@@ -1,0 +1,35 @@
+# ==========================================
+# VALTER PROJECT IDENTITY (The Island Root)
+# ==========================================
+
+# 1. CORE METADATA
+# Osnovni podaci koje Dashboard prikazuje u tablici.
+name: "{Project-name}"
+description: "{short-description}"
+status: "Active Development"
+version: "0.1.0"
+created_at: ""
+last_updated: ""
+
+operator: "Eris Margeta"
+client: ""
+
+structure:
+  work_orders: "./docs/"
+  financials:  "./docs/FINANCES/" 
+  docs:        "./docs/DOCUMENTS"
+
+tech_stack:
+  backend: ""
+  frontend: ""
+  web: ""
+  database: ""
+
+tags:
+  - "Tag1"
+
+# 5. LINKS
+# Data used by GitHub actions to sync repo data
+repo: "https://github.com/Eris-Margeta/valter-25"
+homepage: "https://valter.sh"
+license: "MIT"

@@ -1,0 +1,67 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
+
+version: 2
+updates:
+  # Maintain dependencies for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    reviewers:
+      - "[YOUR_GITHUB_USERNAME]"
+    labels:
+      - "dependencies"
+      - "ci"
+
+  # Maintain dependencies for Node.js (pnpm)
+  # Assumes package.json and pnpm-lock.yaml are in the root or a subdirectory like 'dashboard'
+  - package-ecosystem: "npm"
+    directory: "/" # Adjust this to '/dashboard' if your pnpm project is in a subdirectory
+    schedule:
+      interval: "daily"
+    reviewers:
+      - "[YOUR_GITHUB_USERNAME]"
+    labels:
+      - "dependencies"
+      - "frontend"
+    # Specify pnpm as the package manager
+    versioning-strategy: increase
+
+  # Maintain dependencies for Rust (Cargo)
+  # Assumes Cargo.toml is in a subdirectory like 'core'
+  - package-ecosystem: "cargo"
+    directory: "/core" # Adjust if your Cargo project is elsewhere
+    schedule:
+      interval: "daily"
+    reviewers:
+      - "[YOUR_GITHUB_USERNAME]"
+    labels:
+      - "dependencies"
+      - "backend"
+
+  # Maintain dependencies for Go (Go modules)
+  # Assumes go.mod is in a subdirectory like 'core' or 'cmd/server'
+  - package-ecosystem: "gomod"
+    directory: "/" # Adjust to the directory containing go.mod
+    schedule:
+      interval: "daily"
+    reviewers:
+      - "[YOUR_GITHUB_USERNAME]"
+    labels:
+      - "dependencies"
+      - "backend"
+
+  # Maintain dependencies for Python (pip/poetry)
+  # Assumes requirements.txt or pyproject.toml is in the root or a subdirectory
+  - package-ecosystem: "pip"
+    directory: "/" # Adjust to the directory containing your dependency file
+    schedule:
+      interval: "daily"
+    reviewers:
+      - "[YOUR_GITHUB_USERNAME]"
+    labels:
+      - "dependencies"
+      - "backend"

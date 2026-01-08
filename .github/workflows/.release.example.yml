@@ -1,0 +1,81 @@
+name: Release
+
+permissions:
+  contents: write
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  create-release:
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+  build-assets:
+    name: Build Release Assets
+    needs: create-release
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      matrix:
+        config:
+          - { os: ubuntu-latest, target: x86_64-unknown-linux-gnu, suffix: "" }
+          - { os: macos-latest, target: x86_64-apple-darwin, suffix: "" }
+          - { os: macos-latest, target: aarch64-apple-darwin, suffix: "" } # M1/M2 Mac
+          - { os: windows-latest, target: x86_64-pc-windows-msvc, suffix: ".exe" }
+
+    steps:
+      - uses: actions/checkout@v4
+
+      # ISPRAVAK: Dodajemo build dashboarda prije builda Rust binary-a
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'pnpm'
+          cache-dependency-path: 'dashboard/pnpm-lock.yaml'
+      - name: Install Dashboard Dependencies
+        run: pnpm install --frozen-lockfile
+        working-directory: ./dashboard
+      - name: Build Dashboard
+        run: pnpm build
+        working-directory: ./dashboard
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.config.target }}
+
+      - name: Build Release
+        # We're building from root so rust-embed can find the right path to dashboard/dist
+        run: cargo build --manifest-path core/Cargo.toml --release --target ${{ matrix.config.target }}
+
+      - name: Package Asset
+        shell: bash
+        run: |
+          # Ažuriramo putanju jer buildamo iz roota
+          cd target/${{ matrix.config.target }}/release
+          
+          # Rename binary to generic name for packaging
+          cp valter${{ matrix.config.suffix }} ../../../valter-${{ matrix.config.target }}${{ matrix.config.suffix }}
+          cd ../../..
+      
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: valter-${{ matrix.config.target }}${{ matrix.config.suffix }}
