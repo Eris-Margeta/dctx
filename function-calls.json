@@ -1,0 +1,56 @@
+[
+  {
+    "name": "logWorkOrder",
+    "description": "Records the metadata of a new Work Order in the system registry.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "class": {
+          "type": "string",
+          "description": "Classification code of the document."
+        },
+        "referenceNumber": {
+          "type": "string",
+          "description": "Reference number of the document."
+        },
+        "date": {
+          "type": "string",
+          "description": "Date the order was issued."
+        },
+        "executor": {
+          "type": "string",
+          "description": "First and last name of the operator executing the order."
+        },
+        "subject": {
+          "type": "string",
+          "description": "Full title of the Work Order's subject."
+        },
+        "timeExpenditure": {
+          "type": "string",
+          "description": "Estimated time expenditure in the Xh Ym format."
+        },
+        "materialExpenditure": {
+          "type": "string",
+          "description": "Specification of consumed material and external services."
+        }
+      },
+      "required": [
+        "class",
+        "referenceNumber",
+        "date",
+        "executor",
+        "subject",
+        "timeExpenditure",
+        "materialExpenditure"
+      ]
+    }
+  },
+  {
+    "name": "generateSummaryReport",
+    "description": "Retrieves all logged Work Orders from the registry.",
+    "parameters": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]

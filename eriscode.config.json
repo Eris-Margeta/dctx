@@ -1,0 +1,6 @@
+{
+  "PROVIDER": "gemini",
+  "MODEL_NAME": "gemini-2.5-pro",
+  "VERBOSE": true
+}
+

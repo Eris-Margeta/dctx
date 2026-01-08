@@ -1,0 +1,54 @@
+name: Repo Sync & Ops
+
+on:
+  push:
+    branches: [ "main", "master" ]
+    paths:
+      - 'README.md'
+      - 'project-meta.yaml'
+
+jobs:
+  # 1. Sinkronizacija Metadataka (Opis, Homepage)
+  sync-metadata:
+    runs-on: ubuntu-latest
+    permissions:
+      # Ova dozvola je dobra praksa, ali stvarna autorizacija dolazi iz PAT-a
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install yq for YAML parsing
+        run: sudo wget https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64 -O /usr/bin/yq && sudo chmod +x /usr/bin/yq
+
+      - name: Update Repo Info from meta.yaml
+        env:
+          # KLJUČNA ISPRAVKA: Koristimo Personal Access Token (PAT) umjesto GITHUB_TOKEN
+          # Ovaj token mora imati 'repo' scope i biti spremljen kao 'GH_PAT' u Repository Secrets.
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          # 1. Izvuci opis i homepage URL iz meta.yaml
+          DESCRIPTION=$(yq e '.description' project-meta.yaml)
+          HOMEPAGE=$(yq e '.homepage' project-meta.yaml)
+          
+          # 2. Ažuriraj GitHub putem CLI-a
+          echo "Updating description to: $DESCRIPTION"
+          echo "Updating homepage to: $HOMEPAGE"
+          gh repo edit --description "$DESCRIPTION" --homepage "$HOMEPAGE" --enable-issues=true --enable-projects=true
+
+  # 2. Sinkronizacija Radnih Naloga (Issues)
+  sync-issues:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Convert TODOs to Issues
+        uses: alstr/todo-to-issue-action@v4
+        with:
+          # Uklonjeni su zastarjeli parametri
+          CLOSE_ISSUES: "true"
+          AUTO_ASSIGN: "true"
