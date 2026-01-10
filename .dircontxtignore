@@ -1,4 +1,4 @@
-# Global Gitignore
+  # Global Gitignore
 
 # --- Rust/Core ---
 /target/

@@ -1,0 +1,30 @@
+# commands.txt
+
+TL;DR:
+
+make clean
+make release
+sudo cp build/bin/dircontxt /usr/local/bin/dctx
+
+
+-------------
+
+
+
+
+# 1. Clean previous build artifacts to ensure a fresh compilation
+make clean
+
+# 2. Build the optimized release version
+# This uses the 'release' target from the Makefile which adds -O2 and strips debug symbols
+make release
+
+# 3. Install the binary to /usr/local/bin
+# We rename 'dircontxt' to 'dctx' during the copy, matching the instructions in README.md.
+# Note: 'sudo' is required for writing to /usr/local/bin
+sudo cp build/bin/dircontxt /usr/local/bin/dctx
+
+# 4. Verify the installation
+# We use the absolute path here to ensure we are testing the newly installed binary
+# and not triggering your existing 'dctx' alias (which points to 'dircontxt_runner').
+/usr/local/bin/dctx --version
