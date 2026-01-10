@@ -1,121 +1,97 @@
-# [Project Name]
+# dircontxt: Intelligent Context for LLMs
 
-**[A brief one-sentence description of the project.]**
+## [deprecated] -> new complete rewrite and a HUGE update on https://github.com/Eris-Margeta/dctx
+> **Stop copy-pasting. Start engineering.**
 
-[A more detailed description of the project goes here. Explain what it does, the problem it solves, its target audience, and its key features. Be as clear and concise as possible.]
+`dircontxt` is a blazing fast, zero-dependency command-line tool that turns your codebase into a structured, version-aware context for Large Language Models (GPT-4, Claude 3, Llama 3).
 
-![License](https://img.shields.io/badge/license-[MIT]-[green])![Version](https://img.shields.io/badge/version-[0.1.0]-[blue])![Build Status](https://img.shields.io/github/actions/workflow/status/[github-user]/[repo-name]/[workflow-file.yml])
-
----
-
-## 📋 Prerequisites
-
-Before you begin, ensure your system has the following tools installed:
-
-| Tool                  | Version          | Purpose                                |
-| --------------------- | ---------------- | -------------------------------------- |
-| **[Language / Platform]** | `[e.g., 1.75+]`  | [e.g., For compiling the core application.] |
-| **[Runtime Environment]** | `[e.g., v20+]`   | [e.g., For running the client application.]   |
-| **[Package Manager]**     | `latest`         | [e.g., For managing dependencies.]         |
-| **[Task Runner]**         | `latest`         | [e.g., For automating build scripts.]      |
-
-### OS-Specific Setup
-*   **macOS:** `[e.g., brew install tool1 tool2]`
-*   **Linux (Debian/Ubuntu):** `[e.g., sudo apt update && sudo apt install tool1 tool2]`
-*   **Windows:** WSL2 is recommended.
+Unlike vector databases that feed AI fragmented "chunks" of code, `dctx` provides a **holistic snapshot** of your project, allowing the AI to understand architecture, imports, and relationships instantly.
 
 ---
 
-## 🚀 Getting Started (Development)
+## 🚀 Key Features
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes.
-
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/[github-user]/[repo-name].git
-    cd [repo-name]
-    ```
-
-2.  **Install dependencies**
-    ```bash
-    [e.g., pnpm install]
-    ```
-
-3.  **Configure the environment**
-    Create a `.env` file from the example and fill in the required variables:
-    ```bash
-    cp .env.example .env
-    # Edit the .env file and add your API keys and other secrets
-    ```
-
-4.  **Run the development server**
-    ```bash
-    [e.g., pnpm dev]
-    ```
-    *This command starts the application, typically available at `http://localhost:3000`.*
+*   **⚡ Blazing Fast:** Written in Rust. Scans thousands of files in milliseconds using multi-threaded walkers.
+*   **📦 Zero Dependency:** A single static binary. No Python, Node, or heavy runtime required.
+*   **🧠 Context-Aware Diffing:** Automatically detects changes. After the first run, it generates highly optimized **Diff Snapshots** containing only what changed, saving you 90% of tokens.
+*   **🛡️ Smart Ignore System:** Respects `.gitignore` and its own `.dctxignore`. Never accidentally send `node_modules` or `.env` files to an AI again.
+*   **🎨 Custom Templates:** Fully customizable output format via `.dctx_template` system. Tailor the output for XML, Markdown, or JSON.
+*   **📋 Clipboard Integration:** Use `-c` to pipe the context directly to your clipboard.
 
 ---
 
-## 📦 Installation (Production)
+## 📦 Installation
 
-Instructions for building and running an optimized version of the application for production.
+### From Source (Rust)
+```bash
+git clone https://github.com/your-username/dctx
+cd dctx
+cargo install --path crates/dctx-cli
+```
 
-1.  **Build the application for production**
-    ```bash
-    [e.g., pnpm build]
-    ```    *This command will create optimized files in the `dist/` or `build/` directory.*
-
-2.  **Run the production application**
-    ```bash
-    [e.g., pnpm start]
-    ```
+*(Binary releases for macOS, Windows, and Linux coming soon via package managers)*
 
 ---
 
-## 🧠 Core Concepts
+## 💻 Usage
 
-This section explains the fundamental principles and architecture of the project.
+### 1. The Basics
+Go to your project folder and run:
+```bash
+dctx .
+```
+This creates a `.llmcontext.txt` file in your folder containing the full project structure and content. Drag and drop this into ChatGPT/Claude.
 
-### 1. [First Concept Name, e.g., Configuration as the Source of Truth]
-[Explain the first key architectural or philosophical concept. How does the system know what to do? Where are the rules defined?]
+### 2. Clipboard Mode (No Files)
+Don't want to clutter your disk?
+```bash
+dctx . -c
+```
+The context is now in your clipboard. Just hit `Ctrl+V` in your AI chat.
 
-### 2. [Second Concept Name, e.g., Modular Architecture]
-[Explain the second important concept. How is the code organized? What is the logic behind the division into modules or services?]
+### 3. The Power of Diffs
+Make some changes to your code. Run `dctx` again.
+*   It detects the file history.
+*   It increments the version (e.g., `V1` -> `V1.1`).
+*   It generates a **Diff File** showing *only* the changes.
 
-### 3. [Third Concept Name, e.g., Data Flow]
-[Explain how data flows through the system. Where does it come from, how is it processed, and where does it end up?]
-
----
-
-## 🛠️ Tech Stack
-
-*   **Backend:** [e.g., Go (Echo), Rust (Axum), Node.js (Express)]
-*   **Frontend:** [e.g., SvelteKit, React (Vite), HTMX]
-*   **Database:** [e.g., PostgreSQL, SQLite, Redis]
-*   **Styling:** [e.g., Tailwind CSS, SCSS]
-*   **Deployment:** [e.g., Docker, Nginx, Systemd]
-*   **Testing:** [e.g., Vitest, Go testing, Pytest]
-
-## 📂 Project Structure
-
-```text
-[PROJECT-NAME]/
-├── src/                    # Main application source code
-│   ├── core/               # Core business logic
-│   ├── web/                # Web server, routes, and handlers
-│   └── lib/                # Utility functions and modules
-├── public/                 # Static assets (images, fonts)
-├── scripts/                # Build and deployment scripts
-├── .env.example            # Example configuration file
-└── package.json            # Project definition and dependencies
+To copy *only* the diff to clipboard:
+```bash
+dctx . -c -d
 ```
 
 ---
 
-## 🤝 Contributing
+## ⚙️ Configuration
 
-Contributions are welcome! Please read `CONTRIBUTING.md` for details on our code of conduct and the process for submitting pull requests.
+`dctx` looks for configuration in:
+1.  **Project Root:** `.dctxignore` (Same syntax as .gitignore)
+2.  **Global Config:** `~/.config/dctx/config.toml`
 
-## 📜 License
+### Example `.dctxignore`
+```gitignore
+# Ignore heavy folders
+node_modules/
+target/
+dist/
 
-This project is licensed under the [MIT] License - see the `LICENSE.md` file for details.
+# Un-ignore specific important files
+!dist/config.json
+```
+
+---
+
+## 🏗️ Architecture
+
+`dctx` is a Monorepo designed for scale:
+*   **dctx-core:** The brain. Pure Rust logic for walking, diffing, and templating. Platform agnostic.
+*   **dctx-cli:** The interface.
+*   *(Coming Soon)* **dctx-ffi:** Bindings for Python, Node, and Go.
+*   *(Coming Soon)* **dctx-desktop:** GUI for non-technical users.
+
+---
+
+## 📄 License
+
+MIT License. Open Source and Free Forever.
+
