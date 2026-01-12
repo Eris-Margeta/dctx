@@ -403,3 +403,73 @@
     "materialExpenditure": "N/A"
   }
 }
+
+  {
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-034",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "Refining Testing Strategy: Local Workspace & Stable Anchors",
+    "description": "Relocating the test environment from /tmp to tools/test_workspace to allow operator inspection. Adding 'stable' files to the test fixtures to prevent false-positive Massive Change triggers (V1->V2) during incremental tests. Implementing a 'clean-before-run' policy.",
+    "tasks": [
+      "Update tools/test-integrity.sh: Change TEST_ROOT to use a local 'test_workspace' directory.",
+      "Update tools/test-integrity.sh: Add a 'stable.txt' file in Suite 1 to ensure files_unchanged > 0 in Suite 2.",
+      "Update tools/test-integrity.sh: Remove the log dumping logic since the folder is now local and accessible."
+    ],
+    "timeExpenditure": "0h 10m",
+    "materialExpenditure": "N/A"
+  }
+}
+
+{
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-035",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "Corrective: Fix Test Assertion False Positive",
+    "description": "The integrity test incorrectly identifies the presence of 'FILE_CONTENT_START' in the instructions block as a failure of Tree-Only mode. The fix refines the grep pattern to look for concrete tag instances (e.g., ID=\"F...) which only appear in actual content blocks.",
+    "tasks": [
+      "Update tools/test-integrity.sh: Change grep pattern from 'FILE_CONTENT_START' to 'FILE_CONTENT_START ID=\"F'."
+    ],
+    "timeExpenditure": "0h 05m",
+    "materialExpenditure": "N/A"
+  }
+}
+  {
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-036",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "Enhancement: Randomized Test Path Generation",
+    "description": "Modifying tools/test-integrity.sh to append a random 5-character suffix to the test project directory name (e.g., project-a-XY12Z). This ensures a unique hash in the registry for each execution, preventing state collisions.",
+    "tasks": [
+      "Update tools/test-integrity.sh: Implement random suffix generation.",
+      "Update tools/test-integrity.sh: Update paths to use the dynamic project name."
+    ],
+    "timeExpenditure": "0h 05m",
+    "materialExpenditure": "N/A"
+  }
+}
+
+  {
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-037",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "Corrective: Enable Info Logging in Clipboard Mode",
+    "description": "The current CLI implementation suppresses informational logs (State Loaded, Changes Detected) when running in clipboard mode. This prevents the user from knowing if the operation succeeded or if changes were found, and it breaks automated testing assertions. This order removes the suppression guards, allowing logs to be visible while ensuring the actual content is still routed exclusively to the clipboard.",
+    "tasks": [
+      "Update crates/dctx-cli/src/main.rs: Remove 'if !cli_config.clipboard_mode' checks around println!() statements for status updates."
+    ],
+    "timeExpenditure": "0h 05m",
+    "materialExpenditure": "N/A"
+  }
+}

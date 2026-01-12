@@ -1,3 +1,5 @@
+// crates/dctx-cli/src/main.rs
+
 mod platform;
 
 use dctx_core::config::{self, OutputMode};
@@ -188,12 +190,11 @@ fn run_headless_mode(cli_config: CliConfig) {
         }
     }
 
-    if !cli_config.clipboard_mode {
-        println!("🚀 dctx running on: {}", target_dir.display());
-        println!("🔑 Project Hash: {}", project_hash);
-        if cli_config.tree_only {
-            println!("🌲 Tree-Only Mode Active");
-        }
+    // Always print startup info
+    println!("🚀 dctx running on: {}", target_dir.display());
+    println!("🔑 Project Hash: {}", project_hash);
+    if cli_config.tree_only {
+        println!("🌲 Tree-Only Mode Active");
     }
 
     // 4. Load or Reset State
@@ -201,9 +202,7 @@ fn run_headless_mode(cli_config: CliConfig) {
     let mut old_version = Version::new_v1();
 
     if !cli_config.force_reset && bin_path.exists() {
-        if !cli_config.clipboard_mode {
-            println!("📝 Found existing binary state at {:?}", bin_path);
-        }
+        println!("📝 Found existing binary state at {:?}", bin_path);
         match state::load_or_reset_state(
             &target_dir,
             &bin_path,
@@ -211,32 +210,26 @@ fn run_headless_mode(cli_config: CliConfig) {
             &project_name,
         ) {
             StateLoadResult::Loaded(loaded_root, loaded_version) => {
-                if !cli_config.clipboard_mode {
-                    println!("✅ State Loaded: {}", loaded_version);
-                }
+                println!("✅ State Loaded: {}", loaded_version);
                 old_tree_opt = Some(loaded_root);
                 old_version = loaded_version;
             }
             StateLoadResult::FreshV1 => {
-                if !cli_config.clipboard_mode {
-                    println!("⚠️ State load resulted in FreshV1 (Reset)");
-                }
+                println!("⚠️ State load resulted in FreshV1 (Reset)");
             }
         }
     } else {
-        if !bin_path.exists() && !cli_config.clipboard_mode {
+        if !bin_path.exists() {
             println!("ℹ️ No existing binary state found (Fresh Start).");
         }
-        if cli_config.force_reset && !cli_config.clipboard_mode {
+        if cli_config.force_reset {
             println!("🔄 Force Reset enabled.");
         }
     }
 
     // 5. Scan Directory
     let ignore_rules = ignore::load_ignore_rules(&target_dir);
-    if !cli_config.clipboard_mode {
-        println!("📂 Scanning directory structure...");
-    }
+    println!("📂 Scanning directory structure...");
 
     let mut new_tree = match walker::walk_directory_structure(&target_dir, &ignore_rules) {
         Ok(r) => r,
@@ -267,19 +260,18 @@ fn run_headless_mode(cli_config: CliConfig) {
         (Version::new_v1(), true)
     };
 
-    if !cli_config.clipboard_mode {
-        if diff_report.has_changes {
-            println!(
-                "📊 Changes detected: +{} -{} ~{} (Version: {} -> {})",
-                diff_report.stats.files_added,
-                diff_report.stats.files_removed,
-                diff_report.stats.files_modified,
-                old_version,
-                new_version
-            );
-        } else {
-            println!("💤 No changes detected. Version remains {}.", new_version);
-        }
+    // Always print stats
+    if diff_report.has_changes {
+        println!(
+            "📊 Changes detected: +{} -{} ~{} (Version: {} -> {})",
+            diff_report.stats.files_added,
+            diff_report.stats.files_removed,
+            diff_report.stats.files_modified,
+            old_version,
+            new_version
+        );
+    } else {
+        println!("💤 No changes detected. Version remains {}.", new_version);
     }
 
     // --- CLEANUP (ADR-002) ---
@@ -302,9 +294,7 @@ fn run_headless_mode(cli_config: CliConfig) {
     // 8. Write Binary State
     match writer::write_dircontxt_file(&bin_path, &mut new_tree, &new_version) {
         Ok(_) => {
-            if !cli_config.clipboard_mode {
-                println!("💾 Saved binary state to cache.");
-            }
+            println!("💾 Saved binary state to cache.");
         }
         Err(e) => eprintln!("❌ Failed to save binary state: {}", e),
     }
@@ -386,23 +376,14 @@ fn run_headless_mode(cli_config: CliConfig) {
                 // If user asked for diff but there were no changes, this sends Main Context V_old.
                 // We might want to warn the user? "No changes detected, copying full context."
                 if cli_config.diff_mode && !diff_generated {
-                    // Optionally warn here
+                    println!("⚠️ No changes detected. Copying FULL context instead of diff.");
                 }
                 output_buffer
             };
 
             let content_str = String::from_utf8_lossy(&content_to_copy);
             match platform::copy_to_clipboard(&content_str) {
-                Ok(_) => {
-                    if !cli_config.clipboard_mode {
-                        // keep clipboard output clean
-                        println!("✨ Copied to clipboard!");
-                    } else {
-                        // Minimal feedback for clipboard mode if mostly silent?
-                        // Actually user likes "✨ Copied to clipboard!"
-                        println!("✨ Copied to clipboard!");
-                    }
-                }
+                Ok(_) => println!("✨ Copied to clipboard!"),
                 Err(e) => eprintln!("❌ Clipboard error: {}", e),
             }
         } else {
@@ -429,9 +410,7 @@ fn run_headless_mode(cli_config: CliConfig) {
         }
     }
 
-    if !cli_config.clipboard_mode {
-        println!("✨ Done in {:.2?}", start_time.elapsed());
-    }
+    println!("✨ Done in {:.2?}", start_time.elapsed());
 }
 
 fn print_help() {
