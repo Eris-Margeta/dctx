@@ -6,7 +6,7 @@ FACTORY OF ELECTRONIC UNITS AND LOGIC – TEJL d.o.o.
 Sector for System Integration and Development
 
 **Class:** 003-05/25-01
-**Reference Number:** 251-01-03-25-04 (Rev. 6)
+**Reference Number:** 251-01-03-25-04 (Rev. 7)
 **Date:** 2026-01-12
 
 SUBJECT: Elaboration on the Development of the 'dctx' Project
@@ -52,7 +52,7 @@ The `tools/install.sh` script manages compilation and installation on POSIX syst
 *   **Phase 1: The Interface Layer:** `COMPLETED`
 *   **Phase 2: The Core Logic Loop (Base):** `COMPLETED`
 *   **Phase 3: Architectural Realignment (ADR-001/005/006):** `COMPLETED`
-*   **Phase 4: Output Parity & Diffing (ADR-002):** `PENDING`
+*   **Phase 4: Output Parity & Diffing (ADR-002):** `COMPLETED`
 *   **Phase 5: The AOT Templating Engine (ADR-003):** `PENDING`
 *   **Phase 6: Final Polish:** `PENDING`
 
@@ -104,30 +104,31 @@ The `tools/install.sh` script manages compilation and installation on POSIX syst
     *   `3.4.a.` Established `VERSION` file as the single source of truth.
     *   `3.4.b.` Created `tools/sync-version.sh` to propagate versions to `Cargo.toml` and metadata.
 
----
-
-### **Phase 4: Output Parity, Diffing & Hard Resets (ADR-002) (PENDING)**
-
-**Goal:** Fix the "noisy" output regression and implement the advanced versioning triggers defined in ADR-002.
+### **Phase 4: Output Parity, Diffing & Hard Resets (ADR-002) (COMPLETED)**
 
 *   **4.1. Aesthetic Restoration (Parity with Legacy C)**
-    *   `4.1.a.` **Header:** Revert output header to `[DIRCONTXT_LLM_SNAPSHOT_V...]`.
-    *   `4.1.b.` **IDs:** Update `llm_formatter.rs` to generate semantic IDs (`ROOT`, `D1`, `F2`,`F3`, `D4`, `F5`) instead of raw integers.
-    *   `4.1.c.` **Indentation:** Fix recursive walker to visually indent the Directory Tree.
+    *   `4.1.a.` **Header:** Implemented `[DCTX_LLM_CONTEXT_SNAPSHOT_V...]` header.
+    *   `4.1.b.` **IDs:** Implemented Semantic IDs (`ROOT`, `Dxxx`, `Fxxx`) in `llm_formatter.rs`.
+    *   `4.1.c.` **Indentation:** Implemented visual indentation in the Directory Tree.
 *   **4.2. Diff File Generation**
-    *   `4.2.a.` Implement `llm_formatter::generate_diff_context`.
-    *   `4.2.b.` Logic: Iterate `DiffReport`. Write Header. Write Changed Directory Tree. Write *only* content of `Modified` or `Added` files.
+    *   `4.2.a.` Implemented `llm_formatter::generate_diff_context`.
+    *   `4.2.b.` Logic: Header -> Summary -> Full Tree -> Partial Content.
 *   **4.3. Major Bump Logic (ADR-002)**
-    *   `4.3.a.` Implement Trigger A: "Massive Change" (If `files_unchanged == 0`, force Major Bump V1 -> V2).
-    *   `4.3.b.` Implement Trigger B: "Diff Limit" (If `minor_version > max_diff_files`, force Major Bump).
-    *   `4.3.c.` **Cleanup Action:** On Major Bump, delete all old `*-diff.txt` files in the output directory.
+    *   `4.3.a.` Implemented "Massive Change" trigger (V1 -> V2).
+    *   `4.3.b.` Implemented "Diff Limit" trigger.
+    *   `4.3.c.` **Cleanup:** Implemented auto-deletion of old `*-diff.txt` files on major bumps.
+*   **4.4. Template Refinement**
+    *   `4.4.a.` Implemented robust template parsing with `\n` escape support.
+    *   `4.4.b.` Moved `[DIRECTORY:...]` branding into the `default.dctx_template` layout for user control.
+
+---
 
 ### **Phase 5: The AOT Templating Engine (ADR-003) (PENDING)**
 
 **Goal:** Implement the "Ahead-of-Time" compiled template system for extreme performance and flexibility.
 
 *   **5.1. Template Parser Core**
-    *   `5.1.a.` Implement `template.rs` parser for the `.dctx_template` format (handling `[VARIABLES]`, `[PARTIALS]`, `[LAYOUT]` sections).
+    *   `5.1.a.` **(Done)** Extracted basic parsing logic to `template.rs`.
     *   `5.1.b.` Implement "Pass 1" resolution: Resolve internal `{{VAR}}` references.
 *   **5.2. CLI Compilation Subcommand**
     *   `5.2.a.` Add `dctx template build <path>` command to CLI.
