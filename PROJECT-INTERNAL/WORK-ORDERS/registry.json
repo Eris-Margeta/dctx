@@ -384,3 +384,22 @@
     "materialExpenditure": "N/A"
   }
 }
+
+  {
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-033",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "Phase 5.5: Implementation of ADR-007 Triple-Run Test Script",
+    "description": "Rewriting tools/test-integrity.sh to adhere to the newly established Triple-Run Protocol. The script will perform rigorous verification of Fresh Start, Incremental Updates, Config Propagation, and Major Resets, testing each scenario in both Text and Clipboard modes with confirmation runs.",
+    "tasks": [
+      "Rewrite tools/test-integrity.sh: Implement Triple-Run logic (Trigger -> Confirm -> Cross-Check).",
+      "Add explicit assertions for version bumping and diff generation.",
+      "Add validation for 'text_output_mode_generates_diff_files' config behavior."
+    ],
+    "timeExpenditure": "0h 30m",
+    "materialExpenditure": "N/A"
+  }
+}

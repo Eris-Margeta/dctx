@@ -1,5 +1,3 @@
-// crates/dctx-cli/src/main.rs
-
 mod platform;
 
 use dctx_core::config::{self, OutputMode};
