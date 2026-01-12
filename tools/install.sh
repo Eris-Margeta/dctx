@@ -31,7 +31,6 @@ echo "🖥️  System: $OS ($ARCH)"
 # --- 2. Build Release Binary ---
 echo "🛠️  Building dctx-cli (Release mode)..."
 cd "$PROJECT_ROOT"
-# Ensure we clean previous builds if version changed to force recompilation of env! constants
 cargo build --release -p dctx-cli
 
 # --- 3. Install Binary ---
@@ -59,8 +58,6 @@ mkdir -p "$TEMPLATES_DIR"
 
 # --- 5. Config File Management (Merge-Append Strategy) ---
 CONFIG_FILE="$CONFIG_DIR/config.toml"
-
-# Define default configuration keys
 CFG_KEY_GIT_SAFETY="update_local_git_repo_gitignore_rules"
 
 if [ ! -f "$CONFIG_FILE" ]; then
@@ -83,8 +80,6 @@ $CFG_KEY_GIT_SAFETY = true
 EOF
 else
   echo "🔄 Checking config.toml for missing keys..."
-
-  # Check for Git Safety Key
   if ! grep -q "$CFG_KEY_GIT_SAFETY" "$CONFIG_FILE"; then
     echo "   -> Appending missing key: $CFG_KEY_GIT_SAFETY"
     cat >>"$CONFIG_FILE" <<EOF
@@ -94,12 +89,9 @@ else
 $CFG_KEY_GIT_SAFETY = true
 EOF
   fi
-
-  # Update version comment (if we want to track it)
-  # For now, we just append missing keys.
 fi
 
-# --- 6. Global Git Safety (Versioned Block Replacement) ---
+# --- 6. Global Git Safety (Strict Fail-Safe & Recursion Fix) ---
 echo "🌍 Configuring Global Git Safety..."
 
 # Determine Global Ignore file path
@@ -118,51 +110,52 @@ IGNORE_DIR=$(dirname "$GIT_GLOBAL_IGNORE")
 mkdir -p "$IGNORE_DIR"
 touch "$GIT_GLOBAL_IGNORE"
 
-# Define Block Markers
-BLOCK_START="# >>> dctx-ignore-v"
-BLOCK_END="# <<< dctx-ignore-v"
-NEW_BLOCK_START="# >>> dctx-ignore-v$DCTX_VERSION >>>"
-NEW_BLOCK_END="# <<< dctx-ignore-v$DCTX_VERSION <<<"
+# --- STEP 6.1: Cleanup Legacy Blocks (The Bug Fix) ---
+# We use perl to match the specific legacy header and delete it + the next 4 lines.
+# This cleans up the "litter" from previous versions.
+if grep -q "# \[dctx\] Automated Ignore Rules" "$GIT_GLOBAL_IGNORE"; then
+  echo "🧹 Cleaning up legacy unversioned dctx rules..."
+  perl -i -ne 'if (/# \[dctx\] Automated Ignore Rules/) { $skip=5; } print unless $skip-- > 0;' "$GIT_GLOBAL_IGNORE"
+fi
 
-# Define the content block
-RULES_CONTENT=".dctx
-.dctx/
-*.llmcontext.txt
-*.llmcontext-*-diff.txt"
+# --- STEP 6.2: Cleanup Any Versioned Blocks ---
+# We remove ANY block matching the version pattern to get a clean state for checking.
+# Regex: Matches start tag `>>> dctx-ignore`... up to end tag `<<< dctx-ignore`...
+if grep -q ">>> dctx-ignore-v" "$GIT_GLOBAL_IGNORE"; then
+  echo "🔄 removing existing dctx version block to re-verify..."
+  perl -i -0777 -pe 's/# >>> dctx-ignore-v.*?# <<< dctx-ignore-v.*?\n//gs' "$GIT_GLOBAL_IGNORE"
+fi
 
-# Check if CURRENT version block exists
-if grep -Fq "$NEW_BLOCK_START" "$GIT_GLOBAL_IGNORE"; then
-  echo "✅ Global gitignore is up to date (v$DCTX_VERSION)."
+# --- STEP 6.3: Fail-Safe Check (Do we still need to add rules?) ---
+# Now that our auto-blocks are gone, does the file STILL contain dctx rules?
+# If yes, the user added them manually (e.g., **/.dctx/). We MUST NOT interfere.
+if grep -q "\.dctx" "$GIT_GLOBAL_IGNORE" || grep -q "llmcontext\.txt" "$GIT_GLOBAL_IGNORE"; then
+  echo "✅ Manual dctx rules detected in global gitignore. Skipping auto-add."
 else
-  echo "🔄 Updating global gitignore rules to v$DCTX_VERSION..."
+  # --- STEP 6.4: Add New Block (With Explicit Recursion) ---
+  echo "📝 Adding dctx rules to global gitignore..."
 
-  # Check if ANY dctx block exists (Old version)
-  if grep -Fq "$BLOCK_START" "$GIT_GLOBAL_IGNORE"; then
-    # Remove old block (using sed range delete)
-    # We assume standard markers. This deletes anything between >>> dctx and <<< dctx
-    if [[ "$OS" == "Darwin" ]]; then
-      sed -i '' "/$BLOCK_START/,/$BLOCK_END/d" "$GIT_GLOBAL_IGNORE"
-    else
-      sed -i "/$BLOCK_START/,/$BLOCK_END/d" "$GIT_GLOBAL_IGNORE"
-    fi
-    echo "   -> Removed old dctx rules."
-  fi
+  NEW_BLOCK_START="# >>> dctx-ignore-v$DCTX_VERSION >>>"
+  NEW_BLOCK_END="# <<< dctx-ignore-v$DCTX_VERSION <<<"
 
-  # Append new block
+  # We use double asterisks for explicit global recursion as requested
+  RULES_CONTENT="**/.dctx
+**/.dctx/
+**/*.llmcontext.txt
+**/*.llmcontext-*-diff.txt"
+
   cat >>"$GIT_GLOBAL_IGNORE" <<EOF
 $NEW_BLOCK_START
 # Automated rules. Do not edit this block manually.
 $RULES_CONTENT
 $NEW_BLOCK_END
 EOF
-  echo "   -> Added rules for v$DCTX_VERSION."
+  echo "✅ Updated global gitignore with explicit recursion rules."
 fi
 
 # --- 7. Local Repo Git Safety (Self-Correction) ---
-# We update the .gitignore of the repo we are currently installing from
 CURRENT_REPO_GITIGNORE="$PROJECT_ROOT/.gitignore"
 if [ -f "$CURRENT_REPO_GITIGNORE" ]; then
-  # Check for dctx marker
   if ! grep -q ".dctx/" "$CURRENT_REPO_GITIGNORE"; then
     echo "🛡️  Updating project root .gitignore..."
     echo "" >>"$CURRENT_REPO_GITIGNORE"
