@@ -97,3 +97,47 @@
   "timeExpenditure": "0h 05m",
   "materialExpenditure": "None"
 }
+
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-014",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Implementation of Phase 4: Output Parity and Diffing Engine",
+      "description": "Restoration of legacy output aesthetics (Semantic IDs, Indentation) and implementation of the Diff Generation engine (Changes Summary + Partial Content) as per ADR-002.",
+      "tasks": [
+        "Refactor llm_formatter.rs to use Semantic IDs (ROOT, Dxxx, Fxxx).",
+        "Implement visual indentation for Directory Tree output.",
+        "Implement generate_diff_context function in llm_formatter.rs.",
+        "Update CLI main logic to handle Major Version Bump triggers and file cleanup."
+      ],
+      "timeExpenditure": "1h 30m",
+      "materialExpenditure": "Consumables"
+    }
+  }
+]
+
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-015",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Refinement of Output Formatting and Version Handling",
+      "description": "Adjusting llm_formatter.rs to interpret newline escapes in templates, implementing visual indentation for directory trees, and enforcing Semantic IDs (ROOT, Dxxx, Fxxx). Updating CLI to pull version strictly from Cargo.toml.",
+      "tasks": [
+        "Update llm_formatter.rs: Implement \\n escape sequence parsing for template variables.",
+        "Update llm_formatter.rs: Implement tree indentation logic.",
+        "Update llm_formatter.rs: Implement Semantic IDs.",
+        "Update main.rs: Use env!('CARGO_PKG_VERSION') for version reporting."
+      ],
+      "timeExpenditure": "0h 45m",
+      "materialExpenditure": "Consumables"
+    }
+  }
+]

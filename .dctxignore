@@ -2,6 +2,7 @@
 
 # --- Rust/Core ---
 /target/
+/build/
 /core/target
 **/*.rs.bk
 

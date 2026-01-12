@@ -1,6 +1,6 @@
 ---
 
-# [PROJECT NAME]: AI Development Protocol
+# DCTX: AI Development Protocol
 ## Master Architectural Plan & AI Operational Mandate
 
 **AI ROLE:** Lead System Architect & Development Assistant
