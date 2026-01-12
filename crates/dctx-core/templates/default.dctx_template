@@ -35,7 +35,10 @@ attr_size  = "SIZE"
 attr_lines = "LINES"
 attr_mod   = "MOD"
 
-# --- 4. Instructions Block Text ---
+# --- 4. Branding & Header Config ---
+folder_denotation_marker = "DIRECTORY"
+
+# --- 5. Instructions Block Text ---
 # This text explains the format to the LLM. It references the variables above
 # to ensure the instructions always match the actual format used.
 # Use '\n' for new lines.
@@ -67,6 +70,8 @@ instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}
 # and NOT included here.
 # ==============================================================================
 [LAYOUT]
+[{{folder_denotation_marker}}:{{project}}]
+
 {{start_marker_open}}{{instr_marker}}{{start_marker_close}}
 {{instructions_text}}
 {{end_marker_open}}{{instr_marker}}{{end_marker_close}}
