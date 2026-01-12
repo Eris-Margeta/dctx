@@ -2,59 +2,55 @@
 
 use crate::datatypes::{DirContextTreeNode, NodeType};
 use crate::diff::{ChangeType, DiffReport};
+use crate::template::{self, Template};
 use crate::version::Version;
-use std::collections::HashMap;
 use std::io::{self, Write};
 
 // The default template raw string.
 const DEFAULT_TEMPLATE_RAW: &str = include_str!("../templates/default.dctx_template");
 
-// Header format matching Legacy C implementation for parity
-const VERSION_HEADER_PREFIX: &str = "[DIRCONTXT_LLM_SNAPSHOT_";
+// Branding: DCTX
+const VERSION_HEADER_PREFIX: &str = "[DCTX_LLM_CONTEXT_SNAPSHOT_";
 const VERSION_HEADER_SUFFIX: &str = "]";
 
-const DIFF_HEADER_PREFIX: &str = "[DIRCONTXT_LLM_DIFF_";
-
-struct ParsedTemplate {
-    variables: HashMap<String, String>,
-    partial_tree_entry: String,
-    partial_file_block: String,
-    layout: String,
-}
+const DIFF_HEADER_PREFIX: &str = "[DCTX_LLM_CONTEXT_DIFF_";
 
 /// Generates the full LLM context file (Snapshot).
-/// Corresponds to legacy `generate_llm_context_file`.
 pub fn generate_llm_context<W: Write>(
     writer: &mut W,
     root: &DirContextTreeNode,
     version: &Version,
-    project_name: &str, // Kept for future template use, though header uses fixed format now
+    project_name: &str,
 ) -> io::Result<()> {
-    let tmpl = parse_template(DEFAULT_TEMPLATE_RAW);
+    // 1. Parse Template
+    let mut tmpl = Template::parse(DEFAULT_TEMPLATE_RAW);
+
+    // 2. Inject Runtime Variables
+    // Make project name available to the template engine as "project"
+    tmpl.insert_variable("project", project_name);
+
+    // 3. Generate Components
     let (tree_content, files_content) = generate_components(root, &tmpl);
     let final_output = render_layout(&tmpl, tree_content, files_content);
 
-    // Write Header: [DIRCONTXT_LLM_SNAPSHOT_V{X}.{Y}]
+    // 4. Write Header Line 1: [DCTX_LLM_CONTEXT_SNAPSHOT_V{Version}]
     writeln!(
         writer,
         "{}{}{}",
         VERSION_HEADER_PREFIX, version, VERSION_HEADER_SUFFIX
     )?;
+
+    // 5. Write Header Line 2: [DIRECTORY:{DirectoryName}]
+    writeln!(writer, "[DIRECTORY:{}]", project_name)?;
     writeln!(writer)?;
 
-    // Write Template Content
+    // 6. Write Template Content
     writer.write_all(final_output.as_bytes())?;
 
     Ok(())
 }
 
 /// Generates the Diff context file.
-/// Corresponds to legacy `generate_diff_file`.
-/// Format:
-/// 1. Header
-/// 2. Changes Summary
-/// 3. Updated Directory Tree (Full)
-/// 4. Content of ADDED/MODIFIED files only.
 pub fn generate_diff_context<W: Write>(
     writer: &mut W,
     new_root: &DirContextTreeNode,
@@ -62,16 +58,11 @@ pub fn generate_diff_context<W: Write>(
     old_version: &Version,
     new_version: &Version,
 ) -> io::Result<()> {
-    let tmpl = parse_template(DEFAULT_TEMPLATE_RAW);
+    let tmpl = Template::parse(DEFAULT_TEMPLATE_RAW);
 
     // 1. Write Diff Header
-    // [DIRCONTXT_LLM_DIFF_V1] (Legacy hardcoded version for format, but we use actual versioning logic)
-    // Legacy C used hardcoded [DIRCONTXT_LLM_DIFF_V1], but put the actual version change below.
-    // We will stick to the aesthetic:
-    writeln!(writer, "{}]", DIFF_HEADER_PREFIX)?; // e.g., [DIRCONTXT_LLM_DIFF_] - wait, legacy was V1 hardcoded format version.
-                                                  // Let's use a clean header:
-                                                  // [DIRCONTXT_LLM_DIFF]
-                                                  // Version Change: V1.1 -> V1.2
+    // [DCTX_LLM_CONTEXT_DIFF_V{Version}]
+    writeln!(writer, "{}{}]", DIFF_HEADER_PREFIX, new_version)?;
     writeln!(writer, "Version Change: {} -> {}", old_version, new_version)?;
     writeln!(writer)?;
 
@@ -94,7 +85,6 @@ pub fn generate_diff_context<W: Write>(
     writeln!(writer)?;
 
     // 3. Updated Directory Tree (Full New State)
-    // We reuse the Tree Partial from the template
     let (tree_content, _) = generate_components(new_root, &tmpl);
     writeln!(writer, "<UPDATED_DIRECTORY_TREE>")?;
     writer.write_all(tree_content.as_bytes())?;
@@ -102,17 +92,8 @@ pub fn generate_diff_context<W: Write>(
     writeln!(writer)?;
 
     // 4. Content of Changed Files
-    // We filter the files based on the DiffReport
     let mut files_buffer = String::new();
-    let mut id_counter = 1; // Must match the counter used in tree generation to ensure IDs align?
-                            // CAUTION: generate_components resets counter to 1.
-                            // To match IDs between Tree and Content, we must traverse exactly the same way.
-                            // The `generate_components` function generates both at once.
-                            // However, here we only want *specific* files.
-                            //
-                            // Strategy: We run the full recursive render to get all blocks,
-                            // but we filter which ones we append to the output based on the diff report.
-                            // This is slightly inefficient (generating strings we discard) but guarantees ID consistency.
+    let mut id_counter = 1;
 
     render_recursive_diff_filter(
         new_root,
@@ -128,72 +109,9 @@ pub fn generate_diff_context<W: Write>(
     Ok(())
 }
 
-// --- PARSING ENGINE ---
-
-fn parse_template(raw: &str) -> ParsedTemplate {
-    let mut variables = HashMap::new();
-    let mut partial_tree = String::new();
-    let mut partial_file = String::new();
-    let mut layout = String::new();
-
-    let mut current_section = "";
-
-    for line in raw.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with('#') || trimmed.is_empty() {
-            continue;
-        }
-
-        if trimmed.starts_with('[') && trimmed.ends_with(']') {
-            current_section = trimmed;
-            continue;
-        }
-
-        match current_section {
-            "[VARIABLES]" => {
-                if let Some((key, val)) = trimmed.split_once('=') {
-                    let key = key.trim().to_string();
-                    let val = val.trim().trim_matches('"').to_string();
-                    variables.insert(key, val);
-                }
-            }
-            "[PARTIAL:TREE_ENTRY]" => {
-                partial_tree.push_str(line);
-                partial_tree.push('\n');
-            }
-            "[PARTIAL:FILE_BLOCK]" => {
-                partial_file.push_str(line);
-                partial_file.push('\n');
-            }
-            "[LAYOUT]" => {
-                layout.push_str(line);
-                layout.push('\n');
-            }
-            _ => {}
-        }
-    }
-
-    // Resolve variables (simple 2-pass for nested vars)
-    for _ in 0..2 {
-        let keys: Vec<String> = variables.keys().cloned().collect();
-        for key in keys {
-            let val = variables[&key].clone();
-            let resolved = replace_vars(&val, &variables);
-            variables.insert(key, resolved);
-        }
-    }
-
-    ParsedTemplate {
-        variables,
-        partial_tree_entry: partial_tree.trim().to_string(),
-        partial_file_block: partial_file.trim().to_string(),
-        layout: layout.trim().to_string(),
-    }
-}
-
 // --- RENDERING ENGINE ---
 
-fn generate_components(root: &DirContextTreeNode, tmpl: &ParsedTemplate) -> (String, String) {
+fn generate_components(root: &DirContextTreeNode, tmpl: &Template) -> (String, String) {
     let mut tree_buffer = String::new();
     let mut files_buffer = String::new();
 
@@ -216,7 +134,7 @@ fn generate_components(root: &DirContextTreeNode, tmpl: &ParsedTemplate) -> (Str
 /// Recursive renderer for standard full snapshot
 fn render_recursive(
     node: &DirContextTreeNode,
-    tmpl: &ParsedTemplate,
+    tmpl: &Template,
     tree_buf: &mut String,
     files_buf: &mut String,
     id_counter: &mut usize,
@@ -225,6 +143,7 @@ fn render_recursive(
     // 1. Generate Semantic ID
     // If depth is 0 and it's a directory, it's ROOT.
     // Otherwise: D{03d} or F{03d}
+    // Note: We check if path is empty for root, but depth 0 is safer for recursion base.
     let current_id = if depth == 0 && node.is_dir() {
         "ROOT".to_string()
     } else if node.is_dir() {
@@ -233,7 +152,9 @@ fn render_recursive(
         format!("F{:03}", id_counter)
     };
 
-    *id_counter += 1;
+    if !(depth == 0 && node.is_dir()) {
+        *id_counter += 1;
+    }
 
     // 2. Prepare Tree Entry Variables
     let type_char = if node.is_dir() { "[D]" } else { "[F]" };
@@ -249,13 +170,13 @@ fn render_recursive(
         )
     };
 
-    // 3. Indentation logic
+    // 3. Indentation logic (2 spaces per level)
     let indentation = "  ".repeat(depth);
 
     // 4. Render Tree Entry
     let mut entry = tmpl.partial_tree_entry.clone();
-    // We prepend indentation to the entry. Note: This assumes the partial starts with the content.
-    // A better way would be {{indent}} variable, but for parity we prepend.
+
+    // Inject indentation at the start
     entry = format!("{}{}", indentation, entry);
 
     entry = entry.replace("{{{node.type_char}}}", type_char);
@@ -264,7 +185,7 @@ fn render_recursive(
     entry = entry.replace("{{{node.mod}}}", &node.last_modified_timestamp.to_string());
     entry = entry.replace("{{{node.size_part}}}", &size_part);
 
-    entry = replace_vars(&entry, &tmpl.variables);
+    entry = template::replace_vars(&entry, &tmpl.variables);
 
     tree_buf.push_str(&entry);
     tree_buf.push('\n');
@@ -290,7 +211,7 @@ fn render_recursive(
         block = block.replace("{{{file.lines}}}", &line_count.to_string());
         block = block.replace("{{{file.content}}}", &content_str);
 
-        block = replace_vars(&block, &tmpl.variables);
+        block = template::replace_vars(&block, &tmpl.variables);
 
         files_buf.push_str(&block);
         files_buf.push('\n');
@@ -303,16 +224,15 @@ fn render_recursive(
 }
 
 /// Recursive renderer that ONLY generates content blocks for changed files.
-/// Used for Diff generation. It still generates IDs sequentially to ensure match.
 fn render_recursive_diff_filter(
     node: &DirContextTreeNode,
-    tmpl: &ParsedTemplate,
+    tmpl: &Template,
     files_buf: &mut String,
     id_counter: &mut usize,
     diff_report: &DiffReport,
     depth: usize,
 ) {
-    // 1. Generate ID (Must happen to increment counter correctly)
+    // 1. Generate ID (Must happen to increment counter correctly to match full tree)
     let current_id = if depth == 0 && node.is_dir() {
         "ROOT".to_string()
     } else if node.is_dir() {
@@ -320,12 +240,12 @@ fn render_recursive_diff_filter(
     } else {
         format!("F{:03}", id_counter)
     };
-    *id_counter += 1;
+
+    if !(depth == 0 && node.is_dir()) {
+        *id_counter += 1;
+    }
 
     // 2. Check if this node is in the Diff Report as Added or Modified
-    // We search the diff entries for a match on relative_path
-    // This is O(N*M), but for typical project sizes it's acceptable vs building a hashmap
-    // (Optimization: Pass a HashSet of changed paths)
     let is_changed = diff_report.entries.iter().any(|e| {
         e.relative_path == node.relative_path
             && (e.change_type == ChangeType::Added || e.change_type == ChangeType::Modified)
@@ -351,7 +271,7 @@ fn render_recursive_diff_filter(
         block = block.replace("{{{file.lines}}}", &line_count.to_string());
         block = block.replace("{{{file.content}}}", &content_str);
 
-        block = replace_vars(&block, &tmpl.variables);
+        block = template::replace_vars(&block, &tmpl.variables);
 
         files_buf.push_str(&block);
         files_buf.push('\n');
@@ -363,19 +283,10 @@ fn render_recursive_diff_filter(
     }
 }
 
-fn render_layout(tmpl: &ParsedTemplate, tree_content: String, files_content: String) -> String {
+fn render_layout(tmpl: &Template, tree_content: String, files_content: String) -> String {
     let mut output = tmpl.layout.clone();
     output = output.replace("{{{comp.tree}}}", &tree_content);
     output = output.replace("{{{comp.files}}}", &files_content);
-    output = replace_vars(&output, &tmpl.variables);
+    output = template::replace_vars(&output, &tmpl.variables);
     output
-}
-
-fn replace_vars(text: &str, vars: &HashMap<String, String>) -> String {
-    let mut result = text.to_string();
-    for (key, val) in vars {
-        let pattern = format!("{{{{{}}}}}", key);
-        result = result.replace(&pattern, val);
-    }
-    result
 }

@@ -261,13 +261,7 @@ fn run_headless_mode(cli_config: CliConfig) {
     }
 
     // --- CLEANUP (ADR-002) ---
-    // If a major reset happened (triggered by massive change or diff limit),
-    // we must delete old diff files to keep the output folder clean.
-    // NOTE: This logic is partially duplicated in state::perform_full_cleanup,
-    // but that is for corruption. Here is for version bumps.
-    // Ideally, we move this logic to state or version module, but for now:
     if is_major_reset && !cli_config.clipboard_mode {
-        // Logic to delete only *-diff.txt files
         if local_output_dir.exists() {
             let diff_suffix = "-diff.txt";
             if let Ok(entries) = fs::read_dir(&local_output_dir) {
@@ -389,5 +383,5 @@ fn print_help() {
 }
 
 fn print_version() {
-    println!("dctx-cli v0.1.0");
+    println!("dctx-cli v{}", env!("CARGO_PKG_VERSION"));
 }
