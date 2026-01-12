@@ -15,7 +15,7 @@ The project team and community take all security vulnerabilities seriously. We a
 
 **Please do not report security vulnerabilities through public GitHub issues.**
 
-Instead, please report them directly to us via `[INSERT PREFERRED CONTACT METHOD, E.g., email to security@example.com]`.
+Instead, please report them directly to us via email to eris.margeta@gmail.com
 
 When reporting a vulnerability, please provide a detailed report including:
 
