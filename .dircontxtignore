@@ -269,4 +269,6 @@ zig-cache/
 
 
 # project specific
-PROJECT-INTERNAL/
+prompt.txt
+idea.txt
+temp

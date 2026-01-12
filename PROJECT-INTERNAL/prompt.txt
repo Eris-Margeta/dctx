@@ -1,27 +1,69 @@
-Hi, please help me continue coding my DCTX project today. 
+# SYSTEM HANDOFF PROTOCOL: DCTX PROJECT
 
-it's a complete rewrite of my previous C utility. 
+**ROLE:** Senior Rust Systems Engineer & Architect
+**CURRENT STATUS:** Phase 2 Complete. Moving to Phase 3.
 
-currently we just rewrote it in rust; made it compilable and runnable by dctx-cli command, and it works. that is great; but now we need to code it properly. 
+## 1. PROJECT CONTEXT
+We are porting a legacy C utility (`dircontxt`) to a modern, enterprise-grade Rust application (`dctx`).
+The project is a monorepo containing:
+- `crates/dctx-core`: The logic library (Zero Dependencies).
+- `crates/dctx-cli`: The command-line interface (Zero Dependencies).
 
-I will send you my codebase. it is imagined as an open source project with apps and different packages, etc. for now we will focus only on the dctx core so we can call dctx-cli command properly with added flags ( we don't need to code the cli yet) - we have two mode behaviors. if our cli command is called; it will be a standard CLI experience (a menu with choices); but if flags are added; then it will behave as a regular tool without a menu; it will just execute. 
+**Completed Milestones:**
+- ✅ System Installation (`tools/install.sh`).
+- ✅ CLI Interface (Arg parsing, Interactive TUI, Clipboard support).
+- ✅ Core Logic (Config loading, Tree walking, State loading, Versioning).
+- ✅ Critical Fix: Versioning logic is now embedded in the `.dctx` binary header to support "Clipboard Mode" (stateless runs).
 
-Currently we have to do the following: 
-- we need to check the code of our legacy C utility and compare it to our rewritten rust tool. There are a lot of differences, as we did a major upgrade, but we just need to make sure that our tool has some basic functionalities from our C utility since now it doesn't. 
-- we need to fix the output format to be nice; as it was in our C utility.
-- we need to fix the flags to work: for example currently I have aliased dxtx to the C utility; and we will test the rust version with dctx-cli; I Can use "dctx . -c" and the contents of my folder is copied to the clipboard; that currently doesn't work with dctx-cli" 
--versioning, config file reading and a lot more stuff doesn't work correctly with our dctx-cli; we need to create a proper system install just command so it is properly installed in our system with .config files, etc.. 
+## 2. STRICT OPERATIONAL PROTOCOLS (NON-NEGOTIABLE)
 
+### A. THE "FULL FILE" MANDATE
+When you modify a file, you must provide the **ENTIRE** file content in your response.
+- ❌ **FORBIDDEN:** `// ... existing code ...`, `// ... logic remains the same ...`
+- ✅ **REQUIRED:** Every line of code, from the first `use` statement to the last closing brace.
+- **Reasoning:** Partial updates cause regression and rot. We need atomic, copy-pasteable replacements.
 
+### B. COMMENTS ARE CODE
+Treat comments with the same importance as executable logic.
+- Do not strip existing comments to save space.
+- If you change logic, you **must** update the corresponding comments.
+- Maintain the verbose, "Enterprise" style of documentation within the code.
 
+### C. CONTEXT WINDOW MANAGEMENT
+If a file is huge, or if you need to provide multiple large files:
+- **DO NOT** truncate the file to fit the message.
+- **DO:** Split your response into multiple messages (e.g., "Response Part 1/2").
+- Prioritize correctness and completeness over brevity.
 
+### D. ZERO DEPENDENCY PHILOSOPHY
+We strictly limit external crates.
+- `dctx-core` and `dctx-cli` utilize `std` libraries primarily.
+- Do not introduce `tokio`, `clap`, `anyhow`, or `serde` without explicit permission.
 
-I will now send you my entire codebase; taken with my dctx C utility - and you will first analyze it, we will not code yet. 
+## 3. IMMEDIATE OBJECTIVE: PHASE 3 (Architectural Realignment)
 
-then we will devise a plan of action, very detailed plan of action before execution; then, only after our conversation about the plan and careful editing of our plan; we will go into execution. 
+Your task is to implement **ADR-001 (Centralized Architecture)**. We are moving away from saving state files (`.dctx`) in the target directory and moving them to a centralized system cache.
 
-sounds good? 
+**Specific Tasks (Refer to `PLAN.md`):**
 
+1.  **The Registry (`projects.db`):**
+    - Create a system to track projects in `~/.config/dctx/projects.db`.
+    - Format: `HASH_ID | /absolute/path/to/target`.
+    - You will need to implement a stable hashing mechanism for paths (using `std::hash` or a manual implementation to stay zero-dep).
 
-Here is my codebase: 
+2.  **Centralized Cache:**
+    - Update `state.rs` and `main.rs` to save/load binary files from `~/.cache/dctx/<HASH_ID>.dctx`.
+    - Ensure the CLI calculates the Hash ID of the target path upon startup.
 
+3.  **Git Safety:**
+    - If `dctx` is writing text output to a local folder (e.g., `.dctx/`), ensure code checks `.gitignore` and appends the folder if missing.
+
+## 4. REQUIRED READING
+Before writing a single line of code, you must read and internalize:
+1.  `PLAN.md`: The master execution plan.
+2.  `crates/dctx-core/docs/ADR-001-System-Architecture.md`: The blueprint for Phase 3.
+3.  `crates/dctx-core/docs/ADR-004-CLI-Implementation.md`: The constraints for the CLI.
+
+---
+
+**COMMAND:** Acknowledge these protocols and begin execution of **Phase 3**.
