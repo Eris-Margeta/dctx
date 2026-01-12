@@ -1,3 +1,5 @@
+// crates/dctx-cli/src/main.rs
+
 mod platform;
 
 use dctx_core::config::{self, OutputMode};
@@ -201,7 +203,9 @@ fn run_headless_mode(cli_config: CliConfig) {
     let mut old_version = Version::new_v1();
 
     if !cli_config.force_reset && bin_path.exists() {
-        println!("📝 Found existing binary state at {:?}", bin_path);
+        if !cli_config.clipboard_mode {
+            println!("📝 Found existing binary state at {:?}", bin_path);
+        }
         match state::load_or_reset_state(
             &target_dir,
             &bin_path,
@@ -209,19 +213,23 @@ fn run_headless_mode(cli_config: CliConfig) {
             &project_name,
         ) {
             StateLoadResult::Loaded(loaded_root, loaded_version) => {
-                println!("✅ State Loaded: {}", loaded_version);
+                if !cli_config.clipboard_mode {
+                    println!("✅ State Loaded: {}", loaded_version);
+                }
                 old_tree_opt = Some(loaded_root);
                 old_version = loaded_version;
             }
             StateLoadResult::FreshV1 => {
-                println!("⚠️ State load resulted in FreshV1 (Reset)");
+                if !cli_config.clipboard_mode {
+                    println!("⚠️ State load resulted in FreshV1 (Reset)");
+                }
             }
         }
     } else {
-        if !bin_path.exists() {
+        if !bin_path.exists() && !cli_config.clipboard_mode {
             println!("ℹ️ No existing binary state found (Fresh Start).");
         }
-        if cli_config.force_reset {
+        if cli_config.force_reset && !cli_config.clipboard_mode {
             println!("🔄 Force Reset enabled.");
         }
     }
@@ -313,7 +321,9 @@ fn run_headless_mode(cli_config: CliConfig) {
         let mut output_buffer = Vec::new();
         let mut diff_buffer = Vec::new();
 
-        let writing_diff_only = cli_config.clipboard_mode
+        // If user asked for -d, they want diff if available.
+        // If config says generate diffs, we generate diffs if changed.
+        let mut writing_diff_only = cli_config.clipboard_mode
             && cli_config.diff_mode
             && diff_report.has_changes
             && !is_major_reset;
@@ -325,18 +335,30 @@ fn run_headless_mode(cli_config: CliConfig) {
                 &new_tree,
                 &new_version,
                 &project_name,
-                cli_config.tree_only, // Pass tree_only flag
+                cli_config.tree_only,
             ) {
                 eprintln!("❌ Generation error: {}", e);
             }
         }
 
-        // Generate Diff Context (If changes exist, not a major reset, and Diffs ENABLED or requested via CLI)
+        // Generate Diff Context (Logic Fix: Force diff gen if clipboard requested it)
         let mut diff_generated = false;
 
-        let should_generate_diff = diff_report.has_changes
-            && !is_major_reset
-            && (app_config.text_output_mode_generates_diff_files || writing_diff_only);
+        // Is it possible to generate a diff?
+        let can_generate_diff = diff_report.has_changes && !is_major_reset;
+
+        // Should we?
+        // 1. If Writing to Disk: check config.
+        // 2. If Clipboard: check if -d flag passed.
+
+        let should_generate_diff = if cli_config.clipboard_mode {
+            // In clipboard mode, we generate diff IF user passed -d AND it's possible.
+            // If they didn't pass -d, we don't need the diff buffer (we send main ctx).
+            cli_config.diff_mode && can_generate_diff
+        } else {
+            // In File mode, check config
+            can_generate_diff && app_config.text_output_mode_generates_diff_files
+        };
 
         if should_generate_diff {
             if let Err(e) = llm_formatter::generate_diff_context(
@@ -349,6 +371,10 @@ fn run_headless_mode(cli_config: CliConfig) {
                 eprintln!("❌ Diff generation error: {}", e);
             } else {
                 diff_generated = true;
+                // If we successfully generated a diff for clipboard, ensure we use it
+                if cli_config.clipboard_mode && cli_config.diff_mode {
+                    writing_diff_only = true;
+                }
             }
         }
 
@@ -356,20 +382,29 @@ fn run_headless_mode(cli_config: CliConfig) {
         if cli_config.clipboard_mode {
             let content_to_copy = if writing_diff_only {
                 // If user specifically asked for diff (-d) and we have one
-                if diff_generated {
-                    diff_buffer
-                } else {
-                    // Fallback to main context if no diff (e.g. V1)
-                    output_buffer
-                }
+                diff_buffer
             } else {
-                // Standard behavior: Copy main context
+                // Fallback to main context if no diff (e.g. V1, or no changes)
+                // If user asked for diff but there were no changes, this sends Main Context V_old.
+                // We might want to warn the user? "No changes detected, copying full context."
+                if cli_config.diff_mode && !diff_generated {
+                    // Optionally warn here
+                }
                 output_buffer
             };
 
             let content_str = String::from_utf8_lossy(&content_to_copy);
             match platform::copy_to_clipboard(&content_str) {
-                Ok(_) => println!("✨ Copied to clipboard!"),
+                Ok(_) => {
+                    if !cli_config.clipboard_mode {
+                        // keep clipboard output clean
+                        println!("✨ Copied to clipboard!");
+                    } else {
+                        // Minimal feedback for clipboard mode if mostly silent?
+                        // Actually user likes "✨ Copied to clipboard!"
+                        println!("✨ Copied to clipboard!");
+                    }
+                }
                 Err(e) => eprintln!("❌ Clipboard error: {}", e),
             }
         } else {
