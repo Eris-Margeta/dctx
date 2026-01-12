@@ -284,3 +284,7 @@ zig-cache/
 *.dctx 
 idea.txt
 prompt.txt
+
+# [dctx] Installer Auto-Add
+.dctx/
+*.llmcontext.txt
