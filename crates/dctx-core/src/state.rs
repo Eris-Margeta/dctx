@@ -1,57 +1,59 @@
 use crate::config::LLM_CONTEXT_EXTENSION;
 use crate::datatypes::DirContextTreeNode;
 use crate::reader::read_dircontxt_file;
+use crate::version::Version;
 use std::fs;
 use std::path::Path;
 use std::time::SystemTime;
 
-/// Rezultat pokušaja učitavanja stanja.
+/// Result of attempting to load the state.
 pub enum StateLoadResult {
-    Loaded(DirContextTreeNode), // Uspješno učitano prethodno stanje
-    FreshV1,                    // Nema prethodnog stanja (ili je resetirano), krećemo od V1
+    Loaded(DirContextTreeNode, Version), // Successfully loaded tree AND version
+    FreshV1,                             // No previous state or corruption detected
 }
 
-/// Glavna funkcija koja pokušava učitati stanje, a ako detektira problem,
-/// radi "Hard Reset" (briše sve outpute) i vraća FreshV1.
+/// Main function to load state. If it fails or detects corruption/reset conditions,
+/// it performs a hard reset (cleanup) and returns FreshV1.
 pub fn load_or_reset_state(
     target_dir: &Path,
     binary_path: &Path,
     output_txt_dir: Option<&Path>,
-    project_name_for_txt: &str,
+    project_name: &str,
 ) -> StateLoadResult {
-    // 1. Ako binary ne postoji, to je čisti start.
+    // 1. If binary does not exist, it's a fresh start.
     if !binary_path.exists() {
         return StateLoadResult::FreshV1;
     }
 
-    // 2. Pokušaj učitati binary
+    // 2. Attempt to read the binary file (Tree + Version)
     match read_dircontxt_file(binary_path) {
-        Ok(loaded_root) => {
-            // 3. Provjera integriteta "Recreated Folder"
+        Ok((loaded_root, loaded_version)) => {
+            // 3. Integrity Check: Recreated Folder
+            // If the folder on disk is "younger" than our history or completely mismatched,
+            // we should reset.
             if is_folder_recreated(target_dir, &loaded_root) {
                 eprintln!("[INFO] Detected recreated target folder. Resetting state to V1.");
-                perform_full_cleanup(binary_path, output_txt_dir, project_name_for_txt);
+                perform_full_cleanup(binary_path, output_txt_dir, project_name);
                 return StateLoadResult::FreshV1;
             }
 
-            // Sve OK
-            StateLoadResult::Loaded(loaded_root)
+            // Everything is OK
+            StateLoadResult::Loaded(loaded_root, loaded_version)
         }
         Err(e) => {
-            // 4. Detekcija korupcije
+            // 4. Corruption Handling
             eprintln!("[WARN] Corrupted or invalid state file detected: {}", e);
             eprintln!("[INFO] Performing automatic cleanup and resetting to V1.");
 
-            perform_full_cleanup(binary_path, output_txt_dir, project_name_for_txt);
+            perform_full_cleanup(binary_path, output_txt_dir, project_name);
             StateLoadResult::FreshV1
         }
     }
 }
 
-/// Provjerava da li se datum kreiranja/modifikacije ciljanog foldera
-/// ne slaže s onim što imamo u povijesti.
+/// Checks if the target directory has been deleted and recreated since the last run.
 fn is_folder_recreated(target_dir: &Path, _loaded_root: &DirContextTreeNode) -> bool {
-    // Pokušavamo dobiti metadata s diska
+    // We attempt to get metadata from the disk.
     if let Ok(metadata) = fs::metadata(target_dir) {
         if let Ok(mtime) = metadata.modified() {
             let _disk_ts = mtime
@@ -59,18 +61,20 @@ fn is_folder_recreated(target_dir: &Path, _loaded_root: &DirContextTreeNode) -> 
                 .unwrap_or_default()
                 .as_secs();
 
-            // TODO: Implementirati logiku usporedbe s loaded_root.last_modified_timestamp
-            // Za sada vraćamo false (pretpostavljamo da je folder isti)
+            // TODO: In the future, we can compare _disk_ts with _loaded_root.last_modified_timestamp.
+            // If disk_ts is significantly NEWER than the root node's timestamp from history,
+            // it implies the folder was recreated.
+            // For now, we return false to be conservative.
             return false;
         }
     }
-    // Ako ne možemo pročitati disk (npr. permission), vjerojatno će walker ionako failati kasnije.
+    // If we can't read disk metadata, the walker will likely fail later anyway.
     false
 }
 
-/// Briše binary file I sve output text fajlove koji pripadaju tom projektu.
+/// Deletes the binary file AND all associated text outputs (Main context + Diffs).
 fn perform_full_cleanup(binary_path: &Path, output_txt_dir: Option<&Path>, project_name: &str) {
-    // 1. Obriši binary file (.dctx)
+    // 1. Delete binary file (.dircontxt or .dctx)
     if binary_path.exists() {
         if let Err(e) = fs::remove_file(binary_path) {
             eprintln!(
@@ -83,31 +87,30 @@ fn perform_full_cleanup(binary_path: &Path, output_txt_dir: Option<&Path>, proje
         }
     }
 
-    // 2. Obriši tekstualne outpute (.llmcontext.txt i diffove)
+    // 2. Delete text outputs (.llmcontext.txt and *-diff.txt)
     if let Some(out_dir) = output_txt_dir {
         if !out_dir.exists() {
             return;
         }
 
-        // Definiramo uzorke za brisanje
+        // Define patterns to look for
         let main_file_name = format!("{}.{}", project_name, LLM_CONTEXT_EXTENSION);
-        let diff_prefix = format!("{}.{}-", project_name, LLM_CONTEXT_EXTENSION); // npr "MyProj.llmcontext.txt-"
+        let diff_prefix = format!("{}.{}-", project_name, LLM_CONTEXT_EXTENSION); // e.g. "MyProj.llmcontext.txt-"
 
-        // Čitamo direktorij
+        // Iterate over the directory
         if let Ok(entries) = fs::read_dir(out_dir) {
             for entry in entries.flatten() {
                 let path = entry.path();
                 if let Some(name_os) = path.file_name() {
                     let name = name_os.to_string_lossy();
 
-                    // --- OVDJE JE BIO FIX (let mut umjesto bool) ---
                     let mut should_delete = false;
 
-                    // A) Glavni fajl
+                    // A) Main Context File
                     if name == main_file_name {
                         should_delete = true;
                     }
-                    // B) Diff fajlovi (provjera prefiksa i sufiksa)
+                    // B) Diff Files (check prefix and suffix)
                     else if name.starts_with(&diff_prefix) && name.ends_with("-diff.txt") {
                         should_delete = true;
                     }

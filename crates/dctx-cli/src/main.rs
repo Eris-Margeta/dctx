@@ -14,13 +14,12 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use std::time::Instant;
 
-// --- Configuration Struct ---
-
+// --- Config Struct ---
 #[derive(Debug)]
 struct CliConfig {
     target_path: PathBuf,
     clipboard_mode: bool,
-    diff_mode: bool, // User requested diff via flag
+    diff_mode: bool,
     force_reset: bool,
     show_help: bool,
     show_version: bool,
@@ -39,11 +38,8 @@ impl Default for CliConfig {
     }
 }
 
-// --- Main Entry Point ---
-
 fn main() {
     let args: Vec<String> = env::args().collect();
-
     if args.len() == 1 {
         run_interactive_mode();
     } else {
@@ -65,11 +61,9 @@ fn main() {
     }
 }
 
-// --- Argument Parsing ---
 fn parse_arguments(args: &[String]) -> Result<CliConfig, String> {
     let mut config = CliConfig::default();
     let mut path_set = false;
-
     for arg in args.iter().skip(1) {
         match arg.as_str() {
             "-c" | "--clipboard" => config.clipboard_mode = true,
@@ -92,8 +86,6 @@ fn parse_arguments(args: &[String]) -> Result<CliConfig, String> {
     Ok(config)
 }
 
-// --- Modes ---
-
 fn run_interactive_mode() {
     println!("========================================");
     println!("      dctx - Intelligent Context        ");
@@ -105,18 +97,16 @@ fn run_interactive_mode() {
     println!();
     print!("> ");
     io::stdout().flush().unwrap();
-
     let mut input = String::new();
     if io::stdin().read_line(&mut input).is_err() {
         return;
     }
-
     match input.trim() {
         "1" => run_headless_mode(CliConfig::default()),
         "2" => {
-            let mut config = CliConfig::default();
-            config.clipboard_mode = true;
-            run_headless_mode(config);
+            let mut c = CliConfig::default();
+            c.clipboard_mode = true;
+            run_headless_mode(c);
         }
         "3" => print_help(),
         "4" | "q" | "exit" => std::process::exit(0),
@@ -124,59 +114,46 @@ fn run_interactive_mode() {
     }
 }
 
-// --- THE BRAIN (Headless Mode) ---
+// --- HEADLESS MODE ---
 
 fn run_headless_mode(cli_config: CliConfig) {
     let start_time = Instant::now();
-    let app_config = config::load_app_config(); // Load ~/.config/dctx/config.toml
+    let app_config = config::load_app_config();
 
     // 1. Resolve Path
     let target_dir = match std::fs::canonicalize(&cli_config.target_path) {
         Ok(p) => p,
         Err(e) => {
-            eprintln!("❌ Error resolving path '{:?}': {}", cli_config.target_path, e);
+            eprintln!(
+                "❌ Error resolving path '{:?}': {}",
+                cli_config.target_path, e
+            );
             std::process::exit(1);
         }
     };
-    
-    // 2. Define Output Paths (mimicking Legacy C: local files)
-    let project_name = target_dir.file_name().unwrap_or_default().to_string_lossy().to_string();
-    
-    // We put the output inside the target dir to avoid polluting the parent.
-    let bin_filename = format!("{}.dircontxt", project_name);
-    let bin_path = target_dir.join(&bin_filename); 
+
+    let project_name = target_dir
+        .file_name()
+        .unwrap_or_default()
+        .to_string_lossy()
+        .to_string();
+
+    // FIX: Extension changed to .dctx
+    let bin_filename = format!("{}.dctx", project_name);
+    let bin_path = target_dir.join(&bin_filename);
 
     // 3. Load or Reset State
     let mut old_tree_opt = None;
     let mut old_version = Version::new_v1();
-    
-    // Try to find the old text file to parse version (Legacy behavior)
-    let txt_filename = format!("{}.llmcontext.txt", project_name);
-    let txt_path = target_dir.join(&txt_filename);
-    
-    // We only try to load state if we are NOT forcing reset
+
+    // FIX: We now load version from binary, ignoring text file completely for versioning truth.
     if !cli_config.force_reset && bin_path.exists() {
         match state::load_or_reset_state(&target_dir, &bin_path, Some(&target_dir), &project_name) {
-            StateLoadResult::Loaded(loaded_root) => {
+            StateLoadResult::Loaded(loaded_root, loaded_version) => {
                 old_tree_opt = Some(loaded_root);
-                // Attempt to parse version from existing text file header
-                if txt_path.exists() {
-                    // Quick and dirty read of first line for version
-                    if let Ok(content) = std::fs::read_to_string(&txt_path) {
-                        if let Some(line) = content.lines().next() {
-                            // Format: [DIRCONTXT_LLM_SNAPSHOT_V1.2]
-                            let v_str = line.trim().trim_start_matches('[').trim_end_matches(']');
-                            // Split on underscore to find V part
-                            if let Some(v_part) = v_str.rsplit('_').next() {
-                                old_version = Version::parse(v_part);
-                            }
-                        }
-                    }
-                }
+                old_version = loaded_version; // Use version from binary
             }
-            StateLoadResult::FreshV1 => {
-                // Was reset or corrupted
-            }
+            StateLoadResult::FreshV1 => { /* Reset happened */ }
         }
     }
 
@@ -184,12 +161,12 @@ fn run_headless_mode(cli_config: CliConfig) {
         println!("🚀 dctx running on: {}", target_dir.display());
     }
 
-    // 4. Scan Directory (New State)
+    // 4. Scan Directory
     let ignore_rules = ignore::load_ignore_rules(&target_dir);
     if !cli_config.clipboard_mode {
         println!("📂 Scanning directory structure...");
     }
-    
+
     let mut new_tree = match walker::walk_directory_structure(&target_dir, &ignore_rules) {
         Ok(r) => r,
         Err(e) => {
@@ -198,19 +175,18 @@ fn run_headless_mode(cli_config: CliConfig) {
         }
     };
 
-    // 5. Populate Content (Parallel)
+    // 5. Populate Content
     walker::populate_file_contents_parallel(&mut new_tree);
 
     // 6. Diff & Versioning
     let mut diff_report = DiffReport::default();
     let (new_version, is_major_reset) = if let Some(old_tree) = &old_tree_opt {
         diff_report = diff::compare_trees(Some(old_tree), &new_tree);
-        
         if diff_report.has_changes {
-             old_version.calculate_next(
+            old_version.calculate_next(
                 diff_report.stats.files_unchanged,
                 diff_report.stats.total_files_in_new_state,
-                app_config.max_diff_files
+                app_config.max_diff_files,
             )
         } else {
             (old_version.clone(), false)
@@ -221,21 +197,22 @@ fn run_headless_mode(cli_config: CliConfig) {
 
     if !cli_config.clipboard_mode {
         if diff_report.has_changes {
-            println!("📊 Changes detected: +{} -{} ~{} (Version: {} -> {})", 
+            println!(
+                "📊 Changes detected: +{} -{} ~{} (Version: {} -> {})",
                 diff_report.stats.files_added,
                 diff_report.stats.files_removed,
                 diff_report.stats.files_modified,
-                old_version, new_version
+                old_version,
+                new_version
             );
         } else {
             println!("💤 No changes detected. Version remains {}.", new_version);
         }
     }
 
-    // 7. Write Binary State
-    // We always update the binary state to the latest view
-    match writer::write_dircontxt_file(&bin_path, &mut new_tree) {
-        Ok(_) => {},
+    // 7. Write Binary State (With Version!)
+    match writer::write_dircontxt_file(&bin_path, &mut new_tree, &new_version) {
+        Ok(_) => {}
         Err(e) => eprintln!("❌ Failed to save binary state: {}", e),
     }
 
@@ -247,43 +224,37 @@ fn run_headless_mode(cli_config: CliConfig) {
 
     if should_generate_output {
         let mut output_buffer = Vec::new();
-
-        // Check if we should output ONLY the diff (Clipboard + -d flag)
+        // Placeholder for Diff-Only logic
         let mut _writing_diff_only = false;
-        if cli_config.clipboard_mode && cli_config.diff_mode && diff_report.has_changes && !is_major_reset {
+        if cli_config.clipboard_mode
+            && cli_config.diff_mode
+            && diff_report.has_changes
+            && !is_major_reset
+        {
             _writing_diff_only = true;
-            // TODO: Phase 3 Diff Generation
-             if let Err(e) = llm_formatter::generate_llm_context(&mut output_buffer, &new_tree, &new_version, &project_name) {
-                 eprintln!("❌ Generation error: {}", e);
-             }
-        } else {
-            // Standard Full Context
-             if let Err(e) = llm_formatter::generate_llm_context(&mut output_buffer, &new_tree, &new_version, &project_name) {
-                 eprintln!("❌ Generation error: {}", e);
-             }
         }
 
-        // B) Output Delivery
+        if let Err(e) = llm_formatter::generate_llm_context(
+            &mut output_buffer,
+            &new_tree,
+            &new_version,
+            &project_name,
+        ) {
+            eprintln!("❌ Generation error: {}", e);
+        }
+
         if cli_config.clipboard_mode {
             let content_str = String::from_utf8_lossy(&output_buffer);
-             match platform::copy_to_clipboard(&content_str) {
+            match platform::copy_to_clipboard(&content_str) {
                 Ok(_) => println!("✨ Copied to clipboard!"),
                 Err(e) => eprintln!("❌ Clipboard error: {}", e),
             }
         } else {
-            // Write Main Context
-             match std::fs::write(&txt_path, &output_buffer) {
+            let txt_filename = format!("{}.llmcontext.txt", project_name);
+            let txt_path = target_dir.join(&txt_filename);
+            match std::fs::write(&txt_path, &output_buffer) {
                 Ok(_) => println!("✅ Saved: {}", txt_filename),
                 Err(e) => eprintln!("❌ Write error: {}", e),
-            }
-            
-            // Write Diff File (if applicable and files enabled)
-            if diff_report.has_changes && !is_major_reset {
-                 let diff_filename = format!("{}.llmcontext-{}-diff.txt", project_name, new_version);
-                 let _diff_path = target_dir.join(&diff_filename);
-                 
-                 // TODO: Phase 3 Diff Generation
-                 // println!("ℹ️  Diff file generation coming in Phase 3.");
             }
         }
     }
@@ -297,7 +268,7 @@ fn print_help() {
     println!("Usage: dctx [PATH] [OPTIONS]");
     println!("Options:");
     println!("  -c, --clipboard  Copy to clipboard");
-    println!("  -d, --diff       Output diff only (if available)");
+    println!("  -d, --diff       Output diff only");
     println!("  -r, --reset      Force V1 reset");
     println!("  -h, --help       Show help");
     println!("  -v, --version    Show version");
