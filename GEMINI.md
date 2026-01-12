@@ -1,6 +1,6 @@
 ---
 
-# [PROJECT NAME]: AI Development Protocol
+# DCTX: AI Development Protocol
 ## Master Architectural Plan & AI Operational Mandate
 
 **AI ROLE:** Lead System Architect & Development Assistant
@@ -49,6 +49,18 @@ To ensure full traceability and discipline, every development action must be for
 ### **3. General Development Protocols & Standards**
 
 To maintain a high-quality codebase, you must enforce and adhere to these standards.
+
+### B. COMMENTS ARE CODE
+Treat comments with the same importance as executable logic.
+- Do not strip existing comments to save space.
+- If you change logic, you **must** update the corresponding comments.
+- Maintain the verbose, "Enterprise" style of documentation within the code.
+
+### C. CONTEXT WINDOW MANAGEMENT
+If a file is huge, or if you need to provide multiple large files:
+- **DO NOT** truncate the file to fit the message.
+- **DO:** Split your response into multiple messages (e.g., "Response Part 1/2").
+- Prioritize correctness and completeness over brevity.
 
 #### **A. Naming Conventions**
 *   **Kebab-Case:** We prioritize `kebab-case` for file names and directories (e.g., `user-profile.ts`, `event-processor.go`).

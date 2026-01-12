@@ -15,7 +15,16 @@ ARCH="$(uname -m)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-echo "🚀 Starting dctx installation..."
+# Read Version from file
+VERSION_FILE="$PROJECT_ROOT/VERSION"
+if [ -f "$VERSION_FILE" ]; then
+  DCTX_VERSION=$(cat "$VERSION_FILE" | tr -d '[:space:]')
+else
+  echo "⚠️  VERSION file not found. Defaulting to 0.1.0"
+  DCTX_VERSION="0.1.0"
+fi
+
+echo "🚀 Starting dctx installation v$DCTX_VERSION..."
 echo "📍 Project Root: $PROJECT_ROOT"
 echo "🖥️  System: $OS ($ARCH)"
 
@@ -34,7 +43,6 @@ if [ ! -f "$BINARY_SOURCE" ]; then
 fi
 
 echo "📦 Installing binary to $INSTALL_DEST..."
-# Use sudo if we don't have write access to /usr/local/bin
 if [ -w "/usr/local/bin" ]; then
   cp "$BINARY_SOURCE" "$INSTALL_DEST"
 else
@@ -43,21 +51,20 @@ else
 fi
 
 # --- 4. Setup Configuration Directory ---
-# Follows XDG standard on Linux, simple .config on macOS for consistency
 CONFIG_DIR="$HOME/.config/dctx"
 TEMPLATES_DIR="$CONFIG_DIR/templates"
-
 echo "📂 Setting up config directory: $CONFIG_DIR"
 mkdir -p "$TEMPLATES_DIR"
 
-# --- 5. Install Default Config File ---
+# --- 5. Config File Management (Merge-Append Strategy) ---
 CONFIG_FILE="$CONFIG_DIR/config.toml"
-if [ -f "$CONFIG_FILE" ]; then
-  echo "ℹ️  Config file already exists. Skipping overwrite."
-else
+CFG_KEY_GIT_SAFETY="update_local_git_repo_gitignore_rules"
+
+if [ ! -f "$CONFIG_FILE" ]; then
   echo "📝 Creating default config.toml..."
   cat >"$CONFIG_FILE" <<EOF
 # dctx Global Configuration
+# Config Version: $DCTX_VERSION
 
 # Output Mode: "both", "text", "binary"
 output_mode = "both"
@@ -67,41 +74,106 @@ max_diff_files = 999
 
 # Default template to use if not specified
 default_template = "default"
-EOF
-fi
 
-# --- 6. Install Global Ignore File ---
-IGNORE_FILE="$CONFIG_DIR/ignore"
-if [ -f "$IGNORE_FILE" ]; then
-  echo "ℹ️  Global ignore file already exists. Skipping."
+# Git Safety: Automatically add dctx patterns to local .gitignore
+$CFG_KEY_GIT_SAFETY = true
+EOF
 else
-  echo "📝 Creating default global ignore file..."
-  cat >"$IGNORE_FILE" <<EOF
-# Global dctx ignore rules
-.DS_Store
-Thumbs.db
-.git/
-node_modules/
-target/
-.dctxignore
-*.dctx
-*.llmcontext.txt
+  echo "🔄 Checking config.toml for missing keys..."
+  if ! grep -q "$CFG_KEY_GIT_SAFETY" "$CONFIG_FILE"; then
+    echo "   -> Appending missing key: $CFG_KEY_GIT_SAFETY"
+    cat >>"$CONFIG_FILE" <<EOF
+
+# [Added in v$DCTX_VERSION]
+# Git Safety: Automatically add dctx patterns to local .gitignore
+$CFG_KEY_GIT_SAFETY = true
 EOF
+  fi
 fi
 
-# --- 7. Install Templates ---
-# We assume the templates are in crates/dctx-core/templates
+# --- 6. Global Git Safety (Strict Fail-Safe & Recursion Fix) ---
+echo "🌍 Configuring Global Git Safety..."
+
+# Determine Global Ignore file path
+GIT_GLOBAL_IGNORE=$(git config --global core.excludesfile || echo "")
+
+if [ -z "$GIT_GLOBAL_IGNORE" ]; then
+  if [ -d "$HOME/.config/git" ]; then
+    GIT_GLOBAL_IGNORE="$HOME/.config/git/ignore"
+  else
+    GIT_GLOBAL_IGNORE="$HOME/.gitignore_global"
+  fi
+  echo "ℹ️  Git global ignore not explicitly set. Targeting: $GIT_GLOBAL_IGNORE"
+fi
+
+IGNORE_DIR=$(dirname "$GIT_GLOBAL_IGNORE")
+mkdir -p "$IGNORE_DIR"
+touch "$GIT_GLOBAL_IGNORE"
+
+# --- STEP 6.1: Cleanup Legacy Blocks (The Bug Fix) ---
+# We use perl to match the specific legacy header and delete it + the next 4 lines.
+# This cleans up the "litter" from previous versions.
+if grep -q "# \[dctx\] Automated Ignore Rules" "$GIT_GLOBAL_IGNORE"; then
+  echo "🧹 Cleaning up legacy unversioned dctx rules..."
+  perl -i -ne 'if (/# \[dctx\] Automated Ignore Rules/) { $skip=5; } print unless $skip-- > 0;' "$GIT_GLOBAL_IGNORE"
+fi
+
+# --- STEP 6.2: Cleanup Any Versioned Blocks ---
+# We remove ANY block matching the version pattern to get a clean state for checking.
+# Regex: Matches start tag `>>> dctx-ignore`... up to end tag `<<< dctx-ignore`...
+if grep -q ">>> dctx-ignore-v" "$GIT_GLOBAL_IGNORE"; then
+  echo "🔄 removing existing dctx version block to re-verify..."
+  perl -i -0777 -pe 's/# >>> dctx-ignore-v.*?# <<< dctx-ignore-v.*?\n//gs' "$GIT_GLOBAL_IGNORE"
+fi
+
+# --- STEP 6.3: Fail-Safe Check (Do we still need to add rules?) ---
+# Now that our auto-blocks are gone, does the file STILL contain dctx rules?
+# If yes, the user added them manually (e.g., **/.dctx/). We MUST NOT interfere.
+if grep -q "\.dctx" "$GIT_GLOBAL_IGNORE" || grep -q "llmcontext\.txt" "$GIT_GLOBAL_IGNORE"; then
+  echo "✅ Manual dctx rules detected in global gitignore. Skipping auto-add."
+else
+  # --- STEP 6.4: Add New Block (With Explicit Recursion) ---
+  echo "📝 Adding dctx rules to global gitignore..."
+
+  NEW_BLOCK_START="# >>> dctx-ignore-v$DCTX_VERSION >>>"
+  NEW_BLOCK_END="# <<< dctx-ignore-v$DCTX_VERSION <<<"
+
+  # We use double asterisks for explicit global recursion as requested
+  RULES_CONTENT="**/.dctx
+**/.dctx/
+**/*.llmcontext.txt
+**/*.llmcontext-*-diff.txt"
+
+  cat >>"$GIT_GLOBAL_IGNORE" <<EOF
+$NEW_BLOCK_START
+# Automated rules. Do not edit this block manually.
+$RULES_CONTENT
+$NEW_BLOCK_END
+EOF
+  echo "✅ Updated global gitignore with explicit recursion rules."
+fi
+
+# --- 7. Local Repo Git Safety (Self-Correction) ---
+CURRENT_REPO_GITIGNORE="$PROJECT_ROOT/.gitignore"
+if [ -f "$CURRENT_REPO_GITIGNORE" ]; then
+  if ! grep -q ".dctx/" "$CURRENT_REPO_GITIGNORE"; then
+    echo "🛡️  Updating project root .gitignore..."
+    echo "" >>"$CURRENT_REPO_GITIGNORE"
+    echo "# [dctx] Installer Auto-Add" >>"$CURRENT_REPO_GITIGNORE"
+    echo ".dctx/" >>"$CURRENT_REPO_GITIGNORE"
+    echo "*.llmcontext.txt" >>"$CURRENT_REPO_GITIGNORE"
+  fi
+fi
+
+# --- 8. Install Templates ---
 SOURCE_TEMPLATES="$PROJECT_ROOT/crates/dctx-core/templates"
 if [ -d "$SOURCE_TEMPLATES" ]; then
   echo "🎨 Installing templates..."
   cp -r "$SOURCE_TEMPLATES/"* "$TEMPLATES_DIR/"
-else
-  echo "⚠️  Warning: Template source directory not found at $SOURCE_TEMPLATES"
 fi
 
 echo ""
-echo "✅ Installation Complete!"
+echo "✅ Installation Complete (v$DCTX_VERSION)!"
 echo "   - Binary: $INSTALL_DEST"
 echo "   - Config: $CONFIG_DIR"
-echo "   - Run 'dctx' for interactive menu"
-echo "   - Run 'dctx .' for instant snapshot"
+echo "   - Global Git Ignore: $GIT_GLOBAL_IGNORE"

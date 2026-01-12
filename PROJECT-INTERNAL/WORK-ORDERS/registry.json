@@ -1,0 +1,241 @@
+{
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-001",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Implementation of Phase 3: Centralized Registry and Cache Architecture",
+  "timeExpenditure": "1h 30m",
+  "materialExpenditure": "Consumables"
+}
+{
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-002",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Implementation of Phase 3.3: Output Redirection and Git Safety",
+  "timeExpenditure": "1h 00m",
+  "materialExpenditure": "Consumables"
+}
+{
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-003",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Creation of ADR-005: Enhanced Git Safety & Global Integration",
+  "timeExpenditure": "0h 15m",
+  "materialExpenditure": "Consumables"
+}
+  {
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-006",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Update ADR-005: Version-Aware Configuration and Safety Protocols",
+  "timeExpenditure": "0h 15m",
+  "materialExpenditure": "Consumables"
+}
+{
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-007",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Implementation of ADR-005 Phase 2: Runtime Fast-Path & Installer Versioning",
+  "timeExpenditure": "1h 15m",
+  "materialExpenditure": "Consumables"
+}
+  {
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-008",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Establish Versioning Strategy and Initialize VERSION File",
+  "timeExpenditure": "0h 10m",
+  "materialExpenditure": "None"
+}
+{
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-009",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Creation of ADR-006 and Version Synchronization Script",
+  "timeExpenditure": "0h 30m",
+  "materialExpenditure": "Consumables"
+}
+  {
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-010",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Phase 3 Closure: Script Activation and Documentation Update",
+  "timeExpenditure": "0h 15m",
+  "materialExpenditure": "None"
+}
+  {
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-011",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Verification and Finalization of Project Development Elaboration",
+  "timeExpenditure": "0h 05m",
+  "materialExpenditure": "None"
+}
+{
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-012",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Critical Fix: Global Gitignore Duplication & Recursion Logic",
+  "timeExpenditure": "0h 30m",
+  "materialExpenditure": "Consumables"
+}
+  {
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-013",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Update Function Definition Schema for Richer Logging",
+  "timeExpenditure": "0h 05m",
+  "materialExpenditure": "None"
+}
+
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-014",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Implementation of Phase 4: Output Parity and Diffing Engine",
+      "description": "Restoration of legacy output aesthetics (Semantic IDs, Indentation) and implementation of the Diff Generation engine (Changes Summary + Partial Content) as per ADR-002.",
+      "tasks": [
+        "Refactor llm_formatter.rs to use Semantic IDs (ROOT, Dxxx, Fxxx).",
+        "Implement visual indentation for Directory Tree output.",
+        "Implement generate_diff_context function in llm_formatter.rs.",
+        "Update CLI main logic to handle Major Version Bump triggers and file cleanup."
+      ],
+      "timeExpenditure": "1h 30m",
+      "materialExpenditure": "Consumables"
+    }
+  }
+]
+
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-015",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Refinement of Output Formatting and Version Handling",
+      "description": "Adjusting llm_formatter.rs to interpret newline escapes in templates, implementing visual indentation for directory trees, and enforcing Semantic IDs (ROOT, Dxxx, Fxxx). Updating CLI to pull version strictly from Cargo.toml.",
+      "tasks": [
+        "Update llm_formatter.rs: Implement \\n escape sequence parsing for template variables.",
+        "Update llm_formatter.rs: Implement tree indentation logic.",
+        "Update llm_formatter.rs: Implement Semantic IDs.",
+        "Update main.rs: Use env!('CARGO_PKG_VERSION') for version reporting."
+      ],
+      "timeExpenditure": "0h 45m",
+      "materialExpenditure": "Consumables"
+    }
+  }
+]
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-016",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Branding Update and Header Refinement",
+      "description": "Updating llm_formatter.rs to use 'DCTX' branding and implement the new two-line header format including the directory name. Injecting 'project' variable into the template engine.",
+      "tasks": [
+        "Update llm_formatter.rs: Change header prefixes to [DCTX_...].",
+        "Update llm_formatter.rs: Add [DIRECTORY:{name}] line to snapshot header.",
+        "Update llm_formatter.rs: Inject 'project' variable into template context.",
+        "Retain previous improvements (Indentation, Semantic IDs)."
+      ],
+      "timeExpenditure": "0h 15m",
+      "materialExpenditure": "Consumables"
+    }
+  }
+]
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-017",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Implementation of Phase 5: Modular Templating Engine (Part 1)",
+      "description": "Extracting template parsing logic into a dedicated 'template.rs' module to support future AOT compilation (ADR-003). Implementing strict separation between Template Structure (Data) and Rendering Logic.",
+      "tasks": [
+        "Create crates/dctx-core/src/template.rs.",
+        "Implement Template struct and parser with Pass 1 variable resolution.",
+        "Update crates/dctx-core/src/lib.rs to export the new module.",
+        "Refactor llm_formatter.rs to utilize the new Template engine."
+      ],
+      "timeExpenditure": "1h 00m",
+      "materialExpenditure": "Consumables"
+    }
+  }
+]
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-018",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Update Default Template Definition",
+      "description": "Updating 'default.dctx_template' to use dynamic variable references in instructions and layout, ensuring consistency between the prompt text and the actual output format.",
+      "tasks": [
+        "Update crates/dctx-core/templates/default.dctx_template with the new definition."
+      ],
+      "timeExpenditure": "0h 05m",
+      "materialExpenditure": "None"
+    }
+  }
+]
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-019",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Move Directory Header to Template Control",
+      "description": "Removing the hardcoded [DIRECTORY:...] line from llm_formatter.rs and implementing it within default.dctx_template. This allows users to toggle this line via the template layout.",
+      "tasks": [
+        "Update crates/dctx-core/src/llm_formatter.rs: Remove hardcoded directory line write.",
+        "Update crates/dctx-core/templates/default.dctx_template: Add 'folder_denotation_marker' variable.",
+        "Update crates/dctx-core/templates/default.dctx_template: Add [DIRECTORY:{{project}}] line to [LAYOUT]."
+      ],
+      "timeExpenditure": "0h 10m",
+      "materialExpenditure": "None"
+    }
+  }
+]
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-020",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Close Phase 4: Update Development Status",
+      "description": "Updating the master development plan to reflect the completion of Phase 4 (Output Parity, Diffing, Branding).",
+      "tasks": [
+        "Update PROJECT-INTERNAL/DOCUMENTS/PROJECT-DEVELOPMENT-ELABORATION.md: Mark Phase 4 and its subtasks as COMPLETED."
+      ],
+      "timeExpenditure": "0h 05m",
+      "materialExpenditure": "None"
+    }
+  }
+]

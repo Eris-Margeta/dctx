@@ -1,105 +1,117 @@
-use crate::datatypes::DirContextTreeNode; // Maknut NodeType
+// crates/dctx-core/src/llm_formatter.rs
+
+use crate::datatypes::{DirContextTreeNode, NodeType};
+use crate::diff::{ChangeType, DiffReport};
+use crate::template::{self, Template};
 use crate::version::Version;
-// Maknut DiffReport import
-use std::collections::HashMap;
 use std::io::{self, Write};
 
+// The default template raw string.
 const DEFAULT_TEMPLATE_RAW: &str = include_str!("../templates/default.dctx_template");
 
-struct ParsedTemplate {
-    variables: HashMap<String, String>,
-    partial_tree_entry: String,
-    partial_file_block: String,
-    layout: String,
-}
+// Branding: DCTX
+const VERSION_HEADER_PREFIX: &str = "[DCTX_LLM_CONTEXT_SNAPSHOT_";
+const VERSION_HEADER_SUFFIX: &str = "]";
 
+const DIFF_HEADER_PREFIX: &str = "[DCTX_LLM_CONTEXT_DIFF_";
+
+/// Generates the full LLM context file (Snapshot).
 pub fn generate_llm_context<W: Write>(
     writer: &mut W,
     root: &DirContextTreeNode,
     version: &Version,
     project_name: &str,
 ) -> io::Result<()> {
-    let tmpl = parse_template(DEFAULT_TEMPLATE_RAW);
+    // 1. Parse Template
+    let mut tmpl = Template::parse(DEFAULT_TEMPLATE_RAW);
+
+    // 2. Inject Runtime Variables
+    // Make project name available to the template engine as "project"
+    tmpl.insert_variable("project", project_name);
+
+    // 3. Generate Components
     let (tree_content, files_content) = generate_components(root, &tmpl);
     let final_output = render_layout(&tmpl, tree_content, files_content);
 
+    // 4. Write Header Line 1: [DCTX_LLM_CONTEXT_SNAPSHOT_V{Version}]
+    // This remains hardcoded as it serves as the file signature/version tracker.
     writeln!(
         writer,
-        "[{}_SNAPSHOT_{}]",
-        project_name.to_uppercase(),
-        version
+        "{}{}{}",
+        VERSION_HEADER_PREFIX, version, VERSION_HEADER_SUFFIX
     )?;
-    writeln!(writer)?;
+
+    // NOTE: The [DIRECTORY:...] line is now handled inside the Template [LAYOUT]
+    // to allow user configuration.
+
+    // 5. Write Template Content
     writer.write_all(final_output.as_bytes())?;
 
     Ok(())
 }
 
-// --- PARSING ENGINE ---
+/// Generates the Diff context file.
+pub fn generate_diff_context<W: Write>(
+    writer: &mut W,
+    new_root: &DirContextTreeNode,
+    diff_report: &DiffReport,
+    old_version: &Version,
+    new_version: &Version,
+) -> io::Result<()> {
+    let tmpl = Template::parse(DEFAULT_TEMPLATE_RAW);
 
-fn parse_template(raw: &str) -> ParsedTemplate {
-    let mut variables = HashMap::new();
-    let mut partial_tree = String::new();
-    let mut partial_file = String::new();
-    let mut layout = String::new();
+    // 1. Write Diff Header
+    // [DCTX_LLM_CONTEXT_DIFF_V{Version}]
+    writeln!(writer, "{}{}]", DIFF_HEADER_PREFIX, new_version)?;
+    writeln!(writer, "Version Change: {} -> {}", old_version, new_version)?;
+    writeln!(writer)?;
 
-    let mut current_section = "";
-
-    for line in raw.lines() {
-        let trimmed = line.trim();
-        if trimmed.starts_with('#') || trimmed.is_empty() {
-            continue;
-        }
-
-        if trimmed.starts_with('[') && trimmed.ends_with(']') {
-            current_section = trimmed;
-            continue;
-        }
-
-        match current_section {
-            "[VARIABLES]" => {
-                if let Some((key, val)) = trimmed.split_once('=') {
-                    let key = key.trim().to_string();
-                    let val = val.trim().trim_matches('"').to_string();
-                    variables.insert(key, val);
-                }
-            }
-            "[PARTIAL:TREE_ENTRY]" => {
-                partial_tree.push_str(line);
-                partial_tree.push('\n');
-            }
-            "[PARTIAL:FILE_BLOCK]" => {
-                partial_file.push_str(line);
-                partial_file.push('\n');
-            }
-            "[LAYOUT]" => {
-                layout.push_str(line);
-                layout.push('\n');
-            }
-            _ => {}
-        }
+    // 2. Changes Summary
+    writeln!(writer, "<CHANGES_SUMMARY>")?;
+    for entry in &diff_report.entries {
+        let type_str = match entry.change_type {
+            ChangeType::Added => "ADDED",
+            ChangeType::Removed => "REMOVED",
+            ChangeType::Modified => "MODIFIED",
+        };
+        let suffix = if entry.node_type == NodeType::Directory {
+            "/"
+        } else {
+            ""
+        };
+        writeln!(writer, "[{}] {}{}", type_str, entry.relative_path, suffix)?;
     }
+    writeln!(writer, "</CHANGES_SUMMARY>")?;
+    writeln!(writer)?;
 
-    for _ in 0..2 {
-        let keys: Vec<String> = variables.keys().cloned().collect();
-        for key in keys {
-            let val = variables[&key].clone();
-            let resolved = replace_vars(&val, &variables);
-            variables.insert(key, resolved);
-        }
-    }
+    // 3. Updated Directory Tree (Full New State)
+    let (tree_content, _) = generate_components(new_root, &tmpl);
+    writeln!(writer, "<UPDATED_DIRECTORY_TREE>")?;
+    writer.write_all(tree_content.as_bytes())?;
+    writeln!(writer, "</UPDATED_DIRECTORY_TREE>")?;
+    writeln!(writer)?;
 
-    ParsedTemplate {
-        variables,
-        partial_tree_entry: partial_tree.trim().to_string(),
-        partial_file_block: partial_file.trim().to_string(),
-        layout: layout.trim().to_string(),
-    }
+    // 4. Content of Changed Files
+    let mut files_buffer = String::new();
+    let mut id_counter = 1;
+
+    render_recursive_diff_filter(
+        new_root,
+        &tmpl,
+        &mut files_buffer,
+        &mut id_counter,
+        diff_report,
+        0,
+    );
+
+    writer.write_all(files_buffer.as_bytes())?;
+
+    Ok(())
 }
 
 // --- RENDERING ENGINE ---
 
-fn generate_components(root: &DirContextTreeNode, tmpl: &ParsedTemplate) -> (String, String) {
+fn generate_components(root: &DirContextTreeNode, tmpl: &Template) -> (String, String) {
     let mut tree_buffer = String::new();
     let mut files_buffer = String::new();
 
@@ -110,6 +122,7 @@ fn generate_components(root: &DirContextTreeNode, tmpl: &ParsedTemplate) -> (Str
         &mut tree_buffer,
         &mut files_buffer,
         &mut id_counter,
+        0,
     );
 
     (
@@ -118,16 +131,32 @@ fn generate_components(root: &DirContextTreeNode, tmpl: &ParsedTemplate) -> (Str
     )
 }
 
+/// Recursive renderer for standard full snapshot
 fn render_recursive(
     node: &DirContextTreeNode,
-    tmpl: &ParsedTemplate,
+    tmpl: &Template,
     tree_buf: &mut String,
     files_buf: &mut String,
     id_counter: &mut usize,
+    depth: usize,
 ) {
-    let current_id = id_counter.to_string();
-    *id_counter += 1;
+    // 1. Generate Semantic ID
+    // If depth is 0 and it's a directory, it's ROOT.
+    // Otherwise: D{03d} or F{03d}
+    // Note: We check if path is empty for root, but depth 0 is safer for recursion base.
+    let current_id = if depth == 0 && node.is_dir() {
+        "ROOT".to_string()
+    } else if node.is_dir() {
+        format!("D{:03}", id_counter)
+    } else {
+        format!("F{:03}", id_counter)
+    };
 
+    if !(depth == 0 && node.is_dir()) {
+        *id_counter += 1;
+    }
+
+    // 2. Prepare Tree Entry Variables
     let type_char = if node.is_dir() { "[D]" } else { "[F]" };
     let size_part = if node.is_dir() {
         String::new()
@@ -141,7 +170,14 @@ fn render_recursive(
         )
     };
 
+    // 3. Indentation logic (2 spaces per level)
+    let indentation = "  ".repeat(depth);
+
+    // 4. Render Tree Entry
     let mut entry = tmpl.partial_tree_entry.clone();
+
+    // Inject indentation at the start
+    entry = format!("{}{}", indentation, entry);
 
     entry = entry.replace("{{{node.type_char}}}", type_char);
     entry = entry.replace("{{{node.path}}}", &node.relative_path);
@@ -149,11 +185,12 @@ fn render_recursive(
     entry = entry.replace("{{{node.mod}}}", &node.last_modified_timestamp.to_string());
     entry = entry.replace("{{{node.size_part}}}", &size_part);
 
-    entry = replace_vars(&entry, &tmpl.variables);
+    entry = template::replace_vars(&entry, &tmpl.variables);
 
     tree_buf.push_str(&entry);
     tree_buf.push('\n');
 
+    // 5. Render File Content Block (if file)
     if !node.is_dir() {
         let line_count = if let Some(content) = &node.file_content {
             content.iter().filter(|&&b| b == b'\n').count() + 1
@@ -174,33 +211,82 @@ fn render_recursive(
         block = block.replace("{{{file.lines}}}", &line_count.to_string());
         block = block.replace("{{{file.content}}}", &content_str);
 
-        block = replace_vars(&block, &tmpl.variables);
+        block = template::replace_vars(&block, &tmpl.variables);
 
         files_buf.push_str(&block);
         files_buf.push('\n');
     }
 
+    // 6. Recurse
     for child in &node.children {
-        render_recursive(child, tmpl, tree_buf, files_buf, id_counter);
+        render_recursive(child, tmpl, tree_buf, files_buf, id_counter, depth + 1);
     }
 }
 
-fn render_layout(tmpl: &ParsedTemplate, tree_content: String, files_content: String) -> String {
-    let mut output = tmpl.layout.clone();
+/// Recursive renderer that ONLY generates content blocks for changed files.
+fn render_recursive_diff_filter(
+    node: &DirContextTreeNode,
+    tmpl: &Template,
+    files_buf: &mut String,
+    id_counter: &mut usize,
+    diff_report: &DiffReport,
+    depth: usize,
+) {
+    // 1. Generate ID (Must happen to increment counter correctly to match full tree)
+    let current_id = if depth == 0 && node.is_dir() {
+        "ROOT".to_string()
+    } else if node.is_dir() {
+        format!("D{:03}", id_counter)
+    } else {
+        format!("F{:03}", id_counter)
+    };
 
+    if !(depth == 0 && node.is_dir()) {
+        *id_counter += 1;
+    }
+
+    // 2. Check if this node is in the Diff Report as Added or Modified
+    let is_changed = diff_report.entries.iter().any(|e| {
+        e.relative_path == node.relative_path
+            && (e.change_type == ChangeType::Added || e.change_type == ChangeType::Modified)
+    });
+
+    if !node.is_dir() && is_changed {
+        let line_count = if let Some(content) = &node.file_content {
+            content.iter().filter(|&&b| b == b'\n').count() + 1
+        } else {
+            0
+        };
+
+        let content_str = if let Some(content) = &node.file_content {
+            String::from_utf8_lossy(content)
+        } else {
+            std::borrow::Cow::Borrowed("")
+        };
+
+        let mut block = tmpl.partial_file_block.clone();
+        block = block.replace("{{{file.id}}}", &current_id);
+        block = block.replace("{{{file.path}}}", &node.relative_path);
+        block = block.replace("{{{file.size}}}", &node.content_size.to_string());
+        block = block.replace("{{{file.lines}}}", &line_count.to_string());
+        block = block.replace("{{{file.content}}}", &content_str);
+
+        block = template::replace_vars(&block, &tmpl.variables);
+
+        files_buf.push_str(&block);
+        files_buf.push('\n');
+    }
+
+    // Recurse
+    for child in &node.children {
+        render_recursive_diff_filter(child, tmpl, files_buf, id_counter, diff_report, depth + 1);
+    }
+}
+
+fn render_layout(tmpl: &Template, tree_content: String, files_content: String) -> String {
+    let mut output = tmpl.layout.clone();
     output = output.replace("{{{comp.tree}}}", &tree_content);
     output = output.replace("{{{comp.files}}}", &files_content);
-
-    output = replace_vars(&output, &tmpl.variables);
-
+    output = template::replace_vars(&output, &tmpl.variables);
     output
-}
-
-fn replace_vars(text: &str, vars: &HashMap<String, String>) -> String {
-    let mut result = text.to_string();
-    for (key, val) in vars {
-        let pattern = format!("{{{{{}}}}}", key);
-        result = result.replace(&pattern, val);
-    }
-    result
 }

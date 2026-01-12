@@ -2,6 +2,7 @@
 
 # --- Rust/Core ---
 /target/
+/build/
 /core/target
 **/*.rs.bk
 
@@ -269,3 +270,4 @@ zig-cache/
 prompt.txt
 idea.txt
 temp
+

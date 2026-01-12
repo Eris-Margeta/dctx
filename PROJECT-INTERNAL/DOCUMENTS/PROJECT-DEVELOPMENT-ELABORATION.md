@@ -6,7 +6,7 @@ FACTORY OF ELECTRONIC UNITS AND LOGIC – TEJL d.o.o.
 Sector for System Integration and Development
 
 **Class:** 003-05/25-01
-**Reference Number:** 251-01-03-25-04 (Rev. 4)
+**Reference Number:** 251-01-03-25-04 (Rev. 7)
 **Date:** 2026-01-12
 
 SUBJECT: Elaboration on the Development of the 'dctx' Project
@@ -51,8 +51,8 @@ The `tools/install.sh` script manages compilation and installation on POSIX syst
 *   **Phase 0: System Integration:** `COMPLETED`
 *   **Phase 1: The Interface Layer:** `COMPLETED`
 *   **Phase 2: The Core Logic Loop (Base):** `COMPLETED`
-*   **Phase 3: Architectural Realignment (ADR-001):** `PENDING`
-*   **Phase 4: Output Parity & Diffing (ADR-002):** `PENDING`
+*   **Phase 3: Architectural Realignment (ADR-001/005/006):** `COMPLETED`
+*   **Phase 4: Output Parity & Diffing (ADR-002):** `COMPLETED`
 *   **Phase 5: The AOT Templating Engine (ADR-003):** `PENDING`
 *   **Phase 6: Final Polish:** `PENDING`
 
@@ -88,46 +88,47 @@ The `tools/install.sh` script manages compilation and installation on POSIX syst
     *   `2.2.b.` Fixed critical bug by embedding Version Header into binary for stateless clipboard support.
     *   `2.2.c.` Connected the "Brain" in `main.rs`: Load -> Walk -> Diff -> Version -> Write.
 
----
-
-### **Phase 3: Architectural Realignment (ADR-001) (PENDING)**
-
-**Goal:** Move from local/polluting state files to a Centralized "Source of Truth" to fully comply with ADR-001.
+### **Phase 3: Architectural Realignment (COMPLETED)**
 
 *   **3.1. The Hash Registry (`projects.db`)**
-    *   `3.1.a.` Implement a SHA-256 (or equivalent zero-dep stable hash) generator for absolute project paths.
-    *   `3.1.b.` Implement `registry.rs` in `dctx-core` to manage `~/.config/dctx/projects.db`.
-    *   `3.1.c.` Logic: Check if path exists in DB; if not, generate Hash ID and append record `HASH_ID | /abs/path`.
+    *   `3.1.a.` Implemented stable FNV-1a path hashing (Zero-Dep).
+    *   `3.1.b.` Implemented `registry.rs` to map paths to Hash IDs.
 *   **3.2. Centralized Cache Implementation**
-    *   `3.2.a.` Modify `main.rs` and `state.rs` to stop writing `project.dircontxt` locally.
-    *   `3.2.b.` Redirect binary reads/writes to `~/.cache/dctx/<HASH_ID>.dctx`.
-    *   `3.2.c.` Ensure cache directory is created if missing.
-*   **3.3. Output Redirection & Git Safety**
-    *   `3.3.a.` Modify `main.rs` to write text output (`.llmcontext.txt`) (and .txt diffs if that option is selected) to a local `.dctx/` hidden folder (instead of root), aligning with ADR-001.
-    *   `3.3.b.` Implement `git_safety.rs`: Check for `.gitignore` in project root. If present, check if `.dctx/` is ignored. If not, append it.
+    *   `3.2.a.` Redirected binary state I/O to `~/.cache/dctx/<HASH>.dctx`.
+    *   `3.2.b.` Ensured cache directory creation and management.
+*   **3.3. Output Redirection & Git Safety (ADR-005)**
+    *   `3.3.a.` Redirected text output to local `.dctx/` directory.
+    *   `3.3.b.` Implemented robust `git_safety.rs` with "Fast-Path" version marker checks.
+    *   `3.3.c.` Updated `install.sh` for Global Gitignore and Version-Aware Config updates.
+*   **3.4. Unified Versioning Strategy (ADR-006)**
+    *   `3.4.a.` Established `VERSION` file as the single source of truth.
+    *   `3.4.b.` Created `tools/sync-version.sh` to propagate versions to `Cargo.toml` and metadata.
 
-### **Phase 4: Output Parity, Diffing & Hard Resets (ADR-002) (PENDING)**
-
-**Goal:** Fix the "noisy" output regression and implement the advanced versioning triggers defined in ADR-002.
+### **Phase 4: Output Parity, Diffing & Hard Resets (ADR-002) (COMPLETED)**
 
 *   **4.1. Aesthetic Restoration (Parity with Legacy C)**
-    *   `4.1.a.` **Header:** Revert output header to `[DIRCONTXT_LLM_SNAPSHOT_V...]`.
-    *   `4.1.b.` **IDs:** Update `llm_formatter.rs` to generate semantic IDs (`ROOT`, `D1`, `F2`,`F3`, `D4`, `F5`) instead of raw integers.
-    *   `4.1.c.` **Indentation:** Fix recursive walker to visually indent the Directory Tree.
+    *   `4.1.a.` **Header:** Implemented `[DCTX_LLM_CONTEXT_SNAPSHOT_V...]` header.
+    *   `4.1.b.` **IDs:** Implemented Semantic IDs (`ROOT`, `Dxxx`, `Fxxx`) in `llm_formatter.rs`.
+    *   `4.1.c.` **Indentation:** Implemented visual indentation in the Directory Tree.
 *   **4.2. Diff File Generation**
-    *   `4.2.a.` Implement `llm_formatter::generate_diff_context`.
-    *   `4.2.b.` Logic: Iterate `DiffReport`. Write Header. Write Changed Directory Tree. Write *only* content of `Modified` or `Added` files.
+    *   `4.2.a.` Implemented `llm_formatter::generate_diff_context`.
+    *   `4.2.b.` Logic: Header -> Summary -> Full Tree -> Partial Content.
 *   **4.3. Major Bump Logic (ADR-002)**
-    *   `4.3.a.` Implement Trigger A: "Massive Change" (If `files_unchanged == 0`, force Major Bump V1 -> V2).
-    *   `4.3.b.` Implement Trigger B: "Diff Limit" (If `minor_version > max_diff_files`, force Major Bump).
-    *   `4.3.c.` **Cleanup Action:** On Major Bump, delete all old `*-diff.txt` files in the output directory.
+    *   `4.3.a.` Implemented "Massive Change" trigger (V1 -> V2).
+    *   `4.3.b.` Implemented "Diff Limit" trigger.
+    *   `4.3.c.` **Cleanup:** Implemented auto-deletion of old `*-diff.txt` files on major bumps.
+*   **4.4. Template Refinement**
+    *   `4.4.a.` Implemented robust template parsing with `\n` escape support.
+    *   `4.4.b.` Moved `[DIRECTORY:...]` branding into the `default.dctx_template` layout for user control.
+
+---
 
 ### **Phase 5: The AOT Templating Engine (ADR-003) (PENDING)**
 
 **Goal:** Implement the "Ahead-of-Time" compiled template system for extreme performance and flexibility.
 
 *   **5.1. Template Parser Core**
-    *   `5.1.a.` Implement `template.rs` parser for the `.dctx_template` format (handling `[VARIABLES]`, `[PARTIALS]`, `[LAYOUT]` sections).
+    *   `5.1.a.` **(Done)** Extracted basic parsing logic to `template.rs`.
     *   `5.1.b.` Implement "Pass 1" resolution: Resolve internal `{{VAR}}` references.
 *   **5.2. CLI Compilation Subcommand**
     *   `5.2.a.` Add `dctx template build <path>` command to CLI.
