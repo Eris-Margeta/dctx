@@ -1,4 +1,4 @@
-# DCTX Execution Plan (Rev. 2)
+# DCTX Execution Plan (Rev. 3)
 
 **Philosophy:** Zero Dependencies. High Performance. Enterprise Grade.
 **Goal:** Reach feature parity with the legacy C utility and establish a proper system installation workflow.
@@ -12,15 +12,18 @@
     - Deploys default `config.toml`, `.dctxignore`, and `templates/`.
 - [ ] Define default configuration values in `dctx-core` to match the installed files.
 
-## 🟡 Phase 1: The CLI Interface (Pure Rust)
-**Goal:** Implement argument parsing without external crates (`clap`).
-- [ ] Remove any planned dependencies. Use `std::env::args`.
-- [ ] Implement a `Config` struct in `main.rs` to hold flags:
-    - `target_dir`: PathBuf
-    - `clipboard_mode`: bool (`-c`)
-    - `diff_mode`: bool (`-d`) (Only active if history exists)
-    - `force_reset`: bool (`--reset`)
-- [ ] Handle `--help` and `--version` manually.
+## 🟡 Phase 1: The Interface Layer (Pure Rust)
+**Goal:** Implement argument parsing and Mode Switching.
+- [ ] **Argument Parser:**
+    - Remove dependencies. Use `std::env::args`.
+    - Parse flags: `-c` (Clipboard), `-d` (Diff), `--reset`, `--help`.
+- [ ] **Mode Switching:**
+    - If `args.len() == 1` (just binary name): Launch **Interactive TUI**.
+    - If `args.len() > 1`: Launch **Headless Walker**.
+- [ ] **Interactive TUI (Stub):**
+    - Simple `println!` menu with `std::io::stdin` selection.
+    - Option 1: Run on current dir.
+    - Option 2: Help.
 
 ## 🟠 Phase 2: The Core Logic Loop (The "Brain")
 **Goal:** Connect the disconnected modules (`walker`, `diff`, `version`) in `main.rs`.
