@@ -239,3 +239,114 @@
     }
   }
 ]
+
+  {
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-022",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "Phase 5 Execution: Logic Remediation, Config Expansion & Tree-Only Mode",
+    "description": "Implementation of Phase 5 tasks as defined in PROJECT-DEVELOPMENT-ELABORATION.md. This involves fixing potential silent failures in text output generation, adding configuration to toggle diff file creation, implementing the Tree-Only CLI flag, and verifying binary state persistence logic.",
+    "tasks": [
+      "Update crates/dctx-core/src/config.rs: Add 'text_output_mode_generates_diff_files' (default false).",
+      "Update crates/dctx-core/src/llm_formatter.rs: Implement 'tree_only' boolean logic to skip file content generation.",
+      "Update crates/dctx-cli/src/main.rs: Implement '-t' argument parsing.",
+      "Update crates/dctx-cli/src/main.rs: Implement logic to respect 'text_output_mode_generates_diff_files'.",
+      "Update crates/dctx-cli/src/main.rs: Add verbose logging to output generation path to diagnose Phase 5.1 issues."
+    ],
+    "timeExpenditure": "1h 30m",
+    "materialExpenditure": "Consumables"
+  }
+}{
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-023",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "Phase 5.4: System Integrity & Persistence Verification",
+    "description": "Creation of an isolated shell script (tools/test-integrity.sh) to verify ADR-001 and ADR-002. The script will mock the XDG environment variables to prevent pollution of the host system, run the compiled dctx binary, and assert the correct creation of the binary cache, registry entries, and version increments.",
+    "tasks": [
+      "Create tools/test-integrity.sh: Implement isolated environment setup (XDG_CACHE_HOME, XDG_CONFIG_HOME).",
+      "Implement Test Case 1: Fresh Snapshot (V1). Verify creation of .dctx binary in cache and registry entry.",
+      "Implement Test Case 2: Incremental Update (V1.1). Modify a file, run dctx, verify version bump and diff generation.",
+      "Implement Test Case 3: Tree-Only Mode. Verify -t flag functionality.",
+      "Implement Test Case 4: Massive Change Trigger. Delete all files, run dctx, verify Major bump (V2) and diff cleanup."
+    ],
+    "timeExpenditure": "0h 45m",
+    "materialExpenditure": "Consumables"
+  }
+}
+  {
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-023",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "Phase 5.4: System Integrity & Persistence Verification",
+    "description": "Creation of an isolated shell script (tools/test-integrity.sh) to verify ADR-001 and ADR-002. The script will mock the XDG environment variables to prevent pollution of the host system, run the compiled dctx binary, and assert the correct creation of the binary cache, registry entries, and version increments.",
+    "tasks": [
+      "Create tools/test-integrity.sh: Implement isolated environment setup (XDG_CACHE_HOME, XDG_CONFIG_HOME).",
+      "Implement Test Case 1: Fresh Snapshot (V1). Verify creation of .dctx binary in cache and registry entry.",
+      "Implement Test Case 2: Incremental Update (V1.1). Modify a file, run dctx, verify version bump and diff generation.",
+      "Implement Test Case 3: Tree-Only Mode. Verify -t flag functionality.",
+      "Implement Test Case 4: Massive Change Trigger. Delete all files, run dctx, verify Major bump (V2) and diff cleanup."
+    ],
+    "timeExpenditure": "0h 45m",
+    "materialExpenditure": "Consumables"
+  }
+}
+  {
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-025",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "CORRECTIVE: Fix Environment Isolation in Integrity Test",
+    "description": "Restructuring tools/test-integrity.sh to prevent the mock HOME environment from interfering with the Cargo build process. The build step will now run in the host environment, and environment overrides will be applied specifically to the dctx execution steps.",
+    "tasks": [
+      "Update tools/test-integrity.sh: Move environment exports after the build step."
+    ],
+    "timeExpenditure": "0h 05m",
+    "materialExpenditure": "N/A"
+  }
+}
+
+  {
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-026",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "CORRECTIVE: Standardize Cache Path Resolution on macOS",
+    "description": "The current implementation of get_cache_dir strictly enforces macOS standards (~/Library/Caches) while ignoring the XDG_CACHE_HOME environment variable. This breaks the isolated testing environment and contradicts the behavior of the config directory resolution. This order updates the logic to prioritize XDG variables if present, ensuring testability and standard CLI behavior.",
+    "tasks": [
+      "Update crates/dctx-core/src/config.rs: Modify get_cache_dir to check XDG_CACHE_HOME before falling back to ~/Library/Caches on macOS.",
+      "Operator Action: Re-run tools/test-integrity.sh."
+    ],
+    "timeExpenditure": "0h 10m",
+    "materialExpenditure": "N/A"
+  }
+}
+  {
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-027",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "Standardization of Cache Paths (Unix/Windows)",
+    "description": "Refactoring config.rs to treat macOS and Linux uniformly regarding cache storage (~/.cache/dctx), while maintaining standard Windows behavior (%LOCALAPPDATA%). This resolves the platform discrepancy in testing and simplifies the directory structure logic.",
+    "tasks": [
+      "Update crates/dctx-core/src/config.rs: Rewrite get_cache_dir to use a binary switch (Windows vs Unix-like).",
+      "Operator Action: Re-run tools/test-integrity.sh to confirm the fix."
+    ],
+    "timeExpenditure": "0h 05m",
+    "materialExpenditure": "N/A"
+  }
+}

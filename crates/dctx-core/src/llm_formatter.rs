@@ -1,5 +1,3 @@
-// crates/dctx-core/src/llm_formatter.rs
-
 use crate::datatypes::{DirContextTreeNode, NodeType};
 use crate::diff::{ChangeType, DiffReport};
 use crate::template::{self, Template};
@@ -21,6 +19,7 @@ pub fn generate_llm_context<W: Write>(
     root: &DirContextTreeNode,
     version: &Version,
     project_name: &str,
+    tree_only: bool,
 ) -> io::Result<()> {
     // 1. Parse Template
     let mut tmpl = Template::parse(DEFAULT_TEMPLATE_RAW);
@@ -30,7 +29,7 @@ pub fn generate_llm_context<W: Write>(
     tmpl.insert_variable("project", project_name);
 
     // 3. Generate Components
-    let (tree_content, files_content) = generate_components(root, &tmpl);
+    let (tree_content, files_content) = generate_components(root, &tmpl, tree_only);
     let final_output = render_layout(&tmpl, tree_content, files_content);
 
     // 4. Write Header Line 1: [DCTX_LLM_CONTEXT_SNAPSHOT_V{Version}]
@@ -51,6 +50,9 @@ pub fn generate_llm_context<W: Write>(
 }
 
 /// Generates the Diff context file.
+/// Note: Tree-only mode is generally not applicable to diffs in the same way,
+/// but logic dictates if we want diffs, we usually want content.
+/// However, keeping the signature consistent is good practice.
 pub fn generate_diff_context<W: Write>(
     writer: &mut W,
     new_root: &DirContextTreeNode,
@@ -85,7 +87,7 @@ pub fn generate_diff_context<W: Write>(
     writeln!(writer)?;
 
     // 3. Updated Directory Tree (Full New State)
-    let (tree_content, _) = generate_components(new_root, &tmpl);
+    let (tree_content, _) = generate_components(new_root, &tmpl, true); // true = no file content for the tree block
     writeln!(writer, "<UPDATED_DIRECTORY_TREE>")?;
     writer.write_all(tree_content.as_bytes())?;
     writeln!(writer, "</UPDATED_DIRECTORY_TREE>")?;
@@ -111,7 +113,11 @@ pub fn generate_diff_context<W: Write>(
 
 // --- RENDERING ENGINE ---
 
-fn generate_components(root: &DirContextTreeNode, tmpl: &Template) -> (String, String) {
+fn generate_components(
+    root: &DirContextTreeNode,
+    tmpl: &Template,
+    tree_only: bool,
+) -> (String, String) {
     let mut tree_buffer = String::new();
     let mut files_buffer = String::new();
 
@@ -123,6 +129,7 @@ fn generate_components(root: &DirContextTreeNode, tmpl: &Template) -> (String, S
         &mut files_buffer,
         &mut id_counter,
         0,
+        tree_only,
     );
 
     (
@@ -139,6 +146,7 @@ fn render_recursive(
     files_buf: &mut String,
     id_counter: &mut usize,
     depth: usize,
+    tree_only: bool,
 ) {
     // 1. Generate Semantic ID
     // If depth is 0 and it's a directory, it's ROOT.
@@ -190,8 +198,8 @@ fn render_recursive(
     tree_buf.push_str(&entry);
     tree_buf.push('\n');
 
-    // 5. Render File Content Block (if file)
-    if !node.is_dir() {
+    // 5. Render File Content Block (if file and NOT tree_only)
+    if !node.is_dir() && !tree_only {
         let line_count = if let Some(content) = &node.file_content {
             content.iter().filter(|&&b| b == b'\n').count() + 1
         } else {
@@ -219,7 +227,15 @@ fn render_recursive(
 
     // 6. Recurse
     for child in &node.children {
-        render_recursive(child, tmpl, tree_buf, files_buf, id_counter, depth + 1);
+        render_recursive(
+            child,
+            tmpl,
+            tree_buf,
+            files_buf,
+            id_counter,
+            depth + 1,
+            tree_only,
+        );
     }
 }
 

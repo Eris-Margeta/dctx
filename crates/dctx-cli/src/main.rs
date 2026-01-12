@@ -1,5 +1,3 @@
-// crates/dctx-cli/src/main.rs
-
 mod platform;
 
 use dctx_core::config::{self, OutputMode};
@@ -25,6 +23,7 @@ struct CliConfig {
     target_path: PathBuf,
     clipboard_mode: bool,
     diff_mode: bool,
+    tree_only: bool, // Added Phase 5.3
     force_reset: bool,
     show_help: bool,
     show_version: bool,
@@ -36,6 +35,7 @@ impl Default for CliConfig {
             target_path: PathBuf::from("."),
             clipboard_mode: false,
             diff_mode: false,
+            tree_only: false,
             force_reset: false,
             show_help: false,
             show_version: false,
@@ -73,6 +73,7 @@ fn parse_arguments(args: &[String]) -> Result<CliConfig, String> {
         match arg.as_str() {
             "-c" | "--clipboard" => config.clipboard_mode = true,
             "-d" | "--diff" => config.diff_mode = true,
+            "-t" | "--tree" => config.tree_only = true, // Added Phase 5.3
             "-r" | "--reset" => config.force_reset = true,
             "-h" | "--help" => config.show_help = true,
             "-v" | "--version" => config.show_version = true,
@@ -190,6 +191,9 @@ fn run_headless_mode(cli_config: CliConfig) {
     if !cli_config.clipboard_mode {
         println!("🚀 dctx running on: {}", target_dir.display());
         println!("🔑 Project Hash: {}", project_hash);
+        if cli_config.tree_only {
+            println!("🌲 Tree-Only Mode Active");
+        }
     }
 
     // 4. Load or Reset State
@@ -305,14 +309,21 @@ fn run_headless_mode(cli_config: CliConfig) {
                 &new_tree,
                 &new_version,
                 &project_name,
+                cli_config.tree_only, // Pass tree_only flag
             ) {
                 eprintln!("❌ Generation error: {}", e);
             }
         }
 
-        // Generate Diff Context (If changes exist and not a major reset)
+        // Generate Diff Context (If changes exist, not a major reset, and Diffs ENABLED or requested via CLI)
+        // Phase 5.2: Check config.text_output_mode_generates_diff_files
         let mut diff_generated = false;
-        if diff_report.has_changes && !is_major_reset {
+
+        let should_generate_diff = diff_report.has_changes
+            && !is_major_reset
+            && (app_config.text_output_mode_generates_diff_files || writing_diff_only);
+
+        if should_generate_diff {
             if let Err(e) = llm_formatter::generate_diff_context(
                 &mut diff_buffer,
                 &new_tree,
@@ -348,20 +359,24 @@ fn run_headless_mode(cli_config: CliConfig) {
             }
         } else {
             // Write Main Context
+            // Phase 5.1: Added logging to trace execution
             let txt_filename = format!("{}.llmcontext.txt", project_name);
             let txt_path = local_output_dir.join(&txt_filename);
+
+            println!("📝 Attempting to write main context: {:?}", txt_path);
+
             match std::fs::write(&txt_path, &output_buffer) {
                 Ok(_) => println!("✅ Saved: .dctx/{}", txt_filename),
-                Err(e) => eprintln!("❌ Write error: {}", e),
+                Err(e) => eprintln!("❌ Write error for {}: {}", txt_filename, e),
             }
 
-            // Write Diff File (if applicable)
+            // Write Diff File (if generated)
             if diff_generated {
                 let diff_filename = format!("{}.llmcontext-{}-diff.txt", project_name, new_version);
                 let diff_path = local_output_dir.join(&diff_filename);
                 match std::fs::write(&diff_path, &diff_buffer) {
                     Ok(_) => println!("✅ Saved Diff: .dctx/{}", diff_filename),
-                    Err(e) => eprintln!("❌ Diff Write error: {}", e),
+                    Err(e) => eprintln!("❌ Diff Write error for {}: {}", diff_filename, e),
                 }
             }
         }
@@ -377,6 +392,7 @@ fn print_help() {
     println!("Options:");
     println!("  -c, --clipboard  Copy to clipboard");
     println!("  -d, --diff       Output diff only (if available)");
+    println!("  -t, --tree       Tree-Only mode (skips file content)");
     println!("  -r, --reset      Force V1 reset");
     println!("  -h, --help       Show help");
     println!("  -v, --version    Show version");

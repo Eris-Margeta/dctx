@@ -1,3 +1,5 @@
+// crates/dctx-core/src/config.rs
+
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -64,6 +66,9 @@ pub struct AppConfig {
     /// Controls whether dctx automatically updates the local .gitignore file
     /// with dctx-specific rules. Defined in ADR-005.
     pub update_local_git_repo_gitignore_rules: bool,
+    /// Controls whether diff files (*-diff.txt) are generated on disk.
+    /// Added in Phase 5.2. Default is FALSE to save disk space.
+    pub text_output_mode_generates_diff_files: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -80,6 +85,7 @@ impl Default for AppConfig {
             max_diff_files: 999,
             default_template: "default".to_string(),
             update_local_git_repo_gitignore_rules: true, // Safe default per ADR-005
+            text_output_mode_generates_diff_files: false, // Default per Phase 5.2
         }
     }
 }
@@ -110,17 +116,13 @@ pub fn get_config_dir() -> Option<PathBuf> {
 
 pub fn get_cache_dir() -> Option<PathBuf> {
     if cfg!(target_os = "windows") {
+        // Windows: Local AppData is the standard for non-roaming caches.
         env::var("LOCALAPPDATA")
             .ok()
             .map(|p| PathBuf::from(p).join(APP_NAME))
-    } else if cfg!(target_os = "macos") {
-        env::var("HOME").ok().map(|h| {
-            PathBuf::from(h)
-                .join("Library")
-                .join("Caches")
-                .join(APP_NAME)
-        })
     } else {
+        // Unix-like (Linux, macOS, BSD)
+        // Unified approach: ~/.cache/dctx
         if let Ok(xdg_cache) = env::var("XDG_CACHE_HOME") {
             Some(PathBuf::from(xdg_cache).join(APP_NAME))
         } else {
@@ -195,6 +197,13 @@ fn parse_config_line(line: &str, config: &mut AppConfig) {
                     config.update_local_git_repo_gitignore_rules = true;
                 } else if val == "false" {
                     config.update_local_git_repo_gitignore_rules = false;
+                }
+            }
+            "text_output_mode_generates_diff_files" => {
+                if val == "true" {
+                    config.text_output_mode_generates_diff_files = true;
+                } else if val == "false" {
+                    config.text_output_mode_generates_diff_files = false;
                 }
             }
             _ => {}

@@ -1,5 +1,3 @@
-// crates/dctx-core/src/template.rs
-
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
