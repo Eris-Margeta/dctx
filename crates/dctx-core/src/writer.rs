@@ -1,51 +1,62 @@
 use crate::config::DIRCONTXT_MAGIC_BYTES;
 use crate::datatypes::{DirContextTreeNode, NodeType};
+use crate::version::Version;
 use std::fs::File;
 use std::io::{self, BufWriter, Write};
 use std::path::Path;
 
-/// Glavna funkcija za pisanje .dircontxt binarne datoteke.
+/// Main function to write the .dircontxt binary file.
 ///
-/// Proces:
-/// 1. Ažurira offsete u stablu (priprema).
-/// 2. Piše potpis (Signature).
-/// 3. Piše zaglavlje (Header - serijalizirano stablo).
-/// 4. Piše podatke (Data - sadržaj datoteka).
-pub fn write_dircontxt_file(output_path: &Path, root: &mut DirContextTreeNode) -> io::Result<()> {
+/// Process:
+/// 1. Updates offsets in the tree (Preparation).
+/// 2. Writes Signature (Magic Bytes).
+/// 3. Writes Version Header (Major, Minor).
+/// 4. Writes Tree Metadata (Header section).
+/// 5. Writes File Content (Data section).
+pub fn write_dircontxt_file(
+    output_path: &Path,
+    root: &mut DirContextTreeNode,
+    version: &Version,
+) -> io::Result<()> {
     let file = File::create(output_path)?;
-    // Koristimo BufWriter da smanjimo broj syscall-ova kod pisanja malih metapodataka
+    // Use BufWriter to minimize syscalls for small metadata writes
     let mut writer = BufWriter::new(file);
 
-    // 1. Priprema: Izračunaj offsete za Data sekciju
-    // Moramo znati gdje svaki fajl počinje unutar Data sekcije prije nego zapišemo Header.
+    // 1. Preparation: Calculate offsets for Data Section
+    // We must know where every file starts before we write the Header.
     let mut current_offset = 0u64;
     calculate_offsets_recursive(root, &mut current_offset);
 
-    // 2. Pisanje Potpisa (8 bytes)
+    // 2. Write Signature (8 bytes)
     writer.write_all(DIRCONTXT_MAGIC_BYTES)?;
 
-    // 3. Pisanje Headera (Tree Metadata)
+    // 3. Write Version Header (8 bytes total)
+    // Format: [Major: u32][Minor: u32] in Little Endian
+    writer.write_all(&version.major.to_le_bytes())?;
+    writer.write_all(&version.minor.to_le_bytes())?;
+
+    // 4. Write Header (Tree Metadata)
     serialize_node_recursive(&mut writer, root)?;
 
-    // 4. Pisanje Data sekcije (File Contents)
+    // 5. Write Data Section (File Contents)
     write_content_recursive(&mut writer, root)?;
 
-    // Osiguraj da je sve zapisano na disk
+    // Ensure everything is flushed to disk
     writer.flush()?;
     Ok(())
 }
 
-/// Rekurzivno prolazi stablo i postavlja `content_offset_in_data_section`.
-/// Također osigurava da je `content_size` točan prema onome što imamo u memoriji.
+/// Recursively traverses tree to set `content_offset_in_data_section`.
+/// Also ensures `content_size` matches the actual data in memory.
 fn calculate_offsets_recursive(node: &mut DirContextTreeNode, current_offset: &mut u64) {
     if node.node_type == NodeType::File {
         node.content_offset_in_data_section = *current_offset;
-        
-        // Ako imamo učitan sadržaj, veličina je duljina vektora.
+
+        // If content is loaded in memory, update size to be exact.
         if let Some(content) = &node.file_content {
             node.content_size = content.len() as u64;
         }
-        
+
         *current_offset += node.content_size;
     } else {
         for child in &mut node.children {
@@ -54,8 +65,8 @@ fn calculate_offsets_recursive(node: &mut DirContextTreeNode, current_offset: &m
     }
 }
 
-/// Serijalizira jedan čvor i njegovu djecu (Header format).
-/// Koristi Little Endian (LE) zapis brojeva radi portabilnosti.
+/// Serializes a single node and its children (Header format).
+/// Uses Little Endian (LE) for portability.
 fn serialize_node_recursive<W: Write>(writer: &mut W, node: &DirContextTreeNode) -> io::Result<()> {
     // 1. Node Type (u8)
     let type_byte = match node.node_type {
@@ -98,8 +109,8 @@ fn serialize_node_recursive<W: Write>(writer: &mut W, node: &DirContextTreeNode)
                 ));
             }
             writer.write_all(&(node.children.len() as u32).to_le_bytes())?;
-            
-            // Rekurzivno piši djecu
+
+            // Recursively write children
             for child in &node.children {
                 serialize_node_recursive(writer, child)?;
             }
@@ -109,17 +120,18 @@ fn serialize_node_recursive<W: Write>(writer: &mut W, node: &DirContextTreeNode)
     Ok(())
 }
 
-/// Rekurzivno piše sadržaj datoteka u Data sekciju.
+/// Recursively writes file contents to the Data section.
 fn write_content_recursive<W: Write>(writer: &mut W, node: &DirContextTreeNode) -> io::Result<()> {
     if node.node_type == NodeType::File {
         if let Some(content) = &node.file_content {
             writer.write_all(content)?;
         } else if node.content_size > 0 {
-            // Fallback: Ako piše da file ima veličinu, a nemamo sadržaj u memoriji,
-            // pišemo nule da ne poremetimo offsete. Ovo se ne bi trebalo događati
-            // ako je walker ispravno učitao podatke.
-            eprintln!("Warning: Node '{}' has size {} but no content in memory. Writing zeros.", 
-                node.relative_path, node.content_size);
+            // Fallback: If size > 0 but no content in memory (shouldn't happen in standard flow),
+            // write zeros to preserve offset integrity.
+            eprintln!(
+                "Warning: Node '{}' has size {} but no content in memory. Writing zeros.",
+                node.relative_path, node.content_size
+            );
             let zeros = vec![0u8; node.content_size as usize];
             writer.write_all(&zeros)?;
         }
