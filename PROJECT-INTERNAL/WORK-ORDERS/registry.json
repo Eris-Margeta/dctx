@@ -366,3 +366,21 @@
     "materialExpenditure": "N/A"
   }
 }
+  {
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-032",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "Corrective: Fix Lazy Version Bump & Clipboard Diff Logic",
+    "description": "Addressing the logic flaws identified in manual testing. 1. Fixing the 'Lazy Bump' by ensuring diff detection is sensitive enough (likely timestamp granularity). 2. Forcing diff generation in Clipboard mode when -d is passed, ignoring disk config. 3. Ensuring config.rs propagates defaults correctly.",
+    "tasks": [
+      "Update crates/dctx-cli/src/main.rs: Modify logic to FORCE diff generation if writing_diff_only is true, regardless of config.",
+      "Update crates/dctx-core/src/walker.rs: Ensure Walker captures nanoseconds if possible, or at least ensures strict comparison.",
+      "Update crates/dctx-core/src/diff.rs: Review is_file_modified logic."
+    ],
+    "timeExpenditure": "0h 20m",
+    "materialExpenditure": "N/A"
+  }
+}

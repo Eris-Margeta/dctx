@@ -1,3 +1,4 @@
+// crates/dctx-core/src/walker.rs
 use crate::datatypes::{DirContextTreeNode, IgnoreRule, NodeType};
 use crate::ignore::should_ignore_item;
 use std::collections::HashMap;
@@ -94,10 +95,11 @@ fn walk_recursive(
     );
 
     if let Ok(mtime) = metadata.modified() {
+        // FIX: Use as_millis() for higher precision to detect rapid changes
         node.last_modified_timestamp = mtime
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or_default()
-            .as_secs();
+            .as_millis() as u64;
     }
     if node_type == NodeType::File {
         node.content_size = metadata.len();
