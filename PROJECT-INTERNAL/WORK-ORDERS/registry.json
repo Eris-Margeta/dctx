@@ -34,4 +34,30 @@
   "timeExpenditure": "0h 15m",
   "materialExpenditure": "Consumables"
 }
-
+{
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-007",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Implementation of ADR-005 Phase 2: Runtime Fast-Path & Installer Versioning",
+  "timeExpenditure": "1h 15m",
+  "materialExpenditure": "Consumables"
+}
+  {
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-008",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Establish Versioning Strategy and Initialize VERSION File",
+  "timeExpenditure": "0h 10m",
+  "materialExpenditure": "None"
+}
+{
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-009",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Creation of ADR-006 and Version Synchronization Script",
+  "timeExpenditure": "0h 30m",
+  "materialExpenditure": "Consumables"
+}
