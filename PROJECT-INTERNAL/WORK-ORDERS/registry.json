@@ -201,3 +201,23 @@
     }
   }
 ]
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-019",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Move Directory Header to Template Control",
+      "description": "Removing the hardcoded [DIRECTORY:...] line from llm_formatter.rs and implementing it within default.dctx_template. This allows users to toggle this line via the template layout.",
+      "tasks": [
+        "Update crates/dctx-core/src/llm_formatter.rs: Remove hardcoded directory line write.",
+        "Update crates/dctx-core/templates/default.dctx_template: Add 'folder_denotation_marker' variable.",
+        "Update crates/dctx-core/templates/default.dctx_template: Add [DIRECTORY:{{project}}] line to [LAYOUT]."
+      ],
+      "timeExpenditure": "0h 10m",
+      "materialExpenditure": "None"
+    }
+  }
+]

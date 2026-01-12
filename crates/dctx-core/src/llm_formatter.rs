@@ -34,17 +34,17 @@ pub fn generate_llm_context<W: Write>(
     let final_output = render_layout(&tmpl, tree_content, files_content);
 
     // 4. Write Header Line 1: [DCTX_LLM_CONTEXT_SNAPSHOT_V{Version}]
+    // This remains hardcoded as it serves as the file signature/version tracker.
     writeln!(
         writer,
         "{}{}{}",
         VERSION_HEADER_PREFIX, version, VERSION_HEADER_SUFFIX
     )?;
 
-    // 5. Write Header Line 2: [DIRECTORY:{DirectoryName}]
-    writeln!(writer, "[DIRECTORY:{}]", project_name)?;
-    writeln!(writer)?;
+    // NOTE: The [DIRECTORY:...] line is now handled inside the Template [LAYOUT]
+    // to allow user configuration.
 
-    // 6. Write Template Content
+    // 5. Write Template Content
     writer.write_all(final_output.as_bytes())?;
 
     Ok(())
