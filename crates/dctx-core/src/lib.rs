@@ -1,5 +1,3 @@
-// crates/dctx-core/src/lib.rs
-
 pub mod config;
 pub mod datatypes;
 pub mod diff;

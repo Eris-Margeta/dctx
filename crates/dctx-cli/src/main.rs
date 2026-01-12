@@ -25,6 +25,7 @@ struct CliConfig {
     target_path: PathBuf,
     clipboard_mode: bool,
     diff_mode: bool,
+    tree_only: bool,
     force_reset: bool,
     show_help: bool,
     show_version: bool,
@@ -36,6 +37,7 @@ impl Default for CliConfig {
             target_path: PathBuf::from("."),
             clipboard_mode: false,
             diff_mode: false,
+            tree_only: false,
             force_reset: false,
             show_help: false,
             show_version: false,
@@ -73,6 +75,7 @@ fn parse_arguments(args: &[String]) -> Result<CliConfig, String> {
         match arg.as_str() {
             "-c" | "--clipboard" => config.clipboard_mode = true,
             "-d" | "--diff" => config.diff_mode = true,
+            "-t" | "--tree" => config.tree_only = true,
             "-r" | "--reset" => config.force_reset = true,
             "-h" | "--help" => config.show_help = true,
             "-v" | "--version" => config.show_version = true,
@@ -187,9 +190,11 @@ fn run_headless_mode(cli_config: CliConfig) {
         }
     }
 
-    if !cli_config.clipboard_mode {
-        println!("🚀 dctx running on: {}", target_dir.display());
-        println!("🔑 Project Hash: {}", project_hash);
+    // Always print startup info
+    println!("🚀 dctx running on: {}", target_dir.display());
+    println!("🔑 Project Hash: {}", project_hash);
+    if cli_config.tree_only {
+        println!("🌲 Tree-Only Mode Active");
     }
 
     // 4. Load or Reset State
@@ -197,6 +202,7 @@ fn run_headless_mode(cli_config: CliConfig) {
     let mut old_version = Version::new_v1();
 
     if !cli_config.force_reset && bin_path.exists() {
+        println!("📝 Found existing binary state at {:?}", bin_path);
         match state::load_or_reset_state(
             &target_dir,
             &bin_path,
@@ -204,18 +210,26 @@ fn run_headless_mode(cli_config: CliConfig) {
             &project_name,
         ) {
             StateLoadResult::Loaded(loaded_root, loaded_version) => {
+                println!("✅ State Loaded: {}", loaded_version);
                 old_tree_opt = Some(loaded_root);
                 old_version = loaded_version;
             }
-            StateLoadResult::FreshV1 => { /* Reset happened */ }
+            StateLoadResult::FreshV1 => {
+                println!("⚠️ State load resulted in FreshV1 (Reset)");
+            }
+        }
+    } else {
+        if !bin_path.exists() {
+            println!("ℹ️ No existing binary state found (Fresh Start).");
+        }
+        if cli_config.force_reset {
+            println!("🔄 Force Reset enabled.");
         }
     }
 
     // 5. Scan Directory
     let ignore_rules = ignore::load_ignore_rules(&target_dir);
-    if !cli_config.clipboard_mode {
-        println!("📂 Scanning directory structure...");
-    }
+    println!("📂 Scanning directory structure...");
 
     let mut new_tree = match walker::walk_directory_structure(&target_dir, &ignore_rules) {
         Ok(r) => r,
@@ -233,11 +247,12 @@ fn run_headless_mode(cli_config: CliConfig) {
     let (new_version, is_major_reset) = if let Some(old_tree) = &old_tree_opt {
         diff_report = diff::compare_trees(Some(old_tree), &new_tree);
         if diff_report.has_changes {
-            old_version.calculate_next(
+            let (v, reset) = old_version.calculate_next(
                 diff_report.stats.files_unchanged,
                 diff_report.stats.total_files_in_new_state,
                 app_config.max_diff_files,
-            )
+            );
+            (v, reset)
         } else {
             (old_version.clone(), false)
         }
@@ -245,19 +260,18 @@ fn run_headless_mode(cli_config: CliConfig) {
         (Version::new_v1(), true)
     };
 
-    if !cli_config.clipboard_mode {
-        if diff_report.has_changes {
-            println!(
-                "📊 Changes detected: +{} -{} ~{} (Version: {} -> {})",
-                diff_report.stats.files_added,
-                diff_report.stats.files_removed,
-                diff_report.stats.files_modified,
-                old_version,
-                new_version
-            );
-        } else {
-            println!("💤 No changes detected. Version remains {}.", new_version);
-        }
+    // Always print stats
+    if diff_report.has_changes {
+        println!(
+            "📊 Changes detected: +{} -{} ~{} (Version: {} -> {})",
+            diff_report.stats.files_added,
+            diff_report.stats.files_removed,
+            diff_report.stats.files_modified,
+            old_version,
+            new_version
+        );
+    } else {
+        println!("💤 No changes detected. Version remains {}.", new_version);
     }
 
     // --- CLEANUP (ADR-002) ---
@@ -279,7 +293,9 @@ fn run_headless_mode(cli_config: CliConfig) {
 
     // 8. Write Binary State
     match writer::write_dircontxt_file(&bin_path, &mut new_tree, &new_version) {
-        Ok(_) => {}
+        Ok(_) => {
+            println!("💾 Saved binary state to cache.");
+        }
         Err(e) => eprintln!("❌ Failed to save binary state: {}", e),
     }
 
@@ -293,7 +309,9 @@ fn run_headless_mode(cli_config: CliConfig) {
         let mut output_buffer = Vec::new();
         let mut diff_buffer = Vec::new();
 
-        let writing_diff_only = cli_config.clipboard_mode
+        // If user asked for -d, they want diff if available.
+        // If config says generate diffs, we generate diffs if changed.
+        let mut writing_diff_only = cli_config.clipboard_mode
             && cli_config.diff_mode
             && diff_report.has_changes
             && !is_major_reset;
@@ -305,14 +323,32 @@ fn run_headless_mode(cli_config: CliConfig) {
                 &new_tree,
                 &new_version,
                 &project_name,
+                cli_config.tree_only,
             ) {
                 eprintln!("❌ Generation error: {}", e);
             }
         }
 
-        // Generate Diff Context (If changes exist and not a major reset)
+        // Generate Diff Context (Logic Fix: Force diff gen if clipboard requested it)
         let mut diff_generated = false;
-        if diff_report.has_changes && !is_major_reset {
+
+        // Is it possible to generate a diff?
+        let can_generate_diff = diff_report.has_changes && !is_major_reset;
+
+        // Should we?
+        // 1. If Writing to Disk: check config.
+        // 2. If Clipboard: check if -d flag passed.
+
+        let should_generate_diff = if cli_config.clipboard_mode {
+            // In clipboard mode, we generate diff IF user passed -d AND it's possible.
+            // If they didn't pass -d, we don't need the diff buffer (we send main ctx).
+            cli_config.diff_mode && can_generate_diff
+        } else {
+            // In File mode, check config
+            can_generate_diff && app_config.text_output_mode_generates_diff_files
+        };
+
+        if should_generate_diff {
             if let Err(e) = llm_formatter::generate_diff_context(
                 &mut diff_buffer,
                 &new_tree,
@@ -323,6 +359,10 @@ fn run_headless_mode(cli_config: CliConfig) {
                 eprintln!("❌ Diff generation error: {}", e);
             } else {
                 diff_generated = true;
+                // If we successfully generated a diff for clipboard, ensure we use it
+                if cli_config.clipboard_mode && cli_config.diff_mode {
+                    writing_diff_only = true;
+                }
             }
         }
 
@@ -330,14 +370,14 @@ fn run_headless_mode(cli_config: CliConfig) {
         if cli_config.clipboard_mode {
             let content_to_copy = if writing_diff_only {
                 // If user specifically asked for diff (-d) and we have one
-                if diff_generated {
-                    diff_buffer
-                } else {
-                    // Fallback to main context if no diff (e.g. V1)
-                    output_buffer
-                }
+                diff_buffer
             } else {
-                // Standard behavior: Copy main context
+                // Fallback to main context if no diff (e.g. V1, or no changes)
+                // If user asked for diff but there were no changes, this sends Main Context V_old.
+                // We might want to warn the user? "No changes detected, copying full context."
+                if cli_config.diff_mode && !diff_generated {
+                    println!("⚠️ No changes detected. Copying FULL context instead of diff.");
+                }
                 output_buffer
             };
 
@@ -350,26 +390,27 @@ fn run_headless_mode(cli_config: CliConfig) {
             // Write Main Context
             let txt_filename = format!("{}.llmcontext.txt", project_name);
             let txt_path = local_output_dir.join(&txt_filename);
+
+            println!("📝 Writing main context: {:?}", txt_path);
+
             match std::fs::write(&txt_path, &output_buffer) {
                 Ok(_) => println!("✅ Saved: .dctx/{}", txt_filename),
-                Err(e) => eprintln!("❌ Write error: {}", e),
+                Err(e) => eprintln!("❌ Write error for {}: {}", txt_filename, e),
             }
 
-            // Write Diff File (if applicable)
+            // Write Diff File (if generated)
             if diff_generated {
                 let diff_filename = format!("{}.llmcontext-{}-diff.txt", project_name, new_version);
                 let diff_path = local_output_dir.join(&diff_filename);
                 match std::fs::write(&diff_path, &diff_buffer) {
                     Ok(_) => println!("✅ Saved Diff: .dctx/{}", diff_filename),
-                    Err(e) => eprintln!("❌ Diff Write error: {}", e),
+                    Err(e) => eprintln!("❌ Diff Write error for {}: {}", diff_filename, e),
                 }
             }
         }
     }
 
-    if !cli_config.clipboard_mode {
-        println!("✨ Done in {:.2?}", start_time.elapsed());
-    }
+    println!("✨ Done in {:.2?}", start_time.elapsed());
 }
 
 fn print_help() {
@@ -377,6 +418,7 @@ fn print_help() {
     println!("Options:");
     println!("  -c, --clipboard  Copy to clipboard");
     println!("  -d, --diff       Output diff only (if available)");
+    println!("  -t, --tree       Tree-Only mode (skips file content)");
     println!("  -r, --reset      Force V1 reset");
     println!("  -h, --help       Show help");
     println!("  -v, --version    Show version");
