@@ -6,7 +6,7 @@ FACTORY OF ELECTRONIC UNITS AND LOGIC – TEJL d.o.o.
 Sector for System Integration and Development
 
 **Class:** 003-05/25-01
-**Reference Number:** 251-01-03-25-04 (Rev. 7)
+**Reference Number:** 251-01-03-25-04 (Rev. 8)
 **Date:** 2026-01-12
 
 SUBJECT: Elaboration on the Development of the 'dctx' Project
@@ -53,8 +53,9 @@ The `tools/install.sh` script manages compilation and installation on POSIX syst
 *   **Phase 2: The Core Logic Loop (Base):** `COMPLETED`
 *   **Phase 3: Architectural Realignment (ADR-001/005/006):** `COMPLETED`
 *   **Phase 4: Output Parity & Diffing (ADR-002):** `COMPLETED`
-*   **Phase 5: The AOT Templating Engine (ADR-003):** `PENDING`
-*   **Phase 6: Final Polish:** `PENDING`
+*   **Phase 5: Critical Fixes & Logic Verification:** `PENDING`
+*   **Phase 6: The AOT Templating Engine (ADR-003):** `PENDING`
+*   **Phase 7: Final Polish:** `PENDING`
 
 ---
 
@@ -123,29 +124,60 @@ The `tools/install.sh` script manages compilation and installation on POSIX syst
 
 ---
 
-### **Phase 5: The AOT Templating Engine (ADR-003) (PENDING)**
+### **Phase 5: Critical Fixes & Logic Verification (PENDING)**
 
-**Goal:** Implement the "Ahead-of-Time" compiled template system for extreme performance and flexibility.
+**Goal:** Ensure the system is actually working as intended before adding complex features. Specifically, we must verify the "Single Source of Truth" (the binary) and fix broken output logic.
 
-*   **5.1. Template Parser Core**
-    *   `5.1.a.` **(Done)** Extracted basic parsing logic to `template.rs`.
-    *   `5.1.b.` Implement "Pass 1" resolution: Resolve internal `{{VAR}}` references.
-*   **5.2. CLI Compilation Subcommand**
-    *   `5.2.a.` Add `dctx template build <path>` command to CLI.
-    *   `5.2.b.` Implement validation logic (circular dependency check).
-    *   `5.2.c.` Serialize parsed template to optimized binary format in `~/.cache/dctx/templates/`.
-*   **5.3. Runtime Renderer**
-    *   `5.3.a.` Modify `llm_formatter.rs` to load the binary template cache.
-    *   `5.3.b.` Implement "Pass 2": Inject runtime data (`{{{node.*}}}`) into the pre-compiled layout.
+*   **5.1. Output Logic Remediation**
+    *   **Problem:** `config.output_mode = "both"` produces no text files in `.dctx/`. The binary is generated, but the text output loop seems to be skipped or failing silently.
+    *   **Task:** Debug and fix the text file generation path in `main.rs`. Ensure permissions and paths are correct.
+*   **5.2. New Configuration Control: Diff Toggle**
+    *   **Requirement:** Users may want snapshots *without* generating persistent diff files to save disk space or reduce clutter.
+    *   **Task:** Add `text_output_mode_generates_diff_files` (bool, default `false`) to `AppConfig`.
+    *   **Logic:** If `false`, `dctx` should *never* write `*-diff.txt` to disk, even if changes are detected. It should only update the main `.llmcontext.txt`.
+*   **5.3. New Feature: Tree-Only Mode (`-t`)**
+    *   **Requirement:** Sometimes users just want the structure, not the content.
+    *   **Task:** Add `-t` flag to CLI arguments.
+    *   **Logic:** When active, the formatter skips the `<FILE_CONTENT_START>` blocks entirely. It outputs *only* the Header, Instructions, and Directory Tree.
+*   **5.4. Single Source of Truth Verification**
+    *   **Problem:** Suspicion that binary files are not being created/read correctly in the system cache.
+    *   **Task:** Create a verification routine (or test) that:
+        1.  Runs `dctx`.
+        2.  Checks specific OS paths (`~/.cache/dctx` or `%LOCALAPPDATA%\dctx`) for the `.dctx` file.
+        3.  Checks `projects.db` for the correct mapping.
+        4.  Ensures subsequent runs *read* from this binary (proven by Version incrementing V1->V1.1).
 
-### **Phase 6: Final Polish (PENDING)**
+---
 
-*   **6.1. Cross-Platform Verification**
-    *   `6.1.a.` Verify behavior on Windows (Paths, AppData).
-    *   `6.1.b.` Verify behavior on Linux/macOS.
-*   **6.2. Documentation & Cleanup**
-    *   `6.2.a.` Run `cargo clippy` and resolve all lints.
-    *   `6.2.b.` Finalize `README.md` with updated usage instructions.
+### **Phase 6: The AOT Templating Engine (ADR-003) (PENDING)**
+
+**Goal:** Implement the "Ahead-of-Time" compiled template system for custom templates. **Note:** The "Default" template is hardcoded (compiled into the binary) and does *not* use this workflow. This phase is exclusively for enabling users to build their own `.dctx_template` files.
+
+*   **6.1. Template Compilation Logic (The "Build" Command)**
+    *   **Context:** Parsing text templates at runtime is slow. We want to "pre-compile" them into an optimized binary format or valid struct representation when the user runs `dctx template build`.
+    *   `6.1.a.` **Syntax Validation:** Before building, the system must parse the `.dctx_template` file and check for required sections (`[VARIABLES]`, `[LAYOUT]`) and valid placeholder syntax. Report precise errors to the user.
+    *   `6.1.b.` **Pass 1 Resolution (Pre-computation):** Resolve all static `{{VAR}}` references within the template during the build phase. The "compiled" template should have these strings already replaced, so runtime only handles `{{{data}}}`.
+    *   `6.1.c.` **Serialization:** Save the validated, pre-resolved template struct to `~/.cache/dctx/templates/<name>.bin` (using `bincode` or similar lightweight serialization).
+*   **6.2. CLI Integration**
+    *   `6.2.a.` Implement `dctx template build <path/to/template.dctx_template>` subcommand.
+    *   `6.2.b.` On success, print: `✅ Template built! To use it, set 'default_template = "<name>"' in your config.toml`.
+*   **6.3. Runtime Loading (Custom Path)**
+    *   `6.3.a.` Update `llm_formatter.rs`: Check `AppConfig.default_template`.
+    *   `6.3.b.` **Logic:**
+        *   If `default`, use the hardcoded `include_str!`.
+        *   If `other`, look for `~/.cache/dctx/templates/other.bin`. Load it directly into the `Template` struct.
+    *   `6.3.c.` **Pass 2 (Data Injection):** This remains the same for both default and custom templates: injecting runtime data (`node`, `file`, `project`) into the layout.
+
+---
+
+### **Phase 7: Final Polish (PENDING)**
+
+*   **7.1. Cross-Platform Verification**
+    *   `7.1.a.` Verify behavior on Windows (Paths, AppData).
+    *   `7.1.b.` Verify behavior on Linux/macOS.
+*   **7.2. Documentation & Cleanup**
+    *   `7.2.a.` Run `cargo clippy` and resolve all lints.
+    *   `7.2.b.` Finalize `README.md` with updated usage instructions.
 
 ---
 
