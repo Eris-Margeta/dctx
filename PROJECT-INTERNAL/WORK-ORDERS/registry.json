@@ -1,0 +1,28 @@
+{
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-001",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Implementation of Phase 3: Centralized Registry and Cache Architecture",
+  "timeExpenditure": "1h 30m",
+  "materialExpenditure": "Consumables"
+}
+{
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-002",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Implementation of Phase 3.3: Output Redirection and Git Safety",
+  "timeExpenditure": "1h 00m",
+  "materialExpenditure": "Consumables"
+}
+{
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-003",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Creation of ADR-005: Enhanced Git Safety & Global Integration",
+  "timeExpenditure": "0h 15m",
+  "materialExpenditure": "Consumables"
+}
+
