@@ -1,5 +1,3 @@
-// crates/dctx-core/src/config.rs
-
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -138,7 +136,8 @@ pub fn get_global_ignore_path() -> Option<PathBuf> {
 }
 
 pub fn get_project_registry_path() -> Option<PathBuf> {
-    get_config_dir().map(|p| p.join("projects.db"))
+    // UPDATED: Now uses cache dir instead of config dir
+    get_cache_dir().map(|p| p.join("projects.db"))
 }
 
 pub fn get_config_file_path() -> Option<PathBuf> {
