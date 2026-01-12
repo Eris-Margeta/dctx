@@ -141,3 +141,63 @@
     }
   }
 ]
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-016",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Branding Update and Header Refinement",
+      "description": "Updating llm_formatter.rs to use 'DCTX' branding and implement the new two-line header format including the directory name. Injecting 'project' variable into the template engine.",
+      "tasks": [
+        "Update llm_formatter.rs: Change header prefixes to [DCTX_...].",
+        "Update llm_formatter.rs: Add [DIRECTORY:{name}] line to snapshot header.",
+        "Update llm_formatter.rs: Inject 'project' variable into template context.",
+        "Retain previous improvements (Indentation, Semantic IDs)."
+      ],
+      "timeExpenditure": "0h 15m",
+      "materialExpenditure": "Consumables"
+    }
+  }
+]
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-017",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Implementation of Phase 5: Modular Templating Engine (Part 1)",
+      "description": "Extracting template parsing logic into a dedicated 'template.rs' module to support future AOT compilation (ADR-003). Implementing strict separation between Template Structure (Data) and Rendering Logic.",
+      "tasks": [
+        "Create crates/dctx-core/src/template.rs.",
+        "Implement Template struct and parser with Pass 1 variable resolution.",
+        "Update crates/dctx-core/src/lib.rs to export the new module.",
+        "Refactor llm_formatter.rs to utilize the new Template engine."
+      ],
+      "timeExpenditure": "1h 00m",
+      "materialExpenditure": "Consumables"
+    }
+  }
+]
+  [
+  {
+    "name": "logWorkOrder",
+    "arguments": {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-018",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Update Default Template Definition",
+      "description": "Updating 'default.dctx_template' to use dynamic variable references in instructions and layout, ensuring consistency between the prompt text and the actual output format.",
+      "tasks": [
+        "Update crates/dctx-core/templates/default.dctx_template with the new definition."
+      ],
+      "timeExpenditure": "0h 05m",
+      "materialExpenditure": "None"
+    }
+  }
+]

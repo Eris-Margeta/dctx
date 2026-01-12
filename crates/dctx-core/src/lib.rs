@@ -1,3 +1,5 @@
+// crates/dctx-core/src/lib.rs
+
 pub mod config;
 pub mod datatypes;
 pub mod diff;
@@ -7,6 +9,7 @@ pub mod llm_formatter;
 pub mod reader;
 pub mod registry;
 pub mod state;
+pub mod template;
 pub mod version;
 pub mod walker;
 pub mod writer;
