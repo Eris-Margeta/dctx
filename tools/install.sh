@@ -67,6 +67,9 @@ max_diff_files = 999
 
 # Default template to use if not specified
 default_template = "default"
+
+# Git Safety: Automatically add dctx patterns to local .gitignore
+update_local_git_repo_gitignore_rules = true
 EOF
 fi
 
@@ -99,9 +102,46 @@ else
   echo "⚠️  Warning: Template source directory not found at $SOURCE_TEMPLATES"
 fi
 
+# --- 8. GLOBAL GIT SAFETY (ADR-005) ---
+echo "🌍 Configuring Global Git Safety..."
+
+# Determine Global Ignore file path
+GIT_GLOBAL_IGNORE=$(git config --global core.excludesfile || echo "")
+
+# If not set, try default XDG path or MacOS default
+if [ -z "$GIT_GLOBAL_IGNORE" ]; then
+  if [ -d "$HOME/.config/git" ]; then
+    GIT_GLOBAL_IGNORE="$HOME/.config/git/ignore"
+  else
+    GIT_GLOBAL_IGNORE="$HOME/.gitignore_global"
+  fi
+  echo "ℹ️  Git global ignore not explicitly set. Targeting: $GIT_GLOBAL_IGNORE"
+fi
+
+# Ensure directory exists if we are writing to ~/.config/git/
+IGNORE_DIR=$(dirname "$GIT_GLOBAL_IGNORE")
+mkdir -p "$IGNORE_DIR"
+
+# Check if markers exist
+if [ -f "$GIT_GLOBAL_IGNORE" ] && grep -q "# \[dctx\] Automated Ignore Rules" "$GIT_GLOBAL_IGNORE"; then
+  echo "✅ Global gitignore already contains dctx rules. Skipping."
+else
+  echo "📝 Adding dctx rules to global gitignore ($GIT_GLOBAL_IGNORE)..."
+  cat >>"$GIT_GLOBAL_IGNORE" <<EOF
+
+# [dctx] Automated Ignore Rules - github.com/Eris-Margeta/dctx
+.dctx
+.dctx/
+*.llmcontext.txt
+*.llmcontext-*-diff.txt
+EOF
+  echo "✅ Updated global gitignore."
+fi
+
 echo ""
 echo "✅ Installation Complete!"
 echo "   - Binary: $INSTALL_DEST"
 echo "   - Config: $CONFIG_DIR"
+echo "   - Global Git Ignore: $GIT_GLOBAL_IGNORE"
 echo "   - Run 'dctx' for interactive menu"
 echo "   - Run 'dctx .' for instant snapshot"
