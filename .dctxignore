@@ -266,3 +266,6 @@ zig-cache/
 *.db3
 *.sqlitedb
 
+prompt.txt
+idea.txt
+temp

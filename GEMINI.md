@@ -11,18 +11,26 @@
 ### **1. Core Operational Mandate: The Single Source of Truth**
 
 Your primary operational focus is the `PROJECT-INTERNAL/` directory. All binding instructions, protocols, and development tasks reside within this folder. You are to operate strictly based on the information contained therein.
+Subfolders of PROJECT-INTERNAL are as follows: 
+ARCHITECTURE/ - here we store our architectural decisions ADRs that are created based upon adr-template.md file found in that folder
+DOCUMENTS/ - here we store project documentation. While project is in development we follow our ROADMAP and PROGRESS with one single file found in that folder: PROJECT-DEVELOPMENT-ELABORATION.md. Later when the project is published we will insert full project documentation here.
+GUIDES/ - instructions for programmers, including AI agents, on how to develop and code in our project.
+WORK-ORDERS/ - saved work orders.
 
 The hierarchy of documents is as follows:
 
-1.  **The Constitution (`AI-INSTRUCTIONS.md`):** This is your most important document. It contains the **unbreakable rules of engagement, communication, and methodology**. It also defines the protocol for how all other documents are to be updated. You must read and internalize this document before any other action.
+1.  **The Constitution (`PROJECT-INTERNAL/GUIDES/AI-INSTRUCTIONS.md`):** This is your most important document. It contains the **unbreakable rules of engagement, communication, and methodology**. It also defines the protocol for how all other documents are to be updated. You must read and internalize this document before any other action.
 
-2.  **The Development Plan (`PROJECT-DEVELOPMENT-ELABORATION.md`):** This document is the official **project blueprint and task list (backlog)**. It outlines completed phases, defines the current active phase, and lists the specific tasks to be executed. Your work is driven directly by this document.
+2.  **The Development Plan (`PROJECT-INTERNAL/DOCUMENTS/PROJECT-DEVELOPMENT-ELABORATION.md`):** This document is the official **project blueprint and task list (backlog)**. It outlines completed phases, defines the current active phase, and lists the specific tasks to be executed. Your work is driven directly by this document.
 
-3.  **The Knowledge Base (`DEVELOPMENT-PRACTICES.md`):** This document's sole purpose is to **codify solutions to recurring problems** to prevent errors and inefficient loops. As per the protocol defined in `AI-INSTRUCTIONS.md`, you are responsible for proactively identifying such issues and formalizing their solutions by updating this document.
+3.  **The Knowledge Base (`PROJECT-INTERNAL/GUIDES/DEVELOPMENT-PRACTICES.md`):** This document's sole purpose is to **codify solutions to recurring problems** to prevent errors and inefficient loops. As per the protocol defined in `AI-INSTRUCTIONS.md`, you are responsible for proactively identifying such issues and formalizing their solutions by updating this document.
 
 4.  **Architectural Records (`PROJECT-INTERNAL/ARCHITECTURE/`):** This directory contains the **Architecture Decision Records (ADRs)**. These documents are the formal record of significant technical decisions and are to be consulted when proposing or implementing architectural changes.
 
-5.  **Strategic Context (Root Directory):** For high-level strategic decisions or when you require inspiration for system design, you may reference `VISION.md`, `ROADMAP.md`, and `WHITEPAPER.md` located in the project's root directory. These documents provide context but **do not contain actionable development tasks**.
+5.  **Strategic Context (`PROJECT-INTERNAL/DOCUMENTS`):** For high-level strategic decisions or when you require inspiration for system design, you may reference `VISION.md` and `WHITEPAPER.md` located in the project's root directory. These documents provide context but **do not contain actionable development tasks**.
+
+6.  **MAIN developer's approach to coding in our project (`PROJECT-INTERNAL/GUIDES/DEVELOPER-GUIDE.md`):** This is a guide on how to approach the development of our project.**.
+
 
 ---
 
@@ -82,6 +90,7 @@ In addition to core development, you are responsible for upholding the project's
 To begin your work session, follow these steps in order:
 
 1.  **Acknowledge Protocol:** Confirm your understanding of this master protocol (`GEMINI.md`).
-2.  **Consult the Constitution:** Navigate to `PROJECT-INTERNAL/` and perform a full reading of `AI-INSTRUCTIONS.md` to load the rules of engagement into your context.
-3.  **Identify Current Task:** Review `PROJECT-INTERNAL/PROJECT-DEVELOPMENT-ELABORATION.md` to determine the current active phase and the next specific task.
-4.  **Commence Work:** Begin execution by issuing the first formal **Work Order** for the identified task.
+2.  **Consult the Constitution:** Navigate to `PROJECT-INTERNAL/GUIDES/` and perform a full reading of `AI-INSTRUCTIONS.md` to load the rules of engagement into your context.
+3.  **Identify Current Task:** Review `PROJECT-INTERNAL/DOCUMENTS/PROJECT-DEVELOPMENT-ELABORATION.md` to determine the current active phase and the next specific task.
+4.  **Read the Developer Guide:** Review `PROJECT-INTERNAL/GUIDES/DEVELOPER-GUIDE.md` to gather useful information on how to develop our project further.
+5.  **Commence Work:** Begin execution by issuing the first formal **Work Order** for the identified task.

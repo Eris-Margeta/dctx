@@ -3,33 +3,36 @@
 # ==========================================
 
 # 1. CORE METADATA
-# Osnovni podaci koje Dashboard prikazuje u tablici.
-name: "{Project-name}"
-description: "{short-description}"
+# Main data that is shown in the DASHBOARD table
+name: "dctx"
+description: "The universal standard for context-aware AI development. Zero-dependency CLI and library for creating versioned code snapshots."
 status: "Active Development"
 version: "0.1.0"
-created_at: ""
-last_updated: ""
+created_at: "2026-01-08"
+last_updated: "2026-01-12"
 
 operator: "Eris Margeta"
-client: ""
+client: "Open Source / Community"
 
 structure:
   work_orders: "./PROJECT-INTERNAL/WORK-ORDERS/"
-  financials:  "./PROJECT-INTERNAL/FINANCES/" 
   docs:        "./PROJECT-INTERNAL/DOCUMENTS"
 
 tech_stack:
-  backend: ""
-  frontend: ""
-  web: ""
-  database: ""
+  backend: "Rust (Core & CLI)"
+  frontend: "Tauri v2 (Planned Desktop App)"
+  web: "None"
+  database: "Custom Binary (.dctx) & Text Registry"
 
 tags:
-  - "Tag1"
+  - "Rust"
+  - "CLI"
+  - "LLM"
+  - "Context-Awareness"
+  - "DevTool"
 
 # 5. LINKS
 # Data used by GitHub actions to sync repo data
-repo: "https://github.com/Eris-Margeta/valter-25"
-homepage: "https://valter.sh"
+repo: "https://github.com/Eris-Margeta/dctx"
+homepage: "https://dctx.app"
 license: "MIT"
