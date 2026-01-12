@@ -265,3 +265,8 @@ zig-cache/
 *.sqlite3
 *.db3
 *.sqlitedb
+
+
+
+# project specific
+docs/
