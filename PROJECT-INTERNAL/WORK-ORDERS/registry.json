@@ -25,4 +25,13 @@
   "timeExpenditure": "0h 15m",
   "materialExpenditure": "Consumables"
 }
+  {
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-006",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Update ADR-005: Version-Aware Configuration and Safety Protocols",
+  "timeExpenditure": "0h 15m",
+  "materialExpenditure": "Consumables"
+}
 

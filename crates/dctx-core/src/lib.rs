@@ -14,6 +14,6 @@ pub mod writer;
 pub use config::AppConfig;
 pub use datatypes::{DirContextTreeNode, IgnoreRule, NodeType, PatternType};
 pub use diff::{ChangeType, DiffReport};
-pub use git_safety::ensure_dctx_ignored;
+pub use git_safety::ensure_local_gitignore_is_safe;
 pub use registry::ProjectRegistry;
 pub use version::Version;

@@ -1,94 +1,115 @@
-# ADR-005: Enhanced Git Safety & Global Integration Strategy
+# ADR-005: Version-Aware Git Safety & Configuration Strategy
 
 **Date:** 2026-01-12
 **Status:** Accepted
 **Author:** dctx Team
-**Context:** `dctx` generates large context files (`.llmcontext.txt`), diffs, and potentially binary state files. While ADR-001 moved the *binary state* to a centralized cache, the *text output* (intended for LLMs) is written to the project directory (specifically `.dctx/`). Users frequently forget to ignore these files, leading to repository pollution. We need a robust, automated, and multi-layered strategy to prevent this.
+**Context:** `dctx` generates large context files (`.llmcontext.txt`), diffs, and binary state files. While binary files are centralized (ADR-001), text output remains in the project directory. Users frequently forget to ignore these files, leading to repository pollution. Furthermore, as the tool evolves (e.g., updating from v0.1.0 to v0.1.2), new configuration options and ignore rules must be propagated to the user's system without overwriting their custom settings or degrading runtime performance.
 
 ## 1. Context and Problem Statement
-*   **Pollution:** Generated files (`*.llmcontext.txt`) are often large and should never be committed to source control.
-*   **User Friction:** Manually adding rules to `.gitignore` for every new tool is tedious and prone to error.
-*   **Global vs. Local:** Some users prefer a system-wide rule, while others need project-specific rules that travel with the repo (for team consistency).
-*   **Safety:** We must ensure we don't accidentally ignore user files, only our own artifacts.
+*   **Pollution:** Generated files (`*.llmcontext.txt`, `.dctx/`) must never be committed.
+*   **Stale Configs:** When upgrading `dctx`, existing `config.toml` files lack new keys, causing the binary to rely on hardcoded defaults rather than user intent.
+*   **Stale Ignore Rules:** Updates might introduce new file patterns that old `.gitignore` files don't cover.
+*   **Performance:** Scanning and parsing `.gitignore` on every execution to check for rules is inefficient. We need a "Fast Path" to skip this check when the environment is already safe.
 
 ## 2. Decision Drivers
-*   **"Safe by Default":** The tool should prevent accidents without user intervention.
-*   **Idempotency:** Repeated runs (or installations) must not duplicate entries in configuration files.
-*   **Configurability:** Users must be able to opt-out of automated file modifications.
-*   **Transparency:** The tool must inform the user when it modifies their environment.
+*   **"Safe by Default":** The tool must prevent accidents without user intervention.
+*   **Non-Destructive Updates:** User customizations in `config.toml` must be preserved during upgrades.
+*   **Performance:** Runtime checks must be negligible (0ms).
+*   **Idempotency:** Repeated installations must not duplicate entries.
 
-## 3. Decision: Two-Layered Protection Strategy
-
-We will implement git safety at two distinct points in the lifecycle: **Installation Time** (Global) and **Runtime** (Local).
-
-### 3.1. Layer 1: Global Git Configuration (Installation Time)
-*   **Trigger:** Execution of `tools/install.sh`.
-*   **Target File:** The user's global git ignore file.
-    *   *Linux/macOS:* Typically `~/.config/git/ignore` (or `~/.gitignore_global` if configured). The installer will attempt to detect the configured global ignore file via `git config --global core.excludesfile`. If unset, it defaults to `~/.config/git/ignore`.
-*   **Action:** Append `dctx` specific patterns if they are missing.
-*   **Feedback:** Print a clear success/skip message to the console.
-
-### 3.2. Layer 2: Local Repository Configuration (Runtime)
-*   **Trigger:** Running `dctx` (CLI) inside a directory.
-*   **Conditions:**
-    1.  Text Output Mode is active (we are actually writing files).
-    2.  Configuration `UPDATE_LOCAL_GIT_REPO_GITIGNORE_RULES` is `true` (Default).
-    3.  A `.gitignore` file exists (we do not create one if the project isn't using git).
-*   **Action:**
-    1.  Scan `.gitignore`.
-    2.  If our specific patterns are missing, append them.
-    3.  **Auto-Stage:** Execute `git add .gitignore` to ensure the rule update is tracked immediately.
-*   **Feedback:** Log a message to stdout/stderr: `"🛡️  Git Safety: Updated and staged .gitignore with dctx rules."`
+## 3. Decision: The Versioning Authority
+The `VERSION` file in the project root (and the `CARGO_PKG_VERSION` in the binary) is the single source of truth.
+*   **Installer:** Uses the `VERSION` file content to tag configuration blocks.
+*   **Runtime:** The binary uses its compiled version to validate markers in local files.
 
 ## 4. Decision: Defined Patterns & Markers
-
-To ensure we only manage *our* files, we use a strict list of patterns and a comment marker.
+We define a strict list of files that **MUST** be ignored in all environments.
 
 ### The Patterns
 1.  `.dctx` (Legacy/Backup binary files).
-2.  `.dctx/` ( The output directory defined in ADR-001 Phase 3.3).
+2.  `.dctx/` (The output directory defined in ADR-001 Phase 3.3).
 3.  `*.llmcontext.txt` (Main context file).
 4.  `*.llmcontext-*-diff.txt` (Specific diff naming convention).
 
-### The Marker
-We wrap or precede our rules with a comment to allow for future programmatic updates/removal and to inform the user.
+### The Global Marker (Installation)
+Used in `~/.config/git/ignore` to delineate our managed block.
 ```gitignore
-# [dctx] Automated Ignore Rules - github.com/Eris-Margeta/dctx
-.dctx
-.dctx/
-*.llmcontext.txt
-*.llmcontext-*-diff.txt
+# >>> dctx-ignore-vX.Y.Z >>>
+... rules ...
+# <<< dctx-ignore-vX.Y.Z <<<
 ```
 
-## 5. Decision: Configuration Updates
+### The Local Marker (Runtime)
+Used in project `.gitignore` for high-speed checks.
+```gitignore
+# [dctx vX.Y.Z]
+```
 
-We add a new key to `AppConfig` (Layer 1 & 2 in configuration hierarchy):
+## 5. Decision: Global Git Safety (Installation Time)
 
-*   **Key:** `update_local_git_repo_gitignore_rules`
-*   **Type:** `bool`
-*   **Default:** `true`
-*   **Location:** `crates/dctx-core/src/config.rs`
+We implement a **Versioned Block Replacement** strategy for the Global Gitignore file.
 
-## 6. Implementation Plan
+*   **Trigger:** Execution of `tools/install.sh`.
+*   **Targets:**
+    1.  The Current Repo `.gitignore` (where the installer is running).
+    2.  The System Global Gitignore (`~/.config/git/ignore`).
+*   **Logic:**
+    1.  **Check Version:** Does the file contain the specific header `# >>> dctx-ignore-v[CURRENT_VERSION] >>>`?
+        *   **YES:** Stop. The file is up to date.
+        *   **NO (Old Block Found):** Detect the old block (`dctx-ignore-v*`) and **replace** it entirely with the new version block.
+        *   **NO (No Block Found):** Check for individual patterns.
+            *   If patterns are missing, append the full new block.
+    2.  **Feedback:** Print a clear status message (e.g., "Updated global gitignore from v0.1.1 to v0.1.2").
 
-### Installer (`install.sh`)
-*   Add logic to detect `core.excludesfile`.
-*   Read the file, grep for `# [dctx]`.
-*   If missing, append the block.
+## 6. Decision: Local Git Safety (Runtime)
 
-### Core (`git_safety.rs`)
-*   Implement `ensure_local_gitignore_is_safe(target_dir: &Path)`.
-*   Logic:
-    *   Read `.gitignore`.
-    *   Check for *all* 4 patterns.
-    *   If *any* are missing, append the missing ones (or the whole block if the marker is missing).
-    *   If updated, run `std::process::Command::new("git").arg("add").arg(".gitignore")...`
+We implement a **Fast-Path Runtime Check** to ensure safety with minimal overhead.
 
-### Core (`config.rs`)
-*   Add `update_local_git_repo_gitignore_rules` to `AppConfig` struct and parser.
+*   **Trigger:** Running `dctx` (CLI) inside a directory.
+*   **Conditions:**
+    1.  Text Output Mode is active (we are writing files).
+    2.  Config `update_local_git_repo_gitignore_rules = true`.
+    3.  A `.gitignore` file exists.
+*   **The "Fast Path" Algorithm:**
+    1.  **Read First:** Scan `.gitignore` for the marker `# [dctx vX.Y.Z]` (where X.Y.Z matches the running binary).
+    2.  **Match Found:** **STOP.** The environment is known to be safe for this version. (Cost: essentially zero).
+    3.  **No Match / Mismatch:**
+        *   **Scan:** Check if the required patterns are present.
+        *   **Update:** Append missing patterns.
+        *   **Stamp:** Append or Update the marker to `# [dctx vX.Y.Z]`.
+        *   **Git Add:** Execute `git add .gitignore` to track the change.
+        *   **Notify:** Print `🛡️ Git Safety: Updated local rules to vX.Y.Z`.
 
-## 7. Validation
-*   **Test 1:** Run installer. Check `~/.config/git/ignore`. Verify patterns exist. Run installer again. Verify no duplicates.
-*   **Test 2:** Run `dctx` in a new git repo. Check `.gitignore`. Verify rules added. Check `git status`. Verify `.gitignore` is staged.
-*   **Test 3:** Set `update_local_git_repo_gitignore_rules = false` in `~/.config/dctx/config.toml`. Run `dctx`. Verify `.gitignore` is untouched.
+## 7. Decision: Configuration Update Strategy (Merge-Append)
 
+We use a **Non-Destructive Merge-Append** strategy for `config.toml` during installation.
+
+*   **Trigger:** Execution of `tools/install.sh`.
+*   **Logic:**
+    1.  **Read Version:** Check `config.toml` for a version comment (e.g., `# dctx-config-version = "0.1.1"`).
+    2.  **Compare:** If the file version matches the installer version, stop.
+    3.  **Update:** If versions differ (or comment is missing):
+        *   Scan the file for specific *new* keys introduced in the new version.
+        *   **Do Not Overwrite:** Existing keys and values remain untouched.
+        *   **Append:** Missing keys are appended to the end of the file with explanatory comments.
+        *   **Stamp:** Update the version comment to the new version.
+
+## 8. Implementation Plan
+
+### 8.1. Configuration (`crates/dctx-core/src/config.rs`)
+*   Add `update_local_git_repo_gitignore_rules` (bool, default true).
+
+### 8.2. Core Logic (`crates/dctx-core/src/git_safety.rs`)
+*   Refactor `ensure_local_gitignore_is_safe`.
+*   Implement `check_fast_path_marker(path, version)`.
+*   Implement `add_or_update_marker(path, version)`.
+
+### 8.3. Installer (`tools/install.sh`)
+*   Implement the "Merge-Append" logic for `config.toml` using `grep`/`cat`.
+*   Implement the "Block Replacement" logic for Global Gitignore.
+*   Ensure it updates the `.gitignore` of the source repo itself.
+
+## 9. Validation
+*   **Upgrade Test:** Configure v1 manually. Install v2. Verify config retains manual settings + has new keys.
+*   **Safety Test:** Run `dctx` in a repo. Verify `.gitignore` gets the rules + the version marker.
+*   **Speed Test:** Run `dctx` again. Verify "Fast Path" is taken (no `git add` execution).
