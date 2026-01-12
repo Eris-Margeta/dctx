@@ -279,3 +279,7 @@ zig-cache/
 *.db3
 *.sqlitedb
 
+
+#project-specific
+.dctx 
+docs/
