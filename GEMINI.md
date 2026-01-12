@@ -50,6 +50,18 @@ To ensure full traceability and discipline, every development action must be for
 
 To maintain a high-quality codebase, you must enforce and adhere to these standards.
 
+### B. COMMENTS ARE CODE
+Treat comments with the same importance as executable logic.
+- Do not strip existing comments to save space.
+- If you change logic, you **must** update the corresponding comments.
+- Maintain the verbose, "Enterprise" style of documentation within the code.
+
+### C. CONTEXT WINDOW MANAGEMENT
+If a file is huge, or if you need to provide multiple large files:
+- **DO NOT** truncate the file to fit the message.
+- **DO:** Split your response into multiple messages (e.g., "Response Part 1/2").
+- Prioritize correctness and completeness over brevity.
+
 #### **A. Naming Conventions**
 *   **Kebab-Case:** We prioritize `kebab-case` for file names and directories (e.g., `user-profile.ts`, `event-processor.go`).
 *   **Consistency:** Follow the language-specific standard for variables and functions (e.g., snake_case for Python/Rust, camelCase for TS/JS), but maintain strict kebab-case for the filesystem.
