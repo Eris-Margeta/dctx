@@ -281,5 +281,5 @@ zig-cache/
 
 
 #project-specific
-.dctx 
+*.dctx 
 PROJECT-INTERNAL/
