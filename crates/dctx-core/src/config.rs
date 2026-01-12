@@ -61,6 +61,9 @@ pub struct AppConfig {
     pub output_mode: OutputMode,
     pub max_diff_files: u32,
     pub default_template: String,
+    /// Controls whether dctx automatically updates the local .gitignore file
+    /// with dctx-specific rules. Defined in ADR-005.
+    pub update_local_git_repo_gitignore_rules: bool,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -76,6 +79,7 @@ impl Default for AppConfig {
             output_mode: OutputMode::Both,
             max_diff_files: 999,
             default_template: "default".to_string(),
+            update_local_git_repo_gitignore_rules: true, // Safe default per ADR-005
         }
     }
 }
@@ -185,6 +189,13 @@ fn parse_config_line(line: &str, config: &mut AppConfig) {
             }
             "default_template" => {
                 config.default_template = val.to_string();
+            }
+            "update_local_git_repo_gitignore_rules" => {
+                if val == "true" {
+                    config.update_local_git_repo_gitignore_rules = true;
+                } else if val == "false" {
+                    config.update_local_git_repo_gitignore_rules = false;
+                }
             }
             _ => {}
         }
