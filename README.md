@@ -1,9 +1,8 @@
-# dircontxt: Intelligent Context for LLMs
+# DCTX: Intelligent Context for LLMs
 
-## [deprecated] -> new complete rewrite and a HUGE update on https://github.com/Eris-Margeta/dctx
 > **Stop copy-pasting. Start engineering.**
 
-`dircontxt` is a blazing fast, zero-dependency command-line tool that turns your codebase into a structured, version-aware context for Large Language Models (GPT-4, Claude 3, Llama 3).
+`dctx` is a blazing fast, zero-dependency command-line tool that turns your codebase into a structured, version-aware context for Large Language Models (GPT-4, Claude 3, Llama 3).
 
 Unlike vector databases that feed AI fragmented "chunks" of code, `dctx` provides a **holistic snapshot** of your project, allowing the AI to understand architecture, imports, and relationships instantly.
 

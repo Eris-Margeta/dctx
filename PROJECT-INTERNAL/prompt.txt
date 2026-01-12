@@ -1,0 +1,27 @@
+Hi, please help me continue coding my DCTX project today. 
+
+it's a complete rewrite of my previous C utility. 
+
+currently we just rewrote it in rust; made it compilable and runnable by dctx-cli command, and it works. that is great; but now we need to code it properly. 
+
+I will send you my codebase. it is imagined as an open source project with apps and different packages, etc. for now we will focus only on the dctx core so we can call dctx-cli command properly with added flags ( we don't need to code the cli yet) - we have two mode behaviors. if our cli command is called; it will be a standard CLI experience (a menu with choices); but if flags are added; then it will behave as a regular tool without a menu; it will just execute. 
+
+Currently we have to do the following: 
+- we need to check the code of our legacy C utility and compare it to our rewritten rust tool. There are a lot of differences, as we did a major upgrade, but we just need to make sure that our tool has some basic functionalities from our C utility since now it doesn't. 
+- we need to fix the output format to be nice; as it was in our C utility.
+- we need to fix the flags to work: for example currently I have aliased dxtx to the C utility; and we will test the rust version with dctx-cli; I Can use "dctx . -c" and the contents of my folder is copied to the clipboard; that currently doesn't work with dctx-cli" 
+-versioning, config file reading and a lot more stuff doesn't work correctly with our dctx-cli; we need to create a proper system install just command so it is properly installed in our system with .config files, etc.. 
+
+
+
+
+
+I will now send you my entire codebase; taken with my dctx C utility - and you will first analyze it, we will not code yet. 
+
+then we will devise a plan of action, very detailed plan of action before execution; then, only after our conversation about the plan and careful editing of our plan; we will go into execution. 
+
+sounds good? 
+
+
+Here is my codebase: 
+
