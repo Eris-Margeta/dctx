@@ -1,7 +1,7 @@
 use crate::config::{get_global_ignore_path, DEFAULT_IGNORE_FILENAME, HARDCODED_IGNORE_RULES};
 use crate::datatypes::{IgnoreRule, PatternType};
 use std::fs;
-use std::path::Path; // Maknut PathBuf
+use std::path::Path;
 
 // --- GLOB MATCHING ENGINE ---
 
