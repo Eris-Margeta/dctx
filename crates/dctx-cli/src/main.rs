@@ -1,3 +1,5 @@
+// crates/dctx-cli/src/main.rs
+
 mod platform;
 
 use dctx_core::config::{self, OutputMode};
@@ -124,7 +126,6 @@ fn run_headless_mode(cli_config: CliConfig) {
     let app_config = config::load_app_config();
 
     // 1. Resolve Absolute Path (Canonicalize)
-    // We MUST use canonicalize to get the absolute path for the Registry ID.
     let target_dir = match std::fs::canonicalize(&cli_config.target_path) {
         Ok(p) => p,
         Err(e) => {
@@ -142,7 +143,7 @@ fn run_headless_mode(cli_config: CliConfig) {
         .to_string_lossy()
         .to_string();
 
-    // 2. Registry & Cache Lookup (ADR-001)
+    // 2. Registry & Cache Lookup
     let mut registry = match ProjectRegistry::new() {
         Ok(r) => r,
         Err(e) => {
@@ -159,7 +160,6 @@ fn run_headless_mode(cli_config: CliConfig) {
         }
     };
 
-    // Determine Cache Directory
     let cache_dir = config::get_cache_dir().unwrap_or_else(|| {
         eprintln!("❌ Could not determine system cache directory.");
         std::process::exit(1);
@@ -170,21 +170,16 @@ fn run_headless_mode(cli_config: CliConfig) {
         std::process::exit(1);
     }
 
-    // Binary file location: ~/.cache/dctx/<HASH>.dctx
     let bin_filename = format!("{}.dctx", project_hash);
     let bin_path = cache_dir.join(&bin_filename);
 
-    // 3. Output Directory Setup & Git Safety
+    // 3. Output Directory Setup
     let local_output_dir = target_dir.join(".dctx");
     if !cli_config.clipboard_mode {
-        // Only create directory/check gitignore if we are actually writing to disk
         if let Err(e) = fs::create_dir_all(&local_output_dir) {
             eprintln!("❌ Failed to create output directory .dctx/: {}", e);
             std::process::exit(1);
         }
-
-        // --- Git Safety Check (ADR-005) ---
-        // Only run if configured enabled and we are in text output mode
         if app_config.update_local_git_repo_gitignore_rules {
             if let Err(e) = git_safety::ensure_local_gitignore_is_safe(&target_dir) {
                 eprintln!("⚠️  Warning: Git safety check failed: {}", e);
@@ -201,7 +196,6 @@ fn run_headless_mode(cli_config: CliConfig) {
     let mut old_tree_opt = None;
     let mut old_version = Version::new_v1();
 
-    // Pass the local_output_dir to the state loader so it knows where to clean up text files
     if !cli_config.force_reset && bin_path.exists() {
         match state::load_or_reset_state(
             &target_dir,
@@ -266,7 +260,30 @@ fn run_headless_mode(cli_config: CliConfig) {
         }
     }
 
-    // 8. Write Binary State (With Version!) to CENTRAL CACHE
+    // --- CLEANUP (ADR-002) ---
+    // If a major reset happened (triggered by massive change or diff limit),
+    // we must delete old diff files to keep the output folder clean.
+    // NOTE: This logic is partially duplicated in state::perform_full_cleanup,
+    // but that is for corruption. Here is for version bumps.
+    // Ideally, we move this logic to state or version module, but for now:
+    if is_major_reset && !cli_config.clipboard_mode {
+        // Logic to delete only *-diff.txt files
+        if local_output_dir.exists() {
+            let diff_suffix = "-diff.txt";
+            if let Ok(entries) = fs::read_dir(&local_output_dir) {
+                for entry in entries.flatten() {
+                    let path = entry.path();
+                    if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                        if name.ends_with(diff_suffix) {
+                            let _ = fs::remove_file(path);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 8. Write Binary State
     match writer::write_dircontxt_file(&bin_path, &mut new_tree, &new_version) {
         Ok(_) => {}
         Err(e) => eprintln!("❌ Failed to save binary state: {}", e),
@@ -280,38 +297,78 @@ fn run_headless_mode(cli_config: CliConfig) {
 
     if should_generate_output {
         let mut output_buffer = Vec::new();
-        // Placeholder for Diff-Only logic
-        let mut _writing_diff_only = false;
-        if cli_config.clipboard_mode
+        let mut diff_buffer = Vec::new();
+
+        let writing_diff_only = cli_config.clipboard_mode
             && cli_config.diff_mode
             && diff_report.has_changes
-            && !is_major_reset
-        {
-            _writing_diff_only = true;
+            && !is_major_reset;
+
+        // Generate Main Context (Always, unless clipboard diff-only requested)
+        if !writing_diff_only {
+            if let Err(e) = llm_formatter::generate_llm_context(
+                &mut output_buffer,
+                &new_tree,
+                &new_version,
+                &project_name,
+            ) {
+                eprintln!("❌ Generation error: {}", e);
+            }
         }
 
-        if let Err(e) = llm_formatter::generate_llm_context(
-            &mut output_buffer,
-            &new_tree,
-            &new_version,
-            &project_name,
-        ) {
-            eprintln!("❌ Generation error: {}", e);
+        // Generate Diff Context (If changes exist and not a major reset)
+        let mut diff_generated = false;
+        if diff_report.has_changes && !is_major_reset {
+            if let Err(e) = llm_formatter::generate_diff_context(
+                &mut diff_buffer,
+                &new_tree,
+                &diff_report,
+                &old_version,
+                &new_version,
+            ) {
+                eprintln!("❌ Diff generation error: {}", e);
+            } else {
+                diff_generated = true;
+            }
         }
 
+        // --- WRITING / COPYING ---
         if cli_config.clipboard_mode {
-            let content_str = String::from_utf8_lossy(&output_buffer);
+            let content_to_copy = if writing_diff_only {
+                // If user specifically asked for diff (-d) and we have one
+                if diff_generated {
+                    diff_buffer
+                } else {
+                    // Fallback to main context if no diff (e.g. V1)
+                    output_buffer
+                }
+            } else {
+                // Standard behavior: Copy main context
+                output_buffer
+            };
+
+            let content_str = String::from_utf8_lossy(&content_to_copy);
             match platform::copy_to_clipboard(&content_str) {
                 Ok(_) => println!("✨ Copied to clipboard!"),
                 Err(e) => eprintln!("❌ Clipboard error: {}", e),
             }
         } else {
-            // Updated Path: Write to .dctx/ directory
+            // Write Main Context
             let txt_filename = format!("{}.llmcontext.txt", project_name);
             let txt_path = local_output_dir.join(&txt_filename);
             match std::fs::write(&txt_path, &output_buffer) {
                 Ok(_) => println!("✅ Saved: .dctx/{}", txt_filename),
                 Err(e) => eprintln!("❌ Write error: {}", e),
+            }
+
+            // Write Diff File (if applicable)
+            if diff_generated {
+                let diff_filename = format!("{}.llmcontext-{}-diff.txt", project_name, new_version);
+                let diff_path = local_output_dir.join(&diff_filename);
+                match std::fs::write(&diff_path, &diff_buffer) {
+                    Ok(_) => println!("✅ Saved Diff: .dctx/{}", diff_filename),
+                    Err(e) => eprintln!("❌ Diff Write error: {}", e),
+                }
             }
         }
     }
@@ -325,7 +382,7 @@ fn print_help() {
     println!("Usage: dctx [PATH] [OPTIONS]");
     println!("Options:");
     println!("  -c, --clipboard  Copy to clipboard");
-    println!("  -d, --diff       Output diff only");
+    println!("  -d, --diff       Output diff only (if available)");
     println!("  -r, --reset      Force V1 reset");
     println!("  -h, --help       Show help");
     println!("  -v, --version    Show version");
