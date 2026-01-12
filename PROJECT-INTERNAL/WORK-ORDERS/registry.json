@@ -61,3 +61,39 @@
   "timeExpenditure": "0h 30m",
   "materialExpenditure": "Consumables"
 }
+  {
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-010",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Phase 3 Closure: Script Activation and Documentation Update",
+  "timeExpenditure": "0h 15m",
+  "materialExpenditure": "None"
+}
+  {
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-011",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Verification and Finalization of Project Development Elaboration",
+  "timeExpenditure": "0h 05m",
+  "materialExpenditure": "None"
+}
+{
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-012",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Critical Fix: Global Gitignore Duplication & Recursion Logic",
+  "timeExpenditure": "0h 30m",
+  "materialExpenditure": "Consumables"
+}
+  {
+  "class": "003-05/25-01",
+  "referenceNumber": "251-01-03-25-04-WO-013",
+  "date": "2026-01-12",
+  "executor": "Eris Margeta",
+  "subject": "Update Function Definition Schema for Richer Logging",
+  "timeExpenditure": "0h 05m",
+  "materialExpenditure": "None"
+}

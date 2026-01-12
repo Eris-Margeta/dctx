@@ -1,7 +1,7 @@
 # SYSTEM HANDOFF PROTOCOL: DCTX PROJECT
 
 **ROLE:** Senior Rust Systems Engineer & Architect
-**CURRENT STATUS:** Phase 2 Complete. Moving to Phase 3.
+**CURRENT STATUS:** Phase 3 Complete. Moving to Phase 4.
 
 ## 1. PROJECT CONTEXT
 We are porting a legacy C utility (`dircontxt`) to a modern, enterprise-grade Rust application (`dctx`).
@@ -10,12 +10,15 @@ The project is a monorepo containing:
 - `crates/dctx-cli`: The command-line interface (Zero Dependencies).
 
 **Completed Milestones:**
-- ✅ System Installation (`tools/install.sh`).
-- ✅ CLI Interface (Arg parsing, Interactive TUI, Clipboard support).
-- ✅ Core Logic (Config loading, Tree walking, State loading, Versioning).
-- ✅ Critical Fix: Versioning logic is now embedded in the `.dctx` binary header to support "Clipboard Mode" (stateless runs).
+- ✅ **Foundation:** CLI Interface (Arg parsing, TUI, Clipboard) & Core Logic (Walker, State, Config).
+- ✅ **Architecture (ADR-001):** Centralized Registry (`projects.db`) & System Cache (`~/.cache/dctx/`).
+- ✅ **Safety (ADR-005):** Robust Git Safety (Global/Local ignore management + Runtime Fast-Path).
+- ✅ **Versioning (ADR-006):** Unified versioning strategy with automated synchronization tools.
 
 ## 2. STRICT OPERATIONAL PROTOCOLS (NON-NEGOTIABLE)
+
+### A0: Main entry point: GEMINI.md
+### A1: Read ALL of the documents in the PROJECT-INTERNAL folder. They are very important before you continue development.
 
 ### A. THE "FULL FILE" MANDATE
 When you modify a file, you must provide the **ENTIRE** file content in your response.
@@ -40,30 +43,32 @@ We strictly limit external crates.
 - `dctx-core` and `dctx-cli` utilize `std` libraries primarily.
 - Do not introduce `tokio`, `clap`, `anyhow`, or `serde` without explicit permission.
 
-## 3. IMMEDIATE OBJECTIVE: PHASE 3 (Architectural Realignment)
+## 3. IMMEDIATE OBJECTIVE: PHASE 4 (Output Parity & Diffing)
 
-Your task is to implement **ADR-001 (Centralized Architecture)**. We are moving away from saving state files (`.dctx`) in the target directory and moving them to a centralized system cache.
+Your task is to implement **ADR-002 (Versioning & Recovery)** and restore output aesthetics to match the legacy C implementation. We need to reduce "noise" in the output and handle massive changes intelligently.
 
-**Specific Tasks (Refer to `PLAN.md`):**
+**Specific Tasks (Refer to `PROJECT-DEVELOPMENT-ELABORATION.md`):**
 
-1.  **The Registry (`projects.db`):**
-    - Create a system to track projects in `~/.config/dctx/projects.db`.
-    - Format: `HASH_ID | /absolute/path/to/target`.
-    - You will need to implement a stable hashing mechanism for paths (using `std::hash` or a manual implementation to stay zero-dep).
+1.  **Aesthetic Restoration:**
+    - Update `llm_formatter.rs` to use the legacy header format: `[DIRCONTXT_LLM_SNAPSHOT_V...]`.
+    - Implement Semantic IDs: Replace raw integers with `ROOT`, `D1`, `F2`, `F3` (D=Directory, F=File).
+    - Implement Visual Indentation in the generated Directory Tree.
 
-2.  **Centralized Cache:**
-    - Update `state.rs` and `main.rs` to save/load binary files from `~/.cache/dctx/<HASH_ID>.dctx`.
-    - Ensure the CLI calculates the Hash ID of the target path upon startup.
+2.  **Diff File Generation:**
+    - Implement logic to generate `*-diff.txt` files when a minor version bump occurs.
+    - These files must contain the *full* tree but *only* the content of modified/added files.
 
-3.  **Git Safety:**
-    - If `dctx` is writing text output to a local folder (e.g., `.dctx/`), ensure code checks `.gitignore` and appends the folder if missing.
+3.  **Advanced Versioning Logic (ADR-002):**
+    - **Trigger A (Massive Change):** If `files_unchanged == 0` (complete rewrite), force a Major Version Bump (V1 -> V2).
+    - **Trigger B (Diff Limit):** If `minor_version > max_diff_files`, force a Major Version Bump.
+    - **Cleanup:** On Major Bump, delete all old `*-diff.txt` files in the output directory.
 
 ## 4. REQUIRED READING
 Before writing a single line of code, you must read and internalize:
-1.  `PLAN.md`: The master execution plan.
-2.  `crates/dctx-core/docs/ADR-001-System-Architecture.md`: The blueprint for Phase 3.
-3.  `crates/dctx-core/docs/ADR-004-CLI-Implementation.md`: The constraints for the CLI.
+1.  `PROJECT-INTERNAL/DOCUMENTS/PROJECT-DEVELOPMENT-ELABORATION.md`: The master execution plan.
+2.  `PROJECT-INTERNAL/ARCHITECTURE/ADR-002-Versioning-and-Recovery.md`: The detailed rules for version bumps and cleanup.
+3.  `crates/dctx-core/src/llm_formatter.rs`: The current implementation to be refactored.
 
 ---
 
-**COMMAND:** Acknowledge these protocols and begin execution of **Phase 3**.
+**COMMAND:** Acknowledge these protocols and begin execution of **Phase 4**.

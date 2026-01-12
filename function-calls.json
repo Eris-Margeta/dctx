@@ -25,6 +25,17 @@
           "type": "string",
           "description": "Full title of the Work Order's subject."
         },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the work order context, goals, and logic."
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of specific actionable tasks to be performed."
+        },
         "timeExpenditure": {
           "type": "string",
           "description": "Estimated time expenditure in the Xh Ym format."
@@ -40,6 +51,8 @@
         "date",
         "executor",
         "subject",
+        "description",
+        "tasks",
         "timeExpenditure",
         "materialExpenditure"
       ]
