@@ -1,3 +1,5 @@
+// crates/dctx-core/src/template.rs
+
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -23,7 +25,13 @@ impl Template {
                 continue;
             }
 
-            if trimmed.starts_with('[') && trimmed.ends_with(']') {
+            // CRITICAL FIX: Only change section if it explicitly matches a known header.
+            // Previously, [DIRECTORY:...] content was triggering this and breaking the parser.
+            if trimmed == "[VARIABLES]"
+                || trimmed == "[PARTIAL:TREE_ENTRY]"
+                || trimmed == "[PARTIAL:FILE_BLOCK]"
+                || trimmed == "[LAYOUT]"
+            {
                 current_section = trimmed;
                 continue;
             }

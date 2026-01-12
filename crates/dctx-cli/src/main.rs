@@ -23,7 +23,7 @@ struct CliConfig {
     target_path: PathBuf,
     clipboard_mode: bool,
     diff_mode: bool,
-    tree_only: bool, // Added Phase 5.3
+    tree_only: bool,
     force_reset: bool,
     show_help: bool,
     show_version: bool,
@@ -73,7 +73,7 @@ fn parse_arguments(args: &[String]) -> Result<CliConfig, String> {
         match arg.as_str() {
             "-c" | "--clipboard" => config.clipboard_mode = true,
             "-d" | "--diff" => config.diff_mode = true,
-            "-t" | "--tree" => config.tree_only = true, // Added Phase 5.3
+            "-t" | "--tree" => config.tree_only = true,
             "-r" | "--reset" => config.force_reset = true,
             "-h" | "--help" => config.show_help = true,
             "-v" | "--version" => config.show_version = true,
@@ -201,6 +201,7 @@ fn run_headless_mode(cli_config: CliConfig) {
     let mut old_version = Version::new_v1();
 
     if !cli_config.force_reset && bin_path.exists() {
+        println!("📝 Found existing binary state at {:?}", bin_path);
         match state::load_or_reset_state(
             &target_dir,
             &bin_path,
@@ -208,10 +209,20 @@ fn run_headless_mode(cli_config: CliConfig) {
             &project_name,
         ) {
             StateLoadResult::Loaded(loaded_root, loaded_version) => {
+                println!("✅ State Loaded: {}", loaded_version);
                 old_tree_opt = Some(loaded_root);
                 old_version = loaded_version;
             }
-            StateLoadResult::FreshV1 => { /* Reset happened */ }
+            StateLoadResult::FreshV1 => {
+                println!("⚠️ State load resulted in FreshV1 (Reset)");
+            }
+        }
+    } else {
+        if !bin_path.exists() {
+            println!("ℹ️ No existing binary state found (Fresh Start).");
+        }
+        if cli_config.force_reset {
+            println!("🔄 Force Reset enabled.");
         }
     }
 
@@ -237,11 +248,12 @@ fn run_headless_mode(cli_config: CliConfig) {
     let (new_version, is_major_reset) = if let Some(old_tree) = &old_tree_opt {
         diff_report = diff::compare_trees(Some(old_tree), &new_tree);
         if diff_report.has_changes {
-            old_version.calculate_next(
+            let (v, reset) = old_version.calculate_next(
                 diff_report.stats.files_unchanged,
                 diff_report.stats.total_files_in_new_state,
                 app_config.max_diff_files,
-            )
+            );
+            (v, reset)
         } else {
             (old_version.clone(), false)
         }
@@ -283,7 +295,11 @@ fn run_headless_mode(cli_config: CliConfig) {
 
     // 8. Write Binary State
     match writer::write_dircontxt_file(&bin_path, &mut new_tree, &new_version) {
-        Ok(_) => {}
+        Ok(_) => {
+            if !cli_config.clipboard_mode {
+                println!("💾 Saved binary state to cache.");
+            }
+        }
         Err(e) => eprintln!("❌ Failed to save binary state: {}", e),
     }
 
@@ -316,7 +332,6 @@ fn run_headless_mode(cli_config: CliConfig) {
         }
 
         // Generate Diff Context (If changes exist, not a major reset, and Diffs ENABLED or requested via CLI)
-        // Phase 5.2: Check config.text_output_mode_generates_diff_files
         let mut diff_generated = false;
 
         let should_generate_diff = diff_report.has_changes
@@ -359,11 +374,10 @@ fn run_headless_mode(cli_config: CliConfig) {
             }
         } else {
             // Write Main Context
-            // Phase 5.1: Added logging to trace execution
             let txt_filename = format!("{}.llmcontext.txt", project_name);
             let txt_path = local_output_dir.join(&txt_filename);
 
-            println!("📝 Attempting to write main context: {:?}", txt_path);
+            println!("📝 Writing main context: {:?}", txt_path);
 
             match std::fs::write(&txt_path, &output_buffer) {
                 Ok(_) => println!("✅ Saved: .dctx/{}", txt_filename),

@@ -350,3 +350,19 @@
     "materialExpenditure": "N/A"
   }
 }
+  {
+  "name": "logWorkOrder",
+  "arguments": {
+    "class": "003-05/25-01",
+    "referenceNumber": "251-01-03-25-05-WO-030",
+    "date": "2026-01-12",
+    "executor": "Eris Margeta",
+    "subject": "CRITICAL CORRECTIVE: Fix Template Parser State Machine Hijack",
+    "description": "The template parser incorrectly identified content lines wrapped in brackets (e.g. [DIRECTORY:...]) as section headers, causing it to abort parsing the [LAYOUT] section. This resulted in blank output files. The fix restricts section header detection to explicitly known keywords.",
+    "tasks": [
+      "Update crates/dctx-core/src/template.rs: Restrict section switching to explicitly matched keywords ([VARIABLES], [LAYOUT], etc.) instead of generic bracket checking."
+    ],
+    "timeExpenditure": "0h 10m",
+    "materialExpenditure": "N/A"
+  }
+}

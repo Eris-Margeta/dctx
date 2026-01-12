@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # ==============================================================================
-# DCTX INTEGRITY & PERSISTENCE TEST (UPDATED)
+# DCTX INTEGRITY & PERSISTENCE TEST (DEBUG FIX)
 # ==============================================================================
 # This script verifies the implementation of ADR-001 (Centralized State) and
 # ADR-002 (Versioning). It runs in an isolated environment by overriding
@@ -16,13 +16,19 @@ RED='\033[0;31m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
+# Global log file variable (set later)
+LOG_FILE=""
+
 log() { echo -e "${BLUE}[TEST]${NC} $1"; }
 pass() { echo -e "${GREEN}[PASS]${NC} $1"; }
 fail() {
   echo -e "${RED}[FAIL]${NC} $1"
-  if [ -f "dctx.log" ]; then
-    echo ">>> DUMPING LOGS <<<"
-    cat dctx.log
+  if [ -f "$LOG_FILE" ]; then
+    echo ">>> DUMPING LOGS ($LOG_FILE) <<<"
+    cat "$LOG_FILE"
+    echo ">>> END LOGS <<<"
+  else
+    echo "Log file not found at $LOG_FILE"
   fi
   exit 1
 }
@@ -108,7 +114,7 @@ fi
 
 # --- TEST CASE 2: Incremental Update (V1.1) ---
 log ">>> TEST CASE 2: Incremental Update (V1.1)"
-sleep 1 # Ensure timestamp difference
+sleep 2 # Ensure timestamp difference (Increased to 2s)
 echo "New Line" >>"$TARGET_PROJECT/main.txt"
 
 "$DCTX_BIN" "$TARGET_PROJECT" >"$LOG_FILE" 2>&1 || fail "dctx crashed"
@@ -135,7 +141,7 @@ log ">>> TEST CASE 3: Config Override & Tree-Only"
 # Enable diffs in config
 echo "text_output_mode_generates_diff_files = true" >"$XDG_CONFIG_HOME/dctx/config.toml"
 
-sleep 1
+sleep 2
 echo "Another Change" >>"$TARGET_PROJECT/main.txt"
 
 # Run with -t (Tree Only)
@@ -158,7 +164,7 @@ fi
 
 # --- TEST CASE 4: Massive Change Trigger (V2) ---
 log ">>> TEST CASE 4: Massive Change (V2 Reset)"
-sleep 1
+sleep 2
 rm "$TARGET_PROJECT/main.txt"
 echo "Complete Rewrite" >"$TARGET_PROJECT/new_start.txt"
 
