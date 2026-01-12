@@ -1,7 +1,8 @@
 # SYSTEM HANDOFF PROTOCOL: DCTX PROJECT
 
 **ROLE:** Senior Rust Systems Engineer & Architect
-**CURRENT STATUS:** Phase 3 Complete. Moving to Phase 4.
+**CURRENT STATUS:** Phase 4 Complete. Moving to Phase 5.
+**LAST WORK ORDER:** 251-01-03-25-04-WO-021
 
 ## 1. PROJECT CONTEXT
 We are porting a legacy C utility (`dircontxt`) to a modern, enterprise-grade Rust application (`dctx`).
@@ -10,10 +11,13 @@ The project is a monorepo containing:
 - `crates/dctx-cli`: The command-line interface (Zero Dependencies).
 
 **Completed Milestones:**
-- ✅ **Foundation:** CLI Interface (Arg parsing, TUI, Clipboard) & Core Logic (Walker, State, Config).
-- ✅ **Architecture (ADR-001):** Centralized Registry (`projects.db`) & System Cache (`~/.cache/dctx/`).
-- ✅ **Safety (ADR-005):** Robust Git Safety (Global/Local ignore management + Runtime Fast-Path).
-- ✅ **Versioning (ADR-006):** Unified versioning strategy with automated synchronization tools.
+- ✅ **Foundation:** CLI Interface, Core Logic, Centralized Registry & Cache (ADR-001).
+- ✅ **Safety:** Robust Git Safety & Unified Versioning (ADR-005, ADR-006).
+- ✅ **Output Parity (Phase 4):**
+    - Restored Semantic IDs (`ROOT`, `Dxxx`) and Indentation.
+    - Implemented `[DCTX_...]` Branding and Template-controlled Headers.
+    - Implemented Diff Engine (Summary + Partial Content).
+    - Implemented Smart Versioning (Massive Change Triggers & Cleanup).
 
 ## 2. STRICT OPERATIONAL PROTOCOLS (NON-NEGOTIABLE)
 
@@ -43,35 +47,36 @@ We strictly limit external crates.
 - `dctx-core` and `dctx-cli` utilize `std` libraries primarily.
 - Do not introduce `tokio`, `clap`, `anyhow`, or `serde` without explicit permission.
 
-## 3. IMMEDIATE OBJECTIVE: PHASE 4 (Output Parity & Diffing)
+## 3. IMMEDIATE OBJECTIVE: PHASE 5 (Critical Fixes & Logic Verification)
 
-Your task is to implement **ADR-002 (Versioning & Recovery)** and restore output aesthetics to match the legacy C implementation. We need to reduce "noise" in the output and handle massive changes intelligently.
+Your task is to stabilize the system, fix output generation bugs, and verify the integrity of the binary state engine.
 
 **Specific Tasks (Refer to `PROJECT-DEVELOPMENT-ELABORATION.md`):**
 
-1.  **Aesthetic Restoration:**
-    - Update `llm_formatter.rs` to use the legacy header format: `[DIRCONTXT_LLM_SNAPSHOT_V...]`.
-    - Implement Semantic IDs: Replace raw integers with `ROOT`, `D1`, `F2`, `F3` (D=Directory, F=File).
-    - Implement Visual Indentation in the generated Directory Tree.
+1.  **Output Logic Remediation (5.1):**
+    - **Bug:** `config.output_mode = "both"` currently fails to write text files to `.dctx/`.
+    - **Action:** Debug `main.rs`. Ensure logic flow correctly triggers text generation and paths are valid.
 
-2.  **Diff File Generation:**
-    - Implement logic to generate `*-diff.txt` files when a minor version bump occurs.
-    - These files must contain the *full* tree but *only* the content of modified/added files.
+2.  **New Configuration Control (5.2):**
+    - **Action:** Add `text_output_mode_generates_diff_files` (bool, default `false`) to `AppConfig`.
+    - **Logic:** If `false`, disable `*-diff.txt` file writing (keep main `.llmcontext.txt` update).
 
-3.  **Advanced Versioning Logic (ADR-002):**
-    - **Trigger A (Massive Change):** If `files_unchanged == 0` (complete rewrite), force a Major Version Bump (V1 -> V2).
-    - **Trigger B (Diff Limit):** If `minor_version > max_diff_files`, force a Major Version Bump.
-    - **Cleanup:** On Major Bump, delete all old `*-diff.txt` files in the output directory.
+3.  **New Feature: Tree-Only Mode (5.3):**
+    - **Action:** Add `-t` flag to CLI.
+    - **Logic:** Output *only* Header + Instructions + Directory Tree. Skip all `<FILE_CONTENT>` blocks.
+
+4.  **Single Source of Truth Verification (5.4):**
+    - **Action:** Verify `projects.db` mapping and binary persistence in `~/.cache/dctx/` (or OS equivalent). Ensure the system is actually reading/writing the binary state correctly.
 
 ## 4. REQUIRED READING
 Before writing a single line of code, you must read and internalize:
-1.  `PROJECT-INTERNAL/DOCUMENTS/PROJECT-DEVELOPMENT-ELABORATION.md`: The master execution plan.
-2.  `PROJECT-INTERNAL/ARCHITECTURE/ADR-002-Versioning-and-Recovery.md`: The detailed rules for version bumps and cleanup.
-3.  `crates/dctx-core/src/llm_formatter.rs`: The current implementation to be refactored.
+1.  `PROJECT-INTERNAL/DOCUMENTS/PROJECT-DEVELOPMENT-ELABORATION.md`: The master execution plan (Rev 8).
+2.  `crates/dctx-cli/src/main.rs`: The current CLI entry point containing the logic to be fixed.
+3.  `crates/dctx-core/src/config.rs`: Configuration definitions.
 
 ---
 
-**COMMAND:** Acknowledge these protocols and begin execution of **Phase 4**.
+**COMMAND:** Acknowledge these protocols and begin execution of **Phase 5**.
 
 
 Here is our codebase:
