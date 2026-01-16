@@ -398,6 +398,77 @@
       ],
       "timeExpenditure": "0h 05m",
       "materialExpenditure": "N/A"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-038",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Repository Documentation Cleanup & Standardization",
+      "description": "Comprehensive cleanup of PROJECT-INTERNAL documentation structure. Fixed malformed registry.json, translated RUST-STYLE-GUIDES.md to English, corrected ADR path references, removed code fence artifacts from DEVELOPMENT-PRACTICES.md, consolidated notes files into NOTES.md, and created universal WELCOME.md entry point for AI agents.",
+      "tasks": [
+        "Fix registry.json: Convert malformed JSON to proper structure with workOrders array.",
+        "Translate RUST-STYLE-GUIDES.md from Croatian to English.",
+        "Fix DEVELOPER-GUIDE.md: Correct ADR path from crates/dctx-core/docs/ to PROJECT-INTERNAL/ARCHITECTURE/.",
+        "Fix DEVELOPMENT-PRACTICES.md: Remove erroneous markdown code fence wrapper.",
+        "Consolidate notes-during-development.txt and idea.txt into PROJECT-INTERNAL/NOTES.md.",
+        "Add 'Principle of Notes Non-Actionability' to AI-INSTRUCTIONS.md Article 2.",
+        "Create WELCOME.md as universal AI entry point; delete legacy GEMINI.md.",
+        "Update prompt.txt to reference WELCOME.md."
+      ],
+      "timeExpenditure": "0h 45m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-039",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Creation of Universal Template Repository Structure",
+      "description": "Created repo-template/ folder containing a project-agnostic template structure for future repositories. Includes all PROJECT-INTERNAL documentation with placeholders, generic README and project-meta.yaml templates, disabled GitHub workflow files, and a simplified sync-version.sh script.",
+      "tasks": [
+        "Create repo-template/ folder structure with PROJECT-INTERNAL/, .github/, tools/, apps/, packages/, crates/.",
+        "Copy and genericize AI-INSTRUCTIONS.md, DEVELOPER-GUIDE.md, DEVELOPMENT-PRACTICES.md.",
+        "Create template PROJECT-DEVELOPMENT-ELABORATION.md with placeholder structure.",
+        "Create template README.md and project-meta.yaml.",
+        "Copy config files (.gitignore, .dctxignore, function-calls.json, etc.).",
+        "Modify sync-version.sh to only update project-meta.yaml.",
+        "Add .gitkeep files to empty placeholder directories.",
+        "Preserve RUST-STYLE-GUIDES.md as example technology-specific guide."
+      ],
+      "timeExpenditure": "0h 30m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-040",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Config Variable Rename: output_mode to text_output_enabled",
+      "description": "Renamed legacy output_mode (enum: Both/TextOnly/BinaryOnly) to text_output_enabled (bool) to accurately reflect that binary state is ALWAYS written to system cache, and this config only controls whether .txt files are written to local .dctx/ directory. Added backward compatibility for legacy config values.",
+      "tasks": [
+        "Update crates/dctx-core/src/config.rs: Remove OutputMode enum, rename field to text_output_enabled: bool.",
+        "Update crates/dctx-core/src/config.rs: Add backward-compatible parser for legacy 'output_mode' values.",
+        "Update crates/dctx-cli/src/main.rs: Remove OutputMode import, update logic to use boolean directly.",
+        "Update tools/install.sh: Change default config to use text_output_enabled = true.",
+        "Run tools/test-integrity.sh: Verify all 5 test suites pass."
+      ],
+      "timeExpenditure": "0h 20m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-041",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Phase 5 Closure: Update Development Status",
+      "description": "Updating PROJECT-DEVELOPMENT-ELABORATION.md to mark Phase 5 (Critical Fixes & Logic Verification) as COMPLETED. All subtasks verified: output logic remediation, diff toggle config, tree-only mode, and integrity verification tests.",
+      "tasks": [
+        "Update PROJECT-INTERNAL/DOCUMENTS/PROJECT-DEVELOPMENT-ELABORATION.md: Change Phase 5 status from PENDING to COMPLETED.",
+        "Update Phase 5 task descriptions with completion notes and checkmarks."
+      ],
+      "timeExpenditure": "0h 10m",
+      "materialExpenditure": "None"
     }
   ]
 }

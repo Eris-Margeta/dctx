@@ -53,7 +53,7 @@ The `tools/install.sh` script manages compilation and installation on POSIX syst
 *   **Phase 2: The Core Logic Loop (Base):** `COMPLETED`
 *   **Phase 3: Architectural Realignment (ADR-001/005/006):** `COMPLETED`
 *   **Phase 4: Output Parity & Diffing (ADR-002):** `COMPLETED`
-*   **Phase 5: Critical Fixes & Logic Verification:** `PENDING`
+*   **Phase 5: Critical Fixes & Logic Verification:** `COMPLETED`
 *   **Phase 6: The AOT Templating Engine (ADR-003):** `PENDING`
 *   **Phase 7: Final Polish:** `PENDING`
 
@@ -124,28 +124,27 @@ The `tools/install.sh` script manages compilation and installation on POSIX syst
 
 ---
 
-### **Phase 5: Critical Fixes & Logic Verification (PENDING)**
+### **Phase 5: Critical Fixes & Logic Verification (COMPLETED)**
 
 **Goal:** Ensure the system is actually working as intended before adding complex features. Specifically, we must verify the "Single Source of Truth" (the binary) and fix broken output logic.
 
-*   **5.1. Output Logic Remediation**
-    *   **Problem:** `config.output_mode = "both"` produces no text files in `.dctx/`. The binary is generated, but the text output loop seems to be skipped or failing silently.
-    *   **Task:** Debug and fix the text file generation path in `main.rs`. Ensure permissions and paths are correct.
-*   **5.2. New Configuration Control: Diff Toggle**
-    *   **Requirement:** Users may want snapshots *without* generating persistent diff files to save disk space or reduce clutter.
-    *   **Task:** Add `text_output_mode_generates_diff_files` (bool, default `false`) to `AppConfig`.
-    *   **Logic:** If `false`, `dctx` should *never* write `*-diff.txt` to disk, even if changes are detected. It should only update the main `.llmcontext.txt`.
-*   **5.3. New Feature: Tree-Only Mode (`-t`)**
-    *   **Requirement:** Sometimes users just want the structure, not the content.
-    *   **Task:** Add `-t` flag to CLI arguments.
-    *   **Logic:** When active, the formatter skips the `<FILE_CONTENT_START>` blocks entirely. It outputs *only* the Header, Instructions, and Directory Tree.
-*   **5.4. Single Source of Truth Verification**
-    *   **Problem:** Suspicion that binary files are not being created/read correctly in the system cache.
-    *   **Task:** Create a verification routine (or test) that:
-        1.  Runs `dctx`.
-        2.  Checks specific OS paths (`~/.cache/dctx` or `%LOCALAPPDATA%\dctx`) for the `.dctx` file.
-        3.  Checks `projects.db` for the correct mapping.
-        4.  Ensures subsequent runs *read* from this binary (proven by Version incrementing V1->V1.1).
+*   **5.1. Output Logic Remediation** ✓
+    *   **Problem:** Legacy `output_mode` config was confusing since binary is now always written to system cache.
+    *   **Solution:** Renamed `output_mode` (enum) to `text_output_enabled` (bool). Binary state is ALWAYS written; this config now only controls whether `.txt` files are written to `.dctx/`.
+    *   **Backward Compatibility:** Parser still accepts legacy `output_mode = "binary"/"text"/"both"` values.
+*   **5.2. New Configuration Control: Diff Toggle** ✓
+    *   **Implemented:** `text_output_mode_generates_diff_files` (bool, default `false`) in `AppConfig`.
+    *   **Logic:** If `false`, `dctx` never writes `*-diff.txt` to disk. Only updates main `.llmcontext.txt`.
+*   **5.3. New Feature: Tree-Only Mode (`-t`)** ✓
+    *   **Implemented:** `-t` / `--tree` flag in CLI.
+    *   **Logic:** When active, formatter skips `<FILE_CONTENT_START>` blocks. Outputs only Header, Instructions, and Directory Tree.
+*   **5.4. Single Source of Truth Verification** ✓
+    *   **Implemented:** `tools/test-integrity.sh` - Triple-Run Protocol (ADR-007) verifying:
+        1.  Fresh Start (V1) - binary creation in `~/.cache/dctx/`
+        2.  Incremental Update (V1.1) - version bumping
+        3.  Config propagation - `text_output_mode_generates_diff_files`
+        4.  Massive Change (V2) - major reset and diff cleanup
+    *   **Status:** All 5 test suites PASS.
 
 ---
 
