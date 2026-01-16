@@ -16,7 +16,7 @@ client: "Open Source / Community"
 
 structure:
   work_orders: "./PROJECT-INTERNAL/WORK-ORDERS/"
-  docs:        "./PROJECT-INTERNAL/DOCUMENTS"
+  docs:        "./PROJECT-INTERNAL/DOCUMENTS/"
 
 tech_stack:
   backend: "Rust (Core & CLI)"
