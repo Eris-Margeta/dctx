@@ -469,6 +469,101 @@
       ],
       "timeExpenditure": "0h 10m",
       "materialExpenditure": "None"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-042",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Comprehensive Unit Test Suite Creation",
+      "description": "Created comprehensive unit tests for all dctx-core modules prior to Phase 6. Added 172+ tests covering config parsing, data types, ignore patterns, diff engine, version logic, registry hashing, template parsing, binary reader/writer roundtrips, and LLM formatter output. Added tempfile as dev-dependency for roundtrip tests.",
+      "tasks": [
+        "Add tests to config.rs: 18 tests for parsing, legacy support, constants.",
+        "Add tests to datatypes.rs: 9 tests for node types, tree operations.",
+        "Add tests to ignore.rs: 27 tests for glob matching, pattern parsing, should_ignore logic.",
+        "Add tests to diff.rs: 18 tests for tree comparison, change detection.",
+        "Add tests to version.rs: 29 tests for parsing, display, calculate_next.",
+        "Add tests to registry.rs: 11 tests for FNV-1a hashing stability.",
+        "Add tests to template.rs: 19 tests for parsing, variable resolution.",
+        "Add tests to writer.rs: 13 tests for serialization.",
+        "Add tests to reader.rs: 12 tests for deserialization, roundtrip verification.",
+        "Add tests to llm_formatter.rs: 16 tests for context generation.",
+        "Add tempfile = \"3\" as dev-dependency in dctx-core/Cargo.toml."
+      ],
+      "timeExpenditure": "2h 00m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-043",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Creation of Unit Test Runner Script",
+      "description": "Created tools/run-tests.sh to execute unit tests for all dctx-core modules with color-coded output and module-by-module reporting. Supports --verbose, --lib, --bin, and --module <name> options.",
+      "tasks": [
+        "Create tools/run-tests.sh with color-coded pass/fail output.",
+        "Implement module-by-module test execution for detailed reporting.",
+        "Add command-line options: --verbose, --lib, --bin, --module <name>.",
+        "Make script executable with chmod +x."
+      ],
+      "timeExpenditure": "0h 15m",
+      "materialExpenditure": "None"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-044",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Creation of Landing Page for dctx.app",
+      "description": "Created a modern, attractive landing page for dctx.app with dark theme, gradient accents, and responsive design. Includes hero section, features grid, how-it-works flow, pricing (Free CLI vs $29 Desktop App), open source section with GitHub integration, and footer.",
+      "tasks": [
+        "Create website/ directory.",
+        "Create website/index.html with embedded CSS and minimal JS.",
+        "Implement sections: Navigation, Hero, Features, How It Works, Pricing, Open Source, Footer.",
+        "Add responsive design for mobile devices.",
+        "Use Inter and JetBrains Mono fonts.",
+        "Include install code snippet and GitHub links."
+      ],
+      "timeExpenditure": "0h 30m",
+      "materialExpenditure": "None"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-06-WO-045",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Phase 6 Implementation: AOT Templating Engine (ADR-003)",
+      "description": "Implemented the Ahead-of-Time compiled template system for custom templates. Users can now create .dctx_template files, compile them with 'dctx template build', and use them by setting default_template in config.toml. Includes validation, zero-dependency binary serialization, and runtime loading.",
+      "tasks": [
+        "Add TemplateValidationError enum and Template::validate() method.",
+        "Implement CompiledTemplate struct with pre-resolved variables.",
+        "Implement zero-dep binary serialization: DCTXTMPL magic bytes, version header, fields.",
+        "Add CompiledTemplate::serialize(), deserialize(), save_to_file(), load_from_file().",
+        "Add config helpers: get_compiled_templates_dir(), get_compiled_template_path().",
+        "Add CLI commands: 'dctx template build <path>', 'dctx template list'.",
+        "Update llm_formatter.rs: Add load_template(), generate_llm_context_with_template().",
+        "Update main.rs to use template_name from AppConfig.",
+        "Fix default.dctx_template: Change {{project}} to {{{project}}} (runtime data).",
+        "Add 28 template tests for validation, compilation, serialization roundtrips.",
+        "Update lib.rs exports: CompiledTemplate, Template, TemplateValidationError.",
+        "Verify: 181 unit tests pass, 5 integration test suites pass."
+      ],
+      "timeExpenditure": "1h 30m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-06-WO-046",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Phase 6 Closure: Update Development Status",
+      "description": "Updating PROJECT-DEVELOPMENT-ELABORATION.md to mark Phase 6 (AOT Templating Engine) as COMPLETED. All subtasks verified: template validation, compilation, serialization, CLI commands, and runtime loading.",
+      "tasks": [
+        "Update PROJECT-INTERNAL/DOCUMENTS/PROJECT-DEVELOPMENT-ELABORATION.md: Change Phase 6 status to COMPLETED.",
+        "Update Phase 6 task descriptions with completion notes and implementation details."
+      ],
+      "timeExpenditure": "0h 10m",
+      "materialExpenditure": "None"
     }
   ]
 }

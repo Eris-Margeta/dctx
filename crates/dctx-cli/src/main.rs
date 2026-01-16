@@ -9,6 +9,7 @@ use dctx_core::ignore;
 use dctx_core::llm_formatter;
 use dctx_core::registry::ProjectRegistry;
 use dctx_core::state::{self, StateLoadResult};
+use dctx_core::template::{CompiledTemplate, Template};
 use dctx_core::version::Version;
 use dctx_core::walker;
 use dctx_core::writer;
@@ -19,7 +20,51 @@ use std::io::{self, Write};
 use std::path::PathBuf;
 use std::time::Instant;
 
-// --- Config Struct ---
+// --- Config Structs ---
+
+/// Represents the different commands/modes the CLI can run in.
+#[derive(Debug)]
+enum CliCommand {
+    /// Standard snapshot operation (default)
+    Snapshot(SnapshotConfig),
+    /// Template subcommand
+    Template(TemplateSubcommand),
+    /// Show help
+    Help,
+    /// Show version
+    Version,
+}
+
+#[derive(Debug)]
+enum TemplateSubcommand {
+    /// Build/compile a template file
+    Build { template_path: PathBuf },
+    /// List available compiled templates
+    List,
+}
+
+#[derive(Debug)]
+struct SnapshotConfig {
+    target_path: PathBuf,
+    clipboard_mode: bool,
+    diff_mode: bool,
+    tree_only: bool,
+    force_reset: bool,
+}
+
+impl Default for SnapshotConfig {
+    fn default() -> Self {
+        Self {
+            target_path: PathBuf::from("."),
+            clipboard_mode: false,
+            diff_mode: false,
+            tree_only: false,
+            force_reset: false,
+        }
+    }
+}
+
+// CliConfig wraps SnapshotConfig for internal use
 #[derive(Debug)]
 struct CliConfig {
     target_path: PathBuf,
@@ -27,8 +72,6 @@ struct CliConfig {
     diff_mode: bool,
     tree_only: bool,
     force_reset: bool,
-    show_help: bool,
-    show_version: bool,
 }
 
 impl Default for CliConfig {
@@ -39,8 +82,18 @@ impl Default for CliConfig {
             diff_mode: false,
             tree_only: false,
             force_reset: false,
-            show_help: false,
-            show_version: false,
+        }
+    }
+}
+
+impl From<SnapshotConfig> for CliConfig {
+    fn from(sc: SnapshotConfig) -> Self {
+        Self {
+            target_path: sc.target_path,
+            clipboard_mode: sc.clipboard_mode,
+            diff_mode: sc.diff_mode,
+            tree_only: sc.tree_only,
+            force_reset: sc.force_reset,
         }
     }
 }
@@ -50,16 +103,13 @@ fn main() {
     if args.len() == 1 {
         run_interactive_mode();
     } else {
-        match parse_arguments(&args) {
-            Ok(config) => {
-                if config.show_help {
-                    print_help();
-                } else if config.show_version {
-                    print_version();
-                } else {
-                    run_headless_mode(config);
-                }
-            }
+        match parse_command(&args) {
+            Ok(cmd) => match cmd {
+                CliCommand::Help => print_help(),
+                CliCommand::Version => print_version(),
+                CliCommand::Snapshot(config) => run_headless_mode(config.into()),
+                CliCommand::Template(subcmd) => run_template_command(subcmd),
+            },
             Err(e) => {
                 eprintln!("❌ Error: {}", e);
                 std::process::exit(1);
@@ -68,17 +118,56 @@ fn main() {
     }
 }
 
-fn parse_arguments(args: &[String]) -> Result<CliConfig, String> {
-    let mut config = CliConfig::default();
+/// Parses command line arguments into a CliCommand.
+fn parse_command(args: &[String]) -> Result<CliCommand, String> {
+    let args_slice = &args[1..]; // Skip program name
+
+    if args_slice.is_empty() {
+        return Ok(CliCommand::Snapshot(SnapshotConfig::default()));
+    }
+
+    // Check for subcommands first
+    match args_slice[0].as_str() {
+        "template" => parse_template_subcommand(&args_slice[1..]),
+        "-h" | "--help" | "help" => Ok(CliCommand::Help),
+        "-v" | "--version" | "version" => Ok(CliCommand::Version),
+        _ => parse_snapshot_args(args_slice),
+    }
+}
+
+/// Parses template subcommand arguments.
+fn parse_template_subcommand(args: &[String]) -> Result<CliCommand, String> {
+    if args.is_empty() {
+        return Err("template subcommand requires an action: build, list".to_string());
+    }
+
+    match args[0].as_str() {
+        "build" => {
+            if args.len() < 2 {
+                return Err("template build requires a path to a .dctx_template file".to_string());
+            }
+            Ok(CliCommand::Template(TemplateSubcommand::Build {
+                template_path: PathBuf::from(&args[1]),
+            }))
+        }
+        "list" => Ok(CliCommand::Template(TemplateSubcommand::List)),
+        other => Err(format!("Unknown template action: {}. Use: build, list", other)),
+    }
+}
+
+/// Parses standard snapshot arguments.
+fn parse_snapshot_args(args: &[String]) -> Result<CliCommand, String> {
+    let mut config = SnapshotConfig::default();
     let mut path_set = false;
-    for arg in args.iter().skip(1) {
+
+    for arg in args {
         match arg.as_str() {
             "-c" | "--clipboard" => config.clipboard_mode = true,
             "-d" | "--diff" => config.diff_mode = true,
             "-t" | "--tree" => config.tree_only = true,
             "-r" | "--reset" => config.force_reset = true,
-            "-h" | "--help" => config.show_help = true,
-            "-v" | "--version" => config.show_version = true,
+            "-h" | "--help" => return Ok(CliCommand::Help),
+            "-v" | "--version" => return Ok(CliCommand::Version),
             val => {
                 if val.starts_with('-') {
                     return Err(format!("Unknown flag: {}", val));
@@ -91,7 +180,8 @@ fn parse_arguments(args: &[String]) -> Result<CliConfig, String> {
             }
         }
     }
-    Ok(config)
+
+    Ok(CliCommand::Snapshot(config))
 }
 
 fn run_interactive_mode() {
@@ -317,12 +407,13 @@ fn run_headless_mode(cli_config: CliConfig) {
 
         // Generate Main Context (Always, unless clipboard diff-only requested)
         if !writing_diff_only {
-            if let Err(e) = llm_formatter::generate_llm_context(
+            if let Err(e) = llm_formatter::generate_llm_context_with_template(
                 &mut output_buffer,
                 &new_tree,
                 &new_version,
                 &project_name,
                 cli_config.tree_only,
+                &app_config.default_template,
             ) {
                 eprintln!("❌ Generation error: {}", e);
             }
@@ -348,12 +439,13 @@ fn run_headless_mode(cli_config: CliConfig) {
         };
 
         if should_generate_diff {
-            if let Err(e) = llm_formatter::generate_diff_context(
+            if let Err(e) = llm_formatter::generate_diff_context_with_template(
                 &mut diff_buffer,
                 &new_tree,
                 &diff_report,
                 &old_version,
                 &new_version,
+                &app_config.default_template,
             ) {
                 eprintln!("❌ Diff generation error: {}", e);
             } else {
@@ -414,15 +506,196 @@ fn run_headless_mode(cli_config: CliConfig) {
 
 fn print_help() {
     println!("Usage: dctx [PATH] [OPTIONS]");
-    println!("Options:");
+    println!("       dctx template <COMMAND>");
+    println!();
+    println!("Snapshot Options:");
     println!("  -c, --clipboard  Copy to clipboard");
     println!("  -d, --diff       Output diff only (if available)");
     println!("  -t, --tree       Tree-Only mode (skips file content)");
     println!("  -r, --reset      Force V1 reset");
     println!("  -h, --help       Show help");
     println!("  -v, --version    Show version");
+    println!();
+    println!("Template Commands:");
+    println!("  template build <PATH>  Compile a .dctx_template file");
+    println!("  template list          List compiled templates");
+    println!();
+    println!("Examples:");
+    println!("  dctx .                 Snapshot current directory");
+    println!("  dctx ./project -c      Snapshot and copy to clipboard");
+    println!("  dctx template build my.dctx_template");
 }
 
 fn print_version() {
     println!("dctx-cli v{}", env!("CARGO_PKG_VERSION"));
+}
+
+// --- TEMPLATE COMMANDS ---
+
+fn run_template_command(subcmd: TemplateSubcommand) {
+    match subcmd {
+        TemplateSubcommand::Build { template_path } => {
+            run_template_build(&template_path);
+        }
+        TemplateSubcommand::List => {
+            run_template_list();
+        }
+    }
+}
+
+fn run_template_build(template_path: &PathBuf) {
+    println!("🔧 Building template: {:?}", template_path);
+
+    // 1. Check if file exists
+    if !template_path.exists() {
+        eprintln!("❌ Template file not found: {:?}", template_path);
+        std::process::exit(1);
+    }
+
+    // 2. Read template file
+    let raw_content = match fs::read_to_string(template_path) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("❌ Failed to read template file: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    // 3. Parse template
+    println!("📝 Parsing template...");
+    let template = Template::parse(&raw_content);
+
+    // 4. Validate
+    println!("🔍 Validating template...");
+    let errors = template.validate();
+    if !errors.is_empty() {
+        eprintln!("❌ Template validation failed:");
+        for error in &errors {
+            eprintln!("   - {}", error);
+        }
+        std::process::exit(1);
+    }
+    println!("✅ Validation passed");
+
+    // 5. Derive template name from filename
+    let template_name = template_path
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .unwrap_or("custom");
+
+    // Remove .dctx_template suffix if present in stem
+    let template_name = template_name
+        .strip_suffix(".dctx")
+        .unwrap_or(template_name);
+
+    // 6. Compile template
+    println!("⚙️  Compiling template as '{}'...", template_name);
+    let compiled = match template.compile(template_name) {
+        Ok(c) => c,
+        Err(errors) => {
+            eprintln!("❌ Template compilation failed:");
+            for error in &errors {
+                eprintln!("   - {}", error);
+            }
+            std::process::exit(1);
+        }
+    };
+
+    // 7. Get output path
+    let templates_dir = match config::get_compiled_templates_dir() {
+        Some(d) => d,
+        None => {
+            eprintln!("❌ Could not determine templates directory");
+            std::process::exit(1);
+        }
+    };
+
+    // Ensure directory exists
+    if let Err(e) = fs::create_dir_all(&templates_dir) {
+        eprintln!("❌ Failed to create templates directory: {}", e);
+        std::process::exit(1);
+    }
+
+    let output_path = templates_dir.join(format!("{}.bin", template_name));
+
+    // 8. Save compiled template
+    println!("💾 Saving to {:?}...", output_path);
+    if let Err(e) = compiled.save_to_file(&output_path) {
+        eprintln!("❌ Failed to save compiled template: {}", e);
+        std::process::exit(1);
+    }
+
+    // 9. Success message
+    println!();
+    println!("═══════════════════════════════════════════════════════════");
+    println!("✅ Template built successfully!");
+    println!("═══════════════════════════════════════════════════════════");
+    println!();
+    println!("To use this template, add to your config.toml:");
+    println!();
+    println!("    default_template = \"{}\"", template_name);
+    println!();
+    println!("Config location: {:?}", config::get_config_file_path().unwrap_or_default());
+    println!();
+}
+
+fn run_template_list() {
+    println!("📋 Compiled Templates");
+    println!("═══════════════════════════════════════════════════════════");
+
+    let templates_dir = match config::get_compiled_templates_dir() {
+        Some(d) => d,
+        None => {
+            eprintln!("❌ Could not determine templates directory");
+            std::process::exit(1);
+        }
+    };
+
+    if !templates_dir.exists() {
+        println!();
+        println!("No compiled templates found.");
+        println!("Use 'dctx template build <path>' to compile a template.");
+        return;
+    }
+
+    let entries = match fs::read_dir(&templates_dir) {
+        Ok(e) => e,
+        Err(e) => {
+            eprintln!("❌ Failed to read templates directory: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let mut found = false;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|s| s.to_str()) == Some("bin") {
+            if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
+                // Try to load and verify the template
+                match CompiledTemplate::load_from_file(&path) {
+                    Ok(tmpl) => {
+                        println!("  ✓ {} ({})", name, tmpl.name);
+                        found = true;
+                    }
+                    Err(e) => {
+                        println!("  ✗ {} (corrupted: {})", name, e);
+                        found = true;
+                    }
+                }
+            }
+        }
+    }
+
+    if !found {
+        println!();
+        println!("No compiled templates found.");
+        println!("Use 'dctx template build <path>' to compile a template.");
+    }
+
+    println!();
+    println!("Templates directory: {:?}", templates_dir);
+
+    // Show current config
+    let app_config = config::load_app_config();
+    println!("Current default: {}", app_config.default_template);
 }

@@ -10,8 +10,8 @@ This document serves as a binding guide for all interactions, ensuring consisten
 Board for Standardization and Development
 
 **Class:** 001-01/25-01
-**Reference Number:** 251-01-01-25-05 (Rev. 5)
-**Date:** 30.12.2025.
+**Reference Number:** 251-01-01-25-06 (Rev. 6)
+**Date:** 2026-01-16
 
 SUBJECT: Protocol on the Methodology of Development with the Assistance of Artificial Intelligence (MDAAI), Version 1.5
 
@@ -111,6 +111,7 @@ The development cycle proceeds exclusively through the formalized **"Order-Execu
    (a) `AI-INSTRUCTIONS.md`: The constitution and indisputable protocol for collaboration.
    (b) `PROJECT-DEVELOPMENT-ELABORATION.md`: A detailed development plan, philosophy, and backlog.
    (c) `DEVELOPMENT-PRACTICES.md`: A knowledge base for avoiding recurring errors and inefficiencies.
+   (d) `CHECKPOINT-PROTOCOL.md`: The binding procedure for creating development checkpoints.
 
 ### **Article 9: Protocol for Recording Architectural Decisions (ADR) (NEW)**
 
@@ -123,6 +124,24 @@ The development cycle proceeds exclusively through the formalized **"Order-Execu
 (4) The AI Assistant is responsible for generating the final ADR markdown file, assigning it the next sequential number (e.g., `ADR-001`, `ADR-002`), and issuing a Work Order for its creation in the `PROJECT-INTERNAL/ARCHITECTURE/` directory.
 
 (5) Existing ADRs are considered binding precedent. The AI Assistant must consult them when proposing solutions to ensure architectural consistency.
+
+### **Article 9a: Protocol for Development Checkpoints (NEW)**
+
+(1) A **Checkpoint** is a formal milestone marker that captures the complete state of a project at a significant point in development. The full protocol is defined in `PROJECT-INTERNAL/GUIDES/CHECKPOINT-PROTOCOL.md`.
+
+(2) **Mandatory Triggers:** A checkpoint MUST be created when:
+*   (a) A development phase (as defined in PROJECT-DEVELOPMENT-ELABORATION.md) is completed.
+*   (b) A major version increment occurs.
+*   (c) An ADR implementation is finalized.
+
+(3) **Checkpoint Procedure Overview:**
+*   (a) **Knowledge Base Synchronization:** Before creating a checkpoint, the AI Assistant must update all relevant documentation (PROJECT-DEVELOPMENT-ELABORATION.md, ADRs, guides, README, etc.) following the REVISION protocol defined in Article 8.
+*   (b) **Verification:** Run all tests to confirm system stability.
+*   (c) **Document Creation:** Generate checkpoint document using template at `PROJECT-INTERNAL/CHECKPOINTS/checkpoint-template.md`.
+
+(4) Checkpoints are stored in `PROJECT-INTERNAL/CHECKPOINTS/` with naming convention `CP-XXX-PHASE-Y-DESCRIPTION.md`.
+
+(5) Previous checkpoints serve as **binding historical records** and are never modified after creation.
 
 ### **Article 10: Language and Tone of Communication**
 

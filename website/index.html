@@ -1,0 +1,1720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dctx - Directory Context for AI</title>
+    <meta name="description" content="Transform your codebase into AI-ready context. Open source CLI and Desktop App for developers.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-card: #16161f;
+            --bg-code: #0d0d12;
+            --border-color: #2a2a3a;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --text-muted: #6a6a7a;
+            --accent-primary: #8b5cf6;
+            --accent-secondary: #6366f1;
+            --accent-tertiary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);
+            --gradient-glow: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 20px 0;
+            background: rgba(10, 10, 15, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.3s;
+        }
+
+        nav.scrolled {
+            border-bottom-color: var(--border-color);
+        }
+
+        nav .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-cta {
+            display: flex;
+            gap: 12px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(139, 92, 246, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--bg-secondary);
+            border-color: var(--accent-primary);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 12px 16px;
+        }
+
+        .btn-ghost:hover {
+            color: var(--text-primary);
+        }
+
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding-top: 80px;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150%;
+            height: 150%;
+            background: var(--gradient-glow);
+            pointer-events: none;
+        }
+
+        .hero-grid {
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
+        }
+
+        .hero-content {
+            position: relative;
+            text-align: center;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid rgba(139, 92, 246, 0.2);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            color: var(--accent-primary);
+            margin-bottom: 24px;
+        }
+
+        .hero-badge::before {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .hero h1 {
+            font-size: clamp(3rem, 8vw, 5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            letter-spacing: -2px;
+            margin-bottom: 24px;
+        }
+
+        .hero h1 span {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .hero-code {
+            margin-top: 60px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: left;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-code pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            overflow-x: auto;
+        }
+
+        .hero-code .prompt {
+            color: var(--accent-primary);
+        }
+
+        .hero-code .command {
+            color: var(--text-primary);
+        }
+
+        .hero-code .comment {
+            color: var(--text-muted);
+        }
+
+        .hero-install {
+            margin-top: 60px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .install-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .install-tab {
+            padding: 8px 16px;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+
+        .install-tab:hover {
+            border-color: var(--accent-primary);
+            color: var(--text-secondary);
+        }
+
+        .install-tab.active {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+        }
+
+        /* Section Styles */
+        .section-header {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto 60px;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            letter-spacing: -1px;
+        }
+
+        .section-header p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        /* Problem Section */
+        .problem {
+            padding: 120px 0;
+            background: var(--bg-secondary);
+        }
+
+        .problem-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .problem-text h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        .problem-text p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 24px;
+        }
+
+        .problem-list {
+            list-style: none;
+            margin-bottom: 32px;
+        }
+
+        .problem-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            color: var(--text-secondary);
+        }
+
+        .problem-list li::before {
+            content: '✕';
+            color: #ef4444;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .bash-nightmare {
+            background: var(--bg-code);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .bash-nightmare pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: #ef4444;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        .bash-nightmare .label {
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        /* Solution Row */
+        .solution-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+            margin-top: 80px;
+            padding-top: 80px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .solution-text h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        .solution-text h2 span {
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .solution-text p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .solution-code-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .solution-code {
+            margin: 0;
+        }
+
+        .solution-tagline {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-top: 16px;
+            font-weight: 500;
+        }
+
+        /* Benefits Section */
+        .benefits {
+            padding: 120px 0;
+            background: var(--bg-secondary);
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 32px;
+        }
+
+        .benefit-item {
+            display: flex;
+            gap: 24px;
+            padding: 32px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            transition: all 0.3s;
+        }
+
+        .benefit-item:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .benefit-item.benefit-wide {
+            grid-column: span 2;
+        }
+
+        .benefit-number {
+            font-size: 2rem;
+            font-weight: 800;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .benefit-content h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .benefit-content p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.7;
+        }
+
+        .benefit-content code {
+            background: var(--bg-primary);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-primary);
+        }
+
+        /* Example Output Section */
+        .example-output {
+            padding: 120px 0;
+        }
+
+        .example-tabs {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .example-tab {
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+        }
+
+        .example-tab:hover, .example-tab.active {
+            border-color: var(--accent-primary);
+            color: var(--text-primary);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .example-box {
+            background: var(--bg-code);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .example-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .example-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .example-dots {
+            display: flex;
+            gap: 6px;
+        }
+
+        .example-dots span {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .example-dots span:nth-child(1) { background: #ef4444; }
+        .example-dots span:nth-child(2) { background: #f59e0b; }
+        .example-dots span:nth-child(3) { background: #10b981; }
+
+        .example-title {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .example-content {
+            padding: 24px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .example-content pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: var(--text-secondary);
+        }
+
+        .example-content .tag {
+            color: var(--accent-primary);
+        }
+
+        .example-content .attr {
+            color: var(--accent-tertiary);
+        }
+
+        .example-content .value {
+            color: var(--success);
+        }
+
+        .example-content .bracket {
+            color: var(--warning);
+        }
+
+        .example-content .header {
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .example-description {
+            margin-top: 24px;
+            padding: 20px 24px;
+            background: rgba(139, 92, 246, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.1);
+            border-radius: 12px;
+        }
+
+        .example-description p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .example-description code {
+            background: var(--bg-card);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-primary);
+        }
+
+        /* Features Section */
+        .features {
+            padding: 120px 0;
+            background: var(--bg-secondary);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+            transition: all 0.3s;
+        }
+
+        .feature-card:hover {
+            border-color: var(--accent-primary);
+            transform: translateY(-4px);
+        }
+
+        .feature-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--gradient-primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .feature-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .feature-card code {
+            display: block;
+            margin-top: 12px;
+            padding: 8px 12px;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: var(--accent-primary);
+        }
+
+        /* Ecosystem Section */
+        .ecosystem {
+            padding: 120px 0;
+        }
+
+        .ecosystem-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 32px;
+        }
+
+        .ecosystem-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            transition: all 0.3s;
+        }
+
+        .ecosystem-card:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .ecosystem-card.upcoming {
+            opacity: 0.7;
+            position: relative;
+        }
+
+        .ecosystem-card.upcoming::after {
+            content: 'Coming Soon';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 4px 12px;
+            background: var(--warning);
+            color: #000;
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .ecosystem-icon {
+            width: 56px;
+            height: 56px;
+            background: var(--gradient-primary);
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            font-size: 1.75rem;
+        }
+
+        .ecosystem-card h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .ecosystem-card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 20px;
+        }
+
+        .ecosystem-card ul {
+            list-style: none;
+        }
+
+        .ecosystem-card li {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .ecosystem-card li::before {
+            content: '→';
+            color: var(--accent-primary);
+        }
+
+        /* CLI Flags Section */
+        .cli-flags {
+            padding: 80px 0;
+            background: var(--bg-secondary);
+        }
+
+        .flags-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .flag-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 16px 20px;
+            transition: all 0.2s;
+        }
+
+        .flag-item:hover {
+            border-color: var(--accent-primary);
+        }
+
+        .flag-item code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--accent-primary);
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .flag-item span {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Pricing Section */
+        .pricing {
+            padding: 120px 0;
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 32px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .pricing-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 40px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .pricing-card.featured {
+            border-color: var(--accent-primary);
+            background: linear-gradient(180deg, rgba(139, 92, 246, 0.1) 0%, var(--bg-card) 100%);
+        }
+
+        .pricing-card.featured::before {
+            content: 'Most Popular';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 6px 16px;
+            background: var(--gradient-primary);
+            border-radius: 50px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-4px);
+        }
+
+        .pricing-header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding-bottom: 32px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .pricing-header h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .pricing-header .price {
+            font-size: 3rem;
+            font-weight: 800;
+            letter-spacing: -2px;
+        }
+
+        .pricing-header .price span {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .pricing-header .subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-top: 8px;
+        }
+
+        .pricing-features {
+            list-style: none;
+            margin-bottom: 32px;
+        }
+
+        .pricing-features li {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            color: var(--text-secondary);
+        }
+
+        .pricing-features li::before {
+            content: '✓';
+            width: 24px;
+            height: 24px;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+
+        .pricing-card .btn {
+            width: 100%;
+            justify-content: center;
+        }
+
+        /* Open Source Section */
+        .open-source {
+            padding: 120px 0;
+            background: var(--bg-secondary);
+        }
+
+        .open-source-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+
+        .open-source-text h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            letter-spacing: -1px;
+        }
+
+        .open-source-text p {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            margin-bottom: 32px;
+        }
+
+        .open-source-stats {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 32px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .github-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 32px;
+        }
+
+        .github-card-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .github-icon {
+            width: 48px;
+            height: 48px;
+            background: #24292e;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .github-card-header h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .github-card-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .github-card pre {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            overflow-x: auto;
+        }
+
+        /* Footer */
+        footer {
+            padding: 60px 0 40px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 24px;
+        }
+
+        .footer-logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 32px;
+            list-style: none;
+        }
+
+        .footer-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .footer-links a:hover {
+            color: var(--text-primary);
+        }
+
+        .footer-copy {
+            width: 100%;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-top: 40px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .problem-content,
+            .solution-content,
+            .open-source-content {
+                grid-template-columns: 1fr;
+            }
+
+            .solution-content {
+                margin-top: 48px;
+                padding-top: 48px;
+            }
+
+            .benefits-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .benefit-item.benefit-wide {
+                grid-column: span 1;
+            }
+
+            .benefit-item {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .ecosystem-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .open-source-stats {
+                justify-content: center;
+            }
+
+            .pricing-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .footer-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .example-content {
+                max-height: 400px;
+            }
+
+            .example-content pre {
+                font-size: 0.7rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-in {
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav id="nav">
+        <div class="container">
+            <div class="logo">dctx</div>
+            <ul class="nav-links">
+                <li><a href="#example">Examples</a></li>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#ecosystem">Ecosystem</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+            </ul>
+            <div class="nav-cta">
+                <a href="https://github.com/tejl/dctx" class="btn btn-ghost">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                    GitHub
+                </a>
+                <a href="#pricing" class="btn btn-primary">Get Desktop App</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-grid"></div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">Open Source & Free CLI</div>
+                <h1>Directory Context<br>for <span>AI Assistants</span></h1>
+                <p>Transform your entire codebase into structured context that AI understands. One command. Perfect context. Every time.</p>
+                <div class="hero-buttons">
+                    <a href="#pricing" class="btn btn-primary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+                        Download Desktop App
+                    </a>
+                    <a href="#open-source" class="btn btn-secondary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                        View on GitHub
+                    </a>
+                </div>
+                <div class="hero-install">
+                    <div class="install-tabs">
+                        <button class="install-tab active" onclick="showInstall('brew')">brew</button>
+                        <button class="install-tab" onclick="showInstall('apt')">apt</button>
+                        <button class="install-tab" onclick="showInstall('choco')">choco</button>
+                        <button class="install-tab" onclick="showInstall('npm')">npm</button>
+                        <button class="install-tab" onclick="showInstall('pip')">pip</button>
+                        <button class="install-tab" onclick="showInstall('cargo')">cargo</button>
+                        <button class="install-tab" onclick="showInstall('curl')">curl</button>
+                    </div>
+                    <div class="hero-code">
+                        <pre id="install-brew"><span class="prompt">$</span> <span class="command">brew install dctx</span></pre>
+                        <pre id="install-apt" style="display:none"><span class="prompt">$</span> <span class="command">sudo apt install dctx</span></pre>
+                        <pre id="install-choco" style="display:none"><span class="prompt">$</span> <span class="command">choco install dctx</span></pre>
+                        <pre id="install-npm" style="display:none"><span class="prompt">$</span> <span class="command">npm install -g dctx</span></pre>
+                        <pre id="install-pip" style="display:none"><span class="prompt">$</span> <span class="command">pip install dctx</span></pre>
+                        <pre id="install-cargo" style="display:none"><span class="prompt">$</span> <span class="command">cargo install dctx</span></pre>
+                        <pre id="install-curl" style="display:none"><span class="prompt">$</span> <span class="command">curl -fsSL https://dctx.app/install.sh | sh</span></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Problem Section -->
+    <section class="problem">
+        <div class="container">
+            <!-- The Problem -->
+            <div class="problem-content">
+                <div class="problem-text">
+                    <h2>Stop fighting with bash commands</h2>
+                    <p>Sharing code context with AI shouldn't require a PhD in shell scripting. Dirty, long bash commands that pick up unwanted files and litter your context are a thing of the past.</p>
+                    <ul class="problem-list">
+                        <li>Manual file concatenation misses critical files</li>
+                        <li>Bash one-liners include node_modules and build artifacts</li>
+                        <li>No way to track what changed since your last paste</li>
+                        <li>Token limits wasted on irrelevant boilerplate</li>
+                    </ul>
+                </div>
+                <div class="bash-nightmare">
+                    <span class="label">The old way (don't do this):</span>
+                    <pre>find . -type f \( -name "*.ts" -o -name "*.tsx" \) \
+  -not -path "./node_modules/*" \
+  -not -path "./dist/*" \
+  -not -path "./.git/*" \
+  -not -name "*.test.ts" \
+  -not -name "*.spec.ts" | \
+  head -50 | \
+  xargs -I {} sh -c \
+  'echo "=== {} ===" && cat {}' | \
+  pbcopy</pre>
+                </div>
+            </div>
+            <!-- The Solution -->
+            <div class="solution-content">
+                <div class="solution-text">
+                    <h2>With dctx, simply <span>WORK</span>.</h2>
+                    <p>Share your context with AI and let it intelligently manage what AI needs to see and what it doesn't.</p>
+                </div>
+                <div class="solution-code-wrapper">
+                    <div class="hero-code solution-code">
+                        <pre><span class="comment"># Copy your project context to clipboard</span>
+<span class="prompt">$</span> <span class="command">dctx . -c</span>
+
+<span class="comment"># Context ready! Paste into any AI chat.</span>
+<span class="comment"># 42 files, 15.2KB - intelligently filtered</span></pre>
+                    </div>
+                    <p class="solution-tagline">That's it.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Example Output Section -->
+    <section class="example-output" id="example">
+        <div class="container">
+            <div class="section-header">
+                <h2>See it in action</h2>
+                <p>Real output from a real project. Structured, semantic, AI-ready.</p>
+            </div>
+
+            <div class="example-tabs">
+                <button class="example-tab active" onclick="showExample('full')">dctx . -c</button>
+                <button class="example-tab" onclick="showExample('tree')">dctx . -t -c</button>
+            </div>
+
+            <div class="example-box">
+                <div class="example-header">
+                    <div class="example-header-left">
+                        <div class="example-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <span class="example-title">clipboard contents</span>
+                    </div>
+                </div>
+                <div class="example-content" id="example-full">
+                    <pre><span class="header">[DCTX_LLM_CONTEXT_SNAPSHOT_V1]</span>
+<span class="bracket">[DIRECTORY:my-project]</span>
+<span class="tag">&lt;INSTRUCTIONS&gt;</span>
+1. Manifest: The &lt;DIRECTORY_TREE&gt; section lists all files.
+   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID, MOD:TIMESTAMP)
+   - TYPE is [D] for directory, [F] for file.
+2. Content Access: To read a specific file:
+   - Find its UNIQUE_ID from the directory tree.
+   - Search for the marker: &lt;FILE_CONTENT_START ID="UNIQUE_ID"&gt;
+   - The content is between this marker and &lt;/FILE_CONTENT_END ID="UNIQUE_ID"&gt;
+<span class="tag">&lt;/INSTRUCTIONS&gt;</span>
+<span class="tag">&lt;DIRECTORY_TREE&gt;</span>
+<span class="bracket">[D]</span>  (ID:ROOT, MOD:1768567394241)
+  <span class="bracket">[F]</span> package.json (<span class="attr">ID</span>:<span class="value">F001</span>, <span class="attr">MOD</span>:1768559794769, <span class="attr">SIZE</span>:1420)
+  <span class="bracket">[F]</span> tsconfig.json (<span class="attr">ID</span>:<span class="value">F002</span>, <span class="attr">MOD</span>:1768561368702, <span class="attr">SIZE</span>:892)
+  <span class="bracket">[D]</span> src (<span class="attr">ID</span>:<span class="value">D003</span>, <span class="attr">MOD</span>:1768567394245)
+    <span class="bracket">[F]</span> src/index.ts (<span class="attr">ID</span>:<span class="value">F004</span>, <span class="attr">MOD</span>:1768567400577, <span class="attr">SIZE</span>:2048)
+    <span class="bracket">[F]</span> src/config.ts (<span class="attr">ID</span>:<span class="value">F005</span>, <span class="attr">MOD</span>:1768567394473, <span class="attr">SIZE</span>:1536)
+    <span class="bracket">[D]</span> src/utils (<span class="attr">ID</span>:<span class="value">D006</span>, <span class="attr">MOD</span>:1768567394241)
+      <span class="bracket">[F]</span> src/utils/helpers.ts (<span class="attr">ID</span>:<span class="value">F007</span>, <span class="attr">MOD</span>:1768567396528, <span class="attr">SIZE</span>:3072)
+<span class="tag">&lt;/DIRECTORY_TREE&gt;</span>
+<span class="tag">&lt;FILE_CONTENT_START</span> <span class="attr">ID</span>=<span class="value">"F004"</span> <span class="attr">PATH</span>=<span class="value">"src/index.ts"</span> <span class="attr">LINES</span>=<span class="value">"48"</span><span class="tag">&gt;</span>
+import { Config } from './config';
+import { formatOutput, validateInput } from './utils/helpers';
+
+export async function main(): Promise&lt;void&gt; {
+  const config = await Config.load();
+  // ... your actual code here
+}
+<span class="tag">&lt;/FILE_CONTENT_END</span> <span class="attr">ID</span>=<span class="value">"F004"</span><span class="tag">&gt;</span>
+<span class="comment">// ... more files ...</span></pre>
+                </div>
+                <div class="example-content" id="example-tree" style="display: none;">
+                    <pre><span class="header">[DCTX_LLM_CONTEXT_SNAPSHOT_V1]</span>
+<span class="bracket">[DIRECTORY:my-project]</span>
+<span class="tag">&lt;INSTRUCTIONS&gt;</span>
+1. Manifest: The &lt;DIRECTORY_TREE&gt; section lists all files.
+   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID, MOD:TIMESTAMP)
+   - TYPE is [D] for directory, [F] for file.
+2. Content Access: To read a specific file:
+   - Find its UNIQUE_ID from the directory tree.
+   - Search for the marker: &lt;FILE_CONTENT_START ID="UNIQUE_ID"&gt;
+   - The content is between this marker and &lt;/FILE_CONTENT_END ID="UNIQUE_ID"&gt;
+<span class="tag">&lt;/INSTRUCTIONS&gt;</span>
+<span class="tag">&lt;DIRECTORY_TREE&gt;</span>
+<span class="bracket">[D]</span>  (ID:ROOT, MOD:1768567394241)
+  <span class="bracket">[F]</span> package.json (<span class="attr">ID</span>:<span class="value">F001</span>, <span class="attr">MOD</span>:1768559794769, <span class="attr">SIZE</span>:1420)
+  <span class="bracket">[F]</span> tsconfig.json (<span class="attr">ID</span>:<span class="value">F002</span>, <span class="attr">MOD</span>:1768561368702, <span class="attr">SIZE</span>:892)
+  <span class="bracket">[F]</span> README.md (<span class="attr">ID</span>:<span class="value">F003</span>, <span class="attr">MOD</span>:1768561368702, <span class="attr">SIZE</span>:4096)
+  <span class="bracket">[D]</span> src (<span class="attr">ID</span>:<span class="value">D004</span>, <span class="attr">MOD</span>:1768567394245)
+    <span class="bracket">[F]</span> src/index.ts (<span class="attr">ID</span>:<span class="value">F005</span>, <span class="attr">MOD</span>:1768567400577, <span class="attr">SIZE</span>:2048)
+    <span class="bracket">[F]</span> src/config.ts (<span class="attr">ID</span>:<span class="value">F006</span>, <span class="attr">MOD</span>:1768567394473, <span class="attr">SIZE</span>:1536)
+    <span class="bracket">[F]</span> src/main.ts (<span class="attr">ID</span>:<span class="value">F007</span>, <span class="attr">MOD</span>:1768567394473, <span class="attr">SIZE</span>:892)
+    <span class="bracket">[D]</span> src/utils (<span class="attr">ID</span>:<span class="value">D008</span>, <span class="attr">MOD</span>:1768567394241)
+      <span class="bracket">[F]</span> src/utils/helpers.ts (<span class="attr">ID</span>:<span class="value">F009</span>, <span class="attr">MOD</span>:1768567396528, <span class="attr">SIZE</span>:3072)
+      <span class="bracket">[F]</span> src/utils/logger.ts (<span class="attr">ID</span>:<span class="value">F010</span>, <span class="attr">MOD</span>:1768567396528, <span class="attr">SIZE</span>:1024)
+    <span class="bracket">[D]</span> src/components (<span class="attr">ID</span>:<span class="value">D011</span>, <span class="attr">MOD</span>:1768567394241)
+      <span class="bracket">[F]</span> src/components/Button.tsx (<span class="attr">ID</span>:<span class="value">F012</span>, <span class="attr">MOD</span>:1768567396528, <span class="attr">SIZE</span>:2560)
+      <span class="bracket">[F]</span> src/components/Modal.tsx (<span class="attr">ID</span>:<span class="value">F013</span>, <span class="attr">MOD</span>:1768567396528, <span class="attr">SIZE</span>:4096)
+  <span class="bracket">[D]</span> tests (<span class="attr">ID</span>:<span class="value">D014</span>, <span class="attr">MOD</span>:1768567394245)
+    <span class="bracket">[F]</span> tests/index.test.ts (<span class="attr">ID</span>:<span class="value">F015</span>, <span class="attr">MOD</span>:1768567400577, <span class="attr">SIZE</span>:1536)
+<span class="tag">&lt;/DIRECTORY_TREE&gt;</span>
+
+<span class="comment">// No file contents - tree only mode</span>
+<span class="comment">// Perfect for asking "where should I add X?"</span></pre>
+                </div>
+            </div>
+
+            <div class="example-description">
+                <p><strong>Full context</strong> with <code>dctx . -c</code> gives AI everything it needs: file tree with metadata plus full file contents. <strong>Tree-only mode</strong> with <code>dctx . -t -c</code> shows just the structure - perfect for architecture questions or when you only need AI to understand your project layout.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Core Benefits Section -->
+    <section class="benefits">
+        <div class="container">
+            <div class="section-header">
+                <h2>Why dctx changes everything</h2>
+                <p>Not just another file concatenation tool. A fundamentally better approach to AI context.</p>
+            </div>
+            <div class="benefits-grid">
+                <div class="benefit-item">
+                    <div class="benefit-number">01</div>
+                    <div class="benefit-content">
+                        <h3>Lightning-Fast Workflow</h3>
+                        <p>Intelligent context gathering from any directory in milliseconds. Stop wasting time crafting commands - just point and go.</p>
+                    </div>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-number">02</div>
+                    <div class="benefit-content">
+                        <h3>Massive Token Savings</h3>
+                        <p>Smart ignore rules filter out node_modules, build artifacts, and irrelevant files automatically. Only what matters reaches the AI.</p>
+                    </div>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-number">03</div>
+                    <div class="benefit-content">
+                        <h3>Compounding Efficiency</h3>
+                        <p>Intelligent diffing means savings multiply over time. After the initial snapshot, subsequent updates only send what changed - not the entire codebase again.</p>
+                    </div>
+                </div>
+                <div class="benefit-item">
+                    <div class="benefit-number">04</div>
+                    <div class="benefit-content">
+                        <h3>No Vectorization Artifacts</h3>
+                        <p>Unlike RAG systems that chunk data into fragments, dctx provides <strong>complete files, every time</strong>. No truncated functions, no missing context, no malformed code snippets. AI gets the full picture.</p>
+                    </div>
+                </div>
+                <div class="benefit-item benefit-wide">
+                    <div class="benefit-number">05</div>
+                    <div class="benefit-content">
+                        <h3>Smart Navigation, Full Context</h3>
+                        <p>Even with entire directories sent at once, AI navigates effortlessly. Every file has a unique <code>ID</code>, with <code>MOD</code> (timestamp), <code>SIZE</code>, and <code>LINES</code> metadata. Clear <code>&lt;FILE_CONTENT_START&gt;</code> and <code>&lt;FILE_CONTENT_END&gt;</code> brackets let AI "skip to" exactly what it needs. No parsing errors. No lost boundaries. AI always knows precisely where each file starts and ends.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Built for the AI-assisted workflow</h2>
+                <p>Every feature designed to save tokens and maximize AI comprehension.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">&#128203;</div>
+                    <h3>Intelligent Ignore Rules</h3>
+                    <p>Global config at <code>~/.config/dctx/ignore</code> plus per-project <code>.dctxignore</code> files. Automatically excludes node_modules, build outputs, and secrets.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128202;</div>
+                    <h3>Smart Diff Tracking</h3>
+                    <p>Automatic versioned diffs saved to <code>.dctx/</code> folder. Only send what changed since V1. Major version detection when structure shifts dramatically.</p>
+                    <code>.dctx/context-V1.1-diff.txt</code>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128196;</div>
+                    <h3>Text Output</h3>
+                    <p>Full snapshots written to <code>.dctx/.llmcontext.txt</code>. Keep a history, compare versions, or pipe to other tools. Your context, your way.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#9881;</div>
+                    <h3>Flexible Templating</h3>
+                    <p>Compile custom output templates with <code>dctx template build</code>. Change markers, structure, or format to match your AI's preferences.</p>
+                    <code>dctx template build my-format.dctx_template</code>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#9889;</div>
+                    <h3>Blazing Fast</h3>
+                    <p>Multi-threaded Rust core scans entire filesystems in milliseconds. 10-100x faster than bash equivalents on large directories. Safe for your whole home folder.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128274;</div>
+                    <h3>Privacy First</h3>
+                    <p>Everything runs locally. Binary state cached in <code>~/.cache/dctx/</code>. Zero telemetry, zero cloud, zero dependencies. Your code never leaves your machine.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CLI Flags Section -->
+    <section class="cli-flags">
+        <div class="container">
+            <div class="section-header">
+                <h2>Power user flags</h2>
+                <p>For when you want to move FAST.</p>
+            </div>
+            <div class="flags-grid">
+                <div class="flag-item">
+                    <code>-c, --clipboard</code>
+                    <span>Copy output to clipboard</span>
+                </div>
+                <div class="flag-item">
+                    <code>-t, --tree</code>
+                    <span>Tree only, no file content</span>
+                </div>
+                <div class="flag-item">
+                    <code>-d, --diff</code>
+                    <span>Generate diff from last run</span>
+                </div>
+                <div class="flag-item">
+                    <code>-r, --reset</code>
+                    <span>Reset version to V1</span>
+                </div>
+                <div class="flag-item">
+                    <code>-h, --help</code>
+                    <span>Show help message</span>
+                </div>
+                <div class="flag-item">
+                    <code>-v, --version</code>
+                    <span>Show version info</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ecosystem Section -->
+    <section class="ecosystem" id="ecosystem">
+        <div class="container">
+            <div class="section-header">
+                <h2>A complete ecosystem</h2>
+                <p>From quick terminal use to full programmatic control.</p>
+            </div>
+            <div class="ecosystem-grid">
+                <div class="ecosystem-card">
+                    <div class="ecosystem-icon">&#128187;</div>
+                    <h3>Interactive CLI</h3>
+                    <p>Just type <code>dctx</code>. A simple terminal menu guides you through options. No flags to memorize, no docs to read. Ready to go in seconds.</p>
+                    <ul>
+                        <li>Snapshot current directory</li>
+                        <li>Copy to clipboard with one key</li>
+                        <li>Perfect for beginners</li>
+                    </ul>
+                </div>
+                <div class="ecosystem-card">
+                    <div class="ecosystem-icon">&#9000;</div>
+                    <h3>Advanced CLI</h3>
+                    <p>Chain flags for powerful workflows. Script it, alias it, integrate it into your dev environment.</p>
+                    <ul>
+                        <li><code>dctx ./src -c -t</code> - tree only to clipboard</li>
+                        <li><code>dctx . -d</code> - diff mode</li>
+                        <li><code>dctx template build</code> - custom formats</li>
+                    </ul>
+                </div>
+                <div class="ecosystem-card upcoming">
+                    <div class="ecosystem-icon">&#128230;</div>
+                    <h3>Language Libraries</h3>
+                    <p>Expose dctx's powerful context-gathering APIs directly in your software. Build AI tools with native context awareness.</p>
+                    <ul>
+                        <li>Rust crate (dctx-core)</li>
+                        <li>Go module</li>
+                        <li>Node.js package (npm)</li>
+                        <li>Python package (pip)</li>
+                    </ul>
+                </div>
+                <div class="ecosystem-card upcoming">
+                    <div class="ecosystem-icon">&#128421;</div>
+                    <h3>Desktop App</h3>
+                    <p>For non-developers who want the POWER of dctx. Click, gather context, paste. Continue working with LLMs in copy-paste manner, saving millions of tokens with intelligent diffing.</p>
+                    <ul>
+                        <li>Visual file browser</li>
+                        <li>One-click context generation</li>
+                        <li>macOS, Windows, Linux</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2>Simple pricing</h2>
+                <p>Start free with the CLI. Upgrade to Desktop for the full experience.</p>
+            </div>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3>CLI</h3>
+                        <div class="price">Free</div>
+                        <div class="subtitle">Open source, forever free</div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>Full context generation</li>
+                        <li>Intelligent diff tracking</li>
+                        <li>Global + local ignore rules</li>
+                        <li>Custom template compilation</li>
+                        <li>Text output & versioning</li>
+                        <li>Clipboard integration</li>
+                        <li>Community support</li>
+                    </ul>
+                    <a href="#open-source" class="btn btn-secondary">Get Started Free</a>
+                </div>
+                <div class="pricing-card featured">
+                    <div class="pricing-header">
+                        <h3>Desktop App</h3>
+                        <div class="price">$29 <span>one-time</span></div>
+                        <div class="subtitle">Pay once, own forever</div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li>Everything in CLI</li>
+                        <li>Beautiful native UI</li>
+                        <li>Visual file browser</li>
+                        <li>One-click context copy</li>
+                        <li>Project favorites</li>
+                        <li>Automatic updates</li>
+                        <li>Priority support</li>
+                    </ul>
+                    <a href="#" class="btn btn-primary">Buy Desktop App</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Open Source Section -->
+    <section class="open-source" id="open-source">
+        <div class="container">
+            <div class="open-source-content">
+                <div class="open-source-text">
+                    <h2>Open Source at Heart</h2>
+                    <p>dctx is MIT licensed and built in public. The core engine powers both the CLI and Desktop app. Contributions welcome.</p>
+                    <div class="open-source-stats">
+                        <div class="stat">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Rust</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">0</div>
+                            <div class="stat-label">Dependencies</div>
+                        </div>
+                        <div class="stat">
+                            <div class="stat-value">&lt;1MB</div>
+                            <div class="stat-label">Binary Size</div>
+                        </div>
+                    </div>
+                    <a href="https://github.com/tejl/dctx" class="btn btn-secondary">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                        Star on GitHub
+                    </a>
+                </div>
+                <div class="github-card">
+                    <div class="github-card-header">
+                        <div class="github-icon">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                        </div>
+                        <div>
+                            <h4>dctx</h4>
+                            <p>Directory context for AI assistants</p>
+                        </div>
+                    </div>
+                    <pre># Clone the repository
+git clone https://github.com/tejl/dctx.git
+
+# Build from source
+cd dctx && cargo build --release
+
+# Or install via script
+curl -fsSL https://dctx.app/install.sh | sh</pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">dctx</div>
+                <ul class="footer-links">
+                    <li><a href="https://github.com/tejl/dctx">GitHub</a></li>
+                    <li><a href="https://github.com/tejl/dctx/blob/main/README.md">Documentation</a></li>
+                    <li><a href="https://github.com/tejl/dctx/issues">Support</a></li>
+                    <li><a href="mailto:hello@dctx.app">Contact</a></li>
+                </ul>
+            </div>
+            <div class="footer-copy">
+                &copy; 2025 dctx by TEJL. MIT License. Made with care for developers.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Navbar scroll effect
+        const nav = document.getElementById('nav');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Example tabs
+        function showExample(type) {
+            document.querySelectorAll('.example-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.example-content').forEach(content => {
+                content.style.display = 'none';
+            });
+
+            event.target.classList.add('active');
+            document.getElementById('example-' + type).style.display = 'block';
+        }
+
+        // Install tabs
+        function showInstall(type) {
+            document.querySelectorAll('.install-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.hero-install pre').forEach(pre => {
+                pre.style.display = 'none';
+            });
+
+            event.target.classList.add('active');
+            document.getElementById('install-' + type).style.display = 'block';
+        }
+    </script>
+</body>
+</html>

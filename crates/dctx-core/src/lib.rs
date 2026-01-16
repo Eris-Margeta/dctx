@@ -17,4 +17,5 @@ pub use datatypes::{DirContextTreeNode, IgnoreRule, NodeType, PatternType};
 pub use diff::{ChangeType, DiffReport};
 pub use git_safety::ensure_local_gitignore_is_safe;
 pub use registry::ProjectRegistry;
+pub use template::{CompiledTemplate, Template, TemplateValidationError};
 pub use version::Version;
