@@ -1,107 +1,127 @@
 {
-  "class": "003-05/25-01",
-  "referenceNumber": "251-01-03-25-04-WO-001",
-  "date": "2026-01-12",
-  "executor": "Eris Margeta",
-  "subject": "Implementation of Phase 3: Centralized Registry and Cache Architecture",
-  "timeExpenditure": "1h 30m",
-  "materialExpenditure": "Consumables"
-}
-{
-  "class": "003-05/25-01",
-  "referenceNumber": "251-01-03-25-04-WO-002",
-  "date": "2026-01-12",
-  "executor": "Eris Margeta",
-  "subject": "Implementation of Phase 3.3: Output Redirection and Git Safety",
-  "timeExpenditure": "1h 00m",
-  "materialExpenditure": "Consumables"
-}
-{
-  "class": "003-05/25-01",
-  "referenceNumber": "251-01-03-25-04-WO-003",
-  "date": "2026-01-12",
-  "executor": "Eris Margeta",
-  "subject": "Creation of ADR-005: Enhanced Git Safety & Global Integration",
-  "timeExpenditure": "0h 15m",
-  "materialExpenditure": "Consumables"
-}
-  {
-  "class": "003-05/25-01",
-  "referenceNumber": "251-01-03-25-04-WO-006",
-  "date": "2026-01-12",
-  "executor": "Eris Margeta",
-  "subject": "Update ADR-005: Version-Aware Configuration and Safety Protocols",
-  "timeExpenditure": "0h 15m",
-  "materialExpenditure": "Consumables"
-}
-{
-  "class": "003-05/25-01",
-  "referenceNumber": "251-01-03-25-04-WO-007",
-  "date": "2026-01-12",
-  "executor": "Eris Margeta",
-  "subject": "Implementation of ADR-005 Phase 2: Runtime Fast-Path & Installer Versioning",
-  "timeExpenditure": "1h 15m",
-  "materialExpenditure": "Consumables"
-}
-  {
-  "class": "003-05/25-01",
-  "referenceNumber": "251-01-03-25-04-WO-008",
-  "date": "2026-01-12",
-  "executor": "Eris Margeta",
-  "subject": "Establish Versioning Strategy and Initialize VERSION File",
-  "timeExpenditure": "0h 10m",
-  "materialExpenditure": "None"
-}
-{
-  "class": "003-05/25-01",
-  "referenceNumber": "251-01-03-25-04-WO-009",
-  "date": "2026-01-12",
-  "executor": "Eris Margeta",
-  "subject": "Creation of ADR-006 and Version Synchronization Script",
-  "timeExpenditure": "0h 30m",
-  "materialExpenditure": "Consumables"
-}
-  {
-  "class": "003-05/25-01",
-  "referenceNumber": "251-01-03-25-04-WO-010",
-  "date": "2026-01-12",
-  "executor": "Eris Margeta",
-  "subject": "Phase 3 Closure: Script Activation and Documentation Update",
-  "timeExpenditure": "0h 15m",
-  "materialExpenditure": "None"
-}
-  {
-  "class": "003-05/25-01",
-  "referenceNumber": "251-01-03-25-04-WO-011",
-  "date": "2026-01-12",
-  "executor": "Eris Margeta",
-  "subject": "Verification and Finalization of Project Development Elaboration",
-  "timeExpenditure": "0h 05m",
-  "materialExpenditure": "None"
-}
-{
-  "class": "003-05/25-01",
-  "referenceNumber": "251-01-03-25-04-WO-012",
-  "date": "2026-01-12",
-  "executor": "Eris Margeta",
-  "subject": "Critical Fix: Global Gitignore Duplication & Recursion Logic",
-  "timeExpenditure": "0h 30m",
-  "materialExpenditure": "Consumables"
-}
-  {
-  "class": "003-05/25-01",
-  "referenceNumber": "251-01-03-25-04-WO-013",
-  "date": "2026-01-12",
-  "executor": "Eris Margeta",
-  "subject": "Update Function Definition Schema for Richer Logging",
-  "timeExpenditure": "0h 05m",
-  "materialExpenditure": "None"
-}
-
-  [
-  {
-    "name": "logWorkOrder",
-    "arguments": {
+  "workOrders": [
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-001",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Implementation of Phase 3: Centralized Registry and Cache Architecture",
+      "description": "",
+      "tasks": [],
+      "timeExpenditure": "1h 30m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-002",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Implementation of Phase 3.3: Output Redirection and Git Safety",
+      "description": "",
+      "tasks": [],
+      "timeExpenditure": "1h 00m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-003",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Creation of ADR-005: Enhanced Git Safety & Global Integration",
+      "description": "",
+      "tasks": [],
+      "timeExpenditure": "0h 15m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-006",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Update ADR-005: Version-Aware Configuration and Safety Protocols",
+      "description": "",
+      "tasks": [],
+      "timeExpenditure": "0h 15m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-007",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Implementation of ADR-005 Phase 2: Runtime Fast-Path & Installer Versioning",
+      "description": "",
+      "tasks": [],
+      "timeExpenditure": "1h 15m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-008",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Establish Versioning Strategy and Initialize VERSION File",
+      "description": "",
+      "tasks": [],
+      "timeExpenditure": "0h 10m",
+      "materialExpenditure": "None"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-009",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Creation of ADR-006 and Version Synchronization Script",
+      "description": "",
+      "tasks": [],
+      "timeExpenditure": "0h 30m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-010",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Phase 3 Closure: Script Activation and Documentation Update",
+      "description": "",
+      "tasks": [],
+      "timeExpenditure": "0h 15m",
+      "materialExpenditure": "None"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-011",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Verification and Finalization of Project Development Elaboration",
+      "description": "",
+      "tasks": [],
+      "timeExpenditure": "0h 05m",
+      "materialExpenditure": "None"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-012",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Critical Fix: Global Gitignore Duplication & Recursion Logic",
+      "description": "",
+      "tasks": [],
+      "timeExpenditure": "0h 30m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-04-WO-013",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Update Function Definition Schema for Richer Logging",
+      "description": "",
+      "tasks": [],
+      "timeExpenditure": "0h 05m",
+      "materialExpenditure": "None"
+    },
+    {
       "class": "003-05/25-01",
       "referenceNumber": "251-01-03-25-04-WO-014",
       "date": "2026-01-12",
@@ -116,14 +136,8 @@
       ],
       "timeExpenditure": "1h 30m",
       "materialExpenditure": "Consumables"
-    }
-  }
-]
-
-  [
-  {
-    "name": "logWorkOrder",
-    "arguments": {
+    },
+    {
       "class": "003-05/25-01",
       "referenceNumber": "251-01-03-25-04-WO-015",
       "date": "2026-01-12",
@@ -138,13 +152,8 @@
       ],
       "timeExpenditure": "0h 45m",
       "materialExpenditure": "Consumables"
-    }
-  }
-]
-  [
-  {
-    "name": "logWorkOrder",
-    "arguments": {
+    },
+    {
       "class": "003-05/25-01",
       "referenceNumber": "251-01-03-25-04-WO-016",
       "date": "2026-01-12",
@@ -159,13 +168,8 @@
       ],
       "timeExpenditure": "0h 15m",
       "materialExpenditure": "Consumables"
-    }
-  }
-]
-  [
-  {
-    "name": "logWorkOrder",
-    "arguments": {
+    },
+    {
       "class": "003-05/25-01",
       "referenceNumber": "251-01-03-25-04-WO-017",
       "date": "2026-01-12",
@@ -180,13 +184,8 @@
       ],
       "timeExpenditure": "1h 00m",
       "materialExpenditure": "Consumables"
-    }
-  }
-]
-  [
-  {
-    "name": "logWorkOrder",
-    "arguments": {
+    },
+    {
       "class": "003-05/25-01",
       "referenceNumber": "251-01-03-25-04-WO-018",
       "date": "2026-01-12",
@@ -198,13 +197,8 @@
       ],
       "timeExpenditure": "0h 05m",
       "materialExpenditure": "None"
-    }
-  }
-]
-  [
-  {
-    "name": "logWorkOrder",
-    "arguments": {
+    },
+    {
       "class": "003-05/25-01",
       "referenceNumber": "251-01-03-25-04-WO-019",
       "date": "2026-01-12",
@@ -218,13 +212,8 @@
       ],
       "timeExpenditure": "0h 10m",
       "materialExpenditure": "None"
-    }
-  }
-]
-  [
-  {
-    "name": "logWorkOrder",
-    "arguments": {
+    },
+    {
       "class": "003-05/25-01",
       "referenceNumber": "251-01-03-25-04-WO-020",
       "date": "2026-01-12",
@@ -236,240 +225,250 @@
       ],
       "timeExpenditure": "0h 05m",
       "materialExpenditure": "None"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-022",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Phase 5 Execution: Logic Remediation, Config Expansion & Tree-Only Mode",
+      "description": "Implementation of Phase 5 tasks as defined in PROJECT-DEVELOPMENT-ELABORATION.md. This involves fixing potential silent failures in text output generation, adding configuration to toggle diff file creation, implementing the Tree-Only CLI flag, and verifying binary state persistence logic.",
+      "tasks": [
+        "Update crates/dctx-core/src/config.rs: Add 'text_output_mode_generates_diff_files' (default false).",
+        "Update crates/dctx-core/src/llm_formatter.rs: Implement 'tree_only' boolean logic to skip file content generation.",
+        "Update crates/dctx-cli/src/main.rs: Implement '-t' argument parsing.",
+        "Update crates/dctx-cli/src/main.rs: Implement logic to respect 'text_output_mode_generates_diff_files'.",
+        "Update crates/dctx-cli/src/main.rs: Add verbose logging to output generation path to diagnose Phase 5.1 issues."
+      ],
+      "timeExpenditure": "1h 30m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-023",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Phase 5.4: System Integrity & Persistence Verification",
+      "description": "Creation of an isolated shell script (tools/test-integrity.sh) to verify ADR-001 and ADR-002. The script will mock the XDG environment variables to prevent pollution of the host system, run the compiled dctx binary, and assert the correct creation of the binary cache, registry entries, and version increments.",
+      "tasks": [
+        "Create tools/test-integrity.sh: Implement isolated environment setup (XDG_CACHE_HOME, XDG_CONFIG_HOME).",
+        "Implement Test Case 1: Fresh Snapshot (V1). Verify creation of .dctx binary in cache and registry entry.",
+        "Implement Test Case 2: Incremental Update (V1.1). Modify a file, run dctx, verify version bump and diff generation.",
+        "Implement Test Case 3: Tree-Only Mode. Verify -t flag functionality.",
+        "Implement Test Case 4: Massive Change Trigger. Delete all files, run dctx, verify Major bump (V2) and diff cleanup."
+      ],
+      "timeExpenditure": "0h 45m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-025",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "CORRECTIVE: Fix Environment Isolation in Integrity Test",
+      "description": "Restructuring tools/test-integrity.sh to prevent the mock HOME environment from interfering with the Cargo build process. The build step will now run in the host environment, and environment overrides will be applied specifically to the dctx execution steps.",
+      "tasks": [
+        "Update tools/test-integrity.sh: Move environment exports after the build step."
+      ],
+      "timeExpenditure": "0h 05m",
+      "materialExpenditure": "N/A"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-026",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "CORRECTIVE: Standardize Cache Path Resolution on macOS",
+      "description": "The current implementation of get_cache_dir strictly enforces macOS standards (~/Library/Caches) while ignoring the XDG_CACHE_HOME environment variable. This breaks the isolated testing environment and contradicts the behavior of the config directory resolution. This order updates the logic to prioritize XDG variables if present, ensuring testability and standard CLI behavior.",
+      "tasks": [
+        "Update crates/dctx-core/src/config.rs: Modify get_cache_dir to check XDG_CACHE_HOME before falling back to ~/Library/Caches on macOS.",
+        "Operator Action: Re-run tools/test-integrity.sh."
+      ],
+      "timeExpenditure": "0h 10m",
+      "materialExpenditure": "N/A"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-027",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Standardization of Cache Paths (Unix/Windows)",
+      "description": "Refactoring config.rs to treat macOS and Linux uniformly regarding cache storage (~/.cache/dctx), while maintaining standard Windows behavior (%LOCALAPPDATA%). This resolves the platform discrepancy in testing and simplifies the directory structure logic.",
+      "tasks": [
+        "Update crates/dctx-core/src/config.rs: Rewrite get_cache_dir to use a binary switch (Windows vs Unix-like).",
+        "Operator Action: Re-run tools/test-integrity.sh to confirm the fix."
+      ],
+      "timeExpenditure": "0h 05m",
+      "materialExpenditure": "N/A"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-030",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "CRITICAL CORRECTIVE: Fix Template Parser State Machine Hijack",
+      "description": "The template parser incorrectly identified content lines wrapped in brackets (e.g. [DIRECTORY:...]) as section headers, causing it to abort parsing the [LAYOUT] section. This resulted in blank output files. The fix restricts section header detection to explicitly known keywords.",
+      "tasks": [
+        "Update crates/dctx-core/src/template.rs: Restrict section switching to explicitly matched keywords ([VARIABLES], [LAYOUT], etc.) instead of generic bracket checking."
+      ],
+      "timeExpenditure": "0h 10m",
+      "materialExpenditure": "N/A"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-032",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Corrective: Fix Lazy Version Bump & Clipboard Diff Logic",
+      "description": "Addressing the logic flaws identified in manual testing. 1. Fixing the 'Lazy Bump' by ensuring diff detection is sensitive enough (likely timestamp granularity). 2. Forcing diff generation in Clipboard mode when -d is passed, ignoring disk config. 3. Ensuring config.rs propagates defaults correctly.",
+      "tasks": [
+        "Update crates/dctx-cli/src/main.rs: Modify logic to FORCE diff generation if writing_diff_only is true, regardless of config.",
+        "Update crates/dctx-core/src/walker.rs: Ensure Walker captures nanoseconds if possible, or at least ensures strict comparison.",
+        "Update crates/dctx-core/src/diff.rs: Review is_file_modified logic."
+      ],
+      "timeExpenditure": "0h 20m",
+      "materialExpenditure": "N/A"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-033",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Phase 5.5: Implementation of ADR-007 Triple-Run Test Script",
+      "description": "Rewriting tools/test-integrity.sh to adhere to the newly established Triple-Run Protocol. The script will perform rigorous verification of Fresh Start, Incremental Updates, Config Propagation, and Major Resets, testing each scenario in both Text and Clipboard modes with confirmation runs.",
+      "tasks": [
+        "Rewrite tools/test-integrity.sh: Implement Triple-Run logic (Trigger -> Confirm -> Cross-Check).",
+        "Add explicit assertions for version bumping and diff generation.",
+        "Add validation for 'text_output_mode_generates_diff_files' config behavior."
+      ],
+      "timeExpenditure": "0h 30m",
+      "materialExpenditure": "N/A"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-034",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Refining Testing Strategy: Local Workspace & Stable Anchors",
+      "description": "Relocating the test environment from /tmp to tools/test_workspace to allow operator inspection. Adding 'stable' files to the test fixtures to prevent false-positive Massive Change triggers (V1->V2) during incremental tests. Implementing a 'clean-before-run' policy.",
+      "tasks": [
+        "Update tools/test-integrity.sh: Change TEST_ROOT to use a local 'test_workspace' directory.",
+        "Update tools/test-integrity.sh: Add a 'stable.txt' file in Suite 1 to ensure files_unchanged > 0 in Suite 2.",
+        "Update tools/test-integrity.sh: Remove the log dumping logic since the folder is now local and accessible."
+      ],
+      "timeExpenditure": "0h 10m",
+      "materialExpenditure": "N/A"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-035",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Corrective: Fix Test Assertion False Positive",
+      "description": "The integrity test incorrectly identifies the presence of 'FILE_CONTENT_START' in the instructions block as a failure of Tree-Only mode. The fix refines the grep pattern to look for concrete tag instances (e.g., ID=\"F...) which only appear in actual content blocks.",
+      "tasks": [
+        "Update tools/test-integrity.sh: Change grep pattern from 'FILE_CONTENT_START' to 'FILE_CONTENT_START ID=\"F'."
+      ],
+      "timeExpenditure": "0h 05m",
+      "materialExpenditure": "N/A"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-036",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Enhancement: Randomized Test Path Generation",
+      "description": "Modifying tools/test-integrity.sh to append a random 5-character suffix to the test project directory name (e.g., project-a-XY12Z). This ensures a unique hash in the registry for each execution, preventing state collisions.",
+      "tasks": [
+        "Update tools/test-integrity.sh: Implement random suffix generation.",
+        "Update tools/test-integrity.sh: Update paths to use the dynamic project name."
+      ],
+      "timeExpenditure": "0h 05m",
+      "materialExpenditure": "N/A"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-037",
+      "date": "2026-01-12",
+      "executor": "Eris Margeta",
+      "subject": "Corrective: Enable Info Logging in Clipboard Mode",
+      "description": "The current CLI implementation suppresses informational logs (State Loaded, Changes Detected) when running in clipboard mode. This prevents the user from knowing if the operation succeeded or if changes were found, and it breaks automated testing assertions. This order removes the suppression guards, allowing logs to be visible while ensuring the actual content is still routed exclusively to the clipboard.",
+      "tasks": [
+        "Update crates/dctx-cli/src/main.rs: Remove 'if !cli_config.clipboard_mode' checks around println!() statements for status updates."
+      ],
+      "timeExpenditure": "0h 05m",
+      "materialExpenditure": "N/A"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-038",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Repository Documentation Cleanup & Standardization",
+      "description": "Comprehensive cleanup of PROJECT-INTERNAL documentation structure. Fixed malformed registry.json, translated RUST-STYLE-GUIDES.md to English, corrected ADR path references, removed code fence artifacts from DEVELOPMENT-PRACTICES.md, consolidated notes files into NOTES.md, and created universal WELCOME.md entry point for AI agents.",
+      "tasks": [
+        "Fix registry.json: Convert malformed JSON to proper structure with workOrders array.",
+        "Translate RUST-STYLE-GUIDES.md from Croatian to English.",
+        "Fix DEVELOPER-GUIDE.md: Correct ADR path from crates/dctx-core/docs/ to PROJECT-INTERNAL/ARCHITECTURE/.",
+        "Fix DEVELOPMENT-PRACTICES.md: Remove erroneous markdown code fence wrapper.",
+        "Consolidate notes-during-development.txt and idea.txt into PROJECT-INTERNAL/NOTES.md.",
+        "Add 'Principle of Notes Non-Actionability' to AI-INSTRUCTIONS.md Article 2.",
+        "Create WELCOME.md as universal AI entry point; delete legacy GEMINI.md.",
+        "Update prompt.txt to reference WELCOME.md."
+      ],
+      "timeExpenditure": "0h 45m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-039",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Creation of Universal Template Repository Structure",
+      "description": "Created repo-template/ folder containing a project-agnostic template structure for future repositories. Includes all PROJECT-INTERNAL documentation with placeholders, generic README and project-meta.yaml templates, disabled GitHub workflow files, and a simplified sync-version.sh script.",
+      "tasks": [
+        "Create repo-template/ folder structure with PROJECT-INTERNAL/, .github/, tools/, apps/, packages/, crates/.",
+        "Copy and genericize AI-INSTRUCTIONS.md, DEVELOPER-GUIDE.md, DEVELOPMENT-PRACTICES.md.",
+        "Create template PROJECT-DEVELOPMENT-ELABORATION.md with placeholder structure.",
+        "Create template README.md and project-meta.yaml.",
+        "Copy config files (.gitignore, .dctxignore, function-calls.json, etc.).",
+        "Modify sync-version.sh to only update project-meta.yaml.",
+        "Add .gitkeep files to empty placeholder directories.",
+        "Preserve RUST-STYLE-GUIDES.md as example technology-specific guide."
+      ],
+      "timeExpenditure": "0h 30m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-040",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Config Variable Rename: output_mode to text_output_enabled",
+      "description": "Renamed legacy output_mode (enum: Both/TextOnly/BinaryOnly) to text_output_enabled (bool) to accurately reflect that binary state is ALWAYS written to system cache, and this config only controls whether .txt files are written to local .dctx/ directory. Added backward compatibility for legacy config values.",
+      "tasks": [
+        "Update crates/dctx-core/src/config.rs: Remove OutputMode enum, rename field to text_output_enabled: bool.",
+        "Update crates/dctx-core/src/config.rs: Add backward-compatible parser for legacy 'output_mode' values.",
+        "Update crates/dctx-cli/src/main.rs: Remove OutputMode import, update logic to use boolean directly.",
+        "Update tools/install.sh: Change default config to use text_output_enabled = true.",
+        "Run tools/test-integrity.sh: Verify all 5 test suites pass."
+      ],
+      "timeExpenditure": "0h 20m",
+      "materialExpenditure": "Consumables"
+    },
+    {
+      "class": "003-05/25-01",
+      "referenceNumber": "251-01-03-25-05-WO-041",
+      "date": "2026-01-16",
+      "executor": "Eris Margeta",
+      "subject": "Phase 5 Closure: Update Development Status",
+      "description": "Updating PROJECT-DEVELOPMENT-ELABORATION.md to mark Phase 5 (Critical Fixes & Logic Verification) as COMPLETED. All subtasks verified: output logic remediation, diff toggle config, tree-only mode, and integrity verification tests.",
+      "tasks": [
+        "Update PROJECT-INTERNAL/DOCUMENTS/PROJECT-DEVELOPMENT-ELABORATION.md: Change Phase 5 status from PENDING to COMPLETED.",
+        "Update Phase 5 task descriptions with completion notes and checkmarks."
+      ],
+      "timeExpenditure": "0h 10m",
+      "materialExpenditure": "None"
     }
-  }
-]
-
-  {
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-022",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "Phase 5 Execution: Logic Remediation, Config Expansion & Tree-Only Mode",
-    "description": "Implementation of Phase 5 tasks as defined in PROJECT-DEVELOPMENT-ELABORATION.md. This involves fixing potential silent failures in text output generation, adding configuration to toggle diff file creation, implementing the Tree-Only CLI flag, and verifying binary state persistence logic.",
-    "tasks": [
-      "Update crates/dctx-core/src/config.rs: Add 'text_output_mode_generates_diff_files' (default false).",
-      "Update crates/dctx-core/src/llm_formatter.rs: Implement 'tree_only' boolean logic to skip file content generation.",
-      "Update crates/dctx-cli/src/main.rs: Implement '-t' argument parsing.",
-      "Update crates/dctx-cli/src/main.rs: Implement logic to respect 'text_output_mode_generates_diff_files'.",
-      "Update crates/dctx-cli/src/main.rs: Add verbose logging to output generation path to diagnose Phase 5.1 issues."
-    ],
-    "timeExpenditure": "1h 30m",
-    "materialExpenditure": "Consumables"
-  }
-}{
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-023",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "Phase 5.4: System Integrity & Persistence Verification",
-    "description": "Creation of an isolated shell script (tools/test-integrity.sh) to verify ADR-001 and ADR-002. The script will mock the XDG environment variables to prevent pollution of the host system, run the compiled dctx binary, and assert the correct creation of the binary cache, registry entries, and version increments.",
-    "tasks": [
-      "Create tools/test-integrity.sh: Implement isolated environment setup (XDG_CACHE_HOME, XDG_CONFIG_HOME).",
-      "Implement Test Case 1: Fresh Snapshot (V1). Verify creation of .dctx binary in cache and registry entry.",
-      "Implement Test Case 2: Incremental Update (V1.1). Modify a file, run dctx, verify version bump and diff generation.",
-      "Implement Test Case 3: Tree-Only Mode. Verify -t flag functionality.",
-      "Implement Test Case 4: Massive Change Trigger. Delete all files, run dctx, verify Major bump (V2) and diff cleanup."
-    ],
-    "timeExpenditure": "0h 45m",
-    "materialExpenditure": "Consumables"
-  }
-}
-  {
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-023",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "Phase 5.4: System Integrity & Persistence Verification",
-    "description": "Creation of an isolated shell script (tools/test-integrity.sh) to verify ADR-001 and ADR-002. The script will mock the XDG environment variables to prevent pollution of the host system, run the compiled dctx binary, and assert the correct creation of the binary cache, registry entries, and version increments.",
-    "tasks": [
-      "Create tools/test-integrity.sh: Implement isolated environment setup (XDG_CACHE_HOME, XDG_CONFIG_HOME).",
-      "Implement Test Case 1: Fresh Snapshot (V1). Verify creation of .dctx binary in cache and registry entry.",
-      "Implement Test Case 2: Incremental Update (V1.1). Modify a file, run dctx, verify version bump and diff generation.",
-      "Implement Test Case 3: Tree-Only Mode. Verify -t flag functionality.",
-      "Implement Test Case 4: Massive Change Trigger. Delete all files, run dctx, verify Major bump (V2) and diff cleanup."
-    ],
-    "timeExpenditure": "0h 45m",
-    "materialExpenditure": "Consumables"
-  }
-}
-  {
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-025",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "CORRECTIVE: Fix Environment Isolation in Integrity Test",
-    "description": "Restructuring tools/test-integrity.sh to prevent the mock HOME environment from interfering with the Cargo build process. The build step will now run in the host environment, and environment overrides will be applied specifically to the dctx execution steps.",
-    "tasks": [
-      "Update tools/test-integrity.sh: Move environment exports after the build step."
-    ],
-    "timeExpenditure": "0h 05m",
-    "materialExpenditure": "N/A"
-  }
-}
-
-  {
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-026",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "CORRECTIVE: Standardize Cache Path Resolution on macOS",
-    "description": "The current implementation of get_cache_dir strictly enforces macOS standards (~/Library/Caches) while ignoring the XDG_CACHE_HOME environment variable. This breaks the isolated testing environment and contradicts the behavior of the config directory resolution. This order updates the logic to prioritize XDG variables if present, ensuring testability and standard CLI behavior.",
-    "tasks": [
-      "Update crates/dctx-core/src/config.rs: Modify get_cache_dir to check XDG_CACHE_HOME before falling back to ~/Library/Caches on macOS.",
-      "Operator Action: Re-run tools/test-integrity.sh."
-    ],
-    "timeExpenditure": "0h 10m",
-    "materialExpenditure": "N/A"
-  }
-}
-  {
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-027",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "Standardization of Cache Paths (Unix/Windows)",
-    "description": "Refactoring config.rs to treat macOS and Linux uniformly regarding cache storage (~/.cache/dctx), while maintaining standard Windows behavior (%LOCALAPPDATA%). This resolves the platform discrepancy in testing and simplifies the directory structure logic.",
-    "tasks": [
-      "Update crates/dctx-core/src/config.rs: Rewrite get_cache_dir to use a binary switch (Windows vs Unix-like).",
-      "Operator Action: Re-run tools/test-integrity.sh to confirm the fix."
-    ],
-    "timeExpenditure": "0h 05m",
-    "materialExpenditure": "N/A"
-  }
-}
-  {
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-030",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "CRITICAL CORRECTIVE: Fix Template Parser State Machine Hijack",
-    "description": "The template parser incorrectly identified content lines wrapped in brackets (e.g. [DIRECTORY:...]) as section headers, causing it to abort parsing the [LAYOUT] section. This resulted in blank output files. The fix restricts section header detection to explicitly known keywords.",
-    "tasks": [
-      "Update crates/dctx-core/src/template.rs: Restrict section switching to explicitly matched keywords ([VARIABLES], [LAYOUT], etc.) instead of generic bracket checking."
-    ],
-    "timeExpenditure": "0h 10m",
-    "materialExpenditure": "N/A"
-  }
-}
-  {
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-032",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "Corrective: Fix Lazy Version Bump & Clipboard Diff Logic",
-    "description": "Addressing the logic flaws identified in manual testing. 1. Fixing the 'Lazy Bump' by ensuring diff detection is sensitive enough (likely timestamp granularity). 2. Forcing diff generation in Clipboard mode when -d is passed, ignoring disk config. 3. Ensuring config.rs propagates defaults correctly.",
-    "tasks": [
-      "Update crates/dctx-cli/src/main.rs: Modify logic to FORCE diff generation if writing_diff_only is true, regardless of config.",
-      "Update crates/dctx-core/src/walker.rs: Ensure Walker captures nanoseconds if possible, or at least ensures strict comparison.",
-      "Update crates/dctx-core/src/diff.rs: Review is_file_modified logic."
-    ],
-    "timeExpenditure": "0h 20m",
-    "materialExpenditure": "N/A"
-  }
-}
-
-  {
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-033",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "Phase 5.5: Implementation of ADR-007 Triple-Run Test Script",
-    "description": "Rewriting tools/test-integrity.sh to adhere to the newly established Triple-Run Protocol. The script will perform rigorous verification of Fresh Start, Incremental Updates, Config Propagation, and Major Resets, testing each scenario in both Text and Clipboard modes with confirmation runs.",
-    "tasks": [
-      "Rewrite tools/test-integrity.sh: Implement Triple-Run logic (Trigger -> Confirm -> Cross-Check).",
-      "Add explicit assertions for version bumping and diff generation.",
-      "Add validation for 'text_output_mode_generates_diff_files' config behavior."
-    ],
-    "timeExpenditure": "0h 30m",
-    "materialExpenditure": "N/A"
-  }
-}
-
-  {
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-034",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "Refining Testing Strategy: Local Workspace & Stable Anchors",
-    "description": "Relocating the test environment from /tmp to tools/test_workspace to allow operator inspection. Adding 'stable' files to the test fixtures to prevent false-positive Massive Change triggers (V1->V2) during incremental tests. Implementing a 'clean-before-run' policy.",
-    "tasks": [
-      "Update tools/test-integrity.sh: Change TEST_ROOT to use a local 'test_workspace' directory.",
-      "Update tools/test-integrity.sh: Add a 'stable.txt' file in Suite 1 to ensure files_unchanged > 0 in Suite 2.",
-      "Update tools/test-integrity.sh: Remove the log dumping logic since the folder is now local and accessible."
-    ],
-    "timeExpenditure": "0h 10m",
-    "materialExpenditure": "N/A"
-  }
-}
-
-{
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-035",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "Corrective: Fix Test Assertion False Positive",
-    "description": "The integrity test incorrectly identifies the presence of 'FILE_CONTENT_START' in the instructions block as a failure of Tree-Only mode. The fix refines the grep pattern to look for concrete tag instances (e.g., ID=\"F...) which only appear in actual content blocks.",
-    "tasks": [
-      "Update tools/test-integrity.sh: Change grep pattern from 'FILE_CONTENT_START' to 'FILE_CONTENT_START ID=\"F'."
-    ],
-    "timeExpenditure": "0h 05m",
-    "materialExpenditure": "N/A"
-  }
-}
-  {
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-036",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "Enhancement: Randomized Test Path Generation",
-    "description": "Modifying tools/test-integrity.sh to append a random 5-character suffix to the test project directory name (e.g., project-a-XY12Z). This ensures a unique hash in the registry for each execution, preventing state collisions.",
-    "tasks": [
-      "Update tools/test-integrity.sh: Implement random suffix generation.",
-      "Update tools/test-integrity.sh: Update paths to use the dynamic project name."
-    ],
-    "timeExpenditure": "0h 05m",
-    "materialExpenditure": "N/A"
-  }
-}
-
-  {
-  "name": "logWorkOrder",
-  "arguments": {
-    "class": "003-05/25-01",
-    "referenceNumber": "251-01-03-25-05-WO-037",
-    "date": "2026-01-12",
-    "executor": "Eris Margeta",
-    "subject": "Corrective: Enable Info Logging in Clipboard Mode",
-    "description": "The current CLI implementation suppresses informational logs (State Loaded, Changes Detected) when running in clipboard mode. This prevents the user from knowing if the operation succeeded or if changes were found, and it breaks automated testing assertions. This order removes the suppression guards, allowing logs to be visible while ensuring the actual content is still routed exclusively to the clipboard.",
-    "tasks": [
-      "Update crates/dctx-cli/src/main.rs: Remove 'if !cli_config.clipboard_mode' checks around println!() statements for status updates."
-    ],
-    "timeExpenditure": "0h 05m",
-    "materialExpenditure": "N/A"
-  }
+  ]
 }

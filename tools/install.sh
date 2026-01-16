@@ -66,8 +66,9 @@ if [ ! -f "$CONFIG_FILE" ]; then
 # dctx Global Configuration
 # Config Version: $DCTX_VERSION
 
-# Output Mode: "both", "text", "binary"
-output_mode = "both"
+# Text Output: Enable/disable writing .txt files to .dctx/ directory
+# Binary state is ALWAYS written to system cache regardless of this setting.
+text_output_enabled = true
 
 # Limit for diff files before forcing a full V-bump cleanup
 max_diff_files = 999

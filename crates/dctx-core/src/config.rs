@@ -58,7 +58,10 @@ pub const HARDCODED_IGNORE_RULES: &[&str] = &[
 
 #[derive(Debug, Clone)]
 pub struct AppConfig {
-    pub output_mode: OutputMode,
+    /// Controls whether text output files (.llmcontext.txt) are written to the
+    /// local .dctx/ directory. Binary state is ALWAYS written to system cache.
+    /// Default is TRUE for backward compatibility.
+    pub text_output_enabled: bool,
     pub max_diff_files: u32,
     pub default_template: String,
     /// Controls whether dctx automatically updates the local .gitignore file
@@ -69,17 +72,10 @@ pub struct AppConfig {
     pub text_output_mode_generates_diff_files: bool,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum OutputMode {
-    Both,
-    TextOnly,
-    BinaryOnly,
-}
-
 impl Default for AppConfig {
     fn default() -> Self {
         Self {
-            output_mode: OutputMode::Both,
+            text_output_enabled: true, // Default: write text files to .dctx/
             max_diff_files: 999,
             default_template: "default".to_string(),
             update_local_git_repo_gitignore_rules: true, // Safe default per ADR-005
@@ -178,11 +174,15 @@ fn parse_config_line(line: &str, config: &mut AppConfig) {
         let val = val.trim().trim_matches('"').trim_matches('\''); // Strip quotes
 
         match key {
+            // Legacy support: map old output_mode values to new boolean
             "output_mode" => match val {
-                "text" => config.output_mode = OutputMode::TextOnly,
-                "binary" => config.output_mode = OutputMode::BinaryOnly,
-                _ => config.output_mode = OutputMode::Both,
+                "binary" => config.text_output_enabled = false,
+                _ => config.text_output_enabled = true, // "both" or "text" => enable text
             },
+            // New config key (preferred)
+            "text_output_enabled" => {
+                config.text_output_enabled = val == "true";
+            }
             "max_diff_files" => {
                 if let Ok(num) = val.parse::<u32>() {
                     config.max_diff_files = num;

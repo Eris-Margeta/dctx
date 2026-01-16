@@ -21,7 +21,7 @@ The project is a monorepo containing:
 
 ## 2. STRICT OPERATIONAL PROTOCOLS (NON-NEGOTIABLE)
 
-### A0: Main entry point: GEMINI.md
+### A0: Main entry point: WELCOME.md
 ### A1: Read ALL of the documents in the PROJECT-INTERNAL folder. They are very important before you continue development.
 
 ### A. THE "FULL FILE" MANDATE
