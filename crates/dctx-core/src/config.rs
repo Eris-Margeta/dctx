@@ -140,6 +140,18 @@ pub fn get_config_file_path() -> Option<PathBuf> {
     get_config_dir().map(|p| p.join(CONFIG_FILENAME))
 }
 
+/// Returns the path to the compiled templates directory.
+/// Located in cache: ~/.cache/dctx/templates/
+pub fn get_compiled_templates_dir() -> Option<PathBuf> {
+    get_cache_dir().map(|p| p.join("templates"))
+}
+
+/// Returns the path to a specific compiled template binary file.
+/// Example: ~/.cache/dctx/templates/my_template.bin
+pub fn get_compiled_template_path(template_name: &str) -> Option<PathBuf> {
+    get_compiled_templates_dir().map(|p| p.join(format!("{}.bin", template_name)))
+}
+
 // --- PARSER (Zero Dep) ---
 
 pub fn load_app_config() -> AppConfig {

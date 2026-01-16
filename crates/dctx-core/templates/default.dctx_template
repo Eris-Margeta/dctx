@@ -70,7 +70,7 @@ instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}
 # and NOT included here.
 # ==============================================================================
 [LAYOUT]
-[{{folder_denotation_marker}}:{{project}}]
+[{{folder_denotation_marker}}:{{{project}}}]
 
 {{start_marker_open}}{{instr_marker}}{{start_marker_close}}
 {{instructions_text}}
