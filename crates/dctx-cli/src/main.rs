@@ -2,7 +2,7 @@
 
 mod platform;
 
-use dctx_core::config::{self, OutputMode};
+use dctx_core::config;
 use dctx_core::diff::{self, DiffReport};
 use dctx_core::git_safety;
 use dctx_core::ignore;
@@ -300,10 +300,9 @@ fn run_headless_mode(cli_config: CliConfig) {
     }
 
     // 9. Generate Output
-    let should_generate_output = match app_config.output_mode {
-        OutputMode::BinaryOnly => false,
-        _ => true,
-    };
+    // Binary state is ALWAYS written to cache (done above).
+    // Text output to .dctx/ is controlled by config.
+    let should_generate_output = app_config.text_output_enabled;
 
     if should_generate_output {
         let mut output_buffer = Vec::new();
