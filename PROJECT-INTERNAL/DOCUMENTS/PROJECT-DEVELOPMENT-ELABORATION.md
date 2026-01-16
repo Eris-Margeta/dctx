@@ -54,7 +54,7 @@ The `tools/install.sh` script manages compilation and installation on POSIX syst
 *   **Phase 3: Architectural Realignment (ADR-001/005/006):** `COMPLETED`
 *   **Phase 4: Output Parity & Diffing (ADR-002):** `COMPLETED`
 *   **Phase 5: Critical Fixes & Logic Verification:** `COMPLETED`
-*   **Phase 6: The AOT Templating Engine (ADR-003):** `PENDING`
+*   **Phase 6: The AOT Templating Engine (ADR-003):** `COMPLETED`
 *   **Phase 7: Final Polish:** `PENDING`
 
 ---
@@ -148,24 +148,29 @@ The `tools/install.sh` script manages compilation and installation on POSIX syst
 
 ---
 
-### **Phase 6: The AOT Templating Engine (ADR-003) (PENDING)**
+### **Phase 6: The AOT Templating Engine (ADR-003) (COMPLETED)**
 
 **Goal:** Implement the "Ahead-of-Time" compiled template system for custom templates. **Note:** The "Default" template is hardcoded (compiled into the binary) and does *not* use this workflow. This phase is exclusively for enabling users to build their own `.dctx_template` files.
 
-*   **6.1. Template Compilation Logic (The "Build" Command)**
+*   **6.1. Template Compilation Logic (The "Build" Command)** ✓
     *   **Context:** Parsing text templates at runtime is slow. We want to "pre-compile" them into an optimized binary format or valid struct representation when the user runs `dctx template build`.
-    *   `6.1.a.` **Syntax Validation:** Before building, the system must parse the `.dctx_template` file and check for required sections (`[VARIABLES]`, `[LAYOUT]`) and valid placeholder syntax. Report precise errors to the user.
-    *   `6.1.b.` **Pass 1 Resolution (Pre-computation):** Resolve all static `{{VAR}}` references within the template during the build phase. The "compiled" template should have these strings already replaced, so runtime only handles `{{{data}}}`.
-    *   `6.1.c.` **Serialization:** Save the validated, pre-resolved template struct to `~/.cache/dctx/templates/<name>.bin` (using `bincode` or similar lightweight serialization).
-*   **6.2. CLI Integration**
-    *   `6.2.a.` Implement `dctx template build <path/to/template.dctx_template>` subcommand.
-    *   `6.2.b.` On success, print: `✅ Template built! To use it, set 'default_template = "<name>"' in your config.toml`.
-*   **6.3. Runtime Loading (Custom Path)**
-    *   `6.3.a.` Update `llm_formatter.rs`: Check `AppConfig.default_template`.
-    *   `6.3.b.` **Logic:**
-        *   If `default`, use the hardcoded `include_str!`.
-        *   If `other`, look for `~/.cache/dctx/templates/other.bin`. Load it directly into the `Template` struct.
-    *   `6.3.c.` **Pass 2 (Data Injection):** This remains the same for both default and custom templates: injecting runtime data (`node`, `file`, `project`) into the layout.
+    *   `6.1.a.` **Syntax Validation:** ✓ Implemented in `template.rs::Template::validate()`. Checks for required `[LAYOUT]` section and validates that all `{{VAR}}` references exist in `[VARIABLES]`. Distinguishes between `{{VAR}}` (config) and `{{{DATA}}}` (runtime).
+    *   `6.1.b.` **Pass 1 Resolution (Pre-computation):** ✓ Implemented in `template.rs::Template::compile()`. Resolves all static `{{VAR}}` references during build. Compiled templates only contain `{{{data}}}` placeholders.
+    *   `6.1.c.` **Serialization:** ✓ Implemented zero-dependency binary format with magic bytes (`DCTXTMPL`), version header, and structured field storage. Saved to `~/.cache/dctx/templates/<name>.bin`.
+*   **6.2. CLI Integration** ✓
+    *   `6.2.a.` ✓ Implemented `dctx template build <path>` and `dctx template list` subcommands.
+    *   `6.2.b.` ✓ Success message includes config instructions with path to `config.toml`.
+*   **6.3. Runtime Loading (Custom Path)** ✓
+    *   `6.3.a.` ✓ Updated `llm_formatter.rs` with `load_template()` function and `generate_llm_context_with_template()`.
+    *   `6.3.b.` **Logic:** ✓
+        *   If `default`, uses hardcoded `include_str!`.
+        *   If other, loads from `~/.cache/dctx/templates/<name>.bin` via `CompiledTemplate::load_from_file()`.
+    *   `6.3.c.` **Pass 2 (Data Injection):** ✓ Works identically for both default and custom templates.
+
+**Implementation Notes:**
+*   Added 28 tests in `template.rs` covering validation, compilation, and serialization roundtrips.
+*   Updated default template: Changed `{{project}}` to `{{{project}}}` (runtime data, not config variable).
+*   All 181 unit tests pass. All 5 integration test suites pass.
 
 ---
 

@@ -1,11 +1,43 @@
+use crate::config;
 use crate::datatypes::{DirContextTreeNode, NodeType};
 use crate::diff::{ChangeType, DiffReport};
-use crate::template::{self, Template};
+use crate::template::{self, CompiledTemplate, Template};
 use crate::version::Version;
 use std::io::{self, Write};
 
 // The default template raw string.
 const DEFAULT_TEMPLATE_RAW: &str = include_str!("../templates/default.dctx_template");
+
+/// Loads a template by name.
+/// - If name is "default", returns the hardcoded default template.
+/// - Otherwise, attempts to load a compiled template from the cache.
+pub fn load_template(template_name: &str) -> io::Result<Template> {
+    if template_name == "default" {
+        // Use hardcoded default template
+        Ok(Template::parse(DEFAULT_TEMPLATE_RAW))
+    } else {
+        // Try to load compiled template
+        let compiled_path = config::get_compiled_template_path(template_name).ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                "Could not determine compiled template path",
+            )
+        })?;
+
+        if !compiled_path.exists() {
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                format!(
+                    "Compiled template '{}' not found. Run 'dctx template build' first.\nExpected at: {:?}",
+                    template_name, compiled_path
+                ),
+            ));
+        }
+
+        let compiled = CompiledTemplate::load_from_file(&compiled_path)?;
+        Ok(compiled.to_template())
+    }
+}
 
 // Branding: DCTX
 const VERSION_HEADER_PREFIX: &str = "[DCTX_LLM_CONTEXT_SNAPSHOT_";
@@ -14,6 +46,9 @@ const VERSION_HEADER_SUFFIX: &str = "]";
 const DIFF_HEADER_PREFIX: &str = "[DCTX_LLM_CONTEXT_DIFF_";
 
 /// Generates the full LLM context file (Snapshot).
+///
+/// If `template_name` is None or "default", uses the hardcoded default template.
+/// Otherwise, attempts to load a compiled custom template.
 pub fn generate_llm_context<W: Write>(
     writer: &mut W,
     root: &DirContextTreeNode,
@@ -21,8 +56,20 @@ pub fn generate_llm_context<W: Write>(
     project_name: &str,
     tree_only: bool,
 ) -> io::Result<()> {
-    // 1. Parse Template
-    let mut tmpl = Template::parse(DEFAULT_TEMPLATE_RAW);
+    generate_llm_context_with_template(writer, root, version, project_name, tree_only, "default")
+}
+
+/// Generates the full LLM context file using a specific template.
+pub fn generate_llm_context_with_template<W: Write>(
+    writer: &mut W,
+    root: &DirContextTreeNode,
+    version: &Version,
+    project_name: &str,
+    tree_only: bool,
+    template_name: &str,
+) -> io::Result<()> {
+    // 1. Load Template
+    let mut tmpl = load_template(template_name)?;
 
     // 2. Inject Runtime Variables
     // Make project name available to the template engine as "project"
@@ -60,7 +107,26 @@ pub fn generate_diff_context<W: Write>(
     old_version: &Version,
     new_version: &Version,
 ) -> io::Result<()> {
-    let tmpl = Template::parse(DEFAULT_TEMPLATE_RAW);
+    generate_diff_context_with_template(
+        writer,
+        new_root,
+        diff_report,
+        old_version,
+        new_version,
+        "default",
+    )
+}
+
+/// Generates the Diff context file using a specific template.
+pub fn generate_diff_context_with_template<W: Write>(
+    writer: &mut W,
+    new_root: &DirContextTreeNode,
+    diff_report: &DiffReport,
+    old_version: &Version,
+    new_version: &Version,
+    template_name: &str,
+) -> io::Result<()> {
+    let tmpl = load_template(template_name)?;
 
     // 1. Write Diff Header
     // [DCTX_LLM_CONTEXT_DIFF_V{Version}]
