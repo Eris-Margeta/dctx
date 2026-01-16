@@ -87,7 +87,7 @@ dctx/
 #### **Architectural Decision Records (ADRs)**
 Significant architectural decisions, their context, and their consequences are formally documented in Architecture Decision Records (ADRs). This practice ensures that the reasoning behind our technical choices is preserved and accessible.
 
-All ADRs are located in the `crates/dctx-core/docs/` directory.
+All ADRs are located in the `PROJECT-INTERNAL/ARCHITECTURE/` directory.
 *   **ADR-001:** System Architecture (Centralized State).
 *   **ADR-002:** Versioning & Recovery.
 *   **ADR-003:** Templating Engine.

@@ -1,44 +1,44 @@
-### **Interni Vodič za Pisanje Rust Koda**
+# Rust Code Style Guide
 
-**Status:** Aktivan
-**Svrha:** Ovaj dokument definira standarde i najbolje prakse za pisanje Rust koda unutar naše tvrtke. Cilj je osigurati da je sav kod konzistentan, čitljiv, idiomatski i robustan. Pridržavanje ovih pravila je ključno za dugoročnu održivost naših projekata.
-
----
-
-## **1. Alati za Kvalitetu Koda**
-
-Naš razvojni proces se oslanja na dva temeljna alata iz Rust ekosustava kako bi se automatizirala i standardizirala kvaliteta koda.
-
-### **1.1. Formatiranje: `rustfmt`**
-
-Sve rasprave o stilu (razmaci, prijelomi linija, uvlačenje) su eliminirane korištenjem službenog Rust formatera.
-
-*   **Alat:** `rustfmt`
-*   **Konfiguracija:** Sva pravila su centralizirana u `rustfmt.toml` datoteci u korijenu projekta.
-*   **Pravilo:** Prije svakog `git commit`, developer je dužan pokrenuti `cargo fmt --all` kako bi osigurao da je kod formatiran prema standardu. CI pipeline će provjeravati formatiranje i odbaciti promjene koje nisu u skladu s pravilima.
-
-### **1.2. Linting (Statička Analiza): `clippy`**
-
-Clippy je naš "virtualni senior developer" koji pronalazi česte greške, neidiomatski kod, potencijalne probleme s performansama i predlaže poboljšanja.
-
-*   **Alat:** `clippy`
-*   **Konfiguracija:** Pravila su centralno definirana u `Cargo.toml` datoteci radnog prostora (`[workspace.lints.clippy]`).
-*   **Pravilo:** Naš CI pipeline pokreće `cargo clippy` sa zastavicom koja sva upozorenja (`warnings`) tretira kao greške (`errors`). Developer je dužan pokrenuti `cargo clippy --workspace` lokalno kako bi ispravio sve prijavljene probleme prije slanja koda na reviziju.
+**Status:** Active
+**Purpose:** This document defines the standards and best practices for writing Rust code. The goal is to ensure that all code is consistent, readable, idiomatic, and robust. Adherence to these rules is crucial for the long-term maintainability of projects using this technology stack.
 
 ---
 
-## **2. Idiomatsko Pisanje Koda**
+## **1. Code Quality Tools**
 
-Ovo su ključni obrasci na koje `clippy` često upozorava, a njihovo usvajanje čini kod čišćim, sigurnijim i lakšim za čitanje.
+Our development process relies on two fundamental tools from the Rust ecosystem to automate and standardize code quality.
 
-### **2.1. Iteratori umjesto C-style Petlji**
+### **1.1. Formatting: `rustfmt`**
 
-Rustov sustav iteratora je moćan i siguran. Ručno upravljanje indeksima je sklono greškama i smatra se neidiomatskim.
+All discussions about style (spacing, line breaks, indentation) are eliminated by using the official Rust formatter.
 
-*   **Problem:** Korištenje `for i in 0..vec.len() { vec[i] }`.
-*   **Rješenje:** Koristite iteratore direktno.
+*   **Tool:** `rustfmt`
+*   **Configuration:** All rules are centralized in a `rustfmt.toml` file in the project root.
+*   **Rule:** Before every `git commit`, the developer is required to run `cargo fmt --all` to ensure the code is formatted according to the standard. The CI pipeline will check formatting and reject changes that do not comply with the rules.
 
-*   **Loš Primjer (izbjegavati):**
+### **1.2. Linting (Static Analysis): `clippy`**
+
+Clippy is our "virtual senior developer" that finds common errors, non-idiomatic code, potential performance issues, and suggests improvements.
+
+*   **Tool:** `clippy`
+*   **Configuration:** Rules are centrally defined in the workspace `Cargo.toml` file (`[workspace.lints.clippy]`).
+*   **Rule:** Our CI pipeline runs `cargo clippy` with a flag that treats all warnings as errors. The developer is required to run `cargo clippy --workspace` locally to fix all reported issues before submitting code for review.
+
+---
+
+## **2. Idiomatic Code Patterns**
+
+These are key patterns that `clippy` often warns about, and adopting them makes code cleaner, safer, and easier to read.
+
+### **2.1. Iterators Instead of C-style Loops**
+
+Rust's iterator system is powerful and safe. Manual index management is error-prone and considered non-idiomatic.
+
+*   **Problem:** Using `for i in 0..vec.len() { vec[i] }`.
+*   **Solution:** Use iterators directly.
+
+*   **Bad Example (avoid):**
     ```rust
     let items = vec!["a", "b", "c"];
     for i in 0..items.len() {
@@ -46,54 +46,54 @@ Rustov sustav iteratora je moćan i siguran. Ručno upravljanje indeksima je skl
     }
     ```
 
-*   **Dobar Primjer:**
+*   **Good Example:**
     ```rust
     let items = vec!["a", "b", "c"];
 
-    // Ako vam ne treba indeks:
+    // If you don't need the index:
     for item in &items {
         println!("Item: {}", item);
     }
 
-    // Ako vam trebaju i indeks i vrijednost:
+    // If you need both index and value:
     for (i, item) in items.iter().enumerate() {
-        println!("Item na indeksu {}: {}", i, item);
+        println!("Item at index {}: {}", i, item);
     }
     ```
 
-### **2.2. Elegantno Rukovanje Greškama unutar Petlji**
+### **2.2. Elegant Error Handling Within Loops**
 
-Kada iterator vraća `Result` ili `Option`, izbjegavajte ručnu provjeru s `if let`.
+When an iterator returns `Result` or `Option`, avoid manual checking with `if let`.
 
 *   **Problem:** `for result in iterator { if let Ok(value) = result { ... } }`.
-*   **Rješenje:** Koristite metodu `.flatten()`, koja automatski filtrira sve `Err` ili `None` varijante.
+*   **Solution:** Use the `.flatten()` method, which automatically filters out all `Err` or `None` variants.
 
-*   **Loš Primjer (izbjegavati):**
+*   **Bad Example (avoid):**
     ```rust
-    let results = vec![Ok(1), Err("greška"), Ok(3)];
+    let results = vec![Ok(1), Err("error"), Ok(3)];
     for result in results {
         if let Ok(value) = result {
-            println!("Vrijednost: {}", value);
+            println!("Value: {}", value);
         }
     }
     ```
 
-*   **Dobar Primjer:**
+*   **Good Example:**
     ```rust
-    let results = vec![Ok(1), Err("greška"), Ok(3)];
+    let results = vec![Ok(1), Err("error"), Ok(3)];
     for value in results.into_iter().flatten() {
-        println!("Vrijednost: {}", value);
+        println!("Value: {}", value);
     }
     ```
 
-### **2.3. Funkcionalne Metode za `Option` i `Result`**
+### **2.3. Functional Methods for `Option` and `Result`**
 
-Izbjegavajte ručno pisanje `match` ili `if let` blokova kada postoji ugrađena funkcionalna metoda koja radi istu stvar.
+Avoid manually writing `match` or `if let` blocks when there is a built-in functional method that does the same thing.
 
-*   **Problem:** Ručna implementacija `map` logike.
-*   **Rješenje:** Koristite `.map()`, `.and_then()`, `.is_some_and()`, `.unwrap_or()` itd.
+*   **Problem:** Manual implementation of `map` logic.
+*   **Solution:** Use `.map()`, `.and_then()`, `.is_some_and()`, `.unwrap_or()` etc.
 
-*   **Loš Primjer (izbjegavati):**
+*   **Bad Example (avoid):**
     ```rust
     let maybe_number: Option<i32> = Some(5);
     let maybe_incremented = if let Some(n) = maybe_number {
@@ -103,20 +103,20 @@ Izbjegavajte ručno pisanje `match` ili `if let` blokova kada postoji ugrađena 
     };
     ```
 
-*   **Dobar Primjer:**
+*   **Good Example:**
     ```rust
     let maybe_number: Option<i32> = Some(5);
     let maybe_incremented = maybe_number.map(|n| n + 1);
     ```
 
-### **2.4. Dizajn Struktura i `Default` Trait**
+### **2.4. Struct Design and the `Default` Trait**
 
-Standardna je konvencija da strukture koje se mogu kreirati bez argumenata implementiraju `Default` trait.
+It is standard convention for structs that can be created without arguments to implement the `Default` trait.
 
-*   **Problem:** Imati `fn new() -> Self` bez implementacije `Default`.
-*   **Rješenje:** Implementirajte `Default` i neka `new()` bude samo alias za `default()`.
+*   **Problem:** Having `fn new() -> Self` without implementing `Default`.
+*   **Solution:** Implement `Default` and let `new()` be just an alias for `default()`.
 
-*   **Loš Primjer (izbjegavati):**
+*   **Bad Example (avoid):**
     ```rust
     pub struct Config;
     impl Config {
@@ -124,7 +124,7 @@ Standardna je konvencija da strukture koje se mogu kreirati bez argumenata imple
     }
     ```
 
-*   **Dobar Primjer:**
+*   **Good Example:**
     ```rust
     pub struct Config;
 
@@ -143,22 +143,23 @@ Standardna je konvencija da strukture koje se mogu kreirati bez argumenata imple
 
 ---
 
-## **3. Rukovanje Greškama: Nema Panike!**
+## **3. Error Handling: No Panics!**
 
-Panika (`panic!`) uzrokuje pad programa i treba se koristiti samo u situacijama gdje je oporavak nemoguć (npr. u testovima za provjeru neispravnog stanja).
+Panic (`panic!`) causes the program to crash and should only be used in situations where recovery is impossible (e.g., in tests to verify invalid state).
 
-*   **Pravilo:** Korištenje `.unwrap()` i `.expect()` je **strogo zabranjeno** u produkcijskom kodu (biblioteke i aplikacije).
-*   **Obrazloženje:** Robusni softver mora rukovati greškama, a ne se rušiti.
-*   **Ispravan način:** Koristite `?` operator za propagaciju grešaka prema gore u pozivnom stogu i `match` ili `if let Err(...)` za rukovanje greškama na mjestu gdje se mogu obraditi.
+*   **Rule:** Using `.unwrap()` and `.expect()` is **strictly forbidden** in production code (libraries and applications).
+*   **Rationale:** Robust software must handle errors, not crash.
+*   **Correct approach:** Use the `?` operator to propagate errors up the call stack and `match` or `if let Err(...)` to handle errors where they can be processed.
 
-*   **Loš Primjer (Zabranjeno):**
+*   **Bad Example (Forbidden):**
     ```rust
     let content = std::fs::read_to_string("config.toml").unwrap();
     ```
 
-*   **Dobar Primjer (unutar funkcije koja vraća `Result`):**
+*   **Good Example (within a function that returns `Result`):**
     ```rust
     fn read_config() -> Result<String, std::io::Error> {
         let content = std::fs::read_to_string("config.toml")?;
         Ok(content)
     }
+    ```
