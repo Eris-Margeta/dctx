@@ -1,96 +1,184 @@
-# DCTX: Intelligent Context for LLMs
+# dctx - Directory Context for LLMs
 
 > **Stop copy-pasting. Start engineering.**
 
-`dctx` is a blazing fast, zero-dependency command-line tool that turns your codebase into a structured, version-aware context for Large Language Models (GPT-4, Claude 3, Llama 3).
+`dctx` is a blazing-fast, zero-dependency command-line tool that transforms your codebase into a structured, version-aware context snapshot for Large Language Models.
 
-Unlike vector databases that feed AI fragmented "chunks" of code, `dctx` provides a **holistic snapshot** of your project, allowing the AI to understand architecture, imports, and relationships instantly.
+Unlike RAG systems that fragment code into disconnected chunks, `dctx` provides a **complete, hierarchical view** of your project—letting AI understand architecture, imports, and file relationships instantly.
 
----
-
-## 🚀 Key Features
-
-*   **⚡ Blazing Fast:** Written in Rust. Scans thousands of files in milliseconds using multi-threaded walkers.
-*   **📦 Zero Dependency:** A single static binary. No Python, Node, or heavy runtime required.
-*   **🧠 Context-Aware Diffing:** Automatically detects changes. After the first run, it generates highly optimized **Diff Snapshots** containing only what changed, saving you 90% of tokens.
-*   **🛡️ Smart Ignore System:** Respects `.gitignore` and its own `.dctxignore`. Never accidentally send `node_modules` or `.env` files to an AI again.
-*   **🎨 Custom Templates:** Fully customizable output format via `.dctx_template` system. Tailor the output for XML, Markdown, or JSON.
-*   **📋 Clipboard Integration:** Use `-c` to pipe the context directly to your clipboard.
+**Website:** [dctx.app](https://dctx.app)
 
 ---
 
-## 📦 Installation
+## Key Features
+
+- **Blazing Fast** — Written in Rust with multi-threaded file scanning. Processes thousands of files in milliseconds.
+- **Zero Dependencies** — Single static binary. No Python, Node, or runtime required.
+- **Smart Filtering** — Respects `.gitignore` + its own `.dctxignore`. Never accidentally send `node_modules`, binaries, or `.env` to AI.
+- **Version Tracking** — Automatic versioning with optimized diffs. Save 90% of tokens on subsequent runs.
+- **Semantic Structure** — XML-tagged output with file IDs, paths, sizes, and modification timestamps for AI parsing.
+- **Custom Templates** — AOT-compiled template system for custom output formats.
+
+---
+
+## Installation
 
 ### From Source (Rust)
 ```bash
-git clone https://github.com/your-username/dctx
+git clone https://github.com/Eris-Margeta/dctx
 cd dctx
-cargo install --path crates/dctx-cli
+cargo build --release
+./target/release/dctx-cli --version
 ```
 
-*(Binary releases for macOS, Windows, and Linux coming soon via package managers)*
+### Quick Install (macOS/Linux)
+```bash
+curl -fsSL https://dctx.app/install.sh | sh
+```
 
 ---
 
-## 💻 Usage
+## Usage
 
-### 1. The Basics
-Go to your project folder and run:
+### Basic Snapshot
 ```bash
 dctx .
 ```
-This creates a `.llmcontext.txt` file in your folder containing the full project structure and content. Drag and drop this into ChatGPT/Claude.
+Creates `.dctx/dctx.llmcontext.txt` containing full project structure and content.
 
-### 2. Clipboard Mode (No Files)
-Don't want to clutter your disk?
+### Copy to Clipboard
 ```bash
 dctx . -c
 ```
-The context is now in your clipboard. Just hit `Ctrl+V` in your AI chat.
+Paste directly into ChatGPT, Claude, or any AI chat.
 
-### 3. The Power of Diffs
-Make some changes to your code. Run `dctx` again.
-*   It detects the file history.
-*   It increments the version (e.g., `V1` -> `V1.1`).
-*   It generates a **Diff File** showing *only* the changes.
-
-To copy *only* the diff to clipboard:
+### Tree-Only Mode
 ```bash
-dctx . -c -d
+dctx . -t -c
+```
+Output directory structure without file contents. Useful for architecture discussions.
+
+### Diff Mode
+```bash
+dctx . -d -c
+```
+After making changes, copy only what changed (requires previous snapshot).
+
+### Force Reset
+```bash
+dctx . -r
+```
+Clear history and start fresh at V1.
+
+---
+
+## CLI Reference
+
+```
+Usage: dctx [PATH] [OPTIONS]
+       dctx template <COMMAND>
+
+Snapshot Options:
+  -c, --clipboard  Copy to clipboard
+  -d, --diff       Output diff only (if available)
+  -t, --tree       Tree-Only mode (skips file content)
+  -r, --reset      Force V1 reset
+  -h, --help       Show help
+  -v, --version    Show version
+
+Template Commands:
+  template build <PATH>  Compile a .dctx_template file
+  template list          List compiled templates
 ```
 
 ---
 
-## ⚙️ Configuration
+## Configuration
 
-`dctx` looks for configuration in:
-1.  **Project Root:** `.dctxignore` (Same syntax as .gitignore)
-2.  **Global Config:** `~/.config/dctx/config.toml`
+### Project-Level: `.dctxignore`
+Place in your project root. Same syntax as `.gitignore`:
 
-### Example `.dctxignore`
 ```gitignore
-# Ignore heavy folders
-node_modules/
+# Ignore build artifacts
 target/
 dist/
+build/
 
-# Un-ignore specific important files
+# Ignore dependencies
+node_modules/
+vendor/
+
+# Keep specific files
 !dist/config.json
 ```
 
----
-
-## 🏗️ Architecture
-
-`dctx` is a Monorepo designed for scale:
-*   **dctx-core:** The brain. Pure Rust logic for walking, diffing, and templating. Platform agnostic.
-*   **dctx-cli:** The interface.
-*   *(Coming Soon)* **dctx-ffi:** Bindings for Python, Node, and Go.
-*   *(Coming Soon)* **dctx-desktop:** GUI for non-technical users.
+### Global Config: `~/.config/dctx/`
+- `config.toml` — Global settings
+- `ignore` — Global ignore patterns
+- `templates/` — Custom template files
 
 ---
 
-## 📄 License
+## Output Format
 
-MIT License. Open Source and Free Forever.
+dctx generates semantically structured output:
 
+```xml
+[DCTX_LLM_CONTEXT_SNAPSHOT_V1]
+[DIRECTORY:my-project]
+
+<INSTRUCTIONS>
+1. Manifest: The <DIRECTORY_TREE> section lists all files.
+   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID, MOD:TIMESTAMP)
+2. Content Access: Find UNIQUE_ID, search for <FILE_CONTENT_START ID="...">
+</INSTRUCTIONS>
+
+<DIRECTORY_TREE>
+[D]  (ID:ROOT, MOD:1234567890)
+  [F] src/main.rs (ID:F001, MOD:1234567890, SIZE:1024)
+  [F] Cargo.toml (ID:F002, MOD:1234567890, SIZE:256)
+</DIRECTORY_TREE>
+
+<FILE_CONTENT_START ID="F001" PATH="src/main.rs" LINES="42">
+fn main() {
+    println!("Hello, world!");
+}
+</FILE_CONTENT_END ID="F001">
+```
+
+---
+
+## Architecture
+
+```
+dctx/
+├── crates/
+│   ├── dctx-core/     # Pure Rust library (walker, differ, templating)
+│   └── dctx-cli/      # Command-line interface
+├── tools/             # Build and test scripts
+└── website/           # Landing page (dctx.app)
+```
+
+---
+
+## Performance
+
+Tested on a 4,500-file Rust project:
+
+| Metric | Bash + find/cat | dctx |
+|--------|----------------|------|
+| Time | 0.653s | 0.050s |
+| Speed | — | **13.1x faster** |
+| Files filtered | Manual | **97% automatic** |
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
+
+---
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
