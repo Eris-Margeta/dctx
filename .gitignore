@@ -288,3 +288,8 @@ prompt.txt
 # [dctx] Installer Auto-Add
 .dctx/
 *.llmcontext.txt
+
+# [dctx] Automated Rules
+.dctx
+*.llmcontext-*-diff.txt
+# [dctx v0.1.6]
