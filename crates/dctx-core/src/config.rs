@@ -209,3 +209,152 @@ fn parse_config_line(line: &str, config: &mut AppConfig) {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_default_config() {
+        let config = AppConfig::default();
+        assert!(config.text_output_enabled);
+        assert_eq!(config.max_diff_files, 999);
+        assert_eq!(config.default_template, "default");
+        assert!(config.update_local_git_repo_gitignore_rules);
+        assert!(!config.text_output_mode_generates_diff_files);
+    }
+
+    #[test]
+    fn test_parse_text_output_enabled_true() {
+        let mut config = AppConfig::default();
+        config.text_output_enabled = false; // Start with false
+        parse_config_line("text_output_enabled = true", &mut config);
+        assert!(config.text_output_enabled);
+    }
+
+    #[test]
+    fn test_parse_text_output_enabled_false() {
+        let mut config = AppConfig::default();
+        parse_config_line("text_output_enabled = false", &mut config);
+        assert!(!config.text_output_enabled);
+    }
+
+    #[test]
+    fn test_parse_legacy_output_mode_binary() {
+        let mut config = AppConfig::default();
+        parse_config_line("output_mode = \"binary\"", &mut config);
+        assert!(!config.text_output_enabled);
+    }
+
+    #[test]
+    fn test_parse_legacy_output_mode_both() {
+        let mut config = AppConfig::default();
+        config.text_output_enabled = false;
+        parse_config_line("output_mode = \"both\"", &mut config);
+        assert!(config.text_output_enabled);
+    }
+
+    #[test]
+    fn test_parse_legacy_output_mode_text() {
+        let mut config = AppConfig::default();
+        config.text_output_enabled = false;
+        parse_config_line("output_mode = \"text\"", &mut config);
+        assert!(config.text_output_enabled);
+    }
+
+    #[test]
+    fn test_parse_max_diff_files() {
+        let mut config = AppConfig::default();
+        parse_config_line("max_diff_files = 500", &mut config);
+        assert_eq!(config.max_diff_files, 500);
+    }
+
+    #[test]
+    fn test_parse_max_diff_files_invalid() {
+        let mut config = AppConfig::default();
+        parse_config_line("max_diff_files = not_a_number", &mut config);
+        assert_eq!(config.max_diff_files, 999); // Should remain default
+    }
+
+    #[test]
+    fn test_parse_default_template() {
+        let mut config = AppConfig::default();
+        parse_config_line("default_template = \"custom\"", &mut config);
+        assert_eq!(config.default_template, "custom");
+    }
+
+    #[test]
+    fn test_parse_default_template_single_quotes() {
+        let mut config = AppConfig::default();
+        parse_config_line("default_template = 'my-template'", &mut config);
+        assert_eq!(config.default_template, "my-template");
+    }
+
+    #[test]
+    fn test_parse_gitignore_rules_true() {
+        let mut config = AppConfig::default();
+        config.update_local_git_repo_gitignore_rules = false;
+        parse_config_line("update_local_git_repo_gitignore_rules = true", &mut config);
+        assert!(config.update_local_git_repo_gitignore_rules);
+    }
+
+    #[test]
+    fn test_parse_gitignore_rules_false() {
+        let mut config = AppConfig::default();
+        parse_config_line("update_local_git_repo_gitignore_rules = false", &mut config);
+        assert!(!config.update_local_git_repo_gitignore_rules);
+    }
+
+    #[test]
+    fn test_parse_diff_files_toggle() {
+        let mut config = AppConfig::default();
+        parse_config_line("text_output_mode_generates_diff_files = true", &mut config);
+        assert!(config.text_output_mode_generates_diff_files);
+    }
+
+    #[test]
+    fn test_parse_ignores_comments() {
+        let mut config = AppConfig::default();
+        parse_config_line("# This is a comment", &mut config);
+        parse_config_line("  # Indented comment", &mut config);
+        // Should not change anything
+        assert!(config.text_output_enabled);
+        assert_eq!(config.max_diff_files, 999);
+    }
+
+    #[test]
+    fn test_parse_ignores_empty_lines() {
+        let mut config = AppConfig::default();
+        parse_config_line("", &mut config);
+        parse_config_line("   ", &mut config);
+        // Should not change anything
+        assert!(config.text_output_enabled);
+    }
+
+    #[test]
+    fn test_parse_ignores_unknown_keys() {
+        let mut config = AppConfig::default();
+        parse_config_line("unknown_key = some_value", &mut config);
+        // Should not panic or change known values
+        assert!(config.text_output_enabled);
+    }
+
+    #[test]
+    fn test_hardcoded_ignore_rules_not_empty() {
+        assert!(!HARDCODED_IGNORE_RULES.is_empty());
+        assert!(HARDCODED_IGNORE_RULES.contains(&".git/"));
+        assert!(HARDCODED_IGNORE_RULES.contains(&"node_modules/"));
+        assert!(HARDCODED_IGNORE_RULES.contains(&"target/"));
+    }
+
+    #[test]
+    fn test_constants() {
+        assert_eq!(DIRCONTXT_MAGIC_BYTES, b"DIRCTXTV");
+        assert_eq!(BINARY_FILE_EXTENSION, "dctx");
+        assert_eq!(LLM_CONTEXT_EXTENSION, "llmcontext.txt");
+        assert_eq!(DEFAULT_IGNORE_FILENAME, ".dctxignore");
+        assert_eq!(APP_NAME, "dctx");
+        assert_eq!(GLOBAL_IGNORE_FILENAME, "ignore");
+        assert_eq!(CONFIG_FILENAME, "config.toml");
+    }
+}
