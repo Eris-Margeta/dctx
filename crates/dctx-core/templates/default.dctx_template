@@ -59,7 +59,7 @@ instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}
 # Context: 'file' object
 # Available Data: {{{file.id}}}, {{{file.path}}}, {{{file.lines}}}, {{{file.size}}}, {{{file.content}}}
 [PARTIAL:FILE_BLOCK]
-{{start_marker_open}}{{file_start_marker}} {{attr_id}}="{{{file.id}}}" {{attr_path}}="{{{file.path}}}" {{attr_size}}="{{{file.size}}}" {{attr_lines}}="{{{file.lines}}}"{{start_marker_close}}
+{{start_marker_open}}{{file_start_marker}} {{attr_id}}="{{{file.id}}}" {{attr_path}}="{{{file.path}}}" {{attr_lines}}="{{{file.lines}}}"{{start_marker_close}}
 {{{file.content}}}
 {{end_marker_open}}{{file_end_marker}} {{attr_id}}="{{{file.id}}}"{{end_marker_close}}
 
@@ -70,7 +70,7 @@ instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}
 # and NOT included here.
 # ==============================================================================
 [LAYOUT]
-[{{folder_denotation_marker}}:{{project}}]
+[{{folder_denotation_marker}}:{{{project}}}]
 
 {{start_marker_open}}{{instr_marker}}{{start_marker_close}}
 {{instructions_text}}

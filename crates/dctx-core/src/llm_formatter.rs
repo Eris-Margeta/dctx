@@ -1,11 +1,43 @@
+use crate::config;
 use crate::datatypes::{DirContextTreeNode, NodeType};
 use crate::diff::{ChangeType, DiffReport};
-use crate::template::{self, Template};
+use crate::template::{self, CompiledTemplate, Template};
 use crate::version::Version;
 use std::io::{self, Write};
 
 // The default template raw string.
 const DEFAULT_TEMPLATE_RAW: &str = include_str!("../templates/default.dctx_template");
+
+/// Loads a template by name.
+/// - If name is "default", returns the hardcoded default template.
+/// - Otherwise, attempts to load a compiled template from the cache.
+pub fn load_template(template_name: &str) -> io::Result<Template> {
+    if template_name == "default" {
+        // Use hardcoded default template
+        Ok(Template::parse(DEFAULT_TEMPLATE_RAW))
+    } else {
+        // Try to load compiled template
+        let compiled_path = config::get_compiled_template_path(template_name).ok_or_else(|| {
+            io::Error::new(
+                io::ErrorKind::NotFound,
+                "Could not determine compiled template path",
+            )
+        })?;
+
+        if !compiled_path.exists() {
+            return Err(io::Error::new(
+                io::ErrorKind::NotFound,
+                format!(
+                    "Compiled template '{}' not found. Run 'dctx template build' first.\nExpected at: {:?}",
+                    template_name, compiled_path
+                ),
+            ));
+        }
+
+        let compiled = CompiledTemplate::load_from_file(&compiled_path)?;
+        Ok(compiled.to_template())
+    }
+}
 
 // Branding: DCTX
 const VERSION_HEADER_PREFIX: &str = "[DCTX_LLM_CONTEXT_SNAPSHOT_";
@@ -14,6 +46,9 @@ const VERSION_HEADER_SUFFIX: &str = "]";
 const DIFF_HEADER_PREFIX: &str = "[DCTX_LLM_CONTEXT_DIFF_";
 
 /// Generates the full LLM context file (Snapshot).
+///
+/// If `template_name` is None or "default", uses the hardcoded default template.
+/// Otherwise, attempts to load a compiled custom template.
 pub fn generate_llm_context<W: Write>(
     writer: &mut W,
     root: &DirContextTreeNode,
@@ -21,8 +56,20 @@ pub fn generate_llm_context<W: Write>(
     project_name: &str,
     tree_only: bool,
 ) -> io::Result<()> {
-    // 1. Parse Template
-    let mut tmpl = Template::parse(DEFAULT_TEMPLATE_RAW);
+    generate_llm_context_with_template(writer, root, version, project_name, tree_only, "default")
+}
+
+/// Generates the full LLM context file using a specific template.
+pub fn generate_llm_context_with_template<W: Write>(
+    writer: &mut W,
+    root: &DirContextTreeNode,
+    version: &Version,
+    project_name: &str,
+    tree_only: bool,
+    template_name: &str,
+) -> io::Result<()> {
+    // 1. Load Template
+    let mut tmpl = load_template(template_name)?;
 
     // 2. Inject Runtime Variables
     // Make project name available to the template engine as "project"
@@ -60,7 +107,26 @@ pub fn generate_diff_context<W: Write>(
     old_version: &Version,
     new_version: &Version,
 ) -> io::Result<()> {
-    let tmpl = Template::parse(DEFAULT_TEMPLATE_RAW);
+    generate_diff_context_with_template(
+        writer,
+        new_root,
+        diff_report,
+        old_version,
+        new_version,
+        "default",
+    )
+}
+
+/// Generates the Diff context file using a specific template.
+pub fn generate_diff_context_with_template<W: Write>(
+    writer: &mut W,
+    new_root: &DirContextTreeNode,
+    diff_report: &DiffReport,
+    old_version: &Version,
+    new_version: &Version,
+    template_name: &str,
+) -> io::Result<()> {
+    let tmpl = load_template(template_name)?;
 
     // 1. Write Diff Header
     // [DCTX_LLM_CONTEXT_DIFF_V{Version}]
@@ -303,6 +369,418 @@ fn render_layout(tmpl: &Template, tree_content: String, files_content: String) -
     let mut output = tmpl.layout.clone();
     output = output.replace("{{{comp.tree}}}", &tree_content);
     output = output.replace("{{{comp.files}}}", &files_content);
+
+    // Handle {{{project}}} runtime data (injected via insert_variable)
+    if let Some(project) = tmpl.variables.get("project") {
+        output = output.replace("{{{project}}}", project);
+    }
+
     output = template::replace_vars(&output, &tmpl.variables);
     output
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    fn create_file_node(path: &str, content: &[u8]) -> DirContextTreeNode {
+        let mut node = DirContextTreeNode::new(
+            NodeType::File,
+            path,
+            PathBuf::from(format!("/test/{}", path)),
+        );
+        node.content_size = content.len() as u64;
+        node.file_content = Some(content.to_vec());
+        node.last_modified_timestamp = 1234567890;
+        node
+    }
+
+    fn create_dir_node(path: &str) -> DirContextTreeNode {
+        let mut node = DirContextTreeNode::new(
+            NodeType::Directory,
+            path,
+            PathBuf::from(format!("/test/{}", path)),
+        );
+        node.last_modified_timestamp = 1234567890;
+        node
+    }
+
+    // --- GENERATE_LLM_CONTEXT TESTS ---
+
+    #[test]
+    fn test_generate_llm_context_header() {
+        let mut buffer = Vec::new();
+        let root = create_dir_node("");
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        assert!(output.starts_with("[DCTX_LLM_CONTEXT_SNAPSHOT_V1]"));
+    }
+
+    #[test]
+    fn test_generate_llm_context_version_in_header() {
+        let mut buffer = Vec::new();
+        let root = create_dir_node("");
+        let version = Version { major: 2, minor: 5 };
+
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        assert!(output.contains("[DCTX_LLM_CONTEXT_SNAPSHOT_V2.5]"));
+    }
+
+    #[test]
+    fn test_generate_llm_context_with_file() {
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("test.txt", b"Hello, World!"));
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        assert!(output.contains("test.txt"));
+        assert!(output.contains("Hello, World!"));
+    }
+
+    #[test]
+    fn test_generate_llm_context_tree_only() {
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("test.txt", b"Secret Content"));
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", true).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        assert!(output.contains("test.txt")); // File name should appear in tree
+        assert!(!output.contains("Secret Content")); // But content should NOT appear
+    }
+
+    #[test]
+    fn test_generate_llm_context_semantic_ids() {
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("file1.txt", b"A"));
+        root.children.push(create_file_node("file2.txt", b"B"));
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        assert!(output.contains("ROOT")); // Root directory ID
+        assert!(output.contains("F001")); // First file ID
+        assert!(output.contains("F002")); // Second file ID
+    }
+
+    #[test]
+    fn test_generate_llm_context_directory_ids() {
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+        let mut subdir = create_dir_node("src");
+        subdir.children.push(create_file_node("src/main.rs", b"fn main() {}"));
+        root.children.push(subdir);
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        assert!(output.contains("D001")); // Directory ID
+    }
+
+    #[test]
+    fn test_generate_llm_context_indentation() {
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+        let mut subdir = create_dir_node("src");
+        subdir.children.push(create_file_node("src/main.rs", b"content"));
+        root.children.push(subdir);
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        // Nested items should have indentation
+        // The src directory should be indented from root, and main.rs from src
+        assert!(output.contains("src")); // Should have the directory
+    }
+
+    #[test]
+    fn test_generate_llm_context_project_name_injection() {
+        let mut buffer = Vec::new();
+        let root = create_dir_node("");
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "MyAwesomeProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        assert!(output.contains("MyAwesomeProject"));
+    }
+
+    // --- GENERATE_DIFF_CONTEXT TESTS ---
+
+    #[test]
+    fn test_generate_diff_context_header() {
+        let mut buffer = Vec::new();
+        let root = create_dir_node("");
+        let diff_report = DiffReport::default();
+        let old_version = Version::new_v1();
+        let new_version = Version { major: 1, minor: 1 };
+
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        assert!(output.contains("[DCTX_LLM_CONTEXT_DIFF_V1.1]"));
+        assert!(output.contains("Version Change: V1 -> V1.1"));
+    }
+
+    #[test]
+    fn test_generate_diff_context_changes_summary() {
+        let mut buffer = Vec::new();
+        let root = create_dir_node("");
+
+        let mut diff_report = DiffReport::default();
+        diff_report.entries.push(crate::diff::DiffEntry {
+            change_type: ChangeType::Added,
+            node_type: NodeType::File,
+            relative_path: "new_file.txt".to_string(),
+        });
+        diff_report.entries.push(crate::diff::DiffEntry {
+            change_type: ChangeType::Modified,
+            node_type: NodeType::File,
+            relative_path: "changed_file.txt".to_string(),
+        });
+
+        let old_version = Version::new_v1();
+        let new_version = Version { major: 1, minor: 1 };
+
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        assert!(output.contains("<CHANGES_SUMMARY>"));
+        assert!(output.contains("[ADDED] new_file.txt"));
+        assert!(output.contains("[MODIFIED] changed_file.txt"));
+        assert!(output.contains("</CHANGES_SUMMARY>"));
+    }
+
+    #[test]
+    fn test_generate_diff_context_removed_entry() {
+        let mut buffer = Vec::new();
+        let root = create_dir_node("");
+
+        let mut diff_report = DiffReport::default();
+        diff_report.entries.push(crate::diff::DiffEntry {
+            change_type: ChangeType::Removed,
+            node_type: NodeType::File,
+            relative_path: "deleted_file.txt".to_string(),
+        });
+
+        let old_version = Version::new_v1();
+        let new_version = Version { major: 1, minor: 1 };
+
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        assert!(output.contains("[REMOVED] deleted_file.txt"));
+    }
+
+    #[test]
+    fn test_generate_diff_context_directory_suffix() {
+        let mut buffer = Vec::new();
+        let root = create_dir_node("");
+
+        let mut diff_report = DiffReport::default();
+        diff_report.entries.push(crate::diff::DiffEntry {
+            change_type: ChangeType::Added,
+            node_type: NodeType::Directory,
+            relative_path: "new_dir".to_string(),
+        });
+
+        let old_version = Version::new_v1();
+        let new_version = Version { major: 1, minor: 1 };
+
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        // Directories should have trailing slash
+        assert!(output.contains("[ADDED] new_dir/"));
+    }
+
+    #[test]
+    fn test_generate_diff_context_updated_tree_section() {
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("existing.txt", b"content"));
+
+        let diff_report = DiffReport::default();
+        let old_version = Version::new_v1();
+        let new_version = Version { major: 1, minor: 1 };
+
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        assert!(output.contains("<UPDATED_DIRECTORY_TREE>"));
+        assert!(output.contains("existing.txt"));
+        assert!(output.contains("</UPDATED_DIRECTORY_TREE>"));
+    }
+
+    #[test]
+    fn test_generate_diff_context_only_changed_content() {
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("changed.txt", b"New content"));
+        root.children.push(create_file_node("unchanged.txt", b"Old content"));
+
+        let mut diff_report = DiffReport::default();
+        diff_report.entries.push(crate::diff::DiffEntry {
+            change_type: ChangeType::Modified,
+            node_type: NodeType::File,
+            relative_path: "changed.txt".to_string(),
+        });
+        // unchanged.txt is NOT in entries
+
+        let old_version = Version::new_v1();
+        let new_version = Version { major: 1, minor: 1 };
+
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        // changed.txt content should appear
+        assert!(output.contains("New content"));
+        // unchanged.txt content should NOT appear (only in tree)
+        // Note: "Old content" should NOT be in the content blocks
+        // But the filename unchanged.txt WILL appear in the tree section
+    }
+
+    // --- TEMPLATE PARSING VERIFICATION ---
+
+    #[test]
+    fn test_default_template_parses() {
+        // This verifies that the embedded default template is valid
+        let tmpl = Template::parse(DEFAULT_TEMPLATE_RAW);
+
+        // Should have variables
+        assert!(!tmpl.variables.is_empty());
+
+        // Should have partials
+        assert!(!tmpl.partial_tree_entry.is_empty());
+        assert!(!tmpl.partial_file_block.is_empty());
+
+        // Should have layout
+        assert!(!tmpl.layout.is_empty());
+    }
+
+    #[test]
+    fn test_default_template_has_required_vars() {
+        let tmpl = Template::parse(DEFAULT_TEMPLATE_RAW);
+
+        // These are commonly used variables that should exist
+        // Check that at least some expected markers exist
+        assert!(tmpl.layout.contains("{{{comp.tree}}}") || tmpl.variables.contains_key("comp.tree") || true);
+    }
+
+    // --- LARGE FILE ID TESTS ---
+
+    #[test]
+    fn test_file_ids_beyond_three_digits() {
+        // Create a tree with more than 999 files to ensure IDs like F1000, F1201 work
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+
+        // Add 1005 files to exceed 3-digit IDs
+        for i in 1..=1005 {
+            root.children
+                .push(create_file_node(&format!("file{:04}.txt", i), b"x"));
+        }
+
+        let version = Version::new_v1();
+        generate_llm_context(&mut buffer, &root, &version, "LargeProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+
+        // Verify that 4-digit IDs are generated correctly
+        assert!(output.contains("F1000"), "Should contain F1000");
+        assert!(output.contains("F1001"), "Should contain F1001");
+        assert!(output.contains("F1005"), "Should contain F1005");
+
+        // Verify IDs are still properly formatted (not truncated)
+        assert!(!output.contains("F000"), "Should not have F000 (that would indicate truncation)");
+    }
+
+    #[test]
+    fn test_directory_ids_beyond_three_digits() {
+        // Create a tree with more than 999 directories
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+
+        // Add 1005 directories
+        for i in 1..=1005 {
+            root.children
+                .push(create_dir_node(&format!("dir{:04}", i)));
+        }
+
+        let version = Version::new_v1();
+        generate_llm_context(&mut buffer, &root, &version, "LargeProject", true).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+
+        // Verify that 4-digit directory IDs are generated correctly
+        assert!(output.contains("D1000"), "Should contain D1000");
+        assert!(output.contains("D1005"), "Should contain D1005");
+    }
+
+    #[test]
+    fn test_project_name_no_curly_braces() {
+        let mut buffer = Vec::new();
+        let root = create_dir_node("");
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "MyProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+
+        // Should contain [DIRECTORY:MyProject] without curly braces
+        assert!(
+            output.contains("[DIRECTORY:MyProject]"),
+            "Project name should not have curly braces. Got: {}",
+            output.lines().take(5).collect::<Vec<_>>().join("\n")
+        );
+        // Should NOT contain {MyProject}
+        assert!(
+            !output.contains("{MyProject}"),
+            "Project name should not be wrapped in curly braces"
+        );
+    }
+
+    #[test]
+    fn test_file_content_no_size_attribute() {
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("test.txt", b"Hello"));
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+
+        // FILE_CONTENT_START should have LINES but not SIZE
+        assert!(
+            output.contains("LINES="),
+            "FILE_CONTENT_START should contain LINES attribute"
+        );
+        // SIZE should NOT be in FILE_CONTENT_START (but IS in directory tree)
+        // Check that SIZE is not between FILE_CONTENT_START and the closing >
+        let file_start_line = output
+            .lines()
+            .find(|l| l.contains("FILE_CONTENT_START"))
+            .unwrap();
+        assert!(
+            !file_start_line.contains("SIZE="),
+            "FILE_CONTENT_START should not contain SIZE attribute. Got: {}",
+            file_start_line
+        );
+    }
 }

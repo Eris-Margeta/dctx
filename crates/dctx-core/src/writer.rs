@@ -142,3 +142,220 @@ fn write_content_recursive<W: Write>(writer: &mut W, node: &DirContextTreeNode) 
     }
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+    use tempfile::NamedTempFile;
+
+    fn create_file_node(path: &str, content: &[u8]) -> DirContextTreeNode {
+        let mut node = DirContextTreeNode::new(
+            NodeType::File,
+            path,
+            PathBuf::from(format!("/test/{}", path)),
+        );
+        node.content_size = content.len() as u64;
+        node.file_content = Some(content.to_vec());
+        node.last_modified_timestamp = 1234567890;
+        node
+    }
+
+    fn create_dir_node(path: &str) -> DirContextTreeNode {
+        let mut node = DirContextTreeNode::new(
+            NodeType::Directory,
+            path,
+            PathBuf::from(format!("/test/{}", path)),
+        );
+        node.last_modified_timestamp = 1234567890;
+        node
+    }
+
+    // --- CALCULATE_OFFSETS TESTS ---
+
+    #[test]
+    fn test_calculate_offsets_single_file() {
+        let mut node = create_file_node("test.txt", b"Hello");
+        let mut offset = 0u64;
+        calculate_offsets_recursive(&mut node, &mut offset);
+
+        assert_eq!(node.content_offset_in_data_section, 0);
+        assert_eq!(node.content_size, 5);
+        assert_eq!(offset, 5);
+    }
+
+    #[test]
+    fn test_calculate_offsets_multiple_files() {
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("a.txt", b"AAA"));
+        root.children.push(create_file_node("b.txt", b"BBBBB"));
+
+        let mut offset = 0u64;
+        calculate_offsets_recursive(&mut root, &mut offset);
+
+        assert_eq!(root.children[0].content_offset_in_data_section, 0);
+        assert_eq!(root.children[0].content_size, 3);
+        assert_eq!(root.children[1].content_offset_in_data_section, 3);
+        assert_eq!(root.children[1].content_size, 5);
+        assert_eq!(offset, 8);
+    }
+
+    #[test]
+    fn test_calculate_offsets_nested() {
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("a.txt", b"AA"));
+
+        let mut subdir = create_dir_node("sub");
+        subdir.children.push(create_file_node("sub/b.txt", b"BBB"));
+        root.children.push(subdir);
+
+        let mut offset = 0u64;
+        calculate_offsets_recursive(&mut root, &mut offset);
+
+        assert_eq!(root.children[0].content_offset_in_data_section, 0);
+        assert_eq!(root.children[1].children[0].content_offset_in_data_section, 2);
+        assert_eq!(offset, 5);
+    }
+
+    // --- SERIALIZE_NODE TESTS ---
+
+    #[test]
+    fn test_serialize_file_node() {
+        let node = create_file_node("test.txt", b"Hello");
+        let mut buffer = Vec::new();
+
+        serialize_node_recursive(&mut buffer, &node).unwrap();
+
+        // Check that buffer is not empty
+        assert!(!buffer.is_empty());
+
+        // First byte should be 0 (File type)
+        assert_eq!(buffer[0], 0);
+    }
+
+    #[test]
+    fn test_serialize_directory_node() {
+        let node = create_dir_node("mydir");
+        let mut buffer = Vec::new();
+
+        serialize_node_recursive(&mut buffer, &node).unwrap();
+
+        // First byte should be 1 (Directory type)
+        assert_eq!(buffer[0], 1);
+    }
+
+    #[test]
+    fn test_serialize_directory_with_children() {
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("a.txt", b"A"));
+        root.children.push(create_file_node("b.txt", b"B"));
+
+        let mut buffer = Vec::new();
+        serialize_node_recursive(&mut buffer, &root).unwrap();
+
+        // Should contain data for root + 2 children
+        assert!(buffer.len() > 20);
+    }
+
+    // --- WRITE_CONTENT TESTS ---
+
+    #[test]
+    fn test_write_content_single_file() {
+        let node = create_file_node("test.txt", b"Hello World");
+        let mut buffer = Vec::new();
+
+        write_content_recursive(&mut buffer, &node).unwrap();
+
+        assert_eq!(buffer, b"Hello World");
+    }
+
+    #[test]
+    fn test_write_content_multiple_files() {
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("a.txt", b"AAA"));
+        root.children.push(create_file_node("b.txt", b"BBB"));
+
+        let mut buffer = Vec::new();
+        write_content_recursive(&mut buffer, &root).unwrap();
+
+        assert_eq!(buffer, b"AAABBB");
+    }
+
+    #[test]
+    fn test_write_content_empty_file() {
+        let node = create_file_node("empty.txt", b"");
+        let mut buffer = Vec::new();
+
+        write_content_recursive(&mut buffer, &node).unwrap();
+
+        assert!(buffer.is_empty());
+    }
+
+    // --- INTEGRATION TESTS ---
+
+    #[test]
+    fn test_write_dircontxt_file_creates_file() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let path = temp_file.path();
+
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("test.txt", b"Test content"));
+
+        let version = Version::new_v1();
+        write_dircontxt_file(path, &mut root, &version).unwrap();
+
+        // File should exist and have content
+        let metadata = std::fs::metadata(path).unwrap();
+        assert!(metadata.len() > 0);
+    }
+
+    #[test]
+    fn test_write_dircontxt_file_magic_bytes() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let path = temp_file.path();
+
+        let mut root = create_dir_node("");
+        let version = Version::new_v1();
+        write_dircontxt_file(path, &mut root, &version).unwrap();
+
+        // Read first 8 bytes and verify magic
+        let content = std::fs::read(path).unwrap();
+        assert!(content.len() >= 8);
+        assert_eq!(&content[0..8], DIRCONTXT_MAGIC_BYTES);
+    }
+
+    #[test]
+    fn test_write_dircontxt_file_version_header() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let path = temp_file.path();
+
+        let mut root = create_dir_node("");
+        let version = Version { major: 2, minor: 5 };
+        write_dircontxt_file(path, &mut root, &version).unwrap();
+
+        let content = std::fs::read(path).unwrap();
+        // Bytes 8-12: major (u32 LE), bytes 12-16: minor (u32 LE)
+        let major = u32::from_le_bytes([content[8], content[9], content[10], content[11]]);
+        let minor = u32::from_le_bytes([content[12], content[13], content[14], content[15]]);
+
+        assert_eq!(major, 2);
+        assert_eq!(minor, 5);
+    }
+
+    #[test]
+    fn test_write_dircontxt_file_with_content() {
+        let temp_file = NamedTempFile::new().unwrap();
+        let path = temp_file.path();
+
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("hello.txt", b"Hello, World!"));
+
+        let version = Version::new_v1();
+        write_dircontxt_file(path, &mut root, &version).unwrap();
+
+        let content = std::fs::read(path).unwrap();
+        // Content should be somewhere in the file
+        let content_str = String::from_utf8_lossy(&content);
+        assert!(content_str.contains("Hello, World!"));
+    }
+}

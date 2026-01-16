@@ -102,34 +102,204 @@ impl fmt::Display for Version {
 mod tests {
     use super::*;
 
+    // --- PARSING TESTS ---
+
     #[test]
-    fn test_parsing() {
+    fn test_parse_v1() {
         assert_eq!(Version::parse("V1"), Version { major: 1, minor: 0 });
+    }
+
+    #[test]
+    fn test_parse_v1_with_minor() {
         assert_eq!(Version::parse("V1.5"), Version { major: 1, minor: 5 });
+    }
+
+    #[test]
+    fn test_parse_v2() {
+        assert_eq!(Version::parse("V2"), Version { major: 2, minor: 0 });
+    }
+
+    #[test]
+    fn test_parse_v2_with_minor() {
+        assert_eq!(Version::parse("V2.10"), Version { major: 2, minor: 10 });
+    }
+
+    #[test]
+    fn test_parse_garbage_returns_v1() {
         assert_eq!(Version::parse("Garbage"), Version { major: 1, minor: 0 });
     }
 
     #[test]
+    fn test_parse_empty_returns_v1() {
+        assert_eq!(Version::parse(""), Version { major: 1, minor: 0 });
+    }
+
+    #[test]
+    fn test_parse_no_v_prefix() {
+        assert_eq!(Version::parse("1.5"), Version { major: 1, minor: 0 });
+    }
+
+    #[test]
+    fn test_parse_invalid_numbers() {
+        assert_eq!(Version::parse("Vx.y"), Version { major: 1, minor: 0 });
+    }
+
+    #[test]
+    fn test_parse_large_numbers() {
+        assert_eq!(Version::parse("V100.999"), Version { major: 100, minor: 999 });
+    }
+
+    #[test]
+    fn test_parse_zero_minor() {
+        assert_eq!(Version::parse("V3.0"), Version { major: 3, minor: 0 });
+    }
+
+    // --- NEW_V1 TESTS ---
+
+    #[test]
+    fn test_new_v1() {
+        let v = Version::new_v1();
+        assert_eq!(v.major, 1);
+        assert_eq!(v.minor, 0);
+    }
+
+    // --- CALCULATE_NEXT TESTS ---
+
+    #[test]
     fn test_standard_increment() {
         let current = Version::parse("V1.5");
-        let (next, reset) = current.calculate_next(10, 20, 999); // 10 unchanged, limit not reached
+        let (next, reset) = current.calculate_next(10, 20, 999);
         assert_eq!(next, Version { major: 1, minor: 6 });
-        assert_eq!(reset, false);
+        assert!(!reset);
+    }
+
+    #[test]
+    fn test_increment_from_v1() {
+        let current = Version::new_v1();
+        let (next, reset) = current.calculate_next(5, 10, 999);
+        assert_eq!(next, Version { major: 1, minor: 1 });
+        assert!(!reset);
     }
 
     #[test]
     fn test_massive_change_trigger() {
         let current = Version::parse("V1.5");
-        let (next, reset) = current.calculate_next(0, 20, 999); // 0 unchanged!
+        let (next, reset) = current.calculate_next(0, 20, 999);
         assert_eq!(next, Version { major: 2, minor: 0 });
-        assert_eq!(reset, true);
+        assert!(reset);
     }
 
     #[test]
-    fn test_limit_trigger() {
-        let current = Version::parse("V1.999");
-        let (next, reset) = current.calculate_next(5, 20, 999); // limit reached
+    fn test_massive_change_from_v1() {
+        let current = Version::new_v1();
+        let (next, reset) = current.calculate_next(0, 10, 999);
         assert_eq!(next, Version { major: 2, minor: 0 });
-        assert_eq!(reset, true);
+        assert!(reset);
+    }
+
+    #[test]
+    fn test_limit_trigger_exact() {
+        let current = Version::parse("V1.999");
+        let (next, reset) = current.calculate_next(5, 20, 999);
+        assert_eq!(next, Version { major: 2, minor: 0 });
+        assert!(reset);
+    }
+
+    #[test]
+    fn test_limit_trigger_exceeded() {
+        let current = Version::parse("V1.1000");
+        let (next, reset) = current.calculate_next(5, 20, 999);
+        assert_eq!(next, Version { major: 2, minor: 0 });
+        assert!(reset);
+    }
+
+    #[test]
+    fn test_limit_trigger_custom_limit() {
+        let current = Version::parse("V1.10");
+        let (next, reset) = current.calculate_next(5, 20, 10);
+        assert_eq!(next, Version { major: 2, minor: 0 });
+        assert!(reset);
+    }
+
+    #[test]
+    fn test_no_trigger_below_limit() {
+        let current = Version::parse("V1.998");
+        let (next, reset) = current.calculate_next(5, 20, 999);
+        assert_eq!(next, Version { major: 1, minor: 999 });
+        assert!(!reset);
+    }
+
+    #[test]
+    fn test_empty_new_state_no_massive_change() {
+        // If unchanged=0 but total_files=0, it's an empty folder, not massive change
+        let current = Version::parse("V1.5");
+        let (next, reset) = current.calculate_next(0, 0, 999);
+        // is_massive_change requires total_files > 0
+        assert_eq!(next, Version { major: 1, minor: 6 });
+        assert!(!reset);
+    }
+
+    // --- DISPLAY TESTS ---
+
+    #[test]
+    fn test_display_v1() {
+        let v = Version::new_v1();
+        assert_eq!(format!("{}", v), "V1");
+    }
+
+    #[test]
+    fn test_display_v1_with_minor() {
+        let v = Version { major: 1, minor: 5 };
+        assert_eq!(format!("{}", v), "V1.5");
+    }
+
+    #[test]
+    fn test_display_v2() {
+        let v = Version { major: 2, minor: 0 };
+        assert_eq!(format!("{}", v), "V2");
+    }
+
+    #[test]
+    fn test_display_v2_with_minor() {
+        let v = Version { major: 2, minor: 10 };
+        assert_eq!(format!("{}", v), "V2.10");
+    }
+
+    #[test]
+    fn test_display_large_version() {
+        let v = Version { major: 100, minor: 999 };
+        assert_eq!(format!("{}", v), "V100.999");
+    }
+
+    // --- EQUALITY TESTS ---
+
+    #[test]
+    fn test_equality() {
+        let v1 = Version { major: 1, minor: 5 };
+        let v2 = Version { major: 1, minor: 5 };
+        assert_eq!(v1, v2);
+    }
+
+    #[test]
+    fn test_inequality_major() {
+        let v1 = Version { major: 1, minor: 5 };
+        let v2 = Version { major: 2, minor: 5 };
+        assert_ne!(v1, v2);
+    }
+
+    #[test]
+    fn test_inequality_minor() {
+        let v1 = Version { major: 1, minor: 5 };
+        let v2 = Version { major: 1, minor: 6 };
+        assert_ne!(v1, v2);
+    }
+
+    // --- CLONE TESTS ---
+
+    #[test]
+    fn test_clone() {
+        let v1 = Version { major: 3, minor: 7 };
+        let v2 = v1.clone();
+        assert_eq!(v1, v2);
     }
 }

@@ -121,6 +121,8 @@ fn generate_fnv1a_hash(text: &str) -> String {
 mod tests {
     use super::*;
 
+    // --- FNV1A HASH TESTS ---
+
     #[test]
     fn test_fnv1a_stability() {
         let input = "/home/user/projects/my-app";
@@ -128,5 +130,78 @@ mod tests {
         let hash2 = generate_fnv1a_hash(input);
         assert_eq!(hash1, hash2);
         assert_eq!(hash1.len(), 16);
+    }
+
+    #[test]
+    fn test_fnv1a_different_inputs() {
+        let hash1 = generate_fnv1a_hash("/path/one");
+        let hash2 = generate_fnv1a_hash("/path/two");
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_fnv1a_empty_string() {
+        let hash = generate_fnv1a_hash("");
+        assert_eq!(hash.len(), 16);
+        // FNV-1a of empty string is the offset basis
+        assert_eq!(hash, "cbf29ce484222325");
+    }
+
+    #[test]
+    fn test_fnv1a_single_char() {
+        let hash = generate_fnv1a_hash("a");
+        assert_eq!(hash.len(), 16);
+    }
+
+    #[test]
+    fn test_fnv1a_long_path() {
+        let long_path = "/very/long/path/that/goes/deep/into/the/filesystem/structure/project";
+        let hash = generate_fnv1a_hash(long_path);
+        assert_eq!(hash.len(), 16);
+        // Should still be stable
+        assert_eq!(hash, generate_fnv1a_hash(long_path));
+    }
+
+    #[test]
+    fn test_fnv1a_special_characters() {
+        let path_with_spaces = "/path/with spaces/and-dashes/and_underscores";
+        let hash = generate_fnv1a_hash(path_with_spaces);
+        assert_eq!(hash.len(), 16);
+    }
+
+    #[test]
+    fn test_fnv1a_unicode() {
+        let unicode_path = "/путь/к/проекту"; // Russian characters
+        let hash = generate_fnv1a_hash(unicode_path);
+        assert_eq!(hash.len(), 16);
+    }
+
+    #[test]
+    fn test_fnv1a_case_sensitive() {
+        let hash1 = generate_fnv1a_hash("/Path/To/Project");
+        let hash2 = generate_fnv1a_hash("/path/to/project");
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_fnv1a_similar_paths() {
+        // Paths that are very similar should still produce different hashes
+        let hash1 = generate_fnv1a_hash("/project/a");
+        let hash2 = generate_fnv1a_hash("/project/b");
+        assert_ne!(hash1, hash2);
+    }
+
+    #[test]
+    fn test_fnv1a_hex_format() {
+        let hash = generate_fnv1a_hash("test");
+        // Should be valid hexadecimal
+        assert!(hash.chars().all(|c| c.is_ascii_hexdigit()));
+    }
+
+    // --- DB_SEPARATOR TESTS ---
+
+    #[test]
+    fn test_db_separator_is_pipe() {
+        assert_eq!(DB_SEPARATOR, "|");
     }
 }
