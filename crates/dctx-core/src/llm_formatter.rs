@@ -369,6 +369,12 @@ fn render_layout(tmpl: &Template, tree_content: String, files_content: String) -
     let mut output = tmpl.layout.clone();
     output = output.replace("{{{comp.tree}}}", &tree_content);
     output = output.replace("{{{comp.files}}}", &files_content);
+
+    // Handle {{{project}}} runtime data (injected via insert_variable)
+    if let Some(project) = tmpl.variables.get("project") {
+        output = output.replace("{{{project}}}", project);
+    }
+
     output = template::replace_vars(&output, &tmpl.variables);
     output
 }
@@ -674,5 +680,107 @@ mod tests {
         // These are commonly used variables that should exist
         // Check that at least some expected markers exist
         assert!(tmpl.layout.contains("{{{comp.tree}}}") || tmpl.variables.contains_key("comp.tree") || true);
+    }
+
+    // --- LARGE FILE ID TESTS ---
+
+    #[test]
+    fn test_file_ids_beyond_three_digits() {
+        // Create a tree with more than 999 files to ensure IDs like F1000, F1201 work
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+
+        // Add 1005 files to exceed 3-digit IDs
+        for i in 1..=1005 {
+            root.children
+                .push(create_file_node(&format!("file{:04}.txt", i), b"x"));
+        }
+
+        let version = Version::new_v1();
+        generate_llm_context(&mut buffer, &root, &version, "LargeProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+
+        // Verify that 4-digit IDs are generated correctly
+        assert!(output.contains("F1000"), "Should contain F1000");
+        assert!(output.contains("F1001"), "Should contain F1001");
+        assert!(output.contains("F1005"), "Should contain F1005");
+
+        // Verify IDs are still properly formatted (not truncated)
+        assert!(!output.contains("F000"), "Should not have F000 (that would indicate truncation)");
+    }
+
+    #[test]
+    fn test_directory_ids_beyond_three_digits() {
+        // Create a tree with more than 999 directories
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+
+        // Add 1005 directories
+        for i in 1..=1005 {
+            root.children
+                .push(create_dir_node(&format!("dir{:04}", i)));
+        }
+
+        let version = Version::new_v1();
+        generate_llm_context(&mut buffer, &root, &version, "LargeProject", true).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+
+        // Verify that 4-digit directory IDs are generated correctly
+        assert!(output.contains("D1000"), "Should contain D1000");
+        assert!(output.contains("D1005"), "Should contain D1005");
+    }
+
+    #[test]
+    fn test_project_name_no_curly_braces() {
+        let mut buffer = Vec::new();
+        let root = create_dir_node("");
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "MyProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+
+        // Should contain [DIRECTORY:MyProject] without curly braces
+        assert!(
+            output.contains("[DIRECTORY:MyProject]"),
+            "Project name should not have curly braces. Got: {}",
+            output.lines().take(5).collect::<Vec<_>>().join("\n")
+        );
+        // Should NOT contain {MyProject}
+        assert!(
+            !output.contains("{MyProject}"),
+            "Project name should not be wrapped in curly braces"
+        );
+    }
+
+    #[test]
+    fn test_file_content_no_size_attribute() {
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("test.txt", b"Hello"));
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+
+        // FILE_CONTENT_START should have LINES but not SIZE
+        assert!(
+            output.contains("LINES="),
+            "FILE_CONTENT_START should contain LINES attribute"
+        );
+        // SIZE should NOT be in FILE_CONTENT_START (but IS in directory tree)
+        // Check that SIZE is not between FILE_CONTENT_START and the closing >
+        let file_start_line = output
+            .lines()
+            .find(|l| l.contains("FILE_CONTENT_START"))
+            .unwrap();
+        assert!(
+            !file_start_line.contains("SIZE="),
+            "FILE_CONTENT_START should not contain SIZE attribute. Got: {}",
+            file_start_line
+        );
     }
 }
