@@ -6,8 +6,8 @@ FACTORY OF ELECTRONIC UNITS AND LOGIC – TEJL d.o.o.
 Sector for System Integration and Development
 
 **Class:** 003-05/25-01
-**Reference Number:** 251-01-03-25-04 (Rev. 8)
-**Date:** 2026-01-12
+**Reference Number:** 251-01-03-25-04 (Rev. 9)
+**Date:** 2026-01-16
 
 SUBJECT: Elaboration on the Development of the 'dctx' Project
 
@@ -55,7 +55,10 @@ The `tools/install.sh` script manages compilation and installation on POSIX syst
 *   **Phase 4: Output Parity & Diffing (ADR-002):** `COMPLETED`
 *   **Phase 5: Critical Fixes & Logic Verification:** `COMPLETED`
 *   **Phase 6: The AOT Templating Engine (ADR-003):** `COMPLETED`
-*   **Phase 7: Final Polish:** `PENDING`
+*   **Phase 7: Documentation & Code Quality:** `IN PROGRESS`
+*   **Phase 8: Advanced CLI Filters:** `PENDING`
+*   **Phase 9: Interactive CLI Menu:** `PENDING`
+*   **Phase 10: Desktop Application:** `PENDING`
 
 ---
 
@@ -174,14 +177,175 @@ The `tools/install.sh` script manages compilation and installation on POSIX syst
 
 ---
 
-### **Phase 7: Final Polish (PENDING)**
+### **Phase 7: Documentation & Code Quality (IN PROGRESS)**
 
-*   **7.1. Cross-Platform Verification**
-    *   `7.1.a.` Verify behavior on Windows (Paths, AppData).
-    *   `7.1.b.` Verify behavior on Linux/macOS.
-*   **7.2. Documentation & Cleanup**
-    *   `7.2.a.` Run `cargo clippy` and resolve all lints.
-    *   `7.2.b.` Finalize `README.md` with updated usage instructions.
+**Goal:** Ensure codebase quality, documentation accuracy, and Linux/macOS verification before expanding features.
+
+*   **7.1. Code Quality**
+    *   `7.1.a.` Run `cargo clippy` and resolve all lints (currently 6 warnings).
+    *   `7.1.b.` Review code for any dead or unused functions (do NOT remove `legacy-c/`).
+*   **7.2. Documentation**
+    *   `7.2.a.` ✓ Update `README.md` with accurate feature documentation, CLI reference, and performance metrics.
+    *   `7.2.b.` ✓ Create `CHANGELOG.md` with version history.
+    *   `7.2.c.` Review and update website content (`website/index.html`).
+*   **7.3. Cross-Platform Verification (Linux/macOS)**
+    *   `7.3.a.` Verify behavior on Linux (paths, cache directories).
+    *   `7.3.b.` Verify behavior on macOS (current primary dev platform).
+*   **7.4. Release Preparation**
+    *   `7.4.a.` Prepare version bump to 0.2.0.
+    *   `7.4.b.` Tag release in git.
+
+**Note:** Windows verification and package manager publishing deferred to future phases.
+
+---
+
+### **Phase 8: Advanced CLI Filters (PENDING)**
+
+**Goal:** Implement powerful filtering flags to give users fine-grained control over what files appear in the context output. All filters apply to both the directory tree AND file content sections—filtered files are completely invisible.
+
+*   **8.1. Extension Filters**
+    *   `8.1.a.` Implement `--ext <extensions>` flag to show only files with specified extensions.
+        *   Example: `dctx . --ext rs,toml` (only Rust and TOML files)
+        *   Example: `dctx . --ext js,ts,tsx` (only JavaScript/TypeScript)
+    *   `8.1.b.` Implement `--binary` flag to include binary files in output.
+        *   By default, binary files are excluded. This flag opts them in.
+    *   `8.1.c.` Directory tree shows ONLY folders containing matching files (empty branches pruned).
+
+*   **8.2. Content-Based Filters**
+    *   `8.2.a.` Implement `--empty` flag to show only empty files (0 bytes).
+    *   `8.2.b.` Implement `--non-empty` flag to show only non-empty files.
+    *   `8.2.c.` Implement `--large <MB>` flag to show only files larger than specified megabytes.
+        *   Example: `dctx . --large 1` (files > 1MB)
+    *   `8.2.d.` Implement `--small <MB>` flag to show only files smaller than specified megabytes.
+        *   Example: `dctx . --small 0.1` (files < 100KB)
+
+*   **8.3. Visibility Filters**
+    *   `8.3.a.` Implement `--hidden` flag to show ONLY hidden files and folders.
+        *   Hidden = starts with `.` (e.g., `.gitignore`, `.env`, `.config/`)
+    *   `8.3.b.` Logic: When `--hidden` is active, non-hidden items are invisible.
+
+*   **8.4. Debug/Diagnostic Flags**
+    *   `8.4.a.` Implement `--debug-ignored` flag to display ignored FOLDERS (not their contents).
+        *   Output format: List of folder paths that were skipped due to ignore rules.
+        *   Purpose: Help users understand why certain directories don't appear.
+
+*   **8.5. Filter Combinations**
+    *   `8.5.a.` Ensure filters can be combined logically.
+        *   Example: `dctx . --ext rs --small 0.5` (Rust files under 500KB)
+    *   `8.5.b.` Document filter precedence and interaction rules.
+
+---
+
+### **Phase 9: Interactive CLI Menu (PENDING)**
+
+**Goal:** Create a full-featured interactive menu system for users who prefer not to memorize flags. The menu must be fast, readable, and provide access to all functionality through intuitive navigation.
+
+*   **9.1. Menu Architecture**
+    *   `9.1.a.` Design two-tier menu system: **Basic Menu** and **Advanced Menu**.
+    *   `9.1.b.` Basic Menu: Quick access to common operations (snapshot, clipboard, tree-only, diff).
+    *   `9.1.c.` Advanced Menu: Access to filters, template management, cache operations.
+
+*   **9.2. Basic Menu Implementation**
+    *   `9.2.a.` Main menu options:
+        ```
+        [1] Snapshot current directory
+        [2] Snapshot to clipboard
+        [3] Tree-only mode
+        [4] Diff mode
+        [5] Advanced options →
+        [0] Exit
+        ```
+    *   `9.2.b.` Implement keyboard navigation (arrow keys + Enter, or number keys).
+    *   `9.2.c.` Display current directory and last snapshot version.
+
+*   **9.3. Advanced Menu Implementation**
+    *   `9.3.a.` Filter submenu:
+        ```
+        Filter by extension: [enter extensions]
+        Filter by size: [small/large]
+        Show hidden files only: [yes/no]
+        Include binary files: [yes/no]
+        ```
+    *   `9.3.b.` Template submenu:
+        ```
+        [1] Use default template
+        [2] List available templates
+        [3] Build new template
+        ```
+    *   `9.3.c.` Cache/Debug submenu:
+        ```
+        [1] Show ignored folders
+        [2] Reset project state
+        [3] Clear global cache
+        ```
+
+*   **9.4. User Experience**
+    *   `9.4.a.` Zero-dependency TUI (no external crates like `crossterm` or `tui`).
+    *   `9.4.b.` Fast rendering—menu must appear instantly.
+    *   `9.4.c.` Clear visual feedback on selections.
+    *   `9.4.d.` Escape key returns to previous menu or exits.
+
+*   **9.5. Activation**
+    *   `9.5.a.` Menu launches when `dctx` is run without arguments (or with `--interactive`/`-i` flag).
+    *   `9.5.b.` Flag-based usage remains fully functional for scripting/automation.
+
+---
+
+### **Phase 10: Desktop Application (PENDING)**
+
+**Goal:** Create a cross-platform desktop application for non-technical users and those who prefer GUI interfaces. This phase includes critical licensing considerations.
+
+*   **10.1. Licensing Strategy**
+    *   `10.1.a.` **Decision Required:** The CLI (`dctx-cli`) and core library (`dctx-core`) are MIT licensed and open source.
+    *   `10.1.b.` The Desktop Application will be a **paid product** ($29 one-time, as per website pricing).
+    *   `10.1.c.` **Approach Options:**
+        *   **Option A (Recommended):** Desktop app is proprietary closed-source, built on top of MIT-licensed `dctx-core`. This is legally permissible under MIT.
+        *   **Option B:** Desktop app source is available but under a commercial license (e.g., BSL, proprietary EULA).
+    *   `10.1.d.` Create `LICENSE-DESKTOP.md` documenting the commercial license terms.
+    *   `10.1.e.` Update `README.md` to clarify: "CLI is free and open source. Desktop app is a paid product."
+
+*   **10.2. Technology Selection**
+    *   `10.2.a.` Evaluate cross-platform GUI frameworks:
+        *   **Tauri** (Rust + WebView) — Small binary, uses system WebView.
+        *   **egui/eframe** (Pure Rust) — No web dependencies, immediate mode GUI.
+        *   **Slint** (Rust) — Declarative UI, good cross-platform support.
+    *   `10.2.b.` Select framework based on: binary size, startup time, native look, development speed.
+    *   `10.2.c.` Create ADR-008 documenting the technology decision.
+
+*   **10.3. Core Features**
+    *   `10.3.a.` Directory browser with drag-and-drop support.
+    *   `10.3.b.` Real-time file tree preview.
+    *   `10.3.c.` One-click snapshot generation.
+    *   `10.3.d.` Built-in clipboard integration.
+    *   `10.3.e.` Visual diff viewer.
+    *   `10.3.f.` Filter controls (extension, size, hidden files).
+    *   `10.3.g.` Template selection dropdown.
+
+*   **10.4. Platform-Specific**
+    *   `10.4.a.` macOS: `.app` bundle, code signing, notarization.
+    *   `10.4.b.` Windows: `.exe` installer, optional Microsoft Store.
+    *   `10.4.c.` Linux: `.AppImage` or `.deb`/`.rpm` packages.
+
+*   **10.5. Distribution & Licensing**
+    *   `10.5.a.` Implement license key validation system.
+    *   `10.5.b.` Payment integration (Stripe, Gumroad, or Paddle).
+    *   `10.5.c.` Trial mode: Full functionality for 14 days, then requires license.
+    *   `10.5.d.` Offline license validation (license file, not always-online DRM).
+
+*   **10.6. Crate Structure**
+    *   `10.6.a.` Create `apps/dctx-desktop/` directory.
+    *   `10.6.b.` Desktop app depends on `dctx-core` (MIT) but is NOT part of the open-source release.
+    *   `10.6.c.` Build scripts separate desktop builds from CLI builds.
+
+---
+
+## FUTURE CONSIDERATIONS (Not Yet Scheduled)
+
+*   **Windows Verification:** Full testing on Windows paths and AppData directories.
+*   **Package Manager Publishing:** Cargo, npm, pip, Homebrew, apt, chocolatey.
+*   **FFI Bindings:** `dctx-ffi` crate for Python, Node, Go integration.
+*   **Cloud Sync:** Optional cloud backup of project states.
+*   **AI Integration:** Direct API integration with Claude, GPT-4, etc.
 
 ---
 
