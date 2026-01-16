@@ -102,3 +102,261 @@ pub fn replace_vars(text: &str, vars: &HashMap<String, String>) -> String {
     }
     result
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // --- REPLACE_VARS TESTS ---
+
+    #[test]
+    fn test_replace_vars_simple() {
+        let mut vars = HashMap::new();
+        vars.insert("name".to_string(), "World".to_string());
+        let result = replace_vars("Hello, {{name}}!", &vars);
+        assert_eq!(result, "Hello, World!");
+    }
+
+    #[test]
+    fn test_replace_vars_multiple() {
+        let mut vars = HashMap::new();
+        vars.insert("first".to_string(), "Hello".to_string());
+        vars.insert("second".to_string(), "World".to_string());
+        let result = replace_vars("{{first}}, {{second}}!", &vars);
+        assert_eq!(result, "Hello, World!");
+    }
+
+    #[test]
+    fn test_replace_vars_no_vars() {
+        let vars = HashMap::new();
+        let result = replace_vars("No variables here", &vars);
+        assert_eq!(result, "No variables here");
+    }
+
+    #[test]
+    fn test_replace_vars_missing_var() {
+        let vars = HashMap::new();
+        let result = replace_vars("{{missing}} variable", &vars);
+        assert_eq!(result, "{{missing}} variable"); // Should remain unchanged
+    }
+
+    #[test]
+    fn test_replace_vars_repeated_var() {
+        let mut vars = HashMap::new();
+        vars.insert("x".to_string(), "Y".to_string());
+        let result = replace_vars("{{x}} and {{x}} again", &vars);
+        assert_eq!(result, "Y and Y again");
+    }
+
+    #[test]
+    fn test_replace_vars_optimization_no_braces() {
+        let mut vars = HashMap::new();
+        vars.insert("unused".to_string(), "value".to_string());
+        let result = replace_vars("No braces here", &vars);
+        assert_eq!(result, "No braces here");
+    }
+
+    // --- TEMPLATE PARSE TESTS ---
+
+    #[test]
+    fn test_template_parse_variables() {
+        let raw = r#"
+[VARIABLES]
+key1 = "value1"
+key2 = "value2"
+[LAYOUT]
+"#;
+        let tmpl = Template::parse(raw);
+        assert_eq!(tmpl.variables.get("key1"), Some(&"value1".to_string()));
+        assert_eq!(tmpl.variables.get("key2"), Some(&"value2".to_string()));
+    }
+
+    #[test]
+    fn test_template_parse_newline_escape() {
+        let raw = r#"
+[VARIABLES]
+multiline = "line1\nline2"
+[LAYOUT]
+"#;
+        let tmpl = Template::parse(raw);
+        assert_eq!(tmpl.variables.get("multiline"), Some(&"line1\nline2".to_string()));
+    }
+
+    #[test]
+    fn test_template_parse_variable_references() {
+        let raw = r#"
+[VARIABLES]
+prefix = "START"
+full = "{{prefix}}_END"
+[LAYOUT]
+"#;
+        let tmpl = Template::parse(raw);
+        assert_eq!(tmpl.variables.get("full"), Some(&"START_END".to_string()));
+    }
+
+    #[test]
+    fn test_template_parse_partial_tree() {
+        let raw = r#"
+[VARIABLES]
+[PARTIAL:TREE_ENTRY]
+{{{node.type_char}}} {{{node.path}}}
+[LAYOUT]
+"#;
+        let tmpl = Template::parse(raw);
+        assert!(tmpl.partial_tree_entry.contains("{{{node.type_char}}}"));
+        assert!(tmpl.partial_tree_entry.contains("{{{node.path}}}"));
+    }
+
+    #[test]
+    fn test_template_parse_partial_file() {
+        let raw = r#"
+[VARIABLES]
+[PARTIAL:FILE_BLOCK]
+<FILE id="{{{file.id}}}">
+{{{file.content}}}
+</FILE>
+[LAYOUT]
+"#;
+        let tmpl = Template::parse(raw);
+        assert!(tmpl.partial_file_block.contains("{{{file.id}}}"));
+        assert!(tmpl.partial_file_block.contains("{{{file.content}}}"));
+    }
+
+    #[test]
+    fn test_template_parse_layout() {
+        let raw = r#"
+[VARIABLES]
+[LAYOUT]
+=== TREE ===
+{{{comp.tree}}}
+=== FILES ===
+{{{comp.files}}}
+"#;
+        let tmpl = Template::parse(raw);
+        assert!(tmpl.layout.contains("{{{comp.tree}}}"));
+        assert!(tmpl.layout.contains("{{{comp.files}}}"));
+    }
+
+    #[test]
+    fn test_template_parse_ignores_comments() {
+        let raw = r#"
+# This is a comment
+[VARIABLES]
+# Another comment
+key = "value"
+[LAYOUT]
+# Comment in layout section is NOT ignored (it's content)
+"#;
+        let tmpl = Template::parse(raw);
+        assert_eq!(tmpl.variables.get("key"), Some(&"value".to_string()));
+    }
+
+    #[test]
+    fn test_template_parse_ignores_empty_lines() {
+        let raw = r#"
+[VARIABLES]
+
+key = "value"
+
+[LAYOUT]
+"#;
+        let tmpl = Template::parse(raw);
+        assert_eq!(tmpl.variables.get("key"), Some(&"value".to_string()));
+    }
+
+    #[test]
+    fn test_template_parse_content_with_brackets() {
+        // This tests the critical fix: [DIRECTORY:...] should NOT be treated as a section header
+        let raw = r#"
+[VARIABLES]
+marker = "[DIRECTORY:{{project}}]"
+[LAYOUT]
+{{{marker}}}
+{{{comp.tree}}}
+"#;
+        let tmpl = Template::parse(raw);
+        assert!(tmpl.layout.contains("{{{marker}}}"));
+        assert!(tmpl.layout.contains("{{{comp.tree}}}"));
+    }
+
+    #[test]
+    fn test_template_insert_variable() {
+        let raw = r#"
+[VARIABLES]
+existing = "value"
+[LAYOUT]
+"#;
+        let mut tmpl = Template::parse(raw);
+        tmpl.insert_variable("project", "MyProject");
+
+        assert_eq!(tmpl.variables.get("project"), Some(&"MyProject".to_string()));
+        assert_eq!(tmpl.variables.get("existing"), Some(&"value".to_string()));
+    }
+
+    #[test]
+    fn test_template_insert_variable_overwrites() {
+        let raw = r#"
+[VARIABLES]
+key = "old"
+[LAYOUT]
+"#;
+        let mut tmpl = Template::parse(raw);
+        tmpl.insert_variable("key", "new");
+
+        assert_eq!(tmpl.variables.get("key"), Some(&"new".to_string()));
+    }
+
+    #[test]
+    fn test_template_nested_variable_resolution() {
+        let raw = r#"
+[VARIABLES]
+a = "A"
+b = "{{a}}B"
+c = "{{b}}C"
+[LAYOUT]
+"#;
+        let tmpl = Template::parse(raw);
+        // After 2 passes of resolution
+        assert_eq!(tmpl.variables.get("c"), Some(&"ABC".to_string()));
+    }
+
+    #[test]
+    fn test_template_parse_full_example() {
+        let raw = r#"
+[VARIABLES]
+tree_start = "<TREE>"
+tree_end = "</TREE>"
+file_start = "<FILE>"
+file_end = "</FILE>"
+
+[PARTIAL:TREE_ENTRY]
+{{{node.type_char}}} {{{node.path}}} (ID: {{{node.id}}})
+
+[PARTIAL:FILE_BLOCK]
+{{{file_start}}} id="{{{file.id}}}"
+{{{file.content}}}
+{{{file_end}}}
+
+[LAYOUT]
+{{{tree_start}}}
+{{{comp.tree}}}
+{{{tree_end}}}
+
+{{{comp.files}}}
+"#;
+        let tmpl = Template::parse(raw);
+
+        // Check variables were resolved
+        assert_eq!(tmpl.variables.get("tree_start"), Some(&"<TREE>".to_string()));
+        assert_eq!(tmpl.variables.get("file_end"), Some(&"</FILE>".to_string()));
+
+        // Check partials contain expected placeholders
+        assert!(tmpl.partial_tree_entry.contains("{{{node.type_char}}}"));
+        assert!(tmpl.partial_file_block.contains("{{{file.content}}}"));
+
+        // Check layout structure
+        assert!(tmpl.layout.contains("{{{tree_start}}}"));
+        assert!(tmpl.layout.contains("{{{comp.tree}}}"));
+        assert!(tmpl.layout.contains("{{{comp.files}}}"));
+    }
+}
