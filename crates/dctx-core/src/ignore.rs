@@ -89,14 +89,12 @@ pub fn parse_ignore_pattern_line(line: &str) -> Option<IgnoreRule> {
             rule.pattern_type = PatternType::Glob;
             rule.pattern = trimmed.to_string();
         }
+    } else if has_internal_slash {
+        rule.pattern_type = PatternType::Path;
+        rule.pattern = trimmed.to_string();
     } else {
-        if has_internal_slash {
-            rule.pattern_type = PatternType::Path;
-            rule.pattern = trimmed.to_string();
-        } else {
-            rule.pattern_type = PatternType::Basename;
-            rule.pattern = trimmed.to_string();
-        }
+        rule.pattern_type = PatternType::Basename;
+        rule.pattern = trimmed.to_string();
     }
     Some(rule)
 }

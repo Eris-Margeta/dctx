@@ -29,15 +29,21 @@ pub struct IgnoreRule {
     pub is_negation: bool, // Set to true if the pattern starts with '!'
 }
 
-impl IgnoreRule {
-    /// Konstruktor za stvaranje praznog pravila
-    pub fn new() -> Self {
+impl Default for IgnoreRule {
+    fn default() -> Self {
         Self {
             pattern: String::new(),
             pattern_type: PatternType::Invalid,
             is_dir_only: false,
             is_negation: false,
         }
+    }
+}
+
+impl IgnoreRule {
+    /// Konstruktor za stvaranje praznog pravila
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 

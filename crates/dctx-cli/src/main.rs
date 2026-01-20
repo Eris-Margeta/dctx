@@ -202,9 +202,10 @@ fn run_interactive_mode() {
     match input.trim() {
         "1" => run_headless_mode(CliConfig::default()),
         "2" => {
-            let mut c = CliConfig::default();
-            c.clipboard_mode = true;
-            run_headless_mode(c);
+            run_headless_mode(CliConfig {
+                clipboard_mode: true,
+                ..Default::default()
+            });
         }
         "3" => print_help(),
         "4" | "q" | "exit" => std::process::exit(0),
@@ -365,16 +366,14 @@ fn run_headless_mode(cli_config: CliConfig) {
     }
 
     // --- CLEANUP (ADR-002) ---
-    if is_major_reset && !cli_config.clipboard_mode {
-        if local_output_dir.exists() {
-            let diff_suffix = "-diff.txt";
-            if let Ok(entries) = fs::read_dir(&local_output_dir) {
-                for entry in entries.flatten() {
-                    let path = entry.path();
-                    if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
-                        if name.ends_with(diff_suffix) {
-                            let _ = fs::remove_file(path);
-                        }
+    if is_major_reset && !cli_config.clipboard_mode && local_output_dir.exists() {
+        let diff_suffix = "-diff.txt";
+        if let Ok(entries) = fs::read_dir(&local_output_dir) {
+            for entry in entries.flatten() {
+                let path = entry.path();
+                if let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+                    if name.ends_with(diff_suffix) {
+                        let _ = fs::remove_file(path);
                     }
                 }
             }
