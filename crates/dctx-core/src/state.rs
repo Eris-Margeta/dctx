@@ -104,16 +104,9 @@ fn perform_full_cleanup(binary_path: &Path, output_txt_dir: Option<&Path>, proje
                 if let Some(name_os) = path.file_name() {
                     let name = name_os.to_string_lossy();
 
-                    let mut should_delete = false;
-
-                    // A) Main Context File
-                    if name == main_file_name {
-                        should_delete = true;
-                    }
-                    // B) Diff Files (check prefix and suffix)
-                    else if name.starts_with(&diff_prefix) && name.ends_with("-diff.txt") {
-                        should_delete = true;
-                    }
+                    // A) Main Context File OR B) Diff Files (check prefix and suffix)
+                    let should_delete = name == main_file_name
+                        || (name.starts_with(&diff_prefix) && name.ends_with("-diff.txt"));
 
                     if should_delete {
                         if let Err(e) = fs::remove_file(&path) {
@@ -128,6 +121,293 @@ fn perform_full_cleanup(binary_path: &Path, output_txt_dir: Option<&Path>, proje
                     }
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::datatypes::NodeType;
+    use crate::writer::write_dircontxt_file;
+    use std::path::PathBuf;
+    use tempfile::TempDir;
+
+    fn create_dir_node(path: &str) -> DirContextTreeNode {
+        let mut node = DirContextTreeNode::new(
+            NodeType::Directory,
+            path,
+            PathBuf::from(format!("/test/{}", path)),
+        );
+        node.last_modified_timestamp = 1234567890;
+        node
+    }
+
+    fn create_file_node(path: &str, content: &[u8]) -> DirContextTreeNode {
+        let mut node = DirContextTreeNode::new(
+            NodeType::File,
+            path,
+            PathBuf::from(format!("/test/{}", path)),
+        );
+        node.content_size = content.len() as u64;
+        node.file_content = Some(content.to_vec());
+        node.last_modified_timestamp = 1234567890;
+        node
+    }
+
+    // --- LOAD_OR_RESET_STATE TESTS ---
+
+    #[test]
+    fn test_load_or_reset_state_no_binary() {
+        let temp_dir = TempDir::new().unwrap();
+        let binary_path = temp_dir.path().join("nonexistent.dctx");
+
+        let result = load_or_reset_state(
+            temp_dir.path(),
+            &binary_path,
+            None,
+            "TestProject",
+        );
+
+        match result {
+            StateLoadResult::FreshV1 => {} // Expected
+            StateLoadResult::Loaded(_, _) => panic!("Expected FreshV1 when binary doesn't exist"),
+        }
+    }
+
+    #[test]
+    fn test_load_or_reset_state_valid_binary() {
+        let temp_dir = TempDir::new().unwrap();
+        let binary_path = temp_dir.path().join("test.dctx");
+
+        // Create a valid binary file
+        let mut root = create_dir_node("");
+        root.children.push(create_file_node("test.txt", b"Hello"));
+        let version = Version { major: 1, minor: 5 };
+        write_dircontxt_file(&binary_path, &mut root, &version).unwrap();
+
+        let result = load_or_reset_state(
+            temp_dir.path(),
+            &binary_path,
+            None,
+            "TestProject",
+        );
+
+        match result {
+            StateLoadResult::Loaded(loaded_root, loaded_version) => {
+                assert_eq!(loaded_version.major, 1);
+                assert_eq!(loaded_version.minor, 5);
+                assert_eq!(loaded_root.children.len(), 1);
+            }
+            StateLoadResult::FreshV1 => panic!("Expected Loaded with valid binary"),
+        }
+    }
+
+    #[test]
+    fn test_load_or_reset_state_corrupted_binary() {
+        let temp_dir = TempDir::new().unwrap();
+        let binary_path = temp_dir.path().join("corrupted.dctx");
+
+        // Create a corrupted binary file
+        fs::write(&binary_path, b"INVALID_CORRUPTED_DATA").unwrap();
+
+        let result = load_or_reset_state(
+            temp_dir.path(),
+            &binary_path,
+            None,
+            "TestProject",
+        );
+
+        match result {
+            StateLoadResult::FreshV1 => {
+                // Binary should have been deleted
+                assert!(!binary_path.exists());
+            }
+            StateLoadResult::Loaded(_, _) => panic!("Expected FreshV1 with corrupted binary"),
+        }
+    }
+
+    #[test]
+    fn test_load_or_reset_state_corrupted_cleans_text_files() {
+        let temp_dir = TempDir::new().unwrap();
+        let binary_path = temp_dir.path().join("corrupted.dctx");
+        let output_dir = temp_dir.path().join(".dctx");
+        fs::create_dir(&output_dir).unwrap();
+
+        // Create corrupted binary
+        fs::write(&binary_path, b"INVALID_DATA").unwrap();
+
+        // Create text output files that should be cleaned up
+        let main_file = output_dir.join("TestProject.llmcontext.txt");
+        let diff_file = output_dir.join("TestProject.llmcontext.txt-V1.1-diff.txt");
+        fs::write(&main_file, "main content").unwrap();
+        fs::write(&diff_file, "diff content").unwrap();
+
+        let result = load_or_reset_state(
+            temp_dir.path(),
+            &binary_path,
+            Some(&output_dir),
+            "TestProject",
+        );
+
+        match result {
+            StateLoadResult::FreshV1 => {
+                // All files should have been cleaned up
+                assert!(!binary_path.exists());
+                assert!(!main_file.exists());
+                assert!(!diff_file.exists());
+            }
+            StateLoadResult::Loaded(_, _) => panic!("Expected FreshV1"),
+        }
+    }
+
+    // --- IS_FOLDER_RECREATED TESTS ---
+
+    #[test]
+    fn test_is_folder_recreated_returns_false() {
+        let temp_dir = TempDir::new().unwrap();
+        let root = create_dir_node("");
+
+        // Currently always returns false (stub implementation)
+        let result = is_folder_recreated(temp_dir.path(), &root);
+        assert!(!result);
+    }
+
+    #[test]
+    fn test_is_folder_recreated_nonexistent_dir() {
+        let root = create_dir_node("");
+
+        // Non-existent directory should return false
+        let result = is_folder_recreated(Path::new("/nonexistent/path"), &root);
+        assert!(!result);
+    }
+
+    // --- PERFORM_FULL_CLEANUP TESTS ---
+
+    #[test]
+    fn test_perform_full_cleanup_deletes_binary() {
+        let temp_dir = TempDir::new().unwrap();
+        let binary_path = temp_dir.path().join("test.dctx");
+
+        // Create a binary file
+        fs::write(&binary_path, b"dummy content").unwrap();
+        assert!(binary_path.exists());
+
+        perform_full_cleanup(&binary_path, None, "TestProject");
+
+        assert!(!binary_path.exists());
+    }
+
+    #[test]
+    fn test_perform_full_cleanup_deletes_main_context_file() {
+        let temp_dir = TempDir::new().unwrap();
+        let binary_path = temp_dir.path().join("test.dctx");
+        let output_dir = temp_dir.path().join(".dctx");
+        fs::create_dir(&output_dir).unwrap();
+
+        // Create main context file
+        let main_file = output_dir.join("TestProject.llmcontext.txt");
+        fs::write(&main_file, "content").unwrap();
+        assert!(main_file.exists());
+
+        perform_full_cleanup(&binary_path, Some(&output_dir), "TestProject");
+
+        assert!(!main_file.exists());
+    }
+
+    #[test]
+    fn test_perform_full_cleanup_deletes_diff_files() {
+        let temp_dir = TempDir::new().unwrap();
+        let binary_path = temp_dir.path().join("test.dctx");
+        let output_dir = temp_dir.path().join(".dctx");
+        fs::create_dir(&output_dir).unwrap();
+
+        // Create diff files
+        let diff1 = output_dir.join("TestProject.llmcontext.txt-V1.1-diff.txt");
+        let diff2 = output_dir.join("TestProject.llmcontext.txt-V1.2-diff.txt");
+        fs::write(&diff1, "diff1").unwrap();
+        fs::write(&diff2, "diff2").unwrap();
+        assert!(diff1.exists());
+        assert!(diff2.exists());
+
+        perform_full_cleanup(&binary_path, Some(&output_dir), "TestProject");
+
+        assert!(!diff1.exists());
+        assert!(!diff2.exists());
+    }
+
+    #[test]
+    fn test_perform_full_cleanup_preserves_unrelated_files() {
+        let temp_dir = TempDir::new().unwrap();
+        let binary_path = temp_dir.path().join("test.dctx");
+        let output_dir = temp_dir.path().join(".dctx");
+        fs::create_dir(&output_dir).unwrap();
+
+        // Create unrelated files that should NOT be deleted
+        let unrelated1 = output_dir.join("README.md");
+        let unrelated2 = output_dir.join("OtherProject.llmcontext.txt");
+        let unrelated3 = output_dir.join("random.txt");
+        fs::write(&unrelated1, "readme").unwrap();
+        fs::write(&unrelated2, "other project").unwrap();
+        fs::write(&unrelated3, "random").unwrap();
+
+        // Create target files that SHOULD be deleted
+        let main_file = output_dir.join("TestProject.llmcontext.txt");
+        fs::write(&main_file, "main").unwrap();
+
+        perform_full_cleanup(&binary_path, Some(&output_dir), "TestProject");
+
+        // Unrelated files should still exist
+        assert!(unrelated1.exists());
+        assert!(unrelated2.exists());
+        assert!(unrelated3.exists());
+        // Target file should be deleted
+        assert!(!main_file.exists());
+    }
+
+    #[test]
+    fn test_perform_full_cleanup_handles_nonexistent_output_dir() {
+        let temp_dir = TempDir::new().unwrap();
+        let binary_path = temp_dir.path().join("test.dctx");
+        let nonexistent_dir = temp_dir.path().join("nonexistent");
+
+        // Should not panic when output dir doesn't exist
+        perform_full_cleanup(&binary_path, Some(&nonexistent_dir), "TestProject");
+        // No assertion needed - just verifying it doesn't panic
+    }
+
+    #[test]
+    fn test_perform_full_cleanup_handles_nonexistent_binary() {
+        let temp_dir = TempDir::new().unwrap();
+        let binary_path = temp_dir.path().join("nonexistent.dctx");
+
+        // Should not panic when binary doesn't exist
+        perform_full_cleanup(&binary_path, None, "TestProject");
+        // No assertion needed - just verifying it doesn't panic
+    }
+
+    // --- STATE_LOAD_RESULT TESTS ---
+
+    #[test]
+    fn test_state_load_result_fresh_v1() {
+        let result = StateLoadResult::FreshV1;
+        match result {
+            StateLoadResult::FreshV1 => {} // Expected
+            StateLoadResult::Loaded(_, _) => panic!("Expected FreshV1"),
+        }
+    }
+
+    #[test]
+    fn test_state_load_result_loaded() {
+        let root = create_dir_node("");
+        let version = Version::new_v1();
+        let result = StateLoadResult::Loaded(root, version);
+        match result {
+            StateLoadResult::Loaded(loaded_root, loaded_version) => {
+                assert_eq!(loaded_root.node_type, NodeType::Directory);
+                assert_eq!(loaded_version.major, 1);
+            }
+            StateLoadResult::FreshV1 => panic!("Expected Loaded"),
         }
     }
 }

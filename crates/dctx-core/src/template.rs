@@ -170,12 +170,14 @@ impl Template {
                         if let Some(end) = rest.find("}}") {
                             let var_name = &rest[..end];
                             // Check if the variable exists in the map
-                            if !var_name.is_empty() && !var_name.contains('{') && !var_name.contains('}') {
-                                if !vars.contains_key(var_name) {
-                                    errors.push(TemplateValidationError::UnresolvedVariable(
-                                        var_name.to_string(),
-                                    ));
-                                }
+                            if !var_name.is_empty()
+                                && !var_name.contains('{')
+                                && !var_name.contains('}')
+                                && !vars.contains_key(var_name)
+                            {
+                                errors.push(TemplateValidationError::UnresolvedVariable(
+                                    var_name.to_string(),
+                                ));
                             }
                             i += 2 + end + 2; // Skip past {{ content }}
                             continue;
