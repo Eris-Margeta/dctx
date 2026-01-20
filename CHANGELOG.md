@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] - 2026-01-20
+
+### Added
+- **Unit Tests for git_safety.rs**: 20 new tests covering:
+  - Pattern validation and marker format tests
+  - `read_existing_patterns` tests (empty file, patterns, comments, whitespace)
+  - `is_fast_path_valid` tests (with/without marker, old versions)
+  - `update_gitignore` tests (adding patterns, preserving content)
+  - `ensure_local_gitignore_is_safe` integration tests
+- **Unit Tests for state.rs**: 14 new tests covering:
+  - `load_or_reset_state` with valid, corrupted, and missing binaries
+  - `is_folder_recreated` stub behavior
+  - `perform_full_cleanup` file deletion and preservation logic
+  - `StateLoadResult` enum tests
+- **Total test count**: 219 tests (up from 185)
+
+### Changed
+- **Website Updates**:
+  - Installation tabs now show working methods (curl, cargo, source) instead of unavailable package managers
+  - GitHub URLs updated for consistency across all pages
+  - Copyright year updated to 2026
+- **Code Quality**:
+  - Added `Default` impl for `IgnoreRule` (Clippy lint fix)
+  - Refactored collapsible `if` statements in `ignore.rs`, `state.rs`, `template.rs`
+  - CLI code cleanup in `main.rs` (struct initialization, collapsed conditions)
+
+### Fixed
+- All Clippy warnings resolved (0 warnings)
+- Website GitHub URL inconsistency fixed
+
+---
+
 ## [0.1.6] - 2026-01-16
 
 ### Added

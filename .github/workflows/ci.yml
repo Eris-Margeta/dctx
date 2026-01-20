@@ -1,0 +1,95 @@
+name: CI
+
+env:
+  CARGO_TERM_COLOR: always
+
+# Tests run on PRs only (not on push to main)
+# This saves CI time since PRs must pass before merging
+jobs:
+  test:
+    name: Test (${{ matrix.os }})
+    if: github.event_name == 'pull_request'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run tests
+        run: cargo test --all --verbose
+
+      - name: Run clippy
+        run: cargo clippy --all -- -D warnings
+
+  # Format check runs on PRs and pushes to main
+  fmt:
+    name: Format check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+  # Builds run only on push to main (after PR is merged)
+  build:
+    name: Build (${{ matrix.target }})
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build release
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dctx-${{ matrix.target }}
+          path: |
+            target/${{ matrix.target }}/release/dctx-cli
+            target/${{ matrix.target }}/release/dctx-cli.exe
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]

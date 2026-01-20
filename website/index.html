@@ -1204,22 +1204,14 @@
                 </div>
                 <div class="hero-install">
                     <div class="install-tabs">
-                        <button class="install-tab active" onclick="showInstall('brew')">brew</button>
-                        <button class="install-tab" onclick="showInstall('apt')">apt</button>
-                        <button class="install-tab" onclick="showInstall('choco')">choco</button>
-                        <button class="install-tab" onclick="showInstall('npm')">npm</button>
-                        <button class="install-tab" onclick="showInstall('pip')">pip</button>
+                        <button class="install-tab active" onclick="showInstall('curl')">curl</button>
                         <button class="install-tab" onclick="showInstall('cargo')">cargo</button>
-                        <button class="install-tab" onclick="showInstall('curl')">curl</button>
+                        <button class="install-tab" onclick="showInstall('source')">source</button>
                     </div>
                     <div class="hero-code">
-                        <pre id="install-brew"><span class="prompt">$</span> <span class="command">brew install dctx</span></pre>
-                        <pre id="install-apt" style="display:none"><span class="prompt">$</span> <span class="command">sudo apt install dctx</span></pre>
-                        <pre id="install-choco" style="display:none"><span class="prompt">$</span> <span class="command">choco install dctx</span></pre>
-                        <pre id="install-npm" style="display:none"><span class="prompt">$</span> <span class="command">npm install -g dctx</span></pre>
-                        <pre id="install-pip" style="display:none"><span class="prompt">$</span> <span class="command">pip install dctx</span></pre>
-                        <pre id="install-cargo" style="display:none"><span class="prompt">$</span> <span class="command">cargo install dctx</span></pre>
-                        <pre id="install-curl" style="display:none"><span class="prompt">$</span> <span class="command">curl -fsSL https://dctx.app/install.sh | sh</span></pre>
+                        <pre id="install-curl"><span class="prompt">$</span> <span class="command">curl -fsSL https://dctx.app/install.sh | sh</span></pre>
+                        <pre id="install-cargo" style="display:none"><span class="prompt">$</span> <span class="command">cargo install --path crates/dctx-cli</span></pre>
+                        <pre id="install-source" style="display:none"><span class="prompt">$</span> <span class="command">git clone https://github.com/Eris-Margeta/dctx && cd dctx && cargo build --release</span></pre>
                     </div>
                 </div>
             </div>
@@ -1660,7 +1652,7 @@ curl -fsSL https://dctx.app/install.sh | sh</pre>
                 </ul>
             </div>
             <div class="footer-copy">
-                &copy; 2025 dctx by TEJL. MIT License. Made with care for developers.
+                &copy; 2026 dctx. MIT License. Made with care for developers.
             </div>
         </div>
     </footer>
