@@ -213,7 +213,10 @@ mod tests {
         calculate_offsets_recursive(&mut root, &mut offset);
 
         assert_eq!(root.children[0].content_offset_in_data_section, 0);
-        assert_eq!(root.children[1].children[0].content_offset_in_data_section, 2);
+        assert_eq!(
+            root.children[1].children[0].content_offset_in_data_section,
+            2
+        );
         assert_eq!(offset, 5);
     }
 
@@ -299,7 +302,8 @@ mod tests {
         let path = temp_file.path();
 
         let mut root = create_dir_node("");
-        root.children.push(create_file_node("test.txt", b"Test content"));
+        root.children
+            .push(create_file_node("test.txt", b"Test content"));
 
         let version = Version::new_v1();
         write_dircontxt_file(path, &mut root, &version).unwrap();
@@ -348,7 +352,8 @@ mod tests {
         let path = temp_file.path();
 
         let mut root = create_dir_node("");
-        root.children.push(create_file_node("hello.txt", b"Hello, World!"));
+        root.children
+            .push(create_file_node("hello.txt", b"Hello, World!"));
 
         let version = Version::new_v1();
         write_dircontxt_file(path, &mut root, &version).unwrap();

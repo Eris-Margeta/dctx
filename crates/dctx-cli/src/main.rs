@@ -151,7 +151,10 @@ fn parse_template_subcommand(args: &[String]) -> Result<CliCommand, String> {
             }))
         }
         "list" => Ok(CliCommand::Template(TemplateSubcommand::List)),
-        other => Err(format!("Unknown template action: {}. Use: build, list", other)),
+        other => Err(format!(
+            "Unknown template action: {}. Use: build, list",
+            other
+        )),
     }
 }
 
@@ -583,9 +586,7 @@ fn run_template_build(template_path: &PathBuf) {
         .unwrap_or("custom");
 
     // Remove .dctx_template suffix if present in stem
-    let template_name = template_name
-        .strip_suffix(".dctx")
-        .unwrap_or(template_name);
+    let template_name = template_name.strip_suffix(".dctx").unwrap_or(template_name);
 
     // 6. Compile template
     println!("⚙️  Compiling template as '{}'...", template_name);
@@ -634,7 +635,10 @@ fn run_template_build(template_path: &PathBuf) {
     println!();
     println!("    default_template = \"{}\"", template_name);
     println!();
-    println!("Config location: {:?}", config::get_config_file_path().unwrap_or_default());
+    println!(
+        "Config location: {:?}",
+        config::get_config_file_path().unwrap_or_default()
+    );
     println!();
 }
 

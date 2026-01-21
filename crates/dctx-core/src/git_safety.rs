@@ -99,7 +99,7 @@ fn update_gitignore(path: &Path, missing_patterns: &[&str]) -> io::Result<()> {
     let mut file = OpenOptions::new().append(true).open(path)?;
 
     writeln!(file)?;
-    
+
     // If we have missing patterns, add them with a comment header
     if !missing_patterns.is_empty() {
         writeln!(file, "# [dctx] Automated Rules")?;
@@ -179,7 +179,11 @@ mod tests {
     fn test_read_existing_patterns_ignores_comments() {
         let temp_dir = TempDir::new().unwrap();
         let gitignore_path = temp_dir.path().join(".gitignore");
-        fs::write(&gitignore_path, "# Comment\nnode_modules\n# Another comment\n.env\n").unwrap();
+        fs::write(
+            &gitignore_path,
+            "# Comment\nnode_modules\n# Another comment\n.env\n",
+        )
+        .unwrap();
 
         let patterns = read_existing_patterns(&gitignore_path).unwrap();
         assert_eq!(patterns.len(), 2);
@@ -281,7 +285,10 @@ mod tests {
         assert!(content.contains(".dctx"));
         assert!(content.contains(".dctx/"));
         assert!(content.contains("# [dctx] Automated Rules"));
-        assert!(content.contains(&format!("{}{}{}", MARKER_PREFIX, CURRENT_VERSION, MARKER_SUFFIX)));
+        assert!(content.contains(&format!(
+            "{}{}{}",
+            MARKER_PREFIX, CURRENT_VERSION, MARKER_SUFFIX
+        )));
     }
 
     #[test]
@@ -297,7 +304,10 @@ mod tests {
         // Should NOT have the "Automated Rules" header since no patterns added
         assert!(!content.contains("# [dctx] Automated Rules"));
         // But should have the version marker
-        assert!(content.contains(&format!("{}{}{}", MARKER_PREFIX, CURRENT_VERSION, MARKER_SUFFIX)));
+        assert!(content.contains(&format!(
+            "{}{}{}",
+            MARKER_PREFIX, CURRENT_VERSION, MARKER_SUFFIX
+        )));
     }
 
     #[test]
@@ -365,7 +375,10 @@ mod tests {
             assert!(content.contains(pattern), "Missing pattern: {}", pattern);
         }
         // Should have version marker
-        assert!(content.contains(&format!("{}{}{}", MARKER_PREFIX, CURRENT_VERSION, MARKER_SUFFIX)));
+        assert!(content.contains(&format!(
+            "{}{}{}",
+            MARKER_PREFIX, CURRENT_VERSION, MARKER_SUFFIX
+        )));
     }
 
     #[test]
@@ -382,7 +395,10 @@ mod tests {
 
         let new_content = fs::read_to_string(&gitignore_path).unwrap();
         // Should have added the version marker
-        assert!(new_content.contains(&format!("{}{}{}", MARKER_PREFIX, CURRENT_VERSION, MARKER_SUFFIX)));
+        assert!(new_content.contains(&format!(
+            "{}{}{}",
+            MARKER_PREFIX, CURRENT_VERSION, MARKER_SUFFIX
+        )));
     }
 
     #[test]

@@ -436,7 +436,8 @@ mod tests {
     fn test_generate_llm_context_with_file() {
         let mut buffer = Vec::new();
         let mut root = create_dir_node("");
-        root.children.push(create_file_node("test.txt", b"Hello, World!"));
+        root.children
+            .push(create_file_node("test.txt", b"Hello, World!"));
         let version = Version::new_v1();
 
         generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
@@ -450,7 +451,8 @@ mod tests {
     fn test_generate_llm_context_tree_only() {
         let mut buffer = Vec::new();
         let mut root = create_dir_node("");
-        root.children.push(create_file_node("test.txt", b"Secret Content"));
+        root.children
+            .push(create_file_node("test.txt", b"Secret Content"));
         let version = Version::new_v1();
 
         generate_llm_context(&mut buffer, &root, &version, "TestProject", true).unwrap();
@@ -481,7 +483,9 @@ mod tests {
         let mut buffer = Vec::new();
         let mut root = create_dir_node("");
         let mut subdir = create_dir_node("src");
-        subdir.children.push(create_file_node("src/main.rs", b"fn main() {}"));
+        subdir
+            .children
+            .push(create_file_node("src/main.rs", b"fn main() {}"));
         root.children.push(subdir);
         let version = Version::new_v1();
 
@@ -496,7 +500,9 @@ mod tests {
         let mut buffer = Vec::new();
         let mut root = create_dir_node("");
         let mut subdir = create_dir_node("src");
-        subdir.children.push(create_file_node("src/main.rs", b"content"));
+        subdir
+            .children
+            .push(create_file_node("src/main.rs", b"content"));
         root.children.push(subdir);
         let version = Version::new_v1();
 
@@ -530,7 +536,8 @@ mod tests {
         let old_version = Version::new_v1();
         let new_version = Version { major: 1, minor: 1 };
 
-        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version).unwrap();
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version)
+            .unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         assert!(output.contains("[DCTX_LLM_CONTEXT_DIFF_V1.1]"));
@@ -557,7 +564,8 @@ mod tests {
         let old_version = Version::new_v1();
         let new_version = Version { major: 1, minor: 1 };
 
-        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version).unwrap();
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version)
+            .unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         assert!(output.contains("<CHANGES_SUMMARY>"));
@@ -581,7 +589,8 @@ mod tests {
         let old_version = Version::new_v1();
         let new_version = Version { major: 1, minor: 1 };
 
-        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version).unwrap();
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version)
+            .unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         assert!(output.contains("[REMOVED] deleted_file.txt"));
@@ -602,7 +611,8 @@ mod tests {
         let old_version = Version::new_v1();
         let new_version = Version { major: 1, minor: 1 };
 
-        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version).unwrap();
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version)
+            .unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         // Directories should have trailing slash
@@ -613,13 +623,15 @@ mod tests {
     fn test_generate_diff_context_updated_tree_section() {
         let mut buffer = Vec::new();
         let mut root = create_dir_node("");
-        root.children.push(create_file_node("existing.txt", b"content"));
+        root.children
+            .push(create_file_node("existing.txt", b"content"));
 
         let diff_report = DiffReport::default();
         let old_version = Version::new_v1();
         let new_version = Version { major: 1, minor: 1 };
 
-        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version).unwrap();
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version)
+            .unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         assert!(output.contains("<UPDATED_DIRECTORY_TREE>"));
@@ -631,8 +643,10 @@ mod tests {
     fn test_generate_diff_context_only_changed_content() {
         let mut buffer = Vec::new();
         let mut root = create_dir_node("");
-        root.children.push(create_file_node("changed.txt", b"New content"));
-        root.children.push(create_file_node("unchanged.txt", b"Old content"));
+        root.children
+            .push(create_file_node("changed.txt", b"New content"));
+        root.children
+            .push(create_file_node("unchanged.txt", b"Old content"));
 
         let mut diff_report = DiffReport::default();
         diff_report.entries.push(crate::diff::DiffEntry {
@@ -645,7 +659,8 @@ mod tests {
         let old_version = Version::new_v1();
         let new_version = Version { major: 1, minor: 1 };
 
-        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version).unwrap();
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version)
+            .unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         // changed.txt content should appear
@@ -679,7 +694,11 @@ mod tests {
 
         // These are commonly used variables that should exist
         // Check that at least some expected markers exist
-        assert!(tmpl.layout.contains("{{{comp.tree}}}") || tmpl.variables.contains_key("comp.tree") || true);
+        assert!(
+            tmpl.layout.contains("{{{comp.tree}}}")
+                || tmpl.variables.contains_key("comp.tree")
+                || true
+        );
     }
 
     // --- LARGE FILE ID TESTS ---
@@ -707,7 +726,10 @@ mod tests {
         assert!(output.contains("F1005"), "Should contain F1005");
 
         // Verify IDs are still properly formatted (not truncated)
-        assert!(!output.contains("F000"), "Should not have F000 (that would indicate truncation)");
+        assert!(
+            !output.contains("F000"),
+            "Should not have F000 (that would indicate truncation)"
+        );
     }
 
     #[test]
@@ -718,8 +740,7 @@ mod tests {
 
         // Add 1005 directories
         for i in 1..=1005 {
-            root.children
-                .push(create_dir_node(&format!("dir{:04}", i)));
+            root.children.push(create_dir_node(&format!("dir{:04}", i)));
         }
 
         let version = Version::new_v1();
