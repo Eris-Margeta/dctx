@@ -162,12 +162,7 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let binary_path = temp_dir.path().join("nonexistent.dctx");
 
-        let result = load_or_reset_state(
-            temp_dir.path(),
-            &binary_path,
-            None,
-            "TestProject",
-        );
+        let result = load_or_reset_state(temp_dir.path(), &binary_path, None, "TestProject");
 
         match result {
             StateLoadResult::FreshV1 => {} // Expected
@@ -186,12 +181,7 @@ mod tests {
         let version = Version { major: 1, minor: 5 };
         write_dircontxt_file(&binary_path, &mut root, &version).unwrap();
 
-        let result = load_or_reset_state(
-            temp_dir.path(),
-            &binary_path,
-            None,
-            "TestProject",
-        );
+        let result = load_or_reset_state(temp_dir.path(), &binary_path, None, "TestProject");
 
         match result {
             StateLoadResult::Loaded(loaded_root, loaded_version) => {
@@ -211,12 +201,7 @@ mod tests {
         // Create a corrupted binary file
         fs::write(&binary_path, b"INVALID_CORRUPTED_DATA").unwrap();
 
-        let result = load_or_reset_state(
-            temp_dir.path(),
-            &binary_path,
-            None,
-            "TestProject",
-        );
+        let result = load_or_reset_state(temp_dir.path(), &binary_path, None, "TestProject");
 
         match result {
             StateLoadResult::FreshV1 => {

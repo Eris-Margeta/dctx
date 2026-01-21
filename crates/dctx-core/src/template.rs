@@ -138,57 +138,62 @@ impl Template {
 
         // Check required sections exist and are non-empty
         if self.layout.is_empty() {
-            errors.push(TemplateValidationError::EmptySection("[LAYOUT]".to_string()));
+            errors.push(TemplateValidationError::EmptySection(
+                "[LAYOUT]".to_string(),
+            ));
         }
 
         // Check for unresolved {{VAR}} references in partials and layout
         // A {{VAR}} is unresolved if it doesn't exist in the variables map
         // IMPORTANT: We must skip {{{DATA}}} patterns (triple braces) which are runtime data
-        let check_unresolved = |text: &str, vars: &HashMap<String, String>, errors: &mut Vec<TemplateValidationError>| {
-            let mut i = 0;
-            let chars: Vec<char> = text.chars().collect();
-            while i < chars.len().saturating_sub(4) {
-                // Check for {{ pattern
-                if chars[i] == '{' && chars[i + 1] == '{' {
-                    // Skip if this is {{{ (triple brace - data placeholder)
-                    if chars.get(i + 2) == Some(&'{') {
-                        // This is a {{{ data placeholder, skip past it
-                        // Find the closing }}}
-                        if let Some(rest) = text.get(i + 3..) {
-                            if let Some(end) = rest.find("}}}") {
-                                i += 3 + end + 3; // Skip past {{{ content }}}
+        let check_unresolved =
+            |text: &str,
+             vars: &HashMap<String, String>,
+             errors: &mut Vec<TemplateValidationError>| {
+                let mut i = 0;
+                let chars: Vec<char> = text.chars().collect();
+                while i < chars.len().saturating_sub(4) {
+                    // Check for {{ pattern
+                    if chars[i] == '{' && chars[i + 1] == '{' {
+                        // Skip if this is {{{ (triple brace - data placeholder)
+                        if chars.get(i + 2) == Some(&'{') {
+                            // This is a {{{ data placeholder, skip past it
+                            // Find the closing }}}
+                            if let Some(rest) = text.get(i + 3..) {
+                                if let Some(end) = rest.find("}}}") {
+                                    i += 3 + end + 3; // Skip past {{{ content }}}
+                                    continue;
+                                }
+                            }
+                            i += 3;
+                            continue;
+                        }
+
+                        // This is a {{ config variable reference
+                        // Find closing }}
+                        if let Some(rest) = text.get(i + 2..) {
+                            if let Some(end) = rest.find("}}") {
+                                let var_name = &rest[..end];
+                                // Check if the variable exists in the map
+                                if !var_name.is_empty()
+                                    && !var_name.contains('{')
+                                    && !var_name.contains('}')
+                                    && !vars.contains_key(var_name)
+                                {
+                                    errors.push(TemplateValidationError::UnresolvedVariable(
+                                        var_name.to_string(),
+                                    ));
+                                }
+                                i += 2 + end + 2; // Skip past {{ content }}
                                 continue;
                             }
                         }
-                        i += 3;
-                        continue;
+                        i += 2;
+                    } else {
+                        i += 1;
                     }
-
-                    // This is a {{ config variable reference
-                    // Find closing }}
-                    if let Some(rest) = text.get(i + 2..) {
-                        if let Some(end) = rest.find("}}") {
-                            let var_name = &rest[..end];
-                            // Check if the variable exists in the map
-                            if !var_name.is_empty()
-                                && !var_name.contains('{')
-                                && !var_name.contains('}')
-                                && !vars.contains_key(var_name)
-                            {
-                                errors.push(TemplateValidationError::UnresolvedVariable(
-                                    var_name.to_string(),
-                                ));
-                            }
-                            i += 2 + end + 2; // Skip past {{ content }}
-                            continue;
-                        }
-                    }
-                    i += 2;
-                } else {
-                    i += 1;
                 }
-            }
-        };
+            };
 
         check_unresolved(&self.partial_tree_entry, &self.variables, &mut errors);
         check_unresolved(&self.partial_file_block, &self.variables, &mut errors);
@@ -311,7 +316,10 @@ impl CompiledTemplate {
         let mut name_bytes = vec![0u8; name_len];
         reader.read_exact(&mut name_bytes)?;
         let name = String::from_utf8(name_bytes).map_err(|e| {
-            io::Error::new(io::ErrorKind::InvalidData, format!("Invalid UTF-8 name: {}", e))
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Invalid UTF-8 name: {}", e),
+            )
         })?;
 
         // Variables count
@@ -329,7 +337,10 @@ impl CompiledTemplate {
             let mut key_bytes = vec![0u8; key_len];
             reader.read_exact(&mut key_bytes)?;
             let key = String::from_utf8(key_bytes).map_err(|e| {
-                io::Error::new(io::ErrorKind::InvalidData, format!("Invalid UTF-8 key: {}", e))
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Invalid UTF-8 key: {}", e),
+                )
             })?;
 
             // Value length (u32)
@@ -340,7 +351,10 @@ impl CompiledTemplate {
             let mut val_bytes = vec![0u8; val_len];
             reader.read_exact(&mut val_bytes)?;
             let val = String::from_utf8(val_bytes).map_err(|e| {
-                io::Error::new(io::ErrorKind::InvalidData, format!("Invalid UTF-8 value: {}", e))
+                io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    format!("Invalid UTF-8 value: {}", e),
+                )
             })?;
 
             variables.insert(key, val);
@@ -376,7 +390,10 @@ impl CompiledTemplate {
         let mut layout_bytes = vec![0u8; layout_len];
         reader.read_exact(&mut layout_bytes)?;
         let layout = String::from_utf8(layout_bytes).map_err(|e| {
-            io::Error::new(io::ErrorKind::InvalidData, format!("Invalid UTF-8 layout: {}", e))
+            io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Invalid UTF-8 layout: {}", e),
+            )
         })?;
 
         Ok(Self {
@@ -507,7 +524,10 @@ multiline = "line1\nline2"
 [LAYOUT]
 "#;
         let tmpl = Template::parse(raw);
-        assert_eq!(tmpl.variables.get("multiline"), Some(&"line1\nline2".to_string()));
+        assert_eq!(
+            tmpl.variables.get("multiline"),
+            Some(&"line1\nline2".to_string())
+        );
     }
 
     #[test]
@@ -617,7 +637,10 @@ existing = "value"
         let mut tmpl = Template::parse(raw);
         tmpl.insert_variable("project", "MyProject");
 
-        assert_eq!(tmpl.variables.get("project"), Some(&"MyProject".to_string()));
+        assert_eq!(
+            tmpl.variables.get("project"),
+            Some(&"MyProject".to_string())
+        );
         assert_eq!(tmpl.variables.get("existing"), Some(&"value".to_string()));
     }
 
@@ -675,7 +698,10 @@ file_end = "</FILE>"
         let tmpl = Template::parse(raw);
 
         // Check variables were resolved
-        assert_eq!(tmpl.variables.get("tree_start"), Some(&"<TREE>".to_string()));
+        assert_eq!(
+            tmpl.variables.get("tree_start"),
+            Some(&"<TREE>".to_string())
+        );
         assert_eq!(tmpl.variables.get("file_end"), Some(&"</FILE>".to_string()));
 
         // Check partials contain expected placeholders
@@ -717,7 +743,9 @@ key = "value"
 "#;
         let tmpl = Template::parse(raw);
         let errors = tmpl.validate();
-        assert!(errors.iter().any(|e| matches!(e, TemplateValidationError::EmptySection(_))));
+        assert!(errors
+            .iter()
+            .any(|e| matches!(e, TemplateValidationError::EmptySection(_))));
     }
 
     #[test]
@@ -730,7 +758,9 @@ defined = "yes"
 "#;
         let tmpl = Template::parse(raw);
         let errors = tmpl.validate();
-        assert!(errors.iter().any(|e| matches!(e, TemplateValidationError::UnresolvedVariable(_))));
+        assert!(errors
+            .iter()
+            .any(|e| matches!(e, TemplateValidationError::UnresolvedVariable(_))));
     }
 
     // --- COMPILATION TESTS ---
@@ -854,8 +884,14 @@ layout
         let compiled = tmpl.compile("test").unwrap();
         let back_to_template = compiled.to_template();
 
-        assert_eq!(back_to_template.partial_tree_entry, compiled.partial_tree_entry);
-        assert_eq!(back_to_template.partial_file_block, compiled.partial_file_block);
+        assert_eq!(
+            back_to_template.partial_tree_entry,
+            compiled.partial_tree_entry
+        );
+        assert_eq!(
+            back_to_template.partial_file_block,
+            compiled.partial_file_block
+        );
         assert_eq!(back_to_template.layout, compiled.layout);
     }
 }

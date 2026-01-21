@@ -21,10 +21,10 @@ impl Version {
         }
 
         let clean_str = &version_str[1..]; // Makni 'V'
-        
+
         // Pokušaj splitati na točki
         let parts: Vec<&str> = clean_str.split('.').collect();
-        
+
         if parts.is_empty() {
             return Self::new_v1();
         }
@@ -54,7 +54,6 @@ impl Version {
         total_files_in_new_state: usize,
         max_diff_files: u32,
     ) -> (Version, bool) {
-        
         // TRIGGER A: Massive Change Event
         // Ako niti jedan fajl nije ostao nepromijenjen, a imamo fajlove u novom stanju.
         // (Ako je total_files 0, to je prazan folder, ne radimo major bump nužno, ili da?
@@ -121,7 +120,13 @@ mod tests {
 
     #[test]
     fn test_parse_v2_with_minor() {
-        assert_eq!(Version::parse("V2.10"), Version { major: 2, minor: 10 });
+        assert_eq!(
+            Version::parse("V2.10"),
+            Version {
+                major: 2,
+                minor: 10
+            }
+        );
     }
 
     #[test]
@@ -146,7 +151,13 @@ mod tests {
 
     #[test]
     fn test_parse_large_numbers() {
-        assert_eq!(Version::parse("V100.999"), Version { major: 100, minor: 999 });
+        assert_eq!(
+            Version::parse("V100.999"),
+            Version {
+                major: 100,
+                minor: 999
+            }
+        );
     }
 
     #[test]
@@ -225,7 +236,13 @@ mod tests {
     fn test_no_trigger_below_limit() {
         let current = Version::parse("V1.998");
         let (next, reset) = current.calculate_next(5, 20, 999);
-        assert_eq!(next, Version { major: 1, minor: 999 });
+        assert_eq!(
+            next,
+            Version {
+                major: 1,
+                minor: 999
+            }
+        );
         assert!(!reset);
     }
 
@@ -261,13 +278,19 @@ mod tests {
 
     #[test]
     fn test_display_v2_with_minor() {
-        let v = Version { major: 2, minor: 10 };
+        let v = Version {
+            major: 2,
+            minor: 10,
+        };
         assert_eq!(format!("{}", v), "V2.10");
     }
 
     #[test]
     fn test_display_large_version() {
-        let v = Version { major: 100, minor: 999 };
+        let v = Version {
+            major: 100,
+            minor: 999,
+        };
         assert_eq!(format!("{}", v), "V100.999");
     }
 
