@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.0] - 2026-01-21
+
+### Added
+- **GitHub Actions CI**: Cross-platform testing on Linux, macOS, and Windows
+- **Release Workflow**: Automated binary builds for all platforms on tag push
+- **Justfile**: Development commands (`just fmt`, `just test`, `just ci`, etc.)
+- **README Overhaul**: Badges for CI status, releases, license, and more
+
+### Changed
+- **README.md**: Complete rewrite with professional badges, cleaner structure
+- **CI Workflow**: Tests run on PRs, builds run on main push, format check on both
+
+### Infrastructure
+- Format check enforced via CI
+- Docker-based Linux testing available locally (`just test-linux`)
+- All 219 tests passing on Linux, macOS, and Windows
+
+---
+
 ## [0.2.0] - 2026-01-20
 
 ### Added
