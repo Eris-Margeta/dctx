@@ -21,7 +21,7 @@ pub struct DiffStats {
     pub files_removed: usize,
     pub files_modified: usize,
     /// Ključno za verzioniranje: koliko je fajlova ostalo identično.
-    pub files_unchanged: usize, 
+    pub files_unchanged: usize,
     /// Ukupan broj fajlova u novom stablu (korisno za statistiku).
     pub total_files_in_new_state: usize,
 }
@@ -52,7 +52,7 @@ pub fn compare_trees(
     }
 
     report.has_changes = !report.entries.is_empty();
-    
+
     // Izračunaj total_files_in_new_state (samo files, ne dirs)
     report.stats.total_files_in_new_state = count_files_recursive(new_root);
 
@@ -123,7 +123,7 @@ fn compare_nodes_recursive(
     // promjene direktorija se reflektiraju kroz djecu.
     if old_node.node_type == NodeType::File && new_node.node_type == NodeType::File {
         let is_modified = is_file_modified(old_node, new_node);
-        
+
         if is_modified {
             report.entries.push(DiffEntry {
                 change_type: ChangeType::Modified,
@@ -140,23 +140,31 @@ fn compare_nodes_recursive(
         // Tretiramo ovo kao Remove starog i Add novog.
         // Ali u praksi, pošto recursion ide po imenima, ovo će se vjerojatno riješiti kroz children logiku.
         // Ako smo ovdje, znači da smo matchali po imenu/pathu.
-        
+
         // Logika: Stari file je maknut, novi dir je dodan.
         // Ali čekaj, ova funkcija prima dva čvora za koja ZNAMO da su "isti" path.
         // Za jednostavnost, ako se tip promijeni, sve ispod starog je removed, sve ispod novog je added.
-        report.entries.push(DiffEntry { change_type: ChangeType::Removed, node_type: old_node.node_type, relative_path: old_node.relative_path.clone() });
-        report.entries.push(DiffEntry { change_type: ChangeType::Added, node_type: new_node.node_type, relative_path: new_node.relative_path.clone() });
+        report.entries.push(DiffEntry {
+            change_type: ChangeType::Removed,
+            node_type: old_node.node_type,
+            relative_path: old_node.relative_path.clone(),
+        });
+        report.entries.push(DiffEntry {
+            change_type: ChangeType::Added,
+            node_type: new_node.node_type,
+            relative_path: new_node.relative_path.clone(),
+        });
         // TODO: update stats
-        return; 
+        return;
     }
 
     // 2. Usporedba djece (samo za direktorije)
     if old_node.node_type == NodeType::Directory && new_node.node_type == NodeType::Directory {
         // Kreiramo mapu stare djece za brzi lookup po imenu (basename ili relative path)
         // Relative path je jedinstven unutar stabla, ali unutar node.children je dovoljno gledati file_name
-        // Međutim, u DirContextTreeNode imamo samo relative_path. 
+        // Međutim, u DirContextTreeNode imamo samo relative_path.
         // Koristit ćemo relative_path kao ključ.
-        
+
         let mut old_children_map: HashMap<&String, &DirContextTreeNode> = HashMap::new();
         for child in &old_node.children {
             old_children_map.insert(&child.relative_path, child);
@@ -277,10 +285,14 @@ mod tests {
     #[test]
     fn test_compare_trees_no_changes() {
         let mut old_root = create_dir_node("");
-        old_root.children.push(create_file_node("file.txt", 100, 1000));
+        old_root
+            .children
+            .push(create_file_node("file.txt", 100, 1000));
 
         let mut new_root = create_dir_node("");
-        new_root.children.push(create_file_node("file.txt", 100, 1000));
+        new_root
+            .children
+            .push(create_file_node("file.txt", 100, 1000));
 
         let report = compare_trees(Some(&old_root), &new_root);
 
@@ -294,11 +306,17 @@ mod tests {
     #[test]
     fn test_compare_trees_file_added() {
         let mut old_root = create_dir_node("");
-        old_root.children.push(create_file_node("existing.txt", 100, 1000));
+        old_root
+            .children
+            .push(create_file_node("existing.txt", 100, 1000));
 
         let mut new_root = create_dir_node("");
-        new_root.children.push(create_file_node("existing.txt", 100, 1000));
-        new_root.children.push(create_file_node("new.txt", 50, 2000));
+        new_root
+            .children
+            .push(create_file_node("existing.txt", 100, 1000));
+        new_root
+            .children
+            .push(create_file_node("new.txt", 50, 2000));
 
         let report = compare_trees(Some(&old_root), &new_root);
 
@@ -311,11 +329,17 @@ mod tests {
     #[test]
     fn test_compare_trees_file_removed() {
         let mut old_root = create_dir_node("");
-        old_root.children.push(create_file_node("keep.txt", 100, 1000));
-        old_root.children.push(create_file_node("delete.txt", 50, 1000));
+        old_root
+            .children
+            .push(create_file_node("keep.txt", 100, 1000));
+        old_root
+            .children
+            .push(create_file_node("delete.txt", 50, 1000));
 
         let mut new_root = create_dir_node("");
-        new_root.children.push(create_file_node("keep.txt", 100, 1000));
+        new_root
+            .children
+            .push(create_file_node("keep.txt", 100, 1000));
 
         let report = compare_trees(Some(&old_root), &new_root);
 
@@ -328,10 +352,14 @@ mod tests {
     #[test]
     fn test_compare_trees_file_modified() {
         let mut old_root = create_dir_node("");
-        old_root.children.push(create_file_node("file.txt", 100, 1000));
+        old_root
+            .children
+            .push(create_file_node("file.txt", 100, 1000));
 
         let mut new_root = create_dir_node("");
-        new_root.children.push(create_file_node("file.txt", 150, 2000));
+        new_root
+            .children
+            .push(create_file_node("file.txt", 150, 2000));
 
         let report = compare_trees(Some(&old_root), &new_root);
 
@@ -344,13 +372,19 @@ mod tests {
     fn test_compare_trees_nested_directories() {
         let mut old_root = create_dir_node("");
         let mut old_src = create_dir_node("src");
-        old_src.children.push(create_file_node("src/main.rs", 100, 1000));
+        old_src
+            .children
+            .push(create_file_node("src/main.rs", 100, 1000));
         old_root.children.push(old_src);
 
         let mut new_root = create_dir_node("");
         let mut new_src = create_dir_node("src");
-        new_src.children.push(create_file_node("src/main.rs", 100, 1000));
-        new_src.children.push(create_file_node("src/lib.rs", 50, 2000));
+        new_src
+            .children
+            .push(create_file_node("src/main.rs", 100, 1000));
+        new_src
+            .children
+            .push(create_file_node("src/lib.rs", 50, 2000));
         new_root.children.push(new_src);
 
         let report = compare_trees(Some(&old_root), &new_root);
@@ -366,7 +400,9 @@ mod tests {
 
         let mut new_root = create_dir_node("");
         let mut new_dir = create_dir_node("newdir");
-        new_dir.children.push(create_file_node("newdir/file.txt", 100, 1000));
+        new_dir
+            .children
+            .push(create_file_node("newdir/file.txt", 100, 1000));
         new_root.children.push(new_dir);
 
         let report = compare_trees(Some(&old_root), &new_root);
@@ -381,7 +417,9 @@ mod tests {
     fn test_compare_trees_directory_removed() {
         let mut old_root = create_dir_node("");
         let mut old_dir = create_dir_node("olddir");
-        old_dir.children.push(create_file_node("olddir/file.txt", 100, 1000));
+        old_dir
+            .children
+            .push(create_file_node("olddir/file.txt", 100, 1000));
         old_root.children.push(old_dir);
 
         let new_root = create_dir_node("");
@@ -395,14 +433,26 @@ mod tests {
     #[test]
     fn test_compare_trees_mixed_changes() {
         let mut old_root = create_dir_node("");
-        old_root.children.push(create_file_node("unchanged.txt", 100, 1000));
-        old_root.children.push(create_file_node("modified.txt", 50, 1000));
-        old_root.children.push(create_file_node("deleted.txt", 30, 1000));
+        old_root
+            .children
+            .push(create_file_node("unchanged.txt", 100, 1000));
+        old_root
+            .children
+            .push(create_file_node("modified.txt", 50, 1000));
+        old_root
+            .children
+            .push(create_file_node("deleted.txt", 30, 1000));
 
         let mut new_root = create_dir_node("");
-        new_root.children.push(create_file_node("unchanged.txt", 100, 1000));
-        new_root.children.push(create_file_node("modified.txt", 75, 2000));
-        new_root.children.push(create_file_node("added.txt", 25, 3000));
+        new_root
+            .children
+            .push(create_file_node("unchanged.txt", 100, 1000));
+        new_root
+            .children
+            .push(create_file_node("modified.txt", 75, 2000));
+        new_root
+            .children
+            .push(create_file_node("added.txt", 25, 3000));
 
         let report = compare_trees(Some(&old_root), &new_root);
 

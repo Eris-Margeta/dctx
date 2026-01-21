@@ -15,9 +15,9 @@ pub enum PatternType {
     Path,     // Matches the full relative path (e.g., "src/main.c")
     Suffix,   // Matches a suffix wildcard (e.g., "*.log")
     Prefix,   // Matches a prefix wildcard (e.g., "build/*")
-    
+
     // NOVO: Za složene uzorke
-    Glob,     // Matches complex patterns ("foo/**/bar", "config-*-prod.json")
+    Glob, // Matches complex patterns ("foo/**/bar", "config-*-prod.json")
 }
 
 /// Ekvivalent za IgnoreRule iz C-a
@@ -140,7 +140,10 @@ mod tests {
 
         assert_eq!(node.node_type, NodeType::File);
         assert_eq!(node.relative_path, "src/main.rs");
-        assert_eq!(node.disk_path, PathBuf::from("/home/user/project/src/main.rs"));
+        assert_eq!(
+            node.disk_path,
+            PathBuf::from("/home/user/project/src/main.rs")
+        );
         assert_eq!(node.last_modified_timestamp, 0);
         assert_eq!(node.content_offset_in_data_section, 0);
         assert_eq!(node.content_size, 0);
@@ -165,16 +168,10 @@ mod tests {
 
     #[test]
     fn test_dir_context_tree_node_is_dir() {
-        let file_node = DirContextTreeNode::new(
-            NodeType::File,
-            "test.txt",
-            PathBuf::from("/test.txt"),
-        );
-        let dir_node = DirContextTreeNode::new(
-            NodeType::Directory,
-            "test_dir",
-            PathBuf::from("/test_dir"),
-        );
+        let file_node =
+            DirContextTreeNode::new(NodeType::File, "test.txt", PathBuf::from("/test.txt"));
+        let dir_node =
+            DirContextTreeNode::new(NodeType::Directory, "test_dir", PathBuf::from("/test_dir"));
 
         assert!(!file_node.is_dir());
         assert!(dir_node.is_dir());
@@ -182,11 +179,8 @@ mod tests {
 
     #[test]
     fn test_dir_context_tree_node_with_children() {
-        let mut parent = DirContextTreeNode::new(
-            NodeType::Directory,
-            "parent",
-            PathBuf::from("/parent"),
-        );
+        let mut parent =
+            DirContextTreeNode::new(NodeType::Directory, "parent", PathBuf::from("/parent"));
 
         let child = DirContextTreeNode::new(
             NodeType::File,
@@ -201,11 +195,8 @@ mod tests {
 
     #[test]
     fn test_dir_context_tree_node_with_content() {
-        let mut node = DirContextTreeNode::new(
-            NodeType::File,
-            "test.txt",
-            PathBuf::from("/test.txt"),
-        );
+        let mut node =
+            DirContextTreeNode::new(NodeType::File, "test.txt", PathBuf::from("/test.txt"));
 
         let content = b"Hello, World!".to_vec();
         node.file_content = Some(content.clone());
@@ -218,17 +209,17 @@ mod tests {
 
     #[test]
     fn test_dir_context_tree_node_clone() {
-        let mut original = DirContextTreeNode::new(
-            NodeType::File,
-            "test.txt",
-            PathBuf::from("/test.txt"),
-        );
+        let mut original =
+            DirContextTreeNode::new(NodeType::File, "test.txt", PathBuf::from("/test.txt"));
         original.content_size = 100;
         original.last_modified_timestamp = 1234567890;
 
         let cloned = original.clone();
         assert_eq!(cloned.relative_path, original.relative_path);
         assert_eq!(cloned.content_size, original.content_size);
-        assert_eq!(cloned.last_modified_timestamp, original.last_modified_timestamp);
+        assert_eq!(
+            cloned.last_modified_timestamp,
+            original.last_modified_timestamp
+        );
     }
 }

@@ -320,32 +320,77 @@ mod tests {
     #[test]
     fn test_should_ignore_basename_match() {
         let rules = vec![parse_ignore_pattern_line("node_modules").unwrap()];
-        assert!(should_ignore_item("node_modules", "node_modules", true, &rules));
-        assert!(should_ignore_item("path/to/node_modules", "node_modules", true, &rules));
-        assert!(!should_ignore_item("my_modules", "my_modules", true, &rules));
+        assert!(should_ignore_item(
+            "node_modules",
+            "node_modules",
+            true,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "path/to/node_modules",
+            "node_modules",
+            true,
+            &rules
+        ));
+        assert!(!should_ignore_item(
+            "my_modules",
+            "my_modules",
+            true,
+            &rules
+        ));
     }
 
     #[test]
     fn test_should_ignore_suffix_match() {
         let rules = vec![parse_ignore_pattern_line("*.log").unwrap()];
         assert!(should_ignore_item("debug.log", "debug.log", false, &rules));
-        assert!(should_ignore_item("path/to/error.log", "error.log", false, &rules));
+        assert!(should_ignore_item(
+            "path/to/error.log",
+            "error.log",
+            false,
+            &rules
+        ));
         assert!(!should_ignore_item("log.txt", "log.txt", false, &rules));
     }
 
     #[test]
     fn test_should_ignore_path_match() {
         let rules = vec![parse_ignore_pattern_line("src/generated").unwrap()];
-        assert!(should_ignore_item("src/generated", "generated", true, &rules));
-        assert!(!should_ignore_item("other/generated", "generated", true, &rules));
+        assert!(should_ignore_item(
+            "src/generated",
+            "generated",
+            true,
+            &rules
+        ));
+        assert!(!should_ignore_item(
+            "other/generated",
+            "generated",
+            true,
+            &rules
+        ));
     }
 
     #[test]
     fn test_should_ignore_prefix_match() {
         let rules = vec![parse_ignore_pattern_line("build/*").unwrap()];
-        assert!(should_ignore_item("build/output.o", "output.o", false, &rules));
-        assert!(should_ignore_item("build/sub/file.txt", "file.txt", false, &rules));
-        assert!(!should_ignore_item("mybuild/file.txt", "file.txt", false, &rules));
+        assert!(should_ignore_item(
+            "build/output.o",
+            "output.o",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "build/sub/file.txt",
+            "file.txt",
+            false,
+            &rules
+        ));
+        assert!(!should_ignore_item(
+            "mybuild/file.txt",
+            "file.txt",
+            false,
+            &rules
+        ));
     }
 
     #[test]
@@ -362,7 +407,12 @@ mod tests {
             parse_ignore_pattern_line("!important.log").unwrap(),
         ];
         assert!(should_ignore_item("debug.log", "debug.log", false, &rules));
-        assert!(!should_ignore_item("important.log", "important.log", false, &rules));
+        assert!(!should_ignore_item(
+            "important.log",
+            "important.log",
+            false,
+            &rules
+        ));
     }
 
     #[test]
@@ -379,8 +429,18 @@ mod tests {
     #[test]
     fn test_should_ignore_glob_with_path() {
         let rules = vec![parse_ignore_pattern_line("**/test_*.rs").unwrap()];
-        assert!(should_ignore_item("test_main.rs", "test_main.rs", false, &rules));
-        assert!(should_ignore_item("src/test_util.rs", "test_util.rs", false, &rules));
+        assert!(should_ignore_item(
+            "test_main.rs",
+            "test_main.rs",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "src/test_util.rs",
+            "test_util.rs",
+            false,
+            &rules
+        ));
         assert!(!should_ignore_item("main.rs", "main.rs", false, &rules));
     }
 
@@ -391,9 +451,24 @@ mod tests {
             parse_ignore_pattern_line("__pycache__/").unwrap(),
             parse_ignore_pattern_line("*.egg-info/").unwrap(),
         ];
-        assert!(should_ignore_item("module.pyc", "module.pyc", false, &rules));
-        assert!(should_ignore_item("__pycache__", "__pycache__", true, &rules));
-        assert!(should_ignore_item("mypackage.egg-info", "mypackage.egg-info", true, &rules));
+        assert!(should_ignore_item(
+            "module.pyc",
+            "module.pyc",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "__pycache__",
+            "__pycache__",
+            true,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "mypackage.egg-info",
+            "mypackage.egg-info",
+            true,
+            &rules
+        ));
         assert!(!should_ignore_item("setup.py", "setup.py", false, &rules));
     }
 }

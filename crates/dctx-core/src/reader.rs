@@ -206,7 +206,9 @@ mod tests {
 
         // Write
         let mut original = create_dir_node("");
-        original.children.push(create_file_node("test.txt", b"Content"));
+        original
+            .children
+            .push(create_file_node("test.txt", b"Content"));
         let version = Version { major: 1, minor: 5 };
         write_dircontxt_file(path, &mut original, &version).unwrap();
 
@@ -248,11 +250,17 @@ mod tests {
 
         // Write
         let mut original = create_dir_node("");
-        original.children.push(create_file_node("root.txt", b"Root"));
+        original
+            .children
+            .push(create_file_node("root.txt", b"Root"));
 
         let mut subdir = create_dir_node("src");
-        subdir.children.push(create_file_node("src/main.rs", b"fn main() {}"));
-        subdir.children.push(create_file_node("src/lib.rs", b"// lib"));
+        subdir
+            .children
+            .push(create_file_node("src/main.rs", b"fn main() {}"));
+        subdir
+            .children
+            .push(create_file_node("src/lib.rs", b"// lib"));
         original.children.push(subdir);
 
         let version = Version { major: 2, minor: 0 };
@@ -318,7 +326,8 @@ mod tests {
         let mut a = create_dir_node("a");
         let mut b = create_dir_node("a/b");
         let mut c = create_dir_node("a/b/c");
-        c.children.push(create_file_node("a/b/c/file.txt", b"Deep content"));
+        c.children
+            .push(create_file_node("a/b/c/file.txt", b"Deep content"));
         b.children.push(c);
         a.children.push(b);
         root.children.push(a);
@@ -355,7 +364,10 @@ mod tests {
         let path = temp_file.path();
 
         let mut root = create_dir_node("");
-        let version = Version { major: 3, minor: 42 };
+        let version = Version {
+            major: 3,
+            minor: 42,
+        };
         write_dircontxt_file(path, &mut root, &version).unwrap();
 
         let (_, loaded_version) = read_dircontxt_file(path).unwrap();
