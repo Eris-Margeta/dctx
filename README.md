@@ -258,6 +258,89 @@ Tested on a 4,500-file Rust project:
 
 ---
 
+## Use as Library
+
+`dctx` is architected as a pure Rust library (`dctx-core`) with a thin CLI wrapper. You can use it programmatically in your Rust projects.
+
+### Rust Library Usage
+
+Add to your `Cargo.toml`:
+```toml
+[dependencies]
+dctx-core = { git = "https://github.com/Eris-Margeta/dctx" }
+```
+
+Use in your code:
+```rust
+use dctx_core::{walker, config, ignore, llm_formatter, FilterConfig};
+use std::path::Path;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Set up ignore engine
+    let ignore_engine = ignore::IgnoreEngine::new(Path::new("."));
+    let omit_engine = ignore::OmitContentEngine::new(Path::new("."));
+
+    // Walk directory structure
+    let tree = walker::walk_directory_structure(
+        Path::new("."),
+        &ignore_engine,
+        &omit_engine,
+    )?;
+
+    // Apply filters (optional)
+    let filter_config = FilterConfig::default()
+        .with_extensions(vec!["rs".to_string(), "toml".to_string()])
+        .with_max_size_mb(1.0);
+
+    let filtered_tree = if filter_config.has_active_filters() {
+        walker::filter_tree(&tree, &filter_config).unwrap()
+    } else {
+        tree
+    };
+
+    // Format for LLM consumption
+    let output = llm_formatter::format_snapshot(&filtered_tree, "my-project");
+
+    println!("{}", output);
+    Ok(())
+}
+```
+
+### Language Bindings (Planned)
+
+**Python Bindings** (Phase 12 - After v1.0):
+```python
+# Future Python API
+import dctx
+
+snapshot = dctx.snapshot(
+    path=".",
+    filters={"ext": ["py", "md"], "max_size_mb": 1.0}
+)
+context = snapshot.to_llm_format()
+```
+
+**Node.js Bindings** (Phase 13 - If demand exists):
+```javascript
+// Future Node.js API
+const dctx = require('dctx');
+
+const snapshot = await dctx.snapshot({
+    path: '.',
+    filters: { ext: ['ts', 'js'] }
+});
+const context = snapshot.toLlmFormat();
+```
+
+**Use Cases:**
+- Jupyter notebooks analyzing codebases
+- VS Code extensions with right-click → "Send to AI"
+- Build tools and CI/CD pipelines
+- AI/ML automation workflows
+- Programmatic context generation
+
+---
+
 ## Development
 
 ```bash
