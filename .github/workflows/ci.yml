@@ -3,12 +3,12 @@ name: CI
 env:
   CARGO_TERM_COLOR: always
 
-# Tests run on PRs only (not on push to main)
-# This saves CI time since PRs must pass before merging
+# Tests run on PRs and pushes to dev branch
+# This allows testing CI without opening PRs to main
 jobs:
   test:
     name: Test (${{ matrix.os }})
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/dev')
     strategy:
       fail-fast: false
       matrix:
@@ -48,10 +48,10 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-  # Builds run only on push to main (after PR is merged)
+  # Builds run on push to main (after PR is merged) and dev (for testing)
   build:
     name: Build (${{ matrix.target }})
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     strategy:
       fail-fast: false
       matrix:
@@ -90,6 +90,6 @@ jobs:
 
 on:
   push:
-    branches: [main]
+    branches: [main, dev]
   pull_request:
-    branches: [main]
+    branches: [main, dev]
