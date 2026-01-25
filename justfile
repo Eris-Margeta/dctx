@@ -83,13 +83,30 @@ release:
     echo "🚀 Preparing release for version: $TAG"
     echo ""
 
-    # Step 1: Sync version to all files
-    echo "📋 Step 1: Syncing version across project files..."
+    # Step 1: Verify changelog entry exists
+    echo "📝 Step 1: Verifying changelog entry for $VERSION..."
+    if ! grep -q "^## \[$VERSION\]" PROJECT-INTERNAL/DOCUMENTS/CHANGELOG.md; then
+        echo "❌ No changelog entry found for version $VERSION"
+        echo "   Please add a changelog entry in PROJECT-INTERNAL/DOCUMENTS/CHANGELOG.md"
+        exit 1
+    fi
+    echo "✅ Changelog entry found"
+    echo ""
+
+    # Step 2: Show changelog preview
+    echo "📋 Changelog for $VERSION:"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    ./tools/extract-changelog.sh "$VERSION" | head -20
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+
+    # Step 3: Sync version to all files
+    echo "🔄 Step 3: Syncing version across project files..."
     ./tools/sync-version.sh
     echo ""
 
-    # Step 2: Check for uncommitted changes
-    echo "🔍 Step 2: Checking for uncommitted changes..."
+    # Step 4: Check for uncommitted changes
+    echo "🔍 Step 4: Checking for uncommitted changes..."
     if ! git diff-index --quiet HEAD --; then
         echo "⚠️  You have uncommitted changes:"
         git status --short
@@ -109,8 +126,8 @@ release:
     fi
     echo ""
 
-    # Step 3: Check if tag already exists
-    echo "🏷️  Step 3: Checking if tag exists..."
+    # Step 5: Check if tag already exists
+    echo "🏷️  Step 5: Checking if tag exists..."
     if git rev-parse "$TAG" >/dev/null 2>&1; then
         echo "❌ Tag $TAG already exists!"
         echo "   Delete it first with: git tag -d $TAG && git push origin :refs/tags/$TAG"
@@ -119,14 +136,14 @@ release:
     echo "✅ Tag $TAG does not exist yet"
     echo ""
 
-    # Step 4: Create tag
-    echo "🏷️  Step 4: Creating tag $TAG..."
+    # Step 6: Create tag
+    echo "🏷️  Step 6: Creating tag $TAG..."
     git tag -a "$TAG" -m "Release $TAG"
     echo "✅ Tag created: $TAG"
     echo ""
 
-    # Step 5: Confirm push
-    echo "📤 Step 5: Ready to push tag and trigger release workflow"
+    # Step 7: Confirm push
+    echo "📤 Step 7: Ready to push tag and trigger release workflow"
     echo "   This will:"
     echo "   - Push tag $TAG to origin"
     echo "   - Trigger GitHub Actions release workflow"
@@ -142,7 +159,7 @@ release:
         exit 1
     fi
 
-    # Step 6: Push tag
+    # Step 8: Push tag
     echo "📤 Pushing tag $TAG..."
     git push origin "$TAG"
     echo ""
