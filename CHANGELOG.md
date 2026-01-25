@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.11.0] - 2026-01-25
+
+### Added
+- **Pattern-Based Content Omission**: New `.dctxomitcontent` file for flexible content omission
+  - Files shown in tree but content omitted from output
+  - Hierarchical loading: hardcoded → global (`~/.config/dctx/omitcontent`) → project (`.dctxomitcontent`)
+  - Supports full gitignore-style patterns (glob, negation, basename, path, etc.)
+- **Hardcoded Content Omission Rules**: Built-in patterns for common verbose files
+  - SVG files (`*.svg`) - often large and unreadable
+  - Package manager lockfiles:
+    - `package-lock.json` (npm)
+    - `pnpm-lock.yaml` (pnpm)
+    - `yarn.lock` (Yarn)
+    - `Cargo.lock` (Rust)
+    - `go.sum` (Go)
+    - `Gemfile.lock` (Ruby)
+    - `poetry.lock` (Python Poetry)
+    - `Pipfile.lock` (Python Pipenv)
+- **Content Omission Module**: New `omit_content.rs` for pattern matching
+- **Tree Node Flag**: Added `is_content_omitted` field to `DirContextTreeNode`
+
+### Changed
+- **SVG Handling**: Moved from config option to pattern-based system
+  - `omit_svg_content` config deprecated (pattern `*.svg` in hardcoded rules)
+  - More flexible: can override with negation in `.dctxomitcontent`
+- **Output Messages**: Files omitted by patterns show `[Content omitted by .dctxomitcontent pattern]`
+- **Module Organization**: Separated content omission logic from binary detection
+
+### Removed
+- **Deprecated Config**: `omit_svg_content` config option (use `.dctxomitcontent` patterns instead)
+  - Setting this option now shows deprecation warning
+
+### Technical Details
+- New module: `crates/dctx-core/src/omit_content.rs`
+- Updated modules: `walker.rs`, `llm_formatter.rs`, `config.rs`, `datatypes.rs`, `file_classifier.rs`
+- SVG removed from `file_classifier.rs` (now handled via patterns)
+- Test coverage: 4 new tests in `omit_content.rs`
+- Backward compatible: Binary detection unchanged, SVG behavior maintained via hardcoded pattern
+
+### Migration Guide
+If you previously used `omit_svg_content = false` in `config.toml`:
+1. Remove `omit_svg_content` from config (deprecated)
+2. Create `~/.config/dctx/omitcontent` or project `.dctxomitcontent`
+3. Add `!*.svg` (negation) to override hardcoded SVG omission
+
+---
+
 ## [0.10.0] - 2026-01-25
 
 ### Added
