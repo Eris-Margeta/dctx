@@ -214,6 +214,7 @@ fn generate_components(
 }
 
 /// Recursive renderer for standard full snapshot
+#[allow(clippy::too_many_arguments)]
 fn render_recursive(
     node: &DirContextTreeNode,
     tmpl: &Template,
@@ -292,7 +293,9 @@ fn render_recursive(
             let message = if node.is_binary_file {
                 format!(
                     "[Binary file: {}, content omitted]",
-                    node.binary_file_type.as_ref().unwrap_or(&"Unknown".to_string())
+                    node.binary_file_type
+                        .as_ref()
+                        .unwrap_or(&"Unknown".to_string())
                 )
             } else {
                 // SVG with omit_svg_content=true
@@ -387,7 +390,9 @@ fn render_recursive_diff_filter(
             let message = if node.is_binary_file {
                 format!(
                     "[Binary file: {}, content omitted]",
-                    node.binary_file_type.as_ref().unwrap_or(&"Unknown".to_string())
+                    node.binary_file_type
+                        .as_ref()
+                        .unwrap_or(&"Unknown".to_string())
                 )
             } else {
                 "[SVG file, content omitted (omit_svg_content=true)]".to_string()
@@ -424,7 +429,15 @@ fn render_recursive_diff_filter(
 
     // Recurse
     for child in &node.children {
-        render_recursive_diff_filter(child, tmpl, files_buf, id_counter, diff_report, depth + 1, app_config);
+        render_recursive_diff_filter(
+            child,
+            tmpl,
+            files_buf,
+            id_counter,
+            diff_report,
+            depth + 1,
+            app_config,
+        );
     }
 }
 
