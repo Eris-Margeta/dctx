@@ -9,13 +9,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/anthropics/dctx/actions/workflows/ci.yml">
-    <img src="https://github.com/anthropics/dctx/actions/workflows/ci.yml/badge.svg" alt="CI">
+  <a href="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml">
+    <img src="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml/badge.svg" alt="CI">
   </a>
-  <a href="https://github.com/anthropics/dctx/releases">
-    <img src="https://img.shields.io/github/v/release/anthropics/dctx?color=8b5cf6" alt="Release">
+  <a href="https://github.com/Eris-Margeta/dctx/releases">
+    <img src="https://img.shields.io/github/v/release/Eris-Margeta/dctx?color=8b5cf6" alt="Release">
   </a>
-  <a href="https://github.com/anthropics/dctx/blob/main/LICENSE">
+  <a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
   </a>
   <img src="https://img.shields.io/badge/rust-100%25-orange" alt="Rust">
@@ -56,7 +56,7 @@ Unlike RAG systems that fragment code into disconnected chunks, dctx provides a 
 
 ### From Source (Recommended)
 ```bash
-git clone https://github.com/anthropics/dctx
+git clone https://github.com/Eris-Margeta/dctx
 cd dctx
 cargo build --release
 ./target/release/dctx-cli --version

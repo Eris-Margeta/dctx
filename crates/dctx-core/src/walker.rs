@@ -2,7 +2,6 @@
 use crate::datatypes::{DirContextTreeNode, IgnoreRule, NodeType};
 use crate::file_classifier::{classify_file, FileContentHandling};
 use crate::ignore::should_ignore_item;
-use crate::omit_content::load_omit_content_rules;
 use std::collections::HashMap;
 use std::fs;
 use std::io;
@@ -73,10 +72,7 @@ pub fn populate_file_contents_parallel(root: &mut DirContextTreeNode) {
         content_map.insert(path, content);
     }
 
-    // Load content omission rules
-    let omit_rules = load_omit_content_rules(&root.disk_path);
-
-    fill_tree_from_map(root, &mut content_map, &omit_rules);
+    fill_tree_from_map(root, &mut content_map);
 }
 
 // --- Helperi ---
@@ -158,56 +154,38 @@ fn collect_file_paths(node: &DirContextTreeNode, collector: &mut Vec<PathBuf>) {
     }
 }
 
-fn fill_tree_from_map(
-    node: &mut DirContextTreeNode,
-    map: &mut HashMap<PathBuf, Vec<u8>>,
-    omit_rules: &[IgnoreRule],
-) {
+fn fill_tree_from_map(node: &mut DirContextTreeNode, map: &mut HashMap<PathBuf, Vec<u8>>) {
     if node.node_type == NodeType::File {
         if let Some(content) = map.remove(&node.disk_path) {
             node.content_size = content.len() as u64;
 
-            // Step 1: Classify for binary detection
+            // Classify the file to determine content handling
             let handling = classify_file(&node.disk_path, &content);
 
             match handling {
                 FileContentHandling::IncludeContent => {
-                    // Text file - check if content should be omitted via patterns
-                    let file_name = node
-                        .disk_path
-                        .file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("");
-
-                    let should_omit =
-                        should_ignore_item(&node.relative_path, file_name, false, omit_rules);
-
-                    if should_omit {
-                        // Content omitted by pattern (e.g., SVG, lockfiles)
-                        node.file_content = Some(content); // Store for potential use
-                        node.is_binary_file = false;
-                        node.binary_file_type = None;
-                        node.is_content_omitted = true;
-                    } else {
-                        // Normal text file - include content
-                        node.file_content = Some(content);
-                        node.is_binary_file = false;
-                        node.binary_file_type = None;
-                        node.is_content_omitted = false;
-                    }
+                    // Normal text file - include content
+                    node.file_content = Some(content);
+                    node.is_binary_file = false;
+                    node.binary_file_type = None;
                 }
                 FileContentHandling::OmitBinary { file_type } => {
                     // Binary file - omit content
                     node.file_content = None;
                     node.is_binary_file = true;
                     node.binary_file_type = Some(file_type);
-                    node.is_content_omitted = false;
+                }
+                FileContentHandling::OmitSvgContent => {
+                    // SVG - special handling (store content but mark for conditional omission)
+                    node.file_content = Some(content);
+                    node.is_binary_file = false;
+                    node.binary_file_type = Some("SVG file".to_string());
                 }
             }
         }
     } else {
         for child in &mut node.children {
-            fill_tree_from_map(child, map, omit_rules);
+            fill_tree_from_map(child, map);
         }
     }
 }
