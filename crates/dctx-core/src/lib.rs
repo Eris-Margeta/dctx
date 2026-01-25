@@ -1,6 +1,7 @@
 pub mod config;
 pub mod datatypes;
 pub mod diff;
+pub mod file_classifier;
 pub mod git_safety;
 pub mod ignore;
 pub mod llm_formatter;
