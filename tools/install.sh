@@ -56,30 +56,6 @@ TEMPLATES_DIR="$CONFIG_DIR/templates"
 echo "📂 Setting up config directory: $CONFIG_DIR"
 mkdir -p "$TEMPLATES_DIR"
 
-# --- 4.1. Create Global Ignore File ---
-SOURCE_GLOBAL_IGNORE="$PROJECT_ROOT/crates/dctx-core/templates/global-ignore"
-GLOBAL_IGNORE_FILE="$CONFIG_DIR/ignore"
-if [ ! -f "$GLOBAL_IGNORE_FILE" ]; then
-  if [ -f "$SOURCE_GLOBAL_IGNORE" ]; then
-    echo "📝 Installing global ignore file from template..."
-    cp "$SOURCE_GLOBAL_IGNORE" "$GLOBAL_IGNORE_FILE"
-  else
-    echo "⚠️  Template not found: $SOURCE_GLOBAL_IGNORE"
-  fi
-fi
-
-# --- 4.2. Create Global Omit Content File ---
-SOURCE_GLOBAL_OMIT="$PROJECT_ROOT/crates/dctx-core/templates/global-omitcontent"
-GLOBAL_OMIT_FILE="$CONFIG_DIR/omitcontent"
-if [ ! -f "$GLOBAL_OMIT_FILE" ]; then
-  if [ -f "$SOURCE_GLOBAL_OMIT" ]; then
-    echo "📝 Installing global omitcontent file from template..."
-    cp "$SOURCE_GLOBAL_OMIT" "$GLOBAL_OMIT_FILE"
-  else
-    echo "⚠️  Template not found: $SOURCE_GLOBAL_OMIT"
-  fi
-fi
-
 # --- 5. Config File Management (Merge-Append Strategy) ---
 CONFIG_FILE="$CONFIG_DIR/config.toml"
 CFG_KEY_GIT_SAFETY="update_local_git_repo_gitignore_rules"
@@ -201,6 +177,4 @@ echo ""
 echo "✅ Installation Complete (v$DCTX_VERSION)!"
 echo "   - Binary: $INSTALL_DEST"
 echo "   - Config: $CONFIG_DIR"
-echo "   - Global Ignore: $GLOBAL_IGNORE_FILE"
-echo "   - Global Omit: $GLOBAL_OMIT_FILE"
 echo "   - Global Git Ignore: $GIT_GLOBAL_IGNORE"

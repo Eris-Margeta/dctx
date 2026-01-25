@@ -79,7 +79,7 @@ rm -rf ~/.cache/dctx
 rm -rf ~/.config/dctx
 
 # Build and install
-git clone https://github.com/your-org/dctx.git
+git clone https://github.com/Eris-Margeta/dctx.git
 cd dctx
 cargo build --release
 cargo install --path crates/dctx-cli

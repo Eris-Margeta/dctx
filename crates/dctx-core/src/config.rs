@@ -16,17 +16,11 @@ pub const LLM_CONTEXT_EXTENSION: &str = "llmcontext.txt";
 /// Local ignore filename.
 pub const DEFAULT_IGNORE_FILENAME: &str = ".dctxignore";
 
-/// Local content omission filename.
-pub const DEFAULT_OMIT_CONTENT_FILENAME: &str = ".dctxomitcontent";
-
 /// Application name (folder for config/cache).
 pub const APP_NAME: &str = "dctx";
 
 /// Global ignore filename inside config dir.
 pub const GLOBAL_IGNORE_FILENAME: &str = "ignore";
-
-/// Global content omission filename inside config dir.
-pub const GLOBAL_OMIT_CONTENT_FILENAME: &str = "omitcontent";
 
 /// Configuration filename inside config dir.
 pub const CONFIG_FILENAME: &str = "config.toml";
@@ -60,22 +54,6 @@ pub const HARDCODED_IGNORE_RULES: &[&str] = &[
     "*.dctx",
 ];
 
-// --- LAYER 1: HARDCODED CONTENT OMISSION RULES ---
-// Files visible in tree but content omitted from output.
-pub const HARDCODED_OMIT_CONTENT_RULES: &[&str] = &[
-    // SVG files (often large/unreadable)
-    "*.svg",
-    // Package manager lockfiles (verbose, auto-generated)
-    "package-lock.json",
-    "pnpm-lock.yaml",
-    "yarn.lock",
-    "Cargo.lock",
-    "go.sum",
-    "Gemfile.lock",
-    "poetry.lock",
-    "Pipfile.lock",
-];
-
 // --- CONFIG STRUCT ---
 
 #[derive(Debug, Clone)]
@@ -92,6 +70,10 @@ pub struct AppConfig {
     /// Controls whether diff files (*-diff.txt) are generated on disk.
     /// Added in Phase 5.2. Default is FALSE to save disk space.
     pub text_output_mode_generates_diff_files: bool,
+    /// Controls whether SVG file content is omitted from output.
+    /// SVGs are technically text but often large/unreadable.
+    /// Default is TRUE (omit content, show only in tree).
+    pub omit_svg_content: bool,
 }
 
 impl Default for AppConfig {
@@ -102,6 +84,7 @@ impl Default for AppConfig {
             default_template: "default".to_string(),
             update_local_git_repo_gitignore_rules: true, // Safe default per ADR-005
             text_output_mode_generates_diff_files: false, // Default per Phase 5.2
+            omit_svg_content: true, // Default: omit SVG content (show in tree only)
         }
     }
 }
@@ -151,10 +134,6 @@ pub fn get_cache_dir() -> Option<PathBuf> {
 
 pub fn get_global_ignore_path() -> Option<PathBuf> {
     get_config_dir().map(|p| p.join(GLOBAL_IGNORE_FILENAME))
-}
-
-pub fn get_global_omit_content_path() -> Option<PathBuf> {
-    get_config_dir().map(|p| p.join(GLOBAL_OMIT_CONTENT_FILENAME))
 }
 
 pub fn get_project_registry_path() -> Option<PathBuf> {
@@ -243,9 +222,12 @@ fn parse_config_line(line: &str, config: &mut AppConfig) {
                     config.text_output_mode_generates_diff_files = false;
                 }
             }
-            // Legacy: omit_svg_content is now handled via .dctxomitcontent patterns
             "omit_svg_content" => {
-                eprintln!("Warning: omit_svg_content config is deprecated. Use .dctxomitcontent patterns instead.");
+                if val == "true" {
+                    config.omit_svg_content = true;
+                } else if val == "false" {
+                    config.omit_svg_content = false;
+                }
             }
             _ => {}
         }
@@ -264,6 +246,7 @@ mod tests {
         assert_eq!(config.default_template, "default");
         assert!(config.update_local_git_repo_gitignore_rules);
         assert!(!config.text_output_mode_generates_diff_files);
+        assert!(config.omit_svg_content); // Default: omit SVG content
     }
 
     #[test]
@@ -355,6 +338,21 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_omit_svg_content_true() {
+        let mut config = AppConfig::default();
+        config.omit_svg_content = false; // Start with false
+        parse_config_line("omit_svg_content = true", &mut config);
+        assert!(config.omit_svg_content);
+    }
+
+    #[test]
+    fn test_parse_omit_svg_content_false() {
+        let mut config = AppConfig::default();
+        parse_config_line("omit_svg_content = false", &mut config);
+        assert!(!config.omit_svg_content);
+    }
+
+    #[test]
     fn test_parse_ignores_comments() {
         let mut config = AppConfig::default();
         parse_config_line("# This is a comment", &mut config);
@@ -398,18 +396,5 @@ mod tests {
         assert_eq!(APP_NAME, "dctx");
         assert_eq!(GLOBAL_IGNORE_FILENAME, "ignore");
         assert_eq!(CONFIG_FILENAME, "config.toml");
-        assert_eq!(GLOBAL_OMIT_CONTENT_FILENAME, "omitcontent");
-        assert_eq!(DEFAULT_OMIT_CONTENT_FILENAME, ".dctxomitcontent");
-    }
-
-    #[test]
-    fn test_hardcoded_omit_content_rules_not_empty() {
-        assert!(!HARDCODED_OMIT_CONTENT_RULES.is_empty());
-        assert!(HARDCODED_OMIT_CONTENT_RULES.contains(&"*.svg"));
-        assert!(HARDCODED_OMIT_CONTENT_RULES.contains(&"package-lock.json"));
-        assert!(HARDCODED_OMIT_CONTENT_RULES.contains(&"pnpm-lock.yaml"));
-        assert!(HARDCODED_OMIT_CONTENT_RULES.contains(&"yarn.lock"));
-        assert!(HARDCODED_OMIT_CONTENT_RULES.contains(&"Cargo.lock"));
-        assert!(HARDCODED_OMIT_CONTENT_RULES.contains(&"go.sum"));
     }
 }
