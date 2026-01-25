@@ -43,6 +43,34 @@ test-perf:
 install:
     ./tools/install.sh
 
+# Uninstall dctx (removes binary, cache, and config)
+uninstall:
+    #!/bin/bash
+    echo "🗑️  Uninstalling dctx..."
+    # Remove binary
+    if [ -f "/usr/local/bin/dctx" ]; then
+        echo "   - Removing binary: /usr/local/bin/dctx"
+        if [ -w "/usr/local/bin" ]; then
+            rm -f /usr/local/bin/dctx
+        else
+            echo "   🔐 Sudo required to remove from /usr/local/bin"
+            sudo rm -f /usr/local/bin/dctx
+        fi
+    else
+        echo "   ⚠️  Binary not found at /usr/local/bin/dctx"
+    fi
+    # Remove cache
+    if [ -d "$HOME/.cache/dctx" ]; then
+        echo "   - Removing cache: $HOME/.cache/dctx"
+        rm -rf "$HOME/.cache/dctx"
+    fi
+    # Remove config
+    if [ -d "$HOME/.config/dctx" ]; then
+        echo "   - Removing config: $HOME/.config/dctx"
+        rm -rf "$HOME/.config/dctx"
+    fi
+    echo "✅ Uninstallation complete!"
+
 # Test on Linux via Docker
 test-linux:
     docker run --rm -v "$PWD":/app -w /app rust:latest cargo test --all

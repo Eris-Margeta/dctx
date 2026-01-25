@@ -1,0 +1,33 @@
+# dctx Global Omit Content Rules
+#
+# Files matching these patterns will APPEAR in the directory tree
+# but their CONTENT will be omitted from the output.
+#
+# Use this for files that are useful to know exist, but whose
+# contents are too large or not useful for LLM context.
+#
+# Syntax: Same as .gitignore
+# - One pattern per line
+# - Lines starting with # are comments
+# - Use ! to negate a pattern
+# - Supports wildcards (* and **)
+#
+# Examples:
+#   *.svg                - Omit content of SVG files (but show in tree)
+#   package-lock.json    - Omit lockfile content
+#   !critical.svg        - But include critical.svg content
+#
+# Default rules:
+
+# SVG files (often large/unreadable XML)
+*.svg
+
+# Package manager lockfiles (verbose, auto-generated)
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+Cargo.lock
+go.sum
+Gemfile.lock
+poetry.lock
+Pipfile.lock
