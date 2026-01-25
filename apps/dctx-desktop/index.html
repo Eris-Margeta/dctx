@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>dctx Desktop</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          Oxygen, Ubuntu, Cantarell, sans-serif;
+        background: #1a1a1a;
+        color: #e0e0e0;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      h1 {
+        color: #8b5cf6;
+        margin-bottom: 20px;
+        font-size: 32px;
+      }
+
+      .input-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px;
+        font-size: 14px;
+        border: 1px solid #333;
+        border-radius: 6px;
+        background: #2a2a2a;
+        color: #e0e0e0;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: #8b5cf6;
+      }
+
+      button {
+        background: #8b5cf6;
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 16px;
+        font-weight: 600;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      button:hover {
+        background: #7c3aed;
+      }
+
+      button:disabled {
+        background: #555;
+        cursor: not-allowed;
+      }
+
+      .output {
+        margin-top: 20px;
+        padding: 20px;
+        background: #2a2a2a;
+        border: 1px solid #333;
+        border-radius: 6px;
+        font-family: "Monaco", "Courier New", monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+        max-height: 600px;
+        overflow-y: auto;
+      }
+
+      .badge {
+        display: inline-block;
+        background: #8b5cf6;
+        color: white;
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>
+        dctx Desktop
+        <span class="badge">v0.11.0-alpha</span>
+      </h1>
+
+      <div class="input-group">
+        <label for="path-input">Directory Path:</label>
+        <input
+          id="path-input"
+          type="text"
+          placeholder="/path/to/your/project"
+        />
+      </div>
+
+      <button id="generate-btn">Generate Snapshot</button>
+
+      <div class="output" id="output">
+        Output will appear here...
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

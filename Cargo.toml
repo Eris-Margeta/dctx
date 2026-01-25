@@ -2,6 +2,10 @@
 members = [
   "crates/dctx-core",
   "crates/dctx-cli",
-  # "crates/dctx-ffi", # TODO: Enable when FFI bindings are implemented
+  # Desktop app (requires npm run build first to generate dist/)
+  # "apps/dctx-desktop/src-tauri",
+  # Bindings (future)
+  # "bindings/dctx-py",
+  # "bindings/dctx-node",
 ]
 resolver = "2"

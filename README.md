@@ -366,15 +366,35 @@ See [justfile](justfile) for all available commands.
 
 ## Architecture
 
+dctx is structured as a **monorepo** with clear separation between open-source and commercial components:
+
 ```
 dctx/
-├── crates/
-│   ├── dctx-core/     # Pure Rust library (zero external deps)
-│   └── dctx-cli/      # Command-line interface
-├── tools/             # Build, test, and install scripts
-├── website/           # Landing page (dctx.app)
-└── .github/           # CI workflows
+├── crates/              # Rust workspace (MIT License)
+│   ├── dctx-core/       # Pure Rust library (zero external deps)
+│   └── dctx-cli/        # Command-line interface
+├── apps/                # Applications
+│   └── dctx-desktop/    # Cross-platform GUI (PROPRIETARY - $29)
+├── bindings/            # Language bindings (MIT License - Planned)
+│   ├── dctx-py/         # Python bindings (Phase 12)
+│   └── dctx-node/       # Node.js bindings (Phase 13)
+├── tools/               # Build, test, and install scripts
+├── docs/                # Documentation
+├── website/             # Landing page (dctx.app)
+└── .github/             # CI workflows
 ```
+
+### Licensing Model
+
+**Open Source (MIT)**:
+- `dctx-core` - Core Rust library
+- `dctx-cli` - Command-line tool with ALL features
+- `bindings/*` - Future Python, Node.js bindings
+
+**Commercial (Proprietary)**:
+- `apps/dctx-desktop/` - Desktop GUI application ($29 one-time)
+
+This "Open Core" model keeps developer tools free while monetizing GUI convenience.
 
 ---
 

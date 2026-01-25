@@ -5,6 +5,14 @@
 /core/target
 **/*.rs.bk
 
+# Desktop App (Tauri) - apps/dctx-desktop/
+apps/dctx-desktop/node_modules/
+apps/dctx-desktop/dist/
+apps/dctx-desktop/dist-ssr/
+apps/dctx-desktop/src-tauri/target/
+apps/dctx-desktop/src-tauri/Cargo.lock
+apps/dctx-desktop/*.local
+
 
 # Node / Dashboard / Website
 node_modules/
