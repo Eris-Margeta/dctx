@@ -1,0 +1,20 @@
+# dctx Global Ignore Rules
+#
+# These patterns apply to ALL projects scanned by dctx.
+# Files matching these patterns will be EXCLUDED from directory context output.
+#
+# Syntax: Same as .gitignore
+# - One pattern per line
+# - Lines starting with # are comments
+# - Use ! to negate a pattern (include something that was previously excluded)
+# - Supports wildcards (* and **)
+#
+# Examples:
+#   node_modules/     - Ignore node_modules directory everywhere
+#   *.log             - Ignore all .log files
+#   !important.log    - But include important.log
+#   dist/             - Ignore dist directory
+#
+# Default rules:
+
+node_modules/
