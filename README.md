@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.10.0-8b5cf6" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.11.0--dev-8b5cf6" alt="Version">
   <a href="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml">
     <img src="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml/badge.svg" alt="CI">
   </a>
@@ -110,9 +110,11 @@ After making changes, copy only what changed (saves tokens!).
 | **Blazing Fast** | Multi-threaded Rust core. Processes thousands of files in milliseconds. |
 | **Zero Dependencies** | Single static binary. No Python, Node, or runtime required. |
 | **Smart Filtering** | Respects `.gitignore` + `.dctxignore`. Never sends `node_modules` to AI. |
+| **Advanced Filters** | Filter by extension, size, content, or visibility. Combine filters for precision. |
 | **Version Tracking** | Automatic versioning with diffs. Save 90% of tokens on subsequent runs. |
 | **Semantic Structure** | XML-tagged output with file IDs, paths, sizes, and timestamps. |
 | **Custom Templates** | AOT-compiled template system for custom output formats. |
+| **Binary Detection** | Automatically detects and excludes binary files (42 file types). |
 | **Cross-Platform** | Linux, macOS, Windows. Native clipboard integration. |
 
 ---
@@ -124,16 +126,57 @@ Usage: dctx [PATH] [OPTIONS]
        dctx template <COMMAND>
 
 Snapshot Options:
-  -c, --clipboard  Copy to clipboard
-  -d, --diff       Output diff only (if available)
-  -t, --tree       Tree-only mode (skips file content)
-  -r, --reset      Force V1 reset
-  -h, --help       Show help
-  -v, --version    Show version
+  -c, --clipboard       Copy to clipboard
+  -d, --diff            Output diff only (if available)
+  -t, --tree            Tree-only mode (skips file content)
+  -r, --reset           Force V1 reset
+  -h, --help            Show help
+  -v, --version         Show version
+
+Filter Options:
+  --ext <extensions>    Only include files with these extensions
+                        Example: --ext rs,toml
+  --binary              Include binary files (excluded by default)
+  --empty               Show only empty files (0 bytes)
+  --non-empty           Show only non-empty files
+  --large <MB>          Show only files larger than X megabytes
+                        Example: --large 1
+  --small <MB>          Show only files smaller than X megabytes
+                        Example: --small 0.5
+  --hidden              Show ONLY hidden files and folders (starting with .)
+  --debug-ignored       List ignored folders for debugging
 
 Template Commands:
   template build <PATH>  Compile a .dctx_template file
   template list          List compiled templates
+```
+
+### Filter Examples
+
+```bash
+# Only Rust files
+dctx . --ext rs -c
+
+# Rust and TOML files under 500KB
+dctx . --ext rs,toml --small 0.5
+
+# JavaScript/TypeScript files
+dctx . --ext js,ts,tsx
+
+# Hidden configuration files
+dctx . --hidden --ext conf,yaml,toml
+
+# See what folders are being ignored
+dctx . --debug-ignored
+
+# Include binary files (excluded by default)
+dctx . --binary
+
+# Only empty files
+dctx . --empty
+
+# Files between 10KB and 100KB
+dctx . --large 0.01 --small 0.1
 ```
 
 ---
