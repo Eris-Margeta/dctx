@@ -1,6 +1,7 @@
 // crates/dctx-cli/src/main.rs
 
 mod platform;
+mod tui;
 
 use dctx_core::config;
 use dctx_core::diff::{self, DiffReport};
@@ -17,7 +18,6 @@ use dctx_core::writer;
 
 use std::env;
 use std::fs;
-use std::io::{self, Write};
 use std::path::PathBuf;
 use std::time::Instant;
 
@@ -300,31 +300,361 @@ fn parse_snapshot_args(args: &[String]) -> Result<CliCommand, String> {
 }
 
 fn run_interactive_mode() {
-    println!("========================================");
-    println!("      dctx - Intelligent Context        ");
-    println!("========================================");
-    println!("  [1] Snapshot Current Directory (.)");
-    println!("  [2] Snapshot Current Directory to Clipboard (. -c)");
-    println!("  [3] Help");
-    println!("  [4] Exit");
-    println!();
-    print!("> ");
-    io::stdout().flush().unwrap();
-    let mut input = String::new();
-    if io::stdin().read_line(&mut input).is_err() {
-        return;
-    }
-    match input.trim() {
-        "1" => run_headless_mode(CliConfig::default()),
-        "2" => {
-            run_headless_mode(CliConfig {
-                clipboard_mode: true,
-                ..Default::default()
-            });
+    // Get current directory for context
+    let current_dir = std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."))
+        .display()
+        .to_string();
+
+    // Try to get last version from cache
+    let last_version = get_last_version_from_cache(&current_dir);
+
+    let context = if let Some(version) = last_version {
+        tui::MenuContext::new(current_dir).with_version(version)
+    } else {
+        tui::MenuContext::new(current_dir)
+    };
+
+    // Main menu loop
+    loop {
+        let menu = tui::create_main_menu(&context);
+        match menu.show() {
+            Ok('1') => {
+                // Snapshot current directory
+                run_headless_mode(CliConfig::default());
+                let _ = tui::show_message("Snapshot complete! Check .dctx/ directory.");
+            }
+            Ok('2') => {
+                // Snapshot to clipboard
+                run_headless_mode(CliConfig {
+                    clipboard_mode: true,
+                    ..Default::default()
+                });
+                let _ = tui::show_message("Snapshot copied to clipboard!");
+            }
+            Ok('3') => {
+                // Tree-only mode
+                run_headless_mode(CliConfig {
+                    tree_only: true,
+                    ..Default::default()
+                });
+                let _ = tui::show_message("Tree-only snapshot complete!");
+            }
+            Ok('4') => {
+                // Diff mode
+                run_headless_mode(CliConfig {
+                    diff_mode: true,
+                    clipboard_mode: true,
+                    ..Default::default()
+                });
+                let _ = tui::show_message("Diff copied to clipboard!");
+            }
+            Ok('5') => {
+                // Advanced options
+                run_advanced_menu();
+            }
+            Ok('0') | Ok('q') => {
+                // Exit
+                println!("Goodbye!");
+                std::process::exit(0);
+            }
+            Ok(_) => {
+                let _ = tui::show_error("Invalid selection. Try again.");
+            }
+            Err(e) => {
+                eprintln!("Error reading input: {}", e);
+                std::process::exit(1);
+            }
         }
-        "3" => print_help(),
-        "4" | "q" | "exit" => std::process::exit(0),
-        _ => println!("Invalid selection."),
+    }
+}
+
+fn run_advanced_menu() {
+    loop {
+        let menu = tui::create_advanced_menu();
+        match menu.show() {
+            Ok('1') => {
+                // Filters submenu
+                run_filter_menu();
+            }
+            Ok('2') => {
+                // Templates submenu
+                run_template_menu();
+            }
+            Ok('3') => {
+                // Cache & Debug submenu
+                run_cache_menu();
+            }
+            Ok('0') => {
+                // Back to main menu
+                return;
+            }
+            Ok(_) => {
+                let _ = tui::show_error("Invalid selection. Try again.");
+            }
+            Err(e) => {
+                eprintln!("Error reading input: {}", e);
+                return;
+            }
+        }
+    }
+}
+
+fn run_filter_menu() {
+    let mut filter_config = FilterConfig::default();
+
+    loop {
+        let menu = tui::create_filter_menu();
+        match menu.show() {
+            Ok('1') => {
+                // Filter by extension
+                match tui::get_input("Enter extensions (comma-separated, e.g., rs,toml):") {
+                    Ok(input) if !input.is_empty() => {
+                        let extensions: Vec<String> = input
+                            .split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect();
+
+                        if !extensions.is_empty() {
+                            filter_config = filter_config.with_extensions(extensions.clone());
+                            let _ = tui::show_message(&format!(
+                                "Extension filter set: {}",
+                                extensions.join(", ")
+                            ));
+                        }
+                    }
+                    Ok(_) => {}
+                    Err(e) => {
+                        let _ = tui::show_error(&format!("Error: {}", e));
+                    }
+                }
+            }
+            Ok('2') => {
+                // Filter by size
+                match tui::get_input("Large (L) or Small (S) files?") {
+                    Ok(input) => {
+                        let choice = input.to_lowercase();
+                        if choice == "l" || choice == "large" {
+                            match tui::get_input("Minimum size in MB:") {
+                                Ok(size_str) => {
+                                    if let Ok(size) = size_str.parse::<f64>() {
+                                        filter_config = filter_config.with_min_size_mb(size);
+                                        let _ = tui::show_message(&format!(
+                                            "Large file filter set: >{:.2}MB",
+                                            size
+                                        ));
+                                    } else {
+                                        let _ = tui::show_error("Invalid size number.");
+                                    }
+                                }
+                                Err(e) => {
+                                    let _ = tui::show_error(&format!("Error: {}", e));
+                                }
+                            }
+                        } else if choice == "s" || choice == "small" {
+                            match tui::get_input("Maximum size in MB:") {
+                                Ok(size_str) => {
+                                    if let Ok(size) = size_str.parse::<f64>() {
+                                        filter_config = filter_config.with_max_size_mb(size);
+                                        let _ = tui::show_message(&format!(
+                                            "Small file filter set: <{:.2}MB",
+                                            size
+                                        ));
+                                    } else {
+                                        let _ = tui::show_error("Invalid size number.");
+                                    }
+                                }
+                                Err(e) => {
+                                    let _ = tui::show_error(&format!("Error: {}", e));
+                                }
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        let _ = tui::show_error(&format!("Error: {}", e));
+                    }
+                }
+            }
+            Ok('3') => {
+                // Content filters
+                match tui::get_input("Empty (E) or Non-Empty (N) files?") {
+                    Ok(input) => {
+                        let choice = input.to_lowercase();
+                        if choice == "e" || choice == "empty" {
+                            filter_config = filter_config.with_only_empty(true);
+                            let _ = tui::show_message("Empty files filter set.");
+                        } else if choice == "n" || choice == "non-empty" {
+                            filter_config = filter_config.with_only_non_empty(true);
+                            let _ = tui::show_message("Non-empty files filter set.");
+                        }
+                    }
+                    Err(e) => {
+                        let _ = tui::show_error(&format!("Error: {}", e));
+                    }
+                }
+            }
+            Ok('4') => {
+                // Hidden files only
+                filter_config = filter_config.with_only_hidden(true);
+                let _ = tui::show_message("Hidden files only filter set.");
+            }
+            Ok('5') => {
+                // Include binary files
+                filter_config = filter_config.with_include_binary(true);
+                let _ = tui::show_message("Binary files will be included.");
+            }
+            Ok('9') => {
+                // Clear all filters
+                filter_config = FilterConfig::default();
+                let _ = tui::show_message("All filters cleared.");
+            }
+            Ok('0') => {
+                // Apply filters and go back
+                if filter_config.has_active_filters() {
+                    run_headless_mode(CliConfig {
+                        filter_config,
+                        ..Default::default()
+                    });
+                    let _ = tui::show_message("Filtered snapshot generated!");
+                }
+                return;
+            }
+            Ok(_) => {
+                let _ = tui::show_error("Invalid selection. Try again.");
+            }
+            Err(e) => {
+                eprintln!("Error reading input: {}", e);
+                return;
+            }
+        }
+    }
+}
+
+fn run_template_menu() {
+    loop {
+        let menu = tui::create_template_menu();
+        match menu.show() {
+            Ok('1') => {
+                let _ = tui::show_message("Already using default template.");
+            }
+            Ok('2') => {
+                // List templates
+                run_template_command(TemplateSubcommand::List);
+                let _ = tui::show_message("Press Enter to continue...");
+            }
+            Ok('3') => {
+                // Build template
+                match tui::get_input("Enter template file path:") {
+                    Ok(path) if !path.is_empty() => {
+                        run_template_command(TemplateSubcommand::Build {
+                            template_path: PathBuf::from(path),
+                        });
+                        let _ = tui::show_message("Press Enter to continue...");
+                    }
+                    Ok(_) => {
+                        let _ = tui::show_error("No path provided.");
+                    }
+                    Err(e) => {
+                        let _ = tui::show_error(&format!("Error: {}", e));
+                    }
+                }
+            }
+            Ok('0') => {
+                // Back
+                return;
+            }
+            Ok(_) => {
+                let _ = tui::show_error("Invalid selection. Try again.");
+            }
+            Err(e) => {
+                eprintln!("Error reading input: {}", e);
+                return;
+            }
+        }
+    }
+}
+
+fn run_cache_menu() {
+    loop {
+        let menu = tui::create_cache_menu();
+        match menu.show() {
+            Ok('1') => {
+                // Show ignored folders
+                run_headless_mode(CliConfig {
+                    debug_ignored: true,
+                    tree_only: true,
+                    ..Default::default()
+                });
+                let _ = tui::show_message("Check output above for ignored folders.");
+            }
+            Ok('2') => {
+                // Reset project state
+                run_headless_mode(CliConfig {
+                    force_reset: true,
+                    ..Default::default()
+                });
+                let _ = tui::show_message("Project state reset to V1.");
+            }
+            Ok('3') => {
+                // Clear global cache
+                match config::get_cache_dir() {
+                    Some(cache_dir) => {
+                        if cache_dir.exists() {
+                            match fs::remove_dir_all(&cache_dir) {
+                                Ok(_) => {
+                                    let _ = tui::show_message("Global cache cleared successfully.");
+                                }
+                                Err(e) => {
+                                    let _ = tui::show_error(&format!("Failed to clear cache: {}", e));
+                                }
+                            }
+                        } else {
+                            let _ = tui::show_message("Cache directory does not exist.");
+                        }
+                    }
+                    None => {
+                        let _ = tui::show_error("Could not determine cache directory.");
+                    }
+                }
+            }
+            Ok('0') => {
+                // Back
+                return;
+            }
+            Ok(_) => {
+                let _ = tui::show_error("Invalid selection. Try again.");
+            }
+            Err(e) => {
+                eprintln!("Error reading input: {}", e);
+                return;
+            }
+        }
+    }
+}
+
+fn get_last_version_from_cache(current_dir: &str) -> Option<String> {
+    // Try to load version from cached state
+    let target_dir = match std::fs::canonicalize(current_dir) {
+        Ok(p) => p,
+        Err(_) => return None,
+    };
+
+    let mut registry = ProjectRegistry::new().ok()?;
+    let project_hash = registry.get_or_create_id(&target_dir).ok()?;
+
+    let cache_dir = config::get_cache_dir()?;
+    let bin_path = cache_dir.join(format!("{}.dctx", project_hash));
+
+    if !bin_path.exists() {
+        return None;
+    }
+
+    // Read version from binary file
+    use dctx_core::reader::read_dircontxt_file;
+    match read_dircontxt_file(&bin_path) {
+        Ok((_tree, version)) => Some(version.to_string()),
+        Err(_) => None,
     }
 }
 

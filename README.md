@@ -101,12 +101,19 @@ dctx . -d -c
 ```
 After making changes, copy only what changed (saves tokens!).
 
+### Interactive Mode
+```bash
+dctx
+```
+Run without arguments to launch the interactive menu system—discover all features through an intuitive TUI.
+
 ---
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
+| **Interactive TUI** | Zero-dependency menu system for users who prefer not to memorize CLI flags. |
 | **Blazing Fast** | Multi-threaded Rust core. Processes thousands of files in milliseconds. |
 | **Zero Dependencies** | Single static binary. No Python, Node, or runtime required. |
 | **Smart Filtering** | Respects `.gitignore` + `.dctxignore`. Never sends `node_modules` to AI. |
