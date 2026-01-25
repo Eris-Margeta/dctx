@@ -5,6 +5,7 @@ pub mod file_classifier;
 pub mod git_safety;
 pub mod ignore;
 pub mod llm_formatter;
+pub mod omit_content;
 pub mod reader;
 pub mod registry;
 pub mod state;
