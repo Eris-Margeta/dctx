@@ -81,11 +81,28 @@ jobs:
       - name: List artifacts
         run: find artifacts -type f
 
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          CHANGELOG_ENTRY=$(./tools/extract-changelog.sh "$VERSION" || echo "")
+          if [ -n "$CHANGELOG_ENTRY" ]; then
+            echo "Found changelog entry for version $VERSION"
+            # Save to file for use in release
+            cat > release-notes.md << 'EOF'
+          $CHANGELOG_ENTRY
+          EOF
+          else
+            echo "No changelog entry found, will use auto-generated notes"
+            echo "" > release-notes.md
+          fi
+
       - name: Create Release
         uses: softprops/action-gh-release@v1
         with:
           draft: false
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          body_path: release-notes.md
           generate_release_notes: true
           files: |
             artifacts/**/*.tar.gz
