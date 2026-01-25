@@ -1,5 +1,6 @@
 // crates/dctx-core/src/walker.rs
 use crate::datatypes::{DirContextTreeNode, IgnoreRule, NodeType};
+use crate::file_classifier::{classify_file, FileContentHandling};
 use crate::ignore::should_ignore_item;
 use std::collections::HashMap;
 use std::fs;
@@ -157,7 +158,30 @@ fn fill_tree_from_map(node: &mut DirContextTreeNode, map: &mut HashMap<PathBuf, 
     if node.node_type == NodeType::File {
         if let Some(content) = map.remove(&node.disk_path) {
             node.content_size = content.len() as u64;
-            node.file_content = Some(content);
+
+            // Classify the file to determine content handling
+            let handling = classify_file(&node.disk_path, &content);
+
+            match handling {
+                FileContentHandling::IncludeContent => {
+                    // Normal text file - include content
+                    node.file_content = Some(content);
+                    node.is_binary_file = false;
+                    node.binary_file_type = None;
+                }
+                FileContentHandling::OmitBinary { file_type } => {
+                    // Binary file - omit content
+                    node.file_content = None;
+                    node.is_binary_file = true;
+                    node.binary_file_type = Some(file_type);
+                }
+                FileContentHandling::OmitSvgContent => {
+                    // SVG - special handling (store content but mark for conditional omission)
+                    node.file_content = Some(content);
+                    node.is_binary_file = false;
+                    node.binary_file_type = Some("SVG file".to_string());
+                }
+            }
         }
     } else {
         for child in &mut node.children {

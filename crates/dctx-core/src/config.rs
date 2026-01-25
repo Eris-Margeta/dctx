@@ -70,6 +70,10 @@ pub struct AppConfig {
     /// Controls whether diff files (*-diff.txt) are generated on disk.
     /// Added in Phase 5.2. Default is FALSE to save disk space.
     pub text_output_mode_generates_diff_files: bool,
+    /// Controls whether SVG file content is omitted from output.
+    /// SVGs are technically text but often large/unreadable.
+    /// Default is TRUE (omit content, show only in tree).
+    pub omit_svg_content: bool,
 }
 
 impl Default for AppConfig {
@@ -80,6 +84,7 @@ impl Default for AppConfig {
             default_template: "default".to_string(),
             update_local_git_repo_gitignore_rules: true, // Safe default per ADR-005
             text_output_mode_generates_diff_files: false, // Default per Phase 5.2
+            omit_svg_content: true, // Default: omit SVG content (show in tree only)
         }
     }
 }
@@ -217,6 +222,13 @@ fn parse_config_line(line: &str, config: &mut AppConfig) {
                     config.text_output_mode_generates_diff_files = false;
                 }
             }
+            "omit_svg_content" => {
+                if val == "true" {
+                    config.omit_svg_content = true;
+                } else if val == "false" {
+                    config.omit_svg_content = false;
+                }
+            }
             _ => {}
         }
     }
@@ -234,6 +246,7 @@ mod tests {
         assert_eq!(config.default_template, "default");
         assert!(config.update_local_git_repo_gitignore_rules);
         assert!(!config.text_output_mode_generates_diff_files);
+        assert!(config.omit_svg_content); // Default: omit SVG content
     }
 
     #[test]
@@ -322,6 +335,21 @@ mod tests {
         let mut config = AppConfig::default();
         parse_config_line("text_output_mode_generates_diff_files = true", &mut config);
         assert!(config.text_output_mode_generates_diff_files);
+    }
+
+    #[test]
+    fn test_parse_omit_svg_content_true() {
+        let mut config = AppConfig::default();
+        config.omit_svg_content = false; // Start with false
+        parse_config_line("omit_svg_content = true", &mut config);
+        assert!(config.omit_svg_content);
+    }
+
+    #[test]
+    fn test_parse_omit_svg_content_false() {
+        let mut config = AppConfig::default();
+        parse_config_line("omit_svg_content = false", &mut config);
+        assert!(!config.omit_svg_content);
     }
 
     #[test]

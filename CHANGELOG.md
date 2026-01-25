@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.10.0] - 2026-01-25
+
+### Added
+- **Binary File Detection**: Automatic detection and content omission for binary files
+  - Images (PNG, JPG, GIF, BMP, WebP, AVIF, TIFF, ICO)
+  - Documents (PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, ODT, ODS, ODP)
+  - Archives (ZIP, TAR, GZ, BZ2, XZ, 7Z, RAR)
+  - Videos (MP4, MOV, AVI, MKV, WebM, FLV, WMV, M4V)
+  - Audio (MP3, WAV, OGG, FLAC, AAC, M4A, WMA)
+  - Executables (EXE, DLL, SO, DYLIB, BIN, APP)
+  - Fonts (TTF, OTF, WOFF, WOFF2, EOT)
+  - Database files (DB, SQLite, SQLite3)
+  - Compiled files (O, OBJ, A, LIB, PYC, CLASS)
+- **Content-Based Binary Detection**: Fallback detection using null bytes and non-printable character ratio
+- **SVG Content Omission Config**: New `omit_svg_content` config option (default: `true`)
+  - SVGs are shown in file tree but content can be optionally omitted
+  - Set `omit_svg_content = false` in config to include SVG content
+- **File Classifier Module**: New `file_classifier.rs` with comprehensive file type detection
+- **Binary File Metadata**: Files marked as binary show descriptive type (e.g., "PNG image", "PDF document")
+
+### Changed
+- **Output File Size**: Dramatic reduction in output size for projects with binary files
+  - Example: 4.3 MB → 500 KB (90% reduction) for projects with images
+- **File Content Display**: Binary files now show `[Binary file: <type>, content omitted]` instead of garbage characters
+- **Tree Node Structure**: Added `is_binary_file` and `binary_file_type` fields to `DirContextTreeNode`
+- **Config Structure**: Added `omit_svg_content` field to `AppConfig`
+
+### Fixed
+- **Binary Garbage in Output**: Files like PNG, PDF, MP4 no longer produce corrupted UTF-8 characters
+- **Massive Output Files**: Projects with images/videos no longer generate huge context files
+- **Memory Usage**: Reduced memory footprint by not storing binary content unnecessarily
+
+### Technical Details
+- New module: `crates/dctx-core/src/file_classifier.rs` (42 file types detected)
+- Updated modules: `walker.rs`, `llm_formatter.rs`, `config.rs`, `datatypes.rs`
+- Test coverage: 15 new tests in `file_classifier.rs`
+- Backward compatible: Existing behavior unchanged for text files
+
+---
+
 ## [0.9.0] - 2026-01-21
 
 ### Added

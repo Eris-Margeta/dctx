@@ -78,6 +78,12 @@ pub struct DirContextTreeNode {
 
     // --- Cache za sadržaj ---
     pub file_content: Option<Vec<u8>>,
+
+    // --- Binary file handling ---
+    /// Indicates if this is a binary file and content should be omitted
+    pub is_binary_file: bool,
+    /// Type description for binary files (e.g., "PNG image", "PDF document")
+    pub binary_file_type: Option<String>,
 }
 
 impl DirContextTreeNode {
@@ -92,6 +98,8 @@ impl DirContextTreeNode {
             children: Vec::new(),
             generated_id_for_llm: String::new(),
             file_content: None,
+            is_binary_file: false,
+            binary_file_type: None,
         }
     }
 
