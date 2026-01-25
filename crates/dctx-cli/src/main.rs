@@ -4,6 +4,7 @@ mod platform;
 
 use dctx_core::config;
 use dctx_core::diff::{self, DiffReport};
+use dctx_core::filter::FilterConfig;
 use dctx_core::git_safety;
 use dctx_core::ignore;
 use dctx_core::llm_formatter;
@@ -50,6 +51,15 @@ struct SnapshotConfig {
     diff_mode: bool,
     tree_only: bool,
     force_reset: bool,
+    // Filter options
+    filter_extensions: Vec<String>,
+    include_binary: bool,
+    only_empty: bool,
+    only_non_empty: bool,
+    min_size_mb: Option<f64>,
+    max_size_mb: Option<f64>,
+    only_hidden: bool,
+    debug_ignored: bool,
 }
 
 impl Default for SnapshotConfig {
@@ -60,6 +70,14 @@ impl Default for SnapshotConfig {
             diff_mode: false,
             tree_only: false,
             force_reset: false,
+            filter_extensions: Vec::new(),
+            include_binary: false,
+            only_empty: false,
+            only_non_empty: false,
+            min_size_mb: None,
+            max_size_mb: None,
+            only_hidden: false,
+            debug_ignored: false,
         }
     }
 }
@@ -72,6 +90,8 @@ struct CliConfig {
     diff_mode: bool,
     tree_only: bool,
     force_reset: bool,
+    filter_config: FilterConfig,
+    debug_ignored: bool,
 }
 
 impl Default for CliConfig {
@@ -82,18 +102,49 @@ impl Default for CliConfig {
             diff_mode: false,
             tree_only: false,
             force_reset: false,
+            filter_config: FilterConfig::default(),
+            debug_ignored: false,
         }
     }
 }
 
 impl From<SnapshotConfig> for CliConfig {
     fn from(sc: SnapshotConfig) -> Self {
+        let mut filter_config = FilterConfig::new();
+
+        if !sc.filter_extensions.is_empty() {
+            filter_config = filter_config.with_extensions(sc.filter_extensions);
+        }
+        if sc.include_binary {
+            filter_config = filter_config.with_include_binary(true);
+        }
+        if sc.only_empty {
+            filter_config = filter_config.with_only_empty(true);
+        }
+        if sc.only_non_empty {
+            filter_config = filter_config.with_only_non_empty(true);
+        }
+        if let Some(min_mb) = sc.min_size_mb {
+            filter_config = filter_config.with_min_size_mb(min_mb);
+        }
+        if let Some(max_mb) = sc.max_size_mb {
+            filter_config = filter_config.with_max_size_mb(max_mb);
+        }
+        if sc.only_hidden {
+            filter_config = filter_config.with_only_hidden(true);
+        }
+        if sc.debug_ignored {
+            filter_config = filter_config.with_collect_ignored(true);
+        }
+
         Self {
             target_path: sc.target_path,
             clipboard_mode: sc.clipboard_mode,
             diff_mode: sc.diff_mode,
             tree_only: sc.tree_only,
             force_reset: sc.force_reset,
+            filter_config,
+            debug_ignored: sc.debug_ignored,
         }
     }
 }
@@ -162,15 +213,69 @@ fn parse_template_subcommand(args: &[String]) -> Result<CliCommand, String> {
 fn parse_snapshot_args(args: &[String]) -> Result<CliCommand, String> {
     let mut config = SnapshotConfig::default();
     let mut path_set = false;
+    let mut i = 0;
 
-    for arg in args {
+    while i < args.len() {
+        let arg = &args[i];
+
         match arg.as_str() {
+            // Basic flags
             "-c" | "--clipboard" => config.clipboard_mode = true,
             "-d" | "--diff" => config.diff_mode = true,
             "-t" | "--tree" => config.tree_only = true,
             "-r" | "--reset" => config.force_reset = true,
             "-h" | "--help" => return Ok(CliCommand::Help),
             "-v" | "--version" => return Ok(CliCommand::Version),
+
+            // Filter flags (no arguments)
+            "--binary" => config.include_binary = true,
+            "--empty" => config.only_empty = true,
+            "--non-empty" => config.only_non_empty = true,
+            "--hidden" => config.only_hidden = true,
+            "--debug-ignored" => config.debug_ignored = true,
+
+            // Filter flags (with arguments)
+            "--ext" => {
+                i += 1;
+                if i >= args.len() {
+                    return Err("--ext requires a comma-separated list of extensions".to_string());
+                }
+                let extensions_str = &args[i];
+                config.filter_extensions = extensions_str
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .filter(|s| !s.is_empty())
+                    .collect();
+                if config.filter_extensions.is_empty() {
+                    return Err("--ext requires at least one extension".to_string());
+                }
+            }
+            "--large" => {
+                i += 1;
+                if i >= args.len() {
+                    return Err("--large requires a size in megabytes (e.g., --large 1)".to_string());
+                }
+                let size_str = &args[i];
+                config.min_size_mb = Some(
+                    size_str
+                        .parse::<f64>()
+                        .map_err(|_| format!("Invalid size for --large: {}", size_str))?,
+                );
+            }
+            "--small" => {
+                i += 1;
+                if i >= args.len() {
+                    return Err("--small requires a size in megabytes (e.g., --small 0.5)".to_string());
+                }
+                let size_str = &args[i];
+                config.max_size_mb = Some(
+                    size_str
+                        .parse::<f64>()
+                        .map_err(|_| format!("Invalid size for --small: {}", size_str))?,
+                );
+            }
+
+            // Target path or unknown flag
             val => {
                 if val.starts_with('-') {
                     return Err(format!("Unknown flag: {}", val));
@@ -182,6 +287,13 @@ fn parse_snapshot_args(args: &[String]) -> Result<CliCommand, String> {
                 path_set = true;
             }
         }
+
+        i += 1;
+    }
+
+    // Validate filter combinations
+    if config.only_empty && config.only_non_empty {
+        return Err("Cannot use both --empty and --non-empty flags".to_string());
     }
 
     Ok(CliCommand::Snapshot(config))
@@ -325,16 +437,41 @@ fn run_headless_mode(cli_config: CliConfig) {
     let ignore_rules = ignore::load_ignore_rules(&target_dir);
     println!("📂 Scanning directory structure...");
 
-    let mut new_tree = match walker::walk_directory_structure(&target_dir, &ignore_rules) {
-        Ok(r) => r,
-        Err(e) => {
-            eprintln!("❌ Error walking directory: {}", e);
-            std::process::exit(1);
+    let mut ignored_folders_debug = Vec::new();
+    let mut new_tree = if cli_config.debug_ignored {
+        match walker::walk_directory_structure_with_debug(&target_dir, &ignore_rules, &mut ignored_folders_debug) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("❌ Error walking directory: {}", e);
+                std::process::exit(1);
+            }
+        }
+    } else {
+        match walker::walk_directory_structure(&target_dir, &ignore_rules) {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("❌ Error walking directory: {}", e);
+                std::process::exit(1);
+            }
         }
     };
 
     // 6. Populate Content
     walker::populate_file_contents_parallel(&mut new_tree);
+
+    // 6.5. Display Ignored Folders (Debug)
+    if cli_config.debug_ignored {
+        println!();
+        println!("🔍 Ignored Folders (via .gitignore / .dctxignore):");
+        if ignored_folders_debug.is_empty() {
+            println!("   (none)");
+        } else {
+            for folder in &ignored_folders_debug {
+                println!("   - {}", folder);
+            }
+        }
+        println!();
+    }
 
     // 7. Diff & Versioning
     let mut diff_report = DiffReport::default();
@@ -391,6 +528,23 @@ fn run_headless_mode(cli_config: CliConfig) {
         Err(e) => eprintln!("❌ Failed to save binary state: {}", e),
     }
 
+    // 8.5. Apply Filters (if active)
+    let tree_for_output = if cli_config.filter_config.has_active_filters() {
+        println!("🔍 Applying filters...");
+        match walker::filter_tree(&new_tree, &cli_config.filter_config) {
+            Some(filtered) => {
+                println!("✅ Filters applied (tree pruned)");
+                filtered
+            }
+            None => {
+                println!("⚠️ All files filtered out! No output will be generated.");
+                return;
+            }
+        }
+    } else {
+        new_tree.clone()
+    };
+
     // 9. Generate Output
     // Binary state is ALWAYS written to cache (done above).
     // Text output to .dctx/ is controlled by config.
@@ -411,7 +565,7 @@ fn run_headless_mode(cli_config: CliConfig) {
         if !writing_diff_only {
             if let Err(e) = llm_formatter::generate_llm_context_with_template(
                 &mut output_buffer,
-                &new_tree,
+                &tree_for_output,
                 &new_version,
                 &project_name,
                 cli_config.tree_only,
@@ -443,7 +597,7 @@ fn run_headless_mode(cli_config: CliConfig) {
         if should_generate_diff {
             if let Err(e) = llm_formatter::generate_diff_context_with_template(
                 &mut diff_buffer,
-                &new_tree,
+                &tree_for_output,
                 &diff_report,
                 &old_version,
                 &new_version,
@@ -511,20 +665,35 @@ fn print_help() {
     println!("       dctx template <COMMAND>");
     println!();
     println!("Snapshot Options:");
-    println!("  -c, --clipboard  Copy to clipboard");
-    println!("  -d, --diff       Output diff only (if available)");
-    println!("  -t, --tree       Tree-Only mode (skips file content)");
-    println!("  -r, --reset      Force V1 reset");
-    println!("  -h, --help       Show help");
-    println!("  -v, --version    Show version");
+    println!("  -c, --clipboard       Copy to clipboard");
+    println!("  -d, --diff            Output diff only (if available)");
+    println!("  -t, --tree            Tree-Only mode (skips file content)");
+    println!("  -r, --reset           Force V1 reset");
+    println!("  -h, --help            Show help");
+    println!("  -v, --version         Show version");
+    println!();
+    println!("Filter Options:");
+    println!("  --ext <extensions>    Only include files with these extensions");
+    println!("                        Example: --ext rs,toml");
+    println!("  --binary              Include binary files (excluded by default)");
+    println!("  --empty               Show only empty files (0 bytes)");
+    println!("  --non-empty           Show only non-empty files");
+    println!("  --large <MB>          Show only files larger than X megabytes");
+    println!("                        Example: --large 1");
+    println!("  --small <MB>          Show only files smaller than X megabytes");
+    println!("                        Example: --small 0.5");
+    println!("  --hidden              Show ONLY hidden files and folders (starting with .)");
+    println!("  --debug-ignored       List ignored folders for debugging");
     println!();
     println!("Template Commands:");
     println!("  template build <PATH>  Compile a .dctx_template file");
     println!("  template list          List compiled templates");
     println!();
     println!("Examples:");
-    println!("  dctx .                 Snapshot current directory");
-    println!("  dctx ./project -c      Snapshot and copy to clipboard");
+    println!("  dctx .                      Snapshot current directory");
+    println!("  dctx ./project -c           Snapshot and copy to clipboard");
+    println!("  dctx . --ext rs,toml        Only Rust and TOML files");
+    println!("  dctx . --ext js --small 0.1 JavaScript files under 100KB");
     println!("  dctx template build my.dctx_template");
 }
 
