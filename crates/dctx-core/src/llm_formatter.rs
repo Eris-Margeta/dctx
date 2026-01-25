@@ -75,11 +75,8 @@ pub fn generate_llm_context_with_template<W: Write>(
     // Make project name available to the template engine as "project"
     tmpl.insert_variable("project", project_name);
 
-    // 3. Load app config for SVG handling
-    let app_config = config::load_app_config();
-
-    // 4. Generate Components
-    let (tree_content, files_content) = generate_components(root, &tmpl, tree_only, &app_config);
+    // 3. Generate Components
+    let (tree_content, files_content) = generate_components(root, &tmpl, tree_only);
     let final_output = render_layout(&tmpl, tree_content, files_content);
 
     // 5. Write Header Line 1: [DCTX_LLM_CONTEXT_SNAPSHOT_V{Version}]
@@ -155,17 +152,14 @@ pub fn generate_diff_context_with_template<W: Write>(
     writeln!(writer, "</CHANGES_SUMMARY>")?;
     writeln!(writer)?;
 
-    // 3. Load app config for SVG handling
-    let app_config = config::load_app_config();
-
-    // 4. Updated Directory Tree (Full New State)
-    let (tree_content, _) = generate_components(new_root, &tmpl, true, &app_config); // true = no file content for the tree block
+    // 3. Updated Directory Tree (Full New State)
+    let (tree_content, _) = generate_components(new_root, &tmpl, true); // true = no file content for the tree block
     writeln!(writer, "<UPDATED_DIRECTORY_TREE>")?;
     writer.write_all(tree_content.as_bytes())?;
     writeln!(writer, "</UPDATED_DIRECTORY_TREE>")?;
     writeln!(writer)?;
 
-    // 5. Content of Changed Files
+    // 4. Content of Changed Files
     let mut files_buffer = String::new();
     let mut id_counter = 1;
 
@@ -176,7 +170,6 @@ pub fn generate_diff_context_with_template<W: Write>(
         &mut id_counter,
         diff_report,
         0,
-        &app_config,
     );
 
     writer.write_all(files_buffer.as_bytes())?;
@@ -190,7 +183,6 @@ fn generate_components(
     root: &DirContextTreeNode,
     tmpl: &Template,
     tree_only: bool,
-    app_config: &config::AppConfig,
 ) -> (String, String) {
     let mut tree_buffer = String::new();
     let mut files_buffer = String::new();
@@ -204,7 +196,6 @@ fn generate_components(
         &mut id_counter,
         0,
         tree_only,
-        app_config,
     );
 
     (
@@ -222,7 +213,6 @@ fn render_recursive(
     id_counter: &mut usize,
     depth: usize,
     tree_only: bool,
-    app_config: &config::AppConfig,
 ) {
     // 1. Generate Semantic ID
     // If depth is 0 and it's a directory, it's ROOT.
@@ -277,26 +267,20 @@ fn render_recursive(
     // 5. Render File Content Block (if file and NOT tree_only)
     if !node.is_dir() && !tree_only {
         // Determine if we should omit content
-        let should_omit_content = if node.is_binary_file {
-            // Always omit binary files
-            true
-        } else if let Some(file_type) = &node.binary_file_type {
-            // SVG files - check config
-            file_type == "SVG file" && app_config.omit_svg_content
-        } else {
-            false
-        };
+        let should_omit_content = node.is_binary_file || node.is_content_omitted;
 
         let (line_count, content_str) = if should_omit_content {
             // Generate omission message
             let message = if node.is_binary_file {
                 format!(
                     "[Binary file: {}, content omitted]",
-                    node.binary_file_type.as_ref().unwrap_or(&"Unknown".to_string())
+                    node.binary_file_type
+                        .as_ref()
+                        .unwrap_or(&"Unknown".to_string())
                 )
             } else {
-                // SVG with omit_svg_content=true
-                "[SVG file, content omitted (omit_svg_content=true)]".to_string()
+                // Content omitted by pattern (SVG, lockfiles, etc.)
+                "[Content omitted by .dctxomitcontent pattern]".to_string()
             };
             (0, std::borrow::Cow::Owned(message))
         } else {
@@ -339,7 +323,6 @@ fn render_recursive(
             id_counter,
             depth + 1,
             tree_only,
-            app_config,
         );
     }
 }
@@ -352,7 +335,6 @@ fn render_recursive_diff_filter(
     id_counter: &mut usize,
     diff_report: &DiffReport,
     depth: usize,
-    app_config: &config::AppConfig,
 ) {
     // 1. Generate ID (Must happen to increment counter correctly to match full tree)
     let current_id = if depth == 0 && node.is_dir() {
@@ -375,22 +357,19 @@ fn render_recursive_diff_filter(
 
     if !node.is_dir() && is_changed {
         // Determine if we should omit content (same logic as render_recursive)
-        let should_omit_content = if node.is_binary_file {
-            true
-        } else if let Some(file_type) = &node.binary_file_type {
-            file_type == "SVG file" && app_config.omit_svg_content
-        } else {
-            false
-        };
+        let should_omit_content = node.is_binary_file || node.is_content_omitted;
 
         let (line_count, content_str) = if should_omit_content {
             let message = if node.is_binary_file {
                 format!(
                     "[Binary file: {}, content omitted]",
-                    node.binary_file_type.as_ref().unwrap_or(&"Unknown".to_string())
+                    node.binary_file_type
+                        .as_ref()
+                        .unwrap_or(&"Unknown".to_string())
                 )
             } else {
-                "[SVG file, content omitted (omit_svg_content=true)]".to_string()
+                // Content omitted by pattern (SVG, lockfiles, etc.)
+                "[Content omitted by .dctxomitcontent pattern]".to_string()
             };
             (0, std::borrow::Cow::Owned(message))
         } else {
@@ -424,7 +403,7 @@ fn render_recursive_diff_filter(
 
     // Recurse
     for child in &node.children {
-        render_recursive_diff_filter(child, tmpl, files_buf, id_counter, diff_report, depth + 1, app_config);
+        render_recursive_diff_filter(child, tmpl, files_buf, id_counter, diff_report, depth + 1);
     }
 }
 

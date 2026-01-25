@@ -1,6 +1,6 @@
 [package]
 name = "dctx-core"
-version = "0.10.0"
+version = "0.9.9"
 edition = "2021"
 description = "Core logic for directory context snapshotting (Port of C version)"
 license = "MIT"
