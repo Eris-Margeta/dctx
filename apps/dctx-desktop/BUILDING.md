@@ -34,10 +34,28 @@ xcode-select --install
 
 ### Linux (Debian/Ubuntu)
 
+**Ubuntu 24.04+ / Debian 13+**
+```bash
+sudo apt-get update
+sudo apt-get install -y \
+  libwebkit2gtk-4.1-dev \
+  libglib2.0-dev \
+  build-essential \
+  curl \
+  wget \
+  file \
+  libssl-dev \
+  libgtk-3-dev \
+  libayatana-appindicator3-dev \
+  librsvg2-dev
+```
+
+**Ubuntu 22.04 / Debian 12 and earlier**
 ```bash
 sudo apt-get update
 sudo apt-get install -y \
   libwebkit2gtk-4.0-dev \
+  libglib2.0-dev \
   build-essential \
   curl \
   wget \

@@ -76,7 +76,7 @@ If this stage fails, desktop lint and builds are cancelled.
 Lints the desktop app with full system dependencies installed.
 
 **System dependencies installed:**
-- libwebkit2gtk-4.0-dev
+- libwebkit2gtk-4.1-dev (updated for Ubuntu 24.04)
 - libglib2.0-dev (CRITICAL for Tauri 2.0)
 - build-essential, curl, wget, file
 - libssl-dev, libgtk-3-dev
@@ -232,6 +232,9 @@ bun run tauri build
 
 **"libglib2.0-dev not found" on Linux:**
 - Fixed in workflow with `sudo apt-get install -y libglib2.0-dev`
+
+**"libwebkit2gtk-4.0-dev not found" on Ubuntu 24.04:**
+- Fixed by using libwebkit2gtk-4.1-dev (new package name in Ubuntu 24.04)
 
 **"gdk-3.0 not found" when testing:**
 - Fixed by only testing core/CLI packages, not desktop app
