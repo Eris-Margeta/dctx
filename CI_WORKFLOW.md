@@ -39,7 +39,13 @@ Checks:
 **Platform:** Ubuntu
 **Depends on:** `lint-check`
 
-Runs all Rust tests for dctx-core and dctx-cli on Linux first (fastest platform).
+Runs tests for **dctx-core** and **dctx-cli** only on Linux (fastest platform).
+
+```bash
+cargo test -p dctx-core -p dctx-cli --verbose
+```
+
+**Why skip desktop app?** The desktop app has no tests (it's a GUI). Testing it would require compiling Tauri and installing system dependencies.
 
 If this stage fails, macOS and Windows tests are cancelled.
 
@@ -48,7 +54,7 @@ If this stage fails, macOS and Windows tests are cancelled.
 **Platform:** macOS
 **Depends on:** `test-linux`
 
-Only runs if Linux tests pass.
+Only runs if Linux tests pass. Tests core and CLI only.
 
 If this stage fails, Windows tests are cancelled.
 
@@ -57,17 +63,17 @@ If this stage fails, Windows tests are cancelled.
 **Platform:** Windows
 **Depends on:** `test-macos`
 
-Only runs if Linux and macOS tests pass.
+Only runs if Linux and macOS tests pass. Tests core and CLI only.
 
-If this stage fails, all builds are cancelled.
+If this stage fails, desktop lint and builds are cancelled.
 
-### Stage 6: Build Desktop App (Linux)
-**Job:** `build-desktop-linux`
+### Stage 6: Lint Desktop App (GATE for builds)
+**Job:** `lint-desktop`
 **Platform:** Ubuntu
 **Depends on:** `test-windows`
 **Only runs on:** Push to `main` or `dev` branches
 
-Builds the Tauri desktop app for Linux.
+Lints the desktop app with full system dependencies installed.
 
 **System dependencies installed:**
 - libwebkit2gtk-4.0-dev
@@ -76,6 +82,22 @@ Builds the Tauri desktop app for Linux.
 - libssl-dev, libgtk-3-dev
 - libayatana-appindicator3-dev
 - librsvg2-dev
+
+```bash
+cargo clippy -p dctx-desktop -- -D warnings
+```
+
+**Why separate stage?** Desktop app lint requires compiling Tauri with all system dependencies. We want to catch any desktop-specific issues before spending 30+ minutes building on all platforms.
+
+If this stage fails, all builds are cancelled.
+
+### Stage 7: Build Desktop App (Linux)
+**Job:** `build-desktop-linux`
+**Platform:** Ubuntu
+**Depends on:** `lint-desktop`
+**Only runs on:** Push to `main` or `dev` branches
+
+Builds the Tauri desktop app for Linux (dependencies already verified by lint-desktop stage).
 
 **Build process:**
 1. Install Bun (10-100x faster than npm)
@@ -89,7 +111,7 @@ Builds the Tauri desktop app for Linux.
 
 If this stage fails, macOS and Windows builds are cancelled.
 
-### Stage 7: Build Desktop App (macOS)
+### Stage 8: Build Desktop App (macOS)
 **Job:** `build-desktop-macos`
 **Platform:** macOS
 **Depends on:** `build-desktop-linux`
@@ -103,7 +125,7 @@ Only runs if Linux build succeeds.
 
 If this stage fails, Windows build is cancelled.
 
-### Stage 8: Build Desktop App (Windows)
+### Stage 9: Build Desktop App (Windows)
 **Job:** `build-desktop-windows`
 **Platform:** Windows
 **Depends on:** `build-desktop-macos`
@@ -118,21 +140,23 @@ Only runs if Linux and macOS builds succeed.
 ## Execution Flow
 
 ```
-format-check (Ubuntu, ~30s)
-  ↓ (if pass)
-lint-check (Ubuntu, ~2min) [Core + CLI only, no Tauri]
-  ↓ (if pass)
-test-linux (Ubuntu)
-  ↓ (if pass)
-test-macos (macOS)
-  ↓ (if pass)
-test-windows (Windows)
-  ↓ (if pass AND push to main/dev)
-build-desktop-linux (Ubuntu)
-  ↓ (if pass)
-build-desktop-macos (macOS)
-  ↓ (if pass)
-build-desktop-windows (Windows)
+1. format-check (Ubuntu, ~30s)
+     ↓ (if pass)
+2. lint-check (Ubuntu, ~2min) [Core + CLI only]
+     ↓ (if pass)
+3. test-linux (Ubuntu, ~5min) [Core + CLI only]
+     ↓ (if pass)
+4. test-macos (macOS, ~5min) [Core + CLI only]
+     ↓ (if pass)
+5. test-windows (Windows, ~5min) [Core + CLI only]
+     ↓ (if pass AND push to main/dev)
+6. lint-desktop (Ubuntu, ~3min) [Desktop app with full deps]
+     ↓ (if pass)
+7. build-desktop-linux (Ubuntu, ~10min)
+     ↓ (if pass)
+8. build-desktop-macos (macOS, ~10min)
+     ↓ (if pass)
+9. build-desktop-windows (Windows, ~10min)
 ```
 
 ## Why Sequential?
@@ -159,16 +183,17 @@ build-desktop-windows (Windows)
 
 **Pull request to `main` or `dev`:**
 - Runs stages 1-5 only (format → lint → test all platforms)
-- Skips desktop builds (artifacts not needed for PRs)
+- Skips desktop lint and builds (PRs typically don't touch desktop app)
 
 ## Key Fixes Applied
 
 1. **Split format and lint into separate stages** - Format is ultra-fast (no compilation), lint only checks core/CLI
-2. **Skip desktop app in lint** - Avoids Tauri compilation and system dependency requirements in early gate
-3. **Added `libglib2.0-dev` to Linux dependencies** - Required by Tauri 2.0 for glib-sys crate
-4. **Added frontend build step** - Creates `dist/` directory before Tauri build
-5. **Sequential execution** - Each stage depends on previous (`needs:` key)
-6. **Early exit on failure** - One failure cancels all subsequent jobs
+2. **Test only core and CLI** - Desktop app has no tests and would require Tauri dependencies
+3. **Separate desktop lint stage** - Catches desktop issues before expensive multi-platform builds
+4. **Added `libglib2.0-dev` to Linux dependencies** - Required by Tauri 2.0 for glib-sys crate
+5. **Added frontend build step** - Creates `dist/` directory before Tauri build
+6. **Sequential execution** - Each stage depends on previous (`needs:` key)
+7. **Early exit on failure** - One failure cancels all subsequent jobs
 
 ## Monitoring
 
@@ -208,12 +233,16 @@ bun run tauri build
 **"libglib2.0-dev not found" on Linux:**
 - Fixed in workflow with `sudo apt-get install -y libglib2.0-dev`
 
+**"gdk-3.0 not found" when testing:**
+- Fixed by only testing core/CLI packages, not desktop app
+- Desktop app has no tests anyway
+
 **"frontendDist path doesn't exist" on any platform:**
 - Fixed with frontend build step before Tauri build
 
-**"Tests failed on Linux, but I want to test macOS anyway":**
-- Fix Linux tests first (sequential is intentional)
-- Or temporarily comment out `needs: test-linux` in `.github/workflows/ci.yml` (not recommended)
+**"Desktop lint failed, but I want to build anyway":**
+- Fix desktop lint first (sequential is intentional)
+- Desktop lint catches issues before wasting 30+ minutes on builds
 
 **"Builds take too long":**
 - Builds only run on push to `main`/`dev`, not on PRs
