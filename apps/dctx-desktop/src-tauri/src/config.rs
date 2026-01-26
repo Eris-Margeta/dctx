@@ -3,7 +3,6 @@
 // Desktop-specific configuration that extends dctx-core config
 
 use dctx_core::config::{get_config_dir as get_core_config_dir, load_app_config, AppConfig};
-use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -55,14 +54,12 @@ pub fn get_desktop_config_dir() -> Option<PathBuf> {
         env::var("APPDATA")
             .ok()
             .map(|p| PathBuf::from(p).join(DESKTOP_APP_NAME))
+    } else if let Ok(xdg_config) = env::var("XDG_CONFIG_HOME") {
+        Some(PathBuf::from(xdg_config).join(DESKTOP_APP_NAME))
     } else {
-        if let Ok(xdg_config) = env::var("XDG_CONFIG_HOME") {
-            Some(PathBuf::from(xdg_config).join(DESKTOP_APP_NAME))
-        } else {
-            env::var("HOME")
-                .ok()
-                .map(|h| PathBuf::from(h).join(".config").join(DESKTOP_APP_NAME))
-        }
+        env::var("HOME")
+            .ok()
+            .map(|h| PathBuf::from(h).join(".config").join(DESKTOP_APP_NAME))
     }
 }
 
@@ -72,23 +69,22 @@ pub fn get_desktop_cache_dir() -> Option<PathBuf> {
         env::var("LOCALAPPDATA")
             .ok()
             .map(|p| PathBuf::from(p).join(DESKTOP_APP_NAME))
+    } else if let Ok(xdg_cache) = env::var("XDG_CACHE_HOME") {
+        Some(PathBuf::from(xdg_cache).join(DESKTOP_APP_NAME))
     } else {
-        if let Ok(xdg_cache) = env::var("XDG_CACHE_HOME") {
-            Some(PathBuf::from(xdg_cache).join(DESKTOP_APP_NAME))
-        } else {
-            env::var("HOME")
-                .ok()
-                .map(|h| PathBuf::from(h).join(".cache").join(DESKTOP_APP_NAME))
-        }
+        env::var("HOME")
+            .ok()
+            .map(|h| PathBuf::from(h).join(".cache").join(DESKTOP_APP_NAME))
     }
 }
 
 /// Load desktop config, inheriting from core dctx config
 pub fn load_desktop_config() -> DesktopConfig {
-    let mut config = DesktopConfig::default();
-
     // 1. Load core dctx config first (if exists)
-    config.core = load_app_config();
+    let mut config = DesktopConfig {
+        core: load_app_config(),
+        ..Default::default()
+    };
 
     // 2. Load desktop-specific config (overrides core where applicable)
     if let Some(config_dir) = get_desktop_config_dir() {
@@ -146,6 +142,7 @@ fn parse_desktop_config_line(line: &str, config: &mut DesktopConfig) {
 }
 
 /// Save desktop config to disk
+#[allow(dead_code)]
 pub fn save_desktop_config(config: &DesktopConfig) -> Result<(), String> {
     let config_dir = get_desktop_config_dir().ok_or("Failed to get config directory")?;
 
