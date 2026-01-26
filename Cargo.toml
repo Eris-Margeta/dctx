@@ -2,8 +2,7 @@
 members = [
   "crates/dctx-core",
   "crates/dctx-cli",
-  # Desktop app (requires npm run build first to generate dist/)
-  # "apps/dctx-desktop/src-tauri",
+  "apps/dctx-desktop/src-tauri",
   # Bindings (future)
   # "bindings/dctx-py",
   # "bindings/dctx-node",

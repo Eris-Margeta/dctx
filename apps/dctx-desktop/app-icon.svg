@@ -1,0 +1,15 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="512" height="512" rx="128" fill="#8b5cf6"/>
+
+  <!-- Terminal/Code symbol -->
+  <path d="M 120 180 L 200 256 L 120 332" stroke="#ffffff" stroke-width="24" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Underscore/Cursor -->
+  <line x1="240" y1="320" x2="380" y2="320" stroke="#ffffff" stroke-width="24" stroke-linecap="round"/>
+
+  <!-- Small dots (context representation) -->
+  <circle cx="420" cy="100" r="12" fill="#ffffff" opacity="0.6"/>
+  <circle cx="460" cy="120" r="12" fill="#ffffff" opacity="0.6"/>
+  <circle cx="440" cy="160" r="12" fill="#ffffff" opacity="0.6"/>
+</svg>

@@ -50,24 +50,23 @@ apps/dctx-desktop/
 ### Prerequisites
 
 - Rust 1.70+ (for Tauri backend)
-- Node.js 18+ (for frontend)
-- npm or pnpm
+- Bun 1.0+ (for frontend) - https://bun.sh
 
 ### Setup
 
 ```bash
 # Install frontend dependencies
-npm install
+bun install
 
 # Run in development mode
-npm run tauri dev
+bun run tauri:dev
 ```
 
 ### Build
 
 ```bash
 # Build for production
-npm run tauri build
+bun run tauri:build
 ```
 
 Outputs:

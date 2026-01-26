@@ -5,10 +5,13 @@
   "description": "dctx Desktop - Cross-platform GUI for directory context generation",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build",
-    "preview": "vite preview",
-    "tauri": "tauri"
+    "dev": "bunx --bun vite",
+    "build": "bun run build:ts && bunx --bun vite build",
+    "build:ts": "bun tsc",
+    "preview": "bunx --bun vite preview",
+    "tauri": "bunx tauri",
+    "tauri:dev": "bunx tauri dev",
+    "tauri:build": "bunx tauri build"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.1.1",
