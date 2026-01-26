@@ -373,7 +373,7 @@ Don't want to pay? Use the **free CLI** or **MIT-licensed library**:
 
 ## Credits
 
-**Built by**: [Your Name]
+**Built by**: Eris Margeta
 **Core Library**: dctx-core (MIT) - See [crates/dctx-core](../../crates/dctx-core/)
 **Powered by**: Tauri, Rust, Bun
 
