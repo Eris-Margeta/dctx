@@ -11,11 +11,11 @@ env:
 
 jobs:
   # ============================================================================
-  # STAGE 1: Format and Lint Check (GATE)
-  # If this fails, ALL subsequent jobs are cancelled
+  # STAGE 1: Format Check (GATE)
+  # Ultra-fast, no compilation needed
   # ============================================================================
   format-check:
-    name: Format & Lint Check
+    name: Format Check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,24 +24,41 @@ jobs:
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
+          components: rustfmt
 
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Run clippy
-        run: cargo clippy --all -- -D warnings
+  # ============================================================================
+  # STAGE 2: Lint Core + CLI (GATE)
+  # Only lints core and CLI, skips desktop app (no Tauri dependencies needed)
+  # ============================================================================
+  lint-check:
+    name: Lint Core + CLI
+    needs: format-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run clippy on core and CLI only
+        run: cargo clippy -p dctx-core -p dctx-cli -- -D warnings
 
   # ============================================================================
-  # STAGE 2: Test Core + CLI on Linux
-  # Only runs if format-check passes
+  # STAGE 3: Test Core + CLI on Linux
+  # Only runs if format-check and lint-check pass
   # ============================================================================
   test-linux:
     name: Test Core + CLI (Linux)
-    needs: format-check
+    needs: lint-check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
