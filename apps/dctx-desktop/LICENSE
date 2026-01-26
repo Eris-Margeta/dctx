@@ -1,0 +1,57 @@
+# PROPRIETARY SOFTWARE LICENSE
+
+**dctx Desktop - Commercial License**
+
+Copyright (c) 2026 dctx Project
+
+---
+
+## License Terms
+
+This software and associated documentation files (the "Software") are PROPRIETARY and CONFIDENTIAL.
+
+### Restrictions
+
+1. **No Redistribution**: You may NOT distribute, sublicense, or transfer the Software to any third party.
+2. **No Modification**: You may NOT modify, reverse engineer, decompile, or disassemble the Software.
+3. **No Commercial Use**: You may NOT use the Software for commercial purposes without a valid license key.
+4. **Source Code**: The source code is made available for transparency and audit purposes only, NOT for modification or redistribution.
+
+### Grant of License
+
+Subject to payment of the applicable license fee and compliance with these terms:
+
+- **Personal Use**: One license per user
+- **Installation**: Install on up to 3 devices owned by the licensee
+- **Updates**: Receive updates for 1 year from purchase date
+- **Support**: Email support for 1 year from purchase date
+
+### Trial Period
+
+You may use the Software in trial mode for 14 days without payment. After the trial period, you must purchase a license to continue using the Software.
+
+### Termination
+
+This license terminates automatically if you fail to comply with these terms. Upon termination, you must uninstall and destroy all copies of the Software.
+
+### Disclaimer
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+---
+
+## Purchase
+
+To purchase a license, visit: https://dctx.app/desktop
+
+**Price**: $29 USD (one-time payment)
+
+---
+
+## Open Source Core
+
+Note: This license applies ONLY to the desktop application (`apps/dctx-desktop/`).
+
+The core library (`crates/dctx-core/`) and CLI tool (`crates/dctx-cli/`) remain open source under the MIT License.

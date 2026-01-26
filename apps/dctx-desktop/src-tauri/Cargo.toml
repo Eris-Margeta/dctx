@@ -1,0 +1,27 @@
+[package]
+name = "dctx-desktop"
+version = "0.11.0"
+description = "dctx Desktop - Cross-platform GUI for directory context generation"
+authors = ["Your Name <your.email@example.com>"]
+edition = "2021"
+license = "PROPRIETARY"
+
+[lib]
+name = "dctx_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+dctx-core = { path = "../../../crates/dctx-core" }
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["rt-multi-thread"] }
+
+[features]
+default = ["custom-protocol"]
+custom-protocol = ["tauri/custom-protocol"]

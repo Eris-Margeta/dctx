@@ -154,7 +154,24 @@ fn compare_nodes_recursive(
             node_type: new_node.node_type,
             relative_path: new_node.relative_path.clone(),
         });
-        // TODO: update stats
+
+        // Update stats: Type changed (file->dir or dir->file)
+        // Mark old as removed and recursively count its files
+        if old_node.node_type == NodeType::File {
+            report.stats.files_removed += 1;
+        } else {
+            // Old was directory - recursively count removed files
+            report.stats.files_removed += count_files_recursive(old_node);
+        }
+
+        // Mark new as added and recursively count its files
+        if new_node.node_type == NodeType::File {
+            report.stats.files_added += 1;
+        } else {
+            // New is directory - recursively count added files
+            report.stats.files_added += count_files_recursive(new_node);
+        }
+
         return;
     }
 

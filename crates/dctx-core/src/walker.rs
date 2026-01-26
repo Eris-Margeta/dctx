@@ -1,6 +1,7 @@
 // crates/dctx-core/src/walker.rs
 use crate::datatypes::{DirContextTreeNode, IgnoreRule, NodeType};
 use crate::file_classifier::{classify_file, FileContentHandling};
+use crate::filter::FilterConfig;
 use crate::ignore::should_ignore_item;
 use std::collections::HashMap;
 use std::fs;
@@ -16,13 +17,22 @@ pub fn walk_directory_structure(
     root_disk_path: &Path,
     ignore_rules: &[IgnoreRule],
 ) -> io::Result<DirContextTreeNode> {
+    let mut ignored_folders = Vec::new();
+    walk_directory_structure_with_debug(root_disk_path, ignore_rules, &mut ignored_folders)
+}
+
+pub fn walk_directory_structure_with_debug(
+    root_disk_path: &Path,
+    ignore_rules: &[IgnoreRule],
+    ignored_folders: &mut Vec<String>,
+) -> io::Result<DirContextTreeNode> {
     if !root_disk_path.exists() {
         return Err(io::Error::new(
             io::ErrorKind::NotFound,
             "Root path not found",
         ));
     }
-    walk_recursive(root_disk_path, Path::new(""), ignore_rules)
+    walk_recursive(root_disk_path, Path::new(""), ignore_rules, ignored_folders)
 }
 
 pub fn populate_file_contents_parallel(root: &mut DirContextTreeNode) {
@@ -81,6 +91,7 @@ fn walk_recursive(
     current_disk_path: &Path,
     current_relative_path: &Path,
     rules: &[IgnoreRule],
+    ignored_folders: &mut Vec<String>,
 ) -> io::Result<DirContextTreeNode> {
     let metadata = fs::metadata(current_disk_path)?;
     let node_type = if metadata.is_dir() {
@@ -128,10 +139,16 @@ fn walk_recursive(
                         is_dir,
                         rules,
                     ) {
+                        // Collect ignored folders for debugging
+                        if is_dir {
+                            ignored_folders.push(child_relative.to_string_lossy().to_string());
+                        }
                         continue;
                     }
 
-                    if let Ok(child_node) = walk_recursive(&child_path, &child_relative, rules) {
+                    if let Ok(child_node) =
+                        walk_recursive(&child_path, &child_relative, rules, ignored_folders)
+                    {
                         node.children.push(child_node);
                     }
                 }
@@ -186,6 +203,79 @@ fn fill_tree_from_map(node: &mut DirContextTreeNode, map: &mut HashMap<PathBuf, 
     } else {
         for child in &mut node.children {
             fill_tree_from_map(child, map);
+        }
+    }
+}
+
+// --- Filtering ---
+
+/// Apply filters to an existing tree, returning a filtered copy.
+/// This function creates a new tree containing only items that pass the filter criteria.
+/// Empty directories (after filtering children) are automatically pruned.
+///
+/// # Arguments
+/// * `tree` - The tree to filter
+/// * `filter` - The filter configuration to apply
+///
+/// # Returns
+/// A new tree containing only filtered items, or None if everything was filtered out
+pub fn filter_tree(tree: &DirContextTreeNode, filter: &FilterConfig) -> Option<DirContextTreeNode> {
+    // If no filters are active, return a clone of the original tree
+    if !filter.has_active_filters() {
+        return Some(tree.clone());
+    }
+
+    match tree.node_type {
+        NodeType::File => {
+            // For files, check if they pass the filter
+            let file_name = tree
+                .disk_path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("");
+
+            if filter.should_include_file(
+                file_name,
+                tree.content_size,
+                tree.is_binary_file,
+                &tree.disk_path,
+            ) {
+                Some(tree.clone())
+            } else {
+                None
+            }
+        }
+        NodeType::Directory => {
+            let dir_name = tree
+                .disk_path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("");
+
+            // Check directory-level filters (e.g., hidden filter)
+            // BUT don't filter out the root directory (empty relative_path)
+            if !tree.relative_path.is_empty() && !filter.should_include_directory(dir_name) {
+                return None;
+            }
+
+            // Recursively filter children
+            let mut filtered_children = Vec::new();
+            for child in &tree.children {
+                if let Some(filtered_child) = filter_tree(child, filter) {
+                    filtered_children.push(filtered_child);
+                }
+            }
+
+            // If directory has no children after filtering, prune it
+            // UNLESS it's the root directory (relative_path is empty)
+            if filtered_children.is_empty() && !tree.relative_path.is_empty() {
+                return None;
+            }
+
+            // Create filtered directory node
+            let mut filtered_dir = tree.clone();
+            filtered_dir.children = filtered_children;
+            Some(filtered_dir)
         }
     }
 }

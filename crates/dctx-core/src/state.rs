@@ -52,19 +52,30 @@ pub fn load_or_reset_state(
 }
 
 /// Checks if the target directory has been deleted and recreated since the last run.
-fn is_folder_recreated(target_dir: &Path, _loaded_root: &DirContextTreeNode) -> bool {
+fn is_folder_recreated(target_dir: &Path, loaded_root: &DirContextTreeNode) -> bool {
     // We attempt to get metadata from the disk.
     if let Ok(metadata) = fs::metadata(target_dir) {
         if let Ok(mtime) = metadata.modified() {
-            let _disk_ts = mtime
+            let disk_ts = mtime
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs();
 
-            // TODO: In the future, we can compare _disk_ts with _loaded_root.last_modified_timestamp.
-            // If disk_ts is significantly NEWER than the root node's timestamp from history,
-            // it implies the folder was recreated.
-            // For now, we return false to be conservative.
+            // Compare disk timestamp with loaded root timestamp.
+            // If disk_ts is significantly NEWER than the root node's timestamp,
+            // it implies the folder was deleted and recreated.
+            //
+            // We use a threshold of 1 second to account for filesystem timestamp precision.
+            // If the directory on disk is newer AND the difference is substantial (>1s),
+            // we consider it recreated.
+            if disk_ts > loaded_root.last_modified_timestamp {
+                let diff = disk_ts - loaded_root.last_modified_timestamp;
+                // Threshold: 1 second (accounts for FS timestamp granularity)
+                if diff > 1 {
+                    return true;
+                }
+            }
+
             return false;
         }
     }
@@ -175,8 +186,20 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
         let binary_path = temp_dir.path().join("test.dctx");
 
-        // Create a valid binary file
-        let mut root = create_dir_node("");
+        // Create a valid binary file with CURRENT timestamp to avoid recreation detection
+        let mut root =
+            DirContextTreeNode::new(NodeType::Directory, "", temp_dir.path().to_path_buf());
+
+        // Set timestamp to current (matches disk, won't trigger recreation)
+        if let Ok(metadata) = fs::metadata(temp_dir.path()) {
+            if let Ok(mtime) = metadata.modified() {
+                root.last_modified_timestamp = mtime
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
+            }
+        }
+
         root.children.push(create_file_node("test.txt", b"Hello"));
         let version = Version { major: 1, minor: 5 };
         write_dircontxt_file(&binary_path, &mut root, &version).unwrap();
@@ -249,13 +272,43 @@ mod tests {
     // --- IS_FOLDER_RECREATED TESTS ---
 
     #[test]
-    fn test_is_folder_recreated_returns_false() {
+    fn test_is_folder_recreated_detects_recreation() {
         let temp_dir = TempDir::new().unwrap();
         let root = create_dir_node("");
 
-        // Currently always returns false (stub implementation)
+        // The temp_dir has current timestamp (2026), but root has timestamp from 2009.
+        // This should be detected as recreation (disk is much newer).
         let result = is_folder_recreated(temp_dir.path(), &root);
-        assert!(!result);
+        assert!(
+            result,
+            "Should detect folder recreation when disk is significantly newer"
+        );
+    }
+
+    #[test]
+    fn test_is_folder_recreated_same_timestamp() {
+        let temp_dir = TempDir::new().unwrap();
+
+        // Create a root node with current timestamp (simulating no recreation)
+        let mut root =
+            DirContextTreeNode::new(NodeType::Directory, "", temp_dir.path().to_path_buf());
+
+        // Set timestamp to current time (within 1 second threshold)
+        if let Ok(metadata) = fs::metadata(temp_dir.path()) {
+            if let Ok(mtime) = metadata.modified() {
+                root.last_modified_timestamp = mtime
+                    .duration_since(SystemTime::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs();
+            }
+        }
+
+        // Should NOT detect recreation when timestamps are similar
+        let result = is_folder_recreated(temp_dir.path(), &root);
+        assert!(
+            !result,
+            "Should not detect recreation when timestamps match"
+        );
     }
 
     #[test]

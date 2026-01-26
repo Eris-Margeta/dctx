@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-0.10.0-8b5cf6" alt="Version">
+  <img src="https://img.shields.io/badge/version-0.11.0--dev-8b5cf6" alt="Version">
   <a href="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml">
     <img src="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml/badge.svg" alt="CI">
   </a>
@@ -101,18 +101,27 @@ dctx . -d -c
 ```
 After making changes, copy only what changed (saves tokens!).
 
+### Interactive Mode
+```bash
+dctx
+```
+Run without arguments to launch the interactive menu system—discover all features through an intuitive TUI.
+
 ---
 
 ## Features
 
 | Feature | Description |
 |---------|-------------|
+| **Interactive TUI** | Zero-dependency menu system for users who prefer not to memorize CLI flags. |
 | **Blazing Fast** | Multi-threaded Rust core. Processes thousands of files in milliseconds. |
 | **Zero Dependencies** | Single static binary. No Python, Node, or runtime required. |
 | **Smart Filtering** | Respects `.gitignore` + `.dctxignore`. Never sends `node_modules` to AI. |
+| **Advanced Filters** | Filter by extension, size, content, or visibility. Combine filters for precision. |
 | **Version Tracking** | Automatic versioning with diffs. Save 90% of tokens on subsequent runs. |
 | **Semantic Structure** | XML-tagged output with file IDs, paths, sizes, and timestamps. |
 | **Custom Templates** | AOT-compiled template system for custom output formats. |
+| **Binary Detection** | Automatically detects and excludes binary files (42 file types). |
 | **Cross-Platform** | Linux, macOS, Windows. Native clipboard integration. |
 
 ---
@@ -124,16 +133,57 @@ Usage: dctx [PATH] [OPTIONS]
        dctx template <COMMAND>
 
 Snapshot Options:
-  -c, --clipboard  Copy to clipboard
-  -d, --diff       Output diff only (if available)
-  -t, --tree       Tree-only mode (skips file content)
-  -r, --reset      Force V1 reset
-  -h, --help       Show help
-  -v, --version    Show version
+  -c, --clipboard       Copy to clipboard
+  -d, --diff            Output diff only (if available)
+  -t, --tree            Tree-only mode (skips file content)
+  -r, --reset           Force V1 reset
+  -h, --help            Show help
+  -v, --version         Show version
+
+Filter Options:
+  --ext <extensions>    Only include files with these extensions
+                        Example: --ext rs,toml
+  --binary              Include binary files (excluded by default)
+  --empty               Show only empty files (0 bytes)
+  --non-empty           Show only non-empty files
+  --large <MB>          Show only files larger than X megabytes
+                        Example: --large 1
+  --small <MB>          Show only files smaller than X megabytes
+                        Example: --small 0.5
+  --hidden              Show ONLY hidden files and folders (starting with .)
+  --debug-ignored       List ignored folders for debugging
 
 Template Commands:
   template build <PATH>  Compile a .dctx_template file
   template list          List compiled templates
+```
+
+### Filter Examples
+
+```bash
+# Only Rust files
+dctx . --ext rs -c
+
+# Rust and TOML files under 500KB
+dctx . --ext rs,toml --small 0.5
+
+# JavaScript/TypeScript files
+dctx . --ext js,ts,tsx
+
+# Hidden configuration files
+dctx . --hidden --ext conf,yaml,toml
+
+# See what folders are being ignored
+dctx . --debug-ignored
+
+# Include binary files (excluded by default)
+dctx . --binary
+
+# Only empty files
+dctx . --empty
+
+# Files between 10KB and 100KB
+dctx . --large 0.01 --small 0.1
 ```
 
 ---
@@ -208,6 +258,89 @@ Tested on a 4,500-file Rust project:
 
 ---
 
+## Use as Library
+
+`dctx` is architected as a pure Rust library (`dctx-core`) with a thin CLI wrapper. You can use it programmatically in your Rust projects.
+
+### Rust Library Usage
+
+Add to your `Cargo.toml`:
+```toml
+[dependencies]
+dctx-core = { git = "https://github.com/Eris-Margeta/dctx" }
+```
+
+Use in your code:
+```rust
+use dctx_core::{walker, config, ignore, llm_formatter, FilterConfig};
+use std::path::Path;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Set up ignore engine
+    let ignore_engine = ignore::IgnoreEngine::new(Path::new("."));
+    let omit_engine = ignore::OmitContentEngine::new(Path::new("."));
+
+    // Walk directory structure
+    let tree = walker::walk_directory_structure(
+        Path::new("."),
+        &ignore_engine,
+        &omit_engine,
+    )?;
+
+    // Apply filters (optional)
+    let filter_config = FilterConfig::default()
+        .with_extensions(vec!["rs".to_string(), "toml".to_string()])
+        .with_max_size_mb(1.0);
+
+    let filtered_tree = if filter_config.has_active_filters() {
+        walker::filter_tree(&tree, &filter_config).unwrap()
+    } else {
+        tree
+    };
+
+    // Format for LLM consumption
+    let output = llm_formatter::format_snapshot(&filtered_tree, "my-project");
+
+    println!("{}", output);
+    Ok(())
+}
+```
+
+### Language Bindings (Planned)
+
+**Python Bindings** (Phase 12 - After v1.0):
+```python
+# Future Python API
+import dctx
+
+snapshot = dctx.snapshot(
+    path=".",
+    filters={"ext": ["py", "md"], "max_size_mb": 1.0}
+)
+context = snapshot.to_llm_format()
+```
+
+**Node.js Bindings** (Phase 13 - If demand exists):
+```javascript
+// Future Node.js API
+const dctx = require('dctx');
+
+const snapshot = await dctx.snapshot({
+    path: '.',
+    filters: { ext: ['ts', 'js'] }
+});
+const context = snapshot.toLlmFormat();
+```
+
+**Use Cases:**
+- Jupyter notebooks analyzing codebases
+- VS Code extensions with right-click → "Send to AI"
+- Build tools and CI/CD pipelines
+- AI/ML automation workflows
+- Programmatic context generation
+
+---
+
 ## Development
 
 ```bash
@@ -233,15 +366,35 @@ See [justfile](justfile) for all available commands.
 
 ## Architecture
 
+dctx is structured as a **monorepo** with clear separation between open-source and commercial components:
+
 ```
 dctx/
-├── crates/
-│   ├── dctx-core/     # Pure Rust library (zero external deps)
-│   └── dctx-cli/      # Command-line interface
-├── tools/             # Build, test, and install scripts
-├── website/           # Landing page (dctx.app)
-└── .github/           # CI workflows
+├── crates/              # Rust workspace (MIT License)
+│   ├── dctx-core/       # Pure Rust library (zero external deps)
+│   └── dctx-cli/        # Command-line interface
+├── apps/                # Applications
+│   └── dctx-desktop/    # Cross-platform GUI (PROPRIETARY - $29)
+├── bindings/            # Language bindings (MIT License - Planned)
+│   ├── dctx-py/         # Python bindings (Phase 12)
+│   └── dctx-node/       # Node.js bindings (Phase 13)
+├── tools/               # Build, test, and install scripts
+├── docs/                # Documentation
+├── website/             # Landing page (dctx.app)
+└── .github/             # CI workflows
 ```
+
+### Licensing Model
+
+**Open Source (MIT)**:
+- `dctx-core` - Core Rust library
+- `dctx-cli` - Command-line tool with ALL features
+- `bindings/*` - Future Python, Node.js bindings
+
+**Commercial (Proprietary)**:
+- `apps/dctx-desktop/` - Desktop GUI application ($29 one-time)
+
+This "Open Core" model keeps developer tools free while monetizing GUI convenience.
 
 ---
 

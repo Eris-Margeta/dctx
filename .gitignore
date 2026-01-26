@@ -5,6 +5,17 @@
 /core/target
 **/*.rs.bk
 
+# Desktop App (Tauri) - apps/dctx-desktop/
+apps/dctx-desktop/node_modules/
+apps/dctx-desktop/dist/
+apps/dctx-desktop/dist-ssr/
+apps/dctx-desktop/src-tauri/target/
+apps/dctx-desktop/src-tauri/Cargo.lock
+apps/dctx-desktop/*.local
+
+# Exception: DO track Tauri icons
+!apps/dctx-desktop/src-tauri/icons/
+
 
 # Node / Dashboard / Website
 node_modules/
@@ -58,7 +69,7 @@ temp
 ._*
 .Spotlight-V100
 .Trashes
-Icon?
+Icon[
 ehthumbs.db
 ehthumbs_vista.db
 __MACOSX
@@ -295,3 +306,5 @@ prompt.txt
 # [dctx v0.1.6]
 
 # [dctx v0.9.0]
+
+# [dctx v0.10.0]

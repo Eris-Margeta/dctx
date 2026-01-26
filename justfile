@@ -1,6 +1,6 @@
 # dctx development commands
 
-# Format all code
+# Format all code (core, CLI, desktop)
 fmt:
     cargo fmt --all
 
@@ -8,20 +8,46 @@ fmt:
 fmt-check:
     cargo fmt --all -- --check
 
-# Run all tests
+# Run all tests (core + CLI only, desktop has no tests)
 test:
-    cargo test --all
+    cargo test -p dctx-core -p dctx-cli
 
-# Run clippy lints
+# Run clippy lints (core + CLI only)
 lint:
-    cargo clippy --all -- -D warnings
+    cargo clippy -p dctx-core -p dctx-cli -- -D warnings
 
-# Build release binary
+# Build release binary (CLI only)
 build:
-    cargo build --release
+    cargo build --release -p dctx-cli
 
-# Run all CI checks locally (format, lint, test)
-ci: fmt-check lint test
+# ============================================================================
+# Desktop App Commands
+# ============================================================================
+
+# Build desktop app frontend (required before any Rust desktop commands)
+desktop-frontend:
+    #!/usr/bin/env bash
+    cd apps/dctx-desktop
+    bun install
+    bun run build
+
+# Lint desktop app (builds frontend first)
+desktop-lint: desktop-frontend
+    cargo clippy -p dctx-desktop -- -D warnings
+
+# Build desktop app (builds frontend first)
+desktop-build: desktop-frontend
+    cd apps/dctx-desktop && bun run tauri build
+
+# Run desktop app in dev mode (with hot reload)
+desktop-dev:
+    cd apps/dctx-desktop && bun run tauri:dev
+
+# Check everything including desktop app
+check-all: fmt-check lint desktop-lint
+
+# Run all CI checks locally (format, lint, test, desktop-lint)
+ci: fmt-check lint test desktop-lint
 
 # Clean build artifacts
 clean:

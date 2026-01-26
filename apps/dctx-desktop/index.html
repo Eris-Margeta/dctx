@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>dctx Desktop</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      :root {
+        /* Light mode (default) */
+        --bg-primary: #ffffff;
+        --bg-secondary: #f8fafc;
+        --bg-tertiary: #f1f5f9;
+        --bg-input: #ffffff;
+        --border: #e2e8f0;
+        --border-focus: #3b82f6;
+        --text-primary: #0f172a;
+        --text-secondary: #64748b;
+        --text-tertiary: #94a3b8;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --accent-light: #eff6ff;
+        --shadow: rgba(0, 0, 0, 0.05);
+        --shadow-hover: rgba(0, 0, 0, 0.1);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg-primary: #0f172a;
+          --bg-secondary: #1e293b;
+          --bg-tertiary: #334155;
+          --bg-input: #1e293b;
+          --border: #334155;
+          --border-focus: #3b82f6;
+          --text-primary: #f1f5f9;
+          --text-secondary: #cbd5e1;
+          --text-tertiary: #94a3b8;
+          --accent: #3b82f6;
+          --accent-hover: #60a5fa;
+          --accent-light: #1e3a8a;
+          --shadow: rgba(0, 0, 0, 0.3);
+          --shadow-hover: rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+        color: var(--text-primary);
+        padding: 0;
+        margin: 0;
+        min-height: 100vh;
+        transition: background 0.3s ease, color 0.3s ease;
+      }
+
+      .app {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+      }
+
+      .header {
+        background: var(--bg-primary);
+        border-bottom: 1px solid var(--border);
+        padding: 20px 32px;
+        box-shadow: 0 1px 3px var(--shadow);
+        transition: all 0.3s ease;
+      }
+
+      .header-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo-icon {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        color: white;
+        font-size: 20px;
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+
+      h1 {
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+      }
+
+      .badge {
+        display: inline-block;
+        background: var(--accent-light);
+        color: var(--accent);
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-left: 12px;
+      }
+
+      .container {
+        flex: 1;
+        max-width: 1200px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 32px;
+      }
+
+      .card {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        box-shadow: 0 4px 12px var(--shadow);
+        margin-bottom: 24px;
+        transition: all 0.3s ease;
+      }
+
+      .card:hover {
+        box-shadow: 0 8px 24px var(--shadow-hover);
+        transform: translateY(-2px);
+      }
+
+      .card-header {
+        margin-bottom: 20px;
+      }
+
+      .card-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+      }
+
+      .card-subtitle {
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      .input-group {
+        margin-bottom: 20px;
+      }
+
+      label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      .input-wrapper {
+        position: relative;
+      }
+
+      input {
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 14px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg-input);
+        color: var(--text-primary);
+        transition: all 0.2s ease;
+      }
+
+      input:focus {
+        outline: none;
+        border-color: var(--border-focus);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      input::placeholder {
+        color: var(--text-tertiary);
+      }
+
+      .drop-zone {
+        position: relative;
+        border: 2px dashed var(--border);
+        border-radius: 12px;
+        padding: 48px 24px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: var(--bg-secondary);
+        margin-bottom: 24px;
+      }
+
+      .drop-zone:hover {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        transform: translateY(-2px);
+      }
+
+      .drop-zone.drag-over {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        border-width: 3px;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+      }
+
+      .drop-zone-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.6;
+      }
+
+      .drop-zone-text {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+
+      .drop-zone-hint {
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      .browse-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 12px;
+        padding: 8px 16px;
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        font-size: 13px;
+      }
+
+      .browse-btn:hover {
+        background: var(--accent);
+        color: white;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+      }
+
+      .button-group {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      button {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        font-size: 14px;
+        font-weight: 600;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      button:hover {
+        background: var(--accent-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+
+      button:active {
+        transform: translateY(0);
+      }
+
+      button:disabled {
+        background: var(--text-tertiary);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+      }
+
+      button.secondary {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+
+      button.secondary:hover {
+        background: var(--border);
+        box-shadow: 0 2px 8px var(--shadow);
+      }
+
+      .output-card {
+        min-height: 400px;
+      }
+
+      .output {
+        padding: 20px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        font-family: "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        white-space: pre-wrap;
+        max-height: 500px;
+        overflow-y: auto;
+        color: var(--text-primary);
+        transition: all 0.3s ease;
+      }
+
+      .output:empty::before {
+        content: "Output will appear here...";
+        color: var(--text-tertiary);
+        font-style: italic;
+      }
+
+      .output::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .output::-webkit-scrollbar-track {
+        background: var(--bg-primary);
+        border-radius: 4px;
+      }
+
+      .output::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 4px;
+      }
+
+      .output::-webkit-scrollbar-thumb:hover {
+        background: var(--text-tertiary);
+      }
+
+      .loading {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-radius: 50%;
+        border-top-color: white;
+        animation: spin 0.6s linear infinite;
+      }
+
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .status-bar {
+        padding: 12px 32px;
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-align: center;
+      }
+
+      .fade-in {
+        animation: fadeIn 0.3s ease-in;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="header-content">
+          <div class="logo">
+            <div class="logo-icon">dx</div>
+            <div>
+              <h1>
+                dctx Desktop
+                <span class="badge">v0.1.0-alpha</span>
+              </h1>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="container">
+        <div class="card fade-in">
+          <div class="card-header">
+            <div class="card-title">Generate Context Snapshot</div>
+            <div class="card-subtitle">
+              Create an AI-ready snapshot of your project directory
+            </div>
+          </div>
+
+          <div class="drop-zone" id="drop-zone">
+            <div class="drop-zone-icon">📁</div>
+            <div class="drop-zone-text">Drag & Drop a Folder Here</div>
+            <div class="drop-zone-hint">or</div>
+            <button class="browse-btn" id="browse-btn">
+              <span>📂</span>
+              <span>Browse Files</span>
+            </button>
+          </div>
+
+          <div class="input-group">
+            <label for="path-input">Or Enter Path Manually</label>
+            <div class="input-wrapper">
+              <input
+                id="path-input"
+                type="text"
+                placeholder="e.g., /Users/username/projects/my-app"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button id="generate-btn">
+              <span id="btn-text">Generate Snapshot</span>
+              <span id="btn-loading" style="display: none;" class="loading"></span>
+            </button>
+            <button class="secondary" id="clear-btn">Clear</button>
+          </div>
+        </div>
+
+        <div class="card output-card fade-in">
+          <div class="card-header">
+            <div class="card-title">Output</div>
+            <div class="card-subtitle">Snapshot result will appear below</div>
+          </div>
+
+          <div class="output" id="output"></div>
+        </div>
+      </main>
+
+      <footer class="status-bar">
+        <span id="status">Ready</span>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
