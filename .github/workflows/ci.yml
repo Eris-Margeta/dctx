@@ -53,171 +53,14 @@ jobs:
         run: cargo clippy -p dctx-core -p dctx-cli -- -D warnings
 
   # ============================================================================
-  # STAGE 3: Test Core + CLI on Linux
-  # Only runs if format-check and lint-check pass
-  # Tests core and CLI only (desktop app has no tests)
-  # ============================================================================
-  test-linux:
-    name: Test Core + CLI (Linux)
-    needs: lint-check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-
-      - name: Run tests (core + CLI only)
-        run: cargo test -p dctx-core -p dctx-cli --verbose
-
-  # ============================================================================
-  # STAGE 4: Test Core + CLI on macOS
-  # Only runs if test-linux passes
-  # ============================================================================
-  test-macos:
-    name: Test Core + CLI (macOS)
-    needs: test-linux
-    runs-on: macos-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-
-      - name: Run tests (core + CLI only)
-        run: cargo test -p dctx-core -p dctx-cli --verbose
-
-  # ============================================================================
-  # STAGE 5: Test Core + CLI on Windows
-  # Only runs if test-macos passes
-  # ============================================================================
-  test-windows:
-    name: Test Core + CLI (Windows)
-    needs: test-macos
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-
-      - name: Run tests (core + CLI only)
-        run: cargo test -p dctx-core -p dctx-cli --verbose
-
-  # ============================================================================
-  # STAGE 6: Build CLI (Linux)
-  # Only runs if all tests pass AND push to main/dev
-  # ============================================================================
-  build-cli-linux:
-    name: Build CLI (Linux)
-    needs: test-windows
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-unknown-linux-gnu
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-
-      - name: Build CLI release
-        run: cargo build --release -p dctx-cli --target x86_64-unknown-linux-gnu
-
-      - name: Upload CLI artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dctx-cli-linux-x64
-          path: target/x86_64-unknown-linux-gnu/release/dctx-cli
-
-  # ============================================================================
-  # STAGE 7: Build CLI (macOS)
-  # Only runs if CLI Linux build passes
-  # ============================================================================
-  build-cli-macos:
-    name: Build CLI (macOS)
-    needs: build-cli-linux
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        target: [x86_64-apple-darwin, aarch64-apple-darwin]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.target }}
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-
-      - name: Build CLI release
-        run: cargo build --release -p dctx-cli --target ${{ matrix.target }}
-
-      - name: Upload CLI artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dctx-cli-macos-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/dctx-cli
-
-  # ============================================================================
-  # STAGE 8: Build CLI (Windows)
-  # Only runs if CLI macOS builds pass
-  # ============================================================================
-  build-cli-windows:
-    name: Build CLI (Windows)
-    needs: build-cli-macos
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
-    runs-on: windows-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-msvc
-
-      - name: Cache cargo
-        uses: Swatinem/rust-cache@v2
-
-      - name: Build CLI release
-        run: cargo build --release -p dctx-cli --target x86_64-pc-windows-msvc
-
-      - name: Upload CLI artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: dctx-cli-windows-x64
-          path: target/x86_64-pc-windows-msvc/release/dctx-cli.exe
-
-  # ============================================================================
-  # STAGE 9: Lint Desktop App (GATE for desktop builds)
-  # Only runs if all CLI builds pass
+  # STAGE 3: Lint Desktop App (GATE)
+  # Only runs if lint-check passes
   # Installs full system dependencies and lints desktop app
+  # Fails fast before running expensive tests and builds
   # ============================================================================
   lint-desktop:
     name: Lint Desktop App
-    needs: build-cli-windows
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    needs: lint-check
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -263,12 +106,169 @@ jobs:
         run: cargo clippy -p dctx-desktop -- -D warnings
 
   # ============================================================================
+  # STAGE 4: Test Core + CLI on Linux
+  # Only runs if all lints pass
+  # Tests core and CLI only (desktop app has no tests)
+  # ============================================================================
+  test-linux:
+    name: Test Core + CLI (Linux)
+    needs: lint-desktop
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run tests (core + CLI only)
+        run: cargo test -p dctx-core -p dctx-cli --verbose
+
+  # ============================================================================
+  # STAGE 5: Test Core + CLI on macOS
+  # Only runs if test-linux passes
+  # ============================================================================
+  test-macos:
+    name: Test Core + CLI (macOS)
+    needs: test-linux
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run tests (core + CLI only)
+        run: cargo test -p dctx-core -p dctx-cli --verbose
+
+  # ============================================================================
+  # STAGE 6: Test Core + CLI on Windows
+  # Only runs if test-macos passes
+  # ============================================================================
+  test-windows:
+    name: Test Core + CLI (Windows)
+    needs: test-macos
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run tests (core + CLI only)
+        run: cargo test -p dctx-core -p dctx-cli --verbose
+
+  # ============================================================================
+  # STAGE 7: Build CLI (Linux)
+  # Only runs if all tests pass AND push to main/dev
+  # ============================================================================
+  build-cli-linux:
+    name: Build CLI (Linux)
+    needs: test-windows
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build CLI release
+        run: cargo build --release -p dctx-cli --target x86_64-unknown-linux-gnu
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dctx-cli-linux-x64
+          path: target/x86_64-unknown-linux-gnu/release/dctx-cli
+
+  # ============================================================================
+  # STAGE 8: Build CLI (macOS)
+  # Only runs if CLI Linux build passes
+  # ============================================================================
+  build-cli-macos:
+    name: Build CLI (macOS)
+    needs: build-cli-linux
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        target: [x86_64-apple-darwin, aarch64-apple-darwin]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build CLI release
+        run: cargo build --release -p dctx-cli --target ${{ matrix.target }}
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dctx-cli-macos-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/dctx-cli
+
+  # ============================================================================
+  # STAGE 9: Build CLI (Windows)
+  # Only runs if CLI macOS builds pass
+  # ============================================================================
+  build-cli-windows:
+    name: Build CLI (Windows)
+    needs: build-cli-macos
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build CLI release
+        run: cargo build --release -p dctx-cli --target x86_64-pc-windows-msvc
+
+      - name: Upload CLI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dctx-cli-windows-x64
+          path: target/x86_64-pc-windows-msvc/release/dctx-cli.exe
+
+  # ============================================================================
   # STAGE 10: Build Desktop App (Linux)
-  # Only runs if desktop lint passes
+  # Only runs if all CLI builds pass AND push to main/dev
   # ============================================================================
   build-desktop-linux:
     name: Build Desktop App (Linux)
-    needs: lint-desktop
+    needs: build-cli-windows
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev')
     runs-on: ubuntu-latest
     steps:
