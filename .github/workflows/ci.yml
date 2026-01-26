@@ -223,6 +223,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -245,6 +250,14 @@ jobs:
             libgtk-3-dev \
             libayatana-appindicator3-dev \
             librsvg2-dev
+
+      - name: Install frontend dependencies
+        working-directory: apps/dctx-desktop
+        run: bun install
+
+      - name: Build frontend (required for Tauri compile-time checks)
+        working-directory: apps/dctx-desktop
+        run: bun run build
 
       - name: Run clippy on desktop app
         run: cargo clippy -p dctx-desktop -- -D warnings

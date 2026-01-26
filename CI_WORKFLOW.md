@@ -131,9 +131,23 @@ Lints the desktop app with full system dependencies installed.
 - libayatana-appindicator3-dev
 - librsvg2-dev
 
+**Build process:**
+1. Setup Bun
+2. Install frontend dependencies (`bun install`)
+3. **Build frontend** (`bun run build` → creates `dist/`)
+4. Lint Rust code (`cargo clippy -p dctx-desktop`)
+
 ```bash
+# Frontend must be built BEFORE linting/compiling
+cd apps/dctx-desktop
+bun install
+bun run build
+
+# Then lint
 cargo clippy -p dctx-desktop -- -D warnings
 ```
+
+**Why build frontend first?** Tauri's `generate_context!()` macro validates the `frontendDist` path at compile time. If `dist/` doesn't exist, compilation fails.
 
 **Why separate stage?** Desktop app lint requires compiling Tauri with all system dependencies. We want to catch any desktop-specific issues before spending 30+ minutes building desktop apps on all platforms.
 
