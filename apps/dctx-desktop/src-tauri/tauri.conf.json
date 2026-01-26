@@ -11,6 +11,7 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "fileAssociations": [],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -34,6 +35,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "dctx Desktop",
         "width": 1200,
         "height": 800,
@@ -44,11 +46,32 @@
         "center": true,
         "decorations": true,
         "transparent": false,
-        "theme": null
+        "theme": null,
+        "dragDropEnabled": true
       }
     ],
     "security": {
-      "csp": null
-    }
+      "csp": null,
+      "capabilities": [
+        {
+          "identifier": "default",
+          "description": "Default capabilities for dctx Desktop",
+          "windows": ["main"],
+          "permissions": [
+            "core:default",
+            "core:event:default",
+            "core:event:allow-listen",
+            "core:event:allow-emit",
+            "core:window:default",
+            "core:window:allow-start-dragging",
+            "dialog:default",
+            "dialog:allow-open",
+            "shell:default",
+            "shell:allow-open"
+          ]
+        }
+      ]
+    },
+    "withGlobalTauri": true
   }
 }

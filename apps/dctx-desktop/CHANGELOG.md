@@ -9,40 +9,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Modern UI with light/dark mode support (follows system preference)
-- Blue accent color scheme (#3b82f6 - Tailwind blue-500)
-- Responsive design with beautiful gradients
-- File path input with validation
-- Snapshot generation with progress feedback
-- Output display with monospace font
-- Smooth animations and transitions
-- System tray integration (planned)
-
-### Changed
-- Migrated from npm to Bun for faster builds
-- Updated to Tauri 2.0 stable
+### Planned
+- Visual filter configuration UI
+- Real-time directory tree preview
+- Copy to clipboard button
+- Settings panel with preferences
+- Recent projects dropdown
 
 ---
 
-## [0.1.0-alpha] - 2026-01-25
+## [0.1.0-alpha] - 2026-01-26
 
 ### Added
-- Initial Tauri 2.0 setup with Rust backend
-- Direct integration with dctx-core library
-- `generate_snapshot` command calling dctx-core
-- TypeScript frontend with Vite
-- Basic HTML UI with dark theme
-- Filter support (extensions, size, binary, hidden, etc.)
-- Icon generation for all platforms (macOS, Windows, Linux, iOS, Android)
-- PROPRIETARY license for desktop app
-- Bun package manager integration
+- **Tauri 2.0 Setup** - Rust backend + TypeScript frontend
+- **Drag & Drop** - Drop folders onto app window with instant visual feedback
+- **Native File Picker** - Browse button with native OS dialog
+- **Manual Path Entry** - Type or paste directory paths
+- **Config System** - Two-tier config (global + desktop-specific)
+  - Inherits from `~/.config/dctx/config.toml`
+  - Desktop overrides at `~/.config/dctx-desktop/config.toml`
+- **Safety Limits** - 10,000 file limit (configurable) prevents memory exhaustion
+- **Async Snapshot Generation** - Non-blocking backend with `tokio::spawn_blocking`
+- **Modern UI** - Light/dark mode following system preference
+- **Blue Accent Theme** - #3b82f6 (Tailwind blue-500)
+- **Environment Detection** - Graceful degradation in browser dev mode
+- **Tauri Permissions** - Full Tauri 2.0 capabilities configuration
+- **Icon Generation** - All platforms (macOS, Windows, Linux, iOS, Android)
+- **Bun Integration** - 10-100x faster than npm for builds
+- **Comprehensive Docs** - README, DEVELOPMENT, CONFIG, DRAG_DROP_DEBUG guides
+
+### Changed
+- **Migrated from npm to Bun** - Faster builds and installs
+- **Snapshot runs in background** - UI never freezes
+- **Removed file content loading** - Only walks directory structure (for now)
+
+### Fixed
+- **System freeze on large directories** - Was loading all files into RAM synchronously
+- **Drag-and-drop permissions** - Added `dragDropEnabled: true` + `core:event:allow-listen`
+- **Browse button permissions** - Added `dialog:allow-open` capability
+- **Browser mode errors** - Added Tauri detection and graceful fallbacks
+- **Event listener setup** - Multiple event name variations for compatibility
 
 ### Technical
 - Zero-dependency Rust core integration
 - Fast startup (< 500ms)
-- Small binary size (~5-8MB with system WebView)
+- Small binary size (5-8MB with system WebView)
 - Cross-platform: macOS, Windows, Linux
+- Async Rust backend with tokio
+- TypeScript frontend with Vite
+- Custom CSS (no framework bloat)
 
 ---
 

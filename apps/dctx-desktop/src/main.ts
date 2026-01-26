@@ -1,10 +1,17 @@
 // apps/dctx-desktop/src/main.ts
 import { invoke } from "@tauri-apps/api/core";
+import { open } from "@tauri-apps/plugin-dialog";
+import { listen } from "@tauri-apps/api/event";
+
+// Check if running in Tauri (vs browser dev mode)
+const isTauri = '__TAURI__' in window;
 
 let pathInputEl: HTMLInputElement | null;
 let outputEl: HTMLElement | null;
 let generateBtnEl: HTMLButtonElement | null;
 let clearBtnEl: HTMLButtonElement | null;
+let browseBtnEl: HTMLButtonElement | null;
+let dropZoneEl: HTMLElement | null;
 let btnTextEl: HTMLElement | null;
 let btnLoadingEl: HTMLElement | null;
 let statusEl: HTMLElement | null;
@@ -23,15 +30,51 @@ function setLoading(loading: boolean) {
   }
 }
 
+function setPath(path: string) {
+  if (pathInputEl) {
+    pathInputEl.value = path;
+    setStatus(`Selected: ${path}`);
+  }
+}
+
+async function browseFolderDialog() {
+  if (!isTauri) {
+    setStatus("⚠️ Browse only works in desktop app (not browser dev mode)");
+    return;
+  }
+
+  try {
+    const selected = await open({
+      directory: true,
+      multiple: false,
+      title: "Select Project Directory",
+    });
+
+    if (selected && typeof selected === "string") {
+      setPath(selected);
+    }
+  } catch (error) {
+    console.error("Failed to open dialog:", error);
+    setStatus("Error opening folder dialog");
+  }
+}
+
 async function generateSnapshot() {
   if (!pathInputEl || !outputEl) return;
 
   const path = pathInputEl.value.trim();
 
   if (!path) {
-    outputEl.textContent = "❌ Error: Please enter a valid directory path";
+    outputEl.textContent = "❌ Error: Please enter a valid directory path or drag & drop a folder";
     outputEl.style.color = "#ef4444";
     setStatus("Error: No path provided");
+    return;
+  }
+
+  if (!isTauri) {
+    outputEl.textContent = "⚠️ Snapshot generation only works in the desktop app.\n\nRun: bun run tauri:dev";
+    outputEl.style.color = "var(--text-secondary)";
+    setStatus("Not running in Tauri");
     return;
   }
 
@@ -58,7 +101,7 @@ async function generateSnapshot() {
     if (response.success) {
       outputEl.textContent = `✅ Success!\n\n${response.output}`;
       outputEl.style.color = "var(--text-primary)";
-      setStatus(`Snapshot generated successfully (${path})`);
+      setStatus(`Snapshot generated successfully`);
     } else {
       outputEl.textContent = `❌ Error:\n\n${response.error}`;
       outputEl.style.color = "#ef4444";
@@ -80,23 +123,74 @@ function clearOutput() {
   }
   if (pathInputEl) {
     pathInputEl.value = "";
-    pathInputEl.focus();
   }
   setStatus("Ready");
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+// Drag and drop handlers - attach to entire document for instant feedback
+let dragCounter = 0; // Track nested drag events
+
+function handleDragEnter(e: DragEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragCounter++;
+
+  if (dropZoneEl && dragCounter === 1) {
+    dropZoneEl.classList.add("drag-over");
+    console.log("Drag enter - counter:", dragCounter);
+  }
+}
+
+function handleDragOver(e: DragEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  // Must prevent default to allow drop
+}
+
+function handleDragLeave(e: DragEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragCounter--;
+
+  if (dropZoneEl && dragCounter === 0) {
+    dropZoneEl.classList.remove("drag-over");
+    console.log("Drag leave - counter:", dragCounter);
+  }
+}
+
+function handleDrop(e: DragEvent) {
+  e.preventDefault();
+  e.stopPropagation();
+  dragCounter = 0;
+
+  if (dropZoneEl) {
+    dropZoneEl.classList.remove("drag-over");
+  }
+
+  console.log("Drop event fired on DOM");
+  // Note: Tauri handles file drops via events, not through DataTransfer
+  // The actual drop handling is done via the Tauri event listener below
+}
+
+window.addEventListener("DOMContentLoaded", async () => {
   pathInputEl = document.querySelector("#path-input");
   outputEl = document.querySelector("#output");
   generateBtnEl = document.querySelector("#generate-btn");
   clearBtnEl = document.querySelector("#clear-btn");
+  browseBtnEl = document.querySelector("#browse-btn");
+  dropZoneEl = document.querySelector("#drop-zone");
   btnTextEl = document.querySelector("#btn-text");
   btnLoadingEl = document.querySelector("#btn-loading");
   statusEl = document.querySelector("#status");
 
-  // Event listeners
+  // Click event listeners
   generateBtnEl?.addEventListener("click", () => generateSnapshot());
   clearBtnEl?.addEventListener("click", () => clearOutput());
+  browseBtnEl?.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    browseFolderDialog();
+  });
 
   // Enter key on input
   pathInputEl?.addEventListener("keypress", (e) => {
@@ -105,11 +199,78 @@ window.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Set initial status
-  setStatus("Ready");
+  // Drag and drop - attach to entire document for instant visual feedback
+  document.addEventListener("dragenter", handleDragEnter);
+  document.addEventListener("dragover", handleDragOver);
+  document.addEventListener("dragleave", handleDragLeave);
+  document.addEventListener("drop", handleDrop);
 
-  // Auto-focus input
-  pathInputEl?.focus();
+  // Also allow clicking the drop zone to browse
+  if (dropZoneEl) {
+    dropZoneEl.addEventListener("click", (e) => {
+      // Don't trigger if clicking the browse button
+      if (e.target !== browseBtnEl && !browseBtnEl?.contains(e.target as Node)) {
+        browseFolderDialog();
+      }
+    });
+  }
+
+  // Tauri file drop event listener (only in desktop app)
+  let unlisten1: (() => void) | undefined;
+  let unlisten2: (() => void) | undefined;
+  let unlisten3: (() => void) | undefined;
+
+  if (isTauri) {
+    console.log("Setting up Tauri file drop listeners...");
+
+    try {
+      // Try the correct Tauri 2.0 event name
+      unlisten1 = await listen<string[]>("tauri://file-drop", (event) => {
+        console.log("✅ File drop event (tauri://file-drop):", event);
+        console.log("  Payload:", event.payload);
+
+        // In Tauri 2.0, payload is directly the array of paths
+        const paths = event.payload;
+        if (paths && paths.length > 0) {
+          const path = paths[0];
+          console.log("  Setting path:", path);
+          setPath(path);
+          setStatus(`Dropped: ${path}`);
+        }
+      });
+
+      // Also try alternative event structure
+      unlisten2 = await listen<{ paths: string[] }>("tauri://file-drop", (event) => {
+        console.log("✅ File drop event (alt structure):", event);
+        if (event.payload.paths && event.payload.paths.length > 0) {
+          const path = event.payload.paths[0];
+          console.log("  Setting path:", path);
+          setPath(path);
+          setStatus(`Dropped: ${path}`);
+        }
+      });
+
+      // Fallback for older event name
+      unlisten3 = await listen<any>("tauri://drag-drop", (event) => {
+        console.log("✅ Drag-drop event (tauri://drag-drop):", event);
+        const paths = Array.isArray(event.payload) ? event.payload : event.payload?.paths;
+        if (paths && paths.length > 0) {
+          setPath(paths[0]);
+          setStatus(`Dropped: ${paths[0]}`);
+        }
+      });
+
+      console.log("✅ All Tauri event listeners registered");
+    } catch (error) {
+      console.error("Failed to setup Tauri event listeners:", error);
+    }
+  } else {
+    console.log("⚠️ Running in browser mode - Tauri features disabled");
+    setStatus("Running in browser dev mode - use 'bun run tauri:dev' for full features");
+  }
+
+  // Set initial status
+  setStatus("Ready - Drag & drop a folder to start");
 
   // Detect system theme
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -118,5 +279,16 @@ window.addEventListener("DOMContentLoaded", () => {
   // Listen for theme changes
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", (e) => {
     console.log(`Theme changed to: ${e.matches ? "dark" : "light"} mode`);
+  });
+
+  // Cleanup on page unload
+  window.addEventListener("beforeunload", () => {
+    if (unlisten1) unlisten1();
+    if (unlisten2) unlisten2();
+    if (unlisten3) unlisten3();
+    document.removeEventListener("dragenter", handleDragEnter);
+    document.removeEventListener("dragover", handleDragOver);
+    document.removeEventListener("dragleave", handleDragLeave);
+    document.removeEventListener("drop", handleDrop);
   });
 });

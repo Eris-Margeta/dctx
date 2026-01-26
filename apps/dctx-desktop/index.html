@@ -170,6 +170,10 @@
         color: var(--text-secondary);
       }
 
+      .input-wrapper {
+        position: relative;
+      }
+
       input {
         width: 100%;
         padding: 12px 16px;
@@ -189,6 +193,67 @@
 
       input::placeholder {
         color: var(--text-tertiary);
+      }
+
+      .drop-zone {
+        position: relative;
+        border: 2px dashed var(--border);
+        border-radius: 12px;
+        padding: 48px 24px;
+        text-align: center;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        background: var(--bg-secondary);
+        margin-bottom: 24px;
+      }
+
+      .drop-zone:hover {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        transform: translateY(-2px);
+      }
+
+      .drop-zone.drag-over {
+        border-color: var(--accent);
+        background: var(--accent-light);
+        border-width: 3px;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+      }
+
+      .drop-zone-icon {
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.6;
+      }
+
+      .drop-zone-text {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+
+      .drop-zone-hint {
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      .browse-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 12px;
+        padding: 8px 16px;
+        background: transparent;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        font-size: 13px;
+      }
+
+      .browse-btn:hover {
+        background: var(--accent);
+        color: white;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
       }
 
       .button-group {
@@ -348,15 +413,27 @@
             </div>
           </div>
 
+          <div class="drop-zone" id="drop-zone">
+            <div class="drop-zone-icon">📁</div>
+            <div class="drop-zone-text">Drag & Drop a Folder Here</div>
+            <div class="drop-zone-hint">or</div>
+            <button class="browse-btn" id="browse-btn">
+              <span>📂</span>
+              <span>Browse Files</span>
+            </button>
+          </div>
+
           <div class="input-group">
-            <label for="path-input">Project Directory</label>
-            <input
-              id="path-input"
-              type="text"
-              placeholder="e.g., /Users/username/projects/my-app"
-              autocomplete="off"
-              spellcheck="false"
-            />
+            <label for="path-input">Or Enter Path Manually</label>
+            <div class="input-wrapper">
+              <input
+                id="path-input"
+                type="text"
+                placeholder="e.g., /Users/username/projects/my-app"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </div>
           </div>
 
           <div class="button-group">
