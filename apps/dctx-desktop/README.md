@@ -2,9 +2,8 @@
 
 > **Cross-platform GUI for dctx - Directory Context Generator**
 
-**License**: Proprietary (Commercial) - See [LICENSE](LICENSE)
-**Price**: $29 USD (one-time payment)
-**Status**: v0.1.0-alpha - Working prototype
+**License**: MIT - Free and Open Source
+**Status**: v0.1.0 - Working prototype
 **Platform**: macOS, Windows, Linux
 
 ---
