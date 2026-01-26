@@ -4,6 +4,14 @@
 
 The CI workflow is designed for **sequential, fail-fast execution** to save compute time and provide faster feedback.
 
+**12-stage workflow:**
+1. Format check (30s)
+2. Lint core+CLI (2min)
+3-5. Test core+CLI on all platforms (15min)
+6-8. Build CLI binaries on all platforms (10min) - only on push to main/dev
+9. Lint desktop app (3min) - only on push to main/dev
+10-12. Build desktop app on all platforms (30min) - only on push to main/dev
+
 ## Workflow Stages
 
 ### Stage 1: Format Check (GATE)
@@ -67,10 +75,50 @@ Only runs if Linux and macOS tests pass. Tests core and CLI only.
 
 If this stage fails, desktop lint and builds are cancelled.
 
-### Stage 6: Lint Desktop App (GATE for builds)
-**Job:** `lint-desktop`
+### Stage 6: Build CLI (Linux)
+**Job:** `build-cli-linux`
 **Platform:** Ubuntu
 **Depends on:** `test-windows`
+**Only runs on:** Push to `main` or `dev` branches
+
+Builds the CLI binary for Linux (x86_64).
+
+```bash
+cargo build --release -p dctx-cli --target x86_64-unknown-linux-gnu
+```
+
+**Artifact:** `dctx-cli-linux-x64`
+
+### Stage 7: Build CLI (macOS)
+**Job:** `build-cli-macos`
+**Platform:** macOS
+**Depends on:** `build-cli-linux`
+**Only runs on:** Push to `main` or `dev` branches
+
+Builds CLI binaries for macOS (Intel + Apple Silicon).
+
+**Targets:**
+- `x86_64-apple-darwin` (Intel)
+- `aarch64-apple-darwin` (Apple Silicon)
+
+**Artifacts:**
+- `dctx-cli-macos-x86_64-apple-darwin`
+- `dctx-cli-macos-aarch64-apple-darwin`
+
+### Stage 8: Build CLI (Windows)
+**Job:** `build-cli-windows`
+**Platform:** Windows
+**Depends on:** `build-cli-macos`
+**Only runs on:** Push to `main` or `dev` branches
+
+Builds the CLI binary for Windows (x86_64).
+
+**Artifact:** `dctx-cli-windows-x64` (dctx-cli.exe)
+
+### Stage 9: Lint Desktop App (GATE for desktop builds)
+**Job:** `lint-desktop`
+**Platform:** Ubuntu
+**Depends on:** `build-cli-windows`
 **Only runs on:** Push to `main` or `dev` branches
 
 Lints the desktop app with full system dependencies installed.
@@ -87,11 +135,11 @@ Lints the desktop app with full system dependencies installed.
 cargo clippy -p dctx-desktop -- -D warnings
 ```
 
-**Why separate stage?** Desktop app lint requires compiling Tauri with all system dependencies. We want to catch any desktop-specific issues before spending 30+ minutes building on all platforms.
+**Why separate stage?** Desktop app lint requires compiling Tauri with all system dependencies. We want to catch any desktop-specific issues before spending 30+ minutes building desktop apps on all platforms.
 
-If this stage fails, all builds are cancelled.
+If this stage fails, all desktop builds are cancelled (CLI builds already completed).
 
-### Stage 7: Build Desktop App (Linux)
+### Stage 10: Build Desktop App (Linux)
 **Job:** `build-desktop-linux`
 **Platform:** Ubuntu
 **Depends on:** `lint-desktop`
@@ -111,7 +159,7 @@ Builds the Tauri desktop app for Linux (dependencies already verified by lint-de
 
 If this stage fails, macOS and Windows builds are cancelled.
 
-### Stage 8: Build Desktop App (macOS)
+### Stage 11: Build Desktop App (macOS)
 **Job:** `build-desktop-macos`
 **Platform:** macOS
 **Depends on:** `build-desktop-linux`
@@ -125,7 +173,7 @@ Only runs if Linux build succeeds.
 
 If this stage fails, Windows build is cancelled.
 
-### Stage 9: Build Desktop App (Windows)
+### Stage 12: Build Desktop App (Windows)
 **Job:** `build-desktop-windows`
 **Platform:** Windows
 **Depends on:** `build-desktop-macos`
@@ -150,13 +198,19 @@ Only runs if Linux and macOS builds succeed.
      ↓ (if pass)
 5. test-windows (Windows, ~5min) [Core + CLI only]
      ↓ (if pass AND push to main/dev)
-6. lint-desktop (Ubuntu, ~3min) [Desktop app with full deps]
+6. build-cli-linux (Ubuntu, ~3min)
      ↓ (if pass)
-7. build-desktop-linux (Ubuntu, ~10min)
+7. build-cli-macos (macOS, ~6min) [2 targets: Intel + ARM]
      ↓ (if pass)
-8. build-desktop-macos (macOS, ~10min)
+8. build-cli-windows (Windows, ~3min)
      ↓ (if pass)
-9. build-desktop-windows (Windows, ~10min)
+9. lint-desktop (Ubuntu, ~3min) [Desktop app with full deps]
+     ↓ (if pass)
+10. build-desktop-linux (Ubuntu, ~10min)
+     ↓ (if pass)
+11. build-desktop-macos (macOS, ~10min)
+     ↓ (if pass)
+12. build-desktop-windows (Windows, ~10min)
 ```
 
 ## Why Sequential?
@@ -168,8 +222,10 @@ Only runs if Linux and macOS builds succeed.
 **Fast Feedback:**
 - Format issues caught in ~30 seconds
 - Lint issues caught in ~2 minutes
-- Linux tests complete in ~5 minutes
-- If any fail, you know in <7 minutes total
+- Test failures caught in ~7 minutes
+- CLI build issues caught in ~20 minutes
+- Desktop lint issues caught in ~23 minutes
+- Desktop build issues caught in ~50 minutes
 
 **Predictable Testing:**
 - Linux first (fastest, most common CI platform)
@@ -179,21 +235,23 @@ Only runs if Linux and macOS builds succeed.
 ## Triggers
 
 **Push to `main` or `dev`:**
-- Runs all 7 stages (format → test all platforms → build all platforms)
+- Runs all 12 stages (format → lint → test → build CLI → lint desktop → build desktop)
 
 **Pull request to `main` or `dev`:**
 - Runs stages 1-5 only (format → lint → test all platforms)
-- Skips desktop lint and builds (PRs typically don't touch desktop app)
+- Skips CLI builds, desktop lint, and desktop builds (artifacts not needed for PRs)
 
 ## Key Fixes Applied
 
 1. **Split format and lint into separate stages** - Format is ultra-fast (no compilation), lint only checks core/CLI
 2. **Test only core and CLI** - Desktop app has no tests and would require Tauri dependencies
-3. **Separate desktop lint stage** - Catches desktop issues before expensive multi-platform builds
-4. **Added `libglib2.0-dev` to Linux dependencies** - Required by Tauri 2.0 for glib-sys crate
-5. **Added frontend build step** - Creates `dist/` directory before Tauri build
-6. **Sequential execution** - Each stage depends on previous (`needs:` key)
-7. **Early exit on failure** - One failure cancels all subsequent jobs
+3. **Build CLI binaries on all platforms** - Verifies release builds work and creates distribution artifacts
+4. **Separate desktop lint stage** - Catches desktop issues before expensive multi-platform builds
+5. **Added `libglib2.0-dev` to Linux dependencies** - Required by Tauri 2.0 for glib-sys crate
+6. **Updated to libwebkit2gtk-4.1-dev** - Required for Ubuntu 24.04+ (GitHub Actions runners)
+7. **Added frontend build step** - Creates `dist/` directory before Tauri build
+8. **Sequential execution** - Each stage depends on previous (`needs:` key)
+9. **Early exit on failure** - One failure cancels all subsequent jobs
 
 ## Monitoring
 
