@@ -210,16 +210,26 @@ mod tests {
         assert!(filter.has_active_filters());
 
         assert!(filter.should_include_file("main.rs", 100, false, &PathBuf::from("main.rs")));
-        assert!(!filter.should_include_file("config.toml", 100, false, &PathBuf::from("config.toml")));
+        assert!(!filter.should_include_file(
+            "config.toml",
+            100,
+            false,
+            &PathBuf::from("config.toml")
+        ));
     }
 
     #[test]
     fn test_extension_filter_multiple() {
-        let filter = FilterConfig::new()
-            .with_extensions(vec!["rs".to_string(), "toml".to_string()]);
+        let filter =
+            FilterConfig::new().with_extensions(vec!["rs".to_string(), "toml".to_string()]);
 
         assert!(filter.should_include_file("main.rs", 100, false, &PathBuf::from("main.rs")));
-        assert!(filter.should_include_file("config.toml", 100, false, &PathBuf::from("config.toml")));
+        assert!(filter.should_include_file(
+            "config.toml",
+            100,
+            false,
+            &PathBuf::from("config.toml")
+        ));
         assert!(!filter.should_include_file("readme.md", 100, false, &PathBuf::from("readme.md")));
     }
 
@@ -278,7 +288,12 @@ mod tests {
         let filter = FilterConfig::new().with_min_size_mb(1.0); // 1MB
 
         assert!(!filter.should_include_file("small.txt", 1000, false, &PathBuf::from("small.txt")));
-        assert!(filter.should_include_file("large.bin", 2_000_000, false, &PathBuf::from("large.bin")));
+        assert!(filter.should_include_file(
+            "large.bin",
+            2_000_000,
+            false,
+            &PathBuf::from("large.bin")
+        ));
     }
 
     #[test]
@@ -296,8 +311,18 @@ mod tests {
             .with_max_size_mb(0.1); // 100KB
 
         assert!(!filter.should_include_file("tiny.txt", 1000, false, &PathBuf::from("tiny.txt"))); // 1KB
-        assert!(filter.should_include_file("medium.txt", 50_000, false, &PathBuf::from("medium.txt"))); // 50KB
-        assert!(!filter.should_include_file("large.txt", 200_000, false, &PathBuf::from("large.txt"))); // 200KB
+        assert!(filter.should_include_file(
+            "medium.txt",
+            50_000,
+            false,
+            &PathBuf::from("medium.txt")
+        )); // 50KB
+        assert!(!filter.should_include_file(
+            "large.txt",
+            200_000,
+            false,
+            &PathBuf::from("large.txt")
+        )); // 200KB
     }
 
     #[test]
@@ -325,7 +350,7 @@ mod tests {
         assert!(is_hidden(".env"));
         assert!(is_hidden(".config"));
         assert!(!is_hidden("file.txt"));
-        assert!(!is_hidden("."));  // Current dir marker
+        assert!(!is_hidden(".")); // Current dir marker
         assert!(!is_hidden("..")); // Parent dir marker
     }
 
@@ -346,8 +371,18 @@ mod tests {
             .with_max_size_mb(0.5);
 
         assert!(filter.should_include_file("main.rs", 100_000, false, &PathBuf::from("main.rs"))); // 100KB Rust file
-        assert!(!filter.should_include_file("main.rs", 1_000_000, false, &PathBuf::from("main.rs"))); // 1MB Rust file (too large)
-        assert!(!filter.should_include_file("config.toml", 1000, false, &PathBuf::from("config.toml"))); // Wrong extension
+        assert!(!filter.should_include_file(
+            "main.rs",
+            1_000_000,
+            false,
+            &PathBuf::from("main.rs")
+        )); // 1MB Rust file (too large)
+        assert!(!filter.should_include_file(
+            "config.toml",
+            1000,
+            false,
+            &PathBuf::from("config.toml")
+        )); // Wrong extension
     }
 
     #[test]
@@ -373,8 +408,18 @@ mod tests {
         // .env file: hidden AND matches extension
         assert!(filter.should_include_file(".env", 100, false, &PathBuf::from(".env")));
         // .gitignore file: hidden but wrong extension (gitignore != env)
-        assert!(!filter.should_include_file(".gitignore", 100, false, &PathBuf::from(".gitignore")));
+        assert!(!filter.should_include_file(
+            ".gitignore",
+            100,
+            false,
+            &PathBuf::from(".gitignore")
+        ));
         // config.env file: correct extension but NOT hidden
-        assert!(!filter.should_include_file("config.env", 100, false, &PathBuf::from("config.env")));
+        assert!(!filter.should_include_file(
+            "config.env",
+            100,
+            false,
+            &PathBuf::from("config.env")
+        ));
     }
 }

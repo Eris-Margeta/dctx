@@ -146,7 +146,9 @@ fn walk_recursive(
                         continue;
                     }
 
-                    if let Ok(child_node) = walk_recursive(&child_path, &child_relative, rules, ignored_folders) {
+                    if let Ok(child_node) =
+                        walk_recursive(&child_path, &child_relative, rules, ignored_folders)
+                    {
                         node.children.push(child_node);
                     }
                 }

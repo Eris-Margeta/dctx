@@ -184,7 +184,10 @@ fn main() {
     println!("  Config dir: {:?}", config::get_desktop_config_dir());
     println!("  Cache dir: {:?}", config::get_desktop_cache_dir());
     println!("  File limit: {}", config.file_count_limit);
-    println!("  Core config inherited: text_output={}", config.core.text_output_enabled);
+    println!(
+        "  Core config inherited: text_output={}",
+        config.core.text_output_enabled
+    );
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())

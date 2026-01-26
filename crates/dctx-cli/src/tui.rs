@@ -71,18 +71,38 @@ impl Menu {
         print!("{}", term::CLEAR_SCREEN);
 
         // Print header
-        println!("{}{}═══════════════════════════════════════════════════════════{}",
-                 term::BOLD, term::CYAN, term::RESET);
-        println!("{}{}  {}  {}",
-                 term::BOLD, term::CYAN, self.title, term::RESET);
-        println!("{}{}═══════════════════════════════════════════════════════════{}\n",
-                 term::BOLD, term::CYAN, term::RESET);
+        println!(
+            "{}{}═══════════════════════════════════════════════════════════{}",
+            term::BOLD,
+            term::CYAN,
+            term::RESET
+        );
+        println!(
+            "{}{}  {}  {}",
+            term::BOLD,
+            term::CYAN,
+            self.title,
+            term::RESET
+        );
+        println!(
+            "{}{}═══════════════════════════════════════════════════════════{}\n",
+            term::BOLD,
+            term::CYAN,
+            term::RESET
+        );
 
         // Print menu items
         for item in &self.items {
-            println!("  {}{}[{}]{} {}{}{}",
-                     term::GREEN, term::BOLD, item.key, term::RESET,
-                     term::BOLD, item.label, term::RESET);
+            println!(
+                "  {}{}[{}]{} {}{}{}",
+                term::GREEN,
+                term::BOLD,
+                item.key,
+                term::RESET,
+                term::BOLD,
+                item.label,
+                term::RESET
+            );
             if !item.description.is_empty() {
                 println!("      {}{}{}", term::DIM, item.description, term::RESET);
             }
@@ -127,9 +147,7 @@ impl MenuContext {
     }
 
     pub fn format(&self) -> String {
-        let mut parts = vec![
-            format!("Directory: {}", self.current_dir),
-        ];
+        let mut parts = vec![format!("Directory: {}", self.current_dir)];
 
         if let Some(version) = &self.last_version {
             parts.push(format!("Last Snapshot: {}", version));
@@ -145,13 +163,21 @@ impl MenuContext {
 pub fn create_main_menu(context: &MenuContext) -> Menu {
     let mut menu = Menu::new("dctx - Directory Context Generator");
 
-    menu.add_item('1', "Snapshot Current Directory", "Generate full context snapshot")
-        .add_item('2', "Snapshot to Clipboard", "Generate and copy to clipboard")
-        .add_item('3', "Tree-Only Mode", "Show directory structure only")
-        .add_item('4', "Diff Mode", "Generate diff from last snapshot")
-        .add_item('5', "Advanced Options →", "Filters, templates, and cache")
-        .add_item('0', "Exit", "")
-        .set_footer(&context.format());
+    menu.add_item(
+        '1',
+        "Snapshot Current Directory",
+        "Generate full context snapshot",
+    )
+    .add_item(
+        '2',
+        "Snapshot to Clipboard",
+        "Generate and copy to clipboard",
+    )
+    .add_item('3', "Tree-Only Mode", "Show directory structure only")
+    .add_item('4', "Diff Mode", "Generate diff from last snapshot")
+    .add_item('5', "Advanced Options →", "Filters, templates, and cache")
+    .add_item('0', "Exit", "")
+    .set_footer(&context.format());
 
     menu
 }
@@ -177,7 +203,11 @@ pub fn create_filter_menu() -> Menu {
         .add_item('2', "Filter by Size", "Large or small files")
         .add_item('3', "Content Filters", "Empty or non-empty files")
         .add_item('4', "Hidden Files Only", "Show .hidden files")
-        .add_item('5', "Include Binary Files", "Include binary files in output")
+        .add_item(
+            '5',
+            "Include Binary Files",
+            "Include binary files in output",
+        )
         .add_item('9', "Clear All Filters", "")
         .add_item('0', "← Back", "")
         .set_footer("Filters combine for precise control");
@@ -325,8 +355,7 @@ mod tests {
 
     #[test]
     fn test_menu_context_with_version() {
-        let context = MenuContext::new("/tmp/test".to_string())
-            .with_version("V2".to_string());
+        let context = MenuContext::new("/tmp/test".to_string()).with_version("V2".to_string());
 
         assert_eq!(context.current_dir, "/tmp/test");
         assert_eq!(context.last_version, Some("V2".to_string()));
@@ -344,8 +373,8 @@ mod tests {
 
     #[test]
     fn test_menu_context_format_with_version() {
-        let context = MenuContext::new("/home/user/project".to_string())
-            .with_version("V5".to_string());
+        let context =
+            MenuContext::new("/home/user/project".to_string()).with_version("V5".to_string());
         let formatted = context.format();
 
         assert!(formatted.contains("Directory: /home/user/project"));
@@ -378,7 +407,10 @@ mod tests {
 
         // Verify menu items
         assert!(menu.items.iter().any(|item| item.label.contains("Filters")));
-        assert!(menu.items.iter().any(|item| item.label.contains("Templates")));
+        assert!(menu
+            .items
+            .iter()
+            .any(|item| item.label.contains("Templates")));
         assert!(menu.items.iter().any(|item| item.label.contains("Cache")));
     }
 
@@ -390,10 +422,22 @@ mod tests {
         assert_eq!(menu.items.len(), 7); // Options 1-5 + 9 (Clear) + 0 (Back)
 
         // Check key options
-        assert!(menu.items.iter().any(|item| item.key == '1' && item.label.contains("Extension")));
-        assert!(menu.items.iter().any(|item| item.key == '2' && item.label.contains("Size")));
-        assert!(menu.items.iter().any(|item| item.key == '4' && item.label.contains("Hidden")));
-        assert!(menu.items.iter().any(|item| item.key == '9' && item.label.contains("Clear")));
+        assert!(menu
+            .items
+            .iter()
+            .any(|item| item.key == '1' && item.label.contains("Extension")));
+        assert!(menu
+            .items
+            .iter()
+            .any(|item| item.key == '2' && item.label.contains("Size")));
+        assert!(menu
+            .items
+            .iter()
+            .any(|item| item.key == '4' && item.label.contains("Hidden")));
+        assert!(menu
+            .items
+            .iter()
+            .any(|item| item.key == '9' && item.label.contains("Clear")));
     }
 
     #[test]

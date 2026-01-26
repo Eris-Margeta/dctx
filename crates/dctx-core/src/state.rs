@@ -187,11 +187,8 @@ mod tests {
         let binary_path = temp_dir.path().join("test.dctx");
 
         // Create a valid binary file with CURRENT timestamp to avoid recreation detection
-        let mut root = DirContextTreeNode::new(
-            NodeType::Directory,
-            "",
-            temp_dir.path().to_path_buf(),
-        );
+        let mut root =
+            DirContextTreeNode::new(NodeType::Directory, "", temp_dir.path().to_path_buf());
 
         // Set timestamp to current (matches disk, won't trigger recreation)
         if let Ok(metadata) = fs::metadata(temp_dir.path()) {
@@ -282,7 +279,10 @@ mod tests {
         // The temp_dir has current timestamp (2026), but root has timestamp from 2009.
         // This should be detected as recreation (disk is much newer).
         let result = is_folder_recreated(temp_dir.path(), &root);
-        assert!(result, "Should detect folder recreation when disk is significantly newer");
+        assert!(
+            result,
+            "Should detect folder recreation when disk is significantly newer"
+        );
     }
 
     #[test]
@@ -290,11 +290,8 @@ mod tests {
         let temp_dir = TempDir::new().unwrap();
 
         // Create a root node with current timestamp (simulating no recreation)
-        let mut root = DirContextTreeNode::new(
-            NodeType::Directory,
-            "",
-            temp_dir.path().to_path_buf(),
-        );
+        let mut root =
+            DirContextTreeNode::new(NodeType::Directory, "", temp_dir.path().to_path_buf());
 
         // Set timestamp to current time (within 1 second threshold)
         if let Ok(metadata) = fs::metadata(temp_dir.path()) {
@@ -308,7 +305,10 @@ mod tests {
 
         // Should NOT detect recreation when timestamps are similar
         let result = is_folder_recreated(temp_dir.path(), &root);
-        assert!(!result, "Should not detect recreation when timestamps match");
+        assert!(
+            !result,
+            "Should not detect recreation when timestamps match"
+        );
     }
 
     #[test]

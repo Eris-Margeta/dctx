@@ -253,7 +253,9 @@ fn parse_snapshot_args(args: &[String]) -> Result<CliCommand, String> {
             "--large" => {
                 i += 1;
                 if i >= args.len() {
-                    return Err("--large requires a size in megabytes (e.g., --large 1)".to_string());
+                    return Err(
+                        "--large requires a size in megabytes (e.g., --large 1)".to_string()
+                    );
                 }
                 let size_str = &args[i];
                 config.min_size_mb = Some(
@@ -265,7 +267,9 @@ fn parse_snapshot_args(args: &[String]) -> Result<CliCommand, String> {
             "--small" => {
                 i += 1;
                 if i >= args.len() {
-                    return Err("--small requires a size in megabytes (e.g., --small 0.5)".to_string());
+                    return Err(
+                        "--small requires a size in megabytes (e.g., --small 0.5)".to_string()
+                    );
                 }
                 let size_str = &args[i];
                 config.max_size_mb = Some(
@@ -606,7 +610,8 @@ fn run_cache_menu() {
                                     let _ = tui::show_message("Global cache cleared successfully.");
                                 }
                                 Err(e) => {
-                                    let _ = tui::show_error(&format!("Failed to clear cache: {}", e));
+                                    let _ =
+                                        tui::show_error(&format!("Failed to clear cache: {}", e));
                                 }
                             }
                         } else {
@@ -769,7 +774,11 @@ fn run_headless_mode(cli_config: CliConfig) {
 
     let mut ignored_folders_debug = Vec::new();
     let mut new_tree = if cli_config.debug_ignored {
-        match walker::walk_directory_structure_with_debug(&target_dir, &ignore_rules, &mut ignored_folders_debug) {
+        match walker::walk_directory_structure_with_debug(
+            &target_dir,
+            &ignore_rules,
+            &mut ignored_folders_debug,
+        ) {
             Ok(r) => r,
             Err(e) => {
                 eprintln!("❌ Error walking directory: {}", e);
