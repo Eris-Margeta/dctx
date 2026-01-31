@@ -1,9 +1,12 @@
 use crate::config;
-use crate::datatypes::{DirContextTreeNode, NodeType};
+use crate::datatypes::{DirContextTreeNode, IgnoreRule, NodeType};
 use crate::diff::{ChangeType, DiffReport};
+use crate::ignore::should_ignore_item;
+use crate::omit_content::load_omit_content_rules;
 use crate::template::{self, CompiledTemplate, Template};
 use crate::version::Version;
 use std::io::{self, Write};
+use std::path::Path;
 
 // The default template raw string.
 const DEFAULT_TEMPLATE_RAW: &str = include_str!("../templates/default.dctx_template");
@@ -55,8 +58,9 @@ pub fn generate_llm_context<W: Write>(
     version: &Version,
     project_name: &str,
     tree_only: bool,
+    base_dir: &Path,
 ) -> io::Result<()> {
-    generate_llm_context_with_template(writer, root, version, project_name, tree_only, "default")
+    generate_llm_context_with_template(writer, root, version, project_name, tree_only, "default", base_dir)
 }
 
 /// Generates the full LLM context file using a specific template.
@@ -67,6 +71,7 @@ pub fn generate_llm_context_with_template<W: Write>(
     project_name: &str,
     tree_only: bool,
     template_name: &str,
+    base_dir: &Path,
 ) -> io::Result<()> {
     // 1. Load Template
     let mut tmpl = load_template(template_name)?;
@@ -79,7 +84,7 @@ pub fn generate_llm_context_with_template<W: Write>(
     let app_config = config::load_app_config();
 
     // 4. Generate Components
-    let (tree_content, files_content) = generate_components(root, &tmpl, tree_only, &app_config);
+    let (tree_content, files_content) = generate_components(root, &tmpl, tree_only, &app_config, base_dir);
     let final_output = render_layout(&tmpl, tree_content, files_content);
 
     // 5. Write Header Line 1: [DCTX_LLM_CONTEXT_SNAPSHOT_V{Version}]
@@ -109,6 +114,7 @@ pub fn generate_diff_context<W: Write>(
     diff_report: &DiffReport,
     old_version: &Version,
     new_version: &Version,
+    base_dir: &Path,
 ) -> io::Result<()> {
     generate_diff_context_with_template(
         writer,
@@ -117,6 +123,7 @@ pub fn generate_diff_context<W: Write>(
         old_version,
         new_version,
         "default",
+        base_dir,
     )
 }
 
@@ -128,6 +135,7 @@ pub fn generate_diff_context_with_template<W: Write>(
     old_version: &Version,
     new_version: &Version,
     template_name: &str,
+    base_dir: &Path,
 ) -> io::Result<()> {
     let tmpl = load_template(template_name)?;
 
@@ -159,7 +167,7 @@ pub fn generate_diff_context_with_template<W: Write>(
     let app_config = config::load_app_config();
 
     // 4. Updated Directory Tree (Full New State)
-    let (tree_content, _) = generate_components(new_root, &tmpl, true, &app_config); // true = no file content for the tree block
+    let (tree_content, _) = generate_components(new_root, &tmpl, true, &app_config, base_dir); // true = no file content for the tree block
     writeln!(writer, "<UPDATED_DIRECTORY_TREE>")?;
     writer.write_all(tree_content.as_bytes())?;
     writeln!(writer, "</UPDATED_DIRECTORY_TREE>")?;
@@ -169,6 +177,9 @@ pub fn generate_diff_context_with_template<W: Write>(
     let mut files_buffer = String::new();
     let mut id_counter = 1;
 
+    // Load omit content rules
+    let omit_rules = load_omit_content_rules(base_dir);
+
     render_recursive_diff_filter(
         new_root,
         &tmpl,
@@ -177,6 +188,7 @@ pub fn generate_diff_context_with_template<W: Write>(
         diff_report,
         0,
         &app_config,
+        &omit_rules,
     );
 
     writer.write_all(files_buffer.as_bytes())?;
@@ -191,9 +203,13 @@ fn generate_components(
     tmpl: &Template,
     tree_only: bool,
     app_config: &config::AppConfig,
+    base_dir: &Path,
 ) -> (String, String) {
     let mut tree_buffer = String::new();
     let mut files_buffer = String::new();
+
+    // Load omit content rules from base directory
+    let omit_rules = load_omit_content_rules(base_dir);
 
     let mut id_counter = 1;
     render_recursive(
@@ -205,6 +221,7 @@ fn generate_components(
         0,
         tree_only,
         app_config,
+        &omit_rules,
     );
 
     (
@@ -224,6 +241,7 @@ fn render_recursive(
     depth: usize,
     tree_only: bool,
     app_config: &config::AppConfig,
+    omit_rules: &[IgnoreRule],
 ) {
     // 1. Generate Semantic ID
     // If depth is 0 and it's a directory, it's ROOT.
@@ -277,31 +295,41 @@ fn render_recursive(
 
     // 5. Render File Content Block (if file and NOT tree_only)
     if !node.is_dir() && !tree_only {
+        // Extract filename for pattern matching
+        let filename = node.relative_path.rsplit('/').next().unwrap_or(&node.relative_path);
+
         // Determine if we should omit content
         let should_omit_content = if node.is_binary_file {
             // Always omit binary files
             true
         } else if let Some(file_type) = &node.binary_file_type {
-            // SVG files - check config
+            // SVG files - check config (for backward compatibility)
             file_type == "SVG file" && app_config.omit_svg_content
         } else {
-            false
+            // Check against omit content patterns
+            should_ignore_item(&node.relative_path, filename, false, omit_rules)
         };
 
-        let (line_count, content_str) = if should_omit_content {
+        let (line_count, content_str, _omit_reason) = if should_omit_content {
             // Generate omission message
             let message = if node.is_binary_file {
-                format!(
-                    "[Binary file: {}, content omitted]",
+                let reason = format!(
+                    "Binary file: {}",
                     node.binary_file_type
                         .as_ref()
                         .unwrap_or(&"Unknown".to_string())
-                )
-            } else {
+                );
+                (format!("[{}, content omitted]", reason), reason)
+            } else if let Some(_file_type) = &node.binary_file_type {
                 // SVG with omit_svg_content=true
-                "[SVG file, content omitted (omit_svg_content=true)]".to_string()
+                let reason = "SVG file (omit_svg_content=true)".to_string();
+                (format!("[{}, content omitted]", reason), reason)
+            } else {
+                // Pattern-based omission
+                let reason = "Content omitted by pattern rules".to_string();
+                (format!("[{}]", reason), reason)
             };
-            (0, std::borrow::Cow::Owned(message))
+            (0, std::borrow::Cow::Owned(message.0), Some(message.1))
         } else {
             // Include content
             let line_count = if let Some(content) = &node.file_content {
@@ -316,7 +344,7 @@ fn render_recursive(
                 std::borrow::Cow::Borrowed("")
             };
 
-            (line_count, content_str)
+            (line_count, content_str, None)
         };
 
         let mut block = tmpl.partial_file_block.clone();
@@ -343,11 +371,13 @@ fn render_recursive(
             depth + 1,
             tree_only,
             app_config,
+            omit_rules,
         );
     }
 }
 
 /// Recursive renderer that ONLY generates content blocks for changed files.
+#[allow(clippy::too_many_arguments)]
 fn render_recursive_diff_filter(
     node: &DirContextTreeNode,
     tmpl: &Template,
@@ -356,6 +386,7 @@ fn render_recursive_diff_filter(
     diff_report: &DiffReport,
     depth: usize,
     app_config: &config::AppConfig,
+    omit_rules: &[IgnoreRule],
 ) {
     // 1. Generate ID (Must happen to increment counter correctly to match full tree)
     let current_id = if depth == 0 && node.is_dir() {
@@ -377,13 +408,17 @@ fn render_recursive_diff_filter(
     });
 
     if !node.is_dir() && is_changed {
+        // Extract filename for pattern matching
+        let filename = node.relative_path.rsplit('/').next().unwrap_or(&node.relative_path);
+
         // Determine if we should omit content (same logic as render_recursive)
         let should_omit_content = if node.is_binary_file {
             true
         } else if let Some(file_type) = &node.binary_file_type {
             file_type == "SVG file" && app_config.omit_svg_content
         } else {
-            false
+            // Check against omit content patterns
+            should_ignore_item(&node.relative_path, filename, false, omit_rules)
         };
 
         let (line_count, content_str) = if should_omit_content {
@@ -394,8 +429,10 @@ fn render_recursive_diff_filter(
                         .as_ref()
                         .unwrap_or(&"Unknown".to_string())
                 )
-            } else {
+            } else if let Some(_file_type) = &node.binary_file_type {
                 "[SVG file, content omitted (omit_svg_content=true)]".to_string()
+            } else {
+                "[Content omitted by pattern rules]".to_string()
             };
             (0, std::borrow::Cow::Owned(message))
         } else {
@@ -437,6 +474,7 @@ fn render_recursive_diff_filter(
             diff_report,
             depth + 1,
             app_config,
+            omit_rules,
         );
     }
 }
@@ -490,7 +528,7 @@ mod tests {
         let root = create_dir_node("");
         let version = Version::new_v1();
 
-        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false, Path::new(".")).unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         assert!(output.starts_with("[DCTX_LLM_CONTEXT_SNAPSHOT_V1]"));
@@ -502,7 +540,7 @@ mod tests {
         let root = create_dir_node("");
         let version = Version { major: 2, minor: 5 };
 
-        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false, Path::new(".")).unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         assert!(output.contains("[DCTX_LLM_CONTEXT_SNAPSHOT_V2.5]"));
@@ -516,7 +554,7 @@ mod tests {
             .push(create_file_node("test.txt", b"Hello, World!"));
         let version = Version::new_v1();
 
-        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false, Path::new(".")).unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         assert!(output.contains("test.txt"));
@@ -531,7 +569,7 @@ mod tests {
             .push(create_file_node("test.txt", b"Secret Content"));
         let version = Version::new_v1();
 
-        generate_llm_context(&mut buffer, &root, &version, "TestProject", true).unwrap();
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", true, Path::new(".")).unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         assert!(output.contains("test.txt")); // File name should appear in tree
@@ -546,7 +584,7 @@ mod tests {
         root.children.push(create_file_node("file2.txt", b"B"));
         let version = Version::new_v1();
 
-        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false, Path::new(".")).unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         assert!(output.contains("ROOT")); // Root directory ID
@@ -565,7 +603,7 @@ mod tests {
         root.children.push(subdir);
         let version = Version::new_v1();
 
-        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false, Path::new(".")).unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         assert!(output.contains("D001")); // Directory ID
@@ -582,7 +620,7 @@ mod tests {
         root.children.push(subdir);
         let version = Version::new_v1();
 
-        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false, Path::new(".")).unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         // Nested items should have indentation
@@ -596,7 +634,7 @@ mod tests {
         let root = create_dir_node("");
         let version = Version::new_v1();
 
-        generate_llm_context(&mut buffer, &root, &version, "MyAwesomeProject", false).unwrap();
+        generate_llm_context(&mut buffer, &root, &version, "MyAwesomeProject", false, Path::new(".")).unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
         assert!(output.contains("MyAwesomeProject"));
@@ -612,7 +650,7 @@ mod tests {
         let old_version = Version::new_v1();
         let new_version = Version { major: 1, minor: 1 };
 
-        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version)
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version, Path::new("."))
             .unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
@@ -640,7 +678,7 @@ mod tests {
         let old_version = Version::new_v1();
         let new_version = Version { major: 1, minor: 1 };
 
-        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version)
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version, Path::new("."))
             .unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
@@ -665,7 +703,7 @@ mod tests {
         let old_version = Version::new_v1();
         let new_version = Version { major: 1, minor: 1 };
 
-        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version)
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version, Path::new("."))
             .unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
@@ -687,7 +725,7 @@ mod tests {
         let old_version = Version::new_v1();
         let new_version = Version { major: 1, minor: 1 };
 
-        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version)
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version, Path::new("."))
             .unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
@@ -706,7 +744,7 @@ mod tests {
         let old_version = Version::new_v1();
         let new_version = Version { major: 1, minor: 1 };
 
-        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version)
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version, Path::new("."))
             .unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
@@ -735,7 +773,7 @@ mod tests {
         let old_version = Version::new_v1();
         let new_version = Version { major: 1, minor: 1 };
 
-        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version)
+        generate_diff_context(&mut buffer, &root, &diff_report, &old_version, &new_version, Path::new("."))
             .unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
@@ -792,7 +830,7 @@ mod tests {
         }
 
         let version = Version::new_v1();
-        generate_llm_context(&mut buffer, &root, &version, "LargeProject", false).unwrap();
+        generate_llm_context(&mut buffer, &root, &version, "LargeProject", false, Path::new(".")).unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
 
@@ -820,7 +858,7 @@ mod tests {
         }
 
         let version = Version::new_v1();
-        generate_llm_context(&mut buffer, &root, &version, "LargeProject", true).unwrap();
+        generate_llm_context(&mut buffer, &root, &version, "LargeProject", true, Path::new(".")).unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
 
@@ -835,7 +873,7 @@ mod tests {
         let root = create_dir_node("");
         let version = Version::new_v1();
 
-        generate_llm_context(&mut buffer, &root, &version, "MyProject", false).unwrap();
+        generate_llm_context(&mut buffer, &root, &version, "MyProject", false, Path::new(".")).unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
 
@@ -859,7 +897,7 @@ mod tests {
         root.children.push(create_file_node("test.txt", b"Hello"));
         let version = Version::new_v1();
 
-        generate_llm_context(&mut buffer, &root, &version, "TestProject", false).unwrap();
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false, Path::new(".")).unwrap();
 
         let output = String::from_utf8_lossy(&buffer);
 

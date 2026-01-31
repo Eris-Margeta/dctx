@@ -1,4 +1,6 @@
-# dctx Global Ignore Rules
+# ============================================================================
+# DCTX GLOBAL IGNORE RULES
+# ============================================================================
 #
 # These patterns apply to ALL projects scanned by dctx.
 # Files matching these patterns will be EXCLUDED from directory context output.
@@ -9,12 +11,458 @@
 # - Use ! to negate a pattern (include something that was previously excluded)
 # - Supports wildcards (* and **)
 #
-# Examples:
-#   node_modules/     - Ignore node_modules directory everywhere
-#   *.log             - Ignore all .log files
-#   !important.log    - But include important.log
-#   dist/             - Ignore dist directory
+# To override these rules for a specific project:
+# Create a .dctxignore file in your project root with !pattern
 #
-# Default rules:
+# ============================================================================
 
+# ============================================================================
+# VERSION CONTROL SYSTEMS
+# ============================================================================
+# Internal VCS directories - irrelevant to code context
+
+.git/
+.svn/
+.hg/
+.bzr/
+CVS/
+
+# ============================================================================
+# OPERATING SYSTEM ARTIFACTS
+# ============================================================================
+# OS-specific files and folders - completely irrelevant to code context
+
+# -----------------------------------------------------------------------------
+# macOS
+# -----------------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+Icon
+.DocumentRevisions-V100/
+.fseventsd/
+.Spotlight-V100/
+.TemporaryItems/
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.apdisk
+.PKInstallSandboxManager*
+
+# -----------------------------------------------------------------------------
+# Windows
+# -----------------------------------------------------------------------------
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.stackdump
+*.lnk
+System Volume Information/
+hiberfil.sys
+pagefile.sys
+swapfile.sys
+
+# Windows temporary files
+*.tmp
+*.temp
+~$*
+
+# -----------------------------------------------------------------------------
+# Linux
+# -----------------------------------------------------------------------------
+.directory
+.Trash-*
+.nfs*
+.fuse_hidden*
+lost+found/
+.snapshots/
+.gvfs/
+.cache/
+.thumbnails/
+
+# -----------------------------------------------------------------------------
+# Editor temporary/backup files (cross-platform)
+# -----------------------------------------------------------------------------
+*.swp
+*.swo
+*~
+.*.sw?
+
+# ============================================================================
+# IDE & EDITOR - CACHE/TEMP/USER-SPECIFIC FILES
+# ============================================================================
+# Cache, logs, and user-specific files - completely irrelevant
+
+# -----------------------------------------------------------------------------
+# Visual Studio Code
+# -----------------------------------------------------------------------------
+.vscode/.history/
+.vscode/*.log
+
+# -----------------------------------------------------------------------------
+# JetBrains IDEs (IntelliJ, PyCharm, WebStorm, GoLand, RubyMine, etc.)
+# -----------------------------------------------------------------------------
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/shelf/
+.idea/dictionaries/
+.idea/httpRequests/
+.idea/.name
+.idea/sonarlint/
+.idea/sonarIssues.xml
+.idea/gradle.xml
+.idea/jarRepositories.xml
+.idea/compiler.xml
+.idea/libraries/
+
+# -----------------------------------------------------------------------------
+# Visual Studio
+# -----------------------------------------------------------------------------
+.vs/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# -----------------------------------------------------------------------------
+# Eclipse
+# -----------------------------------------------------------------------------
+.settings/
+.metadata/
+.recommenders/
+.classpath
+.project
+.loadpath
+
+# -----------------------------------------------------------------------------
+# NetBeans
+# -----------------------------------------------------------------------------
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
+
+# -----------------------------------------------------------------------------
+# Sublime Text
+# -----------------------------------------------------------------------------
+*.sublime-workspace
+
+# -----------------------------------------------------------------------------
+# Atom
+# -----------------------------------------------------------------------------
+.atom/
+
+# -----------------------------------------------------------------------------
+# Xcode
+# -----------------------------------------------------------------------------
+*.xcworkspace/xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcshareddata/
+
+# -----------------------------------------------------------------------------
+# Vi/Vim/Neovim
+# -----------------------------------------------------------------------------
+# Note: *.swp, *.swo, *~ already in OS section
+.netrwhist
+Session.vim
+.vim/
+
+# -----------------------------------------------------------------------------
+# Emacs
+# -----------------------------------------------------------------------------
+\#*\#
+.\#*
+auto-save-list/
+.cask/
+*.elc
+
+# -----------------------------------------------------------------------------
+# Other Editors
+# -----------------------------------------------------------------------------
+.vscode-server/
+.history/
+
+# ============================================================================
+# PROGRAMMING LANGUAGE BUILD ARTIFACTS & DEPENDENCIES
+# ============================================================================
+
+# -----------------------------------------------------------------------------
+# JavaScript/TypeScript/Node.js
+# -----------------------------------------------------------------------------
 node_modules/
+.npm/
+.yarn/
+.pnp/
+.pnp.js
+.pnp.cjs
+
+# Build outputs (common across frameworks)
+coverage/
+.nyc_output/
+
+# Framework-specific caches and build directories
+.next/              # Next.js
+.nuxt/              # Nuxt.js
+.output/            # Nuxt 3
+.nitro/             # Nitro
+.cache/             # Gatsby, Parcel, etc.
+.parcel-cache/      # Parcel bundler
+.vite/              # Vite cache
+.astro/             # Astro
+.docusaurus/        # Docusaurus
+.svelte-kit/        # SvelteKit
+.remix/             # Remix
+.angular/           # Angular
+.quasar/            # Quasar
+.nx/                # Nx monorepo
+.cache/nx/          # Nx cache
+.turbo/             # Turborepo
+.vuepress/dist/     # VuePress
+.vuepress/.temp/    # VuePress temp
+.temp/              # Generic temp
+_site/              # Eleventy
+.deploy_git/        # Hexo
+public/             # Gatsby (build output)
+storybook-static/   # Storybook
+.sanity/            # Sanity CMS
+.strapi/            # Strapi CMS
+tmp/                # Ember, Air (Go), generic temp
+.meteor/local/      # Meteor
+
+# Common build output directories (used by multiple languages)
+dist/
+build/
+out/
+bin/
+target/
+
+# Deployment platforms
+.vercel/
+.netlify/
+
+# Package manager caches
+.bun/               # Bun
+
+# Vite temp files
+vite.config.*.timestamp-*
+
+# -----------------------------------------------------------------------------
+# Python
+# -----------------------------------------------------------------------------
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Virtual environments
+# Note: Virtual env directories are OMITTED (visible in tree but content hidden)
+# See global-omitcontent for the actual patterns
+
+# Testing
+.tox/
+.nox/
+.coverage
+.hypothesis/
+.pytest_cache/
+nosetests.xml
+htmlcov/
+
+# Type checkers
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+
+# Linters
+.ruff_cache/
+
+# Build/Distribution
+*.egg-info/
+*.egg
+eggs/
+.eggs/
+*.manifest
+*.spec
+
+# Logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# -----------------------------------------------------------------------------
+# Rust
+# -----------------------------------------------------------------------------
+**/*.rs.bk
+
+# -----------------------------------------------------------------------------
+# Go
+# -----------------------------------------------------------------------------
+*.test
+
+# Air hot reload
+tmp/
+
+# -----------------------------------------------------------------------------
+# Java/Kotlin/Scala
+# -----------------------------------------------------------------------------
+.gradle/
+.mvn/
+*.class
+hs_err_pid*
+replay_pid*
+
+# -----------------------------------------------------------------------------
+# C/C++
+# -----------------------------------------------------------------------------
+# Note: Binary files (*.o, *.so, *.dll, *.exe, *.a) are OMITTED (see global-omitcontent)
+# Only build directories and intermediate files are ignored here
+CMakeCache.txt
+CMakeFiles/
+cmake-build-*/
+*.d
+*.dSYM/
+*.su
+*.gcda
+*.gcno
+*.gch
+*.pch
+
+# -----------------------------------------------------------------------------
+# C#/.NET
+# -----------------------------------------------------------------------------
+# Note: Binary files (*.dll, *.exe) are OMITTED (see global-omitcontent)
+# Note: packages/ directory is OMITTED (see global-omitcontent)
+# Only build directories and intermediate files are ignored here
+[Bb]in/
+[Oo]bj/
+*.pdb
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# -----------------------------------------------------------------------------
+# Ruby
+# -----------------------------------------------------------------------------
+.bundle/
+
+# -----------------------------------------------------------------------------
+# PHP
+# -----------------------------------------------------------------------------
+composer.phar
+.phpunit.result.cache
+.php_cs.cache
+.php-cs-fixer.cache
+
+# -----------------------------------------------------------------------------
+# Swift
+# -----------------------------------------------------------------------------
+.build/
+DerivedData/
+timeline.xctimeline
+*.hmap
+*.dSYM.zip
+Carthage/
+Pods/
+
+# -----------------------------------------------------------------------------
+# Elixir/Erlang
+# -----------------------------------------------------------------------------
+_build/
+deps/
+*.beam
+erl_crash.dump
+rebar3.crashdump
+.elixir_ls/
+
+# -----------------------------------------------------------------------------
+# Haskell
+# -----------------------------------------------------------------------------
+.stack-work/
+dist-newstyle/
+*.hi
+*.p_hi
+*.p_o
+.ghc.environment.*
+cabal.project.local
+cabal.project.local~
+.HTF/
+.hpc/
+
+# -----------------------------------------------------------------------------
+# Dart/Flutter
+# -----------------------------------------------------------------------------
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+GeneratedPluginRegistrant.java
+GeneratedPluginRegistrant.swift
+GeneratedPluginRegistrant.m
+
+# -----------------------------------------------------------------------------
+# R Language
+# -----------------------------------------------------------------------------
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*_cache/
+*.knit.md
+*.utf8.md
+*.Rcheck/
+.Renviron.local
+packrat/
+renv/library/
+
+# -----------------------------------------------------------------------------
+# Lua
+# -----------------------------------------------------------------------------
+lua_modules/
+.luarocks/
+luac.out
+
+# ============================================================================
+# TESTING ARTIFACTS
+# ============================================================================
+
+.testmondata
+*.tap
+
+# ============================================================================
+# LOGS & TEMPORARY FILES
+# ============================================================================
+
+# -----------------------------------------------------------------------------
+# Log Files
+# -----------------------------------------------------------------------------
+*.log
+logs/
+*.log.*
+
+# Package manager logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
+
+# -----------------------------------------------------------------------------
+# Backup & Temporary Files
+# -----------------------------------------------------------------------------
+*.bak
+*.backup
+*.old
+*.orig
+*.rej
+
+# -----------------------------------------------------------------------------
+# Crash Dumps
+# -----------------------------------------------------------------------------
+core
+core.*
+*.dmp

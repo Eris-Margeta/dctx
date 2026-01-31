@@ -909,6 +909,7 @@ fn run_headless_mode(cli_config: CliConfig) {
                 &project_name,
                 cli_config.tree_only,
                 &app_config.default_template,
+                &target_dir,
             ) {
                 eprintln!("❌ Generation error: {}", e);
             }
@@ -941,6 +942,7 @@ fn run_headless_mode(cli_config: CliConfig) {
                 &old_version,
                 &new_version,
                 &app_config.default_template,
+                &target_dir,
             ) {
                 eprintln!("❌ Diff generation error: {}", e);
             } else {

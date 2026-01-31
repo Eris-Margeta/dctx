@@ -2,9 +2,8 @@
 
 > **Cross-platform GUI for dctx - Directory Context Generator**
 
-**License**: Proprietary (Commercial) - See [LICENSE](LICENSE)
-**Price**: $29 USD (one-time payment)
-**Status**: v0.1.0-alpha - Working prototype
+**License**: MIT - Free and Open Source
+**Status**: v0.1.0 - Working prototype
 **Platform**: macOS, Windows, Linux
 
 ---
@@ -374,7 +373,7 @@ Don't want to pay? Use the **free CLI** or **MIT-licensed library**:
 
 ## Credits
 
-**Built by**: [Your Name]
+**Built by**: Eris Margeta
 **Core Library**: dctx-core (MIT) - See [crates/dctx-core](../../crates/dctx-core/)
 **Powered by**: Tauri, Rust, Bun
 

@@ -292,9 +292,17 @@ zig-cache/
 
 
 #project-specific
-*.dctx 
+*.dctx
 idea.txt
 prompt.txt
+
+# Local work notes (not tracked)
+docs/CHECKPOINTS/
+docs/GUIDES/
+docs/
+docs/NOTES.md
+docs/prompt.txt
+ARCHITECTURE/adr-template.md
 
 # [dctx] Installer Auto-Add
 .dctx/
@@ -308,3 +316,5 @@ prompt.txt
 # [dctx v0.9.0]
 
 # [dctx v0.10.0]
+
+# [dctx v0.11.0]

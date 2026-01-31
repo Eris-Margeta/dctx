@@ -1,86 +1,170 @@
-# Contributing to [Project Name]
+# Contributing to dctx
 
-First off, thank you for considering contributing! We welcome any help, from bug reports to new features. Every contribution is valuable.
+Thank you for your interest in contributing to dctx! This document provides guidelines and information for contributors.
 
-This document provides a set of guidelines to help you contribute effectively.
+## Table of Contents
+
+- [Code of Conduct](#code-of-conduct)
+- [How Can I Contribute?](#how-can-i-contribute)
+- [Development Setup](#development-setup)
+- [Project Structure](#project-structure)
+- [Development Workflow](#development-workflow)
+- [Pull Request Process](#pull-request-process)
+- [Coding Standards](#coding-standards)
+- [Testing Guidelines](#testing-guidelines)
+
+---
 
 ## Code of Conduct
 
-To ensure a welcoming and inclusive environment for everyone, this project and everyone participating in it is governed by our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to `[INSERT CONTACT METHOD]`.
+This project adheres to a Code of Conduct that all contributors are expected to follow:
+
+- Be respectful and inclusive
+- Focus on constructive feedback
+- Assume good intentions
+- No harassment or discrimination
+
+---
 
 ## How Can I Contribute?
 
-There are many ways to contribute, and not all of them involve writing code.
+### Reporting Bugs
 
-### 🐛 Reporting Bugs
+Before creating bug reports, please check the issue tracker to avoid duplicates.
 
-If you find a bug, please ensure it hasn't already been reported by searching the existing [Issues](https://github.com/[github-user]/[repo-name]/issues).
+**Good bug reports include:**
+- Clear description of the problem
+- Steps to reproduce
+- Expected vs actual behavior
+- System information (OS, Rust version, etc.)
+- Relevant logs or error messages
 
-If you're opening a new issue, please include:
-*   **A clear and descriptive title** (e.g., "API panics when request body is empty").
-*   **A detailed description of the problem**, including steps to reproduce it.
-*   **The expected behavior** and what happened instead.
-*   **Your system environment** (OS, tool versions, etc.).
+### Suggesting Enhancements
 
-### ✨ Suggesting Enhancements
+Enhancement suggestions are tracked as GitHub issues.
 
-If you have an idea for a new feature or an improvement to an existing one, please open an [Issue](https://github.com/[github-user]/[repo-name]/issues) to start a discussion. This allows us to coordinate efforts and ensure the proposal aligns with the project's goals before any work is done.
+### Your First Code Contribution
+
+Look for issues labeled:
+- `good first issue` - Simple issues for newcomers
+- `help wanted` - Issues where maintainers need assistance
+
+---
+
+## Development Setup
+
+### Prerequisites
+
+```bash
+# Rust (latest stable)
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# For desktop app
+curl -fsSL https://bun.sh/install | bash
+
+# Task runner (optional)
+cargo install just
+```
+
+### Clone and Build
+
+```bash
+git clone https://github.com/Eris-Margeta/dctx
+cd dctx
+
+# Run all checks
+just ci
+
+# Build CLI
+just build
+```
+
+---
+
+## Project Structure
+
+```
+dctx/
+├── crates/
+│   ├── dctx-core/       # Core library (MIT)
+│   └── dctx-cli/        # CLI tool (MIT)
+├── apps/
+│   └── dctx-desktop/    # Desktop app (MIT)
+├── docs/                # Documentation + ADRs
+└── tools/               # Build scripts
+```
+
+---
+
+## Development Workflow
+
+1. **Fork** the repository
+2. **Create a branch** from `main`
+3. **Make changes**
+4. **Test**: `just ci`
+5. **Commit** with clear messages
+6. **Open a Pull Request**
+
+### Commit Messages
+
+Follow conventional commits:
+
+```
+type(scope): subject
+
+Examples:
+feat(core): add binary file detection
+fix(cli): handle empty directory
+docs: update installation guide
+```
+
+---
 
 ## Pull Request Process
 
-Ready to contribute code? Here is the standard workflow for submitting a pull request.
+Before submitting:
 
-1.  **Fork the Repository**
-    Create your own copy of the project to work on.
+1. Run `just ci` locally
+2. Update documentation if needed
+3. Add tests for new features
+4. Update CHANGELOG.md for significant changes
 
-2.  **Clone Your Fork**
-    ```bash
-    git clone https://github.com/Eris-Margeta/[repo-name].git
-    cd [repo-name]
-    ```
+---
 
-3.  **Set Up Your Environment**
-    Follow the setup instructions in the main `README.md` file to install all necessary dependencies and tools.
+## Coding Standards
 
-4.  **Create a New Branch**
-    Create a branch from `main` for your changes. Please use a descriptive name that follows this convention:
-    *   For new features: `feature/[issue-number]-[short-description]`
-    *   For bug fixes: `fix/[issue-number]-[short-description]`
-    ```bash
-    git checkout -b feature/123-add-user-authentication
-    ```
+- Follow `cargo fmt` for formatting
+- Fix all `cargo clippy` warnings
+- Document public APIs
+- Keep functions focused
+- Use `Result` for errors
 
-5.  **Make Your Changes**
-    Write your code, keeping in mind the project's existing style and architecture.
+---
 
-6.  **Add Tests**
-    Your changes must be covered by new or existing tests. Ensure that the entire test suite passes before submitting your pull request.
-    ```bash
-    [command-to-run-tests]
-    ```
+## Testing
 
-7.  **Commit Your Changes**
-    We follow the [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) specification. This helps us automate releases and makes the commit history easy to read. Your commit message should be structured as follows:
-    ```
-    <type>[optional scope]: <description>
+```bash
+# Run tests
+just test
 
-    [optional body]
+# Desktop app
+just desktop-dev
+```
 
-    [optional footer(s)]
-    ```
-    **Example:**
-    ```bash
-    git commit -m "feat(api): add user authentication endpoint" -m "This endpoint allows users to authenticate using JWT. Closes #123."
-    ```
+Aim for >80% coverage on core library.
 
-8.  **Push to Your Fork**
-    ```bash
-    git push origin feature/123-add-user-authentication
-    ```
+---
 
-9.  **Submit a Pull Request**
-    Open a pull request from your forked repository to the `main` branch of the original repository.
-    *   Provide a clear title and a detailed description of your changes.
-    *   **Link the pull request to the relevant issue** using keywords like `Closes #123`.
+## Getting Help
 
-Once submitted, a project maintainer will review your changes. We may suggest some improvements or ask for modifications before merging. We appreciate your patience and collaboration.
+- **Questions**: GitHub Discussions
+- **Bugs**: GitHub Issues
+- **Email**: eris.margeta@gmail.com
+
+---
+
+## License
+
+By contributing, you agree your contributions will be licensed under MIT License.
+
+Thank you for contributing! 🚀

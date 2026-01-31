@@ -1,10 +1,12 @@
-# dctx Global Omit Content Rules
+# ============================================================================
+# DCTX GLOBAL OMIT CONTENT RULES
+# ============================================================================
 #
 # Files matching these patterns will APPEAR in the directory tree
 # but their CONTENT will be omitted from the output.
 #
 # Use this for files that are useful to know exist, but whose
-# contents are too large or not useful for LLM context.
+# contents are too large, binary, or sensitive for LLM context.
 #
 # Syntax: Same as .gitignore
 # - One pattern per line
@@ -12,22 +14,704 @@
 # - Use ! to negate a pattern
 # - Supports wildcards (* and **)
 #
-# Examples:
-#   *.svg                - Omit content of SVG files (but show in tree)
-#   package-lock.json    - Omit lockfile content
-#   !critical.svg        - But include critical.svg content
+# To override these rules for a specific project:
+# Create a .dctxignore file in your project root with !pattern
 #
-# Default rules:
+# ============================================================================
 
-# SVG files (often large/unreadable XML)
+# ============================================================================
+# VERSION CONTROL CONFIGURATION
+# ============================================================================
+# VCS config files - useful to see in tree, but content often verbose
+
+.gitignore
+.gitattributes
+.gitmodules
+
+# ============================================================================
+# BINARY FILES - ARCHIVES & EXECUTABLES
+# ============================================================================
+# These files should appear in tree but content is binary/unreadable
+
+# -----------------------------------------------------------------------------
+# Archive formats
+# -----------------------------------------------------------------------------
+*.zip
+*.tar
+*.gz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.tgz
+*.tar.gz
+*.tbz2
+*.tar.bz2
+*.tar.xz
+
+# -----------------------------------------------------------------------------
+# Executables & System Libraries
+# -----------------------------------------------------------------------------
+# Windows
+*.exe
+*.dll
+*.msi
+*.sys
+
+# macOS
+*.dmg
+*.pkg
+*.app
+
+# Linux/Unix
+*.so
+*.so.*
+*.dylib
+*.a
+*.o
+*.bin
+*.deb
+*.rpm
+*.appimage
+
+# ============================================================================
+# IMAGE FILES
+# ============================================================================
+
+# -----------------------------------------------------------------------------
+# Raster formats
+# -----------------------------------------------------------------------------
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.tiff
+*.tif
+*.webp
+*.ico
+*.cur
+*.avif
+*.heic
+*.heif
+*.jxl
+*.ora
+*.clip
+
+# RAW image formats
+*.raw
+*.cr2
+*.cr3
+*.nef
+*.arw
+*.dng
+*.orf
+*.rw2
+*.pef
+*.srw
+*.raf
+*.rw
+*.rwl
+
+# Legacy raster
+*.pcx
+*.tga
+*.dds
+
+# Vector (non-SVG)
+*.eps
+*.ps
+
+# Icons
+*.icns
+*.iconset
+
+# SVG (already in previous version, keeping for clarity)
 *.svg
 
-# Package manager lockfiles (verbose, auto-generated)
+# ============================================================================
+# FONT FILES
+# ============================================================================
+
+*.ttf
+*.ttc
+*.otf
+*.otc
+*.woff
+*.woff2
+*.eot
+*.pfb
+*.pfm
+*.pfa
+*.fon
+*.fnt
+*.bdf
+*.pcf
+*.dfont
+*.suit
+
+# ============================================================================
+# VIDEO FILES
+# ============================================================================
+
+*.mp4
+*.m4v
+*.mov
+*.avi
+*.mkv
+*.webm
+*.flv
+*.wmv
+*.mpg
+*.mpeg
+*.m2v
+*.3gp
+*.3g2
+*.mts
+*.m2ts
+*.ts
+*.vob
+*.ogv
+*.gifv
+*.mxf
+*.roq
+*.nsv
+*.f4v
+*.f4p
+*.f4a
+*.f4b
+*.asf
+*.rm
+*.rmvb
+*.divx
+*.xvid
+
+# ============================================================================
+# AUDIO FILES
+# ============================================================================
+
+*.mp3
+*.wav
+*.flac
+*.aac
+*.ogg
+*.oga
+*.opus
+*.m4a
+*.wma
+*.ape
+*.alac
+*.aiff
+*.aif
+*.au
+*.mid
+*.midi
+*.mka
+*.ra
+*.dsf
+*.dff
+*.tta
+*.tak
+*.shn
+*.ac3
+*.dts
+*.amr
+*.awb
+
+# Playlists
+*.m3u
+*.m3u8
+*.pls
+*.cue
+*.asx
+*.wpl
+*.xspf
+
+# ============================================================================
+# DOCUMENT FILES
+# ============================================================================
+
+# -----------------------------------------------------------------------------
+# PDF
+# -----------------------------------------------------------------------------
+*.pdf
+
+# -----------------------------------------------------------------------------
+# Microsoft Office
+# -----------------------------------------------------------------------------
+*.doc
+*.docx
+*.docm
+*.dot
+*.dotx
+*.dotm
+*.docb
+*.xls
+*.xlsx
+*.xlsm
+*.xlt
+*.xltx
+*.xltm
+*.xlsb
+*.xlam
+*.xla
+*.ppt
+*.pptx
+*.pptm
+*.pot
+*.potx
+*.potm
+*.pps
+*.ppsx
+*.ppsm
+*.ppam
+*.ppa
+*.mdb
+*.accdb
+*.mde
+*.accde
+*.mda
+*.mdn
+*.mdt
+*.pub
+*.vsd
+*.vsdx
+*.vsdm
+*.vss
+*.vssx
+*.vst
+*.vstx
+*.vsw
+*.one
+*.onetoc2
+*.mpp
+*.mpt
+
+# -----------------------------------------------------------------------------
+# LibreOffice/OpenOffice
+# -----------------------------------------------------------------------------
+*.odt
+*.ott
+*.fodt
+*.ods
+*.ots
+*.fods
+*.odp
+*.otp
+*.fodp
+*.odg
+*.otg
+*.fodg
+*.odb
+*.odf
+*.oth
+
+# -----------------------------------------------------------------------------
+# Apple iWork
+# -----------------------------------------------------------------------------
+*.pages
+*.pages-tef
+*.numbers
+*.numbers-tef
+*.key-tef
+
+# -----------------------------------------------------------------------------
+# Other documents
+# -----------------------------------------------------------------------------
+*.rtf
+*.wpd
+*.wps
+*.dvi
+
+# -----------------------------------------------------------------------------
+# Ebooks
+# -----------------------------------------------------------------------------
+*.epub
+*.mobi
+*.azw
+*.azw3
+*.kf8
+*.kfx
+
+# ============================================================================
+# ADOBE CREATIVE CLOUD
+# ============================================================================
+
+# Photoshop
+*.psd
+*.psb
+*.pdd
+
+# Illustrator
+*.ai
+*.ait
+
+# InDesign
+*.indd
+*.indt
+*.indl
+*.indb
+*.inx
+*.idml
+
+# Premiere Pro
+*.prproj
+*.psq
+*.prm
+
+# After Effects
+*.aep
+*.aet
+*.aepx
+
+# XD
+*.xd
+
+# Animate/Flash
+*.fla
+*.xfl
+*.swf
+
+# Dreamweaver
+*.dw
+
+# Audition
+*.sesx
+
+# Lightroom
+*.lrcat
+*.lrtemplate
+*.lrdata
+
+# Dimension
+*.dn
+
+# Substance
+*.sbs
+*.sbsar
+
+# ============================================================================
+# VIDEO EDITING PROJECTS
+# ============================================================================
+
+# Final Cut Pro
+*.fcpproject
+*.fcpbundle
+*.fcpxml
+*.fcp
+
+# DaVinci Resolve
+*.drp
+*.dra
+
+# Avid
+*.avp
+*.aaf
+*.omf
+
+# Sony Vegas
+*.veg
+*.vf
+*.sfl
+
+# Camtasia
+*.cmproj
+*.tscproj
+
+# ============================================================================
+# IMAGE EDITING PROJECTS
+# ============================================================================
+
+# GIMP
+*.xcf
+*.xcp
+
+# Krita
+*.kra
+*.krz
+
+# Affinity
+*.afphoto
+*.afdesign
+*.afpub
+
+# Sketch
+*.sketch
+
+# CorelDRAW
+*.cdr
+*.cdt
+*.pat
+*.cpt
+*.csl
+
+# Paint.NET
+*.pdn
+
+# Procreate
+*.procreate
+
+# ============================================================================
+# 3D & CAD FILES
+# ============================================================================
+
+# 3D modeling
+*.blend
+*.blend1
+*.blend2
+*.ma
+*.mb
+*.max
+*.c4d
+*.skp
+*.fbx
+*.obj
+*.dae
+*.stl
+*.3ds
+*.ztl
+*.gltf
+*.glb
+*.usd
+*.usda
+*.usdc
+*.ply
+
+# CAD
+*.dwg
+*.dxf
+*.dwf
+*.dwt
+*.sldprt
+*.sldasm
+*.slddrw
+*.iam
+*.ipt
+*.idw
+*.ipn
+*.prt
+*.asm
+*.drw
+*.3dm
+*.fcstd
+*.step
+*.stp
+*.iges
+*.igs
+
+# ============================================================================
+# IDE & EDITOR - GENERATED/VERBOSE FILES
+# ============================================================================
+
+# -----------------------------------------------------------------------------
+# Code Navigation/Indexing
+# -----------------------------------------------------------------------------
+tags
+tags.lock
+tags.temp
+GTAGS
+GRTAGS
+GPATH
+GSYMS
+cscope.files
+cscope.out
+cscope.in.out
+cscope.po.out
+
+# -----------------------------------------------------------------------------
+# Sublime Text Project Files
+# -----------------------------------------------------------------------------
+*.sublime-project
+
+# ============================================================================
+# PACKAGE MANAGER LOCKFILES
+# ============================================================================
+# Lockfiles should appear in tree but content is verbose/auto-generated
+
+# -----------------------------------------------------------------------------
+# JavaScript/Node
+# -----------------------------------------------------------------------------
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
+bun.lockb
+bun.lock
+
+# -----------------------------------------------------------------------------
+# Rust
+# -----------------------------------------------------------------------------
 Cargo.lock
+
+# -----------------------------------------------------------------------------
+# Go
+# -----------------------------------------------------------------------------
 go.sum
+*.out
+
+# -----------------------------------------------------------------------------
+# Ruby
+# -----------------------------------------------------------------------------
 Gemfile.lock
-poetry.lock
+
+# Ruby vendor bundles
+vendor/bundle/
+*.gem
+
+# General vendor directory (Go, PHP, and other languages)
+vendor/
+
+# -----------------------------------------------------------------------------
+# Python
+# -----------------------------------------------------------------------------
 Pipfile.lock
+poetry.lock
+pdm.lock
+
+# Python virtual environments (directories - visible in tree, content omitted)
+venv/
+env/
+.venv/
+env.bak/
+venv.bak/
+
+# -----------------------------------------------------------------------------
+# PHP
+# -----------------------------------------------------------------------------
+composer.lock
+
+# -----------------------------------------------------------------------------
+# Swift
+# -----------------------------------------------------------------------------
+Package.resolved
+Podfile.lock
+Cartfile.resolved
+
+# Swift package dependencies
+Packages/
+*.ipa
+
+# -----------------------------------------------------------------------------
+# Java/Kotlin/Scala
+# -----------------------------------------------------------------------------
+# JAR/WAR files (might be committed dependencies)
+*.jar
+*.war
+*.ear
+*.nar
+
+# -----------------------------------------------------------------------------
+# .NET
+# -----------------------------------------------------------------------------
+packages.lock.json
+paket.lock
+
+# -----------------------------------------------------------------------------
+# Elixir
+# -----------------------------------------------------------------------------
+mix.lock
+rebar.lock
+
+# -----------------------------------------------------------------------------
+# Haskell
+# -----------------------------------------------------------------------------
+stack.yaml.lock
+cabal.project.freeze
+
+# -----------------------------------------------------------------------------
+# Dart/Flutter
+# -----------------------------------------------------------------------------
+pubspec.lock
+
+# -----------------------------------------------------------------------------
+# R
+# -----------------------------------------------------------------------------
+renv.lock
+
+# -----------------------------------------------------------------------------
+# Lua
+# -----------------------------------------------------------------------------
+luarocks.lock
+
+# ============================================================================
+# ENVIRONMENT FILES & SECRETS
+# ============================================================================
+# These files appear in tree but content is OMITTED for security
+# Prevents LLM confusion while protecting sensitive data
+
+# -----------------------------------------------------------------------------
+# Environment Variables
+# -----------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.development
+.env.test
+.env.staging
+.env.production
+
+# -----------------------------------------------------------------------------
+# Secrets & Credentials
+# -----------------------------------------------------------------------------
+secrets.yml
+secrets.yaml
+secrets.json
+secrets.toml
+
+# -----------------------------------------------------------------------------
+# Certificates & Private Keys
+# -----------------------------------------------------------------------------
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+*.cer
+*.crt
+*.der
+*.csr
+
+# -----------------------------------------------------------------------------
+# SSH Keys
+# -----------------------------------------------------------------------------
+id_rsa
+id_dsa
+id_ecdsa
+id_ed25519
+known_hosts
+authorized_keys
+
+# -----------------------------------------------------------------------------
+# Package Manager Authentication
+# -----------------------------------------------------------------------------
+.npmrc
+.yarnrc
+.yarnrc.yml
+.bunfig.toml
+
+# -----------------------------------------------------------------------------
+# Cloud Provider Credentials
+# -----------------------------------------------------------------------------
+.aws/credentials
+.aws/config
+.azure/credentials
+.docker/config.json
+gcloud/credentials.json
+
+# -----------------------------------------------------------------------------
+# Generic Credentials Files
+# -----------------------------------------------------------------------------
+*.credentials
+credentials.json
+credentials.yml
+credentials.yaml
+credentials.toml
+
+# -----------------------------------------------------------------------------
+# Database Configuration
+# -----------------------------------------------------------------------------
+database.yml
+config/database.yml
+database.json

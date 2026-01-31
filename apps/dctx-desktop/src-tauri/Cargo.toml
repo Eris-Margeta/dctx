@@ -2,9 +2,9 @@
 name = "dctx-desktop"
 version = "0.11.0"
 description = "dctx Desktop - Cross-platform GUI for directory context generation"
-authors = ["Your Name <your.email@example.com>"]
+authors = ["Eris Margeta <eris.margeta@gmail.com>"]
 edition = "2021"
-license = "PROPRIETARY"
+license = "MIT"
 
 [lib]
 name = "dctx_desktop_lib"
