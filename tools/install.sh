@@ -173,8 +173,53 @@ if [ -d "$SOURCE_TEMPLATES" ]; then
   cp -r "$SOURCE_TEMPLATES/"* "$TEMPLATES_DIR/"
 fi
 
+# --- 9. Deploy Global Ignore/Omit Rules ---
+# Deploy template files to config root where they're loaded at runtime
+GLOBAL_IGNORE_FILE="$CONFIG_DIR/ignore"
+GLOBAL_OMIT_FILE="$CONFIG_DIR/omitcontent"
+
+# Deploy global-ignore
+if [ -f "$TEMPLATES_DIR/global-ignore" ]; then
+  if [ ! -f "$GLOBAL_IGNORE_FILE" ]; then
+    echo "📋 Deploying global ignore rules..."
+    cp "$TEMPLATES_DIR/global-ignore" "$GLOBAL_IGNORE_FILE"
+  else
+    # Check if template is newer (larger file = more comprehensive rules)
+    TEMPLATE_SIZE=$(wc -c < "$TEMPLATES_DIR/global-ignore")
+    CURRENT_SIZE=$(wc -c < "$GLOBAL_IGNORE_FILE")
+    if [ "$TEMPLATE_SIZE" -gt "$CURRENT_SIZE" ]; then
+      echo "🔄 Updating global ignore rules (new version has more patterns)..."
+      cp "$TEMPLATES_DIR/global-ignore" "$GLOBAL_IGNORE_FILE.new"
+      echo "   - Your current rules: $GLOBAL_IGNORE_FILE"
+      echo "   - New comprehensive rules: $GLOBAL_IGNORE_FILE.new"
+      echo "   - Review and replace manually if desired"
+    fi
+  fi
+fi
+
+# Deploy global-omitcontent
+if [ -f "$TEMPLATES_DIR/global-omitcontent" ]; then
+  if [ ! -f "$GLOBAL_OMIT_FILE" ]; then
+    echo "📋 Deploying global omit rules..."
+    cp "$TEMPLATES_DIR/global-omitcontent" "$GLOBAL_OMIT_FILE"
+  else
+    # Check if template is newer
+    TEMPLATE_SIZE=$(wc -c < "$TEMPLATES_DIR/global-omitcontent")
+    CURRENT_SIZE=$(wc -c < "$GLOBAL_OMIT_FILE")
+    if [ "$TEMPLATE_SIZE" -gt "$CURRENT_SIZE" ]; then
+      echo "🔄 Updating global omit rules (new version has more patterns)..."
+      cp "$TEMPLATES_DIR/global-omitcontent" "$GLOBAL_OMIT_FILE.new"
+      echo "   - Your current rules: $GLOBAL_OMIT_FILE"
+      echo "   - New comprehensive rules: $GLOBAL_OMIT_FILE.new"
+      echo "   - Review and replace manually if desired"
+    fi
+  fi
+fi
+
 echo ""
 echo "✅ Installation Complete (v$DCTX_VERSION)!"
 echo "   - Binary: $INSTALL_DEST"
 echo "   - Config: $CONFIG_DIR"
+echo "   - Global Ignore: $GLOBAL_IGNORE_FILE"
+echo "   - Global Omit: $GLOBAL_OMIT_FILE"
 echo "   - Global Git Ignore: $GIT_GLOBAL_IGNORE"

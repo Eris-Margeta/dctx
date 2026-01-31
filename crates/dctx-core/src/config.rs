@@ -16,11 +16,17 @@ pub const LLM_CONTEXT_EXTENSION: &str = "llmcontext.txt";
 /// Local ignore filename.
 pub const DEFAULT_IGNORE_FILENAME: &str = ".dctxignore";
 
+/// Local omit content filename.
+pub const DEFAULT_OMIT_CONTENT_FILENAME: &str = ".dctxomitcontent";
+
 /// Application name (folder for config/cache).
 pub const APP_NAME: &str = "dctx";
 
 /// Global ignore filename inside config dir.
 pub const GLOBAL_IGNORE_FILENAME: &str = "ignore";
+
+/// Global omit content filename inside config dir.
+pub const GLOBAL_OMIT_CONTENT_FILENAME: &str = "omitcontent";
 
 /// Configuration filename inside config dir.
 pub const CONFIG_FILENAME: &str = "config.toml";
@@ -52,6 +58,38 @@ pub const HARDCODED_IGNORE_RULES: &[&str] = &[
     // Self-referential (prevent tools scanning themselves)
     ".dctxignore",
     "*.dctx",
+];
+
+// --- LAYER 1: HARDCODED OMIT CONTENT RULES ---
+// Files that should appear in tree but have content omitted.
+pub const HARDCODED_OMIT_CONTENT_RULES: &[&str] = &[
+    // SVG Files (replacing deprecated omit_svg_content config)
+    "*.svg",
+    // Package Manager Lockfiles
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "bun.lockb",
+    "bun.lock",
+    "Cargo.lock",
+    "go.sum",
+    "Gemfile.lock",
+    "Pipfile.lock",
+    "poetry.lock",
+    "pdm.lock",
+    "composer.lock",
+    "Package.resolved",
+    "Podfile.lock",
+    "Cartfile.resolved",
+    "packages.lock.json",
+    "paket.lock",
+    "mix.lock",
+    "rebar.lock",
+    "stack.yaml.lock",
+    "cabal.project.freeze",
+    "pubspec.lock",
+    "renv.lock",
+    "luarocks.lock",
 ];
 
 // --- CONFIG STRUCT ---
@@ -134,6 +172,10 @@ pub fn get_cache_dir() -> Option<PathBuf> {
 
 pub fn get_global_ignore_path() -> Option<PathBuf> {
     get_config_dir().map(|p| p.join(GLOBAL_IGNORE_FILENAME))
+}
+
+pub fn get_global_omit_content_path() -> Option<PathBuf> {
+    get_config_dir().map(|p| p.join(GLOBAL_OMIT_CONTENT_FILENAME))
 }
 
 pub fn get_project_registry_path() -> Option<PathBuf> {
