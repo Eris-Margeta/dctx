@@ -471,4 +471,404 @@ mod tests {
         ));
         assert!(!should_ignore_item("setup.py", "setup.py", false, &rules));
     }
+
+    // --- DEPTH TESTING: Verify ignore patterns work at multiple directory levels ---
+
+    #[test]
+    fn test_node_modules_at_multiple_depths() {
+        let rules = vec![parse_ignore_pattern_line("node_modules/").unwrap()];
+
+        // Root level
+        assert!(should_ignore_item(
+            "node_modules",
+            "node_modules",
+            true,
+            &rules
+        ));
+
+        // Depth 1
+        assert!(should_ignore_item(
+            "frontend/node_modules",
+            "node_modules",
+            true,
+            &rules
+        ));
+
+        // Depth 2
+        assert!(should_ignore_item(
+            "apps/web/node_modules",
+            "node_modules",
+            true,
+            &rules
+        ));
+
+        // Depth 3+
+        assert!(should_ignore_item(
+            "monorepo/packages/ui/node_modules",
+            "node_modules",
+            true,
+            &rules
+        ));
+    }
+
+    #[test]
+    fn test_target_directory_at_multiple_depths() {
+        let rules = vec![parse_ignore_pattern_line("target/").unwrap()];
+
+        // Root level
+        assert!(should_ignore_item("target", "target", true, &rules));
+
+        // Depth 1
+        assert!(should_ignore_item(
+            "crates/target",
+            "target",
+            true,
+            &rules
+        ));
+
+        // Depth 2
+        assert!(should_ignore_item(
+            "rust/backend/target",
+            "target",
+            true,
+            &rules
+        ));
+
+        // Depth 3+
+        assert!(should_ignore_item(
+            "workspace/crates/core/target",
+            "target",
+            true,
+            &rules
+        ));
+    }
+
+    #[test]
+    fn test_git_directory_at_multiple_depths() {
+        let rules = vec![parse_ignore_pattern_line(".git/").unwrap()];
+
+        // Root level (typical)
+        assert!(should_ignore_item(".git", ".git", true, &rules));
+
+        // Submodules at depth 1
+        assert!(should_ignore_item("vendor/lib/.git", ".git", true, &rules));
+
+        // Nested repos at depth 2+
+        assert!(should_ignore_item(
+            "external/projects/foo/.git",
+            ".git",
+            true,
+            &rules
+        ));
+    }
+
+    #[test]
+    fn test_pycache_at_multiple_depths() {
+        let rules = vec![parse_ignore_pattern_line("__pycache__/").unwrap()];
+
+        // Root level
+        assert!(should_ignore_item(
+            "__pycache__",
+            "__pycache__",
+            true,
+            &rules
+        ));
+
+        // Depth 1
+        assert!(should_ignore_item(
+            "src/__pycache__",
+            "__pycache__",
+            true,
+            &rules
+        ));
+
+        // Depth 2
+        assert!(should_ignore_item(
+            "backend/api/__pycache__",
+            "__pycache__",
+            true,
+            &rules
+        ));
+
+        // Depth 3+
+        assert!(should_ignore_item(
+            "services/ml/models/training/__pycache__",
+            "__pycache__",
+            true,
+            &rules
+        ));
+    }
+
+    #[test]
+    fn test_build_directories_at_multiple_depths() {
+        let rules = vec![
+            parse_ignore_pattern_line("build/").unwrap(),
+            parse_ignore_pattern_line("dist/").unwrap(),
+            parse_ignore_pattern_line("out/").unwrap(),
+        ];
+
+        // Root level
+        assert!(should_ignore_item("build", "build", true, &rules));
+        assert!(should_ignore_item("dist", "dist", true, &rules));
+        assert!(should_ignore_item("out", "out", true, &rules));
+
+        // Depth 1
+        assert!(should_ignore_item("frontend/build", "build", true, &rules));
+        assert!(should_ignore_item("backend/dist", "dist", true, &rules));
+        assert!(should_ignore_item("cli/out", "out", true, &rules));
+
+        // Depth 2+
+        assert!(should_ignore_item(
+            "apps/web/frontend/build",
+            "build",
+            true,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "packages/ui/lib/dist",
+            "dist",
+            true,
+            &rules
+        ));
+    }
+
+    #[test]
+    fn test_wildcard_extensions_at_multiple_depths() {
+        let rules = vec![
+            parse_ignore_pattern_line("*.pyc").unwrap(),
+            parse_ignore_pattern_line("*.class").unwrap(),
+            parse_ignore_pattern_line("*.o").unwrap(),
+        ];
+
+        // Root level
+        assert!(should_ignore_item("module.pyc", "module.pyc", false, &rules));
+        assert!(should_ignore_item("Main.class", "Main.class", false, &rules));
+        assert!(should_ignore_item("lib.o", "lib.o", false, &rules));
+
+        // Depth 1
+        assert!(should_ignore_item(
+            "src/module.pyc",
+            "module.pyc",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "bin/Main.class",
+            "Main.class",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item("build/lib.o", "lib.o", false, &rules));
+
+        // Depth 3+
+        assert!(should_ignore_item(
+            "backend/services/api/module.pyc",
+            "module.pyc",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "java/src/com/example/Main.class",
+            "Main.class",
+            false,
+            &rules
+        ));
+    }
+
+    #[test]
+    fn test_dotfiles_at_multiple_depths() {
+        let rules = vec![
+            parse_ignore_pattern_line(".DS_Store").unwrap(),
+            parse_ignore_pattern_line("Thumbs.db").unwrap(),
+            parse_ignore_pattern_line(".directory").unwrap(),
+        ];
+
+        // Root level
+        assert!(should_ignore_item(".DS_Store", ".DS_Store", false, &rules));
+        assert!(should_ignore_item("Thumbs.db", "Thumbs.db", false, &rules));
+        assert!(should_ignore_item(".directory", ".directory", false, &rules));
+
+        // Depth 1
+        assert!(should_ignore_item(
+            "assets/.DS_Store",
+            ".DS_Store",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "images/Thumbs.db",
+            "Thumbs.db",
+            false,
+            &rules
+        ));
+
+        // Depth 3+
+        assert!(should_ignore_item(
+            "public/assets/images/.DS_Store",
+            ".DS_Store",
+            false,
+            &rules
+        ));
+    }
+
+    #[test]
+    fn test_vcs_directories_at_multiple_depths() {
+        let rules = vec![
+            parse_ignore_pattern_line(".git/").unwrap(),
+            parse_ignore_pattern_line(".svn/").unwrap(),
+            parse_ignore_pattern_line(".hg/").unwrap(),
+        ];
+
+        // Root level
+        assert!(should_ignore_item(".git", ".git", true, &rules));
+        assert!(should_ignore_item(".svn", ".svn", true, &rules));
+        assert!(should_ignore_item(".hg", ".hg", true, &rules));
+
+        // Nested in submodules/external repos
+        assert!(should_ignore_item("vendor/lib/.git", ".git", true, &rules));
+        assert!(should_ignore_item(
+            "external/legacy/.svn",
+            ".svn",
+            true,
+            &rules
+        ));
+        assert!(should_ignore_item("third-party/old/.hg", ".hg", true, &rules));
+    }
+
+    #[test]
+    fn test_ide_directories_at_multiple_depths() {
+        let rules = vec![
+            parse_ignore_pattern_line(".idea/").unwrap(),
+            parse_ignore_pattern_line(".vscode/").unwrap(),
+            parse_ignore_pattern_line(".vs/").unwrap(),
+        ];
+
+        // Root level
+        assert!(should_ignore_item(".idea", ".idea", true, &rules));
+        assert!(should_ignore_item(".vscode", ".vscode", true, &rules));
+        assert!(should_ignore_item(".vs", ".vs", true, &rules));
+
+        // Nested in subprojects
+        assert!(should_ignore_item(
+            "frontend/.idea",
+            ".idea",
+            true,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "backend/.vscode",
+            ".vscode",
+            true,
+            &rules
+        ));
+        assert!(should_ignore_item("dotnet/api/.vs", ".vs", true, &rules));
+    }
+
+    #[test]
+    fn test_glob_patterns_at_multiple_depths() {
+        let rules = vec![parse_ignore_pattern_line("**/*.log").unwrap()];
+
+        // Root level
+        assert!(should_ignore_item("error.log", "error.log", false, &rules));
+
+        // Depth 1
+        assert!(should_ignore_item("logs/error.log", "error.log", false, &rules));
+
+        // Depth 2
+        assert!(should_ignore_item(
+            "var/logs/error.log",
+            "error.log",
+            false,
+            &rules
+        ));
+
+        // Depth 5+
+        assert!(should_ignore_item(
+            "apps/backend/services/api/logs/error.log",
+            "error.log",
+            false,
+            &rules
+        ));
+
+        // Verify non-.log files are not matched
+        assert!(!should_ignore_item(
+            "apps/backend/services/api/logs/error.txt",
+            "error.txt",
+            false,
+            &rules
+        ));
+    }
+
+    #[test]
+    fn test_complex_real_world_scenario() {
+        // Simulate a complex monorepo structure
+        let rules = vec![
+            parse_ignore_pattern_line("node_modules/").unwrap(),
+            parse_ignore_pattern_line("target/").unwrap(),
+            parse_ignore_pattern_line(".git/").unwrap(),
+            parse_ignore_pattern_line("__pycache__/").unwrap(),
+            parse_ignore_pattern_line("*.pyc").unwrap(),
+            parse_ignore_pattern_line("build/").unwrap(),
+            parse_ignore_pattern_line("dist/").unwrap(),
+            parse_ignore_pattern_line(".DS_Store").unwrap(),
+        ];
+
+        // Verify ignores at various depths
+        assert!(should_ignore_item(
+            "apps/web/node_modules",
+            "node_modules",
+            true,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "crates/core/target",
+            "target",
+            true,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "backend/api/__pycache__",
+            "__pycache__",
+            true,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "services/ml/models/trainer.pyc",
+            "trainer.pyc",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "frontend/dist",
+            "dist",
+            true,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "public/assets/.DS_Store",
+            ".DS_Store",
+            false,
+            &rules
+        ));
+
+        // Verify non-ignored files
+        assert!(!should_ignore_item(
+            "apps/web/package.json",
+            "package.json",
+            false,
+            &rules
+        ));
+        assert!(!should_ignore_item(
+            "crates/core/Cargo.toml",
+            "Cargo.toml",
+            false,
+            &rules
+        ));
+        assert!(!should_ignore_item(
+            "backend/api/main.py",
+            "main.py",
+            false,
+            &rules
+        ));
+    }
 }

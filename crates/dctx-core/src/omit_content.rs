@@ -128,4 +128,414 @@ mod tests {
             &rules
         ));
     }
+
+    // --- DEPTH TESTING: Verify patterns work at multiple directory levels ---
+
+    #[test]
+    fn test_lockfiles_at_root_level() {
+        let rules: Vec<IgnoreRule> = HARDCODED_OMIT_CONTENT_RULES
+            .iter()
+            .filter_map(|&p| parse_ignore_pattern_line(p))
+            .collect();
+
+        // Root level lockfiles should be matched
+        assert!(should_ignore_item("Cargo.lock", "Cargo.lock", false, &rules));
+        assert!(should_ignore_item(
+            "package-lock.json",
+            "package-lock.json",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item("yarn.lock", "yarn.lock", false, &rules));
+        assert!(should_ignore_item("bun.lock", "bun.lock", false, &rules));
+        assert!(should_ignore_item("go.sum", "go.sum", false, &rules));
+        assert!(should_ignore_item("Gemfile.lock", "Gemfile.lock", false, &rules));
+        assert!(should_ignore_item("poetry.lock", "poetry.lock", false, &rules));
+        assert!(should_ignore_item("composer.lock", "composer.lock", false, &rules));
+    }
+
+    #[test]
+    fn test_lockfiles_at_depth_one() {
+        let rules: Vec<IgnoreRule> = HARDCODED_OMIT_CONTENT_RULES
+            .iter()
+            .filter_map(|&p| parse_ignore_pattern_line(p))
+            .collect();
+
+        // Depth 1: <dir>/lockfile
+        assert!(should_ignore_item(
+            "frontend/Cargo.lock",
+            "Cargo.lock",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "backend/package-lock.json",
+            "package-lock.json",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "web/pnpm-lock.yaml",
+            "pnpm-lock.yaml",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item("api/yarn.lock", "yarn.lock", false, &rules));
+        assert!(should_ignore_item("cli/bun.lock", "bun.lock", false, &rules));
+        assert!(should_ignore_item("server/go.sum", "go.sum", false, &rules));
+    }
+
+    #[test]
+    fn test_lockfiles_at_depth_three() {
+        let rules: Vec<IgnoreRule> = HARDCODED_OMIT_CONTENT_RULES
+            .iter()
+            .filter_map(|&p| parse_ignore_pattern_line(p))
+            .collect();
+
+        // Depth 3: <dir>/<dir>/<dir>/lockfile
+        assert!(should_ignore_item(
+            "apps/web/frontend/Cargo.lock",
+            "Cargo.lock",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "packages/ui/components/package-lock.json",
+            "package-lock.json",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "crates/core/lib/pnpm-lock.yaml",
+            "pnpm-lock.yaml",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "services/api/v2/yarn.lock",
+            "yarn.lock",
+            false,
+            &rules
+        ));
+    }
+
+    #[test]
+    fn test_lockfiles_at_depth_five() {
+        let rules: Vec<IgnoreRule> = HARDCODED_OMIT_CONTENT_RULES
+            .iter()
+            .filter_map(|&p| parse_ignore_pattern_line(p))
+            .collect();
+
+        // Depth 5+: Very deeply nested lockfiles
+        assert!(should_ignore_item(
+            "monorepo/apps/web/src/components/package-lock.json",
+            "package-lock.json",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "projects/backend/services/auth/lib/Cargo.lock",
+            "Cargo.lock",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "workspace/packages/ui/design-system/tokens/yarn.lock",
+            "yarn.lock",
+            false,
+            &rules
+        ));
+    }
+
+    #[test]
+    fn test_svg_files_at_multiple_depths() {
+        let rules: Vec<IgnoreRule> = HARDCODED_OMIT_CONTENT_RULES
+            .iter()
+            .filter_map(|&p| parse_ignore_pattern_line(p))
+            .collect();
+
+        // Root level
+        assert!(should_ignore_item("logo.svg", "logo.svg", false, &rules));
+
+        // Depth 1
+        assert!(should_ignore_item("assets/icon.svg", "icon.svg", false, &rules));
+
+        // Depth 2
+        assert!(should_ignore_item(
+            "public/images/logo.svg",
+            "logo.svg",
+            false,
+            &rules
+        ));
+
+        // Depth 3+
+        assert!(should_ignore_item(
+            "src/assets/icons/social/twitter.svg",
+            "twitter.svg",
+            false,
+            &rules
+        ));
+    }
+
+    #[test]
+    fn test_env_files_at_multiple_depths() {
+        let rules: Vec<IgnoreRule> = HARDCODED_OMIT_CONTENT_RULES
+            .iter()
+            .filter_map(|&p| parse_ignore_pattern_line(p))
+            .collect();
+
+        // Note: .env is not in HARDCODED rules, but *.env pattern would match if present
+        // This test verifies basename matching works at any depth
+        let env_rules: Vec<IgnoreRule> = vec![parse_ignore_pattern_line(".env").unwrap()];
+
+        // Root level
+        assert!(should_ignore_item(".env", ".env", false, &env_rules));
+
+        // Depth 1
+        assert!(should_ignore_item("backend/.env", ".env", false, &env_rules));
+
+        // Depth 2
+        assert!(should_ignore_item(
+            "apps/api/.env",
+            ".env",
+            false,
+            &env_rules
+        ));
+
+        // Depth 3+
+        assert!(should_ignore_item(
+            "projects/services/auth/.env",
+            ".env",
+            false,
+            &env_rules
+        ));
+    }
+
+    #[test]
+    fn test_mixed_patterns_at_various_depths() {
+        let rules: Vec<IgnoreRule> = HARDCODED_OMIT_CONTENT_RULES
+            .iter()
+            .filter_map(|&p| parse_ignore_pattern_line(p))
+            .collect();
+
+        // Mix of different lockfile types at different depths
+        assert!(should_ignore_item(
+            "Cargo.lock",
+            "Cargo.lock",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "frontend/package-lock.json",
+            "package-lock.json",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "apps/mobile/ios/Podfile.lock",
+            "Podfile.lock",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "services/backend/api/go.sum",
+            "go.sum",
+            false,
+            &rules
+        ));
+
+        // Verify non-lockfiles are not matched
+        assert!(!should_ignore_item(
+            "frontend/package.json",
+            "package.json",
+            false,
+            &rules
+        ));
+        assert!(!should_ignore_item(
+            "apps/api/Cargo.toml",
+            "Cargo.toml",
+            false,
+            &rules
+        ));
+    }
+
+    #[test]
+    fn test_all_lockfile_types_at_depth_two() {
+        let rules: Vec<IgnoreRule> = HARDCODED_OMIT_CONTENT_RULES
+            .iter()
+            .filter_map(|&p| parse_ignore_pattern_line(p))
+            .collect();
+
+        // JavaScript/Node ecosystem
+        assert!(should_ignore_item(
+            "apps/web/package-lock.json",
+            "package-lock.json",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "apps/web/pnpm-lock.yaml",
+            "pnpm-lock.yaml",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "apps/web/yarn.lock",
+            "yarn.lock",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "apps/web/bun.lockb",
+            "bun.lockb",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "apps/web/bun.lock",
+            "bun.lock",
+            false,
+            &rules
+        ));
+
+        // Rust
+        assert!(should_ignore_item(
+            "crates/core/Cargo.lock",
+            "Cargo.lock",
+            false,
+            &rules
+        ));
+
+        // Go
+        assert!(should_ignore_item(
+            "services/api/go.sum",
+            "go.sum",
+            false,
+            &rules
+        ));
+
+        // Ruby
+        assert!(should_ignore_item(
+            "backend/rails/Gemfile.lock",
+            "Gemfile.lock",
+            false,
+            &rules
+        ));
+
+        // Python
+        assert!(should_ignore_item(
+            "services/ml/Pipfile.lock",
+            "Pipfile.lock",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "services/ml/poetry.lock",
+            "poetry.lock",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "services/ml/pdm.lock",
+            "pdm.lock",
+            false,
+            &rules
+        ));
+
+        // PHP
+        assert!(should_ignore_item(
+            "backend/laravel/composer.lock",
+            "composer.lock",
+            false,
+            &rules
+        ));
+
+        // iOS/Swift
+        assert!(should_ignore_item(
+            "apps/ios/Podfile.lock",
+            "Podfile.lock",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "apps/ios/Package.resolved",
+            "Package.resolved",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "apps/ios/Cartfile.resolved",
+            "Cartfile.resolved",
+            false,
+            &rules
+        ));
+
+        // .NET
+        assert!(should_ignore_item(
+            "backend/dotnet/packages.lock.json",
+            "packages.lock.json",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "backend/dotnet/paket.lock",
+            "paket.lock",
+            false,
+            &rules
+        ));
+
+        // Elixir
+        assert!(should_ignore_item(
+            "backend/phoenix/mix.lock",
+            "mix.lock",
+            false,
+            &rules
+        ));
+
+        // Erlang
+        assert!(should_ignore_item(
+            "backend/erlang/rebar.lock",
+            "rebar.lock",
+            false,
+            &rules
+        ));
+
+        // Haskell
+        assert!(should_ignore_item(
+            "services/parser/stack.yaml.lock",
+            "stack.yaml.lock",
+            false,
+            &rules
+        ));
+        assert!(should_ignore_item(
+            "services/parser/cabal.project.freeze",
+            "cabal.project.freeze",
+            false,
+            &rules
+        ));
+
+        // Dart/Flutter
+        assert!(should_ignore_item(
+            "apps/mobile/pubspec.lock",
+            "pubspec.lock",
+            false,
+            &rules
+        ));
+
+        // R
+        assert!(should_ignore_item(
+            "analytics/scripts/renv.lock",
+            "renv.lock",
+            false,
+            &rules
+        ));
+
+        // Lua
+        assert!(should_ignore_item(
+            "scripts/tools/luarocks.lock",
+            "luarocks.lock",
+            false,
+            &rules
+        ));
+    }
 }
