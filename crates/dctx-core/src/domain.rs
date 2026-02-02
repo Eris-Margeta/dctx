@@ -115,6 +115,41 @@ impl FileHandlingDecision {
             Self::Include | Self::DebugVisible | Self::OmitContent => true,
         }
     }
+
+    /// Returns true if metadata (size, mtime) should be read from filesystem.
+    ///
+    /// Metadata is needed for files that appear in the directory tree,
+    /// as we want to show size and modification time.
+    ///
+    /// For excluded files (never shown), reading metadata is wasted I/O.
+    ///
+    /// # Performance Impact
+    ///
+    /// Skipping metadata for excluded files can save 50%+ of syscall overhead
+    /// on large directories with many ignored files (node_modules/, target/, .git/).
+    ///
+    /// Based on Phase 10.8.1 profiling: each fs::metadata() call takes ~17μs.
+    /// On a scan of 617,322 files with ~300,000 ignored, this optimization
+    /// can save 5-10 seconds (reducing system time from 10.95s to ~5.5s).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use dctx_core::domain::FileHandlingDecision;
+    ///
+    /// assert!(FileHandlingDecision::Include.needs_metadata());
+    /// assert!(!FileHandlingDecision::Exclude.needs_metadata());
+    /// assert!(FileHandlingDecision::DebugVisible.needs_metadata());
+    /// assert!(FileHandlingDecision::OmitContent.needs_metadata());
+    /// ```
+    pub fn needs_metadata(self) -> bool {
+        match self {
+            Self::Include => true,      // Full info needed
+            Self::OmitContent => true,  // Show in tree with size/date
+            Self::DebugVisible => true, // Show in tree for diagnostics
+            Self::Exclude => false,     // Never shown, skip metadata
+        }
+    }
 }
 
 /// Context information for making file handling decisions.
@@ -199,6 +234,14 @@ mod tests {
         let decision = FileHandlingDecision::Include;
         let copied = decision; // Copy semantics
         assert_eq!(decision, copied);
+    }
+
+    #[test]
+    fn test_needs_metadata_helper() {
+        assert!(FileHandlingDecision::Include.needs_metadata());
+        assert!(FileHandlingDecision::OmitContent.needs_metadata());
+        assert!(FileHandlingDecision::DebugVisible.needs_metadata());
+        assert!(!FileHandlingDecision::Exclude.needs_metadata());
     }
 
     // --- ItemContext Tests ---
