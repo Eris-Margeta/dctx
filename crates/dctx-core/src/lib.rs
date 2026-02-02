@@ -22,6 +22,7 @@ pub use diff::{ChangeType, DiffReport};
 pub use domain::{FileHandlingDecision, ItemContext};
 pub use filter::FilterConfig;
 pub use git_safety::ensure_local_gitignore_is_safe;
+pub use ignore::{IgnoreEngine, IgnoreError};
 pub use registry::ProjectRegistry;
 pub use template::{CompiledTemplate, Template, TemplateValidationError};
 pub use version::Version;
