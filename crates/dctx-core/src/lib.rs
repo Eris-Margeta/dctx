@@ -1,6 +1,8 @@
 pub mod config;
+pub mod content_reader;
 pub mod datatypes;
 pub mod diff;
+pub mod domain;
 pub mod file_classifier;
 pub mod filter;
 pub mod git_safety;
@@ -16,10 +18,13 @@ pub mod walker;
 pub mod writer;
 
 pub use config::AppConfig;
+pub use content_reader::ContentReader;
 pub use datatypes::{DirContextTreeNode, IgnoreRule, NodeType, PatternType};
 pub use diff::{ChangeType, DiffReport};
+pub use domain::{FileHandlingDecision, ItemContext};
 pub use filter::FilterConfig;
 pub use git_safety::ensure_local_gitignore_is_safe;
+pub use ignore::{IgnoreEngine, IgnoreError};
 pub use registry::ProjectRegistry;
 pub use template::{CompiledTemplate, Template, TemplateValidationError};
 pub use version::Version;

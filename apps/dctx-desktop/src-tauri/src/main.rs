@@ -25,7 +25,7 @@ struct SnapshotRequest {
     tree_only: bool,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Default)]
 struct SnapshotResponse {
     success: bool,
     output: String,
@@ -75,10 +75,20 @@ async fn generate_snapshot(request: SnapshotRequest) -> Result<SnapshotResponse,
         }
 
         // Load ignore rules
-        let ignore_rules = ignore::load_ignore_rules(path);
+        // Build IgnoreEngine (Phase 10.8.2: debug_verbose = false for GUI)
+        let engine = match ignore::IgnoreEngine::build(path, false) {
+            Ok(e) => e,
+            Err(e) => {
+                return Ok(SnapshotResponse {
+                    success: false,
+                    error: Some(format!("Error loading ignore rules: {}", e)),
+                    ..Default::default()
+                });
+            }
+        };
 
         // Walk directory (structure only, no contents yet)
-        let tree = match walker::walk_directory_structure(path, &ignore_rules) {
+        let tree = match walker::walk_directory_structure(path, &engine, false) {
             Ok(tree) => tree,
             Err(e) => {
                 return Ok(SnapshotResponse {

@@ -247,9 +247,29 @@ target/
 
 # Package manager caches
 .bun/               # Bun
+.pnpm-store/        # pnpm content-addressable store
 
 # Vite temp files
 vite.config.*.timestamp-*
+
+# -----------------------------------------------------------------------------
+# Development Services & Local Emulators
+# -----------------------------------------------------------------------------
+.localstack/        # LocalStack AWS emulator
+.docker/            # Docker local cache
+
+# -----------------------------------------------------------------------------
+# Build Tool Caches
+# -----------------------------------------------------------------------------
+.wireit/            # Google Wireit incremental build
+.rush/              # Microsoft Rush monorepo tool
+
+# -----------------------------------------------------------------------------
+# Mobile Development Caches
+# -----------------------------------------------------------------------------
+.expo/              # Expo/React Native cache
+.android/           # Android build cache
+.ios/               # iOS build cache
 
 # -----------------------------------------------------------------------------
 # Python
@@ -281,6 +301,9 @@ htmlcov/
 
 # Linters
 .ruff_cache/
+.eslintcache        # ESLint cache
+.stylelintcache     # Stylelint cache
+.prettiercache      # Prettier cache
 
 # Build/Distribution
 *.egg-info/
@@ -311,7 +334,9 @@ tmp/
 # Java/Kotlin/Scala
 # -----------------------------------------------------------------------------
 .gradle/
+.gradle/caches/     # Gradle build cache
 .mvn/
+.m2/repository/     # Maven local repository (when in project dir)
 *.class
 hs_err_pid*
 replay_pid*
@@ -432,6 +457,15 @@ luac.out
 
 .testmondata
 *.tap
+.vitest/            # Vitest cache
+playwright-report/  # Playwright test reports
+
+# ============================================================================
+# INFRASTRUCTURE AS CODE
+# ============================================================================
+
+.terraform/         # Terraform provider plugins and modules
+.terragrunt-cache/  # Terragrunt cache
 
 # ============================================================================
 # LOGS & TEMPORARY FILES
