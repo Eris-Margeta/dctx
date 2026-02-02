@@ -143,6 +143,12 @@ fn walk_recursive(
                         rules,
                     );
 
+                    // DEBUG: Log ignored directory detection
+                    if is_dir && is_ignored && (file_name_str.contains("turbo") || file_name_str.contains("localstack") || file_name_str.contains("pnpm")) {
+                        eprintln!("🔍 DEBUG: Found ignored dir: name='{}', rel_path='{}', is_ignored={}, debug_mode={}",
+                            file_name_str, child_relative.display(), is_ignored, debug_ignored);
+                    }
+
                     if is_ignored {
                         // Collect ignored folders for debugging
                         if is_dir {
@@ -151,11 +157,20 @@ fn walk_recursive(
 
                         // In default mode: skip entirely (preserve current behavior)
                         if !debug_ignored {
+                            // DEBUG: Confirm we're skipping
+                            if is_dir && (file_name_str.contains("turbo") || file_name_str.contains("localstack") || file_name_str.contains("pnpm")) {
+                                eprintln!("✅ DEBUG: SKIPPING ignored dir: '{}'", file_name_str);
+                            }
                             continue;
                         }
 
                         // In debug mode: recurse but mark as ignored
                         // Fall through to create node and recurse
+                    }
+
+                    // DEBUG: Log when we DO recurse
+                    if is_dir && (file_name_str.contains("turbo") || file_name_str.contains("localstack") || file_name_str.contains("pnpm")) {
+                        eprintln!("⚠️  DEBUG: RECURSING into dir: name='{}', is_ignored={}", file_name_str, is_ignored);
                     }
 
                     if let Ok(mut child_node) =
@@ -397,5 +412,116 @@ mod tests {
         assert_eq!(paths.len(), 1);
         assert_eq!(paths[0], PathBuf::from("/root/src/main.rs"));
         assert!(!paths.contains(&PathBuf::from("/root/.git/config")));
+    }
+
+    /// Regression test for bug: ignored directories being recursed into
+    ///
+    /// This test verifies that directories matching ignore patterns (like .turbo/,
+    /// .pnpm-store/, .localstack/) are completely skipped during directory traversal,
+    /// preventing performance issues from scanning large cache directories.
+    ///
+    /// Bug Report: docs/DOCUMENTS/BUG-REPORT-IGNORED-DIRECTORIES-RECURSION.md
+    #[test]
+    fn test_ignored_directories_never_recursed() {
+        use crate::ignore::parse_ignore_pattern_line;
+        use tempfile::TempDir;
+
+        // Create a temporary directory with ignored cache directories
+        let temp_dir = TempDir::new().unwrap();
+        let root = temp_dir.path();
+
+        // Create .turbo/cache/ with files (Turborepo cache)
+        let turbo_dir = root.join(".turbo/cache");
+        fs::create_dir_all(&turbo_dir).unwrap();
+        fs::write(turbo_dir.join("build-1.tar.zst"), b"turbo cache data").unwrap();
+        fs::write(turbo_dir.join("build-2.tar.zst"), b"turbo cache data").unwrap();
+
+        // Create .pnpm-store/v10/files/ with files (pnpm content-addressable store)
+        let pnpm_dir = root.join(".pnpm-store/v10/files/1d");
+        fs::create_dir_all(&pnpm_dir).unwrap();
+        fs::write(pnpm_dir.join("package-hash-1"), b"pnpm package data").unwrap();
+        fs::write(pnpm_dir.join("package-hash-2"), b"pnpm package data").unwrap();
+
+        // Create .localstack/state/ with files (LocalStack AWS emulator)
+        let localstack_dir = root.join(".localstack/state/s3");
+        fs::create_dir_all(&localstack_dir).unwrap();
+        fs::write(localstack_dir.join("bucket-state.db"), b"localstack state").unwrap();
+        fs::write(localstack_dir.join("objects.db"), b"localstack objects").unwrap();
+
+        // Create normal files that should NOT be ignored
+        fs::write(root.join("README.md"), b"# Project README").unwrap();
+        fs::write(root.join("package.json"), b"{}").unwrap();
+
+        let src_dir = root.join("src");
+        fs::create_dir_all(&src_dir).unwrap();
+        fs::write(src_dir.join("main.rs"), b"fn main() {}").unwrap();
+
+        // Parse ignore rules (simulating global-ignore file)
+        let ignore_patterns = vec![
+            ".turbo/",
+            ".pnpm-store/",
+            ".localstack/",
+            ".git/",
+        ];
+
+        let ignore_rules: Vec<IgnoreRule> = ignore_patterns
+            .iter()
+            .filter_map(|pattern| parse_ignore_pattern_line(pattern))
+            .collect();
+
+        // Walk the directory with ignore rules
+        let tree = walk_directory_structure(root, &ignore_rules, false).unwrap();
+
+        // Collect all paths in the tree
+        let mut all_paths = Vec::new();
+        fn collect_paths(node: &DirContextTreeNode, paths: &mut Vec<String>) {
+            paths.push(node.relative_path.clone());
+            for child in &node.children {
+                collect_paths(child, paths);
+            }
+        }
+        collect_paths(&tree, &mut all_paths);
+
+        // CRITICAL ASSERTIONS: Ignored directories should NOT appear in tree
+        for path in &all_paths {
+            assert!(
+                !path.contains(".turbo"),
+                "Found .turbo in tree: '{}' - ignored directories should be completely skipped!",
+                path
+            );
+            assert!(
+                !path.contains(".pnpm-store"),
+                "Found .pnpm-store in tree: '{}' - ignored directories should be completely skipped!",
+                path
+            );
+            assert!(
+                !path.contains(".localstack"),
+                "Found .localstack in tree: '{}' - ignored directories should be completely skipped!",
+                path
+            );
+        }
+
+        // Verify that normal files ARE present
+        let path_strings: Vec<&str> = all_paths.iter().map(|s| s.as_str()).collect();
+        assert!(
+            path_strings.contains(&"README.md"),
+            "Normal files should be included in tree"
+        );
+        assert!(
+            path_strings.contains(&"package.json"),
+            "Normal files should be included in tree"
+        );
+        assert!(
+            path_strings.iter().any(|p| p.contains("main.rs")),
+            "Normal files in subdirectories should be included"
+        );
+
+        // Additional verification: tree should be small (only 4-5 nodes: root, README, package.json, src/, src/main.rs)
+        // If ignored directories were recursed, we'd have 10+ nodes
+        assert!(
+            all_paths.len() <= 5,
+            "Tree should only contain ~5 nodes (root + normal files), got {} - ignored dirs may have been included!",
+            all_paths.len()
+        );
     }
 }
