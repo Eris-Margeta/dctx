@@ -69,12 +69,13 @@ mod tests {
             .filter_map(|&p| parse_ignore_pattern_line(p))
             .collect();
 
-        assert!(should_ignore_item("icon.svg", "icon.svg", false, &rules));
+        assert!(should_ignore_item("icon.svg", "icon.svg", false, &rules, false));
         assert!(should_ignore_item(
             "assets/logo.svg",
             "logo.svg",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -89,22 +90,25 @@ mod tests {
             "package-lock.json",
             "package-lock.json",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "pnpm-lock.yaml",
             "pnpm-lock.yaml",
             false,
-            &rules
+            &rules,
+            false
         ));
-        assert!(should_ignore_item("yarn.lock", "yarn.lock", false, &rules));
+        assert!(should_ignore_item("yarn.lock", "yarn.lock", false, &rules, false));
         assert!(should_ignore_item(
             "Cargo.lock",
             "Cargo.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
-        assert!(should_ignore_item("go.sum", "go.sum", false, &rules));
+        assert!(should_ignore_item("go.sum", "go.sum", false, &rules, false));
     }
 
     #[test]
@@ -114,18 +118,20 @@ mod tests {
             .filter_map(|&p| parse_ignore_pattern_line(p))
             .collect();
 
-        assert!(!should_ignore_item("README.md", "README.md", false, &rules));
+        assert!(!should_ignore_item("README.md", "README.md", false, &rules, false));
         assert!(!should_ignore_item(
             "package.json",
             "package.json",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(!should_ignore_item(
             "Cargo.toml",
             "Cargo.toml",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -139,19 +145,20 @@ mod tests {
             .collect();
 
         // Root level lockfiles should be matched
-        assert!(should_ignore_item("Cargo.lock", "Cargo.lock", false, &rules));
+        assert!(should_ignore_item("Cargo.lock", "Cargo.lock", false, &rules, false));
         assert!(should_ignore_item(
             "package-lock.json",
             "package-lock.json",
             false,
-            &rules
+            &rules,
+            false
         ));
-        assert!(should_ignore_item("yarn.lock", "yarn.lock", false, &rules));
-        assert!(should_ignore_item("bun.lock", "bun.lock", false, &rules));
-        assert!(should_ignore_item("go.sum", "go.sum", false, &rules));
-        assert!(should_ignore_item("Gemfile.lock", "Gemfile.lock", false, &rules));
-        assert!(should_ignore_item("poetry.lock", "poetry.lock", false, &rules));
-        assert!(should_ignore_item("composer.lock", "composer.lock", false, &rules));
+        assert!(should_ignore_item("yarn.lock", "yarn.lock", false, &rules, false));
+        assert!(should_ignore_item("bun.lock", "bun.lock", false, &rules, false));
+        assert!(should_ignore_item("go.sum", "go.sum", false, &rules, false));
+        assert!(should_ignore_item("Gemfile.lock", "Gemfile.lock", false, &rules, false));
+        assert!(should_ignore_item("poetry.lock", "poetry.lock", false, &rules, false));
+        assert!(should_ignore_item("composer.lock", "composer.lock", false, &rules, false));
     }
 
     #[test]
@@ -166,23 +173,26 @@ mod tests {
             "frontend/Cargo.lock",
             "Cargo.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "backend/package-lock.json",
             "package-lock.json",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "web/pnpm-lock.yaml",
             "pnpm-lock.yaml",
             false,
-            &rules
+            &rules,
+            false
         ));
-        assert!(should_ignore_item("api/yarn.lock", "yarn.lock", false, &rules));
-        assert!(should_ignore_item("cli/bun.lock", "bun.lock", false, &rules));
-        assert!(should_ignore_item("server/go.sum", "go.sum", false, &rules));
+        assert!(should_ignore_item("api/yarn.lock", "yarn.lock", false, &rules, false));
+        assert!(should_ignore_item("cli/bun.lock", "bun.lock", false, &rules, false));
+        assert!(should_ignore_item("server/go.sum", "go.sum", false, &rules, false));
     }
 
     #[test]
@@ -197,25 +207,29 @@ mod tests {
             "apps/web/frontend/Cargo.lock",
             "Cargo.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "packages/ui/components/package-lock.json",
             "package-lock.json",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "crates/core/lib/pnpm-lock.yaml",
             "pnpm-lock.yaml",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "services/api/v2/yarn.lock",
             "yarn.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -231,19 +245,22 @@ mod tests {
             "monorepo/apps/web/src/components/package-lock.json",
             "package-lock.json",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "projects/backend/services/auth/lib/Cargo.lock",
             "Cargo.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "workspace/packages/ui/design-system/tokens/yarn.lock",
             "yarn.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -255,17 +272,18 @@ mod tests {
             .collect();
 
         // Root level
-        assert!(should_ignore_item("logo.svg", "logo.svg", false, &rules));
+        assert!(should_ignore_item("logo.svg", "logo.svg", false, &rules, false));
 
         // Depth 1
-        assert!(should_ignore_item("assets/icon.svg", "icon.svg", false, &rules));
+        assert!(should_ignore_item("assets/icon.svg", "icon.svg", false, &rules, false));
 
         // Depth 2
         assert!(should_ignore_item(
             "public/images/logo.svg",
             "logo.svg",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Depth 3+
@@ -273,7 +291,8 @@ mod tests {
             "src/assets/icons/social/twitter.svg",
             "twitter.svg",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -289,17 +308,18 @@ mod tests {
         let env_rules: Vec<IgnoreRule> = vec![parse_ignore_pattern_line(".env").unwrap()];
 
         // Root level
-        assert!(should_ignore_item(".env", ".env", false, &env_rules));
+        assert!(should_ignore_item(".env", ".env", false, &env_rules, false));
 
         // Depth 1
-        assert!(should_ignore_item("backend/.env", ".env", false, &env_rules));
+        assert!(should_ignore_item("backend/.env", ".env", false, &env_rules, false));
 
         // Depth 2
         assert!(should_ignore_item(
             "apps/api/.env",
             ".env",
             false,
-            &env_rules
+            &env_rules,
+            false
         ));
 
         // Depth 3+
@@ -307,7 +327,8 @@ mod tests {
             "projects/services/auth/.env",
             ".env",
             false,
-            &env_rules
+            &env_rules,
+            false
         ));
     }
 
@@ -323,25 +344,29 @@ mod tests {
             "Cargo.lock",
             "Cargo.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "frontend/package-lock.json",
             "package-lock.json",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "apps/mobile/ios/Podfile.lock",
             "Podfile.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "services/backend/api/go.sum",
             "go.sum",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Verify non-lockfiles are not matched
@@ -349,13 +374,15 @@ mod tests {
             "frontend/package.json",
             "package.json",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(!should_ignore_item(
             "apps/api/Cargo.toml",
             "Cargo.toml",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -371,31 +398,36 @@ mod tests {
             "apps/web/package-lock.json",
             "package-lock.json",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "apps/web/pnpm-lock.yaml",
             "pnpm-lock.yaml",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "apps/web/yarn.lock",
             "yarn.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "apps/web/bun.lockb",
             "bun.lockb",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "apps/web/bun.lock",
             "bun.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Rust
@@ -403,7 +435,8 @@ mod tests {
             "crates/core/Cargo.lock",
             "Cargo.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Go
@@ -411,7 +444,8 @@ mod tests {
             "services/api/go.sum",
             "go.sum",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Ruby
@@ -419,7 +453,8 @@ mod tests {
             "backend/rails/Gemfile.lock",
             "Gemfile.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Python
@@ -427,19 +462,22 @@ mod tests {
             "services/ml/Pipfile.lock",
             "Pipfile.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "services/ml/poetry.lock",
             "poetry.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "services/ml/pdm.lock",
             "pdm.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // PHP
@@ -447,7 +485,8 @@ mod tests {
             "backend/laravel/composer.lock",
             "composer.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // iOS/Swift
@@ -455,19 +494,22 @@ mod tests {
             "apps/ios/Podfile.lock",
             "Podfile.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "apps/ios/Package.resolved",
             "Package.resolved",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "apps/ios/Cartfile.resolved",
             "Cartfile.resolved",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // .NET
@@ -475,13 +517,15 @@ mod tests {
             "backend/dotnet/packages.lock.json",
             "packages.lock.json",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "backend/dotnet/paket.lock",
             "paket.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Elixir
@@ -489,7 +533,8 @@ mod tests {
             "backend/phoenix/mix.lock",
             "mix.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Erlang
@@ -497,7 +542,8 @@ mod tests {
             "backend/erlang/rebar.lock",
             "rebar.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Haskell
@@ -505,13 +551,15 @@ mod tests {
             "services/parser/stack.yaml.lock",
             "stack.yaml.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "services/parser/cabal.project.freeze",
             "cabal.project.freeze",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Dart/Flutter
@@ -519,7 +567,8 @@ mod tests {
             "apps/mobile/pubspec.lock",
             "pubspec.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // R
@@ -527,7 +576,8 @@ mod tests {
             "analytics/scripts/renv.lock",
             "renv.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Lua
@@ -535,7 +585,8 @@ mod tests {
             "scripts/tools/luarocks.lock",
             "luarocks.lock",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 }

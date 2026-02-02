@@ -202,7 +202,7 @@ mod tests {
 
         root.children.push(create_file_node("test.txt", b"Hello"));
         let version = Version { major: 1, minor: 5 };
-        write_dircontxt_file(&binary_path, &mut root, &version).unwrap();
+        write_dircontxt_file(&binary_path, &mut root, &version, false).unwrap();
 
         let result = load_or_reset_state(temp_dir.path(), &binary_path, None, "TestProject");
 

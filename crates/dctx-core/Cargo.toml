@@ -1,6 +1,6 @@
 [package]
 name = "dctx-core"
-version = "0.12.1"
+version = "0.24.0"
 edition = "2021"
 description = "Core logic for directory context snapshotting (Port of C version)"
 license = "MIT"
@@ -9,3 +9,8 @@ license = "MIT"
 
 [dev-dependencies]
 tempfile = "3"
+criterion = "0.5"
+
+[[bench]]
+name = "pattern_matching"
+harness = false

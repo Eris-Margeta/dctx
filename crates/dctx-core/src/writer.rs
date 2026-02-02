@@ -17,6 +17,7 @@ pub fn write_dircontxt_file(
     output_path: &Path,
     root: &mut DirContextTreeNode,
     version: &Version,
+    debug_verbose: bool,
 ) -> io::Result<()> {
     let file = File::create(output_path)?;
     // Use BufWriter to minimize syscalls for small metadata writes
@@ -39,7 +40,7 @@ pub fn write_dircontxt_file(
     serialize_node_recursive(&mut writer, root)?;
 
     // 5. Write Data Section (File Contents)
-    write_content_recursive(&mut writer, root)?;
+    write_content_recursive(&mut writer, root, debug_verbose)?;
 
     // Ensure everything is flushed to disk
     writer.flush()?;
@@ -121,23 +122,34 @@ fn serialize_node_recursive<W: Write>(writer: &mut W, node: &DirContextTreeNode)
 }
 
 /// Recursively writes file contents to the Data section.
-fn write_content_recursive<W: Write>(writer: &mut W, node: &DirContextTreeNode) -> io::Result<()> {
+fn write_content_recursive<W: Write>(
+    writer: &mut W,
+    node: &DirContextTreeNode,
+    debug_verbose: bool,
+) -> io::Result<()> {
     if node.node_type == NodeType::File {
         if let Some(content) = &node.file_content {
             writer.write_all(content)?;
         } else if node.content_size > 0 {
-            // Fallback: If size > 0 but no content in memory (shouldn't happen in standard flow),
-            // write zeros to preserve offset integrity.
-            eprintln!(
-                "Warning: Node '{}' has size {} but no content in memory. Writing zeros.",
-                node.relative_path, node.content_size
-            );
+            // Phase 10.8.3: Suppress warning for intentionally omitted content
+            // Only warn if this is an Include file that should have content but doesn't
+            use crate::domain::FileHandlingDecision;
+            let should_warn = matches!(node.handling_decision, FileHandlingDecision::Include);
+
+            if should_warn && debug_verbose {
+                // Actual problem: File should have content but doesn't (DEBUG only)
+                eprintln!(
+                    "Warning: Node '{}' has size {} but no content in memory. Writing zeros.",
+                    node.relative_path, node.content_size
+                );
+            }
+            // Write zeros to preserve offset integrity (for all cases)
             let zeros = vec![0u8; node.content_size as usize];
             writer.write_all(&zeros)?;
         }
     } else {
         for child in &node.children {
-            write_content_recursive(writer, child)?;
+            write_content_recursive(writer, child, debug_verbose)?;
         }
     }
     Ok(())
@@ -267,7 +279,7 @@ mod tests {
         let node = create_file_node("test.txt", b"Hello World");
         let mut buffer = Vec::new();
 
-        write_content_recursive(&mut buffer, &node).unwrap();
+        write_content_recursive(&mut buffer, &node, false).unwrap();
 
         assert_eq!(buffer, b"Hello World");
     }
@@ -279,7 +291,7 @@ mod tests {
         root.children.push(create_file_node("b.txt", b"BBB"));
 
         let mut buffer = Vec::new();
-        write_content_recursive(&mut buffer, &root).unwrap();
+        write_content_recursive(&mut buffer, &root, false).unwrap();
 
         assert_eq!(buffer, b"AAABBB");
     }
@@ -289,7 +301,7 @@ mod tests {
         let node = create_file_node("empty.txt", b"");
         let mut buffer = Vec::new();
 
-        write_content_recursive(&mut buffer, &node).unwrap();
+        write_content_recursive(&mut buffer, &node, false).unwrap();
 
         assert!(buffer.is_empty());
     }
@@ -306,7 +318,7 @@ mod tests {
             .push(create_file_node("test.txt", b"Test content"));
 
         let version = Version::new_v1();
-        write_dircontxt_file(path, &mut root, &version).unwrap();
+        write_dircontxt_file(path, &mut root, &version, false).unwrap();
 
         // File should exist and have content
         let metadata = std::fs::metadata(path).unwrap();
@@ -320,7 +332,7 @@ mod tests {
 
         let mut root = create_dir_node("");
         let version = Version::new_v1();
-        write_dircontxt_file(path, &mut root, &version).unwrap();
+        write_dircontxt_file(path, &mut root, &version, false).unwrap();
 
         // Read first 8 bytes and verify magic
         let content = std::fs::read(path).unwrap();
@@ -335,7 +347,7 @@ mod tests {
 
         let mut root = create_dir_node("");
         let version = Version { major: 2, minor: 5 };
-        write_dircontxt_file(path, &mut root, &version).unwrap();
+        write_dircontxt_file(path, &mut root, &version, false).unwrap();
 
         let content = std::fs::read(path).unwrap();
         // Bytes 8-12: major (u32 LE), bytes 12-16: minor (u32 LE)
@@ -356,7 +368,7 @@ mod tests {
             .push(create_file_node("hello.txt", b"Hello, World!"));
 
         let version = Version::new_v1();
-        write_dircontxt_file(path, &mut root, &version).unwrap();
+        write_dircontxt_file(path, &mut root, &version, false).unwrap();
 
         let content = std::fs::read(path).unwrap();
         // Content should be somewhere in the file

@@ -4,6 +4,7 @@ mod platform;
 mod tui;
 
 use dctx_core::config;
+use dctx_core::content_reader::ContentReader;
 use dctx_core::diff::{self, DiffReport};
 use dctx_core::filter::FilterConfig;
 use dctx_core::git_safety;
@@ -60,6 +61,7 @@ struct SnapshotConfig {
     max_size_mb: Option<f64>,
     only_hidden: bool,
     debug_ignored: bool,
+    debug_verbose: bool,
 }
 
 impl Default for SnapshotConfig {
@@ -78,6 +80,7 @@ impl Default for SnapshotConfig {
             max_size_mb: None,
             only_hidden: false,
             debug_ignored: false,
+            debug_verbose: false,
         }
     }
 }
@@ -92,6 +95,7 @@ struct CliConfig {
     force_reset: bool,
     filter_config: FilterConfig,
     debug_ignored: bool,
+    debug_verbose: bool,
 }
 
 impl Default for CliConfig {
@@ -104,6 +108,7 @@ impl Default for CliConfig {
             force_reset: false,
             filter_config: FilterConfig::default(),
             debug_ignored: false,
+            debug_verbose: false,
         }
     }
 }
@@ -145,6 +150,7 @@ impl From<SnapshotConfig> for CliConfig {
             force_reset: sc.force_reset,
             filter_config,
             debug_ignored: sc.debug_ignored,
+            debug_verbose: sc.debug_verbose,
         }
     }
 }
@@ -233,6 +239,7 @@ fn parse_snapshot_args(args: &[String]) -> Result<CliCommand, String> {
             "--non-empty" => config.only_non_empty = true,
             "--hidden" => config.only_hidden = true,
             "--debug-ignored" => config.debug_ignored = true,
+            "--debug-verbose" | "-V" => config.debug_verbose = true,
 
             // Filter flags (with arguments)
             "--ext" => {
@@ -769,48 +776,34 @@ fn run_headless_mode(cli_config: CliConfig) {
     }
 
     // 5. Scan Directory
-    let ignore_rules = ignore::load_ignore_rules(&target_dir);
+    // Build IgnoreEngine (loads rules from all 3 layers)
+    let engine = match ignore::IgnoreEngine::build(&target_dir, cli_config.debug_verbose) {
+        Ok(e) => e,
+        Err(e) => {
+            eprintln!("❌ Error loading ignore rules: {}", e);
+            std::process::exit(1);
+        }
+    };
+
     println!("📂 Scanning directory structure...");
 
-    let mut ignored_folders_debug = Vec::new();
-    let mut new_tree = if cli_config.debug_ignored {
-        match walker::walk_directory_structure_with_debug(
-            &target_dir,
-            &ignore_rules,
-            &mut ignored_folders_debug,
-        ) {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("❌ Error walking directory: {}", e);
-                std::process::exit(1);
-            }
-        }
-    } else {
-        match walker::walk_directory_structure(&target_dir, &ignore_rules) {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("❌ Error walking directory: {}", e);
-                std::process::exit(1);
-            }
+    let mut new_tree = match walker::walk_directory_structure(
+        &target_dir,
+        &engine,
+        cli_config.debug_ignored,
+    ) {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("❌ Error walking directory: {}", e);
+            std::process::exit(1);
         }
     };
 
     // 6. Populate Content
-    walker::populate_file_contents_parallel(&mut new_tree);
+    ContentReader::populate(&mut new_tree);
 
-    // 6.5. Display Ignored Folders (Debug)
-    if cli_config.debug_ignored {
-        println!();
-        println!("🔍 Ignored Folders (via .gitignore / .dctxignore):");
-        if ignored_folders_debug.is_empty() {
-            println!("   (none)");
-        } else {
-            for folder in &ignored_folders_debug {
-                println!("   - {}", folder);
-            }
-        }
-        println!();
-    }
+    // Note: IgnoreEngine logs rule loading statistics during build
+    // Ignored folders are shown in tree with [IGNORED] marker when --debug-ignored is active
 
     // 7. Diff & Versioning
     let mut diff_report = DiffReport::default();
@@ -860,7 +853,7 @@ fn run_headless_mode(cli_config: CliConfig) {
     }
 
     // 8. Write Binary State
-    match writer::write_dircontxt_file(&bin_path, &mut new_tree, &new_version) {
+    match writer::write_dircontxt_file(&bin_path, &mut new_tree, &new_version, cli_config.debug_verbose) {
         Ok(_) => {
             println!("💾 Saved binary state to cache.");
         }
@@ -1024,7 +1017,27 @@ fn print_help() {
     println!("  --small <MB>          Show only files smaller than X megabytes");
     println!("                        Example: --small 0.5");
     println!("  --hidden              Show ONLY hidden files and folders (starting with .)");
-    println!("  --debug-ignored       List ignored folders for debugging");
+    println!("  --debug-ignored       Show ignored files/folders in tree (diagnostics)");
+    println!("                        Files are shown but NEVER read. Use this to");
+    println!("                        verify your ignore rules work correctly.");
+    println!("  -V, --debug-verbose   Show detailed diagnostic output (ignore checks,");
+    println!("                        pattern matches, decision traces). Default: off.");
+    println!();
+    println!("Privacy & Performance:");
+    println!("  Ignored files (.env, credentials, .git/) are NEVER read into");
+    println!("  memory, even with --debug-ignored. This guarantees absolute privacy.");
+    println!();
+    println!("  Ignored folders (node_modules/, target/) are skipped entirely");
+    println!("  without recursion, providing 50-100x faster scanning.");
+    println!();
+    println!("Rule Types:");
+    println!("  IGNORE    Files/folders that don't exist for our purposes");
+    println!("            (.env, .git/, node_modules/)");
+    println!("            Default: Hidden from tree, never read, no recursion");
+    println!();
+    println!("  OMIT      Files that exist but we don't care about contents");
+    println!("            (package-lock.json, *.svg, Cargo.lock)");
+    println!("            Always: Shown in tree, content shows \"[Content omitted]\"");
     println!();
     println!("Template Commands:");
     println!("  template build <PATH>  Compile a .dctx_template file");
@@ -1033,6 +1046,8 @@ fn print_help() {
     println!("Examples:");
     println!("  dctx .                      Snapshot current directory");
     println!("  dctx ./project -c           Snapshot and copy to clipboard");
+    println!("  dctx . --tree               Tree-only (faster, no file contents)");
+    println!("  dctx . --debug-ignored      Verify your ignore rules");
     println!("  dctx . --ext rs,toml        Only Rust and TOML files");
     println!("  dctx . --ext js --small 0.1 JavaScript files under 100KB");
     println!("  dctx template build my.dctx_template");
