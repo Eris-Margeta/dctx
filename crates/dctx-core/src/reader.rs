@@ -188,7 +188,7 @@ mod tests {
         // Write
         let mut original = create_dir_node("");
         let version = Version::new_v1();
-        write_dircontxt_file(path, &mut original, &version).unwrap();
+        write_dircontxt_file(path, &mut original, &version, false).unwrap();
 
         // Read
         let (loaded, loaded_version) = read_dircontxt_file(path).unwrap();
@@ -210,7 +210,7 @@ mod tests {
             .children
             .push(create_file_node("test.txt", b"Content"));
         let version = Version { major: 1, minor: 5 };
-        write_dircontxt_file(path, &mut original, &version).unwrap();
+        write_dircontxt_file(path, &mut original, &version, false).unwrap();
 
         // Read
         let (loaded, loaded_version) = read_dircontxt_file(path).unwrap();
@@ -232,7 +232,7 @@ mod tests {
         original.children.push(create_file_node("b.txt", b"BBBBB"));
         original.children.push(create_file_node("c.txt", b"C"));
         let version = Version::new_v1();
-        write_dircontxt_file(path, &mut original, &version).unwrap();
+        write_dircontxt_file(path, &mut original, &version, false).unwrap();
 
         // Read
         let (loaded, _) = read_dircontxt_file(path).unwrap();
@@ -264,7 +264,7 @@ mod tests {
         original.children.push(subdir);
 
         let version = Version { major: 2, minor: 0 };
-        write_dircontxt_file(path, &mut original, &version).unwrap();
+        write_dircontxt_file(path, &mut original, &version, false).unwrap();
 
         // Read
         let (loaded, loaded_version) = read_dircontxt_file(path).unwrap();
@@ -288,7 +288,7 @@ mod tests {
         original.children.push(file);
 
         let version = Version::new_v1();
-        write_dircontxt_file(path, &mut original, &version).unwrap();
+        write_dircontxt_file(path, &mut original, &version, false).unwrap();
 
         // Read
         let (loaded, _) = read_dircontxt_file(path).unwrap();
@@ -307,7 +307,7 @@ mod tests {
         original.children.push(create_file_node("b.txt", b"BBBBBB")); // 6 bytes
 
         let version = Version::new_v1();
-        write_dircontxt_file(path, &mut original, &version).unwrap();
+        write_dircontxt_file(path, &mut original, &version, false).unwrap();
 
         // Read
         let (loaded, _) = read_dircontxt_file(path).unwrap();
@@ -333,7 +333,7 @@ mod tests {
         root.children.push(a);
 
         let version = Version::new_v1();
-        write_dircontxt_file(path, &mut root, &version).unwrap();
+        write_dircontxt_file(path, &mut root, &version, false).unwrap();
 
         // Read
         let (loaded, _) = read_dircontxt_file(path).unwrap();
@@ -351,7 +351,7 @@ mod tests {
 
         let mut root = create_dir_node("");
         let version = Version::new_v1();
-        write_dircontxt_file(path, &mut root, &version).unwrap();
+        write_dircontxt_file(path, &mut root, &version, false).unwrap();
 
         let (_, loaded_version) = read_dircontxt_file(path).unwrap();
         assert_eq!(loaded_version.major, 1);
@@ -368,7 +368,7 @@ mod tests {
             major: 3,
             minor: 42,
         };
-        write_dircontxt_file(path, &mut root, &version).unwrap();
+        write_dircontxt_file(path, &mut root, &version, false).unwrap();
 
         let (_, loaded_version) = read_dircontxt_file(path).unwrap();
         assert_eq!(loaded_version.major, 3);

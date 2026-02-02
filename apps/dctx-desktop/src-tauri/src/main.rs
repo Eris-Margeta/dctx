@@ -25,7 +25,7 @@ struct SnapshotRequest {
     tree_only: bool,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Default)]
 struct SnapshotResponse {
     success: bool,
     output: String,
@@ -75,8 +75,8 @@ async fn generate_snapshot(request: SnapshotRequest) -> Result<SnapshotResponse,
         }
 
         // Load ignore rules
-        // Build IgnoreEngine
-        let engine = match ignore::IgnoreEngine::build(path) {
+        // Build IgnoreEngine (Phase 10.8.2: debug_verbose = false for GUI)
+        let engine = match ignore::IgnoreEngine::build(path, false) {
             Ok(e) => e,
             Err(e) => {
                 return Ok(SnapshotResponse {

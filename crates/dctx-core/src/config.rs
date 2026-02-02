@@ -58,6 +58,13 @@ pub const HARDCODED_IGNORE_RULES: &[&str] = &[
     // Self-referential (prevent tools scanning themselves)
     ".dctxignore",
     "*.dctx",
+    "*.dircontxt",        // Legacy dctx output format
+    ".dctx/",             // dctx local output directory
+    // AI Tool Caches (prevent scanning AI assistant state)
+    ".cursor/",           // Cursor IDE cache
+    ".aider/",            // Aider cache
+    ".eris-code/",        // Eris Code cache
+    ".continue/",         // Continue.dev cache
 ];
 
 // --- LAYER 1: HARDCODED OMIT CONTENT RULES ---

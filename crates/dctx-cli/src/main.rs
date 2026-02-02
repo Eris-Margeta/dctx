@@ -853,7 +853,7 @@ fn run_headless_mode(cli_config: CliConfig) {
     }
 
     // 8. Write Binary State
-    match writer::write_dircontxt_file(&bin_path, &mut new_tree, &new_version) {
+    match writer::write_dircontxt_file(&bin_path, &mut new_tree, &new_version, cli_config.debug_verbose) {
         Ok(_) => {
             println!("💾 Saved binary state to cache.");
         }
