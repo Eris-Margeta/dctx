@@ -111,6 +111,13 @@ pub fn should_ignore_item(
         return false;
     }
 
+    // DEBUG: Log checks for our problem directories
+    let is_debug_target = item_name.contains("turbo") || item_name.contains("localstack") || item_name.contains("pnpm");
+    if is_debug_target {
+        eprintln!("🔎 IGNORE CHECK: name='{}', rel_path='{}', is_dir={}, rules_count={}",
+            item_name, item_relative_path, is_item_dir, rules.len());
+    }
+
     let mut is_ignored = false;
 
     for rule in rules {
@@ -133,10 +140,20 @@ pub fn should_ignore_item(
             }
         };
 
+        if is_debug_target && matched {
+            eprintln!("  ✅ MATCH: pattern='{}' (type={:?}, dir_only={}) matched '{}' => is_ignored={}",
+                rule.pattern, rule.pattern_type, rule.is_dir_only, item_name, !rule.is_negation);
+        }
+
         if matched {
             is_ignored = !rule.is_negation;
         }
     }
+
+    if is_debug_target {
+        eprintln!("  FINAL RESULT: is_ignored={}", is_ignored);
+    }
+
     is_ignored
 }
 
