@@ -1,4 +1,5 @@
 pub mod config;
+pub mod content_reader;
 pub mod datatypes;
 pub mod diff;
 pub mod domain;
@@ -17,6 +18,7 @@ pub mod walker;
 pub mod writer;
 
 pub use config::AppConfig;
+pub use content_reader::ContentReader;
 pub use datatypes::{DirContextTreeNode, IgnoreRule, NodeType, PatternType};
 pub use diff::{ChangeType, DiffReport};
 pub use domain::{FileHandlingDecision, ItemContext};

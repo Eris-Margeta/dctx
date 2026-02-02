@@ -75,10 +75,20 @@ async fn generate_snapshot(request: SnapshotRequest) -> Result<SnapshotResponse,
         }
 
         // Load ignore rules
-        let ignore_rules = ignore::load_ignore_rules(path);
+        // Build IgnoreEngine
+        let engine = match ignore::IgnoreEngine::build(path) {
+            Ok(e) => e,
+            Err(e) => {
+                return Ok(SnapshotResponse {
+                    success: false,
+                    error: Some(format!("Error loading ignore rules: {}", e)),
+                    ..Default::default()
+                });
+            }
+        };
 
         // Walk directory (structure only, no contents yet)
-        let tree = match walker::walk_directory_structure(path, &ignore_rules, false) {
+        let tree = match walker::walk_directory_structure(path, &engine, false) {
             Ok(tree) => tree,
             Err(e) => {
                 return Ok(SnapshotResponse {

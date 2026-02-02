@@ -4,6 +4,7 @@ mod platform;
 mod tui;
 
 use dctx_core::config;
+use dctx_core::content_reader::ContentReader;
 use dctx_core::diff::{self, DiffReport};
 use dctx_core::filter::FilterConfig;
 use dctx_core::git_safety;
@@ -769,49 +770,34 @@ fn run_headless_mode(cli_config: CliConfig) {
     }
 
     // 5. Scan Directory
-    let ignore_rules = ignore::load_ignore_rules(&target_dir);
+    // Build IgnoreEngine (loads rules from all 3 layers)
+    let engine = match ignore::IgnoreEngine::build(&target_dir) {
+        Ok(e) => e,
+        Err(e) => {
+            eprintln!("❌ Error loading ignore rules: {}", e);
+            std::process::exit(1);
+        }
+    };
+
     println!("📂 Scanning directory structure...");
 
-    let mut ignored_folders_debug = Vec::new();
-    let mut new_tree = if cli_config.debug_ignored {
-        match walker::walk_directory_structure_with_debug(
-            &target_dir,
-            &ignore_rules,
-            &mut ignored_folders_debug,
-            true,
-        ) {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("❌ Error walking directory: {}", e);
-                std::process::exit(1);
-            }
-        }
-    } else {
-        match walker::walk_directory_structure(&target_dir, &ignore_rules, false) {
-            Ok(r) => r,
-            Err(e) => {
-                eprintln!("❌ Error walking directory: {}", e);
-                std::process::exit(1);
-            }
+    let mut new_tree = match walker::walk_directory_structure(
+        &target_dir,
+        &engine,
+        cli_config.debug_ignored,
+    ) {
+        Ok(r) => r,
+        Err(e) => {
+            eprintln!("❌ Error walking directory: {}", e);
+            std::process::exit(1);
         }
     };
 
     // 6. Populate Content
-    walker::populate_file_contents_parallel(&mut new_tree);
+    ContentReader::populate(&mut new_tree);
 
-    // 6.5. Display Ignored Folders (Debug)
-    if cli_config.debug_ignored {
-        println!();
-        println!("🔍 Ignored Folders (via .gitignore / .dctxignore):");
-        if ignored_folders_debug.is_empty() {
-            println!("   (none)");
-        } else {
-            for folder in &ignored_folders_debug {
-                println!("   - {}", folder);
-            }
-        }
-        println!();
-    }
+    // Note: IgnoreEngine logs rule loading statistics during build
+    // Ignored folders are shown in tree with [IGNORED] marker when --debug-ignored is active
 
     // 7. Diff & Versioning
     let mut diff_report = DiffReport::default();

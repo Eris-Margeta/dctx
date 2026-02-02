@@ -1,31 +1,19 @@
 // crates/dctx-core/src/walker.rs
-use crate::datatypes::{DirContextTreeNode, IgnoreRule, NodeType};
-use crate::file_classifier::{classify_file, FileContentHandling};
+use crate::content_reader::ContentReader;
+use crate::datatypes::{DirContextTreeNode, NodeType};
+use crate::domain::{FileHandlingDecision, ItemContext};
 use crate::filter::FilterConfig;
-use crate::ignore::should_ignore_item;
-use std::collections::HashMap;
+use crate::ignore::IgnoreEngine;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use std::sync::{mpsc, Arc};
-use std::thread;
 use std::time::SystemTime;
 
 // --- API ---
 
 pub fn walk_directory_structure(
     root_disk_path: &Path,
-    ignore_rules: &[IgnoreRule],
-    debug_ignored: bool,
-) -> io::Result<DirContextTreeNode> {
-    let mut ignored_folders = Vec::new();
-    walk_directory_structure_with_debug(root_disk_path, ignore_rules, &mut ignored_folders, debug_ignored)
-}
-
-pub fn walk_directory_structure_with_debug(
-    root_disk_path: &Path,
-    ignore_rules: &[IgnoreRule],
-    ignored_folders: &mut Vec<String>,
+    engine: &IgnoreEngine,
     debug_ignored: bool,
 ) -> io::Result<DirContextTreeNode> {
     if !root_disk_path.exists() {
@@ -34,57 +22,20 @@ pub fn walk_directory_structure_with_debug(
             "Root path not found",
         ));
     }
-    walk_recursive(root_disk_path, Path::new(""), ignore_rules, ignored_folders, debug_ignored)
+    walk_recursive(root_disk_path, Path::new(""), engine, debug_ignored)
 }
 
+/// Populate file contents in parallel
+///
+/// # Deprecated
+/// This function is deprecated. Use `ContentReader::populate()` instead.
+/// This wrapper is kept for backward compatibility and will be removed in a future version.
+#[deprecated(
+    since = "0.10.8",
+    note = "Use ContentReader::populate() instead for better separation of concerns"
+)]
 pub fn populate_file_contents_parallel(root: &mut DirContextTreeNode) {
-    let mut tasks: Vec<PathBuf> = Vec::new();
-    collect_file_paths(root, &mut tasks);
-
-    if tasks.is_empty() {
-        return;
-    }
-
-    let task_count = tasks.len();
-    let max_threads = std::thread::available_parallelism()
-        .map(|n| n.get())
-        .unwrap_or(4);
-    let num_threads = std::cmp::min(max_threads, task_count);
-
-    let (tx, rx) = mpsc::channel();
-    let tasks_arc = Arc::new(tasks);
-
-    for i in 0..num_threads {
-        let tx_thread = tx.clone();
-        let tasks_ref = tasks_arc.clone();
-
-        thread::spawn(move || {
-            let mut idx = i;
-            while idx < tasks_ref.len() {
-                let path = &tasks_ref[idx];
-                let result = match fs::read(path) {
-                    Ok(content) => Some((path.clone(), content)),
-                    Err(e) => {
-                        eprintln!("Error reading {:?}: {}", path, e);
-                        None
-                    }
-                };
-
-                if let Some(data) = result {
-                    let _ = tx_thread.send(data);
-                }
-                idx += num_threads;
-            }
-        });
-    }
-    drop(tx);
-
-    let mut content_map: HashMap<PathBuf, Vec<u8>> = HashMap::new();
-    for (path, content) in rx {
-        content_map.insert(path, content);
-    }
-
-    fill_tree_from_map(root, &mut content_map);
+    ContentReader::populate(root);
 }
 
 // --- Helperi ---
@@ -92,8 +43,7 @@ pub fn populate_file_contents_parallel(root: &mut DirContextTreeNode) {
 fn walk_recursive(
     current_disk_path: &Path,
     current_relative_path: &Path,
-    rules: &[IgnoreRule],
-    ignored_folders: &mut Vec<String>,
+    engine: &IgnoreEngine,
     debug_ignored: bool,
 ) -> io::Result<DirContextTreeNode> {
     let metadata = fs::metadata(current_disk_path)?;
@@ -110,7 +60,6 @@ fn walk_recursive(
     );
 
     if let Ok(mtime) = metadata.modified() {
-        // FIX: Use as_millis() for higher precision to detect rapid changes
         node.last_modified_timestamp = mtime
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or_default()
@@ -136,50 +85,34 @@ fn walk_recursive(
 
                     let is_dir = entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false);
 
-                    let is_ignored = should_ignore_item(
-                        &child_relative.to_string_lossy(),
-                        &file_name_str,
-                        is_dir,
-                        rules,
-                    );
+                    // SINGLE DECISION POINT - Use IgnoreEngine
+                    let context = ItemContext {
+                        relative_path: &child_relative.to_string_lossy(),
+                        name: &file_name_str,
+                        is_directory: is_dir,
+                        debug_mode: debug_ignored,
+                    };
 
-                    // DEBUG: Log ignored directory detection
-                    if is_dir && is_ignored && (file_name_str.contains("turbo") || file_name_str.contains("localstack") || file_name_str.contains("pnpm")) {
-                        eprintln!("🔍 DEBUG: Found ignored dir: name='{}', rel_path='{}', is_ignored={}, debug_mode={}",
-                            file_name_str, child_relative.display(), is_ignored, debug_ignored);
+                    let decision = engine.decide(&context);
+
+                    // Simple, linear control flow
+                    if !decision.show_in_tree() {
+                        continue; // Excluded - skip entirely
                     }
 
-                    if is_ignored {
-                        // Collect ignored folders for debugging
-                        if is_dir {
-                            ignored_folders.push(child_relative.to_string_lossy().to_string());
-                        }
-
-                        // In default mode: skip entirely (preserve current behavior)
-                        if !debug_ignored {
-                            // DEBUG: Confirm we're skipping
-                            if is_dir && (file_name_str.contains("turbo") || file_name_str.contains("localstack") || file_name_str.contains("pnpm")) {
-                                eprintln!("✅ DEBUG: SKIPPING ignored dir: '{}'", file_name_str);
-                            }
-                            continue;
-                        }
-
-                        // In debug mode: recurse but mark as ignored
-                        // Fall through to create node and recurse
-                    }
-
-                    // DEBUG: Log when we DO recurse
-                    if is_dir && (file_name_str.contains("turbo") || file_name_str.contains("localstack") || file_name_str.contains("pnpm")) {
-                        eprintln!("⚠️  DEBUG: RECURSING into dir: name='{}', is_ignored={}", file_name_str, is_ignored);
-                    }
-
+                    // Recurse if needed
                     if let Ok(mut child_node) =
-                        walk_recursive(&child_path, &child_relative, rules, ignored_folders, debug_ignored)
+                        walk_recursive(&child_path, &child_relative, engine, debug_ignored)
                     {
-                        if is_ignored {
+                        // Set handling decision on node
+                        child_node.handling_decision = decision;
+
+                        // Mark ignored nodes and subtrees
+                        if decision == FileHandlingDecision::DebugVisible {
                             child_node.is_ignored = true;
                             mark_subtree_as_ignored(&mut child_node);
                         }
+
                         node.children.push(child_node);
                     }
                 }
@@ -201,56 +134,6 @@ fn mark_subtree_as_ignored(node: &mut DirContextTreeNode) {
     }
 }
 
-fn collect_file_paths(node: &DirContextTreeNode, collector: &mut Vec<PathBuf>) {
-    // CRITICAL: Skip ignored files - NEVER read them
-    if node.is_ignored {
-        return;
-    }
-
-    if node.node_type == NodeType::File {
-        collector.push(node.disk_path.clone());
-    } else {
-        for child in &node.children {
-            collect_file_paths(child, collector);
-        }
-    }
-}
-
-fn fill_tree_from_map(node: &mut DirContextTreeNode, map: &mut HashMap<PathBuf, Vec<u8>>) {
-    if node.node_type == NodeType::File {
-        if let Some(content) = map.remove(&node.disk_path) {
-            node.content_size = content.len() as u64;
-
-            // Classify the file to determine content handling
-            let handling = classify_file(&node.disk_path, &content);
-
-            match handling {
-                FileContentHandling::IncludeContent => {
-                    // Normal text file - include content
-                    node.file_content = Some(content);
-                    node.is_binary_file = false;
-                    node.binary_file_type = None;
-                }
-                FileContentHandling::OmitBinary { file_type } => {
-                    // Binary file - omit content
-                    node.file_content = None;
-                    node.is_binary_file = true;
-                    node.binary_file_type = Some(file_type);
-                }
-                FileContentHandling::OmitSvgContent => {
-                    // SVG - special handling (store content but mark for conditional omission)
-                    node.file_content = Some(content);
-                    node.is_binary_file = false;
-                    node.binary_file_type = Some("SVG file".to_string());
-                }
-            }
-        }
-    } else {
-        for child in &mut node.children {
-            fill_tree_from_map(child, map);
-        }
-    }
-}
 
 // --- Filtering ---
 
@@ -329,91 +212,6 @@ pub fn filter_tree(tree: &DirContextTreeNode, filter: &FilterConfig) -> Option<D
 mod tests {
     use super::*;
 
-    #[test]
-    fn test_collect_file_paths_skips_ignored() {
-        let mut root = DirContextTreeNode::new(
-            NodeType::Directory,
-            "root",
-            PathBuf::from("/root"),
-        );
-
-        // Normal file (should be collected)
-        let normal_file = DirContextTreeNode::new(
-            NodeType::File,
-            "normal.txt",
-            PathBuf::from("/root/normal.txt"),
-        );
-
-        // Ignored file (should be skipped - PRIVACY GUARANTEE)
-        let mut ignored_file = DirContextTreeNode::new(
-            NodeType::File,
-            "secret.env",
-            PathBuf::from("/root/secret.env"),
-        );
-        ignored_file.is_ignored = true;
-
-        root.children.push(normal_file);
-        root.children.push(ignored_file);
-
-        let mut paths = Vec::new();
-        collect_file_paths(&root, &mut paths);
-
-        // CRITICAL ASSERTION: Only 1 file should be collected
-        assert_eq!(paths.len(), 1);
-        assert_eq!(paths[0], PathBuf::from("/root/normal.txt"));
-        // secret.env should NOT be in paths - privacy guarantee enforced
-        assert!(!paths.contains(&PathBuf::from("/root/secret.env")));
-    }
-
-    #[test]
-    fn test_collect_file_paths_skips_ignored_subtree() {
-        let mut root = DirContextTreeNode::new(
-            NodeType::Directory,
-            "root",
-            PathBuf::from("/root"),
-        );
-
-        // Normal folder with files
-        let mut normal_dir = DirContextTreeNode::new(
-            NodeType::Directory,
-            "src",
-            PathBuf::from("/root/src"),
-        );
-        let normal_file = DirContextTreeNode::new(
-            NodeType::File,
-            "main.rs",
-            PathBuf::from("/root/src/main.rs"),
-        );
-        normal_dir.children.push(normal_file);
-
-        // Ignored folder with files (entire subtree should be skipped)
-        let mut ignored_dir = DirContextTreeNode::new(
-            NodeType::Directory,
-            ".git",
-            PathBuf::from("/root/.git"),
-        );
-        ignored_dir.is_ignored = true;
-
-        let mut ignored_file = DirContextTreeNode::new(
-            NodeType::File,
-            "config",
-            PathBuf::from("/root/.git/config"),
-        );
-        ignored_file.is_ignored = true;
-        ignored_dir.children.push(ignored_file);
-
-        root.children.push(normal_dir);
-        root.children.push(ignored_dir);
-
-        let mut paths = Vec::new();
-        collect_file_paths(&root, &mut paths);
-
-        // CRITICAL: Only normal files collected, ignored subtree completely skipped
-        assert_eq!(paths.len(), 1);
-        assert_eq!(paths[0], PathBuf::from("/root/src/main.rs"));
-        assert!(!paths.contains(&PathBuf::from("/root/.git/config")));
-    }
-
     /// Regression test for bug: ignored directories being recursed into
     ///
     /// This test verifies that directories matching ignore patterns (like .turbo/,
@@ -423,7 +221,7 @@ mod tests {
     /// Bug Report: docs/DOCUMENTS/BUG-REPORT-IGNORED-DIRECTORIES-RECURSION.md
     #[test]
     fn test_ignored_directories_never_recursed() {
-        use crate::ignore::parse_ignore_pattern_line;
+        use crate::ignore::IgnoreEngine;
         use tempfile::TempDir;
 
         // Create a temporary directory with ignored cache directories
@@ -456,21 +254,11 @@ mod tests {
         fs::create_dir_all(&src_dir).unwrap();
         fs::write(src_dir.join("main.rs"), b"fn main() {}").unwrap();
 
-        // Parse ignore rules (simulating global-ignore file)
-        let ignore_patterns = vec![
-            ".turbo/",
-            ".pnpm-store/",
-            ".localstack/",
-            ".git/",
-        ];
+        // Build IgnoreEngine (will load global rules + any local .dctxignore)
+        let engine = IgnoreEngine::build(root).unwrap();
 
-        let ignore_rules: Vec<IgnoreRule> = ignore_patterns
-            .iter()
-            .filter_map(|pattern| parse_ignore_pattern_line(pattern))
-            .collect();
-
-        // Walk the directory with ignore rules
-        let tree = walk_directory_structure(root, &ignore_rules, false).unwrap();
+        // Walk the directory with engine
+        let tree = walk_directory_structure(root, &engine, false).unwrap();
 
         // Collect all paths in the tree
         let mut all_paths = Vec::new();
