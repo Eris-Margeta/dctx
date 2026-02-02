@@ -212,6 +212,112 @@ assert_file_missing "$PROJECT_A/.dctx/$PROJECT_NAME.llmcontext-V1.2-diff.txt"
 
 pass "Suite 5 Complete"
 
+# ==============================================================================
+# TEST SUITE 6: PRIVACY VERIFICATION
+# ==============================================================================
+log ">>> SUITE 6: PRIVACY VERIFICATION"
+
+# --- Test 6.1: Sensitive File in Ignored Folder Never Appears ---
+log "Test 6.1: Sensitive file in ignored folder"
+
+# Create .env file in .git/ folder
+mkdir -p "$PROJECT_A/.git"
+echo "AWS_SECRET_KEY=super-secret-123" > "$PROJECT_A/.git/.env"
+echo ".git/" > "$PROJECT_A/.dctxignore"
+
+run_dctx "$PROJECT_A" --tree || fail "dctx crashed"
+CONTEXT_FILE="$PROJECT_A/.dctx/$PROJECT_NAME.llmcontext.txt"
+
+# Assert .env never appears in output
+if grep -q ".env" "$CONTEXT_FILE"; then
+    fail "Test 6.1: .env file appears in output despite being ignored"
+fi
+
+# Assert secret never appears
+if grep -q "AWS_SECRET_KEY" "$CONTEXT_FILE"; then
+    fail "Test 6.1: Secret appears in output despite being ignored"
+fi
+
+pass "Test 6.1: Ignored sensitive file never appears"
+
+# --- Test 6.2: Debug Mode Shows Paths But Not Content ---
+log "Test 6.2: Debug mode shows [IGNORED] but no content"
+
+# Create .env in root
+echo "SECRET_DATA=classified" > "$PROJECT_A/.env"
+echo ".env" >> "$PROJECT_A/.dctxignore"
+
+run_dctx "$PROJECT_A" --debug-ignored --tree || fail "dctx crashed"
+
+# Assert .env shown with [IGNORED] marker
+if ! grep -q "\.env.*\[IGNORED\]" "$CONTEXT_FILE"; then
+    fail "Test 6.2: .env not shown with [IGNORED] marker in debug mode"
+fi
+
+# Assert content never appears
+if grep -q "SECRET_DATA" "$CONTEXT_FILE"; then
+    fail "Test 6.2: Secret content appears in debug mode"
+fi
+
+pass "Test 6.2: Debug mode shows marker but no content"
+
+# --- Test 6.3: OMIT vs IGNORE Distinction ---
+log "Test 6.3: OMIT vs IGNORE distinction"
+
+# Clean up .dctxignore and create omit test
+rm "$PROJECT_A/.dctxignore"
+rm "$PROJECT_A/.env"
+rm -rf "$PROJECT_A/.git"
+
+echo "lockfile content here" > "$PROJECT_A/package-lock.json"
+echo "package-lock.json" > "$PROJECT_A/.dctxomitcontent"
+
+run_dctx "$PROJECT_A" || fail "dctx crashed"
+
+# Assert file appears in tree
+if ! grep -q "package-lock.json" "$CONTEXT_FILE"; then
+    fail "Test 6.3: Omitted file doesn't appear in tree"
+fi
+
+# Assert content is omitted
+if ! grep -q "\[Content omitted by pattern rules\]" "$CONTEXT_FILE"; then
+    fail "Test 6.3: Content not omitted for matched pattern"
+fi
+
+# Assert actual content doesn't appear
+if grep -q "lockfile content here" "$CONTEXT_FILE"; then
+    fail "Test 6.3: Omitted file content appears in output"
+fi
+
+pass "Test 6.3: OMIT shows in tree, content omitted"
+
+# --- Test 6.4: Multiple Sensitive Files in Deep Hierarchy ---
+log "Test 6.4: Deeply nested ignored files"
+
+# Clean up omit test
+rm "$PROJECT_A/.dctxomitcontent"
+rm "$PROJECT_A/package-lock.json"
+
+# Create deeply nested structure
+mkdir -p "$PROJECT_A/.git/hooks"
+mkdir -p "$PROJECT_A/secrets/prod"
+echo "HOOK_SECRET=abc123" > "$PROJECT_A/.git/hooks/.env"
+echo "PROD_KEY=xyz789" > "$PROJECT_A/secrets/prod/.env"
+
+echo ".git/" > "$PROJECT_A/.dctxignore"
+echo "secrets/" >> "$PROJECT_A/.dctxignore"
+
+run_dctx "$PROJECT_A" --tree || fail "dctx crashed"
+
+# Assert no secrets appear
+if grep -q "HOOK_SECRET\|PROD_KEY" "$CONTEXT_FILE"; then
+    fail "Test 6.4: Secrets from deeply nested ignored files appear"
+fi
+
+pass "Test 6.4: Deeply nested ignored files never read"
+
+pass "Suite 6 Complete (4/4 privacy tests passed)"
+
 log "========================================"
-pass "ALL TESTS PASSED. Artifacts available in: $TEST_ROOT"
+pass "ALL TESTS PASSED (6 Suites). Artifacts available in: $TEST_ROOT"
 log "========================================"

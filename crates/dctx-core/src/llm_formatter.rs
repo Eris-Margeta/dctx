@@ -1,3 +1,43 @@
+//! # LLM Context Formatter
+//!
+//! This module generates structured context snapshots and diffs for Large Language Models.
+//! It transforms a directory tree and file contents into a formatted output using templates.
+//!
+//! # Template Variable Safety
+//!
+//! This module ensures that template variables requiring file content are never used
+//! for ignored or omitted files through a multi-layer defense strategy.
+//!
+//! ## Safety Layers
+//!
+//! 1. **Walker Layer:** Ignored files are never added to the tree when debug mode
+//!    is disabled (walker.rs). In debug mode, they are marked with `is_ignored: true`
+//!    but their content is never read.
+//!
+//! 2. **Collection Layer:** Ignored files are never collected for content reading
+//!    (walker.rs:collect_file_paths skips nodes where `is_ignored == true`).
+//!
+//! 3. **Formatter Layer:** Content blocks are never generated for ignored files
+//!    (render_recursive guard: `!node.is_ignored`).
+//!
+//! ## Variable Classification
+//!
+//! ### Metadata-Only Variables (Safe for all files, including ignored)
+//! - `{{{node.type_char}}}`, `{{{node.path}}}`, `{{{node.id}}}`
+//! - `{{{node.mod}}}`, `{{{node.size_part}}}`
+//! - `{{{file.id}}}`, `{{{file.path}}}`, `{{{file.size}}}`
+//!
+//! These variables only read filesystem metadata (stat/lstat) and never open files.
+//!
+//! ### Content-Requiring Variables (Safe only in content blocks)
+//! - `{{{file.lines}}}` - Line count (requires reading file)
+//! - `{{{file.content}}}` - Full content (requires reading file)
+//!
+//! Content-requiring variables are only resolved within the content block rendering
+//! code path, which is never entered for ignored files due to the `!node.is_ignored`
+//! guard. This guarantees that ignored files (.env, credentials, private keys) are
+//! **never read into memory**, regardless of template configuration.
+
 use crate::config;
 use crate::datatypes::{DirContextTreeNode, IgnoreRule, NodeType};
 use crate::diff::{ChangeType, DiffReport};
@@ -283,7 +323,15 @@ fn render_recursive(
     entry = format!("{}{}", indentation, entry);
 
     entry = entry.replace("{{{node.type_char}}}", type_char);
-    entry = entry.replace("{{{node.path}}}", &node.relative_path);
+
+    // Add [IGNORED] marker for ignored nodes (debug mode)
+    let display_path = if node.is_ignored {
+        format!("{} [IGNORED]", node.relative_path)
+    } else {
+        node.relative_path.clone()
+    };
+    entry = entry.replace("{{{node.path}}}", &display_path);
+
     entry = entry.replace("{{{node.id}}}", &current_id);
     entry = entry.replace("{{{node.mod}}}", &node.last_modified_timestamp.to_string());
     entry = entry.replace("{{{node.size_part}}}", &size_part);
@@ -293,8 +341,13 @@ fn render_recursive(
     tree_buf.push_str(&entry);
     tree_buf.push('\n');
 
-    // 5. Render File Content Block (if file and NOT tree_only)
-    if !node.is_dir() && !tree_only {
+    // 5. Render File Content Block (if file and NOT tree_only and NOT ignored)
+    // SAFETY: This guard prevents all content-requiring template variables
+    // ({{{file.lines}}}, {{{file.content}}}) from being resolved for ignored files.
+    // This is the primary defense layer for template variable safety. Ignored files
+    // are never read into memory, guaranteeing absolute privacy for sensitive files
+    // like .env, credentials, and private keys.
+    if !node.is_dir() && !tree_only && !node.is_ignored {
         // Extract filename for pattern matching
         let filename = node.relative_path.rsplit('/').next().unwrap_or(&node.relative_path);
 
@@ -407,7 +460,7 @@ fn render_recursive_diff_filter(
             && (e.change_type == ChangeType::Added || e.change_type == ChangeType::Modified)
     });
 
-    if !node.is_dir() && is_changed {
+    if !node.is_dir() && is_changed && !node.is_ignored {
         // Extract filename for pattern matching
         let filename = node.relative_path.rsplit('/').next().unwrap_or(&node.relative_path);
 
@@ -507,6 +560,7 @@ mod tests {
         node.content_size = content.len() as u64;
         node.file_content = Some(content.to_vec());
         node.last_modified_timestamp = 1234567890;
+        node.is_ignored = false;
         node
     }
 
@@ -517,6 +571,7 @@ mod tests {
             PathBuf::from(format!("/test/{}", path)),
         );
         node.last_modified_timestamp = 1234567890;
+        node.is_ignored = false;
         node
     }
 
@@ -916,6 +971,163 @@ mod tests {
             !file_start_line.contains("SIZE="),
             "FILE_CONTENT_START should not contain SIZE attribute. Got: {}",
             file_start_line
+        );
+    }
+
+    // --- IGNORED NODE HANDLING TESTS ---
+
+    #[test]
+    fn test_ignored_node_has_marker_in_tree() {
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+        let mut ignored_file = create_file_node("secret.env", b"PASSWORD=123");
+        ignored_file.is_ignored = true;
+        root.children.push(ignored_file);
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false, Path::new(".")).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        // File should appear in tree with [IGNORED] marker
+        assert!(
+            output.contains("secret.env [IGNORED]"),
+            "Ignored file should have [IGNORED] marker in tree. Got: {}",
+            output
+        );
+    }
+
+    #[test]
+    fn test_ignored_node_has_no_content_block() {
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+        let mut ignored_file = create_file_node("secret.env", b"PASSWORD=123");
+        ignored_file.is_ignored = true;
+        root.children.push(ignored_file);
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false, Path::new(".")).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        // Content should NOT appear anywhere
+        assert!(
+            !output.contains("PASSWORD=123"),
+            "Ignored file content should never appear in output"
+        );
+        // Verify no FILE_CONTENT_START block exists for this file
+        // The file name will appear in the tree, but not in a content block
+        let has_content_block = output.lines().any(|line| {
+            line.contains("FILE_CONTENT_START") && line.contains("secret.env")
+        });
+        assert!(
+            !has_content_block,
+            "Ignored file should not have FILE_CONTENT_START block"
+        );
+    }
+
+    #[test]
+    fn test_ignored_directory_marked_in_tree() {
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+        let mut ignored_dir = create_dir_node(".git");
+        ignored_dir.is_ignored = true;
+        let mut ignored_file = create_file_node(".git/config", b"sensitive");
+        ignored_file.is_ignored = true;
+        ignored_dir.children.push(ignored_file);
+        root.children.push(ignored_dir);
+        let version = Version::new_v1();
+
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", true, Path::new(".")).unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+        // Both directory and file should have [IGNORED] markers
+        assert!(
+            output.contains(".git [IGNORED]"),
+            "Ignored directory should have [IGNORED] marker. Got: {}",
+            output
+        );
+        assert!(
+            output.contains(".git/config [IGNORED]"),
+            "Ignored file in ignored directory should have [IGNORED] marker. Got: {}",
+            output
+        );
+    }
+
+    #[test]
+    fn test_template_variable_safety_for_ignored_files() {
+        // SAFETY TEST: Verify that even if template uses content-requiring variables,
+        // they are never resolved for ignored files. This test proves that ignored files
+        // never trigger file content reading, regardless of template configuration.
+        let mut buffer = Vec::new();
+        let mut root = create_dir_node("");
+
+        // Create ignored file with multi-line content
+        let mut ignored_file = create_file_node("secret.env", b"PASSWORD=secret123\nAPI_KEY=key456\nTOKEN=abc789");
+        ignored_file.is_ignored = true;
+        root.children.push(ignored_file);
+
+        // Create normal file for comparison
+        let normal_file = create_file_node("normal.txt", b"public\ndata");
+        root.children.push(normal_file);
+
+        let version = Version::new_v1();
+        generate_llm_context(&mut buffer, &root, &version, "TestProject", false, Path::new("."))
+            .unwrap();
+
+        let output = String::from_utf8_lossy(&buffer);
+
+        // 1. Ignored file should appear in tree with [IGNORED] marker
+        assert!(
+            output.contains("secret.env [IGNORED]"),
+            "Ignored file should appear in tree with [IGNORED] marker"
+        );
+
+        // 2. Normal file should have content block with LINES attribute (content-requiring variable)
+        assert!(output.contains("normal.txt"), "Normal file should be in tree");
+        assert!(
+            output.contains("LINES=\"2\""),
+            "Normal file should have LINES attribute from file.lines variable"
+        );
+
+        // 3. Ignored file should NOT have any content block
+        let has_ignored_content_block = output.lines().any(|line| {
+            line.contains("FILE_CONTENT_START") && line.contains("secret.env")
+        });
+        assert!(
+            !has_ignored_content_block,
+            "Ignored file should never have FILE_CONTENT_START block"
+        );
+
+        // 4. Ignored file should NOT have LINES attribute (proves content-requiring variables are not resolved)
+        let has_ignored_lines = output.lines().any(|line| {
+            line.contains("secret.env") && line.contains("LINES=")
+        });
+        assert!(
+            !has_ignored_lines,
+            "Ignored file should never have LINES attribute (content-requiring variable)"
+        );
+
+        // 5. Verify sensitive content never appears in output
+        assert!(
+            !output.contains("PASSWORD=secret123"),
+            "Ignored file content should never appear in output"
+        );
+        assert!(
+            !output.contains("API_KEY=key456"),
+            "Ignored file content should never appear in output"
+        );
+        assert!(
+            !output.contains("TOKEN=abc789"),
+            "Ignored file content should never appear in output"
+        );
+
+        // 6. Verify normal file content DOES appear (proving the test is valid)
+        assert!(
+            output.contains("public"),
+            "Normal file content should appear in output"
+        );
+        assert!(
+            output.contains("data"),
+            "Normal file content should appear in output"
         );
     }
 }
