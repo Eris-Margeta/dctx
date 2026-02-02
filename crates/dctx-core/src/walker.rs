@@ -16,15 +16,17 @@ use std::time::SystemTime;
 pub fn walk_directory_structure(
     root_disk_path: &Path,
     ignore_rules: &[IgnoreRule],
+    debug_ignored: bool,
 ) -> io::Result<DirContextTreeNode> {
     let mut ignored_folders = Vec::new();
-    walk_directory_structure_with_debug(root_disk_path, ignore_rules, &mut ignored_folders)
+    walk_directory_structure_with_debug(root_disk_path, ignore_rules, &mut ignored_folders, debug_ignored)
 }
 
 pub fn walk_directory_structure_with_debug(
     root_disk_path: &Path,
     ignore_rules: &[IgnoreRule],
     ignored_folders: &mut Vec<String>,
+    debug_ignored: bool,
 ) -> io::Result<DirContextTreeNode> {
     if !root_disk_path.exists() {
         return Err(io::Error::new(
@@ -32,7 +34,7 @@ pub fn walk_directory_structure_with_debug(
             "Root path not found",
         ));
     }
-    walk_recursive(root_disk_path, Path::new(""), ignore_rules, ignored_folders)
+    walk_recursive(root_disk_path, Path::new(""), ignore_rules, ignored_folders, debug_ignored)
 }
 
 pub fn populate_file_contents_parallel(root: &mut DirContextTreeNode) {
@@ -92,6 +94,7 @@ fn walk_recursive(
     current_relative_path: &Path,
     rules: &[IgnoreRule],
     ignored_folders: &mut Vec<String>,
+    debug_ignored: bool,
 ) -> io::Result<DirContextTreeNode> {
     let metadata = fs::metadata(current_disk_path)?;
     let node_type = if metadata.is_dir() {
@@ -133,22 +136,35 @@ fn walk_recursive(
 
                     let is_dir = entry.file_type().map(|ft| ft.is_dir()).unwrap_or(false);
 
-                    if should_ignore_item(
+                    let is_ignored = should_ignore_item(
                         &child_relative.to_string_lossy(),
                         &file_name_str,
                         is_dir,
                         rules,
-                    ) {
+                    );
+
+                    if is_ignored {
                         // Collect ignored folders for debugging
                         if is_dir {
                             ignored_folders.push(child_relative.to_string_lossy().to_string());
                         }
-                        continue;
+
+                        // In default mode: skip entirely (preserve current behavior)
+                        if !debug_ignored {
+                            continue;
+                        }
+
+                        // In debug mode: recurse but mark as ignored
+                        // Fall through to create node and recurse
                     }
 
-                    if let Ok(child_node) =
-                        walk_recursive(&child_path, &child_relative, rules, ignored_folders)
+                    if let Ok(mut child_node) =
+                        walk_recursive(&child_path, &child_relative, rules, ignored_folders, debug_ignored)
                     {
+                        if is_ignored {
+                            child_node.is_ignored = true;
+                            mark_subtree_as_ignored(&mut child_node);
+                        }
                         node.children.push(child_node);
                     }
                 }
@@ -161,7 +177,21 @@ fn walk_recursive(
     Ok(node)
 }
 
+/// Recursively marks all nodes in a subtree as ignored.
+/// Used in debug mode to ensure ignored folder children are also marked.
+fn mark_subtree_as_ignored(node: &mut DirContextTreeNode) {
+    node.is_ignored = true;
+    for child in &mut node.children {
+        mark_subtree_as_ignored(child);
+    }
+}
+
 fn collect_file_paths(node: &DirContextTreeNode, collector: &mut Vec<PathBuf>) {
+    // CRITICAL: Skip ignored files - NEVER read them
+    if node.is_ignored {
+        return;
+    }
+
     if node.node_type == NodeType::File {
         collector.push(node.disk_path.clone());
     } else {
@@ -277,5 +307,95 @@ pub fn filter_tree(tree: &DirContextTreeNode, filter: &FilterConfig) -> Option<D
             filtered_dir.children = filtered_children;
             Some(filtered_dir)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_collect_file_paths_skips_ignored() {
+        let mut root = DirContextTreeNode::new(
+            NodeType::Directory,
+            "root",
+            PathBuf::from("/root"),
+        );
+
+        // Normal file (should be collected)
+        let normal_file = DirContextTreeNode::new(
+            NodeType::File,
+            "normal.txt",
+            PathBuf::from("/root/normal.txt"),
+        );
+
+        // Ignored file (should be skipped - PRIVACY GUARANTEE)
+        let mut ignored_file = DirContextTreeNode::new(
+            NodeType::File,
+            "secret.env",
+            PathBuf::from("/root/secret.env"),
+        );
+        ignored_file.is_ignored = true;
+
+        root.children.push(normal_file);
+        root.children.push(ignored_file);
+
+        let mut paths = Vec::new();
+        collect_file_paths(&root, &mut paths);
+
+        // CRITICAL ASSERTION: Only 1 file should be collected
+        assert_eq!(paths.len(), 1);
+        assert_eq!(paths[0], PathBuf::from("/root/normal.txt"));
+        // secret.env should NOT be in paths - privacy guarantee enforced
+        assert!(!paths.contains(&PathBuf::from("/root/secret.env")));
+    }
+
+    #[test]
+    fn test_collect_file_paths_skips_ignored_subtree() {
+        let mut root = DirContextTreeNode::new(
+            NodeType::Directory,
+            "root",
+            PathBuf::from("/root"),
+        );
+
+        // Normal folder with files
+        let mut normal_dir = DirContextTreeNode::new(
+            NodeType::Directory,
+            "src",
+            PathBuf::from("/root/src"),
+        );
+        let normal_file = DirContextTreeNode::new(
+            NodeType::File,
+            "main.rs",
+            PathBuf::from("/root/src/main.rs"),
+        );
+        normal_dir.children.push(normal_file);
+
+        // Ignored folder with files (entire subtree should be skipped)
+        let mut ignored_dir = DirContextTreeNode::new(
+            NodeType::Directory,
+            ".git",
+            PathBuf::from("/root/.git"),
+        );
+        ignored_dir.is_ignored = true;
+
+        let mut ignored_file = DirContextTreeNode::new(
+            NodeType::File,
+            "config",
+            PathBuf::from("/root/.git/config"),
+        );
+        ignored_file.is_ignored = true;
+        ignored_dir.children.push(ignored_file);
+
+        root.children.push(normal_dir);
+        root.children.push(ignored_dir);
+
+        let mut paths = Vec::new();
+        collect_file_paths(&root, &mut paths);
+
+        // CRITICAL: Only normal files collected, ignored subtree completely skipped
+        assert_eq!(paths.len(), 1);
+        assert_eq!(paths[0], PathBuf::from("/root/src/main.rs"));
+        assert!(!paths.contains(&PathBuf::from("/root/.git/config")));
     }
 }

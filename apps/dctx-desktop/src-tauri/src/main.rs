@@ -78,7 +78,7 @@ async fn generate_snapshot(request: SnapshotRequest) -> Result<SnapshotResponse,
         let ignore_rules = ignore::load_ignore_rules(path);
 
         // Walk directory (structure only, no contents yet)
-        let tree = match walker::walk_directory_structure(path, &ignore_rules) {
+        let tree = match walker::walk_directory_structure(path, &ignore_rules, false) {
             Ok(tree) => tree,
             Err(e) => {
                 return Ok(SnapshotResponse {

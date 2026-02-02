@@ -84,6 +84,12 @@ pub struct DirContextTreeNode {
     pub is_binary_file: bool,
     /// Type description for binary files (e.g., "PNG image", "PDF document")
     pub binary_file_type: Option<String>,
+
+    // --- Privacy & Debug Support ---
+    /// Marks files/folders that matched ignore rules.
+    /// Only populated when --debug-ignored flag is active.
+    /// When true: Show in tree but NEVER read content.
+    pub is_ignored: bool,
 }
 
 impl DirContextTreeNode {
@@ -100,6 +106,7 @@ impl DirContextTreeNode {
             file_content: None,
             is_binary_file: false,
             binary_file_type: None,
+            is_ignored: false,
         }
     }
 

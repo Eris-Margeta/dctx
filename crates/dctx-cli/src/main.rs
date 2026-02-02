@@ -778,6 +778,7 @@ fn run_headless_mode(cli_config: CliConfig) {
             &target_dir,
             &ignore_rules,
             &mut ignored_folders_debug,
+            true,
         ) {
             Ok(r) => r,
             Err(e) => {
@@ -786,7 +787,7 @@ fn run_headless_mode(cli_config: CliConfig) {
             }
         }
     } else {
-        match walker::walk_directory_structure(&target_dir, &ignore_rules) {
+        match walker::walk_directory_structure(&target_dir, &ignore_rules, false) {
             Ok(r) => r,
             Err(e) => {
                 eprintln!("❌ Error walking directory: {}", e);
