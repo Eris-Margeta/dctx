@@ -1,4 +1,5 @@
 use std::path::PathBuf;
+use crate::domain::FileHandlingDecision;
 
 /// Ekvivalent za NodeType iz C-a
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -90,6 +91,12 @@ pub struct DirContextTreeNode {
     /// Only populated when --debug-ignored flag is active.
     /// When true: Show in tree but NEVER read content.
     pub is_ignored: bool,
+
+    // --- Phase 10.7: Explicit State Model ---
+    /// The decision made about how to handle this node.
+    /// Added in Phase 10.7.2 as part of architecture refactoring.
+    /// Default is Include for backward compatibility.
+    pub handling_decision: FileHandlingDecision,
 }
 
 impl DirContextTreeNode {
@@ -107,6 +114,7 @@ impl DirContextTreeNode {
             is_binary_file: false,
             binary_file_type: None,
             is_ignored: false,
+            handling_decision: FileHandlingDecision::Include,
         }
     }
 

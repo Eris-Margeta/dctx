@@ -1,6 +1,7 @@
 pub mod config;
 pub mod datatypes;
 pub mod diff;
+pub mod domain;
 pub mod file_classifier;
 pub mod filter;
 pub mod git_safety;
@@ -18,6 +19,7 @@ pub mod writer;
 pub use config::AppConfig;
 pub use datatypes::{DirContextTreeNode, IgnoreRule, NodeType, PatternType};
 pub use diff::{ChangeType, DiffReport};
+pub use domain::{FileHandlingDecision, ItemContext};
 pub use filter::FilterConfig;
 pub use git_safety::ensure_local_gitignore_is_safe;
 pub use registry::ProjectRegistry;
