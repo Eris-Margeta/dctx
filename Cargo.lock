@@ -480,14 +480,14 @@ dependencies = [
 
 [[package]]
 name = "dctx-cli"
-version = "0.15.0"
+version = "0.21.2"
 dependencies = [
  "dctx-core",
 ]
 
 [[package]]
 name = "dctx-core"
-version = "0.15.0"
+version = "0.21.2"
 dependencies = [
  "tempfile",
 ]

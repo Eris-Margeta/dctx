@@ -112,6 +112,11 @@ pub struct AppConfig {
     /// SVGs are technically text but often large/unreadable.
     /// Default is TRUE (omit content, show only in tree).
     pub omit_svg_content: bool,
+    /// Controls whether detailed debug output is shown (ignore checks, pattern matches).
+    /// When FALSE (default), only errors, warnings, and info are shown.
+    /// When TRUE, comprehensive diagnostic output is displayed.
+    /// Added in Phase 10.8.2 for debug output control.
+    pub debug_verbose: bool,
 }
 
 impl Default for AppConfig {
@@ -123,6 +128,7 @@ impl Default for AppConfig {
             update_local_git_repo_gitignore_rules: true, // Safe default per ADR-005
             text_output_mode_generates_diff_files: false, // Default per Phase 5.2
             omit_svg_content: true, // Default: omit SVG content (show in tree only)
+            debug_verbose: false, // Default: silent operation, debug only on demand
         }
     }
 }

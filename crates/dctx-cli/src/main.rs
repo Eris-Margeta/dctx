@@ -61,6 +61,7 @@ struct SnapshotConfig {
     max_size_mb: Option<f64>,
     only_hidden: bool,
     debug_ignored: bool,
+    debug_verbose: bool,
 }
 
 impl Default for SnapshotConfig {
@@ -79,6 +80,7 @@ impl Default for SnapshotConfig {
             max_size_mb: None,
             only_hidden: false,
             debug_ignored: false,
+            debug_verbose: false,
         }
     }
 }
@@ -93,6 +95,7 @@ struct CliConfig {
     force_reset: bool,
     filter_config: FilterConfig,
     debug_ignored: bool,
+    debug_verbose: bool,
 }
 
 impl Default for CliConfig {
@@ -105,6 +108,7 @@ impl Default for CliConfig {
             force_reset: false,
             filter_config: FilterConfig::default(),
             debug_ignored: false,
+            debug_verbose: false,
         }
     }
 }
@@ -146,6 +150,7 @@ impl From<SnapshotConfig> for CliConfig {
             force_reset: sc.force_reset,
             filter_config,
             debug_ignored: sc.debug_ignored,
+            debug_verbose: sc.debug_verbose,
         }
     }
 }
@@ -234,6 +239,7 @@ fn parse_snapshot_args(args: &[String]) -> Result<CliCommand, String> {
             "--non-empty" => config.only_non_empty = true,
             "--hidden" => config.only_hidden = true,
             "--debug-ignored" => config.debug_ignored = true,
+            "--debug-verbose" | "-V" => config.debug_verbose = true,
 
             // Filter flags (with arguments)
             "--ext" => {
@@ -771,7 +777,7 @@ fn run_headless_mode(cli_config: CliConfig) {
 
     // 5. Scan Directory
     // Build IgnoreEngine (loads rules from all 3 layers)
-    let engine = match ignore::IgnoreEngine::build(&target_dir) {
+    let engine = match ignore::IgnoreEngine::build(&target_dir, cli_config.debug_verbose) {
         Ok(e) => e,
         Err(e) => {
             eprintln!("❌ Error loading ignore rules: {}", e);
@@ -1014,6 +1020,8 @@ fn print_help() {
     println!("  --debug-ignored       Show ignored files/folders in tree (diagnostics)");
     println!("                        Files are shown but NEVER read. Use this to");
     println!("                        verify your ignore rules work correctly.");
+    println!("  -V, --debug-verbose   Show detailed diagnostic output (ignore checks,");
+    println!("                        pattern matches, decision traces). Default: off.");
     println!();
     println!("Privacy & Performance:");
     println!("  Ignored files (.env, credentials, .git/) are NEVER read into");

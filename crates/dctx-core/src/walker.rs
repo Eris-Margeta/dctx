@@ -255,7 +255,7 @@ mod tests {
         fs::write(src_dir.join("main.rs"), b"fn main() {}").unwrap();
 
         // Build IgnoreEngine (will load global rules + any local .dctxignore)
-        let engine = IgnoreEngine::build(root).unwrap();
+        let engine = IgnoreEngine::build(root, false).unwrap();
 
         // Walk the directory with engine
         let tree = walk_directory_structure(root, &engine, false).unwrap();

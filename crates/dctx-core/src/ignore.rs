@@ -141,13 +141,14 @@ pub fn should_ignore_item(
     item_name: &str,
     is_item_dir: bool,
     rules: &[IgnoreRule],
+    debug_verbose: bool,
 ) -> bool {
     if rules.is_empty() {
         return false;
     }
 
-    // DEBUG: Log checks for our problem directories
-    let is_debug_target = item_name.contains("turbo") || item_name.contains("localstack") || item_name.contains("pnpm");
+    // DEBUG: Log checks for diagnostic purposes (only with --debug-verbose)
+    let is_debug_target = debug_verbose && (item_name.contains("turbo") || item_name.contains("localstack") || item_name.contains("pnpm"));
     if is_debug_target {
         eprintln!("🔎 IGNORE CHECK: name='{}', rel_path='{}', is_dir={}, rules_count={}",
             item_name, item_relative_path, is_item_dir, rules.len());
@@ -240,6 +241,10 @@ pub struct IgnoreEngine {
 
     /// Statistics for diagnostic output
     stats: EngineStats,
+
+    /// Controls whether detailed debug output is shown
+    /// Added in Phase 10.8.2 for debug output control
+    debug_verbose: bool,
 }
 
 impl IgnoreEngine {
@@ -255,7 +260,7 @@ impl IgnoreEngine {
     /// - A rule file exists but cannot be read (permissions error)
     ///
     /// Note: Missing files are NOT an error - they are simply skipped.
-    pub fn build(base_dir: &Path) -> Result<Self, IgnoreError> {
+    pub fn build(base_dir: &Path, debug_verbose: bool) -> Result<Self, IgnoreError> {
         let mut ignore_rules = Vec::new();
         let mut omit_rules = Vec::new();
 
@@ -315,25 +320,28 @@ impl IgnoreEngine {
             local_omit_count,
         };
 
-        // Log statistics
-        eprintln!("🔧 IgnoreEngine loaded:");
-        eprintln!("   IGNORE: {} hardcoded + {} global + {} local = {} total",
-            stats.hardcoded_ignore_count,
-            stats.global_ignore_count,
-            stats.local_ignore_count,
-            stats.hardcoded_ignore_count + stats.global_ignore_count + stats.local_ignore_count
-        );
-        eprintln!("   OMIT:   {} hardcoded + {} global + {} local = {} total",
-            stats.hardcoded_omit_count,
-            stats.global_omit_count,
-            stats.local_omit_count,
-            stats.hardcoded_omit_count + stats.global_omit_count + stats.local_omit_count
-        );
+        // Log statistics (INFO level: always show summary)
+        let total_ignore = stats.hardcoded_ignore_count + stats.global_ignore_count + stats.local_ignore_count;
+        let total_omit = stats.hardcoded_omit_count + stats.global_omit_count + stats.local_omit_count;
+        eprintln!("🔧 Loaded {} ignore + {} omit rules (from 3 sources)", total_ignore, total_omit);
+
+        // DEBUG level: show detailed breakdown only with flag
+        if debug_verbose {
+            eprintln!("   IGNORE RULES:");
+            eprintln!("     • Hardcoded: {}", stats.hardcoded_ignore_count);
+            eprintln!("     • Global: {}", stats.global_ignore_count);
+            eprintln!("     • Local: {}", stats.local_ignore_count);
+            eprintln!("   OMIT RULES:");
+            eprintln!("     • Hardcoded: {}", stats.hardcoded_omit_count);
+            eprintln!("     • Global: {}", stats.global_omit_count);
+            eprintln!("     • Local: {}", stats.local_omit_count);
+        }
 
         Ok(Self {
             ignore_rules,
             omit_rules,
             stats,
+            debug_verbose,
         })
     }
 
@@ -355,6 +363,7 @@ impl IgnoreEngine {
             context.name,
             context.is_directory,
             &self.ignore_rules,
+            self.debug_verbose,
         ) {
             return if context.debug_mode {
                 FileHandlingDecision::DebugVisible
@@ -369,6 +378,7 @@ impl IgnoreEngine {
             context.name,
             context.is_directory,
             &self.omit_rules,
+            self.debug_verbose,
         ) {
             return FileHandlingDecision::OmitContent;
         }
@@ -470,7 +480,7 @@ fn matches_rule(context: &ItemContext, rule: &IgnoreRule) -> bool {
 /// which rules were loaded from which sources.
 #[deprecated(since = "0.14.9", note = "Use IgnoreEngine::build() instead")]
 pub fn load_ignore_rules(base_dir_path: &Path) -> Vec<IgnoreRule> {
-    match IgnoreEngine::build(base_dir_path) {
+    match IgnoreEngine::build(base_dir_path, false) {
         Ok(engine) => engine.ignore_rules.clone(),
         Err(e) => {
             eprintln!("⚠️  Warning: Failed to load ignore rules: {}", e);
@@ -622,7 +632,7 @@ mod tests {
     #[test]
     fn test_should_ignore_empty_rules() {
         let rules: Vec<IgnoreRule> = vec![];
-        assert!(!should_ignore_item("test.txt", "test.txt", false, &rules));
+        assert!(!should_ignore_item("test.txt", "test.txt", false, &rules, false));
     }
 
     #[test]
@@ -632,33 +642,37 @@ mod tests {
             "node_modules",
             "node_modules",
             true,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "path/to/node_modules",
             "node_modules",
             true,
-            &rules
+            &rules,
+            false
         ));
         assert!(!should_ignore_item(
             "my_modules",
             "my_modules",
             true,
-            &rules
+            &rules,
+            false
         ));
     }
 
     #[test]
     fn test_should_ignore_suffix_match() {
         let rules = vec![parse_ignore_pattern_line("*.log").unwrap()];
-        assert!(should_ignore_item("debug.log", "debug.log", false, &rules));
+        assert!(should_ignore_item("debug.log", "debug.log", false, &rules, false));
         assert!(should_ignore_item(
             "path/to/error.log",
             "error.log",
             false,
-            &rules
+            &rules,
+            false
         ));
-        assert!(!should_ignore_item("log.txt", "log.txt", false, &rules));
+        assert!(!should_ignore_item("log.txt", "log.txt", false, &rules, false));
     }
 
     #[test]
@@ -668,13 +682,15 @@ mod tests {
             "src/generated",
             "generated",
             true,
-            &rules
+            &rules,
+            false
         ));
         assert!(!should_ignore_item(
             "other/generated",
             "generated",
             true,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -685,27 +701,30 @@ mod tests {
             "build/output.o",
             "output.o",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "build/sub/file.txt",
             "file.txt",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(!should_ignore_item(
             "mybuild/file.txt",
             "file.txt",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 
     #[test]
     fn test_should_ignore_dir_only_rule() {
         let rules = vec![parse_ignore_pattern_line("cache/").unwrap()];
-        assert!(should_ignore_item("cache", "cache", true, &rules));
-        assert!(!should_ignore_item("cache", "cache", false, &rules)); // File named "cache" should NOT be ignored
+        assert!(should_ignore_item("cache", "cache", true, &rules, false));
+        assert!(!should_ignore_item("cache", "cache", false, &rules, false)); // File named "cache" should NOT be ignored
     }
 
     #[test]
@@ -714,12 +733,13 @@ mod tests {
             parse_ignore_pattern_line("*.log").unwrap(),
             parse_ignore_pattern_line("!important.log").unwrap(),
         ];
-        assert!(should_ignore_item("debug.log", "debug.log", false, &rules));
+        assert!(should_ignore_item("debug.log", "debug.log", false, &rules, false));
         assert!(!should_ignore_item(
             "important.log",
             "important.log",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -731,7 +751,7 @@ mod tests {
             parse_ignore_pattern_line("*.log").unwrap(),
         ];
         // Both rules match keep.log, but the last one (*.log which is NOT negation) wins
-        assert!(should_ignore_item("keep.log", "keep.log", false, &rules));
+        assert!(should_ignore_item("keep.log", "keep.log", false, &rules, false));
     }
 
     #[test]
@@ -741,15 +761,17 @@ mod tests {
             "test_main.rs",
             "test_main.rs",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "src/test_util.rs",
             "test_util.rs",
             false,
-            &rules
+            &rules,
+            false
         ));
-        assert!(!should_ignore_item("main.rs", "main.rs", false, &rules));
+        assert!(!should_ignore_item("main.rs", "main.rs", false, &rules, false));
     }
 
     #[test]
@@ -763,21 +785,24 @@ mod tests {
             "module.pyc",
             "module.pyc",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "__pycache__",
             "__pycache__",
             true,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "mypackage.egg-info",
             "mypackage.egg-info",
             true,
-            &rules
+            &rules,
+            false
         ));
-        assert!(!should_ignore_item("setup.py", "setup.py", false, &rules));
+        assert!(!should_ignore_item("setup.py", "setup.py", false, &rules, false));
     }
 
     // --- DEPTH TESTING: Verify ignore patterns work at multiple directory levels ---
@@ -791,7 +816,8 @@ mod tests {
             "node_modules",
             "node_modules",
             true,
-            &rules
+            &rules,
+            false
         ));
 
         // Depth 1
@@ -799,7 +825,8 @@ mod tests {
             "frontend/node_modules",
             "node_modules",
             true,
-            &rules
+            &rules,
+            false
         ));
 
         // Depth 2
@@ -807,7 +834,8 @@ mod tests {
             "apps/web/node_modules",
             "node_modules",
             true,
-            &rules
+            &rules,
+            false
         ));
 
         // Depth 3+
@@ -815,7 +843,8 @@ mod tests {
             "monorepo/packages/ui/node_modules",
             "node_modules",
             true,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -824,14 +853,15 @@ mod tests {
         let rules = vec![parse_ignore_pattern_line("target/").unwrap()];
 
         // Root level
-        assert!(should_ignore_item("target", "target", true, &rules));
+        assert!(should_ignore_item("target", "target", true, &rules, false));
 
         // Depth 1
         assert!(should_ignore_item(
             "crates/target",
             "target",
             true,
-            &rules
+            &rules,
+            false
         ));
 
         // Depth 2
@@ -839,7 +869,8 @@ mod tests {
             "rust/backend/target",
             "target",
             true,
-            &rules
+            &rules,
+            false
         ));
 
         // Depth 3+
@@ -847,7 +878,8 @@ mod tests {
             "workspace/crates/core/target",
             "target",
             true,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -856,17 +888,18 @@ mod tests {
         let rules = vec![parse_ignore_pattern_line(".git/").unwrap()];
 
         // Root level (typical)
-        assert!(should_ignore_item(".git", ".git", true, &rules));
+        assert!(should_ignore_item(".git", ".git", true, &rules, false));
 
         // Submodules at depth 1
-        assert!(should_ignore_item("vendor/lib/.git", ".git", true, &rules));
+        assert!(should_ignore_item("vendor/lib/.git", ".git", true, &rules, false));
 
         // Nested repos at depth 2+
         assert!(should_ignore_item(
             "external/projects/foo/.git",
             ".git",
             true,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -879,7 +912,8 @@ mod tests {
             "__pycache__",
             "__pycache__",
             true,
-            &rules
+            &rules,
+            false
         ));
 
         // Depth 1
@@ -887,7 +921,8 @@ mod tests {
             "src/__pycache__",
             "__pycache__",
             true,
-            &rules
+            &rules,
+            false
         ));
 
         // Depth 2
@@ -895,7 +930,8 @@ mod tests {
             "backend/api/__pycache__",
             "__pycache__",
             true,
-            &rules
+            &rules,
+            false
         ));
 
         // Depth 3+
@@ -903,7 +939,8 @@ mod tests {
             "services/ml/models/training/__pycache__",
             "__pycache__",
             true,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -916,27 +953,29 @@ mod tests {
         ];
 
         // Root level
-        assert!(should_ignore_item("build", "build", true, &rules));
-        assert!(should_ignore_item("dist", "dist", true, &rules));
-        assert!(should_ignore_item("out", "out", true, &rules));
+        assert!(should_ignore_item("build", "build", true, &rules, false));
+        assert!(should_ignore_item("dist", "dist", true, &rules, false));
+        assert!(should_ignore_item("out", "out", true, &rules, false));
 
         // Depth 1
-        assert!(should_ignore_item("frontend/build", "build", true, &rules));
-        assert!(should_ignore_item("backend/dist", "dist", true, &rules));
-        assert!(should_ignore_item("cli/out", "out", true, &rules));
+        assert!(should_ignore_item("frontend/build", "build", true, &rules, false));
+        assert!(should_ignore_item("backend/dist", "dist", true, &rules, false));
+        assert!(should_ignore_item("cli/out", "out", true, &rules, false));
 
         // Depth 2+
         assert!(should_ignore_item(
             "apps/web/frontend/build",
             "build",
             true,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "packages/ui/lib/dist",
             "dist",
             true,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -949,37 +988,41 @@ mod tests {
         ];
 
         // Root level
-        assert!(should_ignore_item("module.pyc", "module.pyc", false, &rules));
-        assert!(should_ignore_item("Main.class", "Main.class", false, &rules));
-        assert!(should_ignore_item("lib.o", "lib.o", false, &rules));
+        assert!(should_ignore_item("module.pyc", "module.pyc", false, &rules, false));
+        assert!(should_ignore_item("Main.class", "Main.class", false, &rules, false));
+        assert!(should_ignore_item("lib.o", "lib.o", false, &rules, false));
 
         // Depth 1
         assert!(should_ignore_item(
             "src/module.pyc",
             "module.pyc",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "bin/Main.class",
             "Main.class",
             false,
-            &rules
+            &rules,
+            false
         ));
-        assert!(should_ignore_item("build/lib.o", "lib.o", false, &rules));
+        assert!(should_ignore_item("build/lib.o", "lib.o", false, &rules, false));
 
         // Depth 3+
         assert!(should_ignore_item(
             "backend/services/api/module.pyc",
             "module.pyc",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "java/src/com/example/Main.class",
             "Main.class",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -992,22 +1035,24 @@ mod tests {
         ];
 
         // Root level
-        assert!(should_ignore_item(".DS_Store", ".DS_Store", false, &rules));
-        assert!(should_ignore_item("Thumbs.db", "Thumbs.db", false, &rules));
-        assert!(should_ignore_item(".directory", ".directory", false, &rules));
+        assert!(should_ignore_item(".DS_Store", ".DS_Store", false, &rules, false));
+        assert!(should_ignore_item("Thumbs.db", "Thumbs.db", false, &rules, false));
+        assert!(should_ignore_item(".directory", ".directory", false, &rules, false));
 
         // Depth 1
         assert!(should_ignore_item(
             "assets/.DS_Store",
             ".DS_Store",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "images/Thumbs.db",
             "Thumbs.db",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Depth 3+
@@ -1015,7 +1060,8 @@ mod tests {
             "public/assets/images/.DS_Store",
             ".DS_Store",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -1028,19 +1074,20 @@ mod tests {
         ];
 
         // Root level
-        assert!(should_ignore_item(".git", ".git", true, &rules));
-        assert!(should_ignore_item(".svn", ".svn", true, &rules));
-        assert!(should_ignore_item(".hg", ".hg", true, &rules));
+        assert!(should_ignore_item(".git", ".git", true, &rules, false));
+        assert!(should_ignore_item(".svn", ".svn", true, &rules, false));
+        assert!(should_ignore_item(".hg", ".hg", true, &rules, false));
 
         // Nested in submodules/external repos
-        assert!(should_ignore_item("vendor/lib/.git", ".git", true, &rules));
+        assert!(should_ignore_item("vendor/lib/.git", ".git", true, &rules, false));
         assert!(should_ignore_item(
             "external/legacy/.svn",
             ".svn",
             true,
-            &rules
+            &rules,
+            false
         ));
-        assert!(should_ignore_item("third-party/old/.hg", ".hg", true, &rules));
+        assert!(should_ignore_item("third-party/old/.hg", ".hg", true, &rules, false));
     }
 
     #[test]
@@ -1052,24 +1099,26 @@ mod tests {
         ];
 
         // Root level
-        assert!(should_ignore_item(".idea", ".idea", true, &rules));
-        assert!(should_ignore_item(".vscode", ".vscode", true, &rules));
-        assert!(should_ignore_item(".vs", ".vs", true, &rules));
+        assert!(should_ignore_item(".idea", ".idea", true, &rules, false));
+        assert!(should_ignore_item(".vscode", ".vscode", true, &rules, false));
+        assert!(should_ignore_item(".vs", ".vs", true, &rules, false));
 
         // Nested in subprojects
         assert!(should_ignore_item(
             "frontend/.idea",
             ".idea",
             true,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "backend/.vscode",
             ".vscode",
             true,
-            &rules
+            &rules,
+            false
         ));
-        assert!(should_ignore_item("dotnet/api/.vs", ".vs", true, &rules));
+        assert!(should_ignore_item("dotnet/api/.vs", ".vs", true, &rules, false));
     }
 
     #[test]
@@ -1077,17 +1126,18 @@ mod tests {
         let rules = vec![parse_ignore_pattern_line("**/*.log").unwrap()];
 
         // Root level
-        assert!(should_ignore_item("error.log", "error.log", false, &rules));
+        assert!(should_ignore_item("error.log", "error.log", false, &rules, false));
 
         // Depth 1
-        assert!(should_ignore_item("logs/error.log", "error.log", false, &rules));
+        assert!(should_ignore_item("logs/error.log", "error.log", false, &rules, false));
 
         // Depth 2
         assert!(should_ignore_item(
             "var/logs/error.log",
             "error.log",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Depth 5+
@@ -1095,7 +1145,8 @@ mod tests {
             "apps/backend/services/api/logs/error.log",
             "error.log",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Verify non-.log files are not matched
@@ -1103,7 +1154,8 @@ mod tests {
             "apps/backend/services/api/logs/error.txt",
             "error.txt",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -1126,37 +1178,43 @@ mod tests {
             "apps/web/node_modules",
             "node_modules",
             true,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "crates/core/target",
             "target",
             true,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "backend/api/__pycache__",
             "__pycache__",
             true,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "services/ml/models/trainer.pyc",
             "trainer.pyc",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "frontend/dist",
             "dist",
             true,
-            &rules
+            &rules,
+            false
         ));
         assert!(should_ignore_item(
             "public/assets/.DS_Store",
             ".DS_Store",
             false,
-            &rules
+            &rules,
+            false
         ));
 
         // Verify non-ignored files
@@ -1164,19 +1222,22 @@ mod tests {
             "apps/web/package.json",
             "package.json",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(!should_ignore_item(
             "crates/core/Cargo.toml",
             "Cargo.toml",
             false,
-            &rules
+            &rules,
+            false
         ));
         assert!(!should_ignore_item(
             "backend/api/main.py",
             "main.py",
             false,
-            &rules
+            &rules,
+            false
         ));
     }
 
@@ -1185,14 +1246,14 @@ mod tests {
     #[test]
     fn test_engine_build_success() {
         let temp = tempfile::TempDir::new().unwrap();
-        let engine = IgnoreEngine::build(temp.path()).unwrap();
+        let engine = IgnoreEngine::build(temp.path(), false).unwrap();
         assert!(engine.total_rules() > 0); // Should have hardcoded rules
     }
 
     #[test]
     fn test_engine_loads_hardcoded_rules() {
         let temp = tempfile::TempDir::new().unwrap();
-        let engine = IgnoreEngine::build(temp.path()).unwrap();
+        let engine = IgnoreEngine::build(temp.path(), false).unwrap();
         assert!(engine.stats().hardcoded_ignore_count > 0);
         assert!(engine.stats().hardcoded_omit_count > 0);
     }
@@ -1201,7 +1262,7 @@ mod tests {
     fn test_engine_loads_global_rules() {
         // This test depends on global config existing
         let temp = tempfile::TempDir::new().unwrap();
-        let engine = IgnoreEngine::build(temp.path()).unwrap();
+        let engine = IgnoreEngine::build(temp.path(), false).unwrap();
         // Just verify it doesn't panic - actual count depends on environment
         let _ = engine.stats().global_ignore_count;
     }
@@ -1212,14 +1273,14 @@ mod tests {
         let ignore_file = temp.path().join(".dctxignore");
         fs::write(&ignore_file, "custom_pattern/\ntest_*.txt\n").unwrap();
 
-        let engine = IgnoreEngine::build(temp.path()).unwrap();
+        let engine = IgnoreEngine::build(temp.path(), false).unwrap();
         assert_eq!(engine.stats().local_ignore_count, 2);
     }
 
     #[test]
     fn test_decide_exclude_for_ignored() {
         let temp = tempfile::TempDir::new().unwrap();
-        let engine = IgnoreEngine::build(temp.path()).unwrap();
+        let engine = IgnoreEngine::build(temp.path(), false).unwrap();
 
         let context = ItemContext {
             relative_path: "node_modules/package",
@@ -1234,7 +1295,7 @@ mod tests {
     #[test]
     fn test_decide_debug_visible_in_debug_mode() {
         let temp = tempfile::TempDir::new().unwrap();
-        let engine = IgnoreEngine::build(temp.path()).unwrap();
+        let engine = IgnoreEngine::build(temp.path(), false).unwrap();
 
         let context = ItemContext {
             relative_path: ".git/hooks",
@@ -1249,7 +1310,7 @@ mod tests {
     #[test]
     fn test_decide_omit_content_for_lockfiles() {
         let temp = tempfile::TempDir::new().unwrap();
-        let engine = IgnoreEngine::build(temp.path()).unwrap();
+        let engine = IgnoreEngine::build(temp.path(), false).unwrap();
 
         let context = ItemContext {
             relative_path: "package-lock.json",
@@ -1264,7 +1325,7 @@ mod tests {
     #[test]
     fn test_decide_include_for_normal_files() {
         let temp = tempfile::TempDir::new().unwrap();
-        let engine = IgnoreEngine::build(temp.path()).unwrap();
+        let engine = IgnoreEngine::build(temp.path(), false).unwrap();
 
         let context = ItemContext {
             relative_path: "src/main.rs",
@@ -1279,7 +1340,7 @@ mod tests {
     #[test]
     fn test_explain_produces_output() {
         let temp = tempfile::TempDir::new().unwrap();
-        let engine = IgnoreEngine::build(temp.path()).unwrap();
+        let engine = IgnoreEngine::build(temp.path(), false).unwrap();
 
         let context = ItemContext {
             relative_path: "node_modules/package",
@@ -1297,7 +1358,7 @@ mod tests {
     #[test]
     fn test_turbo_pattern_loaded() {
         let temp = tempfile::TempDir::new().unwrap();
-        let engine = IgnoreEngine::build(temp.path()).unwrap();
+        let engine = IgnoreEngine::build(temp.path(), false).unwrap();
 
         // Debug: Check if .turbo pattern exists
         let has_turbo = engine.ignore_rules.iter().any(|r| r.pattern == ".turbo");
@@ -1324,7 +1385,7 @@ mod tests {
     #[test]
     fn test_pnpm_store_pattern_loaded() {
         let temp = tempfile::TempDir::new().unwrap();
-        let engine = IgnoreEngine::build(temp.path()).unwrap();
+        let engine = IgnoreEngine::build(temp.path(), false).unwrap();
 
         let context = ItemContext {
             relative_path: ".pnpm-store/v3",
@@ -1350,7 +1411,7 @@ mod tests {
     #[test]
     fn test_ignored_directories_never_recursed() {
         let temp = tempfile::TempDir::new().unwrap();
-        let engine = IgnoreEngine::build(temp.path()).unwrap();
+        let engine = IgnoreEngine::build(temp.path(), false).unwrap();
 
         // Test that ignored directories return decisions with should_recurse() = false
         let context = ItemContext {

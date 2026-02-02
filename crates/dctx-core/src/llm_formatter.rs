@@ -360,7 +360,7 @@ fn render_recursive(
             file_type == "SVG file" && app_config.omit_svg_content
         } else {
             // Check against omit content patterns
-            should_ignore_item(&node.relative_path, filename, false, omit_rules)
+            should_ignore_item(&node.relative_path, filename, false, omit_rules, false)
         };
 
         let (line_count, content_str, _omit_reason) = if should_omit_content {
@@ -471,7 +471,7 @@ fn render_recursive_diff_filter(
             file_type == "SVG file" && app_config.omit_svg_content
         } else {
             // Check against omit content patterns
-            should_ignore_item(&node.relative_path, filename, false, omit_rules)
+            should_ignore_item(&node.relative_path, filename, false, omit_rules, false)
         };
 
         let (line_count, content_str) = if should_omit_content {
