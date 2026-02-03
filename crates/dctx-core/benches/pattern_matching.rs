@@ -1,6 +1,5 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use dctx_core::ignore::IgnoreEngine;
-use std::path::Path;
 
 /// Benchmark glob matching performance
 ///
