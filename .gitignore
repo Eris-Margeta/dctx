@@ -297,12 +297,6 @@ idea.txt
 prompt.txt
 
 # Local work notes (not tracked)
-docs/CHECKPOINTS/
-docs/GUIDES/
-docs/
-docs/NOTES.md
-docs/prompt.txt
-ARCHITECTURE/adr-template.md
 
 # [dctx] Installer Auto-Add
 .dctx/
