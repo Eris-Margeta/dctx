@@ -304,6 +304,16 @@
         box-shadow: 0 2px 8px var(--shadow);
       }
 
+      button.secondary.success {
+        background: #10b981;
+        color: white;
+      }
+
+      button.secondary.success:hover {
+        background: #059669;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      }
+
       .output-card {
         min-height: 400px;
       }
@@ -440,6 +450,10 @@
             <button id="generate-btn">
               <span id="btn-text">Generate Snapshot</span>
               <span id="btn-loading" style="display: none;" class="loading"></span>
+            </button>
+            <button class="secondary" id="copy-btn" disabled>
+              <span>📋</span>
+              <span>Copy to Clipboard</span>
             </button>
             <button class="secondary" id="clear-btn">Clear</button>
           </div>

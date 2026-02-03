@@ -31,6 +31,9 @@ pub struct DesktopConfig {
 
     /// Desktop-specific: Theme preference (system, light, dark)
     pub theme: String,
+
+    /// Desktop-specific: Auto-copy snapshot to clipboard after generation
+    pub auto_copy_to_clipboard: bool,
 }
 
 impl Default for DesktopConfig {
@@ -42,6 +45,7 @@ impl Default for DesktopConfig {
             window_height: 800,
             file_count_limit: 10_000,
             theme: "system".to_string(),
+            auto_copy_to_clipboard: false,
         }
     }
 }
@@ -134,6 +138,9 @@ fn parse_desktop_config_line(line: &str, config: &mut DesktopConfig) {
             "theme" => {
                 config.theme = val.to_string();
             }
+            "auto_copy_to_clipboard" => {
+                config.auto_copy_to_clipboard = val == "true";
+            }
             _ => {
                 // Unknown key - ignore
             }
@@ -163,6 +170,7 @@ pub fn save_desktop_config(config: &DesktopConfig) -> Result<(), String> {
     content.push_str(&format!("window_height = {}\n", config.window_height));
     content.push_str(&format!("file_count_limit = {}\n", config.file_count_limit));
     content.push_str(&format!("theme = \"{}\"\n", config.theme));
+    content.push_str(&format!("auto_copy_to_clipboard = {}\n", config.auto_copy_to_clipboard));
 
     fs::write(config_path, content).map_err(|e| format!("Failed to write config: {}", e))?;
 

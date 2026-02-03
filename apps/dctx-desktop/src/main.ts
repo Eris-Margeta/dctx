@@ -11,10 +11,12 @@ let outputEl: HTMLElement | null;
 let generateBtnEl: HTMLButtonElement | null;
 let clearBtnEl: HTMLButtonElement | null;
 let browseBtnEl: HTMLButtonElement | null;
+let copyBtnEl: HTMLButtonElement | null;
 let dropZoneEl: HTMLElement | null;
 let btnTextEl: HTMLElement | null;
 let btnLoadingEl: HTMLElement | null;
 let statusEl: HTMLElement | null;
+let lastGeneratedOutput: string = "";
 
 function setStatus(message: string) {
   if (statusEl) {
@@ -99,20 +101,68 @@ async function generateSnapshot() {
     });
 
     if (response.success) {
+      lastGeneratedOutput = response.output;  // Store for copy
       outputEl.textContent = `✅ Success!\n\n${response.output}`;
       outputEl.style.color = "var(--text-primary)";
       setStatus(`Snapshot generated successfully`);
+
+      // Enable copy button
+      if (copyBtnEl) {
+        copyBtnEl.disabled = false;
+      }
     } else {
+      lastGeneratedOutput = "";  // Clear on error
       outputEl.textContent = `❌ Error:\n\n${response.error}`;
       outputEl.style.color = "#ef4444";
       setStatus("Error generating snapshot");
+
+      // Disable copy button
+      if (copyBtnEl) {
+        copyBtnEl.disabled = true;
+      }
     }
   } catch (error) {
+    lastGeneratedOutput = "";  // Clear on error
     outputEl.textContent = `❌ Fatal Error:\n\n${error}`;
     outputEl.style.color = "#ef4444";
     setStatus("Fatal error occurred");
+
+    // Disable copy button
+    if (copyBtnEl) {
+      copyBtnEl.disabled = true;
+    }
   } finally {
     setLoading(false);
+  }
+}
+
+async function copyToClipboard() {
+  if (!isTauri || !lastGeneratedOutput) {
+    setStatus("No snapshot to copy");
+    return;
+  }
+
+  try {
+    await invoke("copy_to_clipboard", { text: lastGeneratedOutput });
+
+    // Visual feedback: change button to success state
+    if (copyBtnEl) {
+      copyBtnEl.classList.add("success");
+      copyBtnEl.innerHTML = '<span>✅</span><span>Copied!</span>';
+
+      // Reset after 2 seconds
+      setTimeout(() => {
+        if (copyBtnEl) {
+          copyBtnEl.classList.remove("success");
+          copyBtnEl.innerHTML = '<span>📋</span><span>Copy to Clipboard</span>';
+        }
+      }, 2000);
+    }
+
+    setStatus("Copied to clipboard");
+  } catch (error) {
+    console.error("Failed to copy:", error);
+    setStatus("Failed to copy to clipboard");
   }
 }
 
@@ -124,6 +174,10 @@ function clearOutput() {
   if (pathInputEl) {
     pathInputEl.value = "";
   }
+  if (copyBtnEl) {
+    copyBtnEl.disabled = true;
+  }
+  lastGeneratedOutput = "";
   setStatus("Ready");
 }
 
@@ -178,6 +232,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   generateBtnEl = document.querySelector("#generate-btn");
   clearBtnEl = document.querySelector("#clear-btn");
   browseBtnEl = document.querySelector("#browse-btn");
+  copyBtnEl = document.querySelector("#copy-btn");
   dropZoneEl = document.querySelector("#drop-zone");
   btnTextEl = document.querySelector("#btn-text");
   btnLoadingEl = document.querySelector("#btn-loading");
@@ -191,6 +246,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     e.stopPropagation();
     browseFolderDialog();
   });
+  copyBtnEl?.addEventListener("click", () => copyToClipboard());
 
   // Enter key on input
   pathInputEl?.addEventListener("keypress", (e) => {
