@@ -611,14 +611,14 @@ dependencies = [
 
 [[package]]
 name = "dctx-cli"
-version = "0.24.0"
+version = "0.25.0"
 dependencies = [
  "dctx-core",
 ]
 
 [[package]]
 name = "dctx-core"
-version = "0.24.0"
+version = "0.25.0"
 dependencies = [
  "criterion",
  "tempfile",
