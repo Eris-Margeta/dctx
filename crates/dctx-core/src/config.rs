@@ -306,8 +306,10 @@ mod tests {
 
     #[test]
     fn test_parse_text_output_enabled_true() {
-        let mut config = AppConfig::default();
-        config.text_output_enabled = false; // Start with false
+        let mut config = AppConfig {
+            text_output_enabled: false,
+            ..Default::default()
+        };
         parse_config_line("text_output_enabled = true", &mut config);
         assert!(config.text_output_enabled);
     }
@@ -328,16 +330,20 @@ mod tests {
 
     #[test]
     fn test_parse_legacy_output_mode_both() {
-        let mut config = AppConfig::default();
-        config.text_output_enabled = false;
+        let mut config = AppConfig {
+            text_output_enabled: false,
+            ..Default::default()
+        };
         parse_config_line("output_mode = \"both\"", &mut config);
         assert!(config.text_output_enabled);
     }
 
     #[test]
     fn test_parse_legacy_output_mode_text() {
-        let mut config = AppConfig::default();
-        config.text_output_enabled = false;
+        let mut config = AppConfig {
+            text_output_enabled: false,
+            ..Default::default()
+        };
         parse_config_line("output_mode = \"text\"", &mut config);
         assert!(config.text_output_enabled);
     }
@@ -372,8 +378,10 @@ mod tests {
 
     #[test]
     fn test_parse_gitignore_rules_true() {
-        let mut config = AppConfig::default();
-        config.update_local_git_repo_gitignore_rules = false;
+        let mut config = AppConfig {
+            update_local_git_repo_gitignore_rules: false,
+            ..Default::default()
+        };
         parse_config_line("update_local_git_repo_gitignore_rules = true", &mut config);
         assert!(config.update_local_git_repo_gitignore_rules);
     }
@@ -394,8 +402,10 @@ mod tests {
 
     #[test]
     fn test_parse_omit_svg_content_true() {
-        let mut config = AppConfig::default();
-        config.omit_svg_content = false; // Start with false
+        let mut config = AppConfig {
+            omit_svg_content: false,
+            ..Default::default()
+        };
         parse_config_line("omit_svg_content = true", &mut config);
         assert!(config.omit_svg_content);
     }

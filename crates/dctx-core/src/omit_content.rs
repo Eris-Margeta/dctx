@@ -298,7 +298,7 @@ mod tests {
 
     #[test]
     fn test_env_files_at_multiple_depths() {
-        let rules: Vec<IgnoreRule> = HARDCODED_OMIT_CONTENT_RULES
+        let _rules: Vec<IgnoreRule> = HARDCODED_OMIT_CONTENT_RULES
             .iter()
             .filter_map(|&p| parse_ignore_pattern_line(p))
             .collect();
