@@ -2,6 +2,8 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
+import { initNavigation, navigateToMain } from "./navigation";
+import { initSettings } from "./settings";
 
 // Check if running in Tauri (vs browser dev mode)
 const isTauri = '__TAURI__' in window;
@@ -227,6 +229,13 @@ function handleDrop(e: DragEvent) {
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
+  // Initialize navigation system first
+  initNavigation();
+
+  // Initialize settings screen scroll-sync
+  initSettings();
+
+  // Get DOM elements
   pathInputEl = document.querySelector("#path-input");
   outputEl = document.querySelector("#output");
   generateBtnEl = document.querySelector("#generate-btn");
@@ -238,7 +247,11 @@ window.addEventListener("DOMContentLoaded", async () => {
   btnLoadingEl = document.querySelector("#btn-loading");
   statusEl = document.querySelector("#status");
 
-  // Click event listeners
+  // Get navigation elements
+  const closeSettingsBtn = document.querySelector("#close-settings-btn");
+  const addProjectBtn = document.querySelector("#add-project-btn");
+
+  // Main screen event listeners
   generateBtnEl?.addEventListener("click", () => generateSnapshot());
   clearBtnEl?.addEventListener("click", () => clearOutput());
   browseBtnEl?.addEventListener("click", (e) => {
@@ -247,6 +260,10 @@ window.addEventListener("DOMContentLoaded", async () => {
     browseFolderDialog();
   });
   copyBtnEl?.addEventListener("click", () => copyToClipboard());
+
+  // Navigation event listeners
+  closeSettingsBtn?.addEventListener("click", () => navigateToMain());
+  addProjectBtn?.addEventListener("click", () => browseFolderDialog());
 
   // Enter key on input
   pathInputEl?.addEventListener("keypress", (e) => {
