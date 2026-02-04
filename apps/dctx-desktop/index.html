@@ -335,7 +335,10 @@
         background: var(--bg-secondary);
         border: 1px solid var(--border);
         border-radius: 8px;
-        font-family: "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
+        font-family: "SF Mono", "Monaco", "Menlo", "Consolas", "DejaVu Sans Mono",
+          "Liberation Mono", "Courier New", "Noto Sans Mono",
+          "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+          "Noto Color Emoji", monospace;
         font-size: 13px;
         line-height: 1.6;
         white-space: pre-wrap;
@@ -343,6 +346,9 @@
         overflow-y: auto;
         color: var(--text-primary);
         transition: all 0.3s ease;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
       }
 
       .output:empty::before {
@@ -765,7 +771,8 @@
         background: var(--bg-tertiary);
         padding: 2px 6px;
         border-radius: 4px;
-        font-family: "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
+        font-family: "SF Mono", "Monaco", "Menlo", "Consolas", "DejaVu Sans Mono",
+          "Liberation Mono", "Courier New", "Noto Sans Mono", monospace;
         font-size: 12px;
       }
 
@@ -886,7 +893,8 @@
       .project-path {
         font-size: 13px;
         color: var(--text-secondary);
-        font-family: "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
+        font-family: "SF Mono", "Monaco", "Menlo", "Consolas", "DejaVu Sans Mono",
+          "Liberation Mono", "Courier New", "Noto Sans Mono", monospace;
       }
 
       .project-meta {
