@@ -850,6 +850,83 @@
         background: #ef4444;
         color: white;
       }
+
+      /* Project cards */
+      .project-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 12px;
+        transition: all 0.2s ease;
+      }
+
+      .project-card:hover {
+        background: var(--bg-tertiary);
+        transform: translateX(4px);
+        box-shadow: 0 2px 8px var(--shadow);
+      }
+
+      .project-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .project-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .project-path {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-family: "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
+      }
+
+      .project-meta {
+        font-size: 12px;
+        color: var(--text-tertiary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .project-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .project-actions button {
+        padding: 8px 16px;
+        font-size: 13px;
+      }
+
+      .btn-open {
+        background: var(--accent);
+        color: white;
+      }
+
+      .btn-open:hover {
+        background: var(--accent-hover);
+      }
+
+      .btn-remove {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+      }
+
+      .btn-remove:hover {
+        background: #fee;
+        color: #ef4444;
+        border-color: #ef4444;
+      }
     </style>
   </head>
   <body>
@@ -984,7 +1061,7 @@
               <!-- Right: Settings Panels -->
               <div class="settings-content">
                 <!-- Section 1: General Settings -->
-                <section class="settings-section" data-section-id="general">
+                <section class="settings-section" data-section-id="general" id="general">
                   <div class="section-header">
                     <h2 class="section-title">General Settings</h2>
                     <p class="section-description">Basic application preferences and behavior</p>
@@ -995,7 +1072,7 @@
                         <span class="label-text">Theme</span>
                         <span class="label-hint">Choose color scheme for the interface</span>
                       </label>
-                      <select class="setting-input">
+                      <select class="setting-input" id="theme-select">
                         <option value="system">System Default</option>
                         <option value="light">Light</option>
                         <option value="dark">Dark</option>
@@ -1007,7 +1084,7 @@
                         <span class="label-text">File Count Limit</span>
                         <span class="label-hint">Maximum files to process (safety threshold)</span>
                       </label>
-                      <input type="number" class="setting-input" value="10000" min="100" max="1000000">
+                      <input type="number" class="setting-input" id="file-count-input" value="10000" min="100" max="1000000">
                     </div>
 
                     <div class="setting-row">
@@ -1016,7 +1093,7 @@
                         <span class="label-hint">Automatically copy snapshot to clipboard after generation</span>
                       </label>
                       <label class="toggle">
-                        <input type="checkbox">
+                        <input type="checkbox" id="auto-copy-toggle">
                         <span class="slider"></span>
                       </label>
                     </div>
@@ -1035,7 +1112,7 @@
                         <span class="label-text">Extension Filters</span>
                         <span class="label-hint">Comma-separated file extensions (e.g., rs, toml, md)</span>
                       </label>
-                      <input type="text" class="setting-input" placeholder="Leave empty for all files">
+                      <input type="text" id="filter-extensions-input" class="setting-input" placeholder="Leave empty for all files">
                     </div>
 
                     <div class="setting-row">
@@ -1044,7 +1121,7 @@
                         <span class="label-hint">Show binary files in output</span>
                       </label>
                       <label class="toggle">
-                        <input type="checkbox">
+                        <input type="checkbox" id="include-binary-toggle">
                         <span class="slider"></span>
                       </label>
                     </div>
@@ -1055,7 +1132,7 @@
                         <span class="label-hint">Only include files/folders starting with dot (.)</span>
                       </label>
                       <label class="toggle">
-                        <input type="checkbox">
+                        <input type="checkbox" id="only-hidden-toggle">
                         <span class="slider"></span>
                       </label>
                     </div>
@@ -1065,7 +1142,7 @@
                         <span class="label-text">Maximum File Size (MB)</span>
                         <span class="label-hint">Exclude files larger than this size</span>
                       </label>
-                      <input type="number" class="setting-input" placeholder="No limit" min="0" step="0.1">
+                      <input type="number" id="max-size-input" class="setting-input" placeholder="No limit" min="0" step="0.1">
                     </div>
 
                     <div class="setting-row">
@@ -1073,7 +1150,28 @@
                         <span class="label-text">Minimum File Size (MB)</span>
                         <span class="label-hint">Exclude files smaller than this size</span>
                       </label>
-                      <input type="number" class="setting-input" placeholder="No limit" min="0" step="0.1">
+                      <input type="number" id="min-size-input" class="setting-input" placeholder="No limit" min="0" step="0.1">
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Content Filter</span>
+                        <span class="label-hint">Filter files by content presence</span>
+                      </label>
+                      <div style="display: flex; gap: 16px; align-items: center;">
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                          <input type="radio" name="content-filter" value="all" checked>
+                          <span>All Files</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                          <input type="radio" name="content-filter" value="empty">
+                          <span>Empty Only</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                          <input type="radio" name="content-filter" value="non-empty">
+                          <span>Non-Empty Only</span>
+                        </label>
+                      </div>
                     </div>
                   </div>
                 </section>
@@ -1113,7 +1211,7 @@
                         <span class="label-hint">Show directory structure without file contents</span>
                       </label>
                       <label class="toggle">
-                        <input type="checkbox">
+                        <input type="checkbox" id="tree-only-toggle">
                         <span class="slider"></span>
                       </label>
                     </div>

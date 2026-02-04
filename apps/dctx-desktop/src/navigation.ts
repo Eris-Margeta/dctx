@@ -84,6 +84,21 @@ export function navigateToProjects() {
   state.selectedProject = null;
   state.isProjectSpecificSettings = false;
   navigateToScreen('projects');
+
+  // Initialize projects screen when navigating to it
+  // Dynamic import to avoid circular dependency
+  import('./recent-projects').then(({ initProjectsScreen }) => {
+    initProjectsScreen().catch(err => {
+      console.error('Failed to initialize projects screen:', err);
+    });
+  });
+}
+
+/**
+ * Show projects screen (exported for use by recent-projects module)
+ */
+export function showProjectsScreen() {
+  navigateToProjects();
 }
 
 /**

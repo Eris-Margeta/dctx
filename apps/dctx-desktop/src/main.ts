@@ -4,6 +4,8 @@ import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
 import { initNavigation, navigateToMain } from "./navigation";
 import { initSettings } from "./settings";
+import { initSettingsUI } from "./settings-manager";
+import { recordProjectAccess } from "./recent-projects";
 
 // Check if running in Tauri (vs browser dev mode)
 const isTauri = '__TAURI__' in window;
@@ -91,14 +93,6 @@ async function generateSnapshot() {
     const response: any = await invoke("generate_snapshot", {
       request: {
         path,
-        filter_extensions: [],
-        include_binary: false,
-        only_empty: false,
-        only_non_empty: false,
-        min_size_mb: null,
-        max_size_mb: null,
-        only_hidden: false,
-        tree_only: false,
       },
     });
 
@@ -112,6 +106,9 @@ async function generateSnapshot() {
       if (copyBtnEl) {
         copyBtnEl.disabled = false;
       }
+
+      // Add to recent projects
+      await recordProjectAccess(path);
     } else {
       lastGeneratedOutput = "";  // Clear on error
       outputEl.textContent = `❌ Error:\n\n${response.error}`;
@@ -234,6 +231,16 @@ window.addEventListener("DOMContentLoaded", async () => {
 
   // Initialize settings screen scroll-sync
   initSettings();
+
+  // Initialize settings manager (load and wire up form controls)
+  if (isTauri) {
+    try {
+      await initSettingsUI();
+      console.log("✅ Settings UI initialized");
+    } catch (error) {
+      console.error("Failed to initialize settings UI:", error);
+    }
+  }
 
   // Get DOM elements
   pathInputEl = document.querySelector("#path-input");

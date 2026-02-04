@@ -6,8 +6,10 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod config;
+mod recent_projects;
 
-use config::{ensure_config_dirs, load_desktop_config};
+use config::{ensure_config_dirs, load_desktop_config, save_desktop_config, DesktopConfig};
+use recent_projects::RecentProject;
 use dctx_core::{
     content_reader::ContentReader,
     datatypes::DirContextTreeNode,
@@ -23,14 +25,6 @@ use std::path::Path;
 #[derive(Debug, Serialize, Deserialize)]
 struct SnapshotRequest {
     path: String,
-    filter_extensions: Vec<String>,
-    include_binary: bool,
-    only_empty: bool,
-    only_non_empty: bool,
-    min_size_mb: Option<f64>,
-    max_size_mb: Option<f64>,
-    only_hidden: bool,
-    tree_only: bool,
 }
 
 #[derive(Debug, Serialize, Default)]
@@ -63,24 +57,24 @@ async fn generate_snapshot(request: SnapshotRequest) -> Result<SnapshotResponse,
         // Safety check: prevent loading massive directories (from config)
         let file_count_limit = desktop_config.file_count_limit;
 
-        // Build filter config
+        // Build filter config from desktop config settings
         let mut filter_config = FilterConfig::default()
-            .with_extensions(request.filter_extensions)
-            .with_include_binary(request.include_binary);
+            .with_extensions(desktop_config.filter_extensions.clone().unwrap_or_default())
+            .with_include_binary(desktop_config.include_binary);
 
-        if request.only_empty {
+        if desktop_config.only_empty {
             filter_config = filter_config.with_only_empty(true);
         }
-        if request.only_non_empty {
+        if desktop_config.only_non_empty {
             filter_config = filter_config.with_only_non_empty(true);
         }
-        if let Some(min) = request.min_size_mb {
+        if let Some(min) = desktop_config.min_size_mb {
             filter_config = filter_config.with_min_size_mb(min);
         }
-        if let Some(max) = request.max_size_mb {
+        if let Some(max) = desktop_config.max_size_mb {
             filter_config = filter_config.with_max_size_mb(max);
         }
-        if request.only_hidden {
+        if desktop_config.only_hidden {
             filter_config = filter_config.with_only_hidden(true);
         }
 
@@ -147,7 +141,7 @@ async fn generate_snapshot(request: SnapshotRequest) -> Result<SnapshotResponse,
 
         // Read file contents (respects handling_decision for privacy)
         let mut tree_with_content = tree_for_output.clone();
-        if !request.tree_only {
+        if !desktop_config.tree_only {
             ContentReader::populate(&mut tree_with_content);
         }
 
@@ -164,7 +158,7 @@ async fn generate_snapshot(request: SnapshotRequest) -> Result<SnapshotResponse,
             &tree_with_content,
             &version,
             project_name,
-            request.tree_only,
+            desktop_config.tree_only,
             path,
         );
 
@@ -216,6 +210,43 @@ async fn copy_to_clipboard(
         .map_err(|e| format!("Failed to copy to clipboard: {}", e))
 }
 
+/// Get current desktop settings
+#[tauri::command]
+async fn get_desktop_settings() -> Result<DesktopConfig, String> {
+    Ok(load_desktop_config())
+}
+
+/// Save desktop settings to disk
+#[tauri::command]
+async fn save_desktop_settings(config: DesktopConfig) -> Result<(), String> {
+    save_desktop_config(&config)
+}
+
+/// Reset desktop settings to defaults
+#[tauri::command]
+async fn reset_desktop_settings() -> Result<(), String> {
+    let default_config = DesktopConfig::default();
+    save_desktop_config(&default_config)
+}
+
+/// Get recent projects list
+#[tauri::command]
+async fn get_recent_projects() -> Result<Vec<RecentProject>, String> {
+    recent_projects::load_recent_projects()
+}
+
+/// Add a project to recent projects
+#[tauri::command]
+async fn add_recent_project(path: String) -> Result<(), String> {
+    recent_projects::add_recent_project(&path)
+}
+
+/// Remove a project from recent projects
+#[tauri::command]
+async fn remove_recent_project(path: String) -> Result<(), String> {
+    recent_projects::remove_recent_project(&path)
+}
+
 fn main() {
     // Initialize config directories on startup
     if let Err(e) = ensure_config_dirs() {
@@ -237,7 +268,16 @@ fn main() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
-        .invoke_handler(tauri::generate_handler![generate_snapshot, copy_to_clipboard])
+        .invoke_handler(tauri::generate_handler![
+            generate_snapshot,
+            copy_to_clipboard,
+            get_desktop_settings,
+            save_desktop_settings,
+            reset_desktop_settings,
+            get_recent_projects,
+            add_recent_project,
+            remove_recent_project
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
