@@ -2,6 +2,10 @@
 import { invoke } from "@tauri-apps/api/core";
 import { open } from "@tauri-apps/plugin-dialog";
 import { listen } from "@tauri-apps/api/event";
+import { initNavigation, navigateToMain } from "./navigation";
+import { initSettings } from "./settings";
+import { initSettingsUI } from "./settings-manager";
+import { recordProjectAccess } from "./recent-projects";
 
 // Check if running in Tauri (vs browser dev mode)
 const isTauri = '__TAURI__' in window;
@@ -11,10 +15,12 @@ let outputEl: HTMLElement | null;
 let generateBtnEl: HTMLButtonElement | null;
 let clearBtnEl: HTMLButtonElement | null;
 let browseBtnEl: HTMLButtonElement | null;
+let copyBtnEl: HTMLButtonElement | null;
 let dropZoneEl: HTMLElement | null;
 let btnTextEl: HTMLElement | null;
 let btnLoadingEl: HTMLElement | null;
 let statusEl: HTMLElement | null;
+let lastGeneratedOutput: string = "";
 
 function setStatus(message: string) {
   if (statusEl) {
@@ -87,32 +93,75 @@ async function generateSnapshot() {
     const response: any = await invoke("generate_snapshot", {
       request: {
         path,
-        filter_extensions: [],
-        include_binary: false,
-        only_empty: false,
-        only_non_empty: false,
-        min_size_mb: null,
-        max_size_mb: null,
-        only_hidden: false,
-        tree_only: false,
       },
     });
 
     if (response.success) {
+      lastGeneratedOutput = response.output;  // Store for copy
       outputEl.textContent = `✅ Success!\n\n${response.output}`;
       outputEl.style.color = "var(--text-primary)";
       setStatus(`Snapshot generated successfully`);
+
+      // Enable copy button
+      if (copyBtnEl) {
+        copyBtnEl.disabled = false;
+      }
+
+      // Add to recent projects
+      await recordProjectAccess(path);
     } else {
+      lastGeneratedOutput = "";  // Clear on error
       outputEl.textContent = `❌ Error:\n\n${response.error}`;
       outputEl.style.color = "#ef4444";
       setStatus("Error generating snapshot");
+
+      // Disable copy button
+      if (copyBtnEl) {
+        copyBtnEl.disabled = true;
+      }
     }
   } catch (error) {
+    lastGeneratedOutput = "";  // Clear on error
     outputEl.textContent = `❌ Fatal Error:\n\n${error}`;
     outputEl.style.color = "#ef4444";
     setStatus("Fatal error occurred");
+
+    // Disable copy button
+    if (copyBtnEl) {
+      copyBtnEl.disabled = true;
+    }
   } finally {
     setLoading(false);
+  }
+}
+
+async function copyToClipboard() {
+  if (!isTauri || !lastGeneratedOutput) {
+    setStatus("No snapshot to copy");
+    return;
+  }
+
+  try {
+    await invoke("copy_to_clipboard", { text: lastGeneratedOutput });
+
+    // Visual feedback: change button to success state
+    if (copyBtnEl) {
+      copyBtnEl.classList.add("success");
+      copyBtnEl.innerHTML = '<span>✅</span><span>Copied!</span>';
+
+      // Reset after 2 seconds
+      setTimeout(() => {
+        if (copyBtnEl) {
+          copyBtnEl.classList.remove("success");
+          copyBtnEl.innerHTML = '<span>📋</span><span>Copy to Clipboard</span>';
+        }
+      }, 2000);
+    }
+
+    setStatus("Copied to clipboard");
+  } catch (error) {
+    console.error("Failed to copy:", error);
+    setStatus("Failed to copy to clipboard");
   }
 }
 
@@ -124,6 +173,10 @@ function clearOutput() {
   if (pathInputEl) {
     pathInputEl.value = "";
   }
+  if (copyBtnEl) {
+    copyBtnEl.disabled = true;
+  }
+  lastGeneratedOutput = "";
   setStatus("Ready");
 }
 
@@ -173,17 +226,39 @@ function handleDrop(e: DragEvent) {
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
+  // Initialize navigation system first
+  initNavigation();
+
+  // Initialize settings screen scroll-sync
+  initSettings();
+
+  // Initialize settings manager (load and wire up form controls)
+  if (isTauri) {
+    try {
+      await initSettingsUI();
+      console.log("✅ Settings UI initialized");
+    } catch (error) {
+      console.error("Failed to initialize settings UI:", error);
+    }
+  }
+
+  // Get DOM elements
   pathInputEl = document.querySelector("#path-input");
   outputEl = document.querySelector("#output");
   generateBtnEl = document.querySelector("#generate-btn");
   clearBtnEl = document.querySelector("#clear-btn");
   browseBtnEl = document.querySelector("#browse-btn");
+  copyBtnEl = document.querySelector("#copy-btn");
   dropZoneEl = document.querySelector("#drop-zone");
   btnTextEl = document.querySelector("#btn-text");
   btnLoadingEl = document.querySelector("#btn-loading");
   statusEl = document.querySelector("#status");
 
-  // Click event listeners
+  // Get navigation elements
+  const closeSettingsBtn = document.querySelector("#close-settings-btn");
+  const addProjectBtn = document.querySelector("#add-project-btn");
+
+  // Main screen event listeners
   generateBtnEl?.addEventListener("click", () => generateSnapshot());
   clearBtnEl?.addEventListener("click", () => clearOutput());
   browseBtnEl?.addEventListener("click", (e) => {
@@ -191,6 +266,11 @@ window.addEventListener("DOMContentLoaded", async () => {
     e.stopPropagation();
     browseFolderDialog();
   });
+  copyBtnEl?.addEventListener("click", () => copyToClipboard());
+
+  // Navigation event listeners
+  closeSettingsBtn?.addEventListener("click", () => navigateToMain());
+  addProjectBtn?.addEventListener("click", () => browseFolderDialog());
 
   // Enter key on input
   pathInputEl?.addEventListener("keypress", (e) => {

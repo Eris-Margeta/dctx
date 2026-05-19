@@ -13,10 +13,11 @@ pub const DESKTOP_APP_NAME: &str = "dctx-desktop";
 /// Desktop config filename
 pub const DESKTOP_CONFIG_FILENAME: &str = "config.toml";
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct DesktopConfig {
     /// Inherit core dctx config (filters, ignore rules, etc.)
     /// Not serialized - loaded from ~/.config/dctx/config.toml
+    #[serde(skip)]
     pub core: AppConfig,
 
     /// Desktop-specific: Last used directory
@@ -31,6 +32,19 @@ pub struct DesktopConfig {
 
     /// Desktop-specific: Theme preference (system, light, dark)
     pub theme: String,
+
+    /// Desktop-specific: Auto-copy snapshot to clipboard after generation
+    pub auto_copy_to_clipboard: bool,
+
+    // Filter settings (desktop-specific defaults)
+    pub filter_extensions: Option<Vec<String>>,
+    pub include_binary: bool,
+    pub only_hidden: bool,
+    pub min_size_mb: Option<f64>,
+    pub max_size_mb: Option<f64>,
+    pub only_empty: bool,
+    pub only_non_empty: bool,
+    pub tree_only: bool,
 }
 
 impl Default for DesktopConfig {
@@ -42,6 +56,15 @@ impl Default for DesktopConfig {
             window_height: 800,
             file_count_limit: 10_000,
             theme: "system".to_string(),
+            auto_copy_to_clipboard: false,
+            filter_extensions: None,
+            include_binary: false,
+            only_hidden: false,
+            min_size_mb: None,
+            max_size_mb: None,
+            only_empty: false,
+            only_non_empty: false,
+            tree_only: false,
         }
     }
 }
@@ -134,6 +157,44 @@ fn parse_desktop_config_line(line: &str, config: &mut DesktopConfig) {
             "theme" => {
                 config.theme = val.to_string();
             }
+            "auto_copy_to_clipboard" => {
+                config.auto_copy_to_clipboard = val == "true";
+            }
+            "filter_extensions" => {
+                if !val.is_empty() {
+                    config.filter_extensions = Some(
+                        val.split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect()
+                    );
+                }
+            }
+            "include_binary" => {
+                config.include_binary = val == "true";
+            }
+            "only_hidden" => {
+                config.only_hidden = val == "true";
+            }
+            "min_size_mb" => {
+                if let Ok(num) = val.parse::<f64>() {
+                    config.min_size_mb = Some(num);
+                }
+            }
+            "max_size_mb" => {
+                if let Ok(num) = val.parse::<f64>() {
+                    config.max_size_mb = Some(num);
+                }
+            }
+            "only_empty" => {
+                config.only_empty = val == "true";
+            }
+            "only_non_empty" => {
+                config.only_non_empty = val == "true";
+            }
+            "tree_only" => {
+                config.tree_only = val == "true";
+            }
             _ => {
                 // Unknown key - ignore
             }
@@ -163,6 +224,23 @@ pub fn save_desktop_config(config: &DesktopConfig) -> Result<(), String> {
     content.push_str(&format!("window_height = {}\n", config.window_height));
     content.push_str(&format!("file_count_limit = {}\n", config.file_count_limit));
     content.push_str(&format!("theme = \"{}\"\n", config.theme));
+    content.push_str(&format!("auto_copy_to_clipboard = {}\n", config.auto_copy_to_clipboard));
+
+    content.push_str("\n# Filter settings\n");
+    if let Some(ref exts) = config.filter_extensions {
+        content.push_str(&format!("filter_extensions = \"{}\"\n", exts.join(",")));
+    }
+    content.push_str(&format!("include_binary = {}\n", config.include_binary));
+    content.push_str(&format!("only_hidden = {}\n", config.only_hidden));
+    if let Some(min) = config.min_size_mb {
+        content.push_str(&format!("min_size_mb = {}\n", min));
+    }
+    if let Some(max) = config.max_size_mb {
+        content.push_str(&format!("max_size_mb = {}\n", max));
+    }
+    content.push_str(&format!("only_empty = {}\n", config.only_empty));
+    content.push_str(&format!("only_non_empty = {}\n", config.only_non_empty));
+    content.push_str(&format!("tree_only = {}\n", config.tree_only));
 
     fs::write(config_path, content).map_err(|e| format!("Failed to write config: {}", e))?;
 

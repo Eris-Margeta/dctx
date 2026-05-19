@@ -81,6 +81,18 @@
         justify-content: space-between;
       }
 
+      .header-left {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
       .logo {
         display: flex;
         align-items: center;
@@ -304,6 +316,16 @@
         box-shadow: 0 2px 8px var(--shadow);
       }
 
+      button.secondary.success {
+        background: #10b981;
+        color: white;
+      }
+
+      button.secondary.success:hover {
+        background: #059669;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      }
+
       .output-card {
         min-height: 400px;
       }
@@ -313,7 +335,10 @@
         background: var(--bg-secondary);
         border: 1px solid var(--border);
         border-radius: 8px;
-        font-family: "SF Mono", "Monaco", "Menlo", "Courier New", monospace;
+        font-family: "SF Mono", "Monaco", "Menlo", "Consolas", "DejaVu Sans Mono",
+          "Liberation Mono", "Courier New", "Noto Sans Mono",
+          "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+          "Noto Color Emoji", monospace;
         font-size: 13px;
         line-height: 1.6;
         white-space: pre-wrap;
@@ -321,6 +346,9 @@
         overflow-y: auto;
         color: var(--text-primary);
         transition: all 0.3s ease;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
       }
 
       .output:empty::before {
@@ -386,25 +414,559 @@
           transform: translateY(0);
         }
       }
+
+      /* Navigation buttons */
+      .nav-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: transparent;
+        color: var(--text-secondary);
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .nav-btn:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+
+      .nav-btn .nav-arrow {
+        font-size: 16px;
+      }
+
+      .nav-btn.hidden {
+        display: none;
+      }
+
+      .icon-btn {
+        width: 40px;
+        height: 40px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: transparent;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        color: var(--text-secondary);
+      }
+
+      .icon-btn:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+
+      .icon-btn .icon {
+        font-size: 20px;
+      }
+
+      /* Screen management */
+      .screen {
+        display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .screen.screen-active {
+        display: block;
+        opacity: 1;
+      }
+
+      .screen.screen-hidden {
+        display: none;
+        opacity: 0;
+      }
+
+      .screen.fade-out {
+        opacity: 0;
+      }
+
+      .screen.fade-in {
+        animation: fadeIn 0.3s ease;
+      }
+
+      /* Empty state */
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+      }
+
+      .empty-icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+        opacity: 0.4;
+      }
+
+      .empty-text {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+
+      .empty-hint {
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      /* Settings screen */
+      .settings-container {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px var(--shadow);
+      }
+
+      .settings-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .settings-header h2 {
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0;
+      }
+
+      .close-btn {
+        width: 32px;
+        height: 32px;
+      }
+
+      .close-btn .icon {
+        font-size: 18px;
+      }
+
+      .settings-layout {
+        display: flex;
+        min-height: 600px;
+      }
+
+      /* Settings navigation sidebar */
+      .settings-nav {
+        width: 240px;
+        background: var(--bg-secondary);
+        border-right: 1px solid var(--border);
+        padding: 16px 0;
+      }
+
+      .nav-item {
+        padding: 12px 24px;
+        font-size: 14px;
+        font-weight: 400;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-left: 2px solid transparent;
+        opacity: 0.6;
+      }
+
+      .nav-item:hover {
+        background: var(--bg-tertiary);
+        opacity: 0.8;
+      }
+
+      .nav-item.active {
+        color: var(--text-primary);
+        font-weight: 600;
+        border-left-color: var(--accent);
+        opacity: 1;
+      }
+
+      .nav-item.partially-visible {
+        opacity: 0.7;
+        font-weight: 500;
+      }
+
+      /* Settings content area */
+      .settings-content {
+        flex: 1;
+        padding: 24px 32px;
+        overflow-y: auto;
+        max-height: 600px;
+      }
+
+      .settings-content::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .settings-content::-webkit-scrollbar-track {
+        background: var(--bg-primary);
+      }
+
+      .settings-content::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 4px;
+      }
+
+      .settings-content::-webkit-scrollbar-thumb:hover {
+        background: var(--text-tertiary);
+      }
+
+      /* Settings sections */
+      .settings-section {
+        margin-bottom: 48px;
+        scroll-margin-top: 20px;
+      }
+
+      .settings-section:last-child {
+        margin-bottom: 20px;
+      }
+
+      .section-header {
+        margin-bottom: 24px;
+      }
+
+      .section-title {
+        font-size: 24px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 8px 0;
+      }
+
+      .section-description {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin: 0;
+      }
+
+      .section-content {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* Setting rows */
+      .setting-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        padding: 16px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        transition: all 0.2s ease;
+      }
+
+      .setting-row:hover {
+        background: var(--bg-tertiary);
+      }
+
+      .setting-label {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .label-text {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+
+      .label-hint {
+        font-size: 12px;
+        color: var(--text-secondary);
+        font-weight: 400;
+      }
+
+      .setting-input {
+        min-width: 200px;
+        padding: 8px 12px;
+        font-size: 14px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--bg-input);
+        color: var(--text-primary);
+        transition: all 0.2s ease;
+      }
+
+      .setting-input:focus {
+        outline: none;
+        border-color: var(--border-focus);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      /* Toggle switch */
+      .toggle {
+        position: relative;
+        display: inline-block;
+        width: 48px;
+        height: 26px;
+        cursor: pointer;
+      }
+
+      .toggle input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: var(--text-tertiary);
+        border-radius: 26px;
+        transition: 0.3s;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 20px;
+        width: 20px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        border-radius: 50%;
+        transition: 0.3s;
+      }
+
+      .toggle input:checked + .slider {
+        background-color: var(--accent);
+      }
+
+      .toggle input:checked + .slider:before {
+        transform: translateX(22px);
+      }
+
+      /* Setting info boxes */
+      .setting-info {
+        padding: 16px;
+        background: var(--accent-light);
+        border: 1px solid var(--accent);
+        border-radius: 8px;
+        font-size: 13px;
+        line-height: 1.6;
+        color: var(--text-primary);
+      }
+
+      .setting-info p {
+        margin: 0 0 8px 0;
+      }
+
+      .setting-info p:last-child {
+        margin-bottom: 0;
+      }
+
+      .setting-info code {
+        background: var(--bg-tertiary);
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: "SF Mono", "Monaco", "Menlo", "Consolas", "DejaVu Sans Mono",
+          "Liberation Mono", "Courier New", "Noto Sans Mono", monospace;
+        font-size: 12px;
+      }
+
+      .setting-divider {
+        height: 1px;
+        background: var(--border);
+        margin: 8px 0;
+      }
+
+      /* About section */
+      .about-info {
+        text-align: center;
+        padding: 20px;
+      }
+
+      .about-logo {
+        display: flex;
+        justify-content: center;
+        margin-bottom: 16px;
+      }
+
+      .about-info h3 {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin: 0 0 8px 0;
+      }
+
+      .about-info .version {
+        font-size: 14px;
+        color: var(--text-secondary);
+        margin: 0 0 12px 0;
+      }
+
+      .about-info .tagline {
+        font-size: 14px;
+        color: var(--text-secondary);
+        font-style: italic;
+        margin: 0;
+      }
+
+      .about-links {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .about-link {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 16px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        text-decoration: none;
+        transition: all 0.2s ease;
+      }
+
+      .about-link:hover {
+        background: var(--bg-tertiary);
+        transform: translateX(4px);
+      }
+
+      .about-link span:first-child {
+        font-size: 20px;
+      }
+
+      .about-link span:last-child {
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      /* Danger button variant */
+      button.danger {
+        color: #ef4444;
+        border: 1px solid #ef4444;
+      }
+
+      button.danger:hover {
+        background: #ef4444;
+        color: white;
+      }
+
+      /* Project cards */
+      .project-card {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 12px;
+        transition: all 0.2s ease;
+      }
+
+      .project-card:hover {
+        background: var(--bg-tertiary);
+        transform: translateX(4px);
+        box-shadow: 0 2px 8px var(--shadow);
+      }
+
+      .project-info {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .project-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      .project-path {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-family: "SF Mono", "Monaco", "Menlo", "Consolas", "DejaVu Sans Mono",
+          "Liberation Mono", "Courier New", "Noto Sans Mono", monospace;
+      }
+
+      .project-meta {
+        font-size: 12px;
+        color: var(--text-tertiary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .project-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .project-actions button {
+        padding: 8px 16px;
+        font-size: 13px;
+      }
+
+      .btn-open {
+        background: var(--accent);
+        color: white;
+      }
+
+      .btn-open:hover {
+        background: var(--accent-hover);
+      }
+
+      .btn-remove {
+        background: transparent;
+        color: var(--text-secondary);
+        border: 1px solid var(--border);
+      }
+
+      .btn-remove:hover {
+        background: #fee;
+        color: #ef4444;
+        border-color: #ef4444;
+      }
     </style>
   </head>
   <body>
     <div class="app">
       <header class="header">
         <div class="header-content">
-          <div class="logo">
-            <div class="logo-icon">dx</div>
-            <div>
-              <h1>
-                dctx Desktop
-                <span class="badge">v0.1.0-alpha</span>
-              </h1>
+          <div class="header-left">
+            <div class="logo">
+              <div class="logo-icon">dx</div>
+              <div>
+                <h1>
+                  dctx Desktop
+                  <span class="badge">v0.1.0-alpha</span>
+                </h1>
+              </div>
             </div>
+            <button class="nav-btn" id="projects-nav-btn">
+              <span class="nav-arrow">←</span>
+              <span>All Projects</span>
+            </button>
+          </div>
+          <div class="header-right">
+            <button class="icon-btn" id="settings-btn" title="Settings">
+              <span class="icon">⚙️</span>
+            </button>
           </div>
         </div>
       </header>
 
       <main class="container">
+        <!-- Main Screen: Snapshot Generation -->
+        <div id="main-screen" class="screen screen-active">
         <div class="card fade-in">
           <div class="card-header">
             <div class="card-title">Generate Context Snapshot</div>
@@ -441,6 +1003,10 @@
               <span id="btn-text">Generate Snapshot</span>
               <span id="btn-loading" style="display: none;" class="loading"></span>
             </button>
+            <button class="secondary" id="copy-btn" disabled>
+              <span>📋</span>
+              <span>Copy to Clipboard</span>
+            </button>
             <button class="secondary" id="clear-btn">Clear</button>
           </div>
         </div>
@@ -452,6 +1018,360 @@
           </div>
 
           <div class="output" id="output"></div>
+        </div>
+        </div>
+
+        <!-- Projects Screen: Recent Projects List -->
+        <div id="projects-screen" class="screen screen-hidden">
+          <div class="card fade-in">
+            <div class="card-header">
+              <div class="card-title">All Projects</div>
+              <div class="card-subtitle">Recently accessed projects</div>
+            </div>
+
+            <div id="projects-list">
+              <div class="empty-state">
+                <div class="empty-icon">📂</div>
+                <div class="empty-text">No recent projects</div>
+                <div class="empty-hint">Generate a snapshot to add a project here</div>
+              </div>
+            </div>
+
+            <button class="secondary" id="add-project-btn">
+              <span>+</span>
+              <span>Add New Project</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Settings Screen: Configuration Management -->
+        <div id="settings-screen" class="screen screen-hidden">
+          <div class="settings-container">
+            <div class="settings-header">
+              <h2>Settings</h2>
+              <button class="icon-btn close-btn" id="close-settings-btn" title="Close">
+                <span class="icon">✕</span>
+              </button>
+            </div>
+
+            <div class="settings-layout">
+              <!-- Left: Navigation Sidebar -->
+              <nav class="settings-nav">
+                <div class="nav-item active" data-section="general">General</div>
+                <div class="nav-item" data-section="filters">Filters</div>
+                <div class="nav-item" data-section="output">Output</div>
+                <div class="nav-item" data-section="templates">Templates</div>
+                <div class="nav-item" data-section="ignore">Ignore Rules</div>
+                <div class="nav-item" data-section="advanced">Advanced</div>
+                <div class="nav-item" data-section="about">About</div>
+              </nav>
+
+              <!-- Right: Settings Panels -->
+              <div class="settings-content">
+                <!-- Section 1: General Settings -->
+                <section class="settings-section" data-section-id="general" id="general">
+                  <div class="section-header">
+                    <h2 class="section-title">General Settings</h2>
+                    <p class="section-description">Basic application preferences and behavior</p>
+                  </div>
+                  <div class="section-content">
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Theme</span>
+                        <span class="label-hint">Choose color scheme for the interface</span>
+                      </label>
+                      <select class="setting-input" id="theme-select">
+                        <option value="system">System Default</option>
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                      </select>
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">File Count Limit</span>
+                        <span class="label-hint">Maximum files to process (safety threshold)</span>
+                      </label>
+                      <input type="number" class="setting-input" id="file-count-input" value="10000" min="100" max="1000000">
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Auto-copy to Clipboard</span>
+                        <span class="label-hint">Automatically copy snapshot to clipboard after generation</span>
+                      </label>
+                      <label class="toggle">
+                        <input type="checkbox" id="auto-copy-toggle">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Section 2: Filter Settings -->
+                <section class="settings-section" data-section-id="filters">
+                  <div class="section-header">
+                    <h2 class="section-title">Filter Settings</h2>
+                    <p class="section-description">Control which files are included in snapshots</p>
+                  </div>
+                  <div class="section-content">
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Extension Filters</span>
+                        <span class="label-hint">Comma-separated file extensions (e.g., rs, toml, md)</span>
+                      </label>
+                      <input type="text" id="filter-extensions-input" class="setting-input" placeholder="Leave empty for all files">
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Include Binary Files</span>
+                        <span class="label-hint">Show binary files in output</span>
+                      </label>
+                      <label class="toggle">
+                        <input type="checkbox" id="include-binary-toggle">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Show Hidden Files Only</span>
+                        <span class="label-hint">Only include files/folders starting with dot (.)</span>
+                      </label>
+                      <label class="toggle">
+                        <input type="checkbox" id="only-hidden-toggle">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Maximum File Size (MB)</span>
+                        <span class="label-hint">Exclude files larger than this size</span>
+                      </label>
+                      <input type="number" id="max-size-input" class="setting-input" placeholder="No limit" min="0" step="0.1">
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Minimum File Size (MB)</span>
+                        <span class="label-hint">Exclude files smaller than this size</span>
+                      </label>
+                      <input type="number" id="min-size-input" class="setting-input" placeholder="No limit" min="0" step="0.1">
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Content Filter</span>
+                        <span class="label-hint">Filter files by content presence</span>
+                      </label>
+                      <div style="display: flex; gap: 16px; align-items: center;">
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                          <input type="radio" name="content-filter" value="all" checked>
+                          <span>All Files</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                          <input type="radio" name="content-filter" value="empty">
+                          <span>Empty Only</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                          <input type="radio" name="content-filter" value="non-empty">
+                          <span>Non-Empty Only</span>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Section 3: Output Settings -->
+                <section class="settings-section" data-section-id="output">
+                  <div class="section-header">
+                    <h2 class="section-title">Output Settings</h2>
+                    <p class="section-description">Configure how snapshots are generated and saved</p>
+                  </div>
+                  <div class="section-content">
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Text Output Enabled</span>
+                        <span class="label-hint">Save snapshots as .txt files in .dctx/ directory</span>
+                      </label>
+                      <label class="toggle">
+                        <input type="checkbox" checked>
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Generate Diff Files</span>
+                        <span class="label-hint">Create separate diff files for incremental changes</span>
+                      </label>
+                      <label class="toggle">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Tree-Only Mode</span>
+                        <span class="label-hint">Show directory structure without file contents</span>
+                      </label>
+                      <label class="toggle">
+                        <input type="checkbox" id="tree-only-toggle">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Section 4: Templates -->
+                <section class="settings-section" data-section-id="templates">
+                  <div class="section-header">
+                    <h2 class="section-title">Templates</h2>
+                    <p class="section-description">Manage custom output templates</p>
+                  </div>
+                  <div class="section-content">
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Default Template</span>
+                        <span class="label-hint">Template used for generating snapshots</span>
+                      </label>
+                      <select class="setting-input">
+                        <option value="default">Default</option>
+                      </select>
+                    </div>
+
+                    <div class="setting-info">
+                      <p>Custom templates allow you to customize the output format.</p>
+                      <p>Build new templates using the CLI: <code>dctx template build &lt;path&gt;</code></p>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Section 5: Ignore Rules -->
+                <section class="settings-section" data-section-id="ignore">
+                  <div class="section-header">
+                    <h2 class="section-title">Ignore Rules</h2>
+                    <p class="section-description">Customize file ignore and content omit patterns</p>
+                  </div>
+                  <div class="section-content">
+                    <div class="setting-info">
+                      <p><strong>Global Rules:</strong> ~/.config/dctx/ignore and ~/.config/dctx/omitcontent</p>
+                      <p><strong>Project Rules:</strong> .dctxignore and .dctxomitcontent in project root</p>
+                      <p>Patterns follow gitignore syntax. Project rules extend global rules.</p>
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">View Global Ignore Rules</span>
+                      </label>
+                      <button class="secondary">Open in Editor</button>
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">View Global Omit Rules</span>
+                      </label>
+                      <button class="secondary">Open in Editor</button>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Section 6: Advanced Settings -->
+                <section class="settings-section" data-section-id="advanced">
+                  <div class="section-header">
+                    <h2 class="section-title">Advanced Settings</h2>
+                    <p class="section-description">Debug options and cache management</p>
+                  </div>
+                  <div class="section-content">
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Debug Verbose Mode</span>
+                        <span class="label-hint">Show detailed diagnostic output</span>
+                      </label>
+                      <label class="toggle">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Show Ignored Folders</span>
+                        <span class="label-hint">Display ignored directories in tree</span>
+                      </label>
+                      <label class="toggle">
+                        <input type="checkbox">
+                        <span class="slider"></span>
+                      </label>
+                    </div>
+
+                    <div class="setting-divider"></div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Cache Management</span>
+                        <span class="label-hint">Project state is stored in ~/.cache/dctx/</span>
+                      </label>
+                      <button class="secondary danger">Clear All Cache</button>
+                    </div>
+
+                    <div class="setting-row">
+                      <label class="setting-label">
+                        <span class="label-text">Reset All Settings</span>
+                        <span class="label-hint">Restore all settings to default values</span>
+                      </label>
+                      <button class="secondary danger">Reset to Defaults</button>
+                    </div>
+                  </div>
+                </section>
+
+                <!-- Section 7: About -->
+                <section class="settings-section" data-section-id="about">
+                  <div class="section-header">
+                    <h2 class="section-title">About</h2>
+                    <p class="section-description">Version information and resources</p>
+                  </div>
+                  <div class="section-content">
+                    <div class="about-info">
+                      <div class="about-logo">
+                        <div class="logo-icon" style="width: 64px; height: 64px; font-size: 32px;">dx</div>
+                      </div>
+                      <h3>dctx Desktop</h3>
+                      <p class="version">Version 0.1.0-alpha</p>
+                      <p class="tagline">The universal standard for context-aware AI development</p>
+                    </div>
+
+                    <div class="setting-divider"></div>
+
+                    <div class="about-links">
+                      <a href="https://dctx.app" target="_blank" class="about-link">
+                        <span>🌐</span>
+                        <span>Website</span>
+                      </a>
+                      <a href="https://github.com/Eris-Margeta/dctx" target="_blank" class="about-link">
+                        <span>📦</span>
+                        <span>GitHub Repository</span>
+                      </a>
+                      <a href="https://github.com/Eris-Margeta/dctx/issues" target="_blank" class="about-link">
+                        <span>🐛</span>
+                        <span>Report an Issue</span>
+                      </a>
+                    </div>
+
+                    <div class="setting-divider"></div>
+
+                    <div class="setting-info">
+                      <p><strong>Core & CLI:</strong> MIT License (Free Forever)</p>
+                      <p><strong>Desktop App:</strong> Proprietary (Beta - Free)</p>
+                    </div>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </div>
         </div>
       </main>
 

@@ -225,7 +225,7 @@ mod tests {
     #[test]
     fn test_decision_clone() {
         let decision = FileHandlingDecision::Include;
-        let cloned = decision.clone();
+        let cloned = decision;
         assert_eq!(decision, cloned);
     }
 

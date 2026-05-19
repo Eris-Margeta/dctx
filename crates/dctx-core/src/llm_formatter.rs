@@ -866,7 +866,6 @@ mod tests {
         assert!(
             tmpl.layout.contains("{{{comp.tree}}}")
                 || tmpl.variables.contains_key("comp.tree")
-                || true
         );
     }
 

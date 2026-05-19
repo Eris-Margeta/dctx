@@ -1,3 +1,7 @@
+// Deny unwrap() in production code - use expect() with clear messages or proper error handling
+// Tests are allowed to use unwrap() for convenience
+#![cfg_attr(not(test), deny(clippy::unwrap_used))]
+
 pub mod config;
 pub mod content_reader;
 pub mod datatypes;
