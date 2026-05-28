@@ -20,6 +20,51 @@ lint:
 build:
     cargo build --release -p dctx-cli
 
+# Render Mermaid diagrams from docs/diagrams/*.mmd into docs/assets/*.svg
+diagrams:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    if ! command -v mmdc >/dev/null 2>&1; then
+        if ! command -v pnpm >/dev/null 2>&1; then
+            echo "ERROR: Mermaid CLI is required. Install mmdc or pnpm."
+            echo "Install option: pnpm add -g @mermaid-js/mermaid-cli"
+            exit 1
+        fi
+        RENDERER="pnpm dlx --allow-build=puppeteer @mermaid-js/mermaid-cli"
+    else
+        RENDERER="mmdc"
+    fi
+
+    if [ -z "${PUPPETEER_EXECUTABLE_PATH:-}" ]; then
+        if [ -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]; then
+            export PUPPETEER_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+            export PUPPETEER_SKIP_DOWNLOAD=true
+        else
+            browser="$(find "$HOME/.cache/puppeteer" "$HOME/Library/Caches/ms-playwright" -type f -name chrome-headless-shell -perm -111 2>/dev/null | sort | tail -n 1 || true)"
+            if [ -n "$browser" ]; then
+                export PUPPETEER_EXECUTABLE_PATH="$browser"
+                export PUPPETEER_SKIP_DOWNLOAD=true
+            fi
+        fi
+    fi
+
+    mkdir -p docs/assets
+
+    shopt -s nullglob
+    sources=(docs/diagrams/*.mmd)
+    if [ ${#sources[@]} -eq 0 ]; then
+        echo "No Mermaid source files found in docs/diagrams/"
+        exit 0
+    fi
+
+    for source in "${sources[@]}"; do
+        name="$(basename "${source%.mmd}")"
+        target="docs/assets/${name}.svg"
+        echo "Rendering ${source} -> ${target}"
+        ${RENDERER} -i "${source}" -o "${target}" -c docs/diagrams/mermaid-config.json --backgroundColor transparent
+    done
+
 # ============================================================================
 # Desktop App Commands
 # ============================================================================

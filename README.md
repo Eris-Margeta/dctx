@@ -128,6 +128,22 @@ Run without arguments to launch the interactive menu system—discover all featu
 
 ---
 
+## AI Development Workflow
+
+
+
+
+
+Editable source: [docs/diagrams/ai-workflow.mmd](docs/diagrams/ai-workflow.mmd)
+
+Regenerate the SVG asset after editing the source:
+
+```bash
+just diagrams
+```
+
+---
+
 ## Security & Privacy
 
 ### Privacy Guarantee
