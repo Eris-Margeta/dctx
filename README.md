@@ -136,11 +136,22 @@ Run without arguments to launch the interactive menu system—discover all featu
 
 Editable source: [docs/diagrams/ai-workflow.mmd](docs/diagrams/ai-workflow.mmd)
 
-Regenerate the SVG asset after editing the source:
+### Diagramming Standard
+
+Project diagrams are maintained as editable Mermaid source plus rendered SVG assets:
+
+- Edit Mermaid source files in `docs/diagrams/*.mmd`.
+- Render embeddable SVG files into `docs/assets/*.svg`.
+- Embed SVG assets in Markdown so GitHub READMEs stay crisp and readable.
+- Keep the matching Mermaid source linked near each embedded diagram.
+
+Regenerate SVG assets after editing Mermaid source:
 
 ```bash
 just diagrams
 ```
+
+The full diagram editing and rendering procedure is documented in [docs/GUIDES/DEVELOPER-GUIDE.md](docs/GUIDES/DEVELOPER-GUIDE.md).
 
 ---
 
