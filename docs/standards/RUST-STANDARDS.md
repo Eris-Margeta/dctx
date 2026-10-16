@@ -49,3 +49,4 @@ Binding for every Rust packet. Workers read this before writing code.
 - Also approved here: everything `dctx-core` already uses; `rusqlite` with `bundled` (FTS5) in `dctx-map-store`; `tree-sitter`, `tree-sitter-rust` and `tree-sitter-md` (exact pins) in `dctx-map-parse`.
 - In dctx, workspace-level dependencies may be declared in the crate's own `Cargo.toml` with an exact version. The root stays untouched.
 - Dev-dependencies only, for differential testing of first-party cryptography (decision 078, decision 081): `sha2` (against dctx-hash) and `ed25519-dalek` (against dctx-ed25519). They never appear in a production dependency closure.
+- `syn` (exact pin, minimal features) in `dctx-lex-rust` only: the Rust structural extractor (decision 077).
