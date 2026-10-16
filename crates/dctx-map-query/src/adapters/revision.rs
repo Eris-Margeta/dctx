@@ -1,6 +1,8 @@
-//! Base revision and dirty overlay identity from read-only Git commands.
-//! Implements SPEC-MAP-MODE sections 6.4 and 7 for filesystem sources.
-//! Uses an explicit place root; non-Git trees receive a content identity.
+//! Place revision from authorized content hashes only.
+//! Implements SPEC-MAP-MODE section 7 under decision 078: no Git and no other
+//! version-control tool. Freshness pre-filter (mtime and size) stays in inventory.
+//! Inventory calls this after that pre-filter and then fills directories and rules.
+
 use crate::{
     Result,
     ports::{Snapshot, SourceFile},
@@ -8,95 +10,96 @@ use crate::{
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::Path,
-    process::Command,
 };
 
-fn git(root: &Path, args: &[&str]) -> Option<Vec<u8>> {
-    let output = Command::new("git")
-        .arg("-C")
-        .arg(root)
-        .args(args)
-        .env("GIT_OPTIONAL_LOCKS", "0")
-        .output()
-        .ok()?;
-    output.status.success().then_some(output.stdout)
-}
-pub(super) fn snapshot(
-    root: &Path,
-    files: BTreeMap<String, SourceFile>,
-    previous: Option<&Snapshot>,
-) -> Result<Snapshot> {
-    let revision = git(root, &["rev-parse", "--verify", "HEAD"])
-        .and_then(|bytes| String::from_utf8(bytes).ok())
-        .map(|s| s.trim().to_owned())
-        .filter(|s| s.len() >= 7 && s.bytes().all(|b| b.is_ascii_hexdigit()));
-    let Some(revision) = revision else {
-        let mut identities = Vec::new();
-        for (path, file) in &files {
-            identities.extend_from_slice(path.as_bytes());
-            identities.push(0);
-            identities.extend_from_slice(file.hash.as_bytes());
-        }
-        return Ok(Snapshot {
-            revision: super::source::digest(&identities),
-            files,
-            dirty: BTreeSet::new(),
-            recent: BTreeSet::new(),
-            directories: BTreeMap::new(),
-            rules: BTreeMap::new(),
-        });
-    };
-    let mut dirty = BTreeSet::new();
-    if let Some(bytes) = git(
-        root,
-        &["status", "--porcelain=v1", "-z", "--untracked-files=all"],
-    ) {
-        let mut fields = bytes.split(|b| *b == 0).filter(|b| !b.is_empty());
-        while let Some(field) = fields.next() {
-            if field.len() < 4 {
-                continue;
-            }
-            dirty.insert(String::from_utf8_lossy(&field[3..]).into_owned());
-            if field[..2].iter().any(|b| matches!(b, b'R' | b'C')) {
-                fields.next();
-            }
-        }
-    } else {
-        return Err(crate::Error::Request(
-            "cannot determine Git dirty overlay".into(),
-        ));
+fn content_revision(files: &BTreeMap<String, SourceFile>) -> String {
+    let mut identities = Vec::new();
+    for (path, file) in files {
+        identities.extend_from_slice(path.as_bytes());
+        // NUL keeps a path from merging with the following hash.
+        identities.push(0);
+        identities.extend_from_slice(file.hash.as_bytes());
     }
-    let recent = if let Some(previous) = previous.filter(|old| old.revision == revision) {
-        previous.recent.clone()
-    } else {
-        git(
-            root,
-            &[
-                "log",
-                "-5",
-                "--format=",
-                "--name-only",
-                "-z",
-                "--no-renames",
-            ],
-        )
-        .map(|bytes| {
-            bytes
-                .split(|b| *b == 0)
-                .filter_map(|b| std::str::from_utf8(b).ok())
-                .map(str::trim)
-                .filter(|s| !s.is_empty())
-                .map(str::to_owned)
-                .collect()
-        })
-        .unwrap_or_default()
-    };
+    super::source::digest(&identities)
+}
+
+pub(super) fn snapshot(
+    _root: &Path,
+    files: BTreeMap<String, SourceFile>,
+    _previous: Option<&Snapshot>,
+) -> Result<Snapshot> {
+    let revision = content_revision(&files);
     Ok(Snapshot {
         revision,
         files,
-        dirty,
-        recent,
+        dirty: BTreeSet::new(),
+        recent: BTreeSet::new(),
         directories: BTreeMap::new(),
         rules: BTreeMap::new(),
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ports::FileStamp;
+
+    fn file(hash: &str, mtime: i64) -> SourceFile {
+        SourceFile {
+            bytes: None,
+            hash: hash.into(),
+            size: hash.len() as u64,
+            mtime,
+            readable: true,
+            allowed: true,
+            stamp: FileStamp {
+                size: hash.len() as u64,
+                modified: mtime,
+                ..FileStamp::default()
+            },
+        }
+    }
+
+    #[test]
+    fn empty_place_revision_is_the_empty_content_digest() {
+        let snapshot = snapshot(Path::new("/missing"), BTreeMap::new(), None).unwrap();
+        assert_eq!(
+            snapshot.revision,
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
+        assert!(snapshot.dirty.is_empty());
+        assert!(snapshot.recent.is_empty());
+    }
+
+    #[test]
+    fn revision_follows_authorized_hashes_not_mtime_or_root() {
+        let mut first = BTreeMap::new();
+        first.insert("b.rs".into(), file("bbb", 1));
+        first.insert("a.rs".into(), file("aaa", 2));
+        let mut second = BTreeMap::new();
+        second.insert("a.rs".into(), file("aaa", 9));
+        second.insert("b.rs".into(), file("bbb", 8));
+        let left = snapshot(Path::new("/one"), first, None).unwrap();
+        let right = snapshot(Path::new("/two"), second, None).unwrap();
+        assert_eq!(left.revision, right.revision);
+        assert_eq!(left.revision.len(), 64);
+
+        let mut changed = BTreeMap::new();
+        changed.insert("a.rs".into(), file("aaa", 2));
+        changed.insert("b.rs".into(), file("ccc", 1));
+        let next = snapshot(Path::new("/one"), changed, Some(&left)).unwrap();
+        assert_ne!(next.revision, left.revision);
+    }
+
+    #[test]
+    fn prior_overlay_paths_are_not_carried_forward() {
+        let mut previous = snapshot(Path::new("/missing"), BTreeMap::new(), None).unwrap();
+        previous.dirty.insert("secret.rs".into());
+        previous.recent.insert(".env".into());
+        let next = snapshot(Path::new("/missing"), BTreeMap::new(), Some(&previous)).unwrap();
+        assert_eq!(next.revision, previous.revision);
+        assert!(next.dirty.is_empty());
+        assert!(next.recent.is_empty());
+        assert!(!next.files.contains_key("secret.rs"));
+    }
 }

@@ -27,6 +27,7 @@ pub use datatypes::{DirContextTreeNode, IgnoreRule, NodeType, PatternType};
 pub use diff::{ChangeType, DiffReport};
 pub use domain::{FileHandlingDecision, ItemContext};
 pub use filter::FilterConfig;
+// decision 078: no-op. dctx does not write or stage .gitignore, and does not call Git.
 pub use git_safety::ensure_local_gitignore_is_safe;
 pub use ignore::{IgnoreEngine, IgnoreError};
 pub use registry::ProjectRegistry;
