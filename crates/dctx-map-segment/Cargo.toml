@@ -1,0 +1,13 @@
+[package]
+name = "dctx-map-segment"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+description = "Pure safe binary codec for immutable dctx map index segments"
+
+[dependencies]
+dctx-hash = { path = "../dctx-hash" }
+thiserror = "=2.0.18"
+
+[dev-dependencies]
+proptest = "1"
