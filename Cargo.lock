@@ -944,12 +944,18 @@ dependencies = [
 name = "dctx-map-query"
 version = "0.1.0"
 dependencies = [
+ "dctx-adapter-cache",
+ "dctx-adapter-fs",
+ "dctx-adapter-store",
+ "dctx-core",
+ "dctx-hash",
  "dctx-map-model",
  "dctx-map-parse",
  "dctx-map-resolve",
  "dctx-map-scan",
+ "dctx-map-segment",
  "dctx-map-store",
- "rusqlite",
+ "dctx-ports",
  "serde",
  "serde_json",
  "tempfile",
