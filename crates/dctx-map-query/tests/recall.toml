@@ -1,0 +1,123 @@
+# Hand-written recall@10 corpus for the dctx workspace.
+# Natural-language questions and fixed expected stable ids; never generated from results.
+
+[[question]]
+text = "How are ignore pattern lines parsed with negation and anchoring?"
+expected = "s:crates/dctx-core/src/ignore.rs#parse_ignore_pattern_line"
+
+[[question]]
+text = "Where does the core decide whether file content is binary?"
+expected = "s:crates/dctx-core/src/file_classifier.rs#classify_file"
+
+[[question]]
+text = "How is the directory structure walked before reading file contents?"
+expected = "s:crates/dctx-core/src/walker.rs#walk_directory_structure"
+
+[[question]]
+text = "How is a directory tree filtered with FilterConfig?"
+expected = "s:crates/dctx-core/src/walker.rs#filter_tree"
+
+[[question]]
+text = "Where are file contents populated in parallel?"
+expected = "s:crates/dctx-core/src/walker.rs#populate_file_contents_parallel"
+
+[[question]]
+text = "How does FilterConfig check for active filters?"
+expected = "s:crates/dctx-core/src/filter.rs#FilterConfig::has_active_filters"
+
+[[question]]
+text = "Where does FilterConfig decide which files to include?"
+expected = "s:crates/dctx-core/src/filter.rs#FilterConfig::should_include_file"
+
+[[question]]
+text = "How does FilterConfig include directories?"
+expected = "s:crates/dctx-core/src/filter.rs#FilterConfig::should_include_directory"
+
+[[question]]
+text = "Where is the compiled templates directory configured?"
+expected = "s:crates/dctx-core/src/config.rs#get_compiled_templates_dir"
+
+[[question]]
+text = "How is the application config loaded?"
+expected = "s:crates/dctx-core/src/config.rs#load_app_config"
+
+[[question]]
+text = "How do I find the project registry path?"
+expected = "s:crates/dctx-core/src/config.rs#get_project_registry_path"
+
+[[question]]
+text = "Where is the global ignore path defined?"
+expected = "s:crates/dctx-core/src/config.rs#get_global_ignore_path"
+
+[[question]]
+text = "How does Version calculate the next version?"
+expected = "s:crates/dctx-core/src/version.rs#Version::calculate_next"
+
+[[question]]
+text = "How does Version parse V1 and V1.5 strings?"
+expected = "s:crates/dctx-core/src/version.rs#Version::parse"
+
+[[question]]
+text = "Where is a template compiled into CompiledTemplate?"
+expected = "s:crates/dctx-core/src/template.rs#Template::compile"
+
+[[question]]
+text = "How does Template validate missing required sections?"
+expected = "s:crates/dctx-core/src/template.rs#Template::validate"
+
+[[question]]
+text = "How is CompiledTemplate saved to a file?"
+expected = "s:crates/dctx-core/src/template.rs#CompiledTemplate::save_to_file"
+
+[[question]]
+text = "How are template variables replaced in text?"
+expected = "s:crates/dctx-core/src/template.rs#replace_vars"
+
+[[question]]
+text = "Where does compare_trees calculate a DiffReport?"
+expected = "s:crates/dctx-core/src/diff.rs#compare_trees"
+
+[[question]]
+text = "How is previous binary state loaded or reset?"
+expected = "s:crates/dctx-core/src/state.rs#load_or_reset_state"
+
+[[question]]
+text = "Where is the dircontxt binary file written?"
+expected = "s:crates/dctx-core/src/writer.rs#write_dircontxt_file"
+
+[[question]]
+text = "How does FileHandlingDecision control reading content?"
+expected = "s:crates/dctx-core/src/domain.rs#FileHandlingDecision::should_read_content"
+
+[[question]]
+text = "How does FileHandlingDecision control recursion?"
+expected = "s:crates/dctx-core/src/domain.rs#FileHandlingDecision::should_recurse"
+
+[[question]]
+text = "How is a stable map id constructed?"
+expected = "s:crates/dctx-map-model/src/domain/ids.rs#StableId::new"
+
+[[question]]
+text = "How are generated summaries checked against a fingerprint?"
+expected = "s:crates/dctx-map-model/src/domain/graph.rs#GeneratedSummary::select"
+
+[[question]]
+text = "Where is the answer token budget converted to bytes?"
+expected = "s:crates/dctx-map-model/src/domain/answer.rs#AnswerBudget::bytes"
+
+[[question]]
+text = "How are Rust body fingerprints normalized?"
+expected = "s:crates/dctx-map-parse/src/domain/identity.rs#body_fingerprint"
+
+[[question]]
+text = "Where are symbol moves detected by fingerprint?"
+expected = "s:crates/dctx-map-resolve/src/domain/moves.rs#detect_moves"
+
+[[question]]
+text = "How are references resolved into graph edges?"
+expected = "s:crates/dctx-map-resolve/src/domain/resolve.rs#resolve"
+
+[[question]]
+text = "Where does the map scanner hash authorized content?"
+expected = "s:crates/dctx-map-scan/src/domain/scanned_file.rs#content_hash"
+

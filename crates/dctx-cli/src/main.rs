@@ -1,5 +1,9 @@
-// crates/dctx-cli/src/main.rs
+//! Command entry point for snapshots, templates and semantic map traversal.
+//! Map routing implements SPEC-MAP-MODE section 9.1 before snapshot side effects.
+//! Uses dctx-core for the original product and dctx-map-query for code traversal.
+#![forbid(unsafe_code)]
 
+mod map;
 mod platform;
 mod tui;
 
@@ -157,6 +161,13 @@ impl From<SnapshotConfig> for CliConfig {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    if args.get(1).is_some_and(|arg| arg == "map") {
+        if let Err(error) = map::run(&args[2..]) {
+            eprintln!("map: {error}");
+            std::process::exit(1);
+        }
+        return;
+    }
     if args.len() == 1 {
         run_interactive_mode();
     } else {
@@ -997,6 +1008,7 @@ fn run_headless_mode(cli_config: CliConfig) {
 fn print_help() {
     println!("Usage: dctx [PATH] [OPTIONS]");
     println!("       dctx template <COMMAND>");
+    println!("       dctx map <map|find|neighbors|explain|read> [--json]");
     println!();
     println!("Snapshot Options:");
     println!("  -c, --clipboard       Copy to clipboard");
