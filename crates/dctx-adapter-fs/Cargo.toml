@@ -1,0 +1,13 @@
+[package]
+name = "dctx-adapter-fs"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+description = "Confined filesystem Source adapter"
+
+[dependencies]
+dctx-hash = { path = "../dctx-hash" }
+thiserror = "=2.0.18"
+
+[dev-dependencies]
+tempfile = "=3.24.0"
