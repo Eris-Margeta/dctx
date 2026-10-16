@@ -1,7 +1,9 @@
 # Cache lifecycle contract v1
 
 DX-A0b · lifecycle/ledger sketch 1.0 · managed directory namespace v2.
-Defines decision 077 time/size/automatic cleaning without a VCS dependency.
+Defines decision 077 time/size/automatic cleaning. decision 078: ownership and expiry use
+dctx manifests, leases, TTL and file metadata only. The core never reads
+`.git/` and never spawns git.
 Depends on identity v1 and segment/manifest v1; used by A2/C3/C4/D2/D3.
 All thresholds are Stage-0 policy defaults, not measured tuning results.
 
@@ -25,7 +27,7 @@ capabilities or explicit refusal. No cross-user sharing.
 
 Partition `facts/segments/views/roots/pack/templates/tmp/leases` by explicit
 trust namespace and format schema. Register only roots opened by a caller;
-never enumerate every repository, home directory or VCS history. A managed
+never enumerate a home directory and never read `.git/`. A managed
 ownership manifest records created/adopted artifacts. Source trees, config,
 template sources and user-selected exports are not disposable cache state.
 
@@ -114,9 +116,9 @@ lease states: acquiring -> active -> released | owner_proven_dead
 
 LRU/TTL selects manifests to retire. Reachability determines which segments/
 facts can then be reclaimed. A shared fact referenced by another permitted
-root remains live. Git branch reachability is neither required nor sufficient;
-optional branch views become roots only through explicit dctx registration/pin.
-With no Git installed and no `.git`, every rule above is unchanged.
+root remains live. Ownership and expiry do not consult branches, commits or
+a `.git` directory. The core never reads `.git/` and never requires a git
+executable. Every rule above is the same for a plain directory.
 
 Segments with >25% dead bytes, or under soft-cap pressure, are candidates for
 compaction. Pin input, reserve new bytes, publish replacement manifests, wait
@@ -192,7 +194,8 @@ status distinguishes authorization from reclamation. Independent purge/retention
 requirements use independent trust namespaces.
 
 A2 models P2/P3/P4/P8 with crash/interleaving mutations. C4 tests every threshold
-with fake clocks/quotas and no Git executable/repository, plus backwards clocks,
+with fake clocks/quotas and file metadata only, plus backwards clocks,
 offline grace, shared roots, full disk, stale owners, active leases, failed
-unlink, compaction headroom and dry-run immutability. Add optional Git metadata
-and require unchanged eviction results for the same dctx roots/leases/clock.
+unlink, compaction headroom and dry-run immutability. Tests assert the core
+never opens `.git/` and never spawns git. Eviction depends only on dctx roots,
+leases and the clock.

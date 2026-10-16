@@ -102,13 +102,15 @@ directory envelope with independent major/minor = 1/0 and kind registry:
 | 3 | Sorted permitted path mapping to FactKey/local IDs, metadata-only entries and freshness/completion status |
 | 4 | Base manifest reference plus replacements/additions/deletion tombstones; explicit overlay generation |
 | 5 | Resolver/extraction/parser revisions, environment digest, pending dependency scopes and capability requirements |
-| 6 | Optional full typed VCS references; never mandatory for decoding or indexing |
+| 6 | Reserved. Encoders omit it. A payload that carries a git object id or other VCS identity is refused. Decoding and indexing use kinds 1–5 only |
 
 ManifestObject digest is identity kind 10 over final envelope bytes. Manifest
 references form a bounded acyclic graph; maximum depth 32, then flatten under
 a reservation. Counts obey caller/decoder caps. Metadata paths and policy
-projections cannot reveal denied content. HEAD/index/working labels are optional
-Git metadata; no-VCS base/overlay uses dctx generations identically.
+projections cannot reveal denied content. View and revision identity are the
+SourceSnapshotDigest, ViewKey and dctx generation from authorized file bytes
+and file metadata. The core manifest stores no HEAD, index, worktree label or
+git object id. Base and overlay generations are dctx generations.
 
 Exactly one effective entry per path: overlay replacement/addition wins;
 tombstone masks base. Deleted/replaced file-owned edges are masked too, and
@@ -159,8 +161,8 @@ its own adapter tests; failed deletion remains counted pending storage.
 Ranking is versioned deterministic fixed-point lexical scoring with field
 weights/name/public/tier-0/centrality/focus boosts, checked/saturating documented
 arithmetic and full public ID tie-break (score descending, ID ascending).
-VCS recency boost is optional and explicitly part of query/environment identity;
-no Git means a neutral boost, not missing ranking capability. C1/C5 freeze score
+Ranking has no VCS recency term. Freshness file metadata is not a commit time
+and is not read from `.git/`. C1/C5 freeze score
 constants as a ranking revision and compare relevance to SQLite; binary-format
 choice alone does not define relevance. Candidate truncation and pending scopes
 must be disclosed. Same ranking revision/inputs produce identical bytes.

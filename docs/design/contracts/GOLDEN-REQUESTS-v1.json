@@ -7,12 +7,10 @@
     "place": "fixture",
     "root_identity": "fixture-root",
     "trust_namespace": "fixture-user",
-    "vcs": null,
-    "git_executable_available": false,
     "clock_seconds": 0,
     "generation": 1,
     "snapshot_handle": "fixture_snapshot",
-    "snapshot_digest_rule": "Compute SourceSnapshotDigest using IDENTITY-v1 from the exact authorized file bytes; no Git input.",
+    "snapshot_digest_rule": "Compute SourceSnapshotDigest using IDENTITY-v1 from the exact authorized file bytes and file metadata only. The core does not read .git/, spawn git, or accept a git object id.",
     "freshness": "immutable_snapshot",
     "parser": "syn adapter with a frozen reviewed test revision",
     "files": [
@@ -172,10 +170,10 @@
     }
   ],
   "cross_case_requirements": [
-    "No source writes, Git processes, ambient home reads or hidden native parser selection.",
+    "No source writes, no git process, no .git/ read, no ambient home reads and no hidden native parser selection.",
     "Every successful encoded answer obeys final byte/token caps including LF, envelope and escaping.",
     "Freeze clock, parser revision and ranking revision; repeat through each supported backend/surface with equal semantic projections.",
-    "Git SHA-1 and SHA-256 aliases, when explicitly added with valid proofs, never change these own identities or semantic results.",
+    "Core identity is the own digest only. Git object ids are not inputs and cannot change these identities or semantic results.",
     "Fixture span excludes leading doc comment and terminal newline; documentation is retained separately as summary provenance."
   ]
 }

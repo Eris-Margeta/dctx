@@ -1,7 +1,8 @@
 # Content identity contract v1
 
 DX-A0b · sketch version 1.0 · successor contract, not implemented evidence.
-Defines decision 077 own identities, optional VCS aliases and contextual sharing.
+DX-A0c applies decision 078: own algorithm-tagged digest and file metadata only.
+Defines decision 078 content identity and contextual sharing. The core has no VCS alias.
 Depends on PRODUCT-CONTRACTS C03/C04/C05; used by B0/B3/B4/B5/C1/C5.
 All encoded integers below are unsigned little-endian unless explicitly text.
 
@@ -16,12 +17,12 @@ ObjectKey.digest.bytes = SHA256(exact source bytes)
 ```
 
 Identity version 1 means exact file bytes: no newline, Unicode, whitespace,
-BOM, path or Git blob-header normalization. Byte length is independently checked.
+BOM or path normalization, and no VCS object header. Byte length is
+independently checked. The core does not read or store git object ids.
 Empty files are valid. Uppercase hex may be normalized at an input boundary;
 canonical output is lowercase with no leading zeros in decimal lengths.
 Unknown algorithm/version yields `UnsupportedIdentity`, never length-based
-guessing. A Git SHA-256 OID hashes a Git object header plus payload and therefore
-is not the above digest, even when lengths happen to match.
+guessing.
 
 Binary Digest framing: `identity_version:u16, algorithm:u16, digest_len:u16,
 digest_bytes[digest_len]`; then `byte_length:u64` for ObjectKey. Version 1 permits
@@ -61,7 +62,8 @@ extractor revision and upstream parser/grammar versions when used. Resource
 failures cannot be cached as complete facts under the successful FactKey.
 
 `RootIdentity` is an opaque caller-provided or registry-allocated stable ID,
-scoped to a trust namespace; it is not a Git path or commit. A registry binds
+scoped to a trust namespace. It is not derived from a path inside `.git/` or
+from a commit id. A registry binds
 root identity to an opened filesystem identity and requires explicit rebind
 after a move/replacement. Paths are root-relative components, never absolute,
 reject `..`/NUL and collisions. Non-UTF-8 paths require a declared lossless path
@@ -75,7 +77,7 @@ key; metadata-only entries have none; excluded entries are absent unless policy
 permits their metadata. A manifest may describe a captured byte snapshot without
 claiming that a live filesystem was globally atomic at capture time.
 Dirty/add/delete overlays also work over a previous dctx snapshot in a plain
-directory. HEAD/index/worktree labels are optional adapter metadata only.
+directory, using the own digest and file metadata.
 
 Reusable payloads contain file-local declarations, spans, docs and unresolved
 references. They never contain absolute paths, root IDs, resolved target IDs or
@@ -90,43 +92,27 @@ bounded per-key reservation. GC, parser/schema/extraction changes or distinct
 bytes require reparse. Concurrent losers reuse only the validated published
 facts; crashed/failed reservations cannot poison the key forever.
 
-## Optional Git/VCS evidence
+## No git in the core
 
-```text
-VcsObjectRef = { provider, object_algorithm, full_oid, object_kind }
-GitAlias = { repository_identity, VcsObjectRef, ObjectKey,
-             equivalence_contract, freshness_evidence, evidence_version }
-```
+Content identity, freshness, view identity and revision identity use the digest
+above and file metadata only. The core never reads `.git/`, never spawns git,
+and never uses git object ids. There is no git alias, object-id mapping or VCS
+evidence port in the core. The core never skips its own digest.
 
-Git OIDs retain their own algorithm (SHA-1 20 bytes, SHA-256 32 bytes today);
-never truncate to seven characters for storage or reject SHA-256 repositories
-because a field was sized for SHA-1. Other VCS adapters may provide hints using
-their own typed metadata. Neither Git nor any VCS is installed/discovered/run
-unless the caller selected that capability.
+The core reads `.gitignore` files as plain-text ignore rules for privacy. That
+read is not a git invocation and does not open `.git/`. Editing `.gitignore`
+and running `git add` exist only in the default-shipped plugin
+`dctx-plugin-git` (`docs/design/PLUGINS.md` once it lands). Any other
+VCS-aware behaviour belongs to a plugin through the plugin API. A plugin cannot
+change ObjectKey, FactKey, SourceSnapshotDigest, ViewKey, freshness, cache
+ownership or expiry.
 
-To skip rehashing, the adapter must provide all of:
-
-1. A previously validated alias binding the candidate bytes to dctx's own
-   ObjectKey, with retained valid facts or bytes. A bare OID is insufficient.
-2. Evidence that this authorized source's current bytes equal that object:
-   immutable source capability or a documented freshness proof sufficient for
-   the requested freshness mode. Stat equality alone is never strict proof.
-3. No active/unknown conversion: CRLF, working-tree encoding, LFS and filters
-   invalidate simple equivalence. Do not run filters to obtain/prove content.
-4. Current policy approval, namespace compatibility and integrity/provenance
-   validation. Weak/collision-suspect/untrusted OIDs cannot select facts alone.
-
-Missing proof/alias uses one authorized read for own digest and parsing.
-If facts are gone and bytes are needed, read/hash again. In a metadata-validated
-view an alias may be reused with that explicitly weaker freshness label;
-strict-current queries require proof or authorized byte validation. Strict mode
-does not promise avoiding reads just because Git exists.
-
-No broad `git status`, recursive history walk, subprocess filter execution or
-packed-object delta-base access containing denied bytes. Git index metadata is
-a separately granted capability, not source permission for `.git/` contents.
-Transforms, sparse/unmerged/racy files and unavailable Git must fall back or
-return typed uncertainty; never change content identity based on VCS presence.
+The core runs no `git status`, recursive history walk, filter subprocess or
+packed-object read. File metadata is the source's own stamps and length, not
+a git index. Transforms, sparse checkout, unmerged paths and racy stamps are
+file facts: freshness is `metadata_validated` only when the mode says so, and
+`strict_live` validates authorized bytes against the own digest. VCS presence
+does not change content identity.
 
 ## Freshness, body fingerprints and privacy
 
@@ -154,16 +140,17 @@ after the revocation is observed; already delivered bytes cannot be recalled.
 Physical pin lifetime does not grant current access to a previously allowed
 path. Content hashing itself is a read and obeys Include-only authorization.
 
-## SHA-256 candidate and acceptance
+## SHA-256 module and acceptance
 
-DX-ARCH-04a remains open. Candidate: first-party, safe, streaming SHA-256 with
+DX-ARCH-04 is superseded by decision 078. The module is `crates/dctx-hash`:
+first-party, safe, streaming SHA-256 with
 checked message-length accounting (reject input ≥2^64 bits), fixed block state,
 standard padding, big-endian message words/output and specified wrapping u32
 arithmetic inside SHA-256. Identity framing remains little-endian; the SHA
 algorithm's internal endian convention is unchanged. No production `sha2`,
 assembly, native code, vendored relabeling or first-party unsafe.
 
-Required implementation tests, owned by B3 with explicitly cut module ownership:
+Required implementation tests for `crates/dctx-hash`, owned by B3 with explicitly cut module ownership:
 
 | Test | Oracle / expected evidence |
 |---|---|

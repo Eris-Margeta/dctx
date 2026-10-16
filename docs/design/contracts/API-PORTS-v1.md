@@ -9,7 +9,7 @@ Signatures below are language-neutral sketches, not compiling Rust or a release.
 
 ```text
 SessionBuilder(Source, FactStore, CachePolicy, EffectivePolicy, ContextPlan,
-               Clock, Cancellation, OperationLimits, optional VcsEvidence)
+               Clock, Cancellation, OperationLimits)
   -> Result<Session, DctxError>
 Session.capabilities() -> Capabilities
 Session.snapshot(SnapshotRequest) -> Result<SnapshotHandle, DctxError>
@@ -21,7 +21,9 @@ Session.cache_status / cache_gc / cache_purge(explicit typed request) -> CacheRe
 
 Convenience `map/find/neighbors/explain/read` methods construct the same
 MapRequest. No engine logic lives in wrappers. Session construction never scans
-home, mutates `.gitignore`, emits stdout or chooses storage implicitly. Ephemeral
+home, edits `.gitignore`, emits stdout or chooses storage implicitly. The core
+reads `.gitignore` as plain-text ignore rules. `.gitignore` edits and `git add`
+belong only to `dctx-plugin-git` through the plugin API. Ephemeral
 is an explicit policy with memory bounds, not a hidden fallback from disk errors.
 Facade is synchronous; frontends schedule bounded work. Async runtimes stay in
 adapters/frontends. No SQL, tree-sitter nodes, raw storage paths or FFI pointers
@@ -46,7 +48,6 @@ codec/compiler have no fs/environment/process/global clock imports.
 | `Source.inventory(Selection, Limits)` → bounded metadata pages | Confined root-relative entries; no contents for non-Include; no recursion into excluded directories; source/path capability is explicit |
 | `Source.open(AuthorizedPath, FreshnessMode)` → CheckedSource | Authorization token binds root, current policy epoch and decision; adapter checks it before opening; immutable snapshot or stated live-read limits |
 | `CheckedSource.read(chunk_limit)` / `verify(ObjectKey)` | Bounded exact bytes; source identity/races checked; content read/hash share one stream where possible; `read` spans emitted only after full required identity verification |
-| `VcsEvidence.lookup(authorized_paths, mode)` → optional alias/proof | Explicit optional capability; no broad status, filters, denied blob/delta reads or mandatory HEAD; identity v1 rules |
 | `FactStore.pin(ViewKey)` → SnapshotHandle | Atomic reader/GC acquisition handshake; validated immutable generation; bounded Busy retry |
 | `FactStore.get_facts(FactKey, authorization)` / `query(handle, plan)` | Validate namespace, epoch and compatible key before content lookup; no backend types escape |
 | `FactStore.begin(view, Reservation)` → Writer | One writer/view; publish validated immutable closure, commit generation or abort; cancellation before commit cannot expose staging |
@@ -55,6 +56,12 @@ codec/compiler have no fs/environment/process/global clock imports.
 | `Clock.wall / monotonic / boot_identity` | Injected/frozen for replay; optional boot ID, never PID-age liveness proof |
 | `Cancellation.checkpoint()` | Checked at file/chunk/posting-block/resolution-batch boundaries; returns `Cancelled`, preserves committed generation |
 | `BoundedSink.reserve_record(encoded_size)` / `write_record` | Final encoding preflight includes framing/escaping/continuation; no partial record on budget refusal; IO failure may still leave transport partial output |
+
+The core has no VCS port. Freshness and revision identity come from `Source`
+file metadata and the own digest (`crates/dctx-hash`). The core never reads
+`.git/`, never spawns git, and never uses git object ids. A plugin that
+implements VCS behaviour uses the plugin API and cannot supply a substitute
+identity, freshness proof, cache owner or expiry.
 
 Publication has one commit point. Cancellation before it aborts staging; after
 it returns a committed report with cancellation observation rather than claiming
@@ -115,13 +122,15 @@ JSON v1 adapter through its announced deprecation. Example shape:
 {"v":2,"place":"fixture","snapshot":"<full own snapshot digest>","generation":1,"verb":"find","freshness":{"mode":"immutable_snapshot","state":"verified","age_s":0},"precision":{"coverage":"syntax","completion":"complete","parser":"syn:<reviewed revision>"},"records":[],"more":0,"next":null}
 ```
 
-Optional `vcs` carries provider/algorithm/full ID; non-VCS results omit it.
-Text headers show own snapshot identity with a disambiguated display prefix,
-generation and freshness; never invent `rev=<git-sha>` for a plain directory.
-Legacy JSON v1 `rev` contains an explicitly tagged own snapshot representation
-when Git metadata is absent; a consumer requiring Git-only revisions must
-negotiate v2 or receive `UnsupportedCapability`, never fabricated SHA text.
-Keep existing v1 record fields/verb behavior; v2 enriches provenance/versioning.
+Core results carry the own snapshot digest, generation and freshness. They do
+not carry a `vcs` object or a git object id. Text headers show own snapshot
+identity with a disambiguated display prefix, generation and freshness; never
+invent `rev=<git-sha>`. Legacy JSON v1 `rev` is an explicitly tagged own
+snapshot representation. A consumer that requires a git object id uses a
+plugin. The core returns `UnsupportedCapability` for that request and never
+fabricates one.
+Keep existing v1 record fields and verb behavior; v2 enriches provenance and
+versioning.
 
 Records carry kind/ID/path/line and byte spans, summary/source, parser/precision
 overrides and edge confidence where applicable. Canonical wire order follows
@@ -145,7 +154,8 @@ Missing/moved/gone/ambiguous IDs are normal query outcomes, not empty success.
 Capabilities report exact engine/build/profile, facade/wire/ABI/format/DTS
 versions, languages/dialects/parser revisions/coverage, freshness/durability,
 source confinement, cancellation granularity, native/unsafe dependency boundary
-and subprocess mechanism. They never equate “Rust” with transitive unsafe-free.
+and subprocess mechanism. The core reports no git executable and no `.git/`
+reader. They never equate “Rust” with transitive unsafe-free.
 
 ## Binding and host sketches
 
@@ -171,14 +181,15 @@ Absent that exception, defer E3 rather than weakening core `forbid(unsafe_code)`
 Kernel DctxLibrary implements host CodeMap, with explicit source permissions,
 cache capability and bounded executor. Preserve the fake and R-60 process
 adapter as explicitly selected alternatives. Linked adapter test must observe
-zero child processes, including inside optional revision adapters. Process
+zero child processes. The core has no revision adapter that spawns git. Process
 isolation remains the option for hard kill deadlines; no silent fallback.
 Worker APIs expose five read verbs, not cache/index administration.
 
 ## Golden and conformance ownership
 
 [GOLDEN-REQUESTS-v1.json](GOLDEN-REQUESTS-v1.json) fixes one tiny immutable
-no-VCS source corpus, requests for all five verbs and error/identity cases.
+source corpus whose snapshot digest comes from authorized file bytes and file
+metadata only, plus requests for all five verbs and error/identity cases.
 It supplies exact expected semantic projections; implementation owners add full
 encoded goldens after final wire record layout/ranking constants freeze, without
 weakening these expectations. Frozen clock and parser fixture revision remove
