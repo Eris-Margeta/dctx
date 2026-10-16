@@ -1,4 +1,6 @@
-// crates/dctx-core/src/template.rs
+//! Legacy compatibility (DX-B0 bridge): DTS v1 templates, their compiled form and file load/save.
+//! The file helpers are IO, so the module stays outside the pure core until DX-B2 (dctx-template).
+//! Depends on nothing else in the crate. Used by `llm_formatter`, dctx-cli and the desktop.
 
 use std::collections::HashMap;
 use std::fs::File;

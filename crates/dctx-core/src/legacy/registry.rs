@@ -1,3 +1,7 @@
+//! Legacy compatibility (DX-B0 bridge): the on-disk project registry (path → project id).
+//! Reads and appends a file in the cache directory, so outside the pure core.
+//! Depends on `config`. Used by dctx-cli and the desktop.
+
 use crate::config;
 use std::collections::HashMap;
 use std::fs::{self, OpenOptions};

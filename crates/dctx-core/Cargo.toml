@@ -2,10 +2,11 @@
 name = "dctx-core"
 version = "0.25.0"
 edition = "2021"
-description = "Core logic for directory context snapshotting (Port of C version)"
+description = "Pure dctx domain (ids, selection, budgets, errors, pack facts) plus legacy compatibility modules"
 license = "Apache-2.0"
 
 [dependencies]
+dctx-hash = { path = "../dctx-hash" }
 
 [dev-dependencies]
 tempfile = "3"

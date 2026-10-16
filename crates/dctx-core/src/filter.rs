@@ -1,9 +1,8 @@
-// crates/dctx-core/src/filter.rs
-//
-// File Filtering System for dctx
-//
-// Provides fine-grained control over what files appear in context output.
-// All filters apply to both directory tree AND file content sections.
+//! File filtering for pack output (`--ext`, size, empty, hidden, binary filters).
+//! Provides fine-grained control over what files appear in context output;
+//! all filters apply to both the directory tree and the file content sections.
+//! Depends on nothing; pure predicates over names and sizes.
+//! Used by the legacy walker's `filter_tree` and by dctx-cli.
 
 use std::path::Path;
 

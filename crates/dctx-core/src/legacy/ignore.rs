@@ -1,11 +1,21 @@
-use crate::config::{get_global_ignore_path, get_global_omit_content_path, DEFAULT_IGNORE_FILENAME, HARDCODED_IGNORE_RULES, HARDCODED_OMIT_CONTENT_RULES};
+//! Legacy compatibility (DX-B0 bridge): `IgnoreEngine`, which loads rule files from disk and
+//! memoizes glob matches. Reading the global and local rule files is IO, so it stays here.
+//! Rules, matching and decisions delegate to the pure [`crate::selection`] context.
+//! Used by dctx-cli, the desktop, the legacy walker and the pattern-matching bench.
+
+use crate::config::{get_global_ignore_path, get_global_omit_content_path, DEFAULT_IGNORE_FILENAME, HARDCODED_IGNORE_RULES};
 use crate::datatypes::{IgnoreRule, PatternType};
 use crate::domain::{FileHandlingDecision, ItemContext};
+use crate::selection::glob::glob_match;
+use crate::selection::policy::{RuleTexts, SelectionPolicy};
+use crate::selection::rule::{glob_subject, rule_matches};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
+
+pub use crate::selection::rule::parse_ignore_pattern_line;
 
 // --- ERROR TYPES ---
 
@@ -30,139 +40,6 @@ impl std::fmt::Display for IgnoreError {
 }
 
 impl std::error::Error for IgnoreError {}
-
-// --- GLOB MATCHING ENGINE ---
-
-/// Iterative glob matching algorithm (Phase 10.8.4)
-///
-/// Replaces recursive implementation with stack-based approach to eliminate
-/// recursion overhead. Expected 20-30% performance improvement.
-///
-/// # Pattern Syntax
-/// - `**` - Match zero or more path segments (including /)
-/// - `*`  - Match zero or more characters within a segment (stops at /)
-/// - `?`  - Match exactly one character (not /)
-/// - Literal characters match themselves
-///
-/// # Performance
-/// - Pre-allocated stack capacity: 64 entries (typical case)
-/// - No heap allocation in common cases
-/// - ~20-30% faster than recursive version
-fn glob_match(pattern: &[u8], text: &[u8]) -> bool {
-    // Stack of (pattern_slice, text_slice) to process
-    // Pre-allocate 64 entries to avoid allocation in typical cases
-    let mut stack: Vec<(&[u8], &[u8])> = Vec::with_capacity(64);
-    stack.push((pattern, text));
-
-    while let Some((pat, txt)) = stack.pop() {
-        // Base case: empty pattern
-        if pat.is_empty() {
-            if txt.is_empty() {
-                return true;
-            }
-            continue;
-        }
-
-        // Pattern matching logic
-        if pat.starts_with(b"**") {
-            // ** pattern - match zero or more path segments
-            if pat.len() == 2 {
-                // ** at end matches everything
-                return true;
-            }
-            if pat.len() > 2 && pat[2] == b'/' {
-                // **/ prefix
-                let rest = &pat[3..];
-                // Try matching rest immediately (zero segments)
-                stack.push((rest, txt));
-                // Try consuming one character and continuing with **
-                if !txt.is_empty() {
-                    stack.push((pat, &txt[1..]));
-                }
-            }
-        } else if pat[0] == b'*' {
-            // * pattern - match zero or more characters within segment
-            let rest = &pat[1..];
-            // Try all positions in current segment
-            for i in 0..=txt.len() {
-                // Stop at path separator
-                if i < txt.len() && txt[i] == b'/' {
-                    break;
-                }
-                stack.push((rest, &txt[i..]));
-            }
-        } else if pat[0] == b'?' {
-            // ? pattern - match exactly one character (not /)
-            if !txt.is_empty() && txt[0] != b'/' {
-                stack.push((&pat[1..], &txt[1..]));
-            }
-        } else {
-            // Literal character match
-            if !txt.is_empty() && pat[0] == txt[0] {
-                stack.push((&pat[1..], &txt[1..]));
-            }
-        }
-    }
-
-    false
-}
-
-// --- PARSING ---
-
-pub fn parse_ignore_pattern_line(line: &str) -> Option<IgnoreRule> {
-    let mut trimmed = line.trim();
-    if trimmed.is_empty() || trimmed.starts_with('#') {
-        return None;
-    }
-
-    // Strip inline comments (everything after unescaped #)
-    // Note: We don't handle escaped # for simplicity - gitignore rarely uses it
-    if let Some(comment_pos) = trimmed.find('#') {
-        trimmed = trimmed[..comment_pos].trim_end();
-        if trimmed.is_empty() {
-            return None;
-        }
-    }
-
-    let mut rule = IgnoreRule::new();
-
-    if trimmed.starts_with('!') {
-        rule.is_negation = true;
-        trimmed = &trimmed[1..];
-    }
-
-    if trimmed.ends_with('/') {
-        rule.is_dir_only = true;
-        trimmed = &trimmed[..trimmed.len() - 1];
-    }
-
-    let has_internal_slash = trimmed.contains('/');
-    let has_glob_chars = trimmed.contains('*') || trimmed.contains('?') || trimmed.contains('[');
-
-    if has_glob_chars {
-        if trimmed.starts_with('*')
-            && !trimmed[1..].contains('*')
-            && !trimmed.contains('/')
-            && !trimmed.contains('?')
-        {
-            rule.pattern_type = PatternType::Suffix;
-            rule.pattern = trimmed[1..].to_string();
-        } else if trimmed.ends_with("/*") && !trimmed[..trimmed.len() - 2].contains('*') {
-            rule.pattern_type = PatternType::Prefix;
-            rule.pattern = trimmed[..trimmed.len() - 1].to_string();
-        } else {
-            rule.pattern_type = PatternType::Glob;
-            rule.pattern = trimmed.to_string();
-        }
-    } else if has_internal_slash {
-        rule.pattern_type = PatternType::Path;
-        rule.pattern = trimmed.to_string();
-    } else {
-        rule.pattern_type = PatternType::Basename;
-        rule.pattern = trimmed.to_string();
-    }
-    Some(rule)
-}
 
 // --- MATCHING ---
 
@@ -190,6 +67,8 @@ pub fn should_ignore_item(
 /// - Glob patterns: Cache results (1-10μs per match, high redundancy)
 /// - Cache key: (rule_index, path_hash) for memory efficiency
 /// - Expected hit rate: 30-40% on large monorepos
+///
+/// Single-rule semantics are [`crate::selection::rule::rule_matches`]; last match wins.
 pub fn should_ignore_item_cached(
     item_relative_path: &str,
     item_name: &str,
@@ -212,40 +91,16 @@ pub fn should_ignore_item_cached(
     let mut is_ignored = false;
 
     for (rule_idx, rule) in rules.iter().enumerate() {
-        if rule.is_dir_only && !is_item_dir {
-            continue;
-        }
-
-        let matched = match rule.pattern_type {
-            PatternType::Invalid => false,
-            // Fast patterns - no caching needed (already <50ns)
-            PatternType::Path => item_relative_path == rule.pattern,
-            PatternType::Prefix => item_relative_path.starts_with(&rule.pattern),
-            PatternType::Basename => item_name == rule.pattern,
-            PatternType::Suffix => item_name.ends_with(&rule.pattern),
-            // Glob patterns - use cache if available
-            PatternType::Glob => {
-                let text = if rule.pattern.contains('/') {
-                    item_relative_path
-                } else {
-                    item_name
-                };
-
-                // Try cache first (Phase 10.8.4)
-                if let Some(cache_ref) = cache {
-                    let path_hash = IgnoreEngine::fast_hash(text);
-                    let cache_key = (rule_idx, path_hash);
-
-                    let mut cache_map = cache_ref.borrow_mut();
-                    *cache_map.entry(cache_key).or_insert_with(|| {
-                        // Cache miss - compute and store
-                        glob_match(rule.pattern.as_bytes(), text.as_bytes())
-                    })
-                } else {
-                    // No cache - compute directly
-                    glob_match(rule.pattern.as_bytes(), text.as_bytes())
-                }
+        let matched = match (rule.pattern_type, cache) {
+            (PatternType::Glob, Some(cache_ref)) if !(rule.is_dir_only && !is_item_dir) => {
+                let text = glob_subject(rule, item_relative_path, item_name);
+                let cache_key = (rule_idx, IgnoreEngine::fast_hash(text));
+                let mut cache_map = cache_ref.borrow_mut();
+                *cache_map
+                    .entry(cache_key)
+                    .or_insert_with(|| glob_match(rule.pattern.as_bytes(), text.as_bytes()))
             }
+            _ => rule_matches(rule, item_relative_path, item_name, is_item_dir),
         };
 
         if is_debug_target && matched {
@@ -267,20 +122,16 @@ pub fn should_ignore_item_cached(
 
 // --- LOADING ---
 
-fn load_rules_from_file(filepath: &Path, rules: &mut Vec<IgnoreRule>) -> Result<(), IgnoreError> {
-    let content = fs::read_to_string(filepath)
+fn read_rule_file(filepath: &Path) -> Result<Option<String>, IgnoreError> {
+    if !filepath.exists() {
+        return Ok(None);
+    }
+    fs::read_to_string(filepath)
+        .map(Some)
         .map_err(|e| IgnoreError::FileReadError {
             path: filepath.to_path_buf(),
             source: e,
-        })?;
-
-    for line in content.lines() {
-        if let Some(rule) = parse_ignore_pattern_line(line) {
-            rules.push(rule);
-        }
-    }
-
-    Ok(())
+        })
 }
 
 // --- IGNORE ENGINE ---
@@ -296,38 +147,26 @@ pub struct EngineStats {
     local_omit_count: usize,
 }
 
-/// Pure ignore decision engine with 3-layer rule loading
+/// Ignore decision engine with 3-layer rule loading
 ///
 /// This engine is responsible for making file handling decisions based on:
 /// - Hardcoded rules (built into binary)
 /// - Global rules (~/.config/dctx/ignore)
 /// - Local rules (.dctxignore in project)
 ///
-/// The engine is stateless after construction and thread-safe.
-///
-/// # Phase 10.8.4: Pattern Result Caching
-/// The engine now caches glob pattern match results to avoid redundant
-/// computation. Cache key is (rule_index, path_hash) for memory efficiency.
-/// Expected memory usage: 1-5MB for typical scans.
+/// The decision itself is [`SelectionPolicy::decide`]; this type adds rule-file
+/// loading and a glob match cache (Phase 10.8.4, key (rule_index, path_hash)).
 pub struct IgnoreEngine {
-    /// Rules for complete exclusion (don't show in tree, don't recurse)
-    ignore_rules: Vec<IgnoreRule>,
-
-    /// Rules for content omission (show in tree, omit content)
-    omit_rules: Vec<IgnoreRule>,
+    /// Ignore and omit rule sets with their layer counts.
+    policy: SelectionPolicy,
 
     /// Statistics for diagnostic output
     stats: EngineStats,
 
     /// Controls whether detailed debug output is shown
-    /// Added in Phase 10.8.2 for debug output control
     debug_verbose: bool,
 
     /// Pattern match result cache (Phase 10.8.4)
-    /// Key: (rule_index, path_hash) - rule index ensures different patterns don't collide
-    /// Value: match result (true/false)
-    /// RefCell for interior mutability (allows cache updates in &self methods)
-    /// Expected 30-40% cache hit rate on large monorepos
     match_cache: RefCell<HashMap<(usize, u64), bool>>,
 }
 
@@ -337,79 +176,37 @@ impl IgnoreEngine {
     /// # Layers (in order of precedence):
     /// 1. Hardcoded rules (HARDCODED_IGNORE_RULES constant)
     /// 2. Global rules (~/.config/dctx/ignore and ~/.config/dctx/omitcontent)
-    /// 3. Local rules (.dctxignore and .dctxomitcontent in base_dir)
+    /// 3. Local rules (.dctxignore in base_dir)
     ///
     /// # Errors
-    /// Returns `IgnoreError` if:
-    /// - A rule file exists but cannot be read (permissions error)
-    ///
-    /// Note: Missing files are NOT an error - they are simply skipped.
+    /// Returns `IgnoreError` if a rule file exists but cannot be read.
+    /// Missing files are NOT an error - they are simply skipped.
     pub fn build(base_dir: &Path, debug_verbose: bool) -> Result<Self, IgnoreError> {
-        let mut ignore_rules = Vec::new();
-        let mut omit_rules = Vec::new();
-
-        // Layer 1: Hardcoded ignore rules
-        let hardcoded_ignore_start = ignore_rules.len();
-        for &pattern in HARDCODED_IGNORE_RULES {
-            if let Some(rule) = parse_ignore_pattern_line(pattern) {
-                ignore_rules.push(rule);
-            }
-        }
-        let hardcoded_ignore_count = ignore_rules.len() - hardcoded_ignore_start;
-
-        // Layer 1: Hardcoded omit rules
-        let hardcoded_omit_start = omit_rules.len();
-        for &pattern in HARDCODED_OMIT_CONTENT_RULES {
-            if let Some(rule) = parse_ignore_pattern_line(pattern) {
-                omit_rules.push(rule);
-            }
-        }
-        let hardcoded_omit_count = omit_rules.len() - hardcoded_omit_start;
-
-        // Layer 2: Global ignore rules
-        let global_ignore_start = ignore_rules.len();
-        if let Some(global_path) = get_global_ignore_path() {
-            if global_path.exists() {
-                load_rules_from_file(&global_path, &mut ignore_rules)?;
-            }
-        }
-        let global_ignore_count = ignore_rules.len() - global_ignore_start;
-
-        // Layer 2: Global omit rules
-        let global_omit_start = omit_rules.len();
-        if let Some(global_path) = get_global_omit_content_path() {
-            if global_path.exists() {
-                load_rules_from_file(&global_path, &mut omit_rules)?;
-            }
-        }
-        let global_omit_count = omit_rules.len() - global_omit_start;
-
-        // Layer 3: Local ignore rules
-        let local_ignore_start = ignore_rules.len();
-        let project_ignore_path = base_dir.join(DEFAULT_IGNORE_FILENAME);
-        if project_ignore_path.exists() {
-            load_rules_from_file(&project_ignore_path, &mut ignore_rules)?;
-        }
-        let local_ignore_count = ignore_rules.len() - local_ignore_start;
-
-        // Layer 3: Local omit rules (future support)
-        let local_omit_count = 0;
-
-        let stats = EngineStats {
-            hardcoded_ignore_count,
-            global_ignore_count,
-            local_ignore_count,
-            hardcoded_omit_count,
-            global_omit_count,
-            local_omit_count,
+        let global_ignore = match get_global_ignore_path() {
+            Some(path) => read_rule_file(&path)?,
+            None => None,
         };
+        let global_omit = match get_global_omit_content_path() {
+            Some(path) => read_rule_file(&path)?,
+            None => None,
+        };
+        let local_ignore = read_rule_file(&base_dir.join(DEFAULT_IGNORE_FILENAME))?;
 
-        // Log statistics (INFO level: always show summary)
+        let engine = Self::from_policy(
+            SelectionPolicy::from_texts(&RuleTexts {
+                global_ignore: global_ignore.as_deref(),
+                global_omit: global_omit.as_deref(),
+                local_ignore: local_ignore.as_deref(),
+                local_omit: None,
+            }),
+            debug_verbose,
+        );
+
+        let stats = &engine.stats;
         let total_ignore = stats.hardcoded_ignore_count + stats.global_ignore_count + stats.local_ignore_count;
         let total_omit = stats.hardcoded_omit_count + stats.global_omit_count + stats.local_omit_count;
         eprintln!("🔧 Loaded {} ignore + {} omit rules (from 3 sources)", total_ignore, total_omit);
 
-        // DEBUG level: show detailed breakdown only with flag
         if debug_verbose {
             eprintln!("   IGNORE RULES:");
             eprintln!("     • Hardcoded: {}", stats.hardcoded_ignore_count);
@@ -421,115 +218,62 @@ impl IgnoreEngine {
             eprintln!("     • Local: {}", stats.local_omit_count);
         }
 
-        Ok(Self {
-            ignore_rules,
-            omit_rules,
+        Ok(engine)
+    }
+
+    /// Wraps an already-built policy (no IO, no logging).
+    pub fn from_policy(policy: SelectionPolicy, debug_verbose: bool) -> Self {
+        let ignore = policy.ignore_layers();
+        let omit = policy.omit_layers();
+        let stats = EngineStats {
+            hardcoded_ignore_count: ignore.hardcoded,
+            global_ignore_count: ignore.global,
+            local_ignore_count: ignore.local,
+            hardcoded_omit_count: omit.hardcoded,
+            global_omit_count: omit.global,
+            local_omit_count: omit.local,
+        };
+        Self {
+            policy,
             stats,
             debug_verbose,
-            // Phase 10.8.4: Initialize pattern match cache
             // Pre-allocate 10,000 entries (typical monorepo scan needs 10k-50k)
             match_cache: RefCell::new(HashMap::with_capacity(10_000)),
-        })
+        }
+    }
+
+    /// The pure selection policy this engine applies.
+    pub fn policy(&self) -> &SelectionPolicy {
+        &self.policy
     }
 
     /// Make a file handling decision for the given item
     ///
-    /// This is the SINGLE DECISION POINT for all file handling logic.
-    ///
-    /// # Decision Logic
-    /// 1. Check if item matches any ignore rule
-    ///    - If yes and debug_mode: return DebugVisible
-    ///    - If yes and !debug_mode: return Exclude
-    /// 2. Check if item matches any omit rule
-    ///    - If yes: return OmitContent
-    /// 3. Otherwise: return Include
+    /// This is the SINGLE DECISION POINT for all file handling logic:
+    /// ignore match → Exclude (DebugVisible in debug mode), omit match → OmitContent, else Include.
     pub fn decide(&self, context: &ItemContext) -> FileHandlingDecision {
-        // Check ignore rules first (most restrictive)
-        // Phase 10.8.4: Pass cache for pattern matching optimization
-        if should_ignore_item_cached(
-            context.relative_path,
-            context.name,
-            context.is_directory,
-            &self.ignore_rules,
-            self.debug_verbose,
-            Some(&self.match_cache),
-        ) {
-            return if context.debug_mode {
-                FileHandlingDecision::DebugVisible
-            } else {
-                FileHandlingDecision::Exclude
-            };
-        }
-
-        // Check omit rules second
-        // Phase 10.8.4: Pass cache for pattern matching optimization
-        if should_ignore_item_cached(
-            context.relative_path,
-            context.name,
-            context.is_directory,
-            &self.omit_rules,
-            self.debug_verbose,
-            Some(&self.match_cache),
-        ) {
-            return FileHandlingDecision::OmitContent;
-        }
-
-        // Default: include everything
-        FileHandlingDecision::Include
+        self.policy.decide_with(context, |rules| {
+            should_ignore_item_cached(
+                context.relative_path,
+                context.name,
+                context.is_directory,
+                rules,
+                self.debug_verbose,
+                Some(&self.match_cache),
+            )
+        })
     }
 
     /// Explain which rules matched for diagnostic purposes
     ///
-    /// Returns a human-readable string showing:
-    /// - Final decision
-    /// - Which rules matched
-    /// - Source of each matching rule (hardcoded/global/local)
-    ///
     /// Used for CLI `--explain-ignore` flag and debugging.
     pub fn explain(&self, context: &ItemContext) -> String {
-        let decision = self.decide(context);
-        let mut output = String::new();
-
-        output.push_str(&format!("Item: {}\n", context.relative_path));
-        output.push_str(&format!("Decision: {:?}\n", decision));
-        output.push_str("Matching Rules:\n");
-
-        // Check which ignore rules matched
-        for (i, rule) in self.ignore_rules.iter().enumerate() {
-            if matches_rule(context, rule) {
-                let source = if i < self.stats.hardcoded_ignore_count {
-                    "hardcoded"
-                } else if i < self.stats.hardcoded_ignore_count + self.stats.global_ignore_count {
-                    "global"
-                } else {
-                    "local"
-                };
-                output.push_str(&format!("  [IGNORE/{}] {} ({:?})\n",
-                    source, rule.pattern, rule.pattern_type));
-            }
-        }
-
-        // Check which omit rules matched
-        for (i, rule) in self.omit_rules.iter().enumerate() {
-            if matches_rule(context, rule) {
-                let source = if i < self.stats.hardcoded_omit_count {
-                    "hardcoded"
-                } else if i < self.stats.hardcoded_omit_count + self.stats.global_omit_count {
-                    "global"
-                } else {
-                    "local"
-                };
-                output.push_str(&format!("  [OMIT/{}] {} ({:?})\n",
-                    source, rule.pattern, rule.pattern_type));
-            }
-        }
-
-        output
+        self.policy.explain(context)
     }
 
     /// Get total number of rules loaded
     pub fn total_rules(&self) -> usize {
-        self.ignore_rules.len() + self.omit_rules.len()
+        self.policy.total_rules()
     }
 
     /// Get statistics about loaded rules
@@ -537,16 +281,7 @@ impl IgnoreEngine {
         &self.stats
     }
 
-    /// Fast hash function for cache keys (Phase 10.8.4)
-    ///
-    /// Uses FNV-1a algorithm (same as registry.rs for consistency).
-    /// Performance: ~10 CPU cycles per byte on modern processors.
-    ///
-    /// # Why FNV-1a?
-    /// - Fast: No complex operations (just XOR and multiply)
-    /// - Good distribution: Rare collisions in practice
-    /// - Simple: Easy to inline and optimize
-    /// - Proven: Used widely in hash tables
+    /// Fast hash function for cache keys (Phase 10.8.4): FNV-1a.
     #[inline]
     fn fast_hash(s: &str) -> u64 {
         const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
@@ -561,12 +296,6 @@ impl IgnoreEngine {
     }
 
     /// Get cache statistics for diagnostics (Phase 10.8.4)
-    ///
-    /// Returns information about pattern match cache performance.
-    /// Useful for:
-    /// - Performance tuning
-    /// - Memory usage monitoring
-    /// - Cache hit rate analysis
     pub fn cache_stats(&self) -> CacheStats {
         let cache = self.match_cache.borrow();
         CacheStats {
@@ -577,28 +306,21 @@ impl IgnoreEngine {
     }
 
     /// Clear pattern match cache (Phase 10.8.4)
-    ///
-    /// Used for testing and benchmarking to reset cache state.
-    /// In production, cache is automatically dropped after scan completes.
     #[cfg(test)]
     pub fn clear_cache(&self) {
         self.match_cache.borrow_mut().clear();
     }
 
     /// Access to cache for benchmarking (Phase 10.8.4)
-    ///
-    /// Allows benchmarks to measure cache performance.
     #[doc(hidden)]
     pub fn match_cache(&self) -> &RefCell<HashMap<(usize, u64), bool>> {
         &self.match_cache
     }
 
     /// Access to ignore rules for benchmarking (Phase 10.8.4)
-    ///
-    /// Allows benchmarks to test pattern matching directly.
     #[doc(hidden)]
     pub fn ignore_rules(&self) -> &[IgnoreRule] {
-        &self.ignore_rules
+        self.policy.ignore_rules()
     }
 }
 
@@ -613,48 +335,20 @@ pub struct CacheStats {
     pub memory_bytes: usize,
 }
 
-/// Helper: Check if a single rule matches the context
-fn matches_rule(context: &ItemContext, rule: &IgnoreRule) -> bool {
-    if rule.is_dir_only && !context.is_directory {
-        return false;
-    }
-
-    match rule.pattern_type {
-        PatternType::Invalid => false,
-        PatternType::Path => context.relative_path == rule.pattern,
-        PatternType::Prefix => context.relative_path.starts_with(&rule.pattern),
-        PatternType::Basename => context.name == rule.pattern,
-        PatternType::Suffix => context.name.ends_with(&rule.pattern),
-        PatternType::Glob => {
-            if rule.pattern.contains('/') {
-                glob_match(rule.pattern.as_bytes(), context.relative_path.as_bytes())
-            } else {
-                glob_match(rule.pattern.as_bytes(), context.name.as_bytes())
-            }
-        }
-    }
-}
-
 // --- LEGACY API (DEPRECATED) ---
 
 /// Legacy function for backward compatibility
 ///
 /// # Deprecated
 /// Use `IgnoreEngine::build()` instead for better error handling and statistics.
-///
-/// This function silently ignores errors and provides no visibility into
-/// which rules were loaded from which sources.
 #[deprecated(since = "0.14.9", note = "Use IgnoreEngine::build() instead")]
 pub fn load_ignore_rules(base_dir_path: &Path) -> Vec<IgnoreRule> {
     match IgnoreEngine::build(base_dir_path, false) {
-        Ok(engine) => engine.ignore_rules.clone(),
+        Ok(engine) => engine.ignore_rules().to_vec(),
         Err(e) => {
             eprintln!("⚠️  Warning: Failed to load ignore rules: {}", e);
             // Return only hardcoded rules as fallback
-            HARDCODED_IGNORE_RULES
-                .iter()
-                .filter_map(|&p| parse_ignore_pattern_line(p))
-                .collect()
+            crate::selection::rule::parse_rule_lines(HARDCODED_IGNORE_RULES)
         }
     }
 }
@@ -662,136 +356,6 @@ pub fn load_ignore_rules(base_dir_path: &Path) -> Vec<IgnoreRule> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    // --- GLOB MATCHING TESTS ---
-
-    #[test]
-    fn test_glob_match_exact() {
-        assert!(glob_match(b"hello", b"hello"));
-        assert!(!glob_match(b"hello", b"world"));
-    }
-
-    #[test]
-    fn test_glob_match_single_star() {
-        assert!(glob_match(b"*.txt", b"file.txt"));
-        assert!(glob_match(b"*.txt", b".txt"));
-        assert!(!glob_match(b"*.txt", b"file.rs"));
-        assert!(!glob_match(b"*.txt", b"dir/file.txt")); // * doesn't match /
-    }
-
-    #[test]
-    fn test_glob_match_prefix_star() {
-        assert!(glob_match(b"test*", b"test"));
-        assert!(glob_match(b"test*", b"test.rs"));
-        assert!(glob_match(b"test*", b"testing"));
-        assert!(!glob_match(b"test*", b"mytest"));
-    }
-
-    #[test]
-    fn test_glob_match_question_mark() {
-        assert!(glob_match(b"test?", b"tests"));
-        assert!(glob_match(b"test?", b"test1"));
-        assert!(!glob_match(b"test?", b"test"));
-        assert!(!glob_match(b"test?", b"test12"));
-        assert!(!glob_match(b"test?", b"test/")); // ? doesn't match /
-    }
-
-    #[test]
-    fn test_glob_match_double_star() {
-        assert!(glob_match(b"**", b"anything"));
-        assert!(glob_match(b"**", b"a/b/c"));
-        assert!(glob_match(b"**/file.txt", b"file.txt"));
-        assert!(glob_match(b"**/file.txt", b"dir/file.txt"));
-        assert!(glob_match(b"**/file.txt", b"a/b/c/file.txt"));
-    }
-
-    #[test]
-    fn test_glob_match_complex() {
-        assert!(glob_match(b"src/*.rs", b"src/main.rs"));
-        assert!(!glob_match(b"src/*.rs", b"src/sub/main.rs"));
-        assert!(glob_match(b"src/**/*.rs", b"src/main.rs"));
-        assert!(glob_match(b"src/**/*.rs", b"src/sub/main.rs"));
-    }
-
-    #[test]
-    fn test_glob_match_empty() {
-        assert!(glob_match(b"", b""));
-        assert!(!glob_match(b"", b"something"));
-        assert!(glob_match(b"*", b""));
-    }
-
-    // --- PATTERN PARSING TESTS ---
-
-    #[test]
-    fn test_parse_ignore_pattern_empty() {
-        assert!(parse_ignore_pattern_line("").is_none());
-        assert!(parse_ignore_pattern_line("   ").is_none());
-    }
-
-    #[test]
-    fn test_parse_ignore_pattern_comment() {
-        assert!(parse_ignore_pattern_line("# This is a comment").is_none());
-        assert!(parse_ignore_pattern_line("  # Indented comment").is_none());
-    }
-
-    #[test]
-    fn test_parse_ignore_pattern_basename() {
-        let rule = parse_ignore_pattern_line("node_modules").unwrap();
-        assert_eq!(rule.pattern, "node_modules");
-        assert_eq!(rule.pattern_type, PatternType::Basename);
-        assert!(!rule.is_dir_only);
-        assert!(!rule.is_negation);
-    }
-
-    #[test]
-    fn test_parse_ignore_pattern_dir_only() {
-        let rule = parse_ignore_pattern_line("build/").unwrap();
-        assert_eq!(rule.pattern, "build");
-        assert_eq!(rule.pattern_type, PatternType::Basename);
-        assert!(rule.is_dir_only);
-    }
-
-    #[test]
-    fn test_parse_ignore_pattern_negation() {
-        let rule = parse_ignore_pattern_line("!important.txt").unwrap();
-        assert_eq!(rule.pattern, "important.txt");
-        assert!(rule.is_negation);
-    }
-
-    #[test]
-    fn test_parse_ignore_pattern_path() {
-        let rule = parse_ignore_pattern_line("src/generated").unwrap();
-        assert_eq!(rule.pattern, "src/generated");
-        assert_eq!(rule.pattern_type, PatternType::Path);
-    }
-
-    #[test]
-    fn test_parse_ignore_pattern_suffix() {
-        let rule = parse_ignore_pattern_line("*.log").unwrap();
-        assert_eq!(rule.pattern, ".log");
-        assert_eq!(rule.pattern_type, PatternType::Suffix);
-    }
-
-    #[test]
-    fn test_parse_ignore_pattern_prefix() {
-        let rule = parse_ignore_pattern_line("build/*").unwrap();
-        assert_eq!(rule.pattern, "build/");
-        assert_eq!(rule.pattern_type, PatternType::Prefix);
-    }
-
-    #[test]
-    fn test_parse_ignore_pattern_glob() {
-        let rule = parse_ignore_pattern_line("**/*.log").unwrap();
-        assert_eq!(rule.pattern, "**/*.log");
-        assert_eq!(rule.pattern_type, PatternType::Glob);
-    }
-
-    #[test]
-    fn test_parse_ignore_pattern_complex_glob() {
-        let rule = parse_ignore_pattern_line("config-*-prod.json").unwrap();
-        assert_eq!(rule.pattern, "config-*-prod.json");
-        assert_eq!(rule.pattern_type, PatternType::Glob);
-    }
 
     // --- SHOULD IGNORE TESTS ---
 
@@ -1527,10 +1091,10 @@ mod tests {
         let engine = IgnoreEngine::build(temp.path(), false).unwrap();
 
         // Debug: Check if .turbo pattern exists
-        let has_turbo = engine.ignore_rules.iter().any(|r| r.pattern == ".turbo");
+        let has_turbo = engine.ignore_rules().iter().any(|r| r.pattern == ".turbo");
         eprintln!("DEBUG: .turbo pattern in ignore_rules: {}", has_turbo);
         if has_turbo {
-            let turbo_rule = engine.ignore_rules.iter().find(|r| r.pattern == ".turbo").unwrap();
+            let turbo_rule = engine.ignore_rules().iter().find(|r| r.pattern == ".turbo").unwrap();
             eprintln!("DEBUG: .turbo rule: pattern_type={:?}, is_dir_only={}", turbo_rule.pattern_type, turbo_rule.is_dir_only);
         }
 
@@ -1544,7 +1108,7 @@ mod tests {
         let decision = engine.decide(&context);
         assert_eq!(decision, FileHandlingDecision::Exclude,
             ".turbo/ should be excluded. Engine has {} ignore rules, {} omit rules. Has .turbo pattern: {}",
-            engine.ignore_rules.len(), engine.omit_rules.len(), has_turbo);
+            engine.ignore_rules().len(), engine.policy().omit_rules().len(), has_turbo);
     }
 
     // REGRESSION TEST: Verify .pnpm-store/ pattern is loaded
@@ -1590,83 +1154,6 @@ mod tests {
         let decision = engine.decide(&context);
         assert_eq!(decision, FileHandlingDecision::Exclude);
         assert!(!decision.should_recurse(), ".git/ should not be recursed into");
-    }
-
-    // --- PHASE 10.8.4: GLOB MATCHING ITERATIVE TESTS ---
-
-    #[test]
-    fn test_glob_iterative_double_star_zero_segments() {
-        assert!(glob_match(b"**/test", b"test"));
-        assert!(glob_match(b"**/test.rs", b"test.rs"));
-    }
-
-    #[test]
-    fn test_glob_iterative_double_star_multiple_segments() {
-        assert!(glob_match(b"**/test.rs", b"a/test.rs"));
-        assert!(glob_match(b"**/test.rs", b"a/b/test.rs"));
-        assert!(glob_match(b"**/test.rs", b"a/b/c/d/e/test.rs"));
-    }
-
-    #[test]
-    fn test_glob_iterative_star_within_segment() {
-        assert!(glob_match(b"test*.rs", b"test.rs"));
-        assert!(glob_match(b"test*.rs", b"test_main.rs"));
-        assert!(glob_match(b"test*.rs", b"testing.rs"));
-        assert!(!glob_match(b"test*.rs", b"dir/test.rs")); // * stops at /
-    }
-
-    #[test]
-    fn test_glob_iterative_question_mark() {
-        assert!(glob_match(b"test?.rs", b"test1.rs"));
-        assert!(glob_match(b"test?.rs", b"testa.rs"));
-        assert!(!glob_match(b"test?.rs", b"test.rs")); // ? requires one char
-        assert!(!glob_match(b"test?.rs", b"test12.rs")); // ? is exactly one char
-        assert!(!glob_match(b"test?rs", b"test/rs")); // ? doesn't match /
-    }
-
-    #[test]
-    fn test_glob_iterative_complex_patterns() {
-        assert!(glob_match(b"src/**/*.rs", b"src/main.rs"));
-        assert!(glob_match(b"src/**/*.rs", b"src/lib/util.rs"));
-        assert!(glob_match(b"src/**/*.rs", b"src/a/b/c/test.rs"));
-        assert!(!glob_match(b"src/**/*.rs", b"tests/main.rs"));
-        assert!(!glob_match(b"src/**/*.rs", b"src/main.txt"));
-    }
-
-    #[test]
-    fn test_glob_iterative_empty_pattern() {
-        assert!(glob_match(b"", b""));
-        assert!(!glob_match(b"", b"text"));
-        assert!(!glob_match(b"pattern", b""));
-    }
-
-    #[test]
-    fn test_glob_iterative_pattern_longer_than_text() {
-        assert!(!glob_match(b"very_long_pattern", b"short"));
-        assert!(!glob_match(b"test.rs.backup", b"test.rs"));
-    }
-
-    #[test]
-    fn test_glob_iterative_multiple_stars() {
-        assert!(glob_match(b"*test*", b"test"));
-        assert!(glob_match(b"*test*", b"mytest"));
-        assert!(glob_match(b"*test*", b"testing"));
-        assert!(glob_match(b"*test*", b"mytesting"));
-        assert!(!glob_match(b"*test*", b"my/testing")); // * stops at /
-    }
-
-    #[test]
-    fn test_glob_iterative_double_star_at_end() {
-        assert!(glob_match(b"src/**", b"src/"));
-        assert!(glob_match(b"src/**", b"src/file"));
-        assert!(glob_match(b"src/**", b"src/a/b/c"));
-    }
-
-    #[test]
-    fn test_glob_iterative_literal_with_special_chars() {
-        assert!(glob_match(b"test-file.rs", b"test-file.rs"));
-        assert!(glob_match(b"test_file.rs", b"test_file.rs"));
-        assert!(glob_match(b"test.backup.rs", b"test.backup.rs"));
     }
 
     // --- PHASE 10.8.4: CACHING TESTS ---

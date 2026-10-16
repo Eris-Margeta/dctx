@@ -3,7 +3,7 @@
 
 [[question]]
 text = "How are ignore pattern lines parsed with negation and anchoring?"
-expected = "s:crates/dctx-core/src/ignore.rs#parse_ignore_pattern_line"
+expected = "s:crates/dctx-core/src/selection/rule.rs#parse_ignore_pattern_line"
 
 [[question]]
 text = "Where does the core decide whether file content is binary?"
@@ -11,15 +11,15 @@ expected = "s:crates/dctx-core/src/file_classifier.rs#classify_file"
 
 [[question]]
 text = "How is the directory structure walked before reading file contents?"
-expected = "s:crates/dctx-core/src/walker.rs#walk_directory_structure"
+expected = "s:crates/dctx-core/src/legacy/walker.rs#walk_directory_structure"
 
 [[question]]
 text = "How is a directory tree filtered with FilterConfig?"
-expected = "s:crates/dctx-core/src/walker.rs#filter_tree"
+expected = "s:crates/dctx-core/src/legacy/walker.rs#filter_tree"
 
 [[question]]
 text = "Where are file contents populated in parallel?"
-expected = "s:crates/dctx-core/src/walker.rs#populate_file_contents_parallel"
+expected = "s:crates/dctx-core/src/legacy/walker.rs#populate_file_contents_parallel"
 
 [[question]]
 text = "How does FilterConfig check for active filters?"
@@ -35,19 +35,19 @@ expected = "s:crates/dctx-core/src/filter.rs#FilterConfig::should_include_direct
 
 [[question]]
 text = "Where is the compiled templates directory configured?"
-expected = "s:crates/dctx-core/src/config.rs#get_compiled_templates_dir"
+expected = "s:crates/dctx-core/src/legacy/config.rs#get_compiled_templates_dir"
 
 [[question]]
 text = "How is the application config loaded?"
-expected = "s:crates/dctx-core/src/config.rs#load_app_config"
+expected = "s:crates/dctx-core/src/legacy/config.rs#load_app_config"
 
 [[question]]
 text = "How do I find the project registry path?"
-expected = "s:crates/dctx-core/src/config.rs#get_project_registry_path"
+expected = "s:crates/dctx-core/src/legacy/config.rs#get_project_registry_path"
 
 [[question]]
 text = "Where is the global ignore path defined?"
-expected = "s:crates/dctx-core/src/config.rs#get_global_ignore_path"
+expected = "s:crates/dctx-core/src/legacy/config.rs#get_global_ignore_path"
 
 [[question]]
 text = "How does Version calculate the next version?"
@@ -59,19 +59,19 @@ expected = "s:crates/dctx-core/src/version.rs#Version::parse"
 
 [[question]]
 text = "Where is a template compiled into CompiledTemplate?"
-expected = "s:crates/dctx-core/src/template.rs#Template::compile"
+expected = "s:crates/dctx-core/src/legacy/template.rs#Template::compile"
 
 [[question]]
 text = "How does Template validate missing required sections?"
-expected = "s:crates/dctx-core/src/template.rs#Template::validate"
+expected = "s:crates/dctx-core/src/legacy/template.rs#Template::validate"
 
 [[question]]
 text = "How is CompiledTemplate saved to a file?"
-expected = "s:crates/dctx-core/src/template.rs#CompiledTemplate::save_to_file"
+expected = "s:crates/dctx-core/src/legacy/template.rs#CompiledTemplate::save_to_file"
 
 [[question]]
 text = "How are template variables replaced in text?"
-expected = "s:crates/dctx-core/src/template.rs#replace_vars"
+expected = "s:crates/dctx-core/src/legacy/template.rs#replace_vars"
 
 [[question]]
 text = "Where does compare_trees calculate a DiffReport?"
@@ -79,11 +79,11 @@ expected = "s:crates/dctx-core/src/diff.rs#compare_trees"
 
 [[question]]
 text = "How is previous binary state loaded or reset?"
-expected = "s:crates/dctx-core/src/state.rs#load_or_reset_state"
+expected = "s:crates/dctx-core/src/legacy/state.rs#load_or_reset_state"
 
 [[question]]
 text = "Where is the dircontxt binary file written?"
-expected = "s:crates/dctx-core/src/writer.rs#write_dircontxt_file"
+expected = "s:crates/dctx-core/src/legacy/writer.rs#write_dircontxt_file"
 
 [[question]]
 text = "How does FileHandlingDecision control reading content?"

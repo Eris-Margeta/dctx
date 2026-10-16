@@ -1,3 +1,7 @@
+//! Legacy compatibility (DX-B0 bridge): loads the previous pack state or resets it on corruption.
+//! Reads and deletes files on disk, so outside the pure core.
+//! Depends on `reader`. Used by dctx-cli; dctx-pack's `FactStore` port replaces it.
+
 use crate::config::LLM_CONTEXT_EXTENSION;
 use crate::datatypes::DirContextTreeNode;
 use crate::reader::read_dircontxt_file;

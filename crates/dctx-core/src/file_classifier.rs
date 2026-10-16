@@ -1,4 +1,7 @@
-// file_classifier.rs - Binary file detection and content handling
+//! Binary file detection and content handling (extension first, then content sniffing).
+//! Implements the pack rule that binaries appear in the tree with their content omitted.
+//! Depends on nothing; pure over a path (as data) and bytes already read under a grant.
+//! Used by [`crate::facts::content::apply_content`].
 
 use std::path::Path;
 

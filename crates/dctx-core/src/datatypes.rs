@@ -1,3 +1,8 @@
+//! Pack tree data: node kinds, ignore-rule records and the snapshot tree node.
+//! Ports the C `dircontxt` data structures; the binary format and formatter read these.
+//! Depends on [`crate::domain`]; pure data (`disk_path` is a path value, never opened here).
+//! Used by every pack module, legacy and new, and by dctx-cli and the desktop.
+
 use std::path::PathBuf;
 use crate::domain::FileHandlingDecision;
 

@@ -1,8 +1,7 @@
-//! Domain model for file handling decisions.
-//!
+//! Domain model for file handling decisions (Include, Exclude, DebugVisible, OmitContent).
 //! This module defines the core state machine for how dctx handles files
-//! and directories during traversal. It replaces the previous boolean flag
-//! approach with an explicit, type-safe state model.
+//! and directories during traversal, replacing the old boolean flags.
+//! Depends on nothing; pure. Used by [`crate::selection`], [`crate::facts`] and dctx-pack.
 
 /// Represents the decision made about how to handle a file or directory.
 ///

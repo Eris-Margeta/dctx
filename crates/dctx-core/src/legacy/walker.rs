@@ -1,4 +1,8 @@
-// crates/dctx-core/src/walker.rs
+//! Legacy compatibility (DX-B0 bridge): walks the real filesystem into a pack tree.
+//! Calls `std::fs` directly; decisions come from the pure policy through `IgnoreEngine`.
+//! The port-based equivalent is `dctx_pack::snapshot`, which reproduces this tree over `Source`.
+//! Used by dctx-cli and the desktop until they move to the facade.
+
 use crate::content_reader::ContentReader;
 use crate::datatypes::{DirContextTreeNode, NodeType};
 use crate::domain::{FileHandlingDecision, ItemContext};
@@ -161,10 +165,7 @@ fn walk_recursive(
 /// Recursively marks all nodes in a subtree as ignored.
 /// Used in debug mode to ensure ignored folder children are also marked.
 fn mark_subtree_as_ignored(node: &mut DirContextTreeNode) {
-    node.is_ignored = true;
-    for child in &mut node.children {
-        mark_subtree_as_ignored(child);
-    }
+    crate::facts::content::mark_subtree_ignored(node);
 }
 
 

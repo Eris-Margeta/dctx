@@ -1,17 +1,10 @@
-// crates/dctx-core/src/content_reader.rs
-//
-// Content Reader Module
-// =====================
-// Responsible for reading file contents in parallel and injecting them into the tree.
-// Separated from walker.rs to maintain single responsibility principle.
-//
-// Privacy Guarantee:
-// - Only reads files where handling_decision.should_read_content() == true
-// - Ignored files (privacy) are never read
-// - Omitted files (lockfiles, binaries) are never read
+//! Legacy compatibility (DX-B0 bridge): reads file contents from disk in parallel threads.
+//! Privacy guarantee: only files whose decision (and every ancestor's) is Include are read;
+//! ignored and omitted files are never read. Classification delegates to [`crate::facts::content`].
+//! Used by dctx-cli and the desktop; the port-based replacement is dctx-pack's snapshot engine.
 
 use crate::datatypes::{DirContextTreeNode, NodeType};
-use crate::file_classifier::{classify_file, FileContentHandling};
+use crate::facts::content::apply_content;
 use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
@@ -128,31 +121,7 @@ impl ContentReader {
     fn inject_content(node: &mut DirContextTreeNode, content_map: &HashMap<PathBuf, Vec<u8>>) {
         if node.node_type == NodeType::File {
             if let Some(content) = content_map.get(&node.disk_path) {
-                node.content_size = content.len() as u64;
-
-                // Classify the file to determine content handling
-                let handling = classify_file(&node.disk_path, content);
-
-                match handling {
-                    FileContentHandling::IncludeContent => {
-                        // Normal text file - include content
-                        node.file_content = Some(content.clone());
-                        node.is_binary_file = false;
-                        node.binary_file_type = None;
-                    }
-                    FileContentHandling::OmitBinary { file_type } => {
-                        // Binary file - omit content
-                        node.file_content = None;
-                        node.is_binary_file = true;
-                        node.binary_file_type = Some(file_type);
-                    }
-                    FileContentHandling::OmitSvgContent => {
-                        // SVG - special handling (store content but mark for conditional omission)
-                        node.file_content = Some(content.clone());
-                        node.is_binary_file = false;
-                        node.binary_file_type = Some("SVG file".to_string());
-                    }
-                }
+                apply_content(node, content);
             }
         } else {
             // Recurse into directory children

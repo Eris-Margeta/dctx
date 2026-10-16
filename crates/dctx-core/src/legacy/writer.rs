@@ -1,3 +1,7 @@
+//! Legacy compatibility (DX-B0 bridge): writes the binary `.dctx` snapshot file to disk.
+//! File IO, so outside the pure core; the format itself is unchanged.
+//! Depends on [`crate::datatypes`] and [`crate::version`]. Used by dctx-cli and the desktop.
+
 use crate::config::DIRCONTXT_MAGIC_BYTES;
 use crate::datatypes::{DirContextTreeNode, NodeType};
 use crate::version::Version;

@@ -1,21 +1,25 @@
-use crate::config::{
-    get_global_omit_content_path, DEFAULT_OMIT_CONTENT_FILENAME, HARDCODED_OMIT_CONTENT_RULES,
-};
+//! Legacy compatibility (DX-B0 bridge): loads the content-omission rule layers from disk.
+//! Reading the global and project `.dctxomitcontent` files is IO, so it stays outside the pure core.
+//! Layering and parsing delegate to [`crate::selection::policy::SelectionPolicy`].
+//! Used by the legacy LLM formatter and by dctx-cli.
+
+#[cfg(test)]
+use crate::config::HARDCODED_OMIT_CONTENT_RULES;
+#[cfg(test)]
+use crate::selection::rule::parse_ignore_pattern_line;
+use crate::config::{get_global_omit_content_path, DEFAULT_OMIT_CONTENT_FILENAME};
 use crate::datatypes::IgnoreRule;
-use crate::ignore::parse_ignore_pattern_line;
+use crate::selection::policy::{RuleTexts, SelectionPolicy};
 use std::fs;
 use std::path::Path;
 
 // --- LOADING ---
 
-fn load_rules_from_file(filepath: &Path, rules: &mut Vec<IgnoreRule>) {
-    if let Ok(content) = fs::read_to_string(filepath) {
-        for line in content.lines() {
-            if let Some(rule) = parse_ignore_pattern_line(line) {
-                rules.push(rule);
-            }
-        }
+fn read_rules_text(filepath: &Path) -> Option<String> {
+    if !filepath.exists() {
+        return None;
     }
+    fs::read_to_string(filepath).ok()
 }
 
 /// Load content omission rules with hierarchical override:
@@ -23,31 +27,16 @@ fn load_rules_from_file(filepath: &Path, rules: &mut Vec<IgnoreRule>) {
 /// 2. Global rules (~/.config/dctx/.dctxomitcontent)
 /// 3. Project rules (.dctxomitcontent in project root)
 ///
-/// Last matching rule wins (same as .dctxignore).
+/// Last matching rule wins (same as .dctxignore). Unreadable files are skipped.
 pub fn load_omit_content_rules(base_dir_path: &Path) -> Vec<IgnoreRule> {
-    let mut rules = Vec::new();
-
-    // Layer 1: Hardcoded rules
-    for &p in HARDCODED_OMIT_CONTENT_RULES {
-        if let Some(rule) = parse_ignore_pattern_line(p) {
-            rules.push(rule);
-        }
-    }
-
-    // Layer 2: Global rules
-    if let Some(global_path) = get_global_omit_content_path() {
-        if global_path.exists() {
-            load_rules_from_file(&global_path, &mut rules);
-        }
-    }
-
-    // Layer 3: Project rules
-    let project_omit_path = base_dir_path.join(DEFAULT_OMIT_CONTENT_FILENAME);
-    if project_omit_path.exists() {
-        load_rules_from_file(&project_omit_path, &mut rules);
-    }
-
-    rules
+    let global = get_global_omit_content_path().and_then(|path| read_rules_text(&path));
+    let local = read_rules_text(&base_dir_path.join(DEFAULT_OMIT_CONTENT_FILENAME));
+    let policy = SelectionPolicy::from_texts(&RuleTexts {
+        global_omit: global.as_deref(),
+        local_omit: local.as_deref(),
+        ..RuleTexts::default()
+    });
+    policy.omit_rules().to_vec()
 }
 
 #[cfg(test)]

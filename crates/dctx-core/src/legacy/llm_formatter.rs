@@ -49,7 +49,7 @@ use std::io::{self, Write};
 use std::path::Path;
 
 // The default template raw string.
-const DEFAULT_TEMPLATE_RAW: &str = include_str!("../templates/default.dctx_template");
+const DEFAULT_TEMPLATE_RAW: &str = include_str!("../../templates/default.dctx_template");
 
 /// Loads a template by name.
 /// - If name is "default", returns the hardcoded default template.
