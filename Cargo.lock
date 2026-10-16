@@ -801,6 +801,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dctx-adapter-fs"
+version = "0.1.0"
+dependencies = [
+ "dctx-hash",
+ "tempfile",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "dctx-cli"
 version = "0.25.0"
 dependencies = [
@@ -952,6 +961,15 @@ dependencies = [
  "rusqlite",
  "serde_json",
  "thiserror 2.0.18",
+]
+
+[[package]]
+name = "dctx-plugin-host"
+version = "0.1.0"
+dependencies = [
+ "dctx-hash",
+ "dctx-plugin-protocol",
+ "proptest",
 ]
 
 [[package]]
