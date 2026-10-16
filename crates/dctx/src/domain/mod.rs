@@ -11,6 +11,7 @@ mod limits;
 mod policy;
 mod report;
 mod request;
+mod rules;
 mod sink;
 mod wire;
 
@@ -20,6 +21,7 @@ pub use error::{DctxError, ErrorCode, Resource};
 pub use identity::{object_key, STRUCTURAL_PARSER};
 pub use limits::OperationLimits;
 pub use policy::{HostGrants, PolicyView};
+pub use rules::RuleSources;
 pub use report::{validate_segment, CacheReport, GcRequest, PackReport, PurgeRequest, PurgeScope, SegmentInfo};
 pub use request::{
     Direction, FreshnessMode, MapRequest, PackRequest, SnapshotRequest, Verb, REQUEST_VERSION,

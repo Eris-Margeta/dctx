@@ -2,9 +2,11 @@
 //! Implements ARCHITECTURE-PROPOSAL §2 and §7 row DX-D1. The facade is synchronous.
 //! Depends on the domain types, the index and the pack and template engines.
 //! Handles pin a generation with an [`std::sync::Arc`] lease. Dropping the last lease allows collection.
+//! A plugin host is optional. The library default starts none and schedules no hook.
 
 mod build;
 mod cache_op;
+mod hooks;
 mod ledger;
 mod pack_op;
 mod query_op;
@@ -22,10 +24,11 @@ pub use build::SessionBuilder;
 
 use self::ledger::AccountingCache;
 use crate::domain::{
-    ancestors_include, check_deadline, seal_segment, HostGrants, OperationLimits, PolicyView, SnapshotRequest,
-    DctxError, REQUEST_VERSION,
+    ancestors_include, check_deadline, seal_segment, HostGrants, OperationLimits, PolicyView, RuleSources,
+    SnapshotRequest, DctxError, REQUEST_VERSION,
 };
 use crate::index::{canonical_bytes, walk_source, Generation, WalkArgs};
+use crate::plugins::{HookWarning, PluginHost};
 
 /// Lease that keeps one generation reachable. The value is the allocation, not its fields.
 struct Pin;
@@ -79,6 +82,9 @@ pub struct Session {
     ceiling: HostCeiling,
     grants: HostGrants,
     plan: Option<ContextPlan>,
+    plugins: Option<PluginHost>,
+    rules: Option<RuleSources>,
+    warnings: Vec<HookWarning>,
     limits: OperationLimits,
     place: String,
     view: String,
@@ -142,6 +148,7 @@ impl Session {
             view.check()?;
             view.parser()?
         };
+        self.hooks_before_index()?;
         let started = self.clock.now().millis();
         check_deadline(started, started, scan_limits.deadline_ms)?;
         let walked = walk_source(&WalkArgs {
@@ -193,7 +200,9 @@ impl Session {
             },
         );
         self.next_generation = self.next_generation.saturating_add(1);
-        Ok(SnapshotHandle { generation: id, epoch: self.epoch, digest, pin })
+        let handle = SnapshotHandle { generation: id, epoch: self.epoch, digest, pin };
+        self.hooks_after_index()?;
+        Ok(handle)
     }
 
     fn policy_view(&self) -> PolicyView<'_> {

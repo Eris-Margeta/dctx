@@ -1,7 +1,7 @@
 //! The five verbs. Convenience methods only fill a [`MapRequest`] and call [`Session::query`].
 //! Implements contracts/API-PORTS-v1.md query, budgets and continuation.
 //! Depends on the index and the wire encoder. A refusal does not write the sink.
-//! Read hashes the source again and emits bytes only when the digest matches.
+//! Read-only map does not schedule plugins. Read hashes the source again when the digest matches.
 
 use dctx_core::facts::ReadGrant;
 use dctx_core::ids::RelativePath;

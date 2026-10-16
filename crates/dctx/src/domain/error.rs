@@ -94,6 +94,8 @@ pub enum ErrorCode {
     SourceUnavailable,
     /// See [`DctxError::Io`].
     Io,
+    /// See [`DctxError::Hook`].
+    Hook,
 }
 
 impl ErrorCode {
@@ -118,6 +120,7 @@ impl ErrorCode {
             Self::SourceChanged => "SourceChanged",
             Self::SourceUnavailable => "SourceUnavailable",
             Self::Io => "Io",
+            Self::Hook => "Hook",
         }
     }
 }
@@ -201,6 +204,15 @@ pub enum DctxError {
     Io {
         /// Truncated adapter message.
         detail: Box<str>,
+    },
+    /// A plugin hook failed. `output_committed` is true only after the engine published.
+    Hook {
+        /// Hook boundary name.
+        hook: &'static str,
+        /// Host reason. A static token, never a path or file bytes.
+        reason: &'static str,
+        /// True when the pack, index or cache result is already published.
+        output_committed: bool,
     },
 }
 
@@ -299,6 +311,16 @@ impl DctxError {
             Self::SourceChanged => ErrorCode::SourceChanged,
             Self::SourceUnavailable => ErrorCode::SourceUnavailable,
             Self::Io { .. } => ErrorCode::Io,
+            Self::Hook { .. } => ErrorCode::Hook,
+        }
+    }
+
+    /// Whether the engine result this error refers to is already published.
+    /// Only a post-commit hook failure returns true. Every other error returns false.
+    pub const fn output_committed(&self) -> bool {
+        match self {
+            Self::Hook { output_committed, .. } => *output_committed,
+            _ => false,
         }
     }
 
@@ -363,6 +385,9 @@ impl fmt::Display for DctxError {
             Self::SourceChanged => formatter.write_str("source changed during read"),
             Self::SourceUnavailable => formatter.write_str("source unavailable"),
             Self::Io { detail } => write!(formatter, "io: {detail}"),
+            Self::Hook { hook, reason, output_committed } => {
+                write!(formatter, "hook {hook} failed (output_committed={output_committed}): {reason}")
+            }
         }
     }
 }
@@ -407,5 +432,13 @@ mod tests {
         assert!(template.to_string().contains("tree-sitter"));
         let version = DctxError::from_template(TemplateError::UnsupportedVersion { found: 9 });
         assert_eq!(version, DctxError::UnsupportedVersion { found: 9 });
+        assert!(!DctxError::Cancelled.output_committed());
+        let before = DctxError::Hook { hook: "before-pack-output-written", reason: "hook-failed", output_committed: false };
+        let after = DctxError::Hook { hook: "after-pack-output-written", reason: "hook-failed", output_committed: true };
+        assert!(!before.output_committed());
+        assert!(after.output_committed());
+        assert!(before.to_string().contains("output_committed=false"));
+        assert!(after.to_string().contains("output_committed=true"));
+        assert_eq!(after.code().as_str(), "Hook");
     }
 }

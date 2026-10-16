@@ -1,7 +1,8 @@
-//! Stable dctx library facade for pack, map, templates and cache.
-//! Implements ARCHITECTURE-PROPOSAL §2 (library contract) and §7 Stage 3 row DX-D1.
+//! Stable dctx library facade for pack, map, templates, cache and an optional plugin host.
+//! Implements ARCHITECTURE-PROPOSAL §2 (library contract) and §7 Stage 3 rows DX-D1 and PL-F.
 //! Depends on dctx-core, dctx-hash, dctx-ports, dctx-pack, dctx-template and dctx-map-model.
 //! Every surface calls this crate. It does not discover a home directory, a global config or a git binary.
+//! A caller may inject a plugin host. The library default starts none and spawns nothing.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
@@ -12,6 +13,7 @@
 mod adapters;
 mod domain;
 mod index;
+mod plugins;
 mod ports;
 mod session;
 
@@ -23,9 +25,10 @@ pub const WIRE_VERSION: u32 = 2;
 pub use domain::{
     encode_answer, object_key, validate_segment, Answer, AnswerRecord, BoundedSink, CacheReport, Capabilities,
     Direction, DctxError, ErrorCode, Freshness, FreshnessMode, GcRequest, HostGrants, IdentityOutcome, MapRequest,
-    OperationLimits, PackReport, PackRequest, Precision, PurgeRequest, PurgeScope, Resource, SegmentInfo,
+    OperationLimits, PackReport, PackRequest, Precision, PurgeRequest, PurgeScope, Resource, RuleSources, SegmentInfo,
     SnapshotRequest, VecSink, Verb, REQUEST_VERSION, STRUCTURAL_PARSER,
 };
+pub use plugins::{Boundary, HookEffect, HookWarning, PluginHost};
 pub use ports::{Cache, Cancellation, Clock, FactStore, Source};
 pub use session::{Session, SessionBuilder, SnapshotHandle, StoragePolicy};
 
@@ -35,7 +38,7 @@ pub use adapters::FsSource;
 pub use dctx_core::selection::RuleTexts;
 pub use dctx_core::{FileHandlingDecision, SelectionPolicy, Timestamp};
 pub use dctx_ports::memory;
-pub use dctx_template::{ContextPlan, GrantRule, HostCeiling};
+pub use dctx_template::{bundled_git_plugin, ContextPlan, GrantRule, HostCeiling, KnownPlugin};
 
 #[cfg(test)]
 mod isolation_scan {
@@ -53,6 +56,7 @@ mod isolation_scan {
             ("domain/report.rs", include_str!("domain/report.rs")),
             ("domain/request.rs", include_str!("domain/request.rs")),
             ("domain/sink.rs", include_str!("domain/sink.rs")),
+            ("domain/rules.rs", include_str!("domain/rules.rs")),
             ("domain/wire.rs", include_str!("domain/wire.rs")),
             ("index/mod.rs", include_str!("index/mod.rs")),
             ("index/extract.rs", include_str!("index/extract.rs")),
@@ -66,7 +70,13 @@ mod isolation_scan {
             ("session/ledger.rs", include_str!("session/ledger.rs")),
             ("session/pack_op.rs", include_str!("session/pack_op.rs")),
             ("session/query_op.rs", include_str!("session/query_op.rs")),
+            ("session/hooks.rs", include_str!("session/hooks.rs")),
             ("session/template_op.rs", include_str!("session/template_op.rs")),
+            ("plugins/mod.rs", include_str!("plugins/mod.rs")),
+            ("plugins/ports.rs", include_str!("plugins/ports.rs")),
+            ("plugins/plan.rs", include_str!("plugins/plan.rs")),
+            ("plugins/effects.rs", include_str!("plugins/effects.rs")),
+            ("plugins/boundary.rs", include_str!("plugins/boundary.rs")),
             ("ports/mod.rs", include_str!("ports/mod.rs")),
             ("adapters/mod.rs", include_str!("adapters/mod.rs")),
             ("adapters/fs.rs", include_str!("adapters/fs.rs")),

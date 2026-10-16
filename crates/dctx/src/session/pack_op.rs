@@ -1,7 +1,7 @@
 //! Pack as a library operation. The engine is `dctx-pack`; this module only builds the report.
 //! Implements contracts/API-PORTS-v1.md `Session.pack`. One publish is the commit point.
 //! Depends on [`super::Session`] and `dctx-pack`. A git revision is refused before the scan.
-//! The public report counts diagnostics and does not copy their paths.
+//! Hook methods run before the engine and after the page is written. The report counts diagnostics.
 
 use dctx_core::budget::PackLimits;
 use dctx_core::datatypes::{DirContextTreeNode, NodeType};
@@ -26,6 +26,7 @@ impl Session {
             return Err(DctxError::BudgetTooSmall { minimum_bytes: 64 });
         }
         self.cancel.checkpoint().map_err(DctxError::from_core)?;
+        self.hooks_before_pack()?;
         let view_name = if request.view.is_empty() { self.view.clone() } else { request.view.clone() };
         let view = ViewKey::parse(&view_name).map_err(DctxError::from_core)?;
         let scan = crate::domain::resolve_scan(&self.limits.intersect(request.limits))?;
@@ -65,6 +66,7 @@ impl Session {
             }
         }
         sink.write_page(&encoded)?;
+        self.hooks_after_pack()?;
         Ok(public)
     }
 }

@@ -1,4 +1,4 @@
-//! Template compile and load. The facade does not execute plugins.
+//! Template compile and load. An installed plan names the plugins a later hook boundary runs.
 //! Implements DTS v2 compile against the session ceiling (decision 079, decision 080, decision 081).
 //! Depends on `dctx-template`. Callers install a plan explicitly; compile does not write it.
 //! Unknown capabilities stay [`crate::domain::DctxError::UnsupportedCapability`].

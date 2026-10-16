@@ -26,6 +26,9 @@ dctx-map-model = { path = "../dctx-map-model", default-features = false }
 dctx-pack = { path = "../dctx-pack" }
 dctx-ports = { path = "../dctx-ports" }
 dctx-template = { path = "../dctx-template" }
+dctx-plugin-host = { path = "../dctx-plugin-host" }
+dctx-plugin-platform = { path = "../dctx-plugin-platform" }
+dctx-plugin-protocol = { path = "../dctx-plugin-protocol" }
 dctx-lex-rust = { path = "../dctx-lex-rust", optional = true }
 
 [dev-dependencies]

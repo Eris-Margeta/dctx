@@ -1,7 +1,7 @@
 //! Cache status, reachability collection and explicit purge.
 //! Implements contracts/API-PORTS-v1.md cache administration.
 //! Depends on [`super::Session`] and the ledger. A live handle blocks destruction.
-//! Purge without `confirm` is refused and does not drop a generation.
+//! Purge does not schedule a hook. Cache collection runs its hook only after an applying reclaim.
 
 use super::Session;
 use crate::domain::{CacheReport, GcRequest, PurgeRequest, PurgeScope, DctxError};
@@ -17,7 +17,12 @@ impl Session {
         if !cfg!(feature = "cache") {
             return Err(DctxError::unsupported("cache"));
         }
-        Ok(self.reclaim(request.apply, None))
+        self.reset_hook_warnings();
+        let report = self.reclaim(request.apply, None);
+        if request.apply {
+            self.hooks_after_cache()?;
+        }
+        Ok(report)
     }
 
     /// Drops generations in `request.scope` when no handle pins them.

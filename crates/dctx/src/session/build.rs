@@ -12,7 +12,8 @@ use dctx_template::HostCeiling;
 
 use super::ledger::AccountingCache;
 use super::Session;
-use crate::domain::{DctxError, HostGrants, OperationLimits};
+use crate::domain::{DctxError, HostGrants, OperationLimits, RuleSources};
+use crate::plugins::{HookWarning, PluginHost};
 
 /// Where bytes live, with an explicit ceiling.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,6 +41,8 @@ pub struct SessionBuilder {
     ceiling: Option<HostCeiling>,
     grants: Option<HostGrants>,
     storage: Option<StoragePolicy>,
+    plugins: Option<PluginHost>,
+    rules: Option<RuleSources>,
     limits: OperationLimits,
     place: Option<String>,
     view: Option<String>,
@@ -57,6 +60,8 @@ impl SessionBuilder {
             ceiling: None,
             grants: None,
             storage: None,
+            plugins: None,
+            rules: None,
             limits: OperationLimits::default(),
             place: None,
             view: None,
@@ -129,6 +134,18 @@ impl SessionBuilder {
         self
     }
 
+    /// Plugin ports. Absent means the session starts no plugin and no git child.
+    pub fn plugins(mut self, plugins: PluginHost) -> Self {
+        self.plugins = Some(plugins);
+        self
+    }
+
+    /// Owned rule texts. Required to rebuild selection after a `.gitignore` edit.
+    pub fn rule_sources(mut self, rules: RuleSources) -> Self {
+        self.rules = Some(rules);
+        self
+    }
+
     /// Builds the session or reports the first missing input.
     pub fn build(self) -> Result<Session, DctxError> {
         let clock = self.clock.ok_or_else(|| DctxError::invalid("clock is required"))?;
@@ -163,6 +180,9 @@ impl SessionBuilder {
             ceiling,
             grants,
             plan: None,
+            plugins: self.plugins,
+            rules: self.rules,
+            warnings: Vec::<HookWarning>::new(),
             limits: self.limits,
             place,
             view,
