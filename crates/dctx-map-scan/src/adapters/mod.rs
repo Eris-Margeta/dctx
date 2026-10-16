@@ -4,5 +4,11 @@
 
 /// Content access gated by domain decisions.
 pub mod content;
+/// Standard filesystem adapter.
+pub mod fs;
 /// Layered rule loading and typed failures.
 pub mod rules;
+/// Observable filesystem decorator.
+pub mod spy;
+/// Privacy-preserving traversal.
+pub mod walker;

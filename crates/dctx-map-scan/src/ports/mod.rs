@@ -15,3 +15,6 @@ pub trait ContentSource {
     /// Opens and reads the authorized path.
     fn read_content(&self, path: &Path) -> io::Result<Vec<u8>>;
 }
+
+/// Traversal filesystem boundary.
+pub mod fs;

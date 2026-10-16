@@ -11,5 +11,7 @@ pub mod domain;
 /// Rule loading boundaries.
 pub mod ports;
 
+pub use adapters::walker::{ScanError, scan};
 pub use domain::ignore::IgnoreEngine;
+pub use domain::scanned_file::{ContentHash, ScannedFile, content_hash};
 pub use domain::{FileHandlingDecision, ItemContext};

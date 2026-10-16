@@ -7,3 +7,14 @@ pub mod decision;
 /// Ignore engine and pattern rules.
 pub mod ignore;
 pub use decision::{FileHandlingDecision, ItemContext};
+
+/// Binary and SVG classification.
+pub mod classifier;
+#[cfg(test)]
+mod omit_parity_0;
+#[cfg(test)]
+mod omit_parity_1;
+#[cfg(test)]
+mod omit_parity_2;
+/// Scan output records and hashes.
+pub mod scanned_file;

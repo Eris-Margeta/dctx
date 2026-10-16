@@ -7,3 +7,7 @@ description = "Model-independent scan privacy rules"
 
 [dev-dependencies]
 tempfile = "3"
+
+[dependencies]
+sha2 = "0.10"
+thiserror = "2"
