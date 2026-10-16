@@ -822,6 +822,7 @@ name = "dctx-core"
 version = "0.25.0"
 dependencies = [
  "criterion",
+ "dctx-hash",
  "tempfile",
 ]
 
@@ -973,6 +974,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "dctx-pack"
+version = "0.1.0"
+dependencies = [
+ "dctx-core",
+ "dctx-hash",
+ "dctx-ports",
+ "tempfile",
+]
+
+[[package]]
 name = "dctx-plugin-distribution"
 version = "0.1.0"
 dependencies = [
@@ -998,6 +1009,13 @@ version = "0.1.0"
 dependencies = [
  "dctx-hash",
  "proptest",
+]
+
+[[package]]
+name = "dctx-ports"
+version = "0.1.0"
+dependencies = [
+ "dctx-core",
 ]
 
 [[package]]
