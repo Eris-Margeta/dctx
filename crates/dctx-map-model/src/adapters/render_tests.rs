@@ -1,7 +1,17 @@
 //! Byte-for-byte golden examples and renderer refusal controls.
 //! Pins SPEC-MAP-MODE sections 3, 4.1 and 4.2.
+//! JSON oracles live in `fixtures/wire-json/` for the future wire adapter.
 //! Uses pure fixture records; executed as the render module's unit tests.
 use super::*;
+
+fn fixture(name: &str) -> &'static str {
+    match name {
+        "find-one" => include_str!("../../fixtures/wire-json/find-one.json"),
+        "find-cut" => include_str!("../../fixtures/wire-json/find-cut.json"),
+        "find-moved" => include_str!("../../fixtures/wire-json/find-moved.json"),
+        _ => unreachable!("unknown wire fixture"),
+    }
+}
 
 pub(super) fn record(name: &str) -> Record {
     Record {
@@ -41,7 +51,7 @@ pub(super) fn answer() -> Answer {
 fn golden_text_and_json_are_exact_bytes() {
     let a = answer();
     let text = "# map demo rev=c23fd83+dirty 1 age=2\ns:src/lib.rs#append  fn  L41-L88  Appends one event.  [doc]\n";
-    let json = "{\"v\":1,\"place\":\"demo\",\"rev\":\"c23fd83\",\"dirty\":1,\"verb\":\"find\",\"records\":[{\"id\":\"s:src/lib.rs#append\",\"kind\":\"fn\",\"path\":\"src/lib.rs\",\"l\":[41,88],\"sum\":\"Appends one event.\",\"src\":\"doc\"}],\"more\":0,\"next\":\"\"}";
+    let json = fixture("find-one").trim_end_matches('\n');
     assert_eq!(render_text(&a, AnswerBudget::default()).unwrap(), text);
     assert_eq!(render_json(&a, AnswerBudget::default()).unwrap(), json);
     assert_eq!(
@@ -62,7 +72,7 @@ fn golden_cut_counts_all_omissions_and_reserves_footer() {
     let text = "# map demo rev=c23fd83+dirty 1 age=2\ns:src/lib.rs#append  fn  L41-L88  Appends one event.  [doc]\n+9 more · next: dctx map find \"event\" --page 2\n";
     let budget = AnswerBudget::new(text.len().div_ceil(7) as u16 * 2).unwrap();
     assert_eq!(render_text(&a, budget).unwrap(), text);
-    let json = "{\"v\":1,\"place\":\"demo\",\"rev\":\"c23fd83\",\"dirty\":1,\"verb\":\"find\",\"records\":[{\"id\":\"s:src/lib.rs#append\",\"kind\":\"fn\",\"path\":\"src/lib.rs\",\"l\":[41,88],\"sum\":\"Appends one event.\",\"src\":\"doc\"}],\"more\":9,\"next\":\"dctx map find \\\"event\\\" --page 2\"}";
+    let json = fixture("find-cut").trim_end_matches('\n');
     let budget = AnswerBudget::new((json.len() * 2).div_ceil(7) as u16).unwrap();
     assert_eq!(render_json(&a, budget).unwrap(), json);
 }
@@ -128,8 +138,10 @@ fn golden_moved_gone_and_empty_answers() {
         render_text(&a, AnswerBudget::default()).unwrap(),
         "# map demo rev=c23fd83+dirty 1 age=2\nmoved: s:src/old.rs#append -> s:src/lib.rs#append\ns:src/lib.rs#append  fn  L41-L88  Appends one event.  [doc]\n"
     );
-    let json = render_json(&a, AnswerBudget::default()).unwrap();
-    assert!(json.ends_with("\"identity\":{\"status\":\"moved\",\"old\":\"s:src/old.rs#append\",\"new\":\"s:src/lib.rs#append\"}}"));
+    assert_eq!(
+        render_json(&a, AnswerBudget::default()).unwrap(),
+        fixture("find-moved").trim_end_matches('\n')
+    );
     a.records.clear();
     assert!(matches!(
         render_text(&a, AnswerBudget::default()),

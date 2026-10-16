@@ -1,8 +1,8 @@
 //! Bounded query answer records and explicit moved/gone outcomes.
 //! Implements SPEC-MAP-MODE sections 3, 4 and 5.2.
-//! Query engines supply ranked facts; pure renderers enforce final byte limits.
+//! Query engines supply ranked facts. The renderer enforces the final byte limit.
+//! JSON traits exist only behind the `wire-json` feature.
 use super::{Confidence, Edge, EdgeKind, Node, StableId, SummarySource};
-use serde::{Deserialize, Serialize};
 
 /// Default output budget, estimated tokens.
 pub const DEFAULT_BUDGET: u16 = 500;
@@ -10,8 +10,9 @@ pub const DEFAULT_BUDGET: u16 = 500;
 pub const MAX_BUDGET: u16 = 2000;
 
 /// A validated positive token limit, capped at 2,000.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[serde(transparent)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "wire-json", derive(serde::Serialize))]
+#[cfg_attr(feature = "wire-json", serde(transparent))]
 pub struct AnswerBudget(u16);
 impl AnswerBudget {
     /// Default for the selected verb (explain uses 400 tokens).
@@ -48,7 +49,8 @@ impl Default for AnswerBudget {
         Self(DEFAULT_BUDGET)
     }
 }
-impl<'de> Deserialize<'de> for AnswerBudget {
+#[cfg(feature = "wire-json")]
+impl<'de> serde::Deserialize<'de> for AnswerBudget {
     fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
         Self::new(u16::deserialize(d)?).map_err(serde::de::Error::custom)
     }
@@ -64,8 +66,9 @@ impl std::fmt::Display for InvalidBudget {
 impl std::error::Error for InvalidBudget {}
 
 /// Supported read-only map queries.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "wire-json", serde(rename_all = "lowercase"))]
 pub enum Verb {
     /// Hierarchical outline.
     Map,
@@ -80,7 +83,8 @@ pub enum Verb {
 }
 
 /// Edge metadata prefixed to a neighbor record.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
 pub struct Relation {
     /// Named edge.
     pub edge: EdgeKind,
@@ -91,7 +95,8 @@ pub struct Relation {
 }
 
 /// One indivisible query result; JSON keys match section 4.2.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
 pub struct Record {
     /// Copyable stable id.
     pub id: StableId,
@@ -106,33 +111,55 @@ pub struct Record {
     /// Summary provenance.
     pub src: SummarySource,
     /// Optional explicit neighbor edge.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
+    #[cfg_attr(
+        feature = "wire-json",
+        serde(skip_serializing_if = "Option::is_none", default)
+    )]
     pub relation: Option<Relation>,
     /// Whether the record could not be refreshed in time.
-    #[serde(skip_serializing_if = "is_false", default)]
+    #[cfg_attr(feature = "wire-json", serde(skip_serializing_if = "is_false", default))]
     pub stale: bool,
     /// Signature shown by explain.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
+    #[cfg_attr(
+        feature = "wire-json",
+        serde(skip_serializing_if = "Option::is_none", default)
+    )]
     pub signature: Option<String>,
     /// Top incoming edges for explain, at most five.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    #[cfg_attr(
+        feature = "wire-json",
+        serde(skip_serializing_if = "Vec::is_empty", default)
+    )]
     pub incoming: Vec<Edge>,
     /// Top outgoing edges for explain, at most five.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    #[cfg_attr(
+        feature = "wire-json",
+        serde(skip_serializing_if = "Vec::is_empty", default)
+    )]
     pub outgoing: Vec<Edge>,
     /// Covering tests for explain.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    #[cfg_attr(
+        feature = "wire-json",
+        serde(skip_serializing_if = "Vec::is_empty", default)
+    )]
     pub tests: Vec<StableId>,
     /// Documentation mentioning this node.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    #[cfg_attr(
+        feature = "wire-json",
+        serde(skip_serializing_if = "Vec::is_empty", default)
+    )]
     pub documents: Vec<StableId>,
     /// Exact source span for read; preserved as a whole record.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
+    #[cfg_attr(
+        feature = "wire-json",
+        serde(skip_serializing_if = "Option::is_none", default)
+    )]
     pub body: Option<String>,
     /// Integer query rank; excluded from the public JSON shape.
-    #[serde(skip)]
+    #[cfg_attr(feature = "wire-json", serde(skip))]
     pub score: i64,
 }
+#[cfg(feature = "wire-json")]
 fn is_false(value: &bool) -> bool {
     !value
 }
@@ -162,8 +189,9 @@ impl From<&Node> for Record {
 }
 
 /// Lookup result for identities that disappeared from the index.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(tag = "status", rename_all = "lowercase")]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "wire-json", serde(tag = "status", rename_all = "lowercase"))]
 pub enum IdentityStatus {
     /// Old id resolves to a new node; its record follows the notice.
     Moved {
@@ -216,12 +244,15 @@ mod tests {
         assert_eq!(AnswerBudget::for_verb(Verb::Map).tokens(), 500);
         assert!(AnswerBudget::new(2).unwrap().fits("1234567"));
         assert!(!AnswerBudget::new(2).unwrap().fits("12345678"));
-        assert!(serde_json::from_str::<AnswerBudget>("0").is_err());
-        assert_eq!(
-            serde_json::from_str::<AnswerBudget>("2000")
-                .unwrap()
-                .tokens(),
-            2000
-        );
+        #[cfg(feature = "wire-json")]
+        {
+            assert!(serde_json::from_str::<AnswerBudget>("0").is_err());
+            assert_eq!(
+                serde_json::from_str::<AnswerBudget>("2000")
+                    .unwrap()
+                    .tokens(),
+                2000
+            );
+        }
     }
 }

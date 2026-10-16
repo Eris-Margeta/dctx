@@ -1,8 +1,8 @@
 //! Validated path/name identities and deterministic short aliases.
 //! Implements SPEC-MAP-MODE section 5.2, independent of source positions.
-//! Uses a pure SHA-256 helper; consumed by every graph layer.
+//! The alias uses `dctx-hash`. Content identity is [`super::ContentId`], never a git object id.
+//! Every graph layer consumes these ids. JSON validation is the `wire-json` feature.
 use super::NodeKind;
-use serde::{Deserialize, Deserializer, Serialize};
 use std::{fmt, str::FromStr};
 
 /// Invalid stable-id components or spelling.
@@ -16,8 +16,9 @@ impl fmt::Display for InvalidId {
 impl std::error::Error for InvalidId {}
 
 /// A canonical graph identity, never based on line numbers.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
-#[serde(transparent)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "wire-json", derive(serde::Serialize))]
+#[cfg_attr(feature = "wire-json", serde(transparent))]
 pub struct StableId(String);
 impl StableId {
     /// Builds a validated id. Ordinals are positive and only used for duplicates.
@@ -53,7 +54,7 @@ impl StableId {
         if self.0.len() <= 120 {
             return None;
         }
-        let digest = super::sha256::digest(self.0.as_bytes());
+        let digest = super::sha256::alias_digest(self.0.as_bytes()).ok()?;
         Some(format!(
             "@{:02x}{:02x}{:02x}",
             digest[0], digest[1], digest[2]
@@ -105,8 +106,9 @@ impl FromStr for StableId {
         Ok(Self(value.into()))
     }
 }
-impl<'de> Deserialize<'de> for StableId {
-    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+#[cfg(feature = "wire-json")]
+impl<'de> serde::Deserialize<'de> for StableId {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let value = String::deserialize(deserializer)?;
         value.parse().map_err(serde::de::Error::custom)
     }
@@ -146,10 +148,13 @@ mod tests {
             StableId::new(NodeKind::Symbol, "src/lib.rs", Some("Chain::append"), None).unwrap();
         assert_eq!(id.as_str(), "s:src/lib.rs#Chain::append");
         assert!(id.alias().is_none());
-        assert_eq!(
-            serde_json::from_str::<StableId>(&serde_json::to_string(&id).unwrap()).unwrap(),
-            id
-        );
+        #[cfg(feature = "wire-json")]
+        {
+            assert_eq!(
+                serde_json::from_str::<StableId>(&serde_json::to_string(&id).unwrap()).unwrap(),
+                id
+            );
+        }
         for bad in [
             "s:../lib.rs#x",
             "m:/abs",
@@ -161,6 +166,7 @@ mod tests {
             "s:x#x~1~2",
         ] {
             assert!(bad.parse::<StableId>().is_err(), "{bad}");
+            #[cfg(feature = "wire-json")]
             assert!(
                 serde_json::from_str::<StableId>(&serde_json::to_string(bad).unwrap()).is_err()
             );

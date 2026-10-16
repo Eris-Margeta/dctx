@@ -1,6 +1,7 @@
-//! Pure graph facts and bounded answers for dctx map mode.
-//! Implements SPEC-MAP-MODE sections 4 and 5 without filesystem access.
-//! Depends on serde and serde_json; used by indexers and query adapters.
+//! IO-free map domain: identities, byte spans, precision, provenance and answers.
+//! Implements ARCHITECTURE-PROPOSAL §7 DX-B1 and SPEC-MAP-MODE sections 3 through 5.
+//! Production dependency is first-party `dctx-hash` only. Optional `wire-json` adds JSON v1.
+//! Parsers, resolvers, stores and query engines share these facts and bring their own IO.
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
 

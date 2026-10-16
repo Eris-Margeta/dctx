@@ -1,8 +1,7 @@
-//! Deterministic, whole-record text and JSON answer serialization.
+//! Deterministic whole-record text answers, with JSON delegated to `wire-json`.
 //! Implements SPEC-MAP-MODE sections 3, 4.1 and 4.2.
-//! Uses domain records and serde_json; callers transport the returned string.
+//! Depends on domain records. Callers transport the returned string. No IO.
 use crate::domain::*;
-use serde::Serialize;
 use std::fmt;
 
 /// Output wire format.
@@ -28,7 +27,11 @@ pub enum RenderError {
     /// The remaining result count overflowed.
     CountOverflow,
     /// JSON serialization failed.
+    #[cfg(feature = "wire-json")]
     Json(serde_json::Error),
+    /// `Format::Json` was requested without the `wire-json` feature.
+    #[cfg(not(feature = "wire-json"))]
+    WireJsonDisabled,
 }
 impl fmt::Display for RenderError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -40,18 +43,23 @@ impl fmt::Display for RenderError {
             Self::InvalidRecord => f.write_str("record violates source span or verb limits"),
             Self::InvalidMetadata => f.write_str("invalid answer metadata"),
             Self::CountOverflow => f.write_str("remaining record count overflow"),
+            #[cfg(feature = "wire-json")]
             Self::Json(error) => error.fmt(f),
+            #[cfg(not(feature = "wire-json"))]
+            Self::WireJsonDisabled => f.write_str("json conversion requires the wire-json feature"),
         }
     }
 }
 impl std::error::Error for RenderError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        match self {
-            Self::Json(error) => Some(error),
-            _ => None,
+        #[cfg(feature = "wire-json")]
+        if let Self::Json(error) = self {
+            return Some(error);
         }
+        None
     }
 }
+#[cfg(feature = "wire-json")]
 impl From<serde_json::Error> for RenderError {
     fn from(value: serde_json::Error) -> Self {
         Self::Json(value)
@@ -71,18 +79,7 @@ pub fn render(
     } else {
         budget.bytes()
     };
-    let mut records = answer
-        .records
-        .iter()
-        .map(|r| Ok((r, serde_json::to_string(r)?)))
-        .collect::<Result<Vec<_>, RenderError>>()?;
-    records.sort_by(|(a, ak), (b, bk)| {
-        b.score
-            .cmp(&a.score)
-            .then_with(|| a.id.cmp(&b.id))
-            .then_with(|| ak.cmp(bk))
-    });
-    let records: Vec<_> = records.into_iter().map(|(r, _)| r).collect();
+    let records = ranked(answer)?;
     let hard_count = match answer.verb {
         Verb::Map | Verb::Neighbors => 60,
         Verb::Find => 40,
@@ -294,45 +291,48 @@ fn text(answer: &Answer, records: &[&Record], more: usize, needs_next: bool) -> 
     output
 }
 
-#[derive(Serialize)]
-struct JsonAnswer<'a> {
-    v: u8,
-    place: &'a str,
-    rev: &'a str,
-    dirty: usize,
-    verb: Verb,
-    records: &'a [&'a Record],
-    more: usize,
-    next: &'a str,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    identity: &'a Option<IdentityStatus>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    reason: Option<&'a str>,
+fn ranked(answer: &Answer) -> Result<Vec<&Record>, RenderError> {
+    #[cfg(feature = "wire-json")]
+    {
+        let mut records = answer
+            .records
+            .iter()
+            .map(|record| Ok((record, super::wire_json::canonical(record)?)))
+            .collect::<Result<Vec<_>, RenderError>>()?;
+        records.sort_by(|(left, left_json), (right, right_json)| {
+            right
+                .score
+                .cmp(&left.score)
+                .then_with(|| left.id.cmp(&right.id))
+                .then_with(|| left_json.cmp(right_json))
+        });
+        Ok(records.into_iter().map(|(record, _)| record).collect())
+    }
+    #[cfg(not(feature = "wire-json"))]
+    {
+        let mut records: Vec<&Record> = answer.records.iter().collect();
+        records.sort_by(|left, right| {
+            right.score.cmp(&left.score).then_with(|| left.id.cmp(&right.id))
+        });
+        Ok(records)
+    }
 }
-fn json(
-    answer: &Answer,
-    records: &[&Record],
+
+fn json<'a>(
+    answer: &'a Answer,
+    records: &'a [&'a Record],
     more: usize,
     needs_next: bool,
 ) -> Result<String, RenderError> {
-    Ok(serde_json::to_string(&JsonAnswer {
-        v: 1,
-        place: &answer.place,
-        rev: &answer.rev[..7],
-        dirty: answer.dirty,
-        verb: answer.verb,
-        records,
-        more,
-        next: if needs_next { &answer.next } else { "" },
-        identity: &answer.identity,
-        reason: answer.reason.as_deref().or(
-            if answer.records.is_empty() && answer.identity.is_none() {
-                Some("no match")
-            } else {
-                None
-            },
-        ),
-    })?)
+    #[cfg(feature = "wire-json")]
+    {
+        super::wire_json::encode(answer, records, more, needs_next)
+    }
+    #[cfg(not(feature = "wire-json"))]
+    {
+        let _ = (answer, records, more, needs_next);
+        Err(RenderError::WireJsonDisabled)
+    }
 }
 
 #[cfg(test)]

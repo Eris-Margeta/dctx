@@ -1,14 +1,18 @@
 //! Graph kinds, source spans and fingerprint-bound summaries.
 //! Implements SPEC-MAP-MODE sections 5.1, 5.3 and 5.4.
-//! Uses serde only; indexers and query engines exchange these facts.
+//! JSON derives exist only behind the `wire-json` feature. Indexers exchange these facts.
 use super::StableId;
-use serde::{Deserialize, Serialize};
 
 macro_rules! vocabulary {
     ($name:ident, $doc:literal, {$($variant:ident => $text:literal),+ $(,)?}) => {
         #[doc = $doc]
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-        pub enum $name { $(#[doc = $text] #[serde(rename = $text)] $variant),+ }
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        #[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
+        pub enum $name { $(
+            #[doc = $text]
+            #[cfg_attr(feature = "wire-json", serde(rename = $text))]
+            $variant
+        ),+ }
         impl $name {
             /// Canonical agent-facing spelling.
             pub const fn as_str(self) -> &'static str {
@@ -67,7 +71,8 @@ vocabulary!(SummarySource, "Provenance shown with every summary.", {
 });
 
 /// Directed relation owned by the file that produced it.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
 pub struct Edge {
     /// Source node.
     pub src: StableId,
@@ -82,7 +87,8 @@ pub struct Edge {
 }
 
 /// First-party summary with explicit provenance.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
 pub struct Summary {
     /// Single-line text.
     pub text: String,
@@ -91,7 +97,8 @@ pub struct Summary {
 }
 
 /// Imported tier-one summary tied to an exact body fingerprint.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
 pub struct GeneratedSummary {
     /// Whitespace-normalized body SHA-256 supplied by the indexer.
     pub fingerprint: String,
@@ -117,7 +124,8 @@ impl GeneratedSummary {
 }
 
 /// Parser/storage node; locations are one-based inclusive line numbers.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "wire-json", derive(serde::Serialize, serde::Deserialize))]
 pub struct Node {
     /// Stable path/name identity.
     pub id: StableId,
