@@ -42,7 +42,9 @@ fn walk_sources(dir: &Path, hits: &mut Vec<PathBuf>) {
     for entry in entries.flatten() {
         let path = entry.path();
         let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        if name == "target" || name == ".git" {
+        // decision 078 bans git from production code. Test trees may spawn git on purpose
+        // (confinement adversary probes prove it is blocked), so they are not scanned.
+        if name == "target" || name == ".git" || name == "tests" || name == "benches" {
             continue;
         }
         let Ok(kind) = entry.file_type() else {
