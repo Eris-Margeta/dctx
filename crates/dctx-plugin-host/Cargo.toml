@@ -1,0 +1,13 @@
+[package]
+name = "dctx-plugin-host"
+version = "0.1.0"
+edition = "2024"
+description = "dctx plugin host domain and brokers: grants, receipts, budgets, liveness and lifecycle over ports"
+license = "MIT"
+
+[dependencies]
+dctx-hash = { path = "../dctx-hash" }
+dctx-plugin-protocol = { path = "../dctx-plugin-protocol" }
+
+[dev-dependencies]
+proptest = "1"
