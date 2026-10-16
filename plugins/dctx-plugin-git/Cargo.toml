@@ -6,9 +6,6 @@ description = "The bundled dctx/git plugin: local .gitignore protection and brok
 license = "Apache-2.0"
 publish = false
 
-# Its own workspace root until PL-W adds plugins/* to the root workspace.
-[workspace]
-
 [lib]
 path = "src/lib.rs"
 
