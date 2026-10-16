@@ -2,13 +2,13 @@
 name = "dctx-ed25519"
 version = "0.1.0"
 edition = "2024"
-description = "First-party safe Rust Ed25519 signature verification for dctx"
+description = "Ed25519 signature verification for dctx via audited ed25519-dalek"
 license = "Apache-2.0"
 
 [dependencies]
+ed25519-dalek = { version = "=2.2.0", default-features = false }
 
 [dev-dependencies]
-ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std"] }
 proptest = "=1.12.0"
 serde_json = "=1.0.149"
 sha2 = "=0.10.9"

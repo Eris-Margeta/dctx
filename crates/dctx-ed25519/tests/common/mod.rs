@@ -1,5 +1,5 @@
-//! Shared reference adapter for the PL-ED integration tests.
-//! Uses only dev-dependency ed25519-dalek's strict verification API.
+//! Shared acceptance oracle for the PL-ED integration tests.
+//! Uses ed25519-dalek 2.2.0 `VerifyingKey::verify_strict`.
 //! Length and key-decoding errors count as rejection, never as skipped cases.
 
 #![forbid(unsafe_code)]

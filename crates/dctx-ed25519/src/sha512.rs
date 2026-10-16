@@ -1,6 +1,6 @@
-//! Streaming SHA-512 for the RFC 8032 challenge hash, per FIPS 180-4 §5–6.
+//! Streaming SHA-512 for the public digest API, per FIPS 180-4 §5–6.
 //! Owns a fixed-size block buffer and 128-bit bit count; no IO or allocation.
-//! The verifier and public digest API share the private compression function.
+//! Signature verification hashes inside ed25519-dalek, not through this type.
 
 use crate::compress::compress;
 
