@@ -1,7 +1,6 @@
 [workspace]
 members = [
-  "crates/dctx-core",
-  "crates/dctx-cli",
+  "crates/*",
   "apps/dctx-desktop/src-tauri",
   # Bindings (future)
   # "bindings/dctx-py",
