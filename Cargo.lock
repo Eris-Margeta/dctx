@@ -953,6 +953,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dctx-map-segment"
+version = "0.1.0"
+dependencies = [
+ "dctx-hash",
+ "proptest",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "dctx-map-store"
 version = "0.1.0"
 dependencies = [
