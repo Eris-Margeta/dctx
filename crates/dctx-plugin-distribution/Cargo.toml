@@ -1,0 +1,15 @@
+[package]
+name = "dctx-plugin-distribution"
+version = "0.1.0"
+edition = "2024"
+description = "dctx plugin installer, trust and discovery client: signed manifests, offline bundles and atomic activation over ports"
+license = "MIT"
+
+[dependencies]
+dctx-ed25519 = { path = "../dctx-ed25519" }
+dctx-hash = { path = "../dctx-hash" }
+dctx-plugin-protocol = { path = "../dctx-plugin-protocol" }
+
+[dev-dependencies]
+ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std"] }
+proptest = "1"
