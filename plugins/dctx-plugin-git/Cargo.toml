@@ -1,0 +1,24 @@
+[package]
+name = "dctx-plugin-git"
+version = "1.0.0"
+edition = "2024"
+description = "The bundled dctx/git plugin: local .gitignore protection and brokered staging (PLUGINS.md §6)"
+license = "Apache-2.0"
+publish = false
+
+# Its own workspace root until PL-W adds plugins/* to the root workspace.
+[workspace]
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "dctx-plugin-git"
+path = "src/main.rs"
+
+[dependencies]
+dctx-plugin-protocol = { path = "../../crates/dctx-plugin-protocol" }
+
+[dev-dependencies]
+dctx-hash = { path = "../../crates/dctx-hash" }
+proptest = "1"
