@@ -1,0 +1,4 @@
+# Runtime TLC evidence and state storage for the PL-M remote gate.
+# check.sh keeps these beneath the packet's owned directory.
+# Source configurations and the suite manifest remain tracked.
+.runs/
