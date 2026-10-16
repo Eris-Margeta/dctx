@@ -50,3 +50,4 @@ Binding for every Rust packet. Workers read this before writing code.
 - In dctx, workspace-level dependencies may be declared in the crate's own `Cargo.toml` with an exact version. The root stays untouched.
 - Dev-dependencies only, for differential testing of first-party cryptography (decision 078, decision 081): `sha2` (against dctx-hash) and `ed25519-dalek` (against dctx-ed25519). They never appear in a production dependency closure.
 - `syn` (exact pin, minimal features) in `dctx-lex-rust` only: the Rust structural extractor (decision 077).
+- In `dctx-plugin-platform` only (Linux confinement, decision 080; versions checked on crates.io 16.10.2026): `rustix = "=1.1.5"`, `landlock = "=0.4.7"`, `seccompiler = "=0.5.0"`. Their unsafe stays inside them; first-party code keeps `forbid(unsafe_code)`.
