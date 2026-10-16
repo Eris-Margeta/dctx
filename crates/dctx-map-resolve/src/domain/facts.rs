@@ -108,9 +108,30 @@ pub enum ResolveError {
     /// Containment must be proven by the parser, never guessed by spelling.
     #[error("containment requires an identity target")]
     UnprovenContainment,
+    /// Two local symbols in one shared fact use the same name.
+    #[error("duplicate local symbol {0}")]
+    DuplicateSymbol(String),
+    /// A retained fact key already stores a different payload.
+    #[error("fact key retains a different payload")]
+    ConflictingFact,
+    /// The view placed a path whose fact key is not retained.
+    #[error("no retained fact for {0}")]
+    MissingFact(String),
+    /// The shared fact names a local symbol that is not in its payload.
+    #[error("shared fact is missing symbol {0}")]
+    MissingSymbol(String),
+    /// Root, namespace or revision is empty or has a git-shaped identity.
+    #[error("invalid view identity: {0}")]
+    InvalidRoot(String),
+    /// A placement path is not a portable relative path.
+    #[error("invalid placement path: {0}")]
+    InvalidPath(String),
+    /// Shared references carry names only; resolved ids belong to a view.
+    #[error("shared reference carries a resolved identity")]
+    LayoutDependentTarget,
 }
 
-pub(super) fn canonical(value: &str) -> bool {
+pub(crate) fn canonical(value: &str) -> bool {
     value.is_empty()
         || value.split("::").all(|part| {
             !part.is_empty()
