@@ -148,6 +148,13 @@ pub enum StorageStrategy {
 }
 
 pub fn get_config_dir() -> Option<PathBuf> {
+    // Unit tests never read the machine's global config: they get a
+    // process-wide directory seeded from the shipped templates.
+    #[cfg(test)]
+    {
+        return Some(test_config_dir().clone());
+    }
+    #[allow(unreachable_code)]
     if cfg!(target_os = "windows") {
         env::var("APPDATA")
             .ok()
@@ -162,6 +169,22 @@ pub fn get_config_dir() -> Option<PathBuf> {
                 .map(|h| PathBuf::from(h).join(".config").join(APP_NAME))
         }
     }
+}
+
+/// The hermetic config dir for unit tests: the global ignore and omit files
+/// are the templates `dctx` installs, so results match a fresh install on any machine.
+#[cfg(test)]
+fn test_config_dir() -> &'static PathBuf {
+    static DIR: std::sync::OnceLock<PathBuf> = std::sync::OnceLock::new();
+    DIR.get_or_init(|| {
+        let dir = std::env::temp_dir().join(format!("dctx-test-config-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).expect("create test config dir");
+        std::fs::write(dir.join(GLOBAL_IGNORE_FILENAME), include_str!("../templates/global-ignore"))
+            .expect("write test global ignore");
+        std::fs::write(dir.join(GLOBAL_OMIT_CONTENT_FILENAME), include_str!("../templates/global-omitcontent"))
+            .expect("write test global omit");
+        dir
+    })
 }
 
 pub fn get_cache_dir() -> Option<PathBuf> {
