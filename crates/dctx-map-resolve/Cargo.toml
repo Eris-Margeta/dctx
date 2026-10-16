@@ -1,0 +1,11 @@
+[package]
+name = "dctx-map-resolve"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+dctx-map-model = { path = "../dctx-map-model" }
+thiserror = "2"
+
+[dev-dependencies]
+proptest = "1"
