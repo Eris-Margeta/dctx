@@ -1,10 +1,15 @@
-//! Command entry point for snapshots, templates and semantic map traversal.
-//! Map routing implements SPEC-MAP-MODE section 9.1 before snapshot side effects.
-//! Uses dctx-core for the original product and dctx-map-query for code traversal.
+//! Command entry point for snapshots, templates, pack and cache.
+//! Map, pack, template and cache call the dctx facade. `dctx .` keeps the legacy snapshot.
+//! Uses dctx-core for the compatibility alias and dctx-adapter-cache for cache administration.
 #![forbid(unsafe_code)]
 
+mod cache;
+mod help;
+mod host;
 mod map;
+mod pack;
 mod platform;
+mod template;
 mod tui;
 
 use dctx_core::config;
@@ -16,7 +21,6 @@ use dctx_core::ignore;
 use dctx_core::llm_formatter;
 use dctx_core::registry::ProjectRegistry;
 use dctx_core::state::{self, StateLoadResult};
-use dctx_core::template::{CompiledTemplate, Template};
 use dctx_core::version::Version;
 use dctx_core::walker;
 use dctx_core::writer;
@@ -168,13 +172,34 @@ fn main() {
         }
         return;
     }
+    if args.get(1).is_some_and(|arg| arg == "pack") {
+        if let Err(error) = pack::run(&args[1..]) {
+            eprintln!("pack: {error}");
+            std::process::exit(1);
+        }
+        return;
+    }
+    if args.get(1).is_some_and(|arg| arg == "cache") {
+        if let Err(error) = cache::run(&args[1..]) {
+            eprintln!("cache: {error}");
+            std::process::exit(1);
+        }
+        return;
+    }
+    if args.get(1).is_some_and(|arg| arg == "template") {
+        if let Err(error) = template::run(&args[1..]) {
+            eprintln!("template: {error}");
+            std::process::exit(1);
+        }
+        return;
+    }
     if args.len() == 1 {
         run_interactive_mode();
     } else {
         match parse_command(&args) {
             Ok(cmd) => match cmd {
                 CliCommand::Help => print_help(),
-                CliCommand::Version => print_version(),
+                CliCommand::Version => print_version(args.iter().any(|arg| arg == "--verbose")),
                 CliCommand::Snapshot(config) => run_headless_mode(config.into()),
                 CliCommand::Template(subcmd) => run_template_command(subcmd),
             },
@@ -975,7 +1000,13 @@ fn run_headless_mode(cli_config: CliConfig) {
 
             let content_str = String::from_utf8_lossy(&content_to_copy);
             match platform::copy_to_clipboard(&content_str) {
-                Ok(_) => println!("✨ Copied to clipboard!"),
+                Ok(_) => {
+                    println!("✨ Copied to clipboard!");
+                    println!(
+                        "Legacy compatibility alias copied {} bytes and wrote no project text file. Explicit pack: dctx pack",
+                        content_to_copy.len()
+                    );
+                }
                 Err(e) => eprintln!("❌ Clipboard error: {}", e),
             }
         } else {
@@ -986,7 +1017,14 @@ fn run_headless_mode(cli_config: CliConfig) {
             println!("📝 Writing main context: {:?}", txt_path);
 
             match std::fs::write(&txt_path, &output_buffer) {
-                Ok(_) => println!("✅ Saved: .dctx/{}", txt_filename),
+                Ok(_) => {
+                    println!("✅ Saved: .dctx/{}", txt_filename);
+                    println!(
+                        "Legacy compatibility alias wrote {} ({} bytes, retention=legacy-project-text). Opt into explicit output with: dctx pack --output <path>",
+                        txt_path.display(),
+                        output_buffer.len()
+                    );
+                }
                 Err(e) => eprintln!("❌ Write error for {}: {}", txt_filename, e),
             }
 
@@ -995,7 +1033,14 @@ fn run_headless_mode(cli_config: CliConfig) {
                 let diff_filename = format!("{}.llmcontext-{}-diff.txt", project_name, new_version);
                 let diff_path = local_output_dir.join(&diff_filename);
                 match std::fs::write(&diff_path, &diff_buffer) {
-                    Ok(_) => println!("✅ Saved Diff: .dctx/{}", diff_filename),
+                    Ok(_) => {
+                        println!("✅ Saved Diff: .dctx/{}", diff_filename);
+                        println!(
+                            "Legacy diff wrote {} ({} bytes, retention=legacy-project-text).",
+                            diff_path.display(),
+                            diff_buffer.len()
+                        );
+                    }
                     Err(e) => eprintln!("❌ Diff Write error for {}: {}", diff_filename, e),
                 }
             }
@@ -1006,236 +1051,42 @@ fn run_headless_mode(cli_config: CliConfig) {
 }
 
 fn print_help() {
-    println!("Usage: dctx [PATH] [OPTIONS]");
-    println!("       dctx template <COMMAND>");
-    println!("       dctx map <map|find|neighbors|explain|read> [--json]");
-    println!();
-    println!("Snapshot Options:");
-    println!("  -c, --clipboard       Copy to clipboard");
-    println!("  -d, --diff            Output diff only (if available)");
-    println!("  -t, --tree            Tree-Only mode (skips file content)");
-    println!("  -r, --reset           Force V1 reset");
-    println!("  -h, --help            Show help");
-    println!("  -v, --version         Show version");
-    println!();
-    println!("Filter Options:");
-    println!("  --ext <extensions>    Only include files with these extensions");
-    println!("                        Example: --ext rs,toml");
-    println!("  --binary              Include binary files (excluded by default)");
-    println!("  --empty               Show only empty files (0 bytes)");
-    println!("  --non-empty           Show only non-empty files");
-    println!("  --large <MB>          Show only files larger than X megabytes");
-    println!("                        Example: --large 1");
-    println!("  --small <MB>          Show only files smaller than X megabytes");
-    println!("                        Example: --small 0.5");
-    println!("  --hidden              Show ONLY hidden files and folders (starting with .)");
-    println!("  --debug-ignored       Show ignored files/folders in tree (diagnostics)");
-    println!("                        Files are shown but NEVER read. Use this to");
-    println!("                        verify your ignore rules work correctly.");
-    println!("  -V, --debug-verbose   Show detailed diagnostic output (ignore checks,");
-    println!("                        pattern matches, decision traces). Default: off.");
-    println!();
-    println!("Privacy & Performance:");
-    println!("  Ignored files (.env, credentials, .git/) are NEVER read into");
-    println!("  memory, even with --debug-ignored. This guarantees absolute privacy.");
-    println!();
-    println!("  Ignored folders (node_modules/, target/) are skipped entirely");
-    println!("  without recursion, providing 50-100x faster scanning.");
-    println!();
-    println!("Rule Types:");
-    println!("  IGNORE    Files/folders that don't exist for our purposes");
-    println!("            (.env, .git/, node_modules/)");
-    println!("            Default: Hidden from tree, never read, no recursion");
-    println!();
-    println!("  OMIT      Files that exist but we don't care about contents");
-    println!("            (package-lock.json, *.svg, Cargo.lock)");
-    println!("            Always: Shown in tree, content shows \"[Content omitted]\"");
-    println!();
-    println!("Template Commands:");
-    println!("  template build <PATH>  Compile a .dctx_template file");
-    println!("  template list          List compiled templates");
-    println!();
-    println!("Examples:");
-    println!("  dctx .                      Snapshot current directory");
-    println!("  dctx ./project -c           Snapshot and copy to clipboard");
-    println!("  dctx . --tree               Tree-only (faster, no file contents)");
-    println!("  dctx . --debug-ignored      Verify your ignore rules");
-    println!("  dctx . --ext rs,toml        Only Rust and TOML files");
-    println!("  dctx . --ext js --small 0.1 JavaScript files under 100KB");
-    println!("  dctx template build my.dctx_template");
+    print!("{}", help::text());
 }
 
-fn print_version() {
+fn print_version(verbose: bool) {
     println!("dctx-cli v{}", env!("CARGO_PKG_VERSION"));
+    if verbose {
+        print!("{}", help::limits());
+    }
 }
 
 // --- TEMPLATE COMMANDS ---
 
+#[cfg(test)]
+mod compatibility {
+    #[test]
+    fn dot_alias_stays_a_snapshot() {
+        let args = vec!["dctx".to_string(), ".".to_string()];
+        let command = super::parse_command(&args).expect("parse");
+        assert!(matches!(command, super::CliCommand::Snapshot(_)));
+    }
+
+    #[test]
+    fn help_is_still_a_command() {
+        let args = vec!["dctx".to_string(), "--help".to_string()];
+        let command = super::parse_command(&args).expect("parse");
+        assert!(matches!(command, super::CliCommand::Help));
+    }
+}
+
 fn run_template_command(subcmd: TemplateSubcommand) {
-    match subcmd {
-        TemplateSubcommand::Build { template_path } => {
-            run_template_build(&template_path);
-        }
-        TemplateSubcommand::List => {
-            run_template_list();
-        }
-    }
-}
-
-fn run_template_build(template_path: &PathBuf) {
-    println!("🔧 Building template: {:?}", template_path);
-
-    // 1. Check if file exists
-    if !template_path.exists() {
-        eprintln!("❌ Template file not found: {:?}", template_path);
+    let result = match subcmd {
+        TemplateSubcommand::Build { template_path } => template::build_path(&template_path),
+        TemplateSubcommand::List => template::list_default(),
+    };
+    if let Err(error) = result {
+        eprintln!("❌ {error}");
         std::process::exit(1);
     }
-
-    // 2. Read template file
-    let raw_content = match fs::read_to_string(template_path) {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("❌ Failed to read template file: {}", e);
-            std::process::exit(1);
-        }
-    };
-
-    // 3. Parse template
-    println!("📝 Parsing template...");
-    let template = Template::parse(&raw_content);
-
-    // 4. Validate
-    println!("🔍 Validating template...");
-    let errors = template.validate();
-    if !errors.is_empty() {
-        eprintln!("❌ Template validation failed:");
-        for error in &errors {
-            eprintln!("   - {}", error);
-        }
-        std::process::exit(1);
-    }
-    println!("✅ Validation passed");
-
-    // 5. Derive template name from filename
-    let template_name = template_path
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("custom");
-
-    // Remove .dctx_template suffix if present in stem
-    let template_name = template_name.strip_suffix(".dctx").unwrap_or(template_name);
-
-    // 6. Compile template
-    println!("⚙️  Compiling template as '{}'...", template_name);
-    let compiled = match template.compile(template_name) {
-        Ok(c) => c,
-        Err(errors) => {
-            eprintln!("❌ Template compilation failed:");
-            for error in &errors {
-                eprintln!("   - {}", error);
-            }
-            std::process::exit(1);
-        }
-    };
-
-    // 7. Get output path
-    let templates_dir = match config::get_compiled_templates_dir() {
-        Some(d) => d,
-        None => {
-            eprintln!("❌ Could not determine templates directory");
-            std::process::exit(1);
-        }
-    };
-
-    // Ensure directory exists
-    if let Err(e) = fs::create_dir_all(&templates_dir) {
-        eprintln!("❌ Failed to create templates directory: {}", e);
-        std::process::exit(1);
-    }
-
-    let output_path = templates_dir.join(format!("{}.bin", template_name));
-
-    // 8. Save compiled template
-    println!("💾 Saving to {:?}...", output_path);
-    if let Err(e) = compiled.save_to_file(&output_path) {
-        eprintln!("❌ Failed to save compiled template: {}", e);
-        std::process::exit(1);
-    }
-
-    // 9. Success message
-    println!();
-    println!("═══════════════════════════════════════════════════════════");
-    println!("✅ Template built successfully!");
-    println!("═══════════════════════════════════════════════════════════");
-    println!();
-    println!("To use this template, add to your config.toml:");
-    println!();
-    println!("    default_template = \"{}\"", template_name);
-    println!();
-    println!(
-        "Config location: {:?}",
-        config::get_config_file_path().unwrap_or_default()
-    );
-    println!();
-}
-
-fn run_template_list() {
-    println!("📋 Compiled Templates");
-    println!("═══════════════════════════════════════════════════════════");
-
-    let templates_dir = match config::get_compiled_templates_dir() {
-        Some(d) => d,
-        None => {
-            eprintln!("❌ Could not determine templates directory");
-            std::process::exit(1);
-        }
-    };
-
-    if !templates_dir.exists() {
-        println!();
-        println!("No compiled templates found.");
-        println!("Use 'dctx template build <path>' to compile a template.");
-        return;
-    }
-
-    let entries = match fs::read_dir(&templates_dir) {
-        Ok(e) => e,
-        Err(e) => {
-            eprintln!("❌ Failed to read templates directory: {}", e);
-            std::process::exit(1);
-        }
-    };
-
-    let mut found = false;
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.extension().and_then(|s| s.to_str()) == Some("bin") {
-            if let Some(name) = path.file_stem().and_then(|s| s.to_str()) {
-                // Try to load and verify the template
-                match CompiledTemplate::load_from_file(&path) {
-                    Ok(tmpl) => {
-                        println!("  ✓ {} ({})", name, tmpl.name);
-                        found = true;
-                    }
-                    Err(e) => {
-                        println!("  ✗ {} (corrupted: {})", name, e);
-                        found = true;
-                    }
-                }
-            }
-        }
-    }
-
-    if !found {
-        println!();
-        println!("No compiled templates found.");
-        println!("Use 'dctx template build <path>' to compile a template.");
-    }
-
-    println!();
-    println!("Templates directory: {:?}", templates_dir);
-
-    // Show current config
-    let app_config = config::load_app_config();
-    println!("Current default: {}", app_config.default_template);
 }

@@ -1,6 +1,6 @@
 //! Parsing for the five read-only map verbs and their bounded options.
 //! Implements SPEC-MAP-MODE sections 4 and 9.1 with no admin commands.
-//! Uses map-query request validation and keeps snapshot-mode parsing separate.
+//! Uses map-query request validation. Execution is the facade in the parent module.
 use dctx_map_query::{AnswerBudget, Direction, EdgeKind, Format, Request, Verb};
 use std::path::PathBuf;
 
@@ -10,17 +10,20 @@ pub(super) struct Options {
     pub place: PathBuf,
 }
 pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read> [TARGET] [OPTIONS]
-  --json                  Machine-readable bounded output
+  --json                  Facade JSON v2, including the precision label
   --place PATH            Place or worktree root (default: current directory)
   --budget TOKENS         Output tokens, 1..2000 (explain max: 1000)
   --depth N               Map: 1..3; neighbors: 1..2
-  --limit N --offset N    Bounded result pages
+  --limit N --offset N    Offset above 0 is refused; pages use the next cursor
   --kind fn,type,doc      Find kinds
   --in PATH              Find within a relative path
   --edge calls,imports   Neighbor edge filter
   --dir in|out|both       Neighbor direction
   --lines A-B --full      Read exact source lines; full permits 400
-  --rev SHA              Require the retained clean revision
+  --rev SHA              Refused: this build does not link git
+Precision: structural declarations, imports, headings and conservative calls.
+Not exact semantic calls, type resolution or macro expansion.
+Token estimate ceil(2 * UTF-8 bytes / 7) is not a tokenizer guarantee.
 Examples:
   dctx map find 'ignore rules' --json
   dctx map map crates/dctx-core --depth 2

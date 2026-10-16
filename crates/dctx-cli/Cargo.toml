@@ -5,5 +5,8 @@ edition = "2021"
 license = "Apache-2.0"
 
 [dependencies]
+dctx = { path = "../dctx" }
+dctx-adapter-cache = { path = "../dctx-adapter-cache" }
 dctx-core = { path = "../dctx-core" }
 dctx-map-query = { path = "../dctx-map-query" }
+dctx-template = { path = "../dctx-template" }
