@@ -1,0 +1,20 @@
+[package]
+name = "plugin-index"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+description = "Local validator and test-key signature check for the public dctx plugin index"
+
+# Own workspace so this packet does not edit the root Cargo.toml.
+[workspace]
+resolver = "2"
+
+[dependencies]
+dctx-ed25519 = { path = "../../crates/dctx-ed25519" }
+dctx-hash = { path = "../../crates/dctx-hash" }
+thiserror = "=2.0.18"
+
+[dev-dependencies]
+ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std"] }
+proptest = "=1.12.0"

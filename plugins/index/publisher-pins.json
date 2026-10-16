@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "role": "local-test-pins",
+  "index_key_fingerprint": "21fe31dfa154a261626bf854046fd2271b7bed4b6abe45aa58877ef47f9721b9",
+  "publishers": [
+    {
+      "id": "dctx/git",
+      "publisher_key_fingerprint": "21fe31dfa154a261626bf854046fd2271b7bed4b6abe45aa58877ef47f9721b9"
+    }
+  ]
+}

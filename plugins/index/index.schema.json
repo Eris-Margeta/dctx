@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dctx:plugin-api:v1:index",
+  "$comment": "PL-C v1 public index schema for PL-X. Copied from docs/design/plugin-api/index.schema.json. Local registry only. Validity grants no install authority and no publication.",
+  "type": "object",
+  "properties": {
+    "schema": {"const": 1},
+    "sequence": {"$ref": "urn:dctx:plugin-api:v1:common#/$defs/positive"},
+    "plugins": {
+      "type": "array",
+      "maxItems": 2048,
+      "minItems": 0,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "repository", "summary", "publisher_key_fingerprint", "releases"],
+        "properties": {
+          "id": {"$ref": "urn:dctx:plugin-api:v1:common#/$defs/id"},
+          "repository": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"
+          },
+          "summary": {"$ref": "urn:dctx:plugin-api:v1:common#/$defs/short_text"},
+          "publisher_key_fingerprint": {"$ref": "urn:dctx:plugin-api:v1:common#/$defs/hex_digest"},
+          "releases": {
+            "type": "array",
+            "maxItems": 128,
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["version", "release_sequence", "manifest_url", "manifest_sha256"],
+              "properties": {
+                "version": {"$ref": "urn:dctx:plugin-api:v1:common#/$defs/semver"},
+                "release_sequence": {"$ref": "urn:dctx:plugin-api:v1:common#/$defs/positive"},
+                "manifest_url": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 2048,
+                  "pattern": "^https://[^\\s]+$"
+                },
+                "manifest_sha256": {"$ref": "urn:dctx:plugin-api:v1:common#/$defs/hex_digest"}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["schema", "sequence", "plugins"],
+  "additionalProperties": false
+}
