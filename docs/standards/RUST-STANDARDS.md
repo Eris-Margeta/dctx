@@ -35,3 +35,16 @@ Binding for every Rust packet. Workers read this before writing code.
 ## The bar a packet must meet
 
 `cargo test -p <crate> --locked` and `cargo clippy -p <crate> --locked -- -D warnings` on the dev machine, `cargo fmt --check`, no new `unsafe`, header docs present, and the TLA+ model it implements still checks. The continuous CI on the dev machine (decision 073) runs all of this for the whole workspace on every commit.
+
+## Dependencies (approved list; L1 keeps it)
+
+- **Workspace dependencies** (use `name.workspace = true`): `serde`, `serde_json`, `thiserror`, `sha2`, `hex`, `rusqlite`, `clap`, `regex`. Dev: `proptest`, `tempfile`.
+- **Crate-local exact pins** (declared in that crate's own `Cargo.toml`, never in the root):
+  - `cedar-policy = "=4.13.0"` in `the host tooling` only. It is the same engine as Node's `@cedar-policy/cedar-wasm` 4.13.0 (POLICY-BUNDLE.md §Evaluator).
+- **Anything else:** stop and ask with one QUESTION line. Give the crate, its exact version, licence, whether it uses `unsafe`, and why the approved list cannot do the job. L1 answers within one watch cycle and adds approved crates here.
+- Never edit the root `Cargo.toml`. Cargo.lock is refreshed by the VM CI; packets run without `--locked`.
+
+### dctx workspace additions (decision 075, spec §13a)
+
+- Also approved here: everything `dctx-core` already uses; `rusqlite` with `bundled` (FTS5) in `dctx-map-store`; `tree-sitter`, `tree-sitter-rust` and `tree-sitter-md` (exact pins) in `dctx-map-parse`.
+- In dctx, workspace-level dependencies may be declared in the crate's own `Cargo.toml` with an exact version. The root stays untouched.
