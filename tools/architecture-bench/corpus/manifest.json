@@ -1,0 +1,38 @@
+{
+  "schema": "dx-a1-corpus-v1",
+  "spec": "docs/design/ARCHITECTURE-PROPOSAL.md §3 and §7 Stage 0 (DX-A1)",
+  "mode": "current-map",
+  "warm_query_count": 30,
+  "verb_find_target": "parse",
+  "dctx": {
+    "id": "dctx",
+    "pin": "git-head-and-sha256-sorted-paths-v1",
+    "skip_dir_names": [
+      ".git",
+      ".agent",
+      ".aws",
+      ".ssh",
+      ".gnupg",
+      ".env",
+      "credentials",
+      "credentials.json",
+      "target",
+      "node_modules"
+    ],
+    "skip_prefixes": [
+      "tools/architecture-bench/scratch/",
+      "tools/architecture-bench/reports/"
+    ]
+  },
+  "fixture": {
+    "id": "public-domain-fixture",
+    "generator": "dx-a1-fixture-v1",
+    "dedication": "CC0-1.0",
+    "seed": "DX-A1-public-domain-fixture-v1",
+    "size_class": "public-domain-text",
+    "rust": 32,
+    "javascript": 16,
+    "typescript": 16,
+    "markdown": 16
+  }
+}

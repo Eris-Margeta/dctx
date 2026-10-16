@@ -1,0 +1,18 @@
+[package]
+name = "architecture-bench"
+version = "0.0.0"
+edition = "2024"
+publish = false
+license = "MIT"
+description = "DX-A1 baseline measurements for the current dctx map mode"
+
+# Own workspace so this packet does not edit the root Cargo.toml.
+[workspace]
+resolver = "2"
+
+[dependencies]
+dctx-map-query = { path = "../../crates/dctx-map-query" }
+serde = { version = "=1.0.228", features = ["derive"] }
+serde_json = "=1.0.149"
+sha2 = "=0.10.9"
+thiserror = "=2.0.18"
