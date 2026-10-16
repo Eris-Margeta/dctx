@@ -1,0 +1,181 @@
+{
+  "contract": "dctx-golden-requests",
+  "version": 1,
+  "status": "successor conformance inputs; not executed product evidence",
+  "description": "DX-A0b API-PORTS-v1 semantic projection goldens. Future owners also freeze complete wire bytes. Fixture handles below are bound by the test runner, never sent as content digests.",
+  "fixture": {
+    "place": "fixture",
+    "root_identity": "fixture-root",
+    "trust_namespace": "fixture-user",
+    "vcs": null,
+    "git_executable_available": false,
+    "clock_seconds": 0,
+    "generation": 1,
+    "snapshot_handle": "fixture_snapshot",
+    "snapshot_digest_rule": "Compute SourceSnapshotDigest using IDENTITY-v1 from the exact authorized file bytes; no Git input.",
+    "freshness": "immutable_snapshot",
+    "parser": "syn adapter with a frozen reviewed test revision",
+    "files": [
+      {
+        "path": "src/lib.rs",
+        "decision": "Include",
+        "language": "rust",
+        "bytes_utf8": "/// Respond.\npub fn ping() {}\n",
+        "byte_length": 30
+      }
+    ],
+    "projection_rules": {
+      "map_records": ["id", "kind"],
+      "find_records": ["id", "kind", "path", "lines", "summary", "summary_source"],
+      "neighbor_records": ["edge", "direction", "target", "confidence"],
+      "explain": ["id", "signature", "path", "lines", "summary", "summary_source"],
+      "read": ["id", "span", "source_utf8"],
+      "diagnostics": "Require asserted code and content-read counters; additional bounded non-content diagnostics are allowed."
+    }
+  },
+  "cases": [
+    {
+      "id": "map_module",
+      "request": {
+        "request_version": 1,
+        "snapshot_handle": "fixture_snapshot",
+        "verb": "map",
+        "target": "m:src/lib.rs",
+        "depth": 1,
+        "limits": {"estimated_tokens": 2000, "records": 60},
+        "output_format": "json_v2"
+      },
+      "expect": {
+        "records": [{"id": "s:src/lib.rs#ping", "kind": "fn"}],
+        "more": 0,
+        "next": null,
+        "freshness_state": "verified",
+        "coverage": "syntax"
+      }
+    },
+    {
+      "id": "find_ping",
+      "request": {
+        "request_version": 1,
+        "snapshot_handle": "fixture_snapshot",
+        "verb": "find",
+        "query": "ping",
+        "filters": {"kind": ["fn"]},
+        "limits": {"estimated_tokens": 2000, "records": 10},
+        "output_format": "json_v2"
+      },
+      "expect": {
+        "records": [{"id": "s:src/lib.rs#ping", "kind": "fn", "path": "src/lib.rs", "lines": [2, 2], "summary": "Respond.", "summary_source": "doc"}],
+        "more": 0,
+        "next": null
+      }
+    },
+    {
+      "id": "neighbors_contains",
+      "request": {
+        "request_version": 1,
+        "snapshot_handle": "fixture_snapshot",
+        "verb": "neighbors",
+        "target": "m:src/lib.rs",
+        "filters": {"edge": ["contains"]},
+        "direction": "out",
+        "depth": 1,
+        "limits": {"estimated_tokens": 2000, "records": 20},
+        "output_format": "json_v2"
+      },
+      "expect": {
+        "records": [{"edge": "contains", "direction": "out", "target": "s:src/lib.rs#ping", "confidence": "exact"}],
+        "more": 0,
+        "next": null
+      }
+    },
+    {
+      "id": "explain_ping",
+      "request": {
+        "request_version": 1,
+        "snapshot_handle": "fixture_snapshot",
+        "verb": "explain",
+        "target": "s:src/lib.rs#ping",
+        "limits": {"estimated_tokens": 1000},
+        "output_format": "json_v2"
+      },
+      "expect": {
+        "id": "s:src/lib.rs#ping",
+        "signature": "pub fn ping()",
+        "path": "src/lib.rs",
+        "lines": [2, 2],
+        "summary": "Respond.",
+        "summary_source": "doc"
+      }
+    },
+    {
+      "id": "read_ping",
+      "request": {
+        "request_version": 1,
+        "snapshot_handle": "fixture_snapshot",
+        "verb": "read",
+        "target": "s:src/lib.rs#ping",
+        "limits": {"estimated_tokens": 2000},
+        "output_format": "json_v2"
+      },
+      "expect": {
+        "id": "s:src/lib.rs#ping",
+        "span": [13, 29],
+        "source_utf8": "pub fn ping() {}",
+        "source_digest_verified_before_emission": true
+      }
+    },
+    {
+      "id": "deny_cached_after_policy_change",
+      "setup": "After indexing and pinning fixture_snapshot, change src/lib.rs to OmitContent and increment the observed policy epoch.",
+      "request_from": "read_ping",
+      "expect": {"error": "PolicyDenied", "emitted_source_bytes": 0, "new_content_reads": 0, "cached_content_reads": 0},
+      "positive_control": "read_ping"
+    },
+    {
+      "id": "tiny_final_envelope",
+      "request_from": "find_ping",
+      "override": {"limits": {"encoded_bytes": 1, "estimated_tokens": 1}},
+      "expect": {"error": "BudgetTooSmall", "stdout_bytes": 0},
+      "positive_control": "find_ping"
+    },
+    {
+      "id": "same_stamp_changed_bytes",
+      "setup": "Use a live source adapter; replace ping with pong while preserving size/mtime, then request the old indexed node span.",
+      "request_from": "read_ping",
+      "expect": {"error": "SourceChanged", "emitted_source_bytes": 0},
+      "positive_control": "read_ping"
+    },
+    {
+      "id": "gone_id",
+      "request_from": "explain_ping",
+      "override": {"target": "s:src/lib.rs#removed"},
+      "expect": {"outcome": "gone", "id": "s:src/lib.rs#removed", "next_action_present": true},
+      "positive_control": "explain_ping"
+    },
+    {
+      "id": "unknown_protocol",
+      "request_from": "find_ping",
+      "override": {"output_format": "json_v999"},
+      "expect": {"error": "UnsupportedVersion"},
+      "positive_control": "find_ping"
+    }
+  ],
+  "identity_goldens": [
+    {
+      "bytes_utf8": "",
+      "object_key": "dctx:object:v1:sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855:0"
+    },
+    {
+      "bytes_utf8": "abc",
+      "object_key": "dctx:object:v1:sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad:3"
+    }
+  ],
+  "cross_case_requirements": [
+    "No source writes, Git processes, ambient home reads or hidden native parser selection.",
+    "Every successful encoded answer obeys final byte/token caps including LF, envelope and escaping.",
+    "Freeze clock, parser revision and ranking revision; repeat through each supported backend/surface with equal semantic projections.",
+    "Git SHA-1 and SHA-256 aliases, when explicitly added with valid proofs, never change these own identities or semantic results.",
+    "Fixture span excludes leading doc comment and terminal newline; documentation is retained separately as summary provenance."
+  ]
+}
