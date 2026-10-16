@@ -2,7 +2,7 @@
 name = "dctx-map-scan"
 version = "0.1.0"
 edition = "2024"
-license = "MIT"
+license = "Apache-2.0"
 description = "Model-independent scan privacy rules"
 
 [dev-dependencies]

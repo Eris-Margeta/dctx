@@ -17,7 +17,7 @@
     <img src="https://img.shields.io/github/v/release/Eris-Margeta/dctx?color=8b5cf6" alt="Release">
   </a>
   <a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">
-    <img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License">
+    <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License">
   </a>
   <img src="https://img.shields.io/badge/rust-100%25-orange" alt="Rust">
   <img src="https://img.shields.io/badge/dependencies-0-brightgreen" alt="Zero Dependencies">
@@ -479,16 +479,16 @@ See [justfile](justfile) for all available commands.
 
 ## Architecture
 
-dctx is structured as a **monorepo** with clear separation between open-source and commercial components:
+dctx is structured as a **monorepo**. Everything is Apache-2.0. The desktop app is sold as signed builds with updates (a way to support the project).
 
 ```
 dctx/
-├── crates/              # Rust workspace (MIT License)
+├── crates/              # Rust workspace (Apache-2.0)
 │   ├── dctx-core/       # Pure Rust library (zero external deps)
 │   └── dctx-cli/        # Command-line interface
 ├── apps/                # Applications
-│   └── dctx-desktop/    # Cross-platform GUI (PROPRIETARY - $29)
-├── bindings/            # Language bindings (MIT License - Planned)
+│   └── dctx-desktop/    # Cross-platform GUI (Apache-2.0; sold as signed builds with updates)
+├── bindings/            # Language bindings (Apache-2.0 - Planned)
 │   ├── dctx-py/         # Python bindings (Phase 12)
 │   └── dctx-node/       # Node.js bindings (Phase 13)
 ├── tools/               # Build, test, and install scripts
@@ -499,21 +499,17 @@ dctx/
 
 ### Licensing Model
 
-**Open Source (MIT)**:
+**Everything is Apache-2.0**:
 - `dctx-core` - Core Rust library
 - `dctx-cli` - Command-line tool with ALL features
 - `bindings/*` - Future Python, Node.js bindings
-
-**Commercial (Proprietary)**:
-- `apps/dctx-desktop/` - Desktop GUI application ($29 one-time)
-
-This "Open Core" model keeps developer tools free while monetizing GUI convenience.
+- `apps/dctx-desktop/` - Desktop GUI, sold as signed builds with updates (a way to support the project)
 
 ---
 
 ## License
 
-MIT License. See [LICENSE](LICENSE) for details.
+Apache License 2.0. Copyright holder: Eris Margeta. Everything is Apache-2.0. The desktop app is sold as signed builds with updates (a way to support the project). See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ---
 

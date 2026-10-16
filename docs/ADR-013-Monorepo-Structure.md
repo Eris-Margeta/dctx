@@ -1,4 +1,4 @@
-# ADR-013: Monorepo Structure with Mixed Licensing
+# ADR-013: Monorepo Structure
 
 **Date:** 2026-01-25
 **Status:** Accepted
@@ -14,17 +14,17 @@ As dctx evolves, we need to support multiple distribution formats:
 4. **Language bindings** - For Python/Node.js developers (future)
 
 Previously, the repository was organized as a simple Rust workspace with two crates. This structure doesn't clearly separate:
-- Open-source components (MIT)
-- Commercial components (Proprietary)
+- Components, which are all Apache-2.0
+- The desktop app, sold as signed builds with updates (a way to support the project)
 - Future language bindings
 - Distribution artifacts
 
 ## 2. Decision Drivers
 
-* **Clear Licensing**: Separate MIT and proprietary code physically
+* **Clear Licensing**: Everything is Apache-2.0
 * **Monorepo Benefits**: Single source of truth, shared CI/CD, atomic commits
 * **Scalability**: Easy to add bindings without restructuring again
-* **Business Model**: Support "Open Core" licensing model
+* **Business Model**: The desktop app is sold as signed builds with updates (a way to support the project)
 * **Developer Experience**: Obvious where each component lives
 * **Distribution**: Multiple distribution formats from one repo
 * **Code Reuse**: Desktop app and bindings use same dctx-core
@@ -35,10 +35,10 @@ Previously, the repository was organized as a simple Rust workspace with two cra
 
 **Structure:**
 ```
-github.com/dctx/dctx-core       (MIT)
-github.com/dctx/dctx-cli        (MIT)
-github.com/dctx/dctx-desktop    (Proprietary)
-github.com/dctx/dctx-py         (MIT)
+github.com/dctx/dctx-core       (Apache-2.0)
+github.com/dctx/dctx-cli        (Apache-2.0)
+github.com/dctx/dctx-desktop    (Apache-2.0; sold as signed builds with updates)
+github.com/dctx/dctx-py         (Apache-2.0)
 ```
 
 **Pros:**
@@ -60,9 +60,9 @@ github.com/dctx/dctx-py         (MIT)
 **Structure:**
 ```
 dctx/
-├── crates/        # Rust workspace (MIT)
-├── apps/          # Applications (Mixed licensing)
-├── bindings/      # Language bindings (MIT)
+├── crates/        # Rust workspace (Apache-2.0)
+├── apps/          # Applications (Apache-2.0)
+├── bindings/      # Language bindings (Apache-2.0)
 ├── tools/         # Shared tooling
 └── docs/          # Documentation
 ```
@@ -89,18 +89,18 @@ dctx/
 
 ```
 dctx/
-├── crates/                    # MIT Licensed Rust Workspace
+├── crates/                    # Apache-2.0 Rust Workspace
 │   ├── dctx-core/             # Core library (0 external deps)
 │   └── dctx-cli/              # CLI binary
 │
 ├── apps/                      # Applications
-│   └── dctx-desktop/          # PROPRIETARY - Tauri GUI ($29)
+│   └── dctx-desktop/          # Apache-2.0 - Tauri GUI, sold as signed builds with updates
 │       ├── src/               # Frontend (TypeScript)
 │       ├── src-tauri/         # Backend (Rust + dctx-core)
-│       ├── LICENSE            # PROPRIETARY
+│       ├── LICENSE            # Apache-2.0
 │       └── README.md
 │
-├── bindings/                  # MIT Licensed Language Bindings
+├── bindings/                  # Apache-2.0 Language Bindings
 │   ├── dctx-py/               # Python (PyO3) - Phase 12
 │   └── dctx-node/             # Node.js (NAPI-RS) - Phase 13
 │
@@ -110,30 +110,21 @@ dctx/
 ├── .github/                   # CI/CD workflows
 │
 ├── Cargo.toml                 # Workspace definition
-├── LICENSE                    # MIT (applies to crates/ and bindings/)
+├── LICENSE                    # Apache-2.0 (applies to the whole repository)
 └── README.md                  # Explains licensing model
 ```
 
 ### Licensing Model
 
-**MIT Licensed (Free Forever):**
+**Everything is Apache-2.0** (decision 078, 16.10.2026). Copyright holder: Eris Margeta.
 - `crates/dctx-core/` - Core library
 - `crates/dctx-cli/` - CLI with ALL features
 - `bindings/dctx-py/` - Python bindings (future)
 - `bindings/dctx-node/` - Node.js bindings (future)
-- Root `LICENSE` file applies to these
-
-**Proprietary Licensed (Commercial):**
 - `apps/dctx-desktop/` - Desktop GUI application
-- Contains its own `LICENSE` file (PROPRIETARY)
-- $29 one-time payment
-- 14-day trial period
-- Source code visible for transparency/audit
-
-**Philosophy**: "Open Core" model
-- Keep developer tools free and open
-- Monetize GUI convenience for non-technical users
-- Similar to: GitLab, Sentry, Mattermost
+- Root `LICENSE` applies to the whole repository
+- `apps/dctx-desktop/LICENSE` is the same Apache-2.0 text
+- The desktop app is sold as signed builds with updates (a way to support the project)
 
 ### Workspace Configuration
 
@@ -182,22 +173,22 @@ dctx/
 2. ✅ Create `bindings/` directory
 3. ✅ Create `docs/` directory
 4. ✅ Initialize `apps/dctx-desktop/` with Tauri
-5. ✅ Add proprietary LICENSE to desktop app
+5. ✅ Add Apache-2.0 LICENSE to desktop app
 6. ✅ Update root `Cargo.toml` workspace members
 7. ✅ Update root README explaining structure
 8. ✅ Create placeholder READMEs in `bindings/`
 
 ## 5. Positive Consequences
 
-* ✅ **Clear Licensing**: Physical separation of MIT vs Proprietary code
+* ✅ **Clear Licensing**: Everything is Apache-2.0
 * ✅ **Atomic Commits**: Cross-component changes in single commit
 * ✅ **Shared CI/CD**: One workflow tests everything
 * ✅ **Code Reuse**: Desktop app uses dctx-core directly (no duplication)
 * ✅ **Scalability**: Easy to add Python/Node.js bindings
 * ✅ **Single Version**: All components share version number (0.11.0)
 * ✅ **Developer Experience**: Clear structure, obvious where things go
-* ✅ **Business Model**: Supports open-core monetization
-* ✅ **Transparency**: Desktop app source visible even though proprietary
+* ✅ **Business Model**: The desktop app is sold as signed builds with updates (a way to support the project)
+* ✅ **Transparency**: Desktop app source is Apache-2.0 and visible
 
 ## 6. Negative Consequences
 
@@ -214,7 +205,7 @@ dctx/
 ```toml
 [package]
 name = "dctx-desktop"
-license = "PROPRIETARY"
+license = "Apache-2.0"
 
 [dependencies]
 dctx-core = { path = "../../../crates/dctx-core" }  # Direct dependency
@@ -301,44 +292,44 @@ cargo build --package dctx-desktop
 ### Verify Licensing
 
 ```bash
-# MIT-licensed components
-cat crates/dctx-core/Cargo.toml   # license = "MIT"
-cat crates/dctx-cli/Cargo.toml    # license = "MIT"
+# Apache-2.0 components
+cat crates/dctx-core/Cargo.toml   # license = "Apache-2.0"
+cat crates/dctx-cli/Cargo.toml    # license = "Apache-2.0"
 
-# Proprietary components
-cat apps/dctx-desktop/src-tauri/Cargo.toml  # license = "PROPRIETARY"
-cat apps/dctx-desktop/LICENSE               # PROPRIETARY terms
+# Desktop app (Apache-2.0; sold as signed builds with updates)
+cat apps/dctx-desktop/src-tauri/Cargo.toml  # license = "Apache-2.0"
+cat apps/dctx-desktop/LICENSE               # Apache-2.0 terms
 ```
 
 ## 9. Examples from Industry
 
-**Successful Monorepos with Mixed Licensing:**
+**Monorepos that ship more than one distribution from one tree:**
 
 | Project | Structure | Licensing |
 |---------|-----------|-----------|
-| **GitLab** | `gitlab-ce/` (MIT) + `gitlab-ee/` (Proprietary) | Open Core |
-| **Sentry** | `sentry/` (BSL) + `getsentry/` (Proprietary) | Open Core |
-| **Tauri** | `tauri/` (MIT) + commercial support | Open Core |
-| **Turborepo** | Monorepo with multiple packages | Mixed |
-| **Next.js** | Monorepo with framework + tools | Mixed |
+| **GitLab** | `gitlab-ce/` + `gitlab-ee/` | Open core |
+| **Sentry** | `sentry/` (BSL) + `getsentry/` | Open core |
+| **Tauri** | `tauri/` + commercial support | Open core |
+| **Turborepo** | Monorepo with multiple packages | Several packages |
+| **Next.js** | Monorepo with framework + tools | Several packages |
 
-**Our model mirrors GitLab/Sentry**: Free core, paid GUI.
+**dctx**: Everything is Apache-2.0. The desktop app is sold as signed builds with updates (a way to support the project).
 
 ## 10. Future Considerations
 
 **Phase 12 (Python Bindings)**:
 - Add `bindings/dctx-py/` to workspace
 - Publish to PyPI as `dctx`
-- MIT licensed
+- Apache-2.0
 
 **Phase 13 (Node.js Bindings)**:
 - Add `bindings/dctx-node/` to workspace
 - Publish to npm as `dctx`
-- MIT licensed
+- Apache-2.0
 
 **Phase 14+ (Other Bindings)**:
 - Go, Ruby, etc. can be added to `bindings/` as needed
-- All MIT licensed
+- All Apache-2.0
 
 ## 11. Migration Checklist
 
@@ -348,7 +339,7 @@ cat apps/dctx-desktop/LICENSE               # PROPRIETARY terms
 - [x] Initialize Tauri app in `apps/dctx-desktop/`
 - [x] Add Tauri backend calling dctx-core
 - [x] Add basic frontend (HTML + TypeScript)
-- [x] Create proprietary LICENSE for desktop app
+- [x] Create Apache-2.0 LICENSE for desktop app
 - [x] Update root `Cargo.toml` workspace members
 - [x] Update root README with monorepo structure
 - [x] Create bindings/README.md placeholder
