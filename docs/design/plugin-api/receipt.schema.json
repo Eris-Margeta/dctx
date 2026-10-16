@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dctx:plugin-api:v1:receipt",
+  "$comment": "PL-C v1; PLUGINS.md, decision 080/decision 081. Local schema registry only. README.md and semantics.md are normative; schema validity grants no authority.",
+  "type": "object",
+  "properties": {
+    "schema": {"const":1},
+    "receipt": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"},
+    "intent": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"},
+    "host_sequence": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},
+    "observed_ms": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/uint"},
+    "operation": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"},
+    "session": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"},
+    "invocation": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"},
+    "plugin": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/identity"},
+    "project": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"},
+    "policy_epoch": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/uint"},
+    "policy_digest": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/digest"},
+    "plan_digest": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/digest"},
+    "method": {"enum":["file.read","file.stage","file.replace","output.read","program.run","state.read","state.write","state.reclaim"]},
+    "resource": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"},
+    "action_id": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"},
+    "argument_digest": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/digest"},
+    "bytes": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/uint"},
+    "effect_state": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/effect_state"},
+    "status": {"enum":["committed","refused","unknown"]},
+    "reason": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/name"}
+  },
+  "required": ["schema","receipt","intent","host_sequence","observed_ms","operation","session","invocation","plugin","project","policy_epoch","policy_digest","plan_digest","method","resource","argument_digest","bytes","effect_state","status","reason"],
+  "additionalProperties": false
+}

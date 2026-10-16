@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dctx:plugin-api:v1:index",
+  "$comment": "PL-C v1; PLUGINS.md, decision 080/decision 081. Local schema registry only. README.md and semantics.md are normative; schema validity grants no authority.",
+  "type": "object",
+  "properties": {
+    "schema": {"const":1},
+    "sequence": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},
+    "plugins": {"type":"array","items":{"type":"object","properties":{"id":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/id"},"repository":{"type":"string","minLength":1,"maxLength":256,"pattern":"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},"summary":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/short_text"},"publisher_key_fingerprint":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/hex_digest"},"releases":{"type":"array","items":{"type":"object","properties":{"version":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/semver"},"release_sequence":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},"manifest_url":{"type":"string","minLength":1,"maxLength":2048,"pattern":"^https://[^\\s]+$"},"manifest_sha256":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/hex_digest"}},"required":["version","release_sequence","manifest_url","manifest_sha256"],"additionalProperties":false},"maxItems":128,"minItems":1}},"required":["id","repository","summary","publisher_key_fingerprint","releases"],"additionalProperties":false},"maxItems":2048,"minItems":0}
+  },
+  "required": ["schema","sequence","plugins"],
+  "additionalProperties": false
+}

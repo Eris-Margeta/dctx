@@ -1,0 +1,15 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "request",
+  "id": "p:1",
+  "method": "state.read",
+  "params": {
+    "handle": "state:1",
+    "offset": 0,
+    "length": 3
+  }
+}

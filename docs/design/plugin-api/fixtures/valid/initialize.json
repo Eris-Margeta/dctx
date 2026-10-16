@@ -1,0 +1,103 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "request",
+  "id": "h:1",
+  "method": "initialize",
+  "params": {
+    "identity": {
+      "id": "dctx/git",
+      "version": "1.0.0",
+      "publisher_key": "fixture-key-1",
+      "artifact_digest": "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    },
+    "config": {
+      "stage": true,
+      "create_missing": false,
+      "marker": "host-version"
+    },
+    "hooks": [
+      {
+        "name": "before-pack-output-written",
+        "version": 1
+      }
+    ],
+    "grants": [
+      {
+        "handle": "grant:read",
+        "capability": {
+          "kind": "file.read",
+          "scope": "project",
+          "path": ".gitignore",
+          "max_bytes": 1048576
+        },
+        "policy_epoch": 1
+      },
+      {
+        "handle": "grant:write",
+        "capability": {
+          "kind": "file.write",
+          "scope": "project",
+          "path": ".gitignore",
+          "create": false,
+          "max_growth_bytes": 4096,
+          "max_bytes": 1052672
+        },
+        "policy_epoch": 1
+      },
+      {
+        "handle": "grant:program",
+        "capability": {
+          "kind": "program.run",
+          "program": "git",
+          "operation": "git.add-ignore",
+          "resources": [
+            "git-admin:stage-ignore"
+          ],
+          "max_output_bytes": 65536
+        },
+        "policy_epoch": 1
+      }
+    ],
+    "resources": [
+      {
+        "handle": "project:1",
+        "kind": "project"
+      },
+      {
+        "handle": "file:ignore",
+        "kind": "file"
+      },
+      {
+        "handle": "repository:1",
+        "kind": "repository"
+      }
+    ],
+    "policy_epoch": 1,
+    "plan_digest": "sha256:d20515be12d4ed156c683e1b5bae1c3785dcada72ebbbcf1c26e097f412aa366",
+    "limits": {
+      "frame_bytes": 1048576,
+      "read_bytes": 8388608,
+      "actions": 128,
+      "outstanding_requests": 16,
+      "diagnostics_bytes": 65536,
+      "chunk_bytes": 65536,
+      "state_bytes": 65536,
+      "upload_bytes": 1052672,
+      "queue_bytes": 2097152,
+      "memory_bytes": 67108864,
+      "work_units": 1000000
+    },
+    "cancellation": true,
+    "progress": true,
+    "liveness": {
+      "mode": "unattended",
+      "sample_ms": 1000,
+      "cancel_grace_ms": 5000,
+      "unresolved": "fail-closed"
+    }
+  }
+}

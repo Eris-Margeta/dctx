@@ -1,0 +1,26 @@
+{
+  "wire": 1,
+  "kind": "response",
+  "id": "h:hello",
+  "result": {
+    "version": [
+      1,
+      0
+    ],
+    "identity": {
+      "id": "dctx/git",
+      "version": "1.0.0",
+      "publisher_key": "fixture-key-1",
+      "artifact_digest": "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+    },
+    "required_apis": [
+      "file.read",
+      "file.stage",
+      "file.replace"
+    ],
+    "optional_apis": [
+      "program.run"
+    ],
+    "extensions": []
+  }
+}

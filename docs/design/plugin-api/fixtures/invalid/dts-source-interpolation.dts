@@ -1,0 +1,15 @@
+[PLUGINS:engineering]
+enabled = ["dctx/git"]
+order = ["dctx/git"]
+network = "none"
+
+[PLUGIN:dctx/git]
+version = "1.0.0"
+hooks = ["before-pack-output-written"]
+required = false
+allow = ["file.read:.gitignore", "file.write:.gitignore", "program:git.add-ignore", "resource:git-admin:stage-ignore"]
+config.stage = "${STAGE}"
+config.create_missing = false
+config.marker = "host-version"
+before = []
+after = []

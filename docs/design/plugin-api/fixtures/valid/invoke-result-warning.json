@@ -1,0 +1,23 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "response",
+  "id": "h:1",
+  "result": {
+    "status": "warning",
+    "reason": "rules-written-not-staged",
+    "receipts": [
+      "receipt:replace"
+    ],
+    "diagnostics": [
+      {
+        "code": "git-missing",
+        "severity": "warning"
+      }
+    ],
+    "command_output": []
+  }
+}

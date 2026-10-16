@@ -1,0 +1,13 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "response",
+  "id": "p:1",
+  "result": {
+    "precondition": "pre:2",
+    "receipt": "receipt:replace"
+  }
+}

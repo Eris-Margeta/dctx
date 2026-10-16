@@ -1,0 +1,16 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "request",
+  "id": "p:1",
+  "method": "file.replace",
+  "params": {
+    "resource": "file:ignore",
+    "precondition": "pre:1",
+    "upload": "upload:1",
+    "action_id": "action:replace"
+  }
+}

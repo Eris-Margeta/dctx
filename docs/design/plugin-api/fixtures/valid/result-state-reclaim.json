@@ -1,0 +1,13 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "response",
+  "id": "p:1",
+  "result": {
+    "reclaimed_bytes": 3,
+    "receipt": "receipt:reclaim"
+  }
+}

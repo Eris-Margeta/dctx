@@ -1,0 +1,47 @@
+{
+  "wire": 1,
+  "kind": "request",
+  "id": "h:hello",
+  "method": "hello",
+  "params": {
+    "versions": [
+      {
+        "major": 1,
+        "min_minor": 0,
+        "max_minor": 0
+      }
+    ],
+    "encoding": "json",
+    "apis": [
+      "initialize",
+      "invoke",
+      "probe",
+      "cancel",
+      "shutdown",
+      "file.read",
+      "file.stage",
+      "file.replace",
+      "program.run"
+    ],
+    "hooks": [
+      {
+        "name": "before-pack-output-written",
+        "version": 1
+      }
+    ],
+    "extensions": [],
+    "limits": {
+      "frame_bytes": 1048576,
+      "read_bytes": 8388608,
+      "actions": 128,
+      "outstanding_requests": 16,
+      "diagnostics_bytes": 65536,
+      "chunk_bytes": 65536,
+      "state_bytes": 65536,
+      "upload_bytes": 1052672,
+      "queue_bytes": 2097152,
+      "memory_bytes": 67108864,
+      "work_units": 1000000
+    }
+  }
+}

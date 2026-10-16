@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dctx:plugin-api:v1:capabilities",
+  "$comment": "PL-C v1; PLUGINS.md, decision 080/decision 081. Local schema registry only. README.md and semantics.md are normative; schema validity grants no authority.",
+  "oneOf": [
+    {"$ref":"urn:dctx:plugin-api:v1:capabilities#/$defs/file_read"},
+    {"$ref":"urn:dctx:plugin-api:v1:capabilities#/$defs/file_write"},
+    {"$ref":"urn:dctx:plugin-api:v1:capabilities#/$defs/program"},
+    {"$ref":"urn:dctx:plugin-api:v1:capabilities#/$defs/outputs"},
+    {"$ref":"urn:dctx:plugin-api:v1:capabilities#/$defs/state"}
+  ],
+  "$defs": {
+    "file_read": {"type":"object","properties":{"kind":{"const":"file.read"},"scope":{"const":"project"},"path":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/path"},"max_bytes":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"}},"required":["kind","scope","path","max_bytes"],"additionalProperties":false},
+    "file_write": {"type":"object","properties":{"kind":{"const":"file.write"},"scope":{"const":"project"},"path":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/path"},"create":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/bool"},"max_growth_bytes":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/uint"},"max_bytes":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"}},"required":["kind","scope","path","create","max_growth_bytes","max_bytes"],"additionalProperties":false},
+    "program": {"type":"object","properties":{"kind":{"const":"program.run"},"program":{"const":"git"},"operation":{"const":"git.add-ignore"},"resources":{"const":["git-admin:stage-ignore"]},"max_output_bytes":{"type":"integer","minimum":1,"maximum":65536}},"required":["kind","program","operation","resources","max_output_bytes"],"additionalProperties":false},
+    "outputs": {"type":"object","properties":{"kind":{"const":"outputs.read"},"roles":{"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/role"},"maxItems":32,"minItems":1,"uniqueItems":true},"operations":{"type":"array","items":{"enum":["pack","index"]},"maxItems":2,"minItems":1,"uniqueItems":true},"max_bytes":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"}},"required":["kind","roles","operations","max_bytes"],"additionalProperties":false},
+    "state": {"type":"object","properties":{"kind":{"const":"state"},"read":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/bool"},"write":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/bool"},"reclaim":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/bool"},"max_bytes":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},"source_content":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/bool"}},"required":["kind","read","write","reclaim","max_bytes","source_content"],"additionalProperties":false}
+  }
+}

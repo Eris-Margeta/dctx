@@ -1,0 +1,18 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "request",
+  "id": "p:1",
+  "method": "program.run",
+  "params": {
+    "operation": "git.add-ignore",
+    "args": [
+      "add",
+      "."
+    ],
+    "action_id": "action:stage"
+  }
+}

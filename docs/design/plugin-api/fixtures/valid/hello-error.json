@@ -1,0 +1,15 @@
+{
+  "wire": 1,
+  "kind": "response",
+  "id": "h:hello",
+  "error": {
+    "code": "UnsupportedVersion",
+    "phase": "negotiate",
+    "retryable": false,
+    "effect_state": "none",
+    "receipt_ids": [],
+    "details": {
+      "reason": "no-common-version"
+    }
+  }
+}

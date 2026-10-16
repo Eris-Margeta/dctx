@@ -1,0 +1,1 @@
+{"v":[1,0],"session":"s:1","kind":"request","id":"p:1","method":"file.read","params":{"resource":"file:ignore","offset":-0,"length":3}}

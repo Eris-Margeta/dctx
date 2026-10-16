@@ -1,0 +1,17 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "response",
+  "id": "p:1",
+  "result": {
+    "bytes": "YWJj",
+    "offset": 0,
+    "size": 4,
+    "eof": true,
+    "precondition": "pre:1",
+    "receipt": "receipt:read"
+  }
+}

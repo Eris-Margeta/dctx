@@ -1,0 +1,17 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "request",
+  "id": "p:1",
+  "method": "state.write",
+  "params": {
+    "handle": "state:1",
+    "precondition": "pre:state",
+    "bytes": "YWJj",
+    "provenance": [],
+    "action_id": "action:state"
+  }
+}

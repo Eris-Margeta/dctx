@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dctx:plugin-api:v1:manifest",
+  "$comment": "PL-C v1; PLUGINS.md, decision 080/decision 081. Local schema registry only. README.md and semantics.md are normative; schema validity grants no authority.",
+  "type": "object",
+  "properties": {
+    "manifest_version": {"const":1},
+    "id": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/id"},
+    "name": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/name"},
+    "version": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/semver"},
+    "release_sequence": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},
+    "publisher_key": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"},
+    "license": {"type":"string","minLength":1,"maxLength":128},
+    "protocol": {"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/range"},"maxItems":8,"minItems":1},
+    "host_api": {"type":"object","properties":{"major":{"const":1},"min_minor":{"const":0}},"required":["major","min_minor"],"additionalProperties":false},
+    "hooks": {"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/hook_decl"},"maxItems":5,"minItems":0,"uniqueItems":true},
+    "commands": {"type":"array","items":{"type":"object","properties":{"alias":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/alias"},"verbs":{"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/name"},"maxItems":32,"minItems":1,"uniqueItems":true},"output":{"type":"array","items":{"type":"object","properties":{"name":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/name"},"fields":{"$ref":"urn:dctx:plugin-api:v1:config"}},"required":["name","fields"],"additionalProperties":false},"maxItems":32,"minItems":0},"allow_text":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/bool"}},"required":["alias","verbs","output","allow_text"],"additionalProperties":false},"maxItems":32,"minItems":0},
+    "capabilities": {"type":"object","properties":{"required":{"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:capabilities"},"maxItems":64,"minItems":0,"uniqueItems":true},"optional":{"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:capabilities"},"maxItems":64,"minItems":0,"uniqueItems":true},"outputs":{"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:capabilities#/$defs/outputs"},"maxItems":32,"minItems":0,"uniqueItems":true},"network":{"const":[]}},"required":["required","optional","outputs","network"],"additionalProperties":false},
+    "config": {"$ref":"urn:dctx:plugin-api:v1:config"},
+    "limits": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/limits"},
+    "reason_codes": {"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/name"},"maxItems":128,"minItems":1,"uniqueItems":true},
+    "diagnostic_codes": {"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/name"},"maxItems":128,"minItems":0,"uniqueItems":true},
+    "artifacts": {"type":"array","items":{"type":"object","properties":{"target":{"enum":["aarch64-apple-darwin","x86_64-apple-darwin","x86_64-unknown-linux-gnu","aarch64-unknown-linux-gnu","x86_64-pc-windows-msvc"]},"file":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/file"},"bytes":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},"sha256":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/hex_digest"},"format":{"const":"native-executable"},"min_os":{"type":"string","minLength":1,"maxLength":64},"libc":{"type":"object","properties":{"name":{"const":"glibc"},"min_version":{"type":"string","minLength":1,"maxLength":64}},"required":["name","min_version"],"additionalProperties":false},"runtime_resources":{"type":"array","items":{"type":"object","properties":{"file":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/file"},"bytes":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},"sha256":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/hex_digest"}},"required":["file","bytes","sha256"],"additionalProperties":false},"maxItems":32,"minItems":0}},"required":["target","file","bytes","sha256","format","min_os","runtime_resources"],"additionalProperties":false},"maxItems":16,"minItems":1},
+    "state_version": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"}
+  },
+  "required": ["manifest_version","id","name","version","release_sequence","publisher_key","license","protocol","host_api","hooks","commands","capabilities","config","limits","reason_codes","diagnostic_codes","artifacts"],
+  "additionalProperties": false
+}

@@ -1,0 +1,15 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "response",
+  "id": "p:1",
+  "result": {
+    "status": "succeeded",
+    "exit_code": 0,
+    "diagnostics": [],
+    "receipt": "receipt:stage"
+  }
+}

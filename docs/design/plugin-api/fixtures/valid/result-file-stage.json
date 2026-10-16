@@ -1,0 +1,15 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "response",
+  "id": "p:1",
+  "result": {
+    "upload": "upload:1",
+    "next_offset": 3,
+    "complete": true,
+    "receipt": "receipt:upload"
+  }
+}

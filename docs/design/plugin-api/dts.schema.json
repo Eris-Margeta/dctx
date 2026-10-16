@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dctx:plugin-api:v1:dts",
+  "$comment": "PL-C v1; PLUGINS.md, decision 080/decision 081. Local schema registry only. README.md and semantics.md are normative; schema validity grants no authority.",
+  "type": "object",
+  "properties": {
+    "plugin_plan_version": {"const":1},
+    "dts_version": {"const":2},
+    "organization": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/name"},
+    "network": {"const":"none"},
+    "plugins": {"type":"array","items":{"type":"object","properties":{"id":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/id"},"enabled":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/bool"},"required":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/bool"},"resolution":{"$ref":"urn:dctx:plugin-api:v1:dts#/$defs/resolution"},"hooks":{"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/hook_decl"},"maxItems":5,"minItems":0,"uniqueItems":true},"allow":{"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:capabilities"},"maxItems":64,"minItems":0,"uniqueItems":true},"config":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/config"},"before":{"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/id"},"maxItems":64,"minItems":0,"uniqueItems":true},"after":{"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/id"},"maxItems":64,"minItems":0,"uniqueItems":true}},"required":["id","enabled","required","resolution","hooks","allow","config","before","after"],"additionalProperties":false},"maxItems":64,"minItems":0},
+    "order": {"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/id"},"maxItems":64,"minItems":0,"uniqueItems":true},
+    "limits": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/limits"},
+    "liveness": {"$ref":"urn:dctx:plugin-api:v1:dts#/$defs/liveness"}
+  },
+  "required": ["plugin_plan_version","dts_version","organization","network","plugins","order","limits","liveness"],
+  "additionalProperties": false,
+  "$defs": {
+    "liveness": {"oneOf":[{"type":"object","properties":{"mode":{"const":"interactive"},"sample_ms":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},"cancel_grace_ms":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"}},"required":["mode","sample_ms","cancel_grace_ms"],"additionalProperties":false},{"type":"object","properties":{"mode":{"const":"unattended"},"sample_ms":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},"cancel_grace_ms":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},"unresolved":{"const":"fail-closed"}},"required":["mode","sample_ms","cancel_grace_ms","unresolved"],"additionalProperties":false},{"type":"object","properties":{"mode":{"const":"unattended"},"sample_ms":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},"cancel_grace_ms":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},"unresolved":{"const":"bounded-observation"},"inactivity_ms":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"}},"required":["mode","sample_ms","cancel_grace_ms","unresolved","inactivity_ms"],"additionalProperties":false}]},
+    "resolution": {"oneOf":[{"type":"object","properties":{"status":{"const":"available"},"version":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/semver"},"artifact_digest":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/digest"},"manifest_digest":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/digest"},"publisher_key":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"},"origin":{"enum":["bundled","installed","override"]}},"required":["status","version","artifact_digest","manifest_digest","publisher_key","origin"],"additionalProperties":false},{"type":"object","properties":{"status":{"const":"unavailable"},"reason":{"enum":["not-installed","incompatible","unsupported-platform","quarantined"]}},"required":["status","reason"],"additionalProperties":false}]}
+  }
+}

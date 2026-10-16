@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dctx:plugin-api:v1:events",
+  "$comment": "PL-C v1; PLUGINS.md, decision 080/decision 081. Local schema registry only. README.md and semantics.md are normative; schema validity grants no authority.",
+  "$defs": {
+    "progress": {"type":"object","properties":{"invocation":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"},"seq":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/positive"},"phase":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/name"},"completed":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/uint"},"total":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/uint"},"unit":{"enum":["bytes","items","actions","work-units"]},"wait":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/wait"}},"required":["invocation","seq","phase","completed","unit"],"additionalProperties":false},
+    "cancelled": {"type":"object","properties":{"invocation":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"},"last_receipt":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/token"}},"required":["invocation"],"additionalProperties":false}
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "response",
+  "id": "h:1",
+  "result": {
+    "status": "ok",
+    "reason": "completed",
+    "receipts": [],
+    "diagnostics": [],
+    "command_output": [
+      {
+        "type": "text",
+        "text": "Protection checked"
+      },
+      {
+        "type": "record",
+        "name": "protection",
+        "fields": {
+          "protected": true,
+          "staged": false
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "request",
+  "id": "h:1",
+  "method": "probe",
+  "params": {
+    "invocation": "op:1",
+    "challenge": "challenge:1",
+    "last_progress_seq": 1
+  }
+}

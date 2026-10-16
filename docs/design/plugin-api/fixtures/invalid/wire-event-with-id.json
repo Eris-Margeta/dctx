@@ -1,0 +1,14 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "event",
+  "id": "p:1",
+  "seq": 1,
+  "method": "cancelled",
+  "params": {
+    "invocation": "op:1"
+  }
+}

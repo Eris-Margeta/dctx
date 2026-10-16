@@ -1,0 +1,43 @@
+{
+  "algorithm": "dctx_hash::Sha256",
+  "identity_version": 1,
+  "entries": [
+    {
+      "path": "fixtures/valid/manifest-git.json",
+      "encoding": "exact-file-bytes",
+      "bytes": 2969,
+      "sha256": "bf74b6b3ff523cb08461bff8bbaa48dba16d91026d17ecd59e683beb165cbf9c"
+    },
+    {
+      "path": "fixtures/valid/dts-plan.json",
+      "encoding": "canonical-json",
+      "bytes": 1303,
+      "sha256": "d20515be12d4ed156c683e1b5bae1c3785dcada72ebbbcf1c26e097f412aa366"
+    }
+  ],
+  "selection_fixture": {
+    "encoding": "base64",
+    "preimage": "",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "note": "Injected fake selection identity; not a claim about the engine selection serialization."
+  },
+  "argument_fixture": {
+    "method": "file.replace",
+    "params": {
+      "resource": "file:ignore",
+      "precondition": "pre:1",
+      "upload": "upload:1"
+    },
+    "encoding": "canonical-json",
+    "bytes": 104,
+    "sha256": "bc2e9f49fa20d7a68a63655eeaba3104e9c2f655d08db3d5b200d5b609c177ed"
+  },
+  "policy_fixture": {
+    "encoding": "base64",
+    "preimage": "",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "note": "Injected fake policy serialization for scenario tests."
+  }
+}

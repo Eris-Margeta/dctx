@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dctx:plugin-api:v1:bundle",
+  "$comment": "PL-C v1; PLUGINS.md, decision 080/decision 081. Local schema registry only. README.md and semantics.md are normative; schema validity grants no authority.",
+  "type": "object",
+  "properties": {
+    "schema": {"const":1},
+    "entries": {"type":"array","items":{"type":"object","properties":{"name":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/file"},"bytes":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/uint"},"sha256":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/hex_digest"}},"required":["name","bytes","sha256"],"additionalProperties":false},"maxItems":128,"minItems":1}
+  },
+  "required": ["schema","entries"],
+  "additionalProperties": false
+}

@@ -1,0 +1,14 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "request",
+  "id": "h:1",
+  "method": "cancel",
+  "params": {
+    "invocation": "op:1",
+    "reason": "user"
+  }
+}

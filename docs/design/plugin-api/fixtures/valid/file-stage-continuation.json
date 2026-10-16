@@ -1,0 +1,18 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "request",
+  "id": "p:2",
+  "method": "file.stage",
+  "params": {
+    "resource": "file:ignore",
+    "precondition": "pre:1",
+    "upload": "upload:1",
+    "offset": 1,
+    "bytes": "YmM=",
+    "final": true
+  }
+}

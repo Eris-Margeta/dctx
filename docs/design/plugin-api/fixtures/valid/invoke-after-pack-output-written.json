@@ -1,0 +1,51 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "request",
+  "id": "h:invoke",
+  "method": "invoke",
+  "params": {
+    "invocation": "op:1",
+    "hook_version": 1,
+    "project": "project:1",
+    "policy_epoch": 1,
+    "selection_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "host_version": "0.26.0",
+    "grants": [
+      "grant:read",
+      "grant:write",
+      "grant:program"
+    ],
+    "limits": {
+      "frame_bytes": 1048576,
+      "read_bytes": 8388608,
+      "actions": 128,
+      "outstanding_requests": 16,
+      "diagnostics_bytes": 65536,
+      "chunk_bytes": 65536,
+      "state_bytes": 65536,
+      "upload_bytes": 1052672,
+      "queue_bytes": 2097152,
+      "memory_bytes": 67108864,
+      "work_units": 1000000
+    },
+    "config": {
+      "stage": true,
+      "create_missing": false,
+      "marker": "host-version"
+    },
+    "hook": "after-pack-output-written",
+    "outputs": [
+      {
+        "handle": "out:1",
+        "role": "pack-text",
+        "bytes": 3
+      }
+    ],
+    "generation": "generation:1",
+    "output_committed": true
+  }
+}

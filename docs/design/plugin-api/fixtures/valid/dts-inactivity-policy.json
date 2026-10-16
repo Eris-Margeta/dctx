@@ -1,0 +1,82 @@
+{
+  "plugin_plan_version": 1,
+  "dts_version": 2,
+  "organization": "engineering",
+  "network": "none",
+  "plugins": [
+    {
+      "id": "dctx/git",
+      "enabled": true,
+      "required": false,
+      "resolution": {
+        "status": "available",
+        "version": "1.0.0",
+        "artifact_digest": "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        "manifest_digest": "sha256:bf74b6b3ff523cb08461bff8bbaa48dba16d91026d17ecd59e683beb165cbf9c",
+        "publisher_key": "fixture-key-1",
+        "origin": "bundled"
+      },
+      "hooks": [
+        {
+          "name": "before-pack-output-written",
+          "version": 1
+        }
+      ],
+      "allow": [
+        {
+          "kind": "file.read",
+          "scope": "project",
+          "path": ".gitignore",
+          "max_bytes": 1048576
+        },
+        {
+          "kind": "file.write",
+          "scope": "project",
+          "path": ".gitignore",
+          "create": false,
+          "max_growth_bytes": 4096,
+          "max_bytes": 1052672
+        },
+        {
+          "kind": "program.run",
+          "program": "git",
+          "operation": "git.add-ignore",
+          "resources": [
+            "git-admin:stage-ignore"
+          ],
+          "max_output_bytes": 65536
+        }
+      ],
+      "config": {
+        "stage": true,
+        "create_missing": false,
+        "marker": "host-version"
+      },
+      "before": [],
+      "after": []
+    }
+  ],
+  "order": [
+    "dctx/git"
+  ],
+  "limits": {
+    "frame_bytes": 1048576,
+    "read_bytes": 8388608,
+    "actions": 128,
+    "outstanding_requests": 16,
+    "diagnostics_bytes": 65536,
+    "chunk_bytes": 65536,
+    "state_bytes": 65536,
+    "upload_bytes": 1052672,
+    "queue_bytes": 2097152,
+    "memory_bytes": 67108864,
+    "work_units": 1000000
+  },
+  "liveness": {
+    "mode": "unattended",
+    "sample_ms": 1000,
+    "cancel_grace_ms": 5000,
+    "unresolved": "bounded-observation",
+    "inactivity_ms": 120000
+  }
+}

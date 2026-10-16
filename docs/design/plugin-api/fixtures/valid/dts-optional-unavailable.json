@@ -1,0 +1,44 @@
+{
+  "plugin_plan_version": 1,
+  "dts_version": 2,
+  "organization": "engineering",
+  "network": "none",
+  "plugins": [
+    {
+      "id": "dctx/git",
+      "enabled": true,
+      "required": false,
+      "resolution": {
+        "status": "unavailable",
+        "reason": "not-installed"
+      },
+      "hooks": [],
+      "allow": [],
+      "config": {},
+      "before": [],
+      "after": []
+    }
+  ],
+  "order": [
+    "dctx/git"
+  ],
+  "limits": {
+    "frame_bytes": 1048576,
+    "read_bytes": 8388608,
+    "actions": 128,
+    "outstanding_requests": 16,
+    "diagnostics_bytes": 65536,
+    "chunk_bytes": 65536,
+    "state_bytes": 65536,
+    "upload_bytes": 1052672,
+    "queue_bytes": 2097152,
+    "memory_bytes": 67108864,
+    "work_units": 1000000
+  },
+  "liveness": {
+    "mode": "unattended",
+    "sample_ms": 1000,
+    "cancel_grace_ms": 5000,
+    "unresolved": "fail-closed"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "request",
+  "id": "p:1",
+  "method": "output.list",
+  "params": {
+    "invocation": "op:1",
+    "cursor": "cursor:1",
+    "max_items": 64
+  }
+}

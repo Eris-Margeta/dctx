@@ -1,0 +1,22 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "response",
+  "id": "h:1",
+  "error": {
+    "code": "PluginExited",
+    "phase": "invoke",
+    "retryable": false,
+    "effect_state": "committed",
+    "receipt_ids": [
+      "receipt:replace"
+    ],
+    "details": {
+      "reason": "worker-exited",
+      "output_committed": true
+    }
+  }
+}

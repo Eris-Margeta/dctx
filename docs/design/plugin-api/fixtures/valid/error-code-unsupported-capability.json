@@ -1,0 +1,19 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "response",
+  "id": "p:1",
+  "error": {
+    "code": "UnsupportedCapability",
+    "phase": "broker",
+    "retryable": false,
+    "effect_state": "none",
+    "receipt_ids": [],
+    "details": {
+      "reason": "fixture-refusal"
+    }
+  }
+}

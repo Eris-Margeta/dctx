@@ -1,0 +1,170 @@
+{
+  "manifest_version": 1,
+  "id": "dctx/git",
+  "name": "dctx-plugin-git",
+  "version": "1.0.0",
+  "release_sequence": 1,
+  "publisher_key": "fixture-key-1",
+  "license": "Apache-2.0",
+  "protocol": [
+    {
+      "major": 1,
+      "min_minor": 0,
+      "max_minor": 0
+    }
+  ],
+  "host_api": {
+    "major": 1,
+    "min_minor": 0
+  },
+  "hooks": [
+    {
+      "name": "before-pack-output-written",
+      "version": 1
+    }
+  ],
+  "commands": [
+    {
+      "alias": "git",
+      "verbs": [
+        "status",
+        "protect"
+      ],
+      "output": [
+        {
+          "name": "protection",
+          "fields": {
+            "protected": {
+              "type": "bool",
+              "default": false
+            },
+            "staged": {
+              "type": "bool",
+              "default": false
+            }
+          }
+        }
+      ],
+      "allow_text": true
+    },
+    {
+      "alias": "git",
+      "verbs": [
+        "other"
+      ],
+      "output": [
+        {
+          "name": "protection",
+          "fields": {
+            "protected": {
+              "type": "bool",
+              "default": false
+            },
+            "staged": {
+              "type": "bool",
+              "default": false
+            }
+          }
+        }
+      ],
+      "allow_text": true
+    }
+  ],
+  "capabilities": {
+    "required": [
+      {
+        "kind": "file.read",
+        "scope": "project",
+        "path": ".gitignore",
+        "max_bytes": 1048576
+      },
+      {
+        "kind": "file.write",
+        "scope": "project",
+        "path": ".gitignore",
+        "create": false,
+        "max_growth_bytes": 4096,
+        "max_bytes": 1052672
+      }
+    ],
+    "optional": [
+      {
+        "kind": "program.run",
+        "program": "git",
+        "operation": "git.add-ignore",
+        "resources": [
+          "git-admin:stage-ignore"
+        ],
+        "max_output_bytes": 65536
+      }
+    ],
+    "outputs": [],
+    "network": []
+  },
+  "config": {
+    "stage": {
+      "type": "bool",
+      "default": true
+    },
+    "create_missing": {
+      "type": "enum",
+      "values": [
+        false
+      ],
+      "default": false
+    },
+    "marker": {
+      "type": "enum",
+      "values": [
+        "host-version"
+      ],
+      "default": "host-version"
+    }
+  },
+  "limits": {
+    "frame_bytes": 1048576,
+    "read_bytes": 8388608,
+    "actions": 128,
+    "outstanding_requests": 16,
+    "diagnostics_bytes": 65536,
+    "chunk_bytes": 65536,
+    "state_bytes": 65536,
+    "upload_bytes": 1052672,
+    "queue_bytes": 2097152,
+    "memory_bytes": 67108864,
+    "work_units": 1000000
+  },
+  "reason_codes": [
+    "completed",
+    "already-protected",
+    "not-a-repository",
+    "missing-ignore",
+    "outside-project",
+    "staging-denied",
+    "rules-written-not-staged",
+    "rules-conflict",
+    "coverage-unknown",
+    "git-missing",
+    "unsupported-repository-layout"
+  ],
+  "diagnostic_codes": [
+    "staging-denied",
+    "git-missing",
+    "rules-conflict",
+    "coverage-unknown",
+    "whole-file-staging",
+    "already-tracked",
+    "rules-written-not-staged"
+  ],
+  "artifacts": [
+    {
+      "target": "aarch64-apple-darwin",
+      "file": "abc.bin",
+      "bytes": 3,
+      "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+      "format": "native-executable",
+      "min_os": "14.0",
+      "runtime_resources": []
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "format": 1,
+  "property": "PP10",
+  "predicate": "S-RESULT",
+  "initial": {
+    "artifact": "sha256:ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    "plugin": "dctx/git",
+    "origin": "installed",
+    "verified": true,
+    "confinement": "established",
+    "negotiated": true,
+    "initialized": true,
+    "enabled": true,
+    "consent": [
+      "file.read",
+      "file.write",
+      "program.run"
+    ],
+    "organization": [
+      "file.read",
+      "file.write",
+      "program.run"
+    ],
+    "caller": [
+      "file.read",
+      "file.write",
+      "program.run"
+    ],
+    "selection": "Include",
+    "policy_epoch": 1,
+    "handle_epoch": 1,
+    "audit": "available",
+    "remaining_bytes": 8388608,
+    "remaining_actions": 128,
+    "project": "project:1",
+    "invocation": "op:1",
+    "resource": "file:ignore",
+    "precondition": "pre:1",
+    "hook_required": true,
+    "output_committed": true
+  },
+  "steps": [
+    {
+      "op": "hook-fails",
+      "code": "PluginExited"
+    }
+  ],
+  "expected": {
+    "parent_result": "committed-with-failure",
+    "output_committed": true,
+    "rollback_claimed": false
+  }
+}

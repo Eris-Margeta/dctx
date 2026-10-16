@@ -1,0 +1,21 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "response",
+  "id": "p:1",
+  "error": {
+    "code": "EffectUnknown",
+    "phase": "broker",
+    "retryable": false,
+    "effect_state": "unknown",
+    "receipt_ids": [
+      "receipt:pending"
+    ],
+    "details": {
+      "reason": "completion-unrecorded"
+    }
+  }
+}

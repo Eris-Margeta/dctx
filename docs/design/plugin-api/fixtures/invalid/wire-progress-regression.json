@@ -1,0 +1,18 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "event",
+  "seq": 2,
+  "method": "progress",
+  "params": {
+    "invocation": "op:1",
+    "seq": 2,
+    "phase": "read-ignore",
+    "completed": 1,
+    "total": 3,
+    "unit": "bytes"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "response",
+  "id": "h:1",
+  "result": {
+    "status": "skipped",
+    "reason": "missing-ignore",
+    "receipts": [],
+    "diagnostics": [],
+    "command_output": []
+  }
+}

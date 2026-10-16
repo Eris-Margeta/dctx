@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dctx:plugin-api:v1:config",
+  "$comment": "PL-C v1; PLUGINS.md, decision 080/decision 081. Local schema registry only. README.md and semantics.md are normative; schema validity grants no authority.",
+  "type": "object",
+  "maxProperties": 64,
+  "propertyNames": {"$ref":"urn:dctx:plugin-api:v1:common#/$defs/name"},
+  "additionalProperties": {"oneOf":[{"$ref":"urn:dctx:plugin-api:v1:config#/$defs/bool"},{"$ref":"urn:dctx:plugin-api:v1:config#/$defs/integer"},{"$ref":"urn:dctx:plugin-api:v1:config#/$defs/enum"},{"$ref":"urn:dctx:plugin-api:v1:config#/$defs/string"},{"$ref":"urn:dctx:plugin-api:v1:config#/$defs/list"}]},
+  "$defs": {
+    "bool": {"type":"object","properties":{"type":{"const":"bool"},"default":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/bool"}},"required":["type","default"],"additionalProperties":false},
+    "integer": {"type":"object","properties":{"type":{"const":"integer"},"min":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/uint"},"max":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/uint"},"default":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/uint"}},"required":["type","min","max","default"],"additionalProperties":false},
+    "enum": {"type":"object","properties":{"type":{"const":"enum"},"values":{"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/scalar"},"maxItems":64,"minItems":1,"uniqueItems":true},"default":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/scalar"}},"required":["type","values","default"],"additionalProperties":false},
+    "string": {"type":"object","properties":{"type":{"const":"string"},"max_bytes":{"type":"integer","minimum":1,"maximum":4096},"default":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/text"}},"required":["type","max_bytes","default"],"additionalProperties":false},
+    "list": {"type":"object","properties":{"type":{"const":"list"},"max_items":{"type":"integer","minimum":0,"maximum":64},"items":{"oneOf":[{"$ref":"urn:dctx:plugin-api:v1:config#/$defs/bool"},{"$ref":"urn:dctx:plugin-api:v1:config#/$defs/integer"},{"$ref":"urn:dctx:plugin-api:v1:config#/$defs/enum"},{"$ref":"urn:dctx:plugin-api:v1:config#/$defs/string"}]},"default":{"type":"array","items":{"$ref":"urn:dctx:plugin-api:v1:common#/$defs/scalar"},"maxItems":64,"minItems":0}},"required":["type","max_items","items","default"],"additionalProperties":false}
+  }
+}

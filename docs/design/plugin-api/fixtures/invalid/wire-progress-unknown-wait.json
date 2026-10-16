@@ -1,0 +1,20 @@
+{
+  "v": [
+    1,
+    0
+  ],
+  "session": "s:1",
+  "kind": "event",
+  "seq": 1,
+  "method": "progress",
+  "params": {
+    "invocation": "op:1",
+    "seq": 1,
+    "phase": "read-ignore",
+    "completed": 0,
+    "unit": "bytes",
+    "wait": {
+      "broker_request": "p:absent"
+    }
+  }
+}
