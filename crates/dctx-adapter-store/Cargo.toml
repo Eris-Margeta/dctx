@@ -1,0 +1,16 @@
+[package]
+name = "dctx-adapter-store"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+description = "Filesystem-backed immutable segments and manifest publication"
+
+[dependencies]
+dctx-hash = { path = "../dctx-hash" }
+dctx-map-segment = { path = "../dctx-map-segment" }
+thiserror = "=2.0.18"
+
+[dev-dependencies]
+dctx-map-segment = { path = "../dctx-map-segment" }
+proptest = "1"
+tempfile = "=3.24.0"
