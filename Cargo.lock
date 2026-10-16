@@ -856,7 +856,12 @@ dependencies = [
  "dctx-adapter-cache",
  "dctx-core",
  "dctx-map-query",
+ "dctx-plugin-distribution",
+ "dctx-plugin-git",
+ "dctx-plugin-protocol",
  "dctx-template",
+ "ed25519-dalek",
+ "proptest",
 ]
 
 [[package]]
