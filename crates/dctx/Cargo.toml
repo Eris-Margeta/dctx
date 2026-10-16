@@ -1,0 +1,33 @@
+[package]
+name = "dctx"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Stable dctx library facade for pack, map, templates and cache"
+
+# `default` is the strict profile: first-party Rust and std, no C and no subprocess.
+# `default-features = false` still builds the pure types; disabled operations return
+# `UnsupportedCapability`. Enhanced parsers and JSON deps are explicit features.
+[features]
+default = ["pack", "map", "templates", "fs", "segments", "cache"]
+pack = []
+map = []
+templates = []
+fs = []
+segments = []
+cache = []
+syntax-rust = ["dep:dctx-lex-rust"]
+wire-json = ["dctx-map-model/wire-json"]
+
+[dependencies]
+dctx-core = { path = "../dctx-core" }
+dctx-hash = { path = "../dctx-hash" }
+dctx-map-model = { path = "../dctx-map-model", default-features = false }
+dctx-pack = { path = "../dctx-pack" }
+dctx-ports = { path = "../dctx-ports" }
+dctx-template = { path = "../dctx-template" }
+dctx-lex-rust = { path = "../dctx-lex-rust", optional = true }
+
+[dev-dependencies]
+proptest = "1"
+tempfile = "=3.24.0"

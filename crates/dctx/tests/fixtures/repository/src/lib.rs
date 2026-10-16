@@ -1,0 +1,2 @@
+/// Respond.
+pub fn ping() {}
