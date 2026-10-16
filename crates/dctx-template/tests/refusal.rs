@@ -28,15 +28,10 @@ budget = "b"
 }
 
 fn plugin(id: &str, version: &str) -> KnownPlugin {
-    KnownPlugin {
-        id: id.to_string(),
-        version: version.to_string(),
-        digest: None,
-        hooks: vec!["before-pack-output-written".to_string()],
-        alias: String::new(),
-        capabilities: vec!["file.read:.gitignore".to_string()],
-        fields: Vec::new(),
-    }
+    let mut known = KnownPlugin::named(id, version);
+    known.hooks.push("before-pack-output-written".to_string());
+    known.capabilities.push("file.read:.gitignore".to_string());
+    known
 }
 
 #[test]
@@ -321,15 +316,15 @@ config.stage = true
 #[test]
 fn plugin_aliases_orders_and_network_are_checked() {
     let mut host = HostCeiling::base();
-    host.plugins.push(plugin("a", "1"));
-    host.plugins.push(plugin("b", "1"));
+    host.plugins.push(plugin("ex/a", "1.0.0"));
+    host.plugins.push(plugin("ex/b", "1.0.0"));
     let dup = skeleton(
         r#"
-[PLUGIN:a]
-version = "1"
+[PLUGIN:ex/a]
+version = "1.0.0"
 alias = "tool"
-[PLUGIN:b]
-version = "1"
+[PLUGIN:ex/b]
+version = "1.0.0"
 alias = "tool"
 "#,
     );
@@ -337,41 +332,41 @@ alias = "tool"
 
     let cycle = skeleton(
         r#"
-[PLUGIN:a]
-version = "1"
-before = ["b"]
-[PLUGIN:b]
-version = "1"
-before = ["a"]
+[PLUGIN:ex/a]
+version = "1.0.0"
+before = ["ex/b"]
+[PLUGIN:ex/b]
+version = "1.0.0"
+before = ["ex/a"]
 "#,
     );
     assert!(matches!(compile(&cycle, &host), Err(TemplateError::Cycle { kind: "plugin", .. })));
 
     let after = skeleton(
         r#"
-[PLUGIN:a]
-version = "1"
-after = ["b"]
-[PLUGIN:b]
-version = "1"
+[PLUGIN:ex/a]
+version = "1.0.0"
+after = ["ex/b"]
+[PLUGIN:ex/b]
+version = "1.0.0"
 "#,
     );
     let plan = compile(&after, &host).expect("after");
-    assert_eq!(plan.plugins.order, vec!["a".to_string(), "b".to_string()]);
+    assert_eq!(plan.plugins.order, vec!["ex/a".to_string(), "ex/b".to_string()]);
 
     let ordered = skeleton(
         r#"
 [PLUGINS:g]
-order = ["a", "b"]
-enabled = ["a", "b"]
-[PLUGIN:a]
-version = "1"
-[PLUGIN:b]
-version = "1"
+order = ["ex/a", "ex/b"]
+enabled = ["ex/a", "ex/b"]
+[PLUGIN:ex/a]
+version = "1.0.0"
+[PLUGIN:ex/b]
+version = "1.0.0"
 "#,
     );
     let plan = compile(&ordered, &host).expect("order");
-    assert_eq!(plan.plugins.order, vec!["a".to_string(), "b".to_string()]);
+    assert_eq!(plan.plugins.order, vec!["ex/a".to_string(), "ex/b".to_string()]);
 
     host.plugins.push(bundled_git_plugin());
     let external = skeleton(

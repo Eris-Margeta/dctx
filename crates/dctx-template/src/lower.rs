@@ -3,21 +3,17 @@
 //! Depends on [`crate::source`], [`crate::opcode`] and [`crate::binary`]. Callers use [`compile`].
 //! A value above a ceiling is an error. An omitted budget field keeps the ceiling.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 use crate::binary;
 use crate::error::{TemplateError, TemplateValidationError, MAX_INSTRUCTIONS, MAX_PLAN_BYTES, MAX_SECTIONS};
 use crate::model::{
-    BudgetPlan, ConfigEntry, ConfigValue, ContextPlan, FieldKind, FieldSpec, HostCeiling, IndexPlan,
-    NetworkPolicy, PluginBinding, PluginGroup, PluginPlan, PluginState, RenderProgram,
-    Selection, ViewPlan, RESERVED_ALIASES, CAP_OPAQUE, CAP_PACK, CAP_PLUGIN_HOST, KNOWN_FACTS, KNOWN_KINDS,
-    KNOWN_LANGUAGES,
+    BudgetPlan, ContextPlan, HostCeiling, IndexPlan, RenderProgram, Selection, ViewPlan, CAP_OPAQUE, CAP_PACK,
+    CAP_PLUGIN_HOST, KNOWN_FACTS, KNOWN_KINDS, KNOWN_LANGUAGES,
 };
 use crate::opcode::{compile_program, include_targets};
-use crate::source::{
-    guard_source, include_names, parse_v2, BudgetDraft, Draft, GroupDraft, IndexDraft, PluginDecl, RawValue,
-    VersionDecl, ViewDraft,
-};
+use crate::plugin::PluginState;
+use crate::source::{guard_source, include_names, parse_v2, BudgetDraft, Draft, IndexDraft, VersionDecl, ViewDraft};
 use crate::v1::{replace_vars, Template};
 
 /// Compiles v1 or v2 source into a sealed [`ContextPlan`].
@@ -58,6 +54,11 @@ fn lower_v1(template: &Template, host: &HostCeiling) -> Result<ContextPlan, Temp
     }
     require_cap(host, "mode:pack")?;
     require_cap(host, "parser:opaque")?;
+    let plugins = crate::plugin_plan::distribution_plan(host)?;
+    let mut capabilities = CAP_PACK | CAP_OPAQUE;
+    if plugins.plugins.iter().any(|plugin| plugin.state == PluginState::Enabled) {
+        capabilities |= CAP_PLUGIN_HOST;
+    }
     let partials = vec![
         ("TREE_ENTRY".to_string(), replace_vars(&template.partial_tree_entry, &template.variables)),
         ("FILE_BLOCK".to_string(), replace_vars(&template.partial_file_block, &template.variables)),
@@ -66,7 +67,7 @@ fn lower_v1(template: &Template, host: &HostCeiling) -> Result<ContextPlan, Temp
     let render = limited_program(host, compile_program(&template.variables, &partials, &layouts)?)?;
     Ok(ContextPlan {
         source_version: 1,
-        capabilities: CAP_PACK | CAP_OPAQUE,
+        capabilities,
         selections: Vec::new(),
         indexes: vec![IndexPlan {
             name: "pack".to_string(),
@@ -97,7 +98,7 @@ fn lower_v1(template: &Template, host: &HostCeiling) -> Result<ContextPlan, Temp
             layout_label: "SNAPSHOT".to_string(),
         }],
         render,
-        plugins: PluginPlan { groups: Vec::new(), plugins: Vec::new(), order: Vec::new() },
+        plugins,
         selection_digest: [0; 32],
         extraction_digest: [0; 32],
         render_digest: [0; 32],
@@ -134,7 +135,10 @@ fn lower_v2(mut draft: Draft, host: &HostCeiling) -> Result<ContextPlan, Templat
     budgets.sort_by(|left, right| left.name.cmp(&right.name));
 
     let render = lower_render(&draft, host)?;
-    let plugins = lower_plugins(&draft, host, &mut capabilities)?;
+    let plugins = crate::plugin_plan::compile_plugins(&draft.groups, &draft.plugins, host)?;
+    if plugins.plugins.iter().any(|plugin| plugin.state == PluginState::Enabled) {
+        capabilities |= CAP_PLUGIN_HOST;
+    }
     let views = lower_views(&draft.views, &selections, &indexes, &budgets, &render, host, &mut capabilities)?;
 
     Ok(ContextPlan {
@@ -321,246 +325,6 @@ fn lower_views(
     }
     views.sort_by(|left, right| left.name.cmp(&right.name));
     Ok(views)
-}
-
-fn lower_plugins(draft: &Draft, host: &HostCeiling, caps: &mut u64) -> Result<PluginPlan, TemplateError> {
-    unique(draft.plugins.iter().map(|plugin| plugin.id.as_str()), "plugin")?;
-    unique(draft.groups.iter().map(|group| group.name.as_str()), "plugins")?;
-    let declared: BTreeSet<&str> = draft.plugins.iter().map(|plugin| plugin.id.as_str()).collect();
-    let mut groups = Vec::new();
-    let mut enabled: BTreeSet<String> = BTreeSet::new();
-    for group in &draft.groups {
-        for id in group.enabled.iter().chain(group.order.iter()) {
-            if !declared.contains(id.as_str()) {
-                return Err(TemplateError::UnresolvedRef { kind: "plugin", name: id.clone() });
-            }
-        }
-        enabled.extend(group.enabled.iter().cloned());
-        let network = match &group.network {
-            None => NetworkPolicy::None,
-            Some(text) => {
-                let policy = NetworkPolicy::parse(text).ok_or_else(|| TemplateError::InvalidSyntax {
-                    line: 0,
-                    detail: "network".into(),
-                })?;
-                if policy.rank() > host.network.rank() {
-                    return Err(TemplateError::GrantExpansion { kind: "network" });
-                }
-                policy
-            }
-        };
-        groups.push(PluginGroup {
-            name: group.name.clone(),
-            network,
-            enabled: group.enabled.clone(),
-            order: group.order.clone(),
-        });
-    }
-    groups.sort_by(|left, right| left.name.cmp(&right.name));
-
-    let mut bindings = Vec::new();
-    let mut aliases = BTreeSet::new();
-    for decl in &draft.plugins {
-        bindings.push(bind_plugin(decl, host, &draft.groups, &enabled, &mut aliases)?);
-    }
-    bindings.sort_by(|left, right| left.id.cmp(&right.id));
-    if bindings.iter().any(|plugin| plugin.state == PluginState::Enabled) {
-        *caps |= CAP_PLUGIN_HOST;
-    }
-    let ids: Vec<String> = bindings.iter().map(|plugin| plugin.id.clone()).collect();
-    let mut edges = Vec::new();
-    for group in &draft.groups {
-        for pair in group.order.windows(2) {
-            edges.push((pair[0].clone(), pair[1].clone()));
-        }
-    }
-    for decl in &draft.plugins {
-        for before in &decl.before {
-            if !declared.contains(before.as_str()) {
-                return Err(TemplateError::UnresolvedRef { kind: "plugin", name: before.clone() });
-            }
-            edges.push((before.clone(), decl.id.clone()));
-        }
-        for after in &decl.after {
-            if !declared.contains(after.as_str()) {
-                return Err(TemplateError::UnresolvedRef { kind: "plugin", name: after.clone() });
-            }
-            edges.push((decl.id.clone(), after.clone()));
-        }
-    }
-    let order = topo(&ids, &edges)?;
-    Ok(PluginPlan { groups, plugins: bindings, order })
-}
-
-fn bind_plugin(
-    decl: &PluginDecl,
-    host: &HostCeiling,
-    groups: &[GroupDraft],
-    enabled: &BTreeSet<String>,
-    aliases: &mut BTreeSet<String>,
-) -> Result<PluginBinding, TemplateError> {
-    let catalog = host.plugins.iter().find(|plugin| plugin.id == decl.id);
-    let Some(catalog) = catalog else {
-        if decl.required {
-            return Err(TemplateError::RequiredPluginMissing { id: decl.id.clone() });
-        }
-        return Ok(unavailable(decl));
-    };
-    let version = decl.version.clone().ok_or_else(|| TemplateError::InvalidSyntax {
-        line: 0,
-        detail: "plugin version".into(),
-    })?;
-    if version != catalog.version {
-        return Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin version".into() });
-    }
-    let digest = match (&decl.digest, catalog.digest) {
-        (Some(text), Some(pinned)) => {
-            let parsed = parse_digest(text)?;
-            if parsed != pinned {
-                return Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin digest mismatch".into() });
-            }
-            Some(parsed)
-        }
-        (Some(text), None) => Some(parse_digest(text)?),
-        (None, pinned) => pinned,
-    };
-    for hook in &decl.hooks {
-        if !catalog.hooks.iter().any(|known| known == hook) {
-            return Err(TemplateError::UnknownCapability { name: format!("hook:{hook}") });
-        }
-    }
-    for allow in &decl.allow {
-        if !catalog.capabilities.iter().any(|known| known == allow) {
-            return Err(TemplateError::GrantExpansion { kind: "plugin" });
-        }
-    }
-    let mut config = Vec::new();
-    for (key, value) in &decl.config {
-        let Some(field) = catalog.fields.iter().find(|field| field.name == *key) else {
-            return Err(TemplateError::UnknownField { plugin: decl.id.clone(), field: key.clone() });
-        };
-        config.push(ConfigEntry { key: key.clone(), value: check_config(field, value)? });
-    }
-    config.sort_by(|left, right| left.key.cmp(&right.key));
-    let alias = decl.alias.clone().unwrap_or_else(|| catalog.alias.clone());
-    if !alias.is_empty() {
-        if RESERVED_ALIASES.contains(&alias.as_str()) {
-            return Err(TemplateError::ReservedAlias { alias });
-        }
-        if !aliases.insert(alias.clone()) {
-            return Err(TemplateError::Duplicate { kind: "alias", name: alias });
-        }
-    }
-    let listed = groups.is_empty() || enabled.contains(&decl.id);
-    if host.disabled_plugins.contains(&decl.id) {
-        if decl.required {
-            return Err(TemplateError::UserDisabled { id: decl.id.clone() });
-        }
-        return Ok(binding(decl, &version, digest, alias, config, PluginState::Disabled));
-    }
-    if !listed {
-        if decl.required {
-            return Err(TemplateError::InvalidSyntax { line: 0, detail: "required plugin is not enabled".into() });
-        }
-        return Ok(binding(decl, &version, digest, alias, config, PluginState::Disabled));
-    }
-    Ok(binding(decl, &version, digest, alias, config, PluginState::Enabled))
-}
-
-fn unavailable(decl: &PluginDecl) -> PluginBinding {
-    binding(decl, decl.version.as_deref().unwrap_or(""), None, String::new(), Vec::new(), PluginState::Unavailable)
-}
-
-fn binding(
-    decl: &PluginDecl,
-    version: &str,
-    digest: Option<[u8; 32]>,
-    alias: String,
-    config: Vec<ConfigEntry>,
-    state: PluginState,
-) -> PluginBinding {
-    PluginBinding {
-        id: decl.id.clone(),
-        version: version.to_string(),
-        digest,
-        required: decl.required,
-        state,
-        alias,
-        hooks: decl.hooks.clone(),
-        allow: decl.allow.clone(),
-        config,
-        before: decl.before.clone(),
-        after: decl.after.clone(),
-    }
-}
-
-fn check_config(field: &FieldSpec, value: &RawValue) -> Result<ConfigValue, TemplateError> {
-    let bad = || TemplateError::InvalidSyntax { line: 0, detail: format!("config {}", field.name) };
-    match (&field.kind, value) {
-        (FieldKind::Bool, RawValue::Bool(value)) => Ok(ConfigValue::Bool(*value)),
-        (FieldKind::Int { min, max }, RawValue::Int(value)) if value >= min && value <= max => Ok(ConfigValue::Int(*value)),
-        (FieldKind::Str { max_bytes }, RawValue::Str(value)) if value.len() <= *max_bytes => Ok(ConfigValue::Str(value.clone())),
-        (FieldKind::Enum { options }, RawValue::Str(value)) if options.iter().any(|item| item == value) => {
-            Ok(ConfigValue::Enum(value.clone()))
-        }
-        (FieldKind::List { max_items, item_max_bytes }, RawValue::List(items))
-            if items.len() <= *max_items && items.iter().all(|item| item.len() <= *item_max_bytes) =>
-        {
-            Ok(ConfigValue::List(items.clone()))
-        }
-        _ => Err(bad()),
-    }
-}
-
-fn parse_digest(text: &str) -> Result<[u8; 32], TemplateError> {
-    let hex = text.strip_prefix("sha256:").unwrap_or(text);
-    if hex.len() != 64 || !hex.bytes().all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f')) {
-        return Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin digest".into() });
-    }
-    let mut out = [0u8; 32];
-    for index in 0..32 {
-        let byte = u8::from_str_radix(&hex[index * 2..index * 2 + 2], 16)
-            .map_err(|_| TemplateError::InvalidSyntax { line: 0, detail: "plugin digest".into() })?;
-        out[index] = byte;
-    }
-    Ok(out)
-}
-
-fn topo(ids: &[String], edges: &[(String, String)]) -> Result<Vec<String>, TemplateError> {
-    let mut indeg: BTreeMap<String, usize> = ids.iter().map(|id| (id.clone(), 0)).collect();
-    let mut outgoing: BTreeMap<String, BTreeSet<String>> =
-        ids.iter().map(|id| (id.clone(), BTreeSet::new())).collect();
-    for (before, after) in edges {
-        let Some(next) = outgoing.get_mut(before) else {
-            return Err(TemplateError::UnresolvedRef { kind: "plugin", name: before.clone() });
-        };
-        if next.insert(after.clone()) {
-            let Some(degree) = indeg.get_mut(after) else {
-                return Err(TemplateError::UnresolvedRef { kind: "plugin", name: after.clone() });
-            };
-            *degree += 1;
-        }
-    }
-    let mut ready: BTreeSet<String> = indeg.iter().filter(|(_, degree)| **degree == 0).map(|(id, _)| id.clone()).collect();
-    let mut order = Vec::new();
-    while let Some(id) = ready.iter().next().cloned() {
-        ready.remove(&id);
-        order.push(id.clone());
-        let nexts = outgoing.get(&id).cloned().unwrap_or_default();
-        for next in nexts {
-            if let Some(degree) = indeg.get_mut(&next) {
-                *degree = degree.saturating_sub(1);
-                if *degree == 0 {
-                    ready.insert(next);
-                }
-            }
-        }
-    }
-    if order.len() != ids.len() {
-        let name = ids.iter().find(|id| !order.contains(*id)).cloned().unwrap_or_default();
-        return Err(TemplateError::Cycle { kind: "plugin", name });
-    }
-    Ok(order)
 }
 
 fn partial_cycles(partials: &[(String, String)]) -> Result<(), TemplateError> {

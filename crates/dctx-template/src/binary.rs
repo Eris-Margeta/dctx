@@ -8,9 +8,8 @@ use dctx_hash::Sha256;
 
 use crate::error::{TemplateError, MAX_INSTRUCTIONS, MAX_PLAN_BYTES, MAX_SECTIONS, MAX_STRING_BYTES};
 use crate::model::{
-    BudgetPlan, ConfigEntry, ConfigValue, ContextPlan, IndexPlan, Inst, NamedCode, NetworkPolicy, PluginBinding,
-    PluginGroup, PluginPlan, PluginState, RenderProgram, SelectRule, Selection, ViewPlan, KNOWN_CAPABILITY_BITS,
-    OP_MAX,
+    BudgetPlan, ContextPlan, IndexPlan, Inst, NamedCode, RenderProgram, SelectRule, Selection, ViewPlan,
+    KNOWN_CAPABILITY_BITS, OP_MAX,
 };
 use crate::opcode::{instruction_ok, validate_program};
 
@@ -144,7 +143,7 @@ pub fn from_bytes(bytes: &[u8]) -> Result<ContextPlan, TemplateError> {
         budgets: decode_budgets(&payloads[2])?,
         views: decode_views(&payloads[3])?,
         render: decode_render(&payloads[4])?,
-        plugins: decode_plugins(&payloads[5])?,
+        plugins: crate::plugin_codec::decode(&payloads[5])?,
         selection_digest: selection,
         extraction_digest: extraction,
         render_digest: render,
@@ -177,7 +176,7 @@ fn body_of(plan: &ContextPlan) -> Result<Body, TemplateError> {
         budget: encode_budgets(&plan.budgets)?,
         view: encode_views(&plan.views)?,
         render: encode_render(&plan.render)?,
-        plugin: encode_plugins(&plan.plugins)?,
+        plugin: crate::plugin_codec::encode(&plan.plugins)?,
     })
 }
 
@@ -507,143 +506,6 @@ fn read_codes(reader: &mut Reader<'_>, instructions: &mut u64) -> Result<Vec<Nam
     Ok(items)
 }
 
-fn encode_plugins(plan: &PluginPlan) -> Result<Vec<u8>, TemplateError> {
-    let mut buf = Buf::new();
-    buf.u32(count(plan.groups.len())?);
-    for group in &plan.groups {
-        buf.str(&group.name)?;
-        buf.u8(network_code(group.network));
-        buf.strs(&group.enabled)?;
-        buf.strs(&group.order)?;
-    }
-    buf.u32(count(plan.plugins.len())?);
-    for plugin in &plan.plugins {
-        buf.str(&plugin.id)?;
-        buf.str(&plugin.version)?;
-        match plugin.digest {
-            None => buf.u8(0),
-            Some(digest) => {
-                buf.u8(1);
-                buf.raw(&digest);
-            }
-        }
-        buf.u8(u8::from(plugin.required));
-        buf.u8(state_code(plugin.state));
-        buf.str(&plugin.alias)?;
-        buf.strs(&plugin.hooks)?;
-        buf.strs(&plugin.allow)?;
-        buf.u32(count(plugin.config.len())?);
-        for entry in &plugin.config {
-            buf.str(&entry.key)?;
-            write_config(&mut buf, &entry.value)?;
-        }
-        buf.strs(&plugin.before)?;
-        buf.strs(&plugin.after)?;
-    }
-    buf.strs(&plan.order)?;
-    Ok(buf.0)
-}
-
-fn decode_plugins(payload: &[u8]) -> Result<PluginPlan, TemplateError> {
-    let mut reader = Reader::new(payload);
-    let group_count = reader.count()?;
-    let mut groups = Vec::with_capacity(group_count);
-    for _ in 0..group_count {
-        groups.push(PluginGroup {
-            name: reader.string()?,
-            network: network_from(reader.u8()?)?,
-            enabled: reader.string_list()?,
-            order: reader.string_list()?,
-        });
-    }
-    let plugin_count = reader.count()?;
-    let mut plugins = Vec::with_capacity(plugin_count);
-    for _ in 0..plugin_count {
-        let id = reader.string()?;
-        let version = reader.string()?;
-        let digest = match reader.u8()? {
-            0 => None,
-            1 => {
-                let mut digest = [0u8; 32];
-                digest.copy_from_slice(reader.take(32)?);
-                Some(digest)
-            }
-            _ => return Err(TemplateError::Corrupt { reason: "digest" }),
-        };
-        let required = match reader.u8()? {
-            0 => false,
-            1 => true,
-            _ => return Err(TemplateError::Corrupt { reason: "required" }),
-        };
-        let state = state_from(reader.u8()?)?;
-        let alias = reader.string()?;
-        let hooks = reader.string_list()?;
-        let allow = reader.string_list()?;
-        let config_count = reader.count()?;
-        let mut config = Vec::with_capacity(config_count);
-        for _ in 0..config_count {
-            config.push(ConfigEntry { key: reader.string()?, value: read_config(&mut reader)? });
-        }
-        plugins.push(PluginBinding {
-            id,
-            version,
-            digest,
-            required,
-            state,
-            alias,
-            hooks,
-            allow,
-            config,
-            before: reader.string_list()?,
-            after: reader.string_list()?,
-        });
-    }
-    let order = reader.string_list()?;
-    reader.finish("payload")?;
-    Ok(PluginPlan { groups, plugins, order })
-}
-
-fn write_config(buf: &mut Buf, value: &ConfigValue) -> Result<(), TemplateError> {
-    match value {
-        ConfigValue::Bool(value) => {
-            buf.u8(1);
-            buf.u8(u8::from(*value));
-        }
-        ConfigValue::Int(value) => {
-            buf.u8(2);
-            buf.u64(*value);
-        }
-        ConfigValue::Str(value) => {
-            buf.u8(3);
-            buf.str(value)?;
-        }
-        ConfigValue::List(items) => {
-            buf.u8(4);
-            buf.strs(items)?;
-        }
-        ConfigValue::Enum(value) => {
-            buf.u8(5);
-            buf.str(value)?;
-        }
-    }
-    Ok(())
-}
-
-fn read_config(reader: &mut Reader<'_>) -> Result<ConfigValue, TemplateError> {
-    match reader.u8()? {
-        1 => match reader.u8()? {
-            0 => Ok(ConfigValue::Bool(false)),
-            1 => Ok(ConfigValue::Bool(true)),
-            _ => Err(TemplateError::Corrupt { reason: "bool" }),
-        },
-        2 => Ok(ConfigValue::Int(reader.u64()?)),
-        3 => Ok(ConfigValue::Str(reader.string()?)),
-        4 => Ok(ConfigValue::List(reader.string_list()?)),
-        5 => Ok(ConfigValue::Enum(reader.string()?)),
-        _ => Err(TemplateError::Corrupt { reason: "config" }),
-    }
-}
-
 fn decision_code(decision: FileHandlingDecision) -> u8 {
     match decision {
         FileHandlingDecision::Include => 1,
@@ -660,40 +522,6 @@ fn decision_from(code: u8) -> Result<FileHandlingDecision, TemplateError> {
         3 => Ok(FileHandlingDecision::OmitContent),
         4 => Ok(FileHandlingDecision::DebugVisible),
         _ => Err(TemplateError::Corrupt { reason: "decision" }),
-    }
-}
-
-fn network_code(policy: NetworkPolicy) -> u8 {
-    match policy {
-        NetworkPolicy::None => 0,
-        NetworkPolicy::Loopback => 1,
-        NetworkPolicy::External => 2,
-    }
-}
-
-fn network_from(code: u8) -> Result<NetworkPolicy, TemplateError> {
-    match code {
-        0 => Ok(NetworkPolicy::None),
-        1 => Ok(NetworkPolicy::Loopback),
-        2 => Ok(NetworkPolicy::External),
-        _ => Err(TemplateError::Corrupt { reason: "network" }),
-    }
-}
-
-fn state_code(state: PluginState) -> u8 {
-    match state {
-        PluginState::Enabled => 1,
-        PluginState::Disabled => 2,
-        PluginState::Unavailable => 3,
-    }
-}
-
-fn state_from(code: u8) -> Result<PluginState, TemplateError> {
-    match code {
-        1 => Ok(PluginState::Enabled),
-        2 => Ok(PluginState::Disabled),
-        3 => Ok(PluginState::Unavailable),
-        _ => Err(TemplateError::Corrupt { reason: "plugin state" }),
     }
 }
 

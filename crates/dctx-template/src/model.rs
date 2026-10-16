@@ -3,11 +3,12 @@
 //! Depends on [`crate::error`] and [`dctx_core::FileHandlingDecision`]. Used by compile, encode and render.
 //! Templates narrow these ceilings; they never raise them.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use dctx_core::FileHandlingDecision;
 
 use crate::error::{MAX_INSTRUCTIONS, MAX_PLAN_BYTES, MAX_SECTIONS};
+use crate::plugin::{ConfigEntry, KnownPlugin, Liveness, NetworkPolicy, PluginPlan, ResourceLimits};
 
 /// Render instruction: copy a string from the program table.
 pub const OP_TEXT: u16 = 1;
@@ -36,58 +37,6 @@ pub const CAP_TREE_SITTER: u64 = 1 << 6;
 pub const CAP_PLUGIN_HOST: u64 = 1 << 7;
 /// Bits this reader understands. Any other bit refuses the load.
 pub const KNOWN_CAPABILITY_BITS: u64 = (1 << 8) - 1;
-
-/// How much network a plugin group may use. Higher ranks are wider.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum NetworkPolicy {
-    /// No network.
-    None,
-    /// Loopback only.
-    Loopback,
-    /// Outbound network.
-    External,
-}
-
-impl NetworkPolicy {
-    /// Width rank. A template may only move toward [`NetworkPolicy::None`].
-    pub const fn rank(self) -> u8 {
-        match self {
-            Self::None => 0,
-            Self::Loopback => 1,
-            Self::External => 2,
-        }
-    }
-
-    /// Parses `none`, `loopback` or `external`.
-    pub fn parse(text: &str) -> Option<Self> {
-        match text {
-            "none" => Some(Self::None),
-            "loopback" => Some(Self::Loopback),
-            "external" => Some(Self::External),
-            _ => None,
-        }
-    }
-
-    /// Canonical token written into the plan.
-    pub const fn as_str(self) -> &'static str {
-        match self {
-            Self::None => "none",
-            Self::Loopback => "loopback",
-            Self::External => "external",
-        }
-    }
-}
-
-/// Whether a compiled plugin binding will run.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum PluginState {
-    /// Present, allowed and not disabled.
-    Enabled,
-    /// The user disable or the template `enabled` list turned it off.
-    Disabled,
-    /// Optional plugin missing from the host catalog.
-    Unavailable,
-}
 
 /// One SELECT rule. Later rules win inside the host ceiling.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -212,140 +161,6 @@ impl RenderProgram {
     }
 }
 
-/// A plugin config value after schema checks.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum ConfigValue {
-    /// Boolean.
-    Bool(bool),
-    /// Bounded integer.
-    Int(u64),
-    /// Bounded string.
-    Str(String),
-    /// Bounded list of strings.
-    List(Vec<String>),
-    /// One of the manifest's enum tokens.
-    Enum(String),
-}
-
-/// One config assignment.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ConfigEntry {
-    /// Field name without the `config.` prefix.
-    pub key: String,
-    /// Checked value.
-    pub value: ConfigValue,
-}
-
-/// Manifest field type. Values outside this shape are refused.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum FieldKind {
-    /// `true` or `false`.
-    Bool,
-    /// Integer in `min..=max`.
-    Int {
-        /// Inclusive minimum.
-        min: u64,
-        /// Inclusive maximum.
-        max: u64,
-    },
-    /// One of `options`.
-    Enum {
-        /// Allowed tokens.
-        options: Vec<String>,
-    },
-    /// String up to `max_bytes`.
-    Str {
-        /// Maximum UTF-8 length.
-        max_bytes: usize,
-    },
-    /// List of short strings.
-    List {
-        /// Most items.
-        max_items: usize,
-        /// Most bytes in one item.
-        item_max_bytes: usize,
-    },
-}
-
-/// One manifest field.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct FieldSpec {
-    /// Field name.
-    pub name: String,
-    /// Accepted shape.
-    pub kind: FieldKind,
-}
-
-/// A plugin the host already resolved. The template cannot fetch or retarget it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct KnownPlugin {
-    /// Plugin id (`dctx/git`).
-    pub id: String,
-    /// Exact resolved version.
-    pub version: String,
-    /// Optional pinned digest, 32 bytes.
-    pub digest: Option<[u8; 32]>,
-    /// Hooks the manifest supports.
-    pub hooks: Vec<String>,
-    /// Command alias, or empty.
-    pub alias: String,
-    /// Capability tokens the manifest allows.
-    pub capabilities: Vec<String>,
-    /// Config fields the manifest defines.
-    pub fields: Vec<FieldSpec>,
-}
-
-/// One plugin group (`[PLUGINS:name]`).
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PluginGroup {
-    /// Group name.
-    pub name: String,
-    /// Network ceiling after narrowing.
-    pub network: NetworkPolicy,
-    /// Enabled ids in source order.
-    pub enabled: Vec<String>,
-    /// Explicit order edges in source order.
-    pub order: Vec<String>,
-}
-
-/// One compiled plugin binding.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PluginBinding {
-    /// Plugin id.
-    pub id: String,
-    /// Resolved version.
-    pub version: String,
-    /// Pinned digest when the source or the catalog has one.
-    pub digest: Option<[u8; 32]>,
-    /// The template marked the plugin required.
-    pub required: bool,
-    /// Enablement after user disable and catalog lookup.
-    pub state: PluginState,
-    /// Command alias, or empty.
-    pub alias: String,
-    /// Hooks in source order.
-    pub hooks: Vec<String>,
-    /// Capability tokens in source order. Each one is inside the manifest.
-    pub allow: Vec<String>,
-    /// Config in key order.
-    pub config: Vec<ConfigEntry>,
-    /// Plugins that must run before this one.
-    pub before: Vec<String>,
-    /// Plugins that must run after this one.
-    pub after: Vec<String>,
-}
-
-/// Plugin section of a plan.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PluginPlan {
-    /// Groups in name order.
-    pub groups: Vec<PluginGroup>,
-    /// Bindings in id order.
-    pub plugins: Vec<PluginBinding>,
-    /// Topological order. Canonical id breaks ties.
-    pub order: Vec<String>,
-}
-
 /// Versioned organization plan. Digests are domain-separated SHA-256 values.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContextPlan {
@@ -375,6 +190,14 @@ pub struct ContextPlan {
     pub plugin_digest: [u8; 32],
     /// Identity kind 8 schema 1 over the plan preimage.
     pub plan_digest: [u8; 32],
+}
+
+impl ContextPlan {
+    /// Selection and extraction digests.
+    /// These identify map facts. Plugin configuration is not part of either value.
+    pub fn map_facts(&self) -> ([u8; 32], [u8; 32]) {
+        (self.selection_digest, self.extraction_digest)
+    }
 }
 
 /// Host grant for one glob. Unmatched paths are [`FileHandlingDecision::Exclude`].
@@ -413,6 +236,14 @@ pub struct HostCeiling {
     pub plugins: Vec<KnownPlugin>,
     /// User disables. Sticky: a template cannot clear these.
     pub disabled_plugins: BTreeSet<String>,
+    /// Selectors removed from a plugin's manifest ceiling. Key `*` applies to every plugin.
+    pub denied_capabilities: BTreeMap<String, BTreeSet<String>>,
+    /// User config applied after manifest defaults and before the template.
+    pub user_config: BTreeMap<String, Vec<ConfigEntry>>,
+    /// Plugin resource ceiling.
+    pub limits: ResourceLimits,
+    /// Plugin liveness policy. The template cannot set it.
+    pub liveness: Liveness,
     /// Plan size cap. Values above [`MAX_PLAN_BYTES`] are treated as that spec cap.
     pub max_plan_bytes: u32,
     /// Section cap. Values above [`MAX_SECTIONS`] are treated as that spec cap.
@@ -450,37 +281,15 @@ impl HostCeiling {
             grants: Vec::new(),
             plugins: Vec::new(),
             disabled_plugins: BTreeSet::new(),
+            denied_capabilities: BTreeMap::new(),
+            user_config: BTreeMap::new(),
+            limits: ResourceLimits::standard(),
+            liveness: Liveness::fail_closed(),
             max_plan_bytes: MAX_PLAN_BYTES,
             max_sections: MAX_SECTIONS,
             max_instructions: MAX_INSTRUCTIONS,
             network: NetworkPolicy::None,
         }
-    }
-}
-
-/// Built-in command words a plugin alias cannot take (PLUGINS.md §3.5).
-pub const RESERVED_ALIASES: &[&str] =
-    &["plugin", "pack", "map", "cache", "template", "help", "version"];
-
-/// The bundled `dctx/git` manifest shape from PLUGINS.md §3.5. The host still opts in.
-pub fn bundled_git_plugin() -> KnownPlugin {
-    KnownPlugin {
-        id: "dctx/git".to_string(),
-        version: "1.0.0".to_string(),
-        digest: None,
-        hooks: vec!["before-pack-output-written".to_string()],
-        alias: "git".to_string(),
-        capabilities: vec![
-            "file.read:.gitignore".to_string(),
-            "file.write:.gitignore".to_string(),
-            "program:git.add-ignore".to_string(),
-            "resource:git-admin:stage-ignore".to_string(),
-        ],
-        fields: vec![
-            FieldSpec { name: "stage".to_string(), kind: FieldKind::Bool },
-            FieldSpec { name: "create_missing".to_string(), kind: FieldKind::Bool },
-            FieldSpec { name: "marker".to_string(), kind: FieldKind::Str { max_bytes: 128 } },
-        ],
     }
 }
 
