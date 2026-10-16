@@ -1,0 +1,27 @@
+[package]
+name = "dctx-plugin-platform"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Fail-closed native plugin admission and Linux confinement primitives"
+exclude = [".research/**"]
+
+[dependencies]
+dctx-hash = { path = "../dctx-hash" }
+dctx-plugin-protocol = { path = "../dctx-plugin-protocol" }
+thiserror = "=2.0.18"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+rustix = { version = "=1.1.5", features = ["fs", "process", "thread", "stdio"] }
+landlock = "=0.4.7"
+seccompiler = { version = "=0.5.0", default-features = false }
+
+[dev-dependencies]
+tempfile = "=3.24.0"
+proptest = "=1.12.0"
+
+[[bin]]
+name = "dctx-platform-probe"
+path = "tests/support/probe.rs"
+test = false
+bench = false
