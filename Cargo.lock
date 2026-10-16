@@ -854,6 +854,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "dctx-lex-js"
+version = "0.1.0"
+dependencies = [
+ "dctx-hash",
+ "dctx-map-model",
+ "dctx-map-parse",
+ "proptest",
+]
+
+[[package]]
+name = "dctx-lex-md"
+version = "0.1.0"
+dependencies = [
+ "dctx-map-parse",
+ "proptest",
+]
+
+[[package]]
 name = "dctx-lex-rust"
 version = "0.1.0"
 dependencies = [
