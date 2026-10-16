@@ -21,7 +21,11 @@ fn git(root: &Path, args: &[&str]) -> Option<Vec<u8>> {
         .ok()?;
     output.status.success().then_some(output.stdout)
 }
-pub(super) fn snapshot(root: &Path, files: BTreeMap<String, SourceFile>) -> Result<Snapshot> {
+pub(super) fn snapshot(
+    root: &Path,
+    files: BTreeMap<String, SourceFile>,
+    previous: Option<&Snapshot>,
+) -> Result<Snapshot> {
     let revision = git(root, &["rev-parse", "--verify", "HEAD"])
         .and_then(|bytes| String::from_utf8(bytes).ok())
         .map(|s| s.trim().to_owned())
@@ -38,6 +42,8 @@ pub(super) fn snapshot(root: &Path, files: BTreeMap<String, SourceFile>) -> Resu
             files,
             dirty: BTreeSet::new(),
             recent: BTreeSet::new(),
+            directories: BTreeMap::new(),
+            rules: BTreeMap::new(),
         });
     };
     let mut dirty = BTreeSet::new();
@@ -60,31 +66,37 @@ pub(super) fn snapshot(root: &Path, files: BTreeMap<String, SourceFile>) -> Resu
             "cannot determine Git dirty overlay".into(),
         ));
     }
-    let recent = git(
-        root,
-        &[
-            "log",
-            "-5",
-            "--format=",
-            "--name-only",
-            "-z",
-            "--no-renames",
-        ],
-    )
-    .map(|bytes| {
-        bytes
-            .split(|b| *b == 0)
-            .filter_map(|b| std::str::from_utf8(b).ok())
-            .map(str::trim)
-            .filter(|s| !s.is_empty())
-            .map(str::to_owned)
-            .collect()
-    })
-    .unwrap_or_default();
+    let recent = if let Some(previous) = previous.filter(|old| old.revision == revision) {
+        previous.recent.clone()
+    } else {
+        git(
+            root,
+            &[
+                "log",
+                "-5",
+                "--format=",
+                "--name-only",
+                "-z",
+                "--no-renames",
+            ],
+        )
+        .map(|bytes| {
+            bytes
+                .split(|b| *b == 0)
+                .filter_map(|b| std::str::from_utf8(b).ok())
+                .map(str::trim)
+                .filter(|s| !s.is_empty())
+                .map(str::to_owned)
+                .collect()
+        })
+        .unwrap_or_default()
+    };
     Ok(Snapshot {
         revision,
         files,
         dirty,
         recent,
+        directories: BTreeMap::new(),
+        rules: BTreeMap::new(),
     })
 }

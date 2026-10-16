@@ -30,6 +30,12 @@ impl Index {
     /// Call refresh first when discovering new files or newly introduced search terms.
     pub fn answer(&self, source: &impl Source, request: &Request) -> Result<Answer> {
         request.validate()?;
+        if !self.ready {
+            return Err(Error::Request("index has not been refreshed".into()));
+        }
+        if !self.graph_loaded && request.verb != Verb::Find {
+            return self.graph_view(request)?.answer(source, request);
+        }
         let snapshot = self
             .snapshot
             .as_ref()
@@ -106,12 +112,9 @@ impl Index {
         let mut changed = BTreeSet::new();
         for record in &answer.records {
             if checked.insert(record.path.clone())
-                && let Some(file) = self.files.get(&record.path)
+                && let Some(file) = snapshot.files.get(&record.path)
                 && file.readable
-                && source
-                    .read(&record.path)
-                    .map(|bytes| super::source::digest(&bytes) != file.hash)
-                    .unwrap_or(true)
+                && !source.unchanged(&record.path, file).unwrap_or(false)
             {
                 changed.insert(record.path.clone());
             }
@@ -159,11 +162,27 @@ impl Index {
             .as_ref()
             .ok_or_else(|| Error::Request("index not ready".into()))?;
         let mut records = Vec::new();
-        for hit in self.store.search(&expression, 40)? {
-            let Some(node) = self.nodes.get(&hit.id) else {
-                continue;
-            };
-            let mut record = Record::from(node);
+        let hits = if let Some(reader) = &self.reader {
+            super::database::search(reader, &expression)?
+        } else if let Some(store) = &self.store {
+            store
+                .search(&expression, 40)?
+                .into_iter()
+                .filter_map(|hit| {
+                    self.nodes.get(&hit.id).map(|node| {
+                        (
+                            node.clone(),
+                            hit.score,
+                            self.degree.get(&hit.id).copied().unwrap_or(0),
+                        )
+                    })
+                })
+                .collect()
+        } else {
+            return Err(Error::Request("index storage unavailable".into()));
+        };
+        for (node, score, degree) in hits {
+            let mut record = Record::from(&node);
             if !request.kinds.is_empty()
                 && !request.kinds.contains(&record.kind)
                 && !(request.kinds.iter().any(|k| k == "type")
@@ -179,10 +198,10 @@ impl Index {
                 continue;
             }
             record.score = rank(
-                node,
-                hit.score,
+                &node,
+                score,
                 request,
-                self.degree.get(&hit.id).copied().unwrap_or(0),
+                degree,
                 snapshot.recent.contains(&node.path),
             );
             records.push(record);

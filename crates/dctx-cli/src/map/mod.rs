@@ -37,7 +37,6 @@ pub(crate) fn run(arguments: &[String]) -> Result<(), String> {
     if options.place != std::path::Path::new(".") {
         output = storage::with_place(&answer, &options.request, options.format, &options.place)?;
     }
-    index.save(&cache.database).map_err(|e| e.to_string())?;
     print!("{output}");
     Ok(())
 }

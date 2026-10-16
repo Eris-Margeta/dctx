@@ -1,27 +1,26 @@
 //! Privacy-filtered filesystem snapshots and selected source reads.
 //! Implements SPEC-MAP-MODE sections 6.1 and 7 using the landed scanner.
-//! Captures authorized bytes once; the indexer never reopens excluded files.
+//! Captures only flagged content; the indexer never reopens excluded files.
 use crate::{
     Error, Result,
     domain::validate_path,
-    ports::{Snapshot, Source, SourceFile},
+    ports::{RuleFile, Snapshot, Source, SourceFile},
 };
 use dctx_map_scan::adapters::{fs::StdFileSystem, rules::FileRuleSource};
-use dctx_map_scan::ports::{
-    ContentSource,
-    fs::{Entry, FileKind, FileSystem},
-};
+use dctx_map_scan::ports::fs::{FileKind, FileSystem};
 use dctx_map_scan::{FileHandlingDecision, IgnoreEngine, ItemContext, content_hash};
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     collections::BTreeMap,
-    fs, io,
+    fs,
     path::{Path, PathBuf},
 };
 
 /// Read-only place source; cache paths are chosen separately.
 pub struct FileSource {
     pub(crate) root: PathBuf,
+    reads: Cell<usize>,
+    rules: RefCell<BTreeMap<String, RuleFile>>,
 }
 impl FileSource {
     /// Canonicalizes a directory root without changing its contents.
@@ -30,11 +29,25 @@ impl FileSource {
         if !root.is_dir() {
             return Err(Error::Request("place must be a directory".into()));
         }
-        Ok(Self { root })
+        Ok(Self {
+            root,
+            reads: Cell::new(0),
+            rules: RefCell::new(BTreeMap::new()),
+        })
     }
     /// Canonical place directory.
     pub fn root(&self) -> &Path {
         &self.root
+    }
+
+    /// Actual content opens, including ignore rules and explicit source reads.
+    pub fn content_reads(&self) -> usize {
+        self.reads.get()
+    }
+
+    pub(super) fn read_bytes(&self, path: &Path) -> Result<Vec<u8>> {
+        self.reads.set(self.reads.get() + 1);
+        Ok(fs::read(path)?)
     }
 
     fn engine(&self) -> Result<IgnoreEngine> {
@@ -47,40 +60,28 @@ impl FileSource {
 }
 impl Source for FileSource {
     fn snapshot(&self) -> Result<Snapshot> {
-        let engine = self.engine()?;
-        let capture = Capture {
-            root: &self.root,
-            bytes: RefCell::new(BTreeMap::new()),
-        };
-        let scanned = dctx_map_scan::scan(&self.root, &engine, &capture, false)?;
-        let mut bytes = capture.bytes.into_inner();
-        let mut files = BTreeMap::new();
-        for file in scanned {
-            let path = file
-                .path
-                .to_str()
-                .ok_or_else(|| Error::Denied("non-UTF-8 path".into()))?
-                .to_owned();
-            let content = if file.decision.should_read_content() {
-                bytes.remove(&self.root.join(&file.path))
-            } else {
-                None
-            };
-            let mtime = fs::symlink_metadata(self.root.join(&file.path))?
-                .modified()?
-                .duration_since(std::time::UNIX_EPOCH)
-                .map_or(0, |d| d.as_nanos().min(i64::MAX as u128) as i64);
-            files.insert(
-                path,
-                SourceFile {
-                    bytes: content,
-                    hash: file.hash.map(hex).unwrap_or_default(),
-                    size: file.size,
-                    mtime,
-                },
-            );
+        self.snapshot_since(None)
+    }
+    fn snapshot_since(&self, previous: Option<&Snapshot>) -> Result<Snapshot> {
+        let snapshot = super::inventory::capture(self, previous)?;
+        *self.rules.borrow_mut() = snapshot.rules.clone();
+        Ok(snapshot)
+    }
+    fn unchanged(&self, path: &str, file: &SourceFile) -> Result<bool> {
+        validate_path(path)?;
+        for (name, rule) in self.rules.borrow().iter() {
+            if super::inventory::optional_stamp(&self.root.join(name))? != rule.stamp {
+                return Ok(false);
+            }
         }
-        super::revision::snapshot(&self.root, files)
+        let mut disk = self.root.clone();
+        for component in Path::new(path).components() {
+            disk.push(component);
+            if fs::symlink_metadata(&disk)?.is_symlink() {
+                return Ok(false);
+            }
+        }
+        Ok(super::inventory::optional_stamp(&disk)?.as_ref() == Some(&file.stamp))
     }
     fn read(&self, path: &str) -> Result<Vec<u8>> {
         validate_path(path)?;
@@ -118,7 +119,7 @@ impl Source for FileSource {
                 return Err(Error::Denied(path.into()));
             }
         }
-        Ok(fs::read(disk)?)
+        self.read_bytes(&disk)
     }
 }
 
@@ -129,7 +130,7 @@ pub(crate) fn digest(bytes: &[u8]) -> String {
     hex(content_hash(bytes))
 }
 
-fn forbidden(name: &str) -> bool {
+pub(super) fn forbidden(name: &str) -> bool {
     matches!(
         name,
         ".git" | ".agent" | ".aws" | ".ssh" | ".gnupg" | ".env" | "credentials" | "credentials.json"
@@ -138,40 +139,6 @@ fn forbidden(name: &str) -> bool {
         || name.ends_with(".key")
         || name.starts_with("id_rsa")
         || name.starts_with("id_ed25519")
-}
-struct Capture<'a> {
-    root: &'a Path,
-    bytes: RefCell<BTreeMap<PathBuf, Vec<u8>>>,
-}
-impl ContentSource for Capture<'_> {
-    fn read_content(&self, path: &Path) -> io::Result<Vec<u8>> {
-        if !path.starts_with(self.root)
-            || path.strip_prefix(self.root).ok().is_some_and(|p| {
-                p.components()
-                    .any(|c| c.as_os_str().to_str().is_some_and(forbidden))
-            })
-        {
-            return Err(io::ErrorKind::PermissionDenied.into());
-        }
-        let bytes = fs::read(path)?;
-        self.bytes.borrow_mut().insert(path.into(), bytes.clone());
-        Ok(bytes)
-    }
-}
-impl FileSystem for Capture<'_> {
-    fn kind(&self, path: &Path) -> io::Result<FileKind> {
-        StdFileSystem.kind(path)
-    }
-    fn size(&self, path: &Path) -> io::Result<u64> {
-        StdFileSystem.size(path)
-    }
-    fn entries(&self, path: &Path) -> io::Result<Vec<Entry>> {
-        Ok(StdFileSystem
-            .entries(path)?
-            .into_iter()
-            .filter(|e| !e.name.to_str().is_some_and(forbidden))
-            .collect())
-    }
 }
 
 #[cfg(test)]

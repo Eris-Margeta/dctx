@@ -1,6 +1,6 @@
-//! External per-worktree cache selection and single-writer exclusion.
+//! External per-worktree cache selection without reader exclusion.
 //! Implements SPEC-MAP-MODE sections 7 and 8 without writing into source places.
-//! Uses standard filesystem operations; the map entry point owns the lock lifetime.
+//! Uses filesystem paths; dctx-map-query owns WAL snapshots and writer locks.
 use std::{
     collections::hash_map::DefaultHasher,
     fs,
@@ -9,7 +9,6 @@ use std::{
 };
 pub(super) struct Cache {
     pub database: PathBuf,
-    lock: PathBuf,
 }
 impl Cache {
     pub fn open(root: &Path) -> Result<Self, String> {
@@ -43,21 +42,9 @@ impl Cache {
         root.hash(&mut hash);
         let dir = base.join(format!("{:016x}", hash.finish()));
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-        let lock = dir.join("writer.lock");
-        fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&lock)
-            .map_err(|e| format!("map cache is busy or unavailable ({}): {e}", lock.display()))?;
         Ok(Self {
             database: dir.join("index.sqlite"),
-            lock,
         })
-    }
-}
-impl Drop for Cache {
-    fn drop(&mut self) {
-        let _ = fs::remove_file(&self.lock);
     }
 }
 

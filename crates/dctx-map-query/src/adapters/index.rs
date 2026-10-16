@@ -1,16 +1,12 @@
 //! Content-hash incremental indexing with explicit stale diagnostics.
 //! Implements SPEC-MAP-MODE sections 6 and 7 via public scan/parse/resolve/store APIs.
 //! Retains parser retry facts and replaces only changed file-owned transactions.
-use crate::{
-    Result,
-    domain::{bridge::bridge, cached::CachedFile},
-    ports::{Snapshot, Source},
-};
+use crate::{Result, domain::cached::CachedFile, ports::Snapshot};
 use dctx_map_model::{Edge, Node, StableId, Summary, SummarySource};
 use dctx_map_parse::{Parser, TreeSitterParser};
-use dctx_map_store::{File, FileFacts, MapStore, SqliteStore, Unresolved};
+use dctx_map_store::SqliteStore;
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, BTreeSet},
     time::{Duration, Instant},
 };
 
@@ -37,7 +33,13 @@ pub struct IndexReport {
 
 /// Stateful query index with independently selected storage.
 pub struct Index {
-    pub(crate) store: SqliteStore,
+    pub(crate) store: Option<SqliteStore>,
+    pub(crate) database: Option<std::path::PathBuf>,
+    pub(crate) reader: Option<rusqlite::Connection>,
+    pub(crate) graph_loaded: bool,
+    pub(crate) dirty_files: BTreeSet<String>,
+    pub(crate) dirty_nodes: BTreeSet<StableId>,
+    pub(crate) dirty_edges: BTreeSet<String>,
     pub(crate) files: BTreeMap<String, CachedFile>,
     pub(crate) nodes: BTreeMap<StableId, Node>,
     pub(crate) edges: Vec<Edge>,
@@ -53,11 +55,20 @@ pub struct Index {
 impl Index {
     /// Creates an isolated in-memory index.
     pub fn in_memory(place: impl Into<String>) -> Result<Self> {
-        Ok(Self::with_store(place.into(), SqliteStore::in_memory()?))
+        Ok(Self::with_store(
+            place.into(),
+            Some(SqliteStore::in_memory()?),
+        ))
     }
-    pub(crate) fn with_store(place: String, store: SqliteStore) -> Self {
+    pub(crate) fn with_store(place: String, store: Option<SqliteStore>) -> Self {
         Self {
             store,
+            database: None,
+            reader: None,
+            graph_loaded: true,
+            dirty_files: BTreeSet::new(),
+            dirty_nodes: BTreeSet::new(),
+            dirty_edges: BTreeSet::new(),
             place: place.split_whitespace().collect::<Vec<_>>().join("_"),
             files: BTreeMap::new(),
             nodes: BTreeMap::new(),
@@ -76,31 +87,33 @@ impl Index {
         &self.report
     }
 
-    /// Hashes authorized content and reparses only changed files.
+    /// Applies a captured inventory, parsing only changed content.
     /// A finite deadline flags pending files stale; no obsolete source is served.
-    pub fn refresh(
+    pub(super) fn apply_snapshot(
         &mut self,
-        source: &impl Source,
+        mut snapshot: Snapshot,
+        started: Instant,
         deadline: Option<Duration>,
     ) -> Result<&IndexReport> {
-        let started = Instant::now();
-        let snapshot = source.snapshot()?;
         let mut report = IndexReport {
             scan_time: started.elapsed(),
             ..IndexReport::default()
         };
         let parse_start = Instant::now();
         let mut parsed_files =
-            super::parsing::parse_changed(&snapshot, &self.files, started, deadline)?;
+            super::parsing::parse_changed(&snapshot, &self.files, parse_start, deadline)?;
         report.parse_time = parse_start.elapsed();
         let mut next = BTreeMap::new();
         for (path, current) in &snapshot.files {
             let old = self.files.get(path);
-            let readable = current.bytes.is_some();
+            let readable = current.readable;
             if let Some(old) =
                 old.filter(|old| old.hash == current.hash && old.readable == readable)
             {
-                next.insert(path.clone(), old.clone());
+                let mut file = old.clone();
+                file.size = current.size;
+                file.mtime = current.mtime;
+                next.insert(path.clone(), file);
                 continue;
             }
             let parsed = parsed_files
@@ -161,145 +174,38 @@ impl Index {
         if changed {
             self.rebuild(&next, &snapshot.revision, &mut report)?;
         }
+        self.dirty_files = self
+            .files
+            .keys()
+            .chain(next.keys())
+            .filter(|path| {
+                self.snapshot.is_none()
+                    || match (self.files.get(*path), next.get(*path)) {
+                        (Some(old), Some(new)) => {
+                            old.hash != new.hash
+                                || old.readable != new.readable
+                                || old.size != new.size
+                                || old.mtime != new.mtime
+                        }
+                        _ => true,
+                    }
+            })
+            .cloned()
+            .collect();
         self.files = next;
+        for (path, file) in &mut snapshot.files {
+            file.bytes = None;
+            if report.stale.contains_key(path) {
+                file.stamp = crate::ports::FileStamp::default();
+            }
+        }
         self.snapshot = Some(snapshot);
         self.report = report;
         self.ready = true;
         Ok(&self.report)
     }
 
-    fn rebuild(
-        &mut self,
-        next: &BTreeMap<String, CachedFile>,
-        revision: &str,
-        report: &mut IndexReport,
-    ) -> Result<()> {
-        let resolve_start = Instant::now();
-        let bridged = bridge(next)?;
-        let resolution = super::resolving::resolve_components(bridged.facts)?;
-        report.resolve_time = resolve_start.elapsed();
-        let store_start = Instant::now();
-        let mut nodes: BTreeMap<_, _> = next
-            .values()
-            .flat_map(|f| f.nodes.iter().cloned())
-            .chain(bridged.structural)
-            .map(|n| (n.id.clone(), n))
-            .collect();
-        let mut edges = resolution.edges;
-        edges.extend(bridged.edges);
-        edges.sort_by(|a, b| {
-            (&a.owner_path, &a.src, &a.dst, a.kind).cmp(&(&b.owner_path, &b.src, &b.dst, b.kind))
-        });
-        edges.dedup();
-        let mut facts: BTreeMap<String, FileFacts> = next
-            .iter()
-            .map(|(path, file)| {
-                (
-                    path.clone(),
-                    FileFacts {
-                        file: File {
-                            path: path.clone(),
-                            size: file.size,
-                            mtime: file.mtime,
-                            sha256: file.hash.clone(),
-                            lang: if path.ends_with(".rs") {
-                                "rust"
-                            } else if path.ends_with(".md") {
-                                "markdown"
-                            } else {
-                                "unknown"
-                            }
-                            .into(),
-                        },
-                        nodes: file.nodes.clone(),
-                        edges: vec![],
-                        unresolved: vec![],
-                        summaries: vec![],
-                    },
-                )
-            })
-            .collect();
-        for node in nodes.values().filter(|n| {
-            matches!(
-                n.kind,
-                dctx_map_model::NodeKind::Place | dctx_map_model::NodeKind::Package
-            )
-        }) {
-            facts
-                .entry(node.path.clone())
-                .or_insert_with(|| FileFacts {
-                    file: File {
-                        path: node.path.clone(),
-                        size: 0,
-                        mtime: 0,
-                        sha256: String::new(),
-                        lang: "structure".into(),
-                    },
-                    nodes: vec![],
-                    edges: vec![],
-                    unresolved: vec![],
-                    summaries: vec![],
-                })
-                .nodes
-                .push(node.clone());
-        }
-        for edge in &edges {
-            if let Some(file) = facts.get_mut(&edge.owner_path) {
-                file.edges.push(edge.clone());
-            }
-        }
-        for unresolved in resolution.unresolved {
-            if let Some(file) = facts.get_mut(&unresolved.owner_path) {
-                let name = match unresolved.reference.target {
-                    dctx_map_resolve::Target::Name(name) => name,
-                    dctx_map_resolve::Target::Id(id) => id.to_string(),
-                };
-                file.unresolved.push(Unresolved {
-                    name,
-                    kind: unresolved.reference.kind,
-                });
-            }
-        }
-        for file in facts.values_mut() {
-            file.nodes.sort_by(|a, b| a.id.cmp(&b.id));
-            file.unresolved
-                .sort_by(|a, b| (&a.name, a.kind).cmp(&(&b.name, b.kind)));
-            file.unresolved.dedup();
-            if let Some(old) = self.store.file(&file.file.path)? {
-                file.summaries = old
-                    .summaries
-                    .into_iter()
-                    .filter(|s| {
-                        file.nodes
-                            .iter()
-                            .any(|n| n.id == s.id && n.fingerprint == s.fingerprint)
-                    })
-                    .collect();
-                if old.file.sha256 == file.file.sha256
-                    && old.nodes == file.nodes
-                    && old.edges == file.edges
-                    && old.unresolved == file.unresolved
-                {
-                    continue;
-                }
-            }
-            self.store.reindex(file)?;
-            report.replaced += 1;
-        }
-        report.removed = self
-            .store
-            .prune(&facts.keys().map(String::as_str).collect::<Vec<_>>())?;
-        let previous: Vec<_> = self
-            .files
-            .values()
-            .flat_map(|f| f.nodes.iter().cloned())
-            .collect();
-        let current: Vec<_> = nodes.values().cloned().collect();
-        for moved in dctx_map_resolve::detect_moves(&previous, &current, revision) {
-            self.moves.insert(moved.old, moved.new);
-        }
-        self.nodes = std::mem::take(&mut nodes);
-        self.edges = edges;
+    pub(super) fn adjacency(&mut self) {
         self.degree.clear();
         self.incoming.clear();
         self.outgoing.clear();
@@ -308,7 +214,5 @@ impl Index {
             self.incoming.entry(edge.dst.clone()).or_default().push(i);
             self.outgoing.entry(edge.src.clone()).or_default().push(i);
         }
-        report.store_time = store_start.elapsed();
-        Ok(())
     }
 }

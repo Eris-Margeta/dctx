@@ -24,9 +24,8 @@ pub(super) fn parse_changed(
         .files
         .iter()
         .filter(|(path, current)| {
-            old.get(*path).is_none_or(|old| {
-                old.hash != current.hash || old.readable != current.bytes.is_some()
-            })
+            old.get(*path)
+                .is_none_or(|old| old.hash != current.hash || old.readable != current.readable)
         })
         .collect();
     if pending.is_empty() {

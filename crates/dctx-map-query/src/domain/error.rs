@@ -22,6 +22,9 @@ pub enum Error {
     /// Persistence failed.
     #[error(transparent)]
     Store(#[from] dctx_map_store::StoreError),
+    /// Query snapshot persistence failed.
+    #[error(transparent)]
+    Sqlite(#[from] rusqlite::Error),
     /// A graph id was invalid.
     #[error(transparent)]
     Id(#[from] dctx_map_model::InvalidId),

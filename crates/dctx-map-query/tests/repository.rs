@@ -34,7 +34,9 @@ fn dctx_repository_recall_and_latency() {
         .unwrap();
     assert!(root.join("crates/dctx-core/src/lib.rs").is_file());
     let source = FileSource::new(root).unwrap();
-    let mut index = Index::in_memory("dctx").unwrap();
+    let cache = tempfile::tempdir().unwrap();
+    let database = cache.path().join("index.sqlite");
+    let mut index = Index::open("dctx", &database).unwrap();
     let start = Instant::now();
     index.refresh(&source, None).unwrap();
     let indexing = start.elapsed();
@@ -90,4 +92,31 @@ fn dctx_repository_recall_and_latency() {
         report.replaced, 0,
         "unchanged file facts must not be rewritten"
     );
+    drop(index);
+    let mut reopened = Vec::new();
+    let reads = source.content_reads();
+    for (question, _) in &rows {
+        let start = Instant::now();
+        let mut index = Index::open("dctx", &database).unwrap();
+        index
+            .query(&source, &Request::new(Verb::Find, question))
+            .unwrap();
+        reopened.push(start.elapsed());
+        assert_eq!(index.report().parsed, 0);
+        assert_eq!(index.report().replaced, 0);
+    }
+    assert_eq!(source.content_reads(), reads);
+    reopened.sort();
+    let p95 = reopened[(reopened.len() * 95).div_ceil(100) - 1];
+    writeln!(
+        stdout,
+        "CM-6c dctx reopened_query_p95={p95:?}; content_reads=0; reindexes=0"
+    )
+    .unwrap();
+    if std::env::var_os("DCTX_MAP_PERF").is_some() {
+        assert!(
+            p95 < Duration::from_millis(30),
+            "reopened query p95 {p95:?}"
+        );
+    }
 }
