@@ -17,13 +17,26 @@ Library callers create `FileSource` and `Index::in_memory` or `Index::open`,
 then call `Index::query` and `render_answer`. `query` refreshes the source
 inventory; `answer` queries an explicitly refreshed index and checks selected
 files' metadata. Explicit `read` requests still validate the source hash.
-`IndexReport` reports parsed files, replaced transactions and stale failures.
+`IndexReport` reports parsed files, replaced transactions, retryable stale failures
+and persistent parse diagnostics.
 
 Content hashes, rather than mtime/size, decide whether to parse. The resolver
-retries unchanged callers when definitions change. Parse failures and exhausted
-refresh deadlines mark records stale; reads refuse obsolete spans. Every read
+retries unchanged callers when definitions change. Parse outcomes are stored with
+the content digest and parser revision. Unparseable files retain a file-level node
+and the error, source line span and bounded syntax excerpt; previous symbols are
+removed. Unchanged failures require no content reads or parsing after reopening.
+Metadata changes trigger a hash check; a changed digest or parser revision triggers
+extraction again. Exhausted refresh deadlines remain retryable stale failures;
+reads refuse obsolete spans. Every read
 checks path containment, ignore policy and its source hash. Secrets and links
 are excluded before the scanner opens content. No watcher or daemon is used.
+
+Until the syn extractor lands, Rust syntax recovery retains independently parseable
+top-level item prefixes and suffixes around rejected syntax. It labels their
+summaries `low-precision`, retains exact containment of the surviving items, and drops references
+and move fingerprints. Recovery tries at most 64 unindented item boundaries on
+each side; it does not reconstruct the rejected item's body or promise complete
+modern Rust support. Diagnostics remain available in `IndexReport::diagnostics`.
 
 The CLI stores its index outside the source tree, under
 `DCTX_MAP_CACHE`, `$XDG_CACHE_HOME/dctx/map`, or `$HOME/.cache/dctx/map`.
@@ -69,8 +82,10 @@ The landed APIs impose these limits:
 
 `tests/recall.toml` contains 30 hand-written questions with fixed expected ids
 from this workspace. The repository integration test indexes the workspace,
-requires recall@10 >= 80%, reports full-index and prepared-query p95 timings,
-and checks that an unchanged refresh reparses and rewrites nothing. Set
+checks that each expected definition exists, reports recall@10 and full-index
+and prepared-query p95 timings, and checks that an unchanged refresh reparses
+and rewrites nothing. The competing file set grows, so set `DCTX_MAP_RECALL=1`
+to enforce recall@10 >= 80% during a deliberate benchmark comparison. Set
 `DCTX_MAP_PERF=1` on an isolated machine to enforce 3 s / 30 ms timing limits;
 default tests report timings without load-sensitive assertions.
 

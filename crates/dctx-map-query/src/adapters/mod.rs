@@ -11,6 +11,7 @@ mod publication;
 mod query;
 mod reading;
 mod rebuild;
+mod recovery;
 mod refresh;
 mod resolving;
 mod revision;

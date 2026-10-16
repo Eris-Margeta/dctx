@@ -24,6 +24,7 @@ impl Index {
             self.snapshot = Some(captured);
             self.report = IndexReport {
                 scan_time: started.elapsed(),
+                diagnostics: self.report.diagnostics.clone(),
                 ..IndexReport::default()
             };
             return Ok(&self.report);
@@ -47,6 +48,7 @@ impl Index {
             self.snapshot = Some(snapshot);
             self.report = IndexReport {
                 scan_time: started.elapsed(),
+                diagnostics: self.report.diagnostics.clone(),
                 ..IndexReport::default()
             };
             return Ok(&self.report);

@@ -2,18 +2,19 @@
 //! Implements SPEC-MAP-MODE section 7 without reparsing unchanged files.
 //! Uses the public stateless parser; the indexer assembles and commits results.
 use crate::{
-    Error, Result,
+    Error, ParseDiagnostic, ParseStatus, Result,
     domain::cached::CachedFile,
+    domain::parse_status::PARSER_REVISION,
     ports::{Snapshot, SourceFile},
 };
-use dctx_map_parse::{ParsedFile, Parser, TreeSitterParser};
+use dctx_map_parse::{Language, ParseError, ParsedFile, Parser, TreeSitterParser};
 use std::{
     collections::BTreeMap,
     sync::atomic::{AtomicUsize, Ordering},
     time::{Duration, Instant},
 };
 
-type Parsed = std::result::Result<ParsedFile, String>;
+type Parsed = std::result::Result<(ParsedFile, ParseStatus), String>;
 pub(super) fn parse_changed(
     snapshot: &Snapshot,
     old: &BTreeMap<String, CachedFile>,
@@ -24,8 +25,11 @@ pub(super) fn parse_changed(
         .files
         .iter()
         .filter(|(path, current)| {
-            old.get(*path)
-                .is_none_or(|old| old.hash != current.hash || old.readable != current.readable)
+            old.get(*path).is_none_or(|old| {
+                old.hash != current.hash
+                    || old.readable != current.readable
+                    || old.parser_revision != PARSER_REVISION
+            })
         })
         .collect();
     if pending.is_empty() {
@@ -67,7 +71,47 @@ fn parse(file: &SourceFile, path: &str, started: Instant, deadline: Option<Durat
     if deadline.is_some_and(|limit| started.elapsed() >= limit) {
         return Err("refresh deadline exceeded".into());
     }
-    TreeSitterParser
-        .parse(path, file.bytes.as_deref().unwrap_or(b""))
-        .map_err(|e| e.to_string())
+    let bytes = file.bytes.as_deref().unwrap_or(b"");
+    let error = match TreeSitterParser.parse(path, bytes) {
+        Ok(parsed) => return Ok((parsed, ParseStatus::Parsed)),
+        Err(error) => error,
+    };
+    let line = match &error {
+        ParseError::Syntax { line, .. } => *line,
+        ParseError::InvalidUtf8(_) | ParseError::TooLarge => 1,
+        _ => return Err(error.to_string()),
+    };
+    let diagnostic = ParseDiagnostic {
+        error: error.to_string(),
+        lines: [line, line],
+        syntax: String::from_utf8_lossy(bytes)
+            .lines()
+            .nth(line.saturating_sub(1) as usize)
+            .unwrap_or_default()
+            .chars()
+            .take(160)
+            .collect(),
+    };
+    if Language::for_path(path) == Language::Rust
+        && matches!(error, ParseError::Syntax { .. })
+        && let Some(parsed) = super::recovery::recover(path, bytes, &diagnostic)
+    {
+        return Ok((
+            parsed,
+            ParseStatus::Partial {
+                diagnostics: vec![diagnostic],
+            },
+        ));
+    }
+    let mut parsed = TreeSitterParser
+        .parse(path, b"")
+        .map_err(|e| e.to_string())?;
+    for node in &mut parsed.nodes {
+        let lines =
+            bytes.split(|byte| *byte == b'\n').count() - usize::from(bytes.ends_with(b"\n"));
+        node.lines = [1, lines.clamp(1, u32::MAX as usize) as u32];
+        node.fingerprint.clear();
+        node.summary.text = format!("unparseable: {}", diagnostic.error);
+    }
+    Ok((parsed, ParseStatus::Unparseable { diagnostic }))
 }

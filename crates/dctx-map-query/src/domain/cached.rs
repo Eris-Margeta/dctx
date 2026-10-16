@@ -1,6 +1,7 @@
 //! Lossless, serializable per-file facts retained between index refreshes.
 //! Implements SPEC-MAP-MODE section 7 where store retry metadata is incomplete.
 //! Uses public parser/model types; query adapters persist these values.
+use super::parse_status::{PARSER_REVISION, ParseStatus};
 use dctx_map_model::{Edge, EdgeKind, Node, StableId};
 use dctx_map_parse::{ParsedFile, RawReference};
 use serde::{Deserialize, Serialize};
@@ -11,6 +12,10 @@ pub(crate) struct CachedFile {
     pub size: u64,
     pub mtime: i64,
     pub readable: bool,
+    #[serde(default)]
+    pub parser_revision: u32,
+    #[serde(default)]
+    pub status: ParseStatus,
     pub nodes: Vec<Node>,
     pub edges: Vec<Edge>,
     pub references: Vec<SavedReference>,
@@ -22,6 +27,8 @@ impl CachedFile {
             size,
             mtime,
             readable,
+            parser_revision: PARSER_REVISION,
+            status: ParseStatus::Parsed,
             nodes: parsed.nodes,
             edges: parsed.edges,
             references: parsed

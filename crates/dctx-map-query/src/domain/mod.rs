@@ -4,9 +4,11 @@
 pub(crate) mod bridge;
 pub(crate) mod cached;
 mod error;
+pub(crate) mod parse_status;
 mod ranking;
 mod request;
 pub use error::{Error, Result};
+pub use parse_status::{ParseDiagnostic, ParseStatus};
 pub(crate) use ranking::{expression, rank};
 pub use request::{Direction, Request};
 pub(crate) use request::{inside, quote, validate_path};

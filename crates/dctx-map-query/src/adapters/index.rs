@@ -1,7 +1,11 @@
 //! Content-hash incremental indexing with explicit stale diagnostics.
 //! Implements SPEC-MAP-MODE sections 6 and 7 via public scan/parse/resolve/store APIs.
 //! Retains parser retry facts and replaces only changed file-owned transactions.
-use crate::{Result, domain::cached::CachedFile, ports::Snapshot};
+use crate::{
+    ParseStatus, Result,
+    domain::{cached::CachedFile, parse_status::PARSER_REVISION},
+    ports::Snapshot,
+};
 use dctx_map_model::{Edge, Node, StableId, Summary, SummarySource};
 use dctx_map_parse::{Parser, TreeSitterParser};
 use dctx_map_store::SqliteStore;
@@ -29,6 +33,8 @@ pub struct IndexReport {
     pub removed: usize,
     /// Stale paths and their explicit failure reasons.
     pub stale: BTreeMap<String, String>,
+    /// Cached syntax failures and partial extraction diagnostics; these do not trigger retries.
+    pub diagnostics: BTreeMap<String, ParseStatus>,
 }
 
 /// Stateful query index with independently selected storage.
@@ -107,9 +113,11 @@ impl Index {
         for (path, current) in &snapshot.files {
             let old = self.files.get(path);
             let readable = current.readable;
-            if let Some(old) =
-                old.filter(|old| old.hash == current.hash && old.readable == readable)
-            {
+            if let Some(old) = old.filter(|old| {
+                old.hash == current.hash
+                    && old.readable == readable
+                    && old.parser_revision == PARSER_REVISION
+            }) {
                 let mut file = old.clone();
                 file.size = current.size;
                 file.mtime = current.mtime;
@@ -120,7 +128,7 @@ impl Index {
                 .remove(path)
                 .ok_or_else(|| crate::Error::Request("missing parser result".into()))?;
             match parsed {
-                Ok(mut parsed) => {
+                Ok((mut parsed, status)) => {
                     if !readable {
                         for node in &mut parsed.nodes {
                             node.summary = Summary {
@@ -130,16 +138,15 @@ impl Index {
                         }
                     }
                     report.parsed += 1;
-                    next.insert(
-                        path.clone(),
-                        CachedFile::parsed(
-                            parsed,
-                            current.hash.clone(),
-                            current.size,
-                            current.mtime,
-                            readable,
-                        ),
+                    let mut file = CachedFile::parsed(
+                        parsed,
+                        current.hash.clone(),
+                        current.size,
+                        current.mtime,
+                        readable,
                     );
+                    file.status = status;
+                    next.insert(path.clone(), file);
                 }
                 Err(reason) => {
                     report.stale.insert(path.clone(), reason);
@@ -167,9 +174,12 @@ impl Index {
         let changed = !self.ready
             || next.len() != self.files.len()
             || next.iter().any(|(path, file)| {
-                self.files
-                    .get(path)
-                    .is_none_or(|old| old.hash != file.hash || old.readable != file.readable)
+                self.files.get(path).is_none_or(|old| {
+                    old.hash != file.hash
+                        || old.readable != file.readable
+                        || old.parser_revision != file.parser_revision
+                        || old.status != file.status
+                })
             });
         if changed {
             self.rebuild(&next, &snapshot.revision, &mut report)?;
@@ -186,6 +196,8 @@ impl Index {
                                 || old.readable != new.readable
                                 || old.size != new.size
                                 || old.mtime != new.mtime
+                                || old.parser_revision != new.parser_revision
+                                || old.status != new.status
                         }
                         _ => true,
                     }
@@ -193,6 +205,12 @@ impl Index {
             .cloned()
             .collect();
         self.files = next;
+        report.diagnostics = self
+            .files
+            .iter()
+            .filter(|(_, file)| file.status != ParseStatus::Parsed)
+            .map(|(path, file)| (path.clone(), file.status.clone()))
+            .collect();
         for (path, file) in &mut snapshot.files {
             file.bytes = None;
             if report.stale.contains_key(path) {

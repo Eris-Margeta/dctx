@@ -105,15 +105,22 @@ fn same_size_edit_is_hashed_and_invalid_source_is_never_served() {
     assert!(read.records[0].body.as_ref().unwrap().contains("43"));
     assert_eq!(index.report().parsed, 1);
     fs::write(&path, "pub fn work(").unwrap();
-    let stale = index
+    let invalid = index
         .query(&source, &Request::new(Verb::Find, "work"))
         .unwrap();
-    assert!(stale.records.iter().any(|r| r.stale));
+    assert!(
+        !invalid
+            .records
+            .iter()
+            .any(|r| r.id.as_str() == "s:src/worker.rs#work")
+    );
+    assert!(index.report().diagnostics.contains_key("src/worker.rs"));
+    assert!(index.report().stale.is_empty());
     let read = index
         .answer(&source, &Request::new(Verb::Read, "s:src/worker.rs#work"))
         .unwrap();
     assert!(read.records.is_empty());
-    assert!(read.reason.unwrap().contains("stale"));
+    assert!(read.identity.is_some());
     fs::write(&path, "pub fn work() { let recovered = 44; }").unwrap();
     assert!(
         !index

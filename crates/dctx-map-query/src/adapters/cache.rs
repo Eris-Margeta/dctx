@@ -3,6 +3,7 @@
 //! Find reads bounded candidates; traversal and writers explicitly load the graph.
 use super::{Index, database};
 use crate::{Error, Result, domain::cached::CachedFile, ports::Snapshot};
+use crate::{ParseStatus, domain::parse_status::PARSER_REVISION};
 use dctx_map_model::{Edge, Node};
 use rusqlite::OptionalExtension;
 use serde::{Deserialize, Serialize};
@@ -52,6 +53,7 @@ impl Index {
             )
             .optional()?;
         self.ready = false;
+        self.report = super::IndexReport::default();
         self.graph_loaded = true;
         self.files.clear();
         self.nodes.clear();
@@ -65,7 +67,7 @@ impl Index {
             if version != 3 || place != self.place {
                 return Err(Error::Request("query cache requires rebuild".into()));
             }
-            let snapshot: Snapshot = serde_json::from_str(&snapshot)?;
+            let mut snapshot: Snapshot = serde_json::from_str(&snapshot)?;
             self.files = snapshot
                 .files
                 .iter()
@@ -77,6 +79,8 @@ impl Index {
                             size: file.size,
                             mtime: file.mtime,
                             readable: file.readable,
+                            parser_revision: 0,
+                            status: ParseStatus::Parsed,
                             nodes: vec![],
                             edges: vec![],
                             references: vec![],
@@ -84,10 +88,42 @@ impl Index {
                     )
                 })
                 .collect();
+            let mut metadata = connection.prepare(
+                "SELECT path,json_extract(payload,'$.parser_revision'),json_extract(payload,'$.status') FROM query_files"
+            )?;
+            for row in metadata.query_map([], |r| {
+                Ok((
+                    r.get::<_, String>(0)?,
+                    r.get::<_, Option<u32>>(1)?,
+                    r.get::<_, Option<String>>(2)?,
+                ))
+            })? {
+                let (path, revision, status) = row?;
+                if let Some(file) = self.files.get_mut(&path) {
+                    file.parser_revision = revision.unwrap_or_default();
+                    file.status = status
+                        .as_deref()
+                        .map(serde_json::from_str)
+                        .transpose()?
+                        .unwrap_or_default();
+                    if file.status != ParseStatus::Parsed {
+                        self.report.diagnostics.insert(path, file.status.clone());
+                    }
+                }
+            }
+            // Old parser facts need fresh authorized bytes even when disk metadata
+            // is unchanged. Legacy payloads have revision zero and upgrade once.
+            let mut parser_changed = false;
+            for (path, file) in &mut snapshot.files {
+                if self.files[path].parser_revision != PARSER_REVISION {
+                    file.stamp = crate::ports::FileStamp::default();
+                    parser_changed = true;
+                }
+            }
             self.report.stale = serde_json::from_str(&stale)?;
             self.moves = serde_json::from_str(&moves)?;
             self.snapshot = Some(snapshot);
-            self.ready = !writing;
+            self.ready = !writing && !parser_changed;
             self.graph_loaded = false;
         } else {
             match fs::read(path.with_extension("query.json")) {

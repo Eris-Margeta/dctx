@@ -152,7 +152,7 @@ fn additions_deletions_and_preserved_mtime_edits_survive_reopening() {
 }
 
 #[test]
-fn failed_parse_is_retried_after_reopening_without_serving_stale_source() {
+fn failed_parse_is_cached_after_reopening_and_retried_after_edit() {
     let (root, cache) = fixture(1);
     let db = cache.path().join("index.sqlite");
     query(root.path(), &db);
@@ -160,8 +160,8 @@ fn failed_parse_is_retried_after_reopening_without_serving_stale_source() {
     let first = query(root.path(), &db);
     let second = query(root.path(), &db);
     assert_eq!(first.1, 1);
-    assert_eq!(second.1, 1);
-    assert!(second.0.contains("stale"));
+    assert_eq!((second.1, second.2, second.3), (0, 0, 0));
+    assert!(!second.0.contains("s:file_0000.rs#operation_0000"));
     fs::write(
         root.path().join("file_0000.rs"),
         "pub fn operation_fixed() {}",
