@@ -1,0 +1,17 @@
+[package]
+name = "dctx-hash"
+version = "0.1.0"
+edition = "2024"
+description = "First-party safe-Rust SHA-256 content digests for dctx"
+license = "MIT"
+
+[dependencies]
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1"
+sha2 = "=0.10.9"
+
+[[bench]]
+name = "throughput"
+harness = false
