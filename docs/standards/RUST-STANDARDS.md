@@ -48,6 +48,7 @@ Binding for every Rust packet. Workers read this before writing code.
 
 - Also approved here: everything `dctx-core` already uses; `rusqlite` with `bundled` (FTS5) in `dctx-map-store`; `tree-sitter`, `tree-sitter-rust` and `tree-sitter-md` (exact pins) in `dctx-map-parse`.
 - In dctx, workspace-level dependencies may be declared in the crate's own `Cargo.toml` with an exact version. The root stays untouched.
-- Dev-dependencies only, for differential testing of first-party cryptography (decision 078, decision 081): `sha2` (against dctx-hash) and `ed25519-dalek` (against dctx-ed25519). They never appear in a production dependency closure.
+- Dev-dependency only, for differential testing of first-party SHA-256 (decision 078): `sha2` (against dctx-hash). It never appears in a production dependency closure.
+- Signature verification (decision 087, 16.10.2026: "use audited crate"): `ed25519-dalek =2.2.0` (with `curve25519-dalek` 4.1.3 and `ed25519` 2.2.3 as its closure), a production dependency of `crates/dctx-ed25519` only, which wraps it behind the unchanged first-party API and uses `verify_strict`. The Wycheproof vectors in its tests are verified identical to the official C2SP file (SHA-256 752d2ea7…, 151/151 cases, 16.10.2026).
 - `syn` (exact pin, minimal features) in `dctx-lex-rust` only: the Rust structural extractor (decision 077).
 - In `dctx-plugin-platform` only (Linux confinement, decision 080; versions checked on crates.io 16.10.2026): `rustix = "=1.1.5"`, `landlock = "=0.4.7"`, `seccompiler = "=0.5.0"`. Their unsafe stays inside them; first-party code keeps `forbid(unsafe_code)`.
