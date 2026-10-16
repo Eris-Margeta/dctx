@@ -18,9 +18,13 @@ Usage: dctx [PATH] [OPTIONS]
        dctx cache purge --all [--dry-run] [--yes]
        dctx template build <PATH> [--output PATH]
        dctx template list [--dir PATH]
+       dctx plugin search|install|list|info|enable|disable|remove|update|verify
+       dctx git <status|protect>
 
 Explicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not create a project text file.
 `dctx .` remains the legacy snapshot alias and still writes its documented project text.
+`dctx plugin list` and `dctx --help` do not create a project `.dctx/` directory or start a plugin.
+`dctx git` routes to the bundled dctx/git plugin. It is not a Git passthrough.
 Cache purge requires `--root PATH` or `--all`, and `--yes` unless `--dry-run` is set.
 `dctx cache gc --legacy` reads only exports the caller already registered. It does not search the home directory.
 

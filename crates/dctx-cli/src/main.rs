@@ -9,6 +9,7 @@ mod host;
 mod map;
 mod pack;
 mod platform;
+mod plugin;
 mod template;
 mod tui;
 
@@ -165,6 +166,13 @@ impl From<SnapshotConfig> for CliConfig {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    let head = args.get(1).map(String::as_str);
+    if head == Some("--internal-plugin-worker") {
+        std::process::exit(i32::from(plugin::enter_worker(&args[2..])));
+    }
+    if head.is_some_and(plugin::is_early) {
+        std::process::exit(i32::from(plugin::enter(&args)));
+    }
     if args.get(1).is_some_and(|arg| arg == "map") {
         if let Err(error) = map::run(&args[2..]) {
             eprintln!("map: {error}");
@@ -1070,6 +1078,13 @@ mod compatibility {
         let args = vec!["dctx".to_string(), ".".to_string()];
         let command = super::parse_command(&args).expect("parse");
         assert!(matches!(command, super::CliCommand::Snapshot(_)));
+    }
+
+    #[test]
+    fn plugin_and_git_are_not_snapshot_paths() {
+        assert!(super::plugin::is_early("plugin"));
+        assert!(super::plugin::is_early("git"));
+        assert!(!super::plugin::is_early("."));
     }
 
     #[test]
