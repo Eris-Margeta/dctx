@@ -1,8 +1,9 @@
 # dctx-map-parse
 
 `Parser::parse(path, bytes)` turns one authorized UTF-8 file into deterministic
-`ParsedFile` facts. `TreeSitterParser` supports Rust (`.rs`) and Markdown (`.md`,
-`.markdown`), case-insensitively. Other extensions produce a module with a
+`ParsedFile` facts. `TreeSitterParser` supports Rust (`.rs`), JavaScript (`.js`,
+`.mjs`, `.cjs`, `.jsx`), TypeScript (`.ts`, `.mts`, `.cts`, `.tsx`) and Markdown
+(`.md`, `.markdown`), case-insensitively. Other extensions produce a module with a
 first-comment summary. The caller performs scanning and file IO.
 
 Nodes and exact `contains` edges use the public `dctx-map-model` types.
@@ -46,3 +47,24 @@ Validation uses the packet's remote `cargo test -p dctx-map-parse` and
 `cargo clippy -p dctx-map-parse -- -D warnings` commands. Fixtures specify exact
 node/reference sets and a heading tree; property tests cover identity stability
 and collision-free duplicate endpoints.
+
+JavaScript and TypeScript use `tree-sitter-javascript = "=0.25.0"` and
+`tree-sitter-typescript = "=0.23.2"` with the existing tree-sitter 0.25.10 runtime
+(D1). TSX selects its separate grammar. Declarations, classes, methods, named
+arrows and function expressions receive qualified identities. JSDoc contributes
+the first nonempty description line's first sentence. Invalid syntax refuses the
+whole file. Rust and Markdown extraction is unchanged.
+
+ES module targets use `module::name`, `module::default`, or `module::*`;
+namespace bindings, side-effect imports and whole-module CommonJS bindings
+retain the module string alone. Namespace aliases bind the module, never a glob.
+Named bindings retain explicit aliases. Export clauses emit `reexports`;
+exported declarations have `public` set. Literal `require` calls emit imports,
+including destructured aliases. Dynamic calls remain ordinary calls.
+
+Syntactic `test`, `describe` and `it` calls with string titles become test nodes,
+including `only`, `skip`, `todo` and `concurrent` modifiers. Nested titles are
+qualified by their enclosing test. Calls in test callbacks emit both `calls`
+and `tests`; registration calls themselves do not. Framework alias resolution,
+escaped string decoding, computed test titles, module execution, and semantic
+type inference remain outside this syntax adapter.

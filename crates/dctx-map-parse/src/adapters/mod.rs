@@ -1,7 +1,10 @@
 //! Tree-sitter language dispatch and unsupported-file fallback.
-//! Implements SPEC-MAP-MODE section 6.2 for Rust and Markdown.
+//! Implements SPEC-MAP-MODE section 6.2 for Rust, JavaScript, TypeScript and Markdown.
 //! Uses pinned grammars and domain facts; implements the Parser port.
 mod facts;
+mod javascript;
+mod javascript_items;
+mod javascript_references;
 mod markdown;
 mod rust;
 mod rust_items;
@@ -10,7 +13,7 @@ mod rust_references;
 use crate::{Language, ParseError, ParsedFile, Parser};
 use facts::Facts;
 
-/// Rust and Markdown tree-sitter adapters with a module-only fallback.
+/// Tree-sitter language adapters with a module-only fallback.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TreeSitterParser;
 
@@ -24,6 +27,9 @@ impl Parser for TreeSitterParser {
         let mut facts = Facts::new(path, source, language)?;
         match language {
             Language::Rust => rust::parse(source, &mut facts)?,
+            Language::JavaScript | Language::TypeScript | Language::Tsx => {
+                javascript::parse(source, &mut facts)?;
+            }
             Language::Markdown => markdown::parse(source, &mut facts)?,
             Language::Unknown => {}
         }

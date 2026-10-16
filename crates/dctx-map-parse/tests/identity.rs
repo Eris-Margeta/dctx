@@ -9,6 +9,23 @@ use std::collections::BTreeSet;
 
 proptest! {
     #[test]
+    fn javascript_arrows_preserve_ids_on_line_shifts_and_bodies_on_renames(
+        name in "[a-z][a-z0-9_]{0,20}", blank_lines in 0usize..30,
+    ) {
+        for path in ["source.js", "source.ts"] {
+            let source = format!("const item_{name} = () => work();");
+            let original = TreeSitterParser.parse(path, source.as_bytes()).unwrap();
+            let shifted = TreeSitterParser.parse(path,
+                format!("{}{source}", "\n".repeat(blank_lines)).as_bytes()).unwrap();
+            let renamed = TreeSitterParser.parse(path, b"const renamed = () => work();").unwrap();
+            prop_assert_eq!(&original.nodes[1].id, &shifted.nodes[1].id);
+            prop_assert_eq!(&original.nodes[1].fingerprint, &renamed.nodes[1].fingerprint);
+            prop_assert_eq!(&original.references[0].src, &shifted.references[0].src);
+            prop_assert_eq!(original.nodes[1].lines[0] + blank_lines as u32, shifted.nodes[1].lines[0]);
+        }
+    }
+
+    #[test]
     fn line_shifts_preserve_identity_and_body_fingerprints(
         name in "[a-z][a-z0-9_]{0,20}", blank_lines in 0usize..30,
     ) {

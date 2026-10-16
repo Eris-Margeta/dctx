@@ -8,6 +8,12 @@ use dctx_map_model::{Edge, EdgeKind, Node, StableId};
 pub enum Language {
     /// Rust source.
     Rust,
+    /// JavaScript, including JSX.
+    JavaScript,
+    /// TypeScript source.
+    TypeScript,
+    /// TypeScript with JSX syntax.
+    Tsx,
     /// Markdown block and inline syntax.
     Markdown,
     /// No grammar; only a module node is emitted.
@@ -24,6 +30,9 @@ impl Language {
             .as_deref()
         {
             Some("rs") => Self::Rust,
+            Some("js" | "mjs" | "cjs" | "jsx") => Self::JavaScript,
+            Some("ts" | "mts" | "cts") => Self::TypeScript,
+            Some("tsx") => Self::Tsx,
             Some("md" | "markdown") => Self::Markdown,
             _ => Self::Unknown,
         }
@@ -82,7 +91,7 @@ pub enum ParseError {
     /// Tree-sitter did not produce a tree.
     #[error("tree-sitter did not produce a syntax tree")]
     NoTree,
-    /// Rust syntax contains an error or missing token.
+    /// Source syntax contains an error or missing token.
     #[error("invalid syntax in {path} at line {line}")]
     Syntax {
         /// File containing invalid syntax.
