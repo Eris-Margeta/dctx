@@ -801,6 +801,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "dctx"
+version = "0.1.0"
+dependencies = [
+ "dctx-core",
+ "dctx-hash",
+ "dctx-lex-rust",
+ "dctx-map-model",
+ "dctx-pack",
+ "dctx-ports",
+ "dctx-template",
+ "proptest",
+ "tempfile",
+]
+
+[[package]]
 name = "dctx-adapter-cache"
 version = "0.1.0"
 dependencies = [
