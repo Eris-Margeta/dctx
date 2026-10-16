@@ -820,6 +820,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "dctx-adapter-store"
+version = "0.1.0"
+dependencies = [
+ "dctx-hash",
+ "dctx-map-segment",
+ "proptest",
+ "tempfile",
+ "thiserror 2.0.18",
+]
+
+[[package]]
 name = "dctx-cli"
 version = "0.25.0"
 dependencies = [
@@ -1004,6 +1015,15 @@ dependencies = [
  "dctx-hash",
  "dctx-plugin-protocol",
  "ed25519-dalek",
+ "proptest",
+]
+
+[[package]]
+name = "dctx-plugin-git"
+version = "1.0.0"
+dependencies = [
+ "dctx-hash",
+ "dctx-plugin-protocol",
  "proptest",
 ]
 
