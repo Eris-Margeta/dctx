@@ -1,0 +1,16 @@
+[package]
+name = "dctx-lex-rust"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+
+[dependencies]
+proc-macro2 = { version = "=1.0.107", default-features = false, features = ["span-locations"] }
+quote = { version = "=1.0.47", default-features = false }
+syn = { version = "=3.0.9", default-features = false, features = ["full", "parsing", "printing", "visit"] }
+thiserror = "=2.0.18"
+
+[dev-dependencies]
+dctx-map-model = { path = "../dctx-map-model" }
+dctx-map-parse = { path = "../dctx-map-parse" }
+proptest = "1"
