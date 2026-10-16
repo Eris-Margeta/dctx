@@ -1,0 +1,14 @@
+[package]
+name = "dctx-adapter-cache"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+description = "Quotas, leases and lifecycle for managed dctx cache state"
+
+[dependencies]
+dctx-core = { path = "../dctx-core" }
+dctx-ports = { path = "../dctx-ports" }
+thiserror = "=2.0.18"
+
+[dev-dependencies]
+proptest = "1"
