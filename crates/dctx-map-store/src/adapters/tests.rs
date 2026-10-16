@@ -219,3 +219,48 @@ fn incompatible_schema_requires_rebuild() {
     let mut store = SqliteStore::in_memory().unwrap();
     schema::initialize(&mut store.connection).unwrap();
 }
+
+#[test]
+fn five_verb_rows_stay_stable_beside_shared_facts() {
+    use crate::{ExtractionContract, FactKey, Retain};
+    use dctx_core::datatypes::{DirContextTreeNode, NodeType};
+    use dctx_core::facts::{ContentDigests, PackSnapshot};
+    use dctx_core::ids::{Timestamp, ViewKey};
+    use dctx_core::version::Version;
+    use dctx_ports::FactStore;
+    use std::path::PathBuf;
+
+    let mut store = SqliteStore::in_memory().unwrap();
+    let version: i64 = store
+        .connection
+        .pragma_query_value(None, "user_version", |row| row.get(0))
+        .unwrap();
+    assert_eq!(version, 1);
+    store.reindex(&facts("src/job.rs", &["work".into()], 1)).unwrap();
+    let hits = store.search("work", 10).unwrap();
+    assert_eq!(hits.len(), 1);
+    let key = FactKey::from_bytes(
+        b"pub fn work() {}",
+        ExtractionContract::new(1, "rust-2024", "dctx-map-parse", "rev-1", "plan-1", 1).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(store.retain_fact("team", "root-a", &key, b"facts").unwrap(), Retain::Parsed);
+    assert_eq!(store.retain_fact("team", "root-b", &key, b"facts").unwrap(), Retain::Reused);
+    assert_eq!(store.retain_fact("team", "root-c", &key, b"facts").unwrap(), Retain::Reused);
+    assert_eq!(store.parse_count().unwrap(), 1);
+    assert_eq!(store.cached_bytes().unwrap(), crate::accounted_bytes(5).unwrap());
+    let view = ViewKey::parse("root-a").unwrap();
+    let snapshot = PackSnapshot::new(
+        DirContextTreeNode::new(NodeType::Directory, "", PathBuf::new()),
+        Version::new_v1(),
+        Timestamp(1),
+        ContentDigests::new(),
+    )
+    .unwrap();
+    store.publish(&view, &snapshot).unwrap();
+    assert_eq!(store.load(&view).unwrap().unwrap().digest(), snapshot.digest());
+    let again = store.search("work", 10).unwrap();
+    assert_eq!(again.len(), 1);
+    assert_eq!(again[0].id.as_str(), hits[0].id.as_str());
+    assert_eq!(store.file("src/job.rs").unwrap().unwrap().nodes.len(), 1);
+}

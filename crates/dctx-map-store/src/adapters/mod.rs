@@ -1,18 +1,27 @@
-//! SQLite implementation of the map persistence port.
-//! Implements spec sections 6.4, 7 and 8 with bundled SQLite.
-//! Uses model facts and schema helpers; consumed by query and index layers.
+//! SQLite map store and the DX-C2 comparison bridge.
+//! Implements spec sections 6.4, 7 and 8, plus FactStore and content-addressed facts.
+//! Uses model facts, dctx-hash and the bridge tables. Consumed by query and pack rollback.
+mod bridge;
 mod read;
 mod schema;
 mod tokens;
 mod write;
 
 use crate::{MapStore, domain::*};
+use dctx_core::error::DctxError;
+use dctx_core::facts::PackSnapshot;
+use dctx_core::ids::ViewKey;
+use dctx_ports::FactStore;
 use rusqlite::{Connection, OptionalExtension, params};
 use std::path::Path;
 
-/// Versioned SQLite map database; no filesystem paths are chosen implicitly.
+/// Versioned SQLite map database and comparison bridge.
+///
+/// Map verbs keep the v1 graph tables. Pack snapshots and content-addressed fact
+/// blobs live beside them. The clock is injected through [`Self::set_clock`].
 pub struct SqliteStore {
     pub(super) connection: Connection,
+    now_ms: u64,
 }
 
 impl SqliteStore {
@@ -28,7 +37,75 @@ impl SqliteStore {
 
     fn from_connection(mut connection: Connection) -> Result<Self> {
         schema::initialize(&mut connection)?;
-        Ok(Self { connection })
+        bridge::ensure(&mut connection)?;
+        Ok(Self { connection, now_ms: 0 })
+    }
+
+    /// Sets the clock used by publish, retain and cleaning. Time is never read from the OS.
+    pub fn set_clock(&mut self, now_ms: u64) {
+        self.now_ms = now_ms;
+    }
+
+    /// How many retained FactKeys required a parse in this database.
+    pub fn parse_count(&self) -> Result<u64> {
+        bridge::parse_count(&self.connection)
+    }
+
+    /// Accounted bytes of pack snapshots and blob facts, shared facts counted once.
+    pub fn cached_bytes(&self) -> Result<u64> {
+        bridge::cached_bytes(&self.connection)
+    }
+
+    /// Hard cap in force. A fresh store uses the stage-0 2 GiB cap.
+    pub fn cache_cap(&self) -> Result<u64> {
+        bridge::cache_cap(&self.connection)
+    }
+
+    /// Lowers or raises the hard cap, then runs the cleaner at the stored clock.
+    pub fn set_cache_cap(&mut self, cap: u64) -> Result<()> {
+        bridge::set_cap(&mut self.connection, cap)
+    }
+
+    /// Stores path-independent bytes for `key` in one trust namespace.
+    ///
+    /// The first root parses. Later roots with the same retained key reuse that payload.
+    pub fn retain_fact(
+        &mut self,
+        namespace: &str,
+        root: &str,
+        key: &FactKey,
+        payload: &[u8],
+    ) -> Result<Retain> {
+        bridge::retain(&mut self.connection, self.now_ms, namespace, root, key, payload)
+    }
+
+    /// Returns the retained payload for `key` after applying expiry and pressure.
+    pub fn retained_fact(&mut self, namespace: &str, key: &FactKey) -> Result<Option<Vec<u8>>> {
+        bridge::retained(&mut self.connection, self.now_ms, namespace, key)
+    }
+
+    /// Drops one root's references and retires facts no root still uses.
+    pub fn release_root(&mut self, namespace: &str, root: &str) -> Result<()> {
+        bridge::release_root(&mut self.connection, self.now_ms, namespace, root)
+    }
+
+    /// Applies time expiry and the size cap at the injected clock.
+    pub fn maintain(&mut self) -> Result<MaintainReport> {
+        bridge::maintain(&mut self.connection, self.now_ms)
+    }
+}
+
+impl FactStore for SqliteStore {
+    fn load(&self, view: &ViewKey) -> std::result::Result<Option<PackSnapshot>, DctxError> {
+        bridge::load(&self.connection, view).map_err(bridge::to_dctx)
+    }
+
+    fn publish(
+        &mut self,
+        view: &ViewKey,
+        snapshot: &PackSnapshot,
+    ) -> std::result::Result<(), DctxError> {
+        bridge::publish(&mut self.connection, self.now_ms, view, snapshot).map_err(bridge::to_dctx)
     }
 }
 

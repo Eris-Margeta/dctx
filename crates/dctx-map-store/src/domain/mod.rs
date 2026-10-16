@@ -1,7 +1,18 @@
-//! File-owned facts exchanged with the persistence port.
-//! Implements map spec sections 7 and 8 without database access.
-//! Uses model graph types; consumed by SQLite and indexers.
+//! File-owned facts, content-addressed keys and cache accounting.
+//! Implements map spec sections 7 and 8, IDENTITY-v1 FactKey and CACHE-v1 stage-0 limits.
+//! Uses model graph types and dctx-hash. Consumed by the SQLite comparison bridge.
 use dctx_map_model::{Edge, EdgeKind, Node, StableId};
+
+mod fact_key;
+mod retention;
+
+pub use fact_key::{ExtractionContract, FactKey, Retain, GIT_IDENTITY};
+pub use retention::{
+    accounted_bytes, cache_limits, MaintainReport, ACCOUNTING_UNIT, HARD_CAP_BYTES,
+    UNREACHABLE_GRACE_MS, VIEW_IDLE_MS,
+};
+pub(crate) use fact_key::{plain_label, view_label};
+pub(crate) use retention::{expired, idle, observed_clock, Charge};
 
 /// Indexed file identity and freshness prefilter.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -84,6 +95,23 @@ pub enum StoreError {
     /// Persisted identity is invalid.
     #[error(transparent)]
     InvalidId(#[from] dctx_map_model::InvalidId),
+    /// A stored bridge object failed validation.
+    #[error("corrupt index: {0}")]
+    Corrupt(&'static str),
+    /// The comparison cache cannot admit the requested bytes.
+    #[error("cache limit requested {requested} available {available}")]
+    CacheLimit {
+        /// Bytes requested.
+        requested: u64,
+        /// Bytes still available under the hard cap.
+        available: u64,
+    },
+    /// A fact identity or root label is not acceptable.
+    #[error("invalid identity: {0}")]
+    InvalidKey(&'static str),
+    /// The same FactKey was stored with a different payload.
+    #[error("retained fact payload conflict")]
+    FactConflict,
 }
 
 /// Persistence result.

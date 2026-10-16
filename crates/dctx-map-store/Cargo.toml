@@ -5,7 +5,10 @@ edition = "2024"
 license = "Apache-2.0"
 
 [dependencies]
+dctx-core = { path = "../dctx-core" }
+dctx-hash = { path = "../dctx-hash" }
 dctx-map-model = { path = "../dctx-map-model" }
+dctx-ports = { path = "../dctx-ports" }
 rusqlite = { version = "0.32", features = ["bundled"] }
 thiserror = "2"
 serde_json = "1"
