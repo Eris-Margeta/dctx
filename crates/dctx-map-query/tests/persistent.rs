@@ -82,21 +82,16 @@ fn interrupted_file_transactions_repair_before_a_new_reader_answers() {
     fs::write(root.path().join("lib.rs"), "pub fn intact() {}").unwrap();
     let source = FileSource::new(root.path()).unwrap();
     let request = Request::new(Verb::Find, "intact");
-    Index::open("fixture", &db)
-        .unwrap()
-        .query(&source, &request)
-        .unwrap();
-    let connection = rusqlite::Connection::open(&db).unwrap();
-    connection
-        .execute("UPDATE query_cache SET writing=1", [])
-        .unwrap();
+    let mut index = Index::open("fixture", &db).unwrap();
+    index.query(&source, &request).unwrap();
+    index.mark_publication_interrupted().unwrap();
+    drop(index);
     let mut store = SqliteStore::open(&db).unwrap();
     let mut file = store.file("lib.rs").unwrap().unwrap();
     file.nodes.clear();
     file.edges.clear();
     store.reindex(&file).unwrap();
     drop(store);
-    drop(connection);
     let mut repaired = Index::open("fixture", &db).unwrap();
     let answer = repaired.query(&source, &request).unwrap();
     assert!(

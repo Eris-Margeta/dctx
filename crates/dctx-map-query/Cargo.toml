@@ -10,10 +10,16 @@ dctx-map-scan = { path = "../dctx-map-scan" }
 dctx-map-parse = { path = "../dctx-map-parse" }
 dctx-map-resolve = { path = "../dctx-map-resolve" }
 dctx-map-store = { path = "../dctx-map-store" }
+dctx-map-segment = { path = "../dctx-map-segment" }
+dctx-ports = { path = "../dctx-ports" }
+dctx-adapter-fs = { path = "../dctx-adapter-fs" }
+dctx-adapter-store = { path = "../dctx-adapter-store" }
+dctx-adapter-cache = { path = "../dctx-adapter-cache" }
+dctx-core = { path = "../dctx-core" }
+dctx-hash = { path = "../dctx-hash" }
 thiserror = "=2.0.18"
 serde = { version = "=1.0.228", features = ["derive"] }
 serde_json = "=1.0.149"
-rusqlite = { version = "=0.32.1", features = ["bundled"] }
 
 [dev-dependencies]
 tempfile = "=3.24.0"

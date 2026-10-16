@@ -1,39 +1,34 @@
 //! Coordinates metadata pre-filtering and exclusive incremental refreshes.
-//! Implements SPEC-MAP-MODE section 7 with lock-free warm WAL readers.
-//! Rechecks after acquiring the OS lock and repairs interrupted publications.
-use super::{Index, IndexReport, database};
+//! Implements SPEC-MAP-MODE section 7. Warm readers do not take the writer mutex.
+//! The mutex is in-process; segment publication locks only for its own publish call.
+use super::{Index, IndexReport};
 use crate::{
     Result,
     ports::{Snapshot, Source},
 };
-use dctx_map_store::SqliteStore;
-use rusqlite::Connection;
 use std::time::{Duration, Instant};
 
 impl Index {
     /// Checks metadata first; hashes and reindexes only flagged authorized content.
-    /// Persistent writers serialize with an OS lock released even after process death.
+    /// Disk writers serialize. A warm index returns without taking that mutex.
     pub fn refresh(
         &mut self,
         source: &impl Source,
         deadline: Option<Duration>,
     ) -> Result<&IndexReport> {
+        if self.cancelled() {
+            return Err(crate::Error::Request("cancelled".into()));
+        }
         let started = Instant::now();
         let captured = source.snapshot_since(self.snapshot.as_ref())?;
         if !self.needs_refresh(&captured) {
-            self.snapshot = Some(captured);
-            self.report = IndexReport {
-                scan_time: started.elapsed(),
-                diagnostics: self.report.diagnostics.clone(),
-                ..IndexReport::default()
-            };
-            return Ok(&self.report);
+            return Ok(self.fresh_report(captured, started));
         }
         let Some(path) = self.database.clone() else {
             return self.apply_snapshot(captured, started, deadline);
         };
-        self.reader = None;
-        let _writer = database::lock(&path)?;
+        let _writer = super::database::writer_lock();
+        let _ = path;
         self.load()?;
         let mut snapshot = source.snapshot_since(Some(&captured))?;
         for (path, file) in &mut snapshot.files {
@@ -45,30 +40,24 @@ impl Index {
             }
         }
         if !self.needs_refresh(&snapshot) {
-            self.snapshot = Some(snapshot);
-            self.report = IndexReport {
-                scan_time: started.elapsed(),
-                diagnostics: self.report.diagnostics.clone(),
-                ..IndexReport::default()
-            };
-            return Ok(&self.report);
+            return Ok(self.fresh_report(snapshot, started));
         }
-        self.load_retry_facts()?;
-        self.reader = None;
-        let mut connection = Connection::open(&path)?;
-        connection.execute("UPDATE query_cache SET writing=1 WHERE id=1", [])?;
-        self.store = Some(SqliteStore::open(&path)?);
+        self.writing = true;
+        self.persist()?;
         self.apply_snapshot(snapshot, started, deadline)?;
-        self.publish(&mut connection)?;
-        self.store = None;
-        self.reader = Some(database::reader(&path)?);
-        // Pin FTS to the generation just published before releasing the writer.
-        if let Some(reader) = &self.reader {
-            reader.query_row("SELECT version FROM query_cache WHERE id=1", [], |r| {
-                r.get::<_, i64>(0)
-            })?;
-        }
+        self.writing = false;
+        self.persist()?;
         Ok(&self.report)
+    }
+
+    fn fresh_report(&mut self, snapshot: Snapshot, started: Instant) -> &IndexReport {
+        self.snapshot = Some(snapshot);
+        self.report = IndexReport {
+            scan_time: started.elapsed(),
+            diagnostics: self.report.diagnostics.clone(),
+            ..IndexReport::default()
+        };
+        &self.report
     }
 
     fn needs_refresh(&self, snapshot: &Snapshot) -> bool {

@@ -85,7 +85,7 @@ fn all_five_verbs_share_facts_and_exact_source() {
 }
 #[test]
 fn same_size_edit_is_hashed_and_invalid_source_is_never_served() {
-    let (dir, source, mut index) = fixture();
+    let (dir, _source, mut index) = fixture();
     let path = dir.path().join("src/worker.rs");
     let old_time = fs::metadata(&path).unwrap().modified().unwrap();
     fs::write(
@@ -99,6 +99,7 @@ fn same_size_edit_is_hashed_and_invalid_source_is_never_served() {
         .unwrap()
         .set_modified(old_time)
         .unwrap();
+    let source = FileSource::strict(dir.path()).unwrap();
     let read = index
         .query(&source, &Request::new(Verb::Read, "s:src/worker.rs#work"))
         .unwrap();

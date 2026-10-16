@@ -12,4 +12,4 @@ pub use adapters::{FileSource, Index, IndexReport};
 pub use adapters::{render_answer, render_answer_at};
 pub use dctx_map_model::adapters::Format;
 pub use dctx_map_model::{Answer, AnswerBudget, EdgeKind, Record, Verb};
-pub use domain::{Direction, Error, ParseDiagnostic, ParseStatus, Request, Result};
+pub use domain::{Direction, Error, Overlay, ParseDiagnostic, ParseStatus, Request, Result};

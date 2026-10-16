@@ -2,17 +2,17 @@
 //! Implements SPEC-MAP-MODE sections 6 and 7 via public scan/parse/resolve/store APIs.
 //! Retains parser retry facts and replaces only changed file-owned transactions.
 use crate::{
-    ParseStatus, Result,
+    Overlay, ParseStatus, Result,
     domain::{cached::CachedFile, parse_status::PARSER_REVISION},
     ports::Snapshot,
 };
+use dctx_core::ids::Timestamp;
 use dctx_map_model::{Edge, Node, StableId, Summary, SummarySource};
 use dctx_map_parse::{Parser, TreeSitterParser};
 use dctx_map_store::SqliteStore;
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    time::{Duration, Instant},
-};
+use dctx_ports::memory::{CancelFlag, FixedClock};
+use dctx_ports::{Cancellation, Clock};
+use std::{collections::BTreeMap, time::{Duration, Instant}};
 
 /// Evidence from the latest source refresh.
 #[derive(Debug, Clone, Default)]
@@ -37,15 +37,13 @@ pub struct IndexReport {
     pub diagnostics: BTreeMap<String, ParseStatus>,
 }
 
-/// Stateful query index with independently selected storage.
+/// Stateful query index with a segment journal and a sqlite comparison store.
 pub struct Index {
     pub(crate) store: Option<SqliteStore>,
+    pub(crate) disk: Option<SqliteStore>,
+    pub(crate) segments: Option<super::segment::Segments>,
     pub(crate) database: Option<std::path::PathBuf>,
-    pub(crate) reader: Option<rusqlite::Connection>,
     pub(crate) graph_loaded: bool,
-    pub(crate) dirty_files: BTreeSet<String>,
-    pub(crate) dirty_nodes: BTreeSet<StableId>,
-    pub(crate) dirty_edges: BTreeSet<String>,
     pub(crate) files: BTreeMap<String, CachedFile>,
     pub(crate) nodes: BTreeMap<StableId, Node>,
     pub(crate) edges: Vec<Edge>,
@@ -54,10 +52,16 @@ pub struct Index {
     pub(crate) report: IndexReport,
     pub(crate) place: String,
     pub(crate) ready: bool,
+    pub(crate) writing: bool,
+    pub(crate) generation: u64,
+    pub(crate) overlay: Overlay,
     pub(crate) degree: BTreeMap<StableId, usize>,
     pub(crate) incoming: BTreeMap<StableId, Vec<usize>>,
     pub(crate) outgoing: BTreeMap<StableId, Vec<usize>>,
+    cancel_flag: CancelFlag,
+    clock: FixedClock,
 }
+
 impl Index {
     /// Creates an isolated in-memory index.
     pub fn in_memory(place: impl Into<String>) -> Result<Self> {
@@ -66,15 +70,14 @@ impl Index {
             Some(SqliteStore::in_memory()?),
         ))
     }
+
     pub(crate) fn with_store(place: String, store: Option<SqliteStore>) -> Self {
         Self {
             store,
+            disk: None,
+            segments: None,
             database: None,
-            reader: None,
             graph_loaded: true,
-            dirty_files: BTreeSet::new(),
-            dirty_nodes: BTreeSet::new(),
-            dirty_edges: BTreeSet::new(),
             place: place.split_whitespace().collect::<Vec<_>>().join("_"),
             files: BTreeMap::new(),
             nodes: BTreeMap::new(),
@@ -83,14 +86,39 @@ impl Index {
             snapshot: None,
             report: IndexReport::default(),
             ready: false,
+            writing: false,
+            generation: 0,
+            overlay: Overlay::default(),
             degree: BTreeMap::new(),
             incoming: BTreeMap::new(),
             outgoing: BTreeMap::new(),
+            cancel_flag: CancelFlag::new(),
+            clock: FixedClock(Timestamp(0)),
         }
     }
+
     /// Latest parse/transaction counts and explicit stale failures.
     pub fn report(&self) -> &IndexReport {
         &self.report
+    }
+
+    /// Paths added, edited, or removed since the clean base.
+    pub fn overlay(&self) -> &Overlay {
+        &self.overlay
+    }
+
+    /// Stops the next refresh or query on this index.
+    pub fn cancel(&self) {
+        self.cancel_flag.cancel();
+    }
+
+    pub(crate) fn cancelled(&self) -> bool {
+        self.cancel_flag.is_cancelled()
+    }
+
+    /// Age in seconds from the injected clock. The clock is frozen at the epoch.
+    pub(crate) fn age_seconds(&self) -> u64 {
+        self.clock.now().millis() / 1000
     }
 
     /// Applies a captured inventory, parsing only changed content.
@@ -101,6 +129,10 @@ impl Index {
         started: Instant,
         deadline: Option<Duration>,
     ) -> Result<&IndexReport> {
+        if self.cancelled() {
+            return Err(crate::Error::Request("cancelled".into()));
+        }
+        self.overlay = Overlay::observe(self.ready, self.snapshot.as_ref(), &snapshot);
         let mut report = IndexReport {
             scan_time: started.elapsed(),
             ..IndexReport::default()
@@ -111,6 +143,9 @@ impl Index {
         report.parse_time = parse_start.elapsed();
         let mut next = BTreeMap::new();
         for (path, current) in &snapshot.files {
+            if self.cancelled() {
+                return Err(crate::Error::Request("cancelled".into()));
+            }
             let old = self.files.get(path);
             let readable = current.readable;
             if let Some(old) = old.filter(|old| {
@@ -184,26 +219,6 @@ impl Index {
         if changed {
             self.rebuild(&next, &snapshot.revision, &mut report)?;
         }
-        self.dirty_files = self
-            .files
-            .keys()
-            .chain(next.keys())
-            .filter(|path| {
-                self.snapshot.is_none()
-                    || match (self.files.get(*path), next.get(*path)) {
-                        (Some(old), Some(new)) => {
-                            old.hash != new.hash
-                                || old.readable != new.readable
-                                || old.size != new.size
-                                || old.mtime != new.mtime
-                                || old.parser_revision != new.parser_revision
-                                || old.status != new.status
-                        }
-                        _ => true,
-                    }
-            })
-            .cloned()
-            .collect();
         self.files = next;
         report.diagnostics = self
             .files

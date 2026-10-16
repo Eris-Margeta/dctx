@@ -1,191 +1,243 @@
-//! Persistent query metadata and lazy graph loading from a pinned WAL snapshot.
-//! Implements SPEC-MAP-MODE sections 7 and 8 with query-owned SQLite tables.
-//! Find reads bounded candidates; traversal and writers explicitly load the graph.
-use super::{Index, database};
-use crate::{Error, Result, domain::cached::CachedFile, ports::Snapshot};
-use crate::{ParseStatus, domain::parse_status::PARSER_REVISION};
-use dctx_map_model::{Edge, Node};
-use rusqlite::OptionalExtension;
+//! Loads and repairs a segment journal beside the sqlite comparison store.
+//! Implements SPEC-MAP-MODE sections 7 and 8 without query-owned SQL tables.
+//! A missing generation may still import a version-1 `query.json` cache.
+use super::segment;
+use super::{Index, IndexReport};
+use crate::{
+    Error, ParseStatus, Result,
+    domain::{cached::CachedFile, parse_status::PARSER_REVISION},
+};
+use dctx_adapter_fs::ports::SourceFs;
+use dctx_adapter_fs::StdFs;
+use dctx_adapter_store::ports::StoreFs;
+use dctx_map_model::{Node, StableId};
+use dctx_map_store::{MapStore, SqliteStore};
 use serde::{Deserialize, Serialize};
-use std::{collections::BTreeMap, fs, path::Path};
+use std::{
+    collections::BTreeMap,
+    io,
+    path::Path,
+    sync::atomic::{AtomicU64, Ordering},
+};
 
 #[derive(Deserialize, Serialize)]
 struct LegacyCache {
     version: u32,
     place: String,
     files: BTreeMap<String, CachedFile>,
-    moves: BTreeMap<dctx_map_model::StableId, dctx_map_model::StableId>,
+    moves: BTreeMap<StableId, StableId>,
 }
 
 impl Index {
-    /// Opens a consistent WAL reader, initializing a missing cache under a writer lock.
-    /// Existing lock-file contents from older builds have no locking authority.
+    /// Opens the segment journal and sqlite comparison store for `database`.
+    /// An empty store is a new index. A legacy `query.json` upgrades on refresh.
     pub fn open(place: impl Into<String>, database: impl AsRef<Path>) -> Result<Self> {
+        let _guard = super::database::writer_lock();
         let path = database.as_ref();
-        database::initialize(path)?;
-        let mut index = Self::with_store(place.into(), None);
-        index.database = Some(path.into());
+        let place = place
+            .into()
+            .split_whitespace()
+            .collect::<Vec<_>>()
+            .join("_");
+        let disk = SqliteStore::open(path)?;
+        let segments = segment::open_store(&path.with_extension("segments"), &place, path)?;
+        let mut index = Self::with_store(place, None);
+        index.disk = Some(disk);
+        index.segments = Some(segments);
+        index.database = Some(path.to_path_buf());
         index.load()?;
         Ok(index)
     }
 
     pub(super) fn load(&mut self) -> Result<()> {
-        self.reader = None;
-        let path = self
-            .database
-            .as_ref()
-            .ok_or_else(|| Error::Request("missing cache path".into()))?;
-        let connection = database::reader(path)?;
-        let row = connection
-            .query_row(
-                "SELECT version,place,writing,snapshot,stale,moves FROM query_cache WHERE id=1",
-                [],
-                |r| {
-                    Ok((
-                        r.get::<_, i64>(0)?,
-                        r.get::<_, String>(1)?,
-                        r.get::<_, bool>(2)?,
-                        r.get::<_, String>(3)?,
-                        r.get::<_, String>(4)?,
-                        r.get::<_, String>(5)?,
-                    ))
-                },
-            )
-            .optional()?;
         self.ready = false;
-        self.report = super::IndexReport::default();
+        self.writing = false;
+        self.report = IndexReport::default();
         self.graph_loaded = true;
         self.files.clear();
         self.nodes.clear();
         self.edges.clear();
         self.moves.clear();
         self.snapshot = None;
-        self.dirty_files.clear();
-        self.dirty_nodes.clear();
-        self.dirty_edges.clear();
-        if let Some((version, place, writing, snapshot, stale, moves)) = row {
-            if version != 3 || place != self.place {
-                return Err(Error::Request("query cache requires rebuild".into()));
-            }
-            let mut snapshot: Snapshot = serde_json::from_str(&snapshot)?;
-            self.files = snapshot
-                .files
-                .iter()
-                .map(|(path, file)| {
-                    (
-                        path.clone(),
-                        CachedFile {
-                            hash: file.hash.clone(),
-                            size: file.size,
-                            mtime: file.mtime,
-                            readable: file.readable,
-                            parser_revision: 0,
-                            status: ParseStatus::Parsed,
-                            nodes: vec![],
-                            edges: vec![],
-                            references: vec![],
-                        },
-                    )
-                })
-                .collect();
-            let mut metadata = connection.prepare(
-                "SELECT path,json_extract(payload,'$.parser_revision'),json_extract(payload,'$.status') FROM query_files"
-            )?;
-            for row in metadata.query_map([], |r| {
-                Ok((
-                    r.get::<_, String>(0)?,
-                    r.get::<_, Option<u32>>(1)?,
-                    r.get::<_, Option<String>>(2)?,
-                ))
-            })? {
-                let (path, revision, status) = row?;
-                if let Some(file) = self.files.get_mut(&path) {
-                    file.parser_revision = revision.unwrap_or_default();
-                    file.status = status
-                        .as_deref()
-                        .map(serde_json::from_str)
-                        .transpose()?
-                        .unwrap_or_default();
-                    if file.status != ParseStatus::Parsed {
-                        self.report.diagnostics.insert(path, file.status.clone());
-                    }
-                }
-            }
-            // Old parser facts need fresh authorized bytes even when disk metadata
-            // is unchanged. Legacy payloads have revision zero and upgrade once.
-            let mut parser_changed = false;
-            for (path, file) in &mut snapshot.files {
-                if self.files[path].parser_revision != PARSER_REVISION {
-                    file.stamp = crate::ports::FileStamp::default();
-                    parser_changed = true;
-                }
-            }
-            self.report.stale = serde_json::from_str(&stale)?;
-            self.moves = serde_json::from_str(&moves)?;
-            self.snapshot = Some(snapshot);
-            self.ready = !writing && !parser_changed;
-            self.graph_loaded = false;
+        self.overlay = crate::Overlay::default();
+        if let Some(journal) = segment::read_journal(self)? {
+            self.install(journal)?;
         } else {
-            match fs::read(path.with_extension("query.json")) {
-                Ok(bytes) => {
-                    let cache: LegacyCache = serde_json::from_slice(&bytes)?;
-                    if cache.version != 1 || cache.place != self.place {
-                        return Err(Error::Request("query cache requires rebuild".into()));
-                    }
-                    self.files = cache.files;
-                    self.moves = cache.moves;
-                }
-                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
-                Err(error) => return Err(error.into()),
-            }
+            self.load_legacy()?;
         }
-        self.reader = Some(connection);
+        self.sync_mirror()?;
         Ok(())
     }
 
-    pub(super) fn load_graph(&mut self) -> Result<()> {
-        if self.graph_loaded {
-            return Ok(());
+    fn install(&mut self, journal: super::journal::Journal) -> Result<()> {
+        if journal.version != 3 || journal.place != self.place {
+            return Err(Error::Request("query cache requires rebuild".into()));
         }
-        let reader = self
-            .reader
-            .as_ref()
-            .ok_or_else(|| Error::Request("missing snapshot".into()))?;
-        let mut nodes = reader.prepare("SELECT payload FROM query_nodes ORDER BY id")?;
-        for row in nodes.query_map([], |r| r.get::<_, String>(0))? {
-            let node: Node = serde_json::from_str(&row?)?;
-            self.nodes.insert(node.id.clone(), node);
+        let mut snapshot = journal.snapshot;
+        let mut parser_changed = false;
+        for (path, file) in &mut snapshot.files {
+            let revision = journal
+                .files
+                .get(path)
+                .map(|cached| cached.parser_revision)
+                .unwrap_or(0);
+            if revision != PARSER_REVISION {
+                file.stamp = crate::ports::FileStamp::default();
+                parser_changed = true;
+            }
         }
-        let mut edges = reader.prepare("SELECT payload FROM query_edges ORDER BY owner")?;
-        for row in edges.query_map([], |r| r.get::<_, String>(0))? {
-            self.edges.push(serde_json::from_str::<Edge>(&row?)?);
+        self.report = IndexReport::default();
+        for (path, file) in &journal.files {
+            if file.status != ParseStatus::Parsed {
+                self.report.diagnostics.insert(path.clone(), file.status.clone());
+            }
         }
-        self.edges.sort_by(|a, b| {
-            (&a.owner_path, &a.src, &a.dst, a.kind).cmp(&(&b.owner_path, &b.src, &b.dst, b.kind))
-        });
-        drop(nodes);
-        drop(edges);
-        self.adjacency();
+        self.report.stale = journal.stale;
+        self.files = journal.files;
+        self.nodes = journal
+            .nodes
+            .into_iter()
+            .map(|node| (node.id.clone(), node))
+            .collect();
+        self.edges = journal.edges;
+        self.moves = journal.moves;
+        self.overlay = journal.overlay;
+        self.generation = journal.generation;
+        self.writing = journal.writing;
+        self.snapshot = Some(snapshot);
+        self.ready = !self.writing && !parser_changed;
         self.graph_loaded = true;
+        self.adjacency();
         Ok(())
     }
 
-    pub(super) fn load_retry_facts(&mut self) -> Result<()> {
-        if self.snapshot.is_none() {
+    fn load_legacy(&mut self) -> Result<()> {
+        let Some(path) = self.database.clone() else {
             return Ok(());
-        }
-        self.load_graph()?;
-        if let Some(connection) = &self.reader {
-            let mut statement = connection.prepare("SELECT path,payload FROM query_files")?;
-            self.files.clear();
-            for row in
-                statement.query_map([], |r| Ok((r.get::<_, String>(0)?, r.get::<_, String>(1)?)))?
-            {
-                let (path, payload) = row?;
-                self.files.insert(path, serde_json::from_str(&payload)?);
+        };
+        let legacy = path.with_extension("query.json");
+        match StdFs.read_file(&legacy) {
+            Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(()),
+            Err(error) => Err(error.into()),
+            Ok(bytes) => {
+                let cache: LegacyCache = serde_json::from_slice(&bytes)?;
+                if cache.version != 1 || cache.place != self.place {
+                    return Err(Error::Request("query cache requires rebuild".into()));
+                }
+                self.files = cache.files;
+                self.moves = cache.moves;
+                self.ready = false;
+                self.graph_loaded = false;
+                Ok(())
             }
         }
+    }
+
+    fn sync_mirror(&mut self) -> Result<()> {
+        let Some(database) = self.database.clone() else {
+            return Ok(());
+        };
+        if self.disk.is_none() {
+            return Ok(());
+        }
+        let parent = database
+            .parent()
+            .filter(|path| !path.as_os_str().is_empty())
+            .ok_or_else(|| Error::Request("database has no directory".into()))?;
+        let name = database
+            .file_name()
+            .and_then(|name| name.to_str())
+            .ok_or_else(|| Error::Request("database name is not utf-8".into()))?;
+        let fs = dctx_adapter_store::StdFs::open(parent)?;
+        let bytes = fs.read(name)?;
+        let mirror_name = format!(
+            "mirror-{}.sqlite",
+            MIRROR_SEQUENCE.fetch_add(1, Ordering::Relaxed)
+        );
+        fs.create(&mirror_name)?;
+        fs.write(&mirror_name, &bytes)?;
+        self.store = Some(SqliteStore::open(parent.join(mirror_name))?);
         Ok(())
+    }
+
+    /// JSON payload retained for one indexed path.
+    pub fn file_payload(&self, path: &str) -> Result<String> {
+        let file = self
+            .files
+            .get(path)
+            .ok_or_else(|| Error::Request(format!("missing file payload: {path}")))?;
+        Ok(serde_json::to_string(file)?)
+    }
+
+    /// Replaces one retained payload. A missing parser revision forces one reparse.
+    pub fn replace_file_payload(&mut self, path: &str, json: &str) -> Result<()> {
+        if self.database.is_none() {
+            return Err(Error::Request("replace requires a database".into()));
+        }
+        let _guard = super::database::writer_lock();
+        let file: CachedFile = serde_json::from_str(json)?;
+        let revision = file.parser_revision;
+        self.files.insert(path.to_string(), file);
+        if revision != PARSER_REVISION
+            && let Some(snapshot) = &mut self.snapshot
+            && let Some(source) = snapshot.files.get_mut(path)
+        {
+            source.stamp = crate::ports::FileStamp::default();
+        }
+        self.ready = false;
+        self.persist()?;
+        Ok(())
+    }
+
+    /// Publishes the current journal as an interrupted generation and leaves sqlite unchanged.
+    pub fn mark_publication_interrupted(&mut self) -> Result<()> {
+        if self.segments.is_none() {
+            return Err(Error::Request(
+                "mark requires the database selected by Index::open".into(),
+            ));
+        }
+        let _guard = super::database::writer_lock();
+        self.writing = true;
+        self.ready = false;
+        self.persist()?;
+        Ok(())
+    }
+
+    /// True when the segment journal and the sqlite comparison store describe this graph.
+    pub fn stores_agree(&self) -> Result<bool> {
+        if !self.graph_loaded {
+            return Ok(false);
+        }
+        let store = self
+            .disk
+            .as_ref()
+            .or(self.store.as_ref())
+            .ok_or_else(|| Error::Request("index storage unavailable".into()))?;
+        for (path, file) in &self.files {
+            let Some(stored) = store.file(path)? else {
+                return Ok(false);
+            };
+            if !file.hash.is_empty() && stored.file.sha256 != file.hash {
+                return Ok(false);
+            }
+            if !same_nodes(&file.nodes, &stored.nodes) {
+                return Ok(false);
+            }
+        }
+        if self.segments.is_some() {
+            let Some(journal) = segment::read_journal(self)? else {
+                return Ok(false);
+            };
+            if journal.nodes.len() != self.nodes.len() || journal.edges.len() != self.edges.len() {
+                return Ok(false);
+            }
+            for (path, file) in &self.files {
+                if journal.files.get(path).is_none_or(|saved| saved.hash != file.hash) {
+                    return Ok(false);
+                }
+            }
+        }
+        Ok(true)
     }
 
     /// Refresh commits persistent caches automatically while holding the writer lock.
@@ -200,46 +252,21 @@ impl Index {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{FileSource, Request, Verb};
+static MIRROR_SEQUENCE: AtomicU64 = AtomicU64::new(1);
 
-    #[test]
-    fn legacy_retry_facts_and_moves_survive_cache_upgrade() {
-        let root = tempfile::tempdir().unwrap();
-        let cache = tempfile::tempdir().unwrap();
-        let database = cache.path().join("index.sqlite");
-        fs::write(root.path().join("old.rs"), "pub fn work() {}").unwrap();
-        let source = FileSource::new(root.path()).unwrap();
-        let mut old = Index::in_memory("fixture").unwrap();
-        old.refresh(&source, None).unwrap();
-        old.moves.insert(
-            "s:earlier.rs#work".parse().unwrap(),
-            "s:old.rs#work".parse().unwrap(),
-        );
-        let legacy = LegacyCache {
-            version: 1,
-            place: old.place,
-            files: old.files,
-            moves: old.moves,
-        };
-        fs::write(
-            database.with_extension("query.json"),
-            serde_json::to_vec(&legacy).unwrap(),
-        )
-        .unwrap();
-        fs::write(cache.path().join("writer.lock"), "abandoned legacy lock").unwrap();
-        fs::rename(root.path().join("old.rs"), root.path().join("new.rs")).unwrap();
-        let request = Request::new(Verb::Explain, "s:earlier.rs#work");
-        let mut upgraded = Index::open("fixture", &database).unwrap();
-        let answer = upgraded.query(&source, &request).unwrap();
-        assert_eq!(answer.records[0].id.as_str(), "s:new.rs#work");
-        drop(upgraded);
-        let reads = source.content_reads();
-        let mut reopened = Index::open("fixture", &database).unwrap();
-        let answer = reopened.query(&source, &request).unwrap();
-        assert_eq!(answer.records[0].id.as_str(), "s:new.rs#work");
-        assert_eq!(source.content_reads(), reads);
-    }
+fn same_nodes(expected: &[Node], stored: &[Node]) -> bool {
+    let mut left: Vec<_> = expected.iter().map(|node| node.id.as_str()).collect();
+    let mut right: Vec<_> = stored
+        .iter()
+        .filter(|node| {
+            !matches!(
+                node.kind,
+                dctx_map_model::NodeKind::Place | dctx_map_model::NodeKind::Package
+            )
+        })
+        .map(|node| node.id.as_str())
+        .collect();
+    left.sort_unstable();
+    right.sort_unstable();
+    left == right
 }

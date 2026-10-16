@@ -4,10 +4,12 @@
 pub(crate) mod bridge;
 pub(crate) mod cached;
 mod error;
+pub(crate) mod overlay;
 pub(crate) mod parse_status;
 mod ranking;
 mod request;
 pub use error::{Error, Result};
+pub use overlay::Overlay;
 pub use parse_status::{ParseDiagnostic, ParseStatus};
 pub(crate) use ranking::{expression, rank};
 pub use request::{Direction, Request};

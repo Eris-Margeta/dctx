@@ -17,10 +17,9 @@ impl Index {
         revision: &str,
         report: &mut IndexReport,
     ) -> Result<()> {
-        let store = self
-            .store
-            .as_mut()
-            .ok_or_else(|| crate::Error::Request("writer unavailable".into()))?;
+        if self.store.is_none() {
+            return Err(crate::Error::Request("writer unavailable".into()));
+        }
         let resolve_start = Instant::now();
         let bridged = bridge(next)?;
         let resolution = super::resolving::resolve_components(bridged.facts)?;
@@ -107,13 +106,19 @@ impl Index {
                 });
             }
         }
-        let mut old_nodes: BTreeMap<&str, Vec<&Node>> = BTreeMap::new();
+        let mut old_nodes: BTreeMap<String, Vec<Node>> = BTreeMap::new();
         for node in self.nodes.values() {
-            old_nodes.entry(&node.path).or_default().push(node);
+            old_nodes
+                .entry(node.path.clone())
+                .or_default()
+                .push(node.clone());
         }
-        let mut old_edges: BTreeMap<&str, Vec<&dctx_map_model::Edge>> = BTreeMap::new();
+        let mut old_edges: BTreeMap<String, Vec<dctx_map_model::Edge>> = BTreeMap::new();
         for edge in &self.edges {
-            old_edges.entry(&edge.owner_path).or_default().push(edge);
+            old_edges
+                .entry(edge.owner_path.clone())
+                .or_default()
+                .push(edge.clone());
         }
         for file in facts.values_mut() {
             file.nodes.sort_by(|a, b| a.id.cmp(&b.id));
@@ -126,25 +131,24 @@ impl Index {
                     .get(&file.file.path)
                     .is_some_and(|old| old.hash == file.file.sha256)
                 && old_nodes
-                    .get(file.file.path.as_str())
-                    .is_some_and(|old| old.iter().copied().eq(file.nodes.iter()))
+                    .get(&file.file.path)
+                    .is_some_and(|old| old.iter().eq(file.nodes.iter()))
                 && old_edges
-                    .get(file.file.path.as_str())
+                    .get(&file.file.path)
                     .into_iter()
                     .flatten()
-                    .copied()
                     .eq(file.edges.iter())
             {
                 continue;
             }
-            if let Some(old) = store.file(&file.file.path)? {
+            if let Some(old) = self.persisted(&file.file.path)? {
                 file.summaries = old
                     .summaries
                     .into_iter()
-                    .filter(|s| {
+                    .filter(|summary| {
                         file.nodes
                             .iter()
-                            .any(|n| n.id == s.id && n.fingerprint == s.fingerprint)
+                            .any(|node| node.id == summary.id && node.fingerprint == summary.fingerprint)
                     })
                     .collect();
                 if old.file.sha256 == file.file.sha256
@@ -155,11 +159,12 @@ impl Index {
                     continue;
                 }
             }
-            store.reindex(file)?;
+            self.write_facts(file)?;
             report.replaced += 1;
         }
         if !self.ready || self.files.keys().any(|path| !next.contains_key(path)) {
-            report.removed = store.prune(&facts.keys().map(String::as_str).collect::<Vec<_>>())?;
+            let live = facts.keys().map(String::as_str).collect::<Vec<_>>();
+            report.removed = self.prune_paths(&live)?;
         }
         let previous: Vec<_> = self
             .files
@@ -170,34 +175,47 @@ impl Index {
         for moved in dctx_map_resolve::detect_moves(&previous, &current, revision) {
             self.moves.insert(moved.old, moved.new);
         }
-        self.dirty_nodes = self
-            .nodes
-            .keys()
-            .chain(nodes.keys())
-            .filter(|id| !self.ready || self.nodes.get(*id) != nodes.get(*id))
-            .cloned()
-            .collect();
-        let mut new_edges: BTreeMap<&str, Vec<&dctx_map_model::Edge>> = BTreeMap::new();
-        for edge in &edges {
-            new_edges.entry(&edge.owner_path).or_default().push(edge);
-        }
-        self.dirty_edges = old_edges
-            .keys()
-            .chain(new_edges.keys())
-            .filter(|owner| !self.ready || old_edges.get(*owner) != new_edges.get(*owner))
-            .map(|owner| (*owner).to_owned())
-            .collect();
         self.nodes = std::mem::take(&mut nodes);
         self.edges = edges;
-        let old_degree = std::mem::take(&mut self.degree);
         self.adjacency();
-        for id in old_degree.keys().chain(self.degree.keys()) {
-            if old_degree.get(id) != self.degree.get(id) {
-                self.dirty_nodes.insert(id.clone());
-            }
-        }
         self.graph_loaded = true;
         report.store_time = store_start.elapsed();
         Ok(())
+    }
+
+    fn persisted(&self, path: &str) -> Result<Option<FileFacts>> {
+        let store = if let Some(disk) = &self.disk {
+            disk
+        } else {
+            self.store
+                .as_ref()
+                .ok_or_else(|| crate::Error::Request("writer unavailable".into()))?
+        };
+        Ok(store.file(path)?)
+    }
+
+    fn write_facts(&mut self, file: &FileFacts) -> Result<()> {
+        if let Some(disk) = &mut self.disk {
+            disk.reindex(file)?;
+        }
+        self.store
+            .as_mut()
+            .ok_or_else(|| crate::Error::Request("writer unavailable".into()))?
+            .reindex(file)?;
+        Ok(())
+    }
+
+    fn prune_paths(&mut self, live: &[&str]) -> Result<usize> {
+        let removed = if let Some(disk) = &mut self.disk {
+            Some(disk.prune(live)?)
+        } else {
+            None
+        };
+        let mirror = self
+            .store
+            .as_mut()
+            .ok_or_else(|| crate::Error::Request("writer unavailable".into()))?
+            .prune(live)?;
+        Ok(removed.unwrap_or(mirror))
     }
 }

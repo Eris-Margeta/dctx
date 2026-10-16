@@ -19,12 +19,15 @@ pub enum Error {
     /// Graph resolution rejected an invalid contract.
     #[error(transparent)]
     Resolve(#[from] dctx_map_resolve::ResolveError),
-    /// Persistence failed.
+    /// The SQLite comparison store failed.
     #[error(transparent)]
     Store(#[from] dctx_map_store::StoreError),
-    /// Query snapshot persistence failed.
+    /// Segment publication or a pinned generation failed.
     #[error(transparent)]
-    Sqlite(#[from] rusqlite::Error),
+    Segment(#[from] dctx_adapter_store::StoreError),
+    /// Cache admission failed.
+    #[error(transparent)]
+    Cache(#[from] dctx_adapter_cache::CacheError),
     /// A graph id was invalid.
     #[error(transparent)]
     Id(#[from] dctx_map_model::InvalidId),

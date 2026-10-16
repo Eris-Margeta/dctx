@@ -29,7 +29,7 @@ impl Index {
             return Ok(vec![]);
         }
         let bytes = source.read(&node.path)?;
-        if super::source::digest(&bytes) != file.hash {
+        if super::source::digest(&bytes)? != file.hash {
             answer.reason = Some("stale: source changed after indexing".into());
             answer.identity = None;
             return Ok(vec![]);

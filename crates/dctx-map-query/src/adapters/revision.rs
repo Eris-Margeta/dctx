@@ -7,12 +7,9 @@ use crate::{
     Result,
     ports::{Snapshot, SourceFile},
 };
-use std::{
-    collections::{BTreeMap, BTreeSet},
-    path::Path,
-};
+use std::collections::{BTreeMap, BTreeSet};
 
-fn content_revision(files: &BTreeMap<String, SourceFile>) -> String {
+fn content_revision(files: &BTreeMap<String, SourceFile>) -> Result<String> {
     let mut identities = Vec::new();
     for (path, file) in files {
         identities.extend_from_slice(path.as_bytes());
@@ -23,12 +20,8 @@ fn content_revision(files: &BTreeMap<String, SourceFile>) -> String {
     super::source::digest(&identities)
 }
 
-pub(super) fn snapshot(
-    _root: &Path,
-    files: BTreeMap<String, SourceFile>,
-    _previous: Option<&Snapshot>,
-) -> Result<Snapshot> {
-    let revision = content_revision(&files);
+pub(super) fn snapshot(files: BTreeMap<String, SourceFile>) -> Result<Snapshot> {
+    let revision = content_revision(&files)?;
     Ok(Snapshot {
         revision,
         files,
@@ -62,7 +55,7 @@ mod tests {
 
     #[test]
     fn empty_place_revision_is_the_empty_content_digest() {
-        let snapshot = snapshot(Path::new("/missing"), BTreeMap::new(), None).unwrap();
+        let snapshot = snapshot(BTreeMap::new()).unwrap();
         assert_eq!(
             snapshot.revision,
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -79,24 +72,24 @@ mod tests {
         let mut second = BTreeMap::new();
         second.insert("a.rs".into(), file("aaa", 9));
         second.insert("b.rs".into(), file("bbb", 8));
-        let left = snapshot(Path::new("/one"), first, None).unwrap();
-        let right = snapshot(Path::new("/two"), second, None).unwrap();
+        let left = snapshot(first).unwrap();
+        let right = snapshot(second).unwrap();
         assert_eq!(left.revision, right.revision);
         assert_eq!(left.revision.len(), 64);
 
         let mut changed = BTreeMap::new();
         changed.insert("a.rs".into(), file("aaa", 2));
         changed.insert("b.rs".into(), file("ccc", 1));
-        let next = snapshot(Path::new("/one"), changed, Some(&left)).unwrap();
+        let next = snapshot(changed).unwrap();
         assert_ne!(next.revision, left.revision);
     }
 
     #[test]
     fn prior_overlay_paths_are_not_carried_forward() {
-        let mut previous = snapshot(Path::new("/missing"), BTreeMap::new(), None).unwrap();
+        let mut previous = snapshot(BTreeMap::new()).unwrap();
         previous.dirty.insert("secret.rs".into());
         previous.recent.insert(".env".into());
-        let next = snapshot(Path::new("/missing"), BTreeMap::new(), Some(&previous)).unwrap();
+        let next = snapshot(BTreeMap::new()).unwrap();
         assert_eq!(next.revision, previous.revision);
         assert!(next.dirty.is_empty());
         assert!(next.recent.is_empty());

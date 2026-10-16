@@ -23,7 +23,19 @@ fn fixture(count: usize) -> (tempfile::TempDir, tempfile::TempDir) {
 }
 
 fn query(root: &std::path::Path, db: &std::path::Path) -> (String, usize, usize, usize, Duration) {
-    let source = FileSource::new(root).unwrap();
+    query_mode(root, db, false)
+}
+
+fn query_mode(
+    root: &std::path::Path,
+    db: &std::path::Path,
+    strict: bool,
+) -> (String, usize, usize, usize, Duration) {
+    let source = if strict {
+        FileSource::strict(root).unwrap()
+    } else {
+        FileSource::new(root).unwrap()
+    };
     let start = Instant::now();
     let mut index = Index::open("fixture", db).unwrap();
     let request = Request::new(Verb::Find, "operation");
@@ -136,7 +148,7 @@ fn additions_deletions_and_preserved_mtime_edits_survive_reopening() {
         .unwrap()
         .set_modified(mtime)
         .unwrap();
-    let result = query(root.path(), &db);
+    let result = query_mode(root.path(), &db, true);
     assert_eq!(result.2, 1);
     assert!(result.0.contains("operation_9999"));
     fs::remove_file(root.path().join("file_0001.rs")).unwrap();

@@ -1,15 +1,16 @@
 //! Metadata-first inventory with persisted directory and privacy-rule stamps.
 //! Implements SPEC-MAP-MODE sections 6.1 and 7 using the scan domain's policies.
-//! FileSource uses this adapter to read and hash only flagged authorized files.
+//! FileSource reads and hashes only flagged authorized files through the fs port.
 use super::source::{FileSource, digest, forbidden};
 use crate::{
     Error, Result,
     ports::{FileStamp, RuleFile, Snapshot, SourceFile},
 };
+use dctx_adapter_fs::ports::{EntryMeta, FsKind};
 use dctx_map_scan::domain::classifier::{FileContentHandling, classify_file};
 use dctx_map_scan::ports::RuleSource;
 use dctx_map_scan::{FileHandlingDecision, IgnoreEngine, ItemContext};
-use std::{collections::BTreeMap, fs, io, path::Path};
+use std::{collections::BTreeMap, io, path::Path};
 
 const RULES: [&str; 4] = [
     ".gitignore",
@@ -18,53 +19,48 @@ const RULES: [&str; 4] = [
     ".dctxomitcontent",
 ];
 
-pub(super) fn stamp(metadata: &fs::Metadata) -> Result<FileStamp> {
-    let mut stamp = FileStamp {
-        size: metadata.len(),
-        modified: metadata
-            .modified()?
-            .duration_since(std::time::UNIX_EPOCH)
-            .map_or(0, |d| d.as_nanos().min(i64::MAX as u128) as i64),
-        ..FileStamp::default()
-    };
-    #[cfg(unix)]
-    {
-        use std::os::unix::fs::MetadataExt;
-        stamp.changed =
-            i128::from(metadata.ctime()) * 1_000_000_000 + i128::from(metadata.ctime_nsec());
-        stamp.identity = (u128::from(metadata.dev()) << 64) | u128::from(metadata.ino());
+pub(super) fn stamp_of(meta: EntryMeta) -> FileStamp {
+    FileStamp {
+        size: meta.size,
+        modified: i64::try_from(meta.modified_ns).unwrap_or(i64::MAX),
+        changed: 0,
+        identity: u128::from(meta.inode.unwrap_or(0)),
     }
-    Ok(stamp)
 }
 
-pub(super) fn optional_stamp(path: &Path) -> Result<Option<FileStamp>> {
-    match fs::symlink_metadata(path) {
-        Ok(metadata) if !metadata.is_symlink() => Ok(Some(stamp(&metadata)?)),
-        Ok(_) => Err(Error::Denied(path.display().to_string())),
+pub(super) fn optional_stamp(source: &FileSource, path: &Path) -> Result<Option<FileStamp>> {
+    match source.metadata(path) {
+        Ok(meta) if meta.kind == FsKind::Symlink => Err(Error::Denied(path.display().to_string())),
+        Ok(meta) => Ok(Some(stamp_of(meta))),
         Err(error) if error.kind() == io::ErrorKind::NotFound => Ok(None),
         Err(error) => Err(error.into()),
     }
 }
 
-struct Rules(BTreeMap<String, RuleFile>);
-impl RuleSource for Rules {
+struct Rules<'a>(&'a BTreeMap<String, RuleFile>);
+
+impl RuleSource for Rules<'_> {
     fn read_rules(&self, path: &Path) -> io::Result<Option<String>> {
         Ok(path
             .file_name()
-            .and_then(|n| n.to_str())
-            .and_then(|n| self.0.get(n))
-            .and_then(|r| r.text.clone()))
+            .and_then(|name| name.to_str())
+            .and_then(|name| self.0.get(name))
+            .and_then(|rule| rule.text.clone()))
     }
 }
 
+pub(super) fn engine(root: &Path, rules: &BTreeMap<String, RuleFile>) -> Result<IgnoreEngine> {
+    Ok(IgnoreEngine::build_with_source(root, None, &Rules(rules))?)
+}
+
 pub(super) fn capture(source: &FileSource, previous: Option<&Snapshot>) -> Result<Snapshot> {
-    let mut rules = Rules(BTreeMap::new());
+    let mut rules = BTreeMap::new();
     let mut same_rules = previous.is_some();
     for name in RULES {
         let path = source.root.join(name);
-        let current = optional_stamp(&path)?;
-        let old = previous.and_then(|s| s.rules.get(name));
-        let rule = if let Some(old) = old.filter(|r| r.stamp == current) {
+        let current = optional_stamp(source, &path)?;
+        let old = previous.and_then(|snapshot| snapshot.rules.get(name));
+        let rule = if let Some(old) = old.filter(|rule| rule.stamp == current) {
             old.clone()
         } else {
             same_rules = false;
@@ -72,7 +68,7 @@ pub(super) fn capture(source: &FileSource, previous: Option<&Snapshot>) -> Resul
                 .as_ref()
                 .map(|_| {
                     String::from_utf8(source.read_bytes(&path)?)
-                        .map_err(|e| Error::Request(e.to_string()))
+                        .map_err(|error| Error::Request(error.to_string()))
                 })
                 .transpose()?;
             RuleFile {
@@ -80,14 +76,13 @@ pub(super) fn capture(source: &FileSource, previous: Option<&Snapshot>) -> Resul
                 text,
             }
         };
-        rules.0.insert(name.into(), rule);
+        rules.insert(name.into(), rule);
     }
     let mut same_directories = same_rules;
     if let Some(previous) = previous {
         for (path, old) in &previous.directories {
-            let metadata = fs::symlink_metadata(source.root.join(path));
-            match metadata {
-                Ok(metadata) if metadata.is_dir() && stamp(&metadata)? == *old => {}
+            match source.metadata(&source.root.join(path)) {
+                Ok(meta) if meta.kind == FsKind::Directory && stamp_of(meta) == *old => {}
                 Ok(_) => {
                     same_directories = false;
                     break;
@@ -104,23 +99,23 @@ pub(super) fn capture(source: &FileSource, previous: Option<&Snapshot>) -> Resul
     let mut files = BTreeMap::new();
     let directories = if let Some(previous) = previous.filter(|_| same_directories) {
         for (path, old) in &previous.files {
-            let metadata = fs::symlink_metadata(source.root.join(path))?;
-            if !metadata.is_file() || metadata.is_symlink() {
+            let meta = source.metadata(&source.root.join(path))?;
+            if meta.kind != FsKind::File {
                 return Err(Error::Denied(path.clone()));
             }
             files.insert(
                 path.clone(),
-                capture_file(source, path, old.allowed, &metadata, Some(old))?,
+                capture_file(source, path, old.allowed, meta, Some(old))?,
             );
         }
         previous.directories.clone()
     } else {
-        let engine = IgnoreEngine::build_with_source(&source.root, None, &rules)?;
+        let engine = engine(&source.root, &rules)?;
         walk(source, &engine, previous, &mut files)?
     };
-    let mut snapshot = super::revision::snapshot(&source.root, files, previous)?;
+    let mut snapshot = super::revision::snapshot(files)?;
     snapshot.directories = directories;
-    snapshot.rules = rules.0;
+    snapshot.rules = rules;
     Ok(snapshot)
 }
 
@@ -128,17 +123,31 @@ fn capture_file(
     source: &FileSource,
     path: &str,
     allowed: bool,
-    metadata: &fs::Metadata,
+    meta: EntryMeta,
     old: Option<&SourceFile>,
 ) -> Result<SourceFile> {
-    if !metadata.is_file() || metadata.is_symlink() {
+    if meta.kind != FsKind::File {
         return Err(Error::Denied(path.into()));
     }
-    let current = stamp(metadata)?;
+    let current = stamp_of(meta);
     if let Some(old) = old.filter(|old| old.stamp == current && old.allowed == allowed) {
-        let mut file = old.clone();
-        file.bytes = None;
-        return Ok(file);
+        if !source.is_strict() {
+            let mut file = old.clone();
+            file.bytes = None;
+            return Ok(file);
+        }
+        let disk = source.root.join(path);
+        let content = source.read_bytes(&disk)?;
+        if optional_stamp(source, &disk)?.as_ref() != Some(&current) {
+            return Err(Error::Request(format!("source changed during scan: {path}")));
+        }
+        let hash = digest(&content)?;
+        if hash == old.hash {
+            let mut file = old.clone();
+            file.bytes = None;
+            return Ok(file);
+        }
+        return Ok(sourced(path, content, hash, allowed, current));
     }
     let mut bytes = None;
     let mut hash = String::new();
@@ -146,16 +155,11 @@ fn capture_file(
     if allowed {
         let disk = source.root.join(path);
         let content = source.read_bytes(&disk)?;
-        if optional_stamp(&disk)?.as_ref() != Some(&current) {
-            return Err(Error::Request(format!(
-                "source changed during scan: {path}"
-            )));
+        if optional_stamp(source, &disk)?.as_ref() != Some(&current) {
+            return Err(Error::Request(format!("source changed during scan: {path}")));
         }
-        hash = digest(&content);
-        readable = !matches!(
-            classify_file(Path::new(path), &content),
-            FileContentHandling::OmitBinary { .. }
-        );
+        hash = digest(&content)?;
+        readable = readable_file(path, &content);
         if readable {
             bytes = Some(content);
         }
@@ -171,6 +175,26 @@ fn capture_file(
     })
 }
 
+fn sourced(path: &str, content: Vec<u8>, hash: String, allowed: bool, stamp: FileStamp) -> SourceFile {
+    let readable = readable_file(path, &content);
+    SourceFile {
+        bytes: readable.then_some(content),
+        hash,
+        size: stamp.size,
+        mtime: stamp.modified,
+        readable,
+        allowed,
+        stamp,
+    }
+}
+
+fn readable_file(path: &str, content: &[u8]) -> bool {
+    !matches!(
+        classify_file(Path::new(path), content),
+        FileContentHandling::OmitBinary { .. }
+    )
+}
+
 fn walk(
     source: &FileSource,
     engine: &IgnoreEngine,
@@ -181,22 +205,23 @@ fn walk(
     let mut pending = vec![(String::new(), FileHandlingDecision::Include)];
     while let Some((relative, parent)) = pending.pop() {
         let disk = source.root.join(&relative);
-        let metadata = fs::symlink_metadata(&disk)?;
-        if !metadata.is_dir() || metadata.is_symlink() {
+        let meta = source.metadata(&disk)?;
+        if meta.kind != FsKind::Directory {
             return Err(Error::Denied(relative));
         }
-        directories.insert(relative.clone(), stamp(&metadata)?);
-        for entry in fs::read_dir(&disk)? {
-            let entry = entry?;
+        directories.insert(relative.clone(), stamp_of(meta));
+        let mut entries = source.list(&disk)?;
+        entries.sort_by(|left, right| left.name.cmp(&right.name));
+        for entry in entries {
             let name = entry
-                .file_name()
-                .into_string()
-                .map_err(|_| Error::Denied("non-UTF-8 path".into()))?;
+                .name
+                .to_str()
+                .ok_or_else(|| Error::Denied("non-UTF-8 path".into()))?
+                .to_string();
             if forbidden(&name) {
                 continue;
             }
-            let kind = entry.file_type()?;
-            if kind.is_symlink() || !(kind.is_dir() || kind.is_file()) {
+            if entry.kind == FsKind::Symlink || entry.kind == FsKind::Other {
                 continue;
             }
             let path = if relative.is_empty() {
@@ -208,7 +233,7 @@ fn walk(
                 &ItemContext {
                     relative_path: &path,
                     name: &name,
-                    is_directory: kind.is_dir(),
+                    is_directory: entry.kind == FsKind::Directory,
                     debug_mode: false,
                 },
                 parent,
@@ -216,15 +241,16 @@ fn walk(
             if !decision.show_in_tree() {
                 continue;
             }
-            if kind.is_dir() {
+            if entry.kind == FsKind::Directory {
                 pending.push((path, decision));
             } else {
+                let meta = source.metadata(&source.root.join(&path))?;
                 let file = capture_file(
                     source,
                     &path,
                     decision.should_read_content(),
-                    &fs::symlink_metadata(entry.path())?,
-                    previous.and_then(|s| s.files.get(&path)),
+                    meta,
+                    previous.and_then(|snapshot| snapshot.files.get(&path)),
                 )?;
                 files.insert(path, file);
             }

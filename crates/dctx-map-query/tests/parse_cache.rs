@@ -6,15 +6,8 @@ use dctx_map_store::{MapStore, SqliteStore};
 use std::{fs, path::Path, time::Duration};
 
 fn payload(database: &Path, path: &str) -> serde_json::Value {
-    let db = rusqlite::Connection::open(database).unwrap();
-    let json: String = db
-        .query_row(
-            "SELECT payload FROM query_files WHERE path=?1",
-            [path],
-            |r| r.get(0),
-        )
-        .unwrap();
-    serde_json::from_str(&json).unwrap()
+    let index = Index::open("fixture", database).unwrap();
+    serde_json::from_str(&index.file_payload(path).unwrap()).unwrap()
 }
 
 #[test]
@@ -107,15 +100,18 @@ fn revision_change_reparses_once_even_with_unchanged_source_metadata() {
         .unwrap()
         .refresh(&source, None)
         .unwrap();
-    let current = payload(&database, "lib.rs");
+    let mut index = Index::open("fixture", &database).unwrap();
+    let current: serde_json::Value =
+        serde_json::from_str(&index.file_payload("lib.rs").unwrap()).unwrap();
     // Also exercises migration of caches written before parser revisions existed.
-    let db = rusqlite::Connection::open(&database).unwrap();
-    db.execute(
-        "UPDATE query_files SET payload=json_remove(payload,'$.parser_revision','$.status')",
-        [],
-    )
-    .unwrap();
-    drop(db);
+    let mut stripped = current.clone();
+    let object = stripped.as_object_mut().unwrap();
+    object.remove("parser_revision");
+    object.remove("status");
+    index
+        .replace_file_payload("lib.rs", &stripped.to_string())
+        .unwrap();
+    drop(index);
     let reads = source.content_reads();
     let mut upgraded = Index::open("fixture", &database).unwrap();
     upgraded.refresh(&source, None).unwrap();

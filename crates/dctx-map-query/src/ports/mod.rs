@@ -25,7 +25,8 @@ pub struct SourceFile {
     pub stamp: FileStamp,
 }
 
-/// Metadata identity; Unix change time detects edits preserving mtime and size.
+/// Metadata pre-filter. Strict mode hashes again when this stamp matches.
+/// `changed` stays zero: the filesystem port does not report ctime.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FileStamp {
     /// File length.
@@ -74,11 +75,14 @@ pub trait Source {
     }
     /// Checks a selected record without requiring unchanged content reads.
     fn unchanged(&self, path: &str, file: &SourceFile) -> Result<bool> {
-        Ok(dctx_map_scan::content_hash(&self.read(path)?)
+        let hashed = dctx_hash::Sha256::digest(&self.read(path)?)
+            .map_err(|error| crate::Error::Request(error.to_string()))?;
+        let text = hashed
+            .as_bytes()
             .iter()
             .map(|byte| format!("{byte:02x}"))
-            .collect::<String>()
-            == file.hash)
+            .collect::<String>();
+        Ok(text == file.hash)
     }
     /// Rechecks privacy and returns current bytes for a selected source span.
     fn read(&self, path: &str) -> Result<Vec<u8>>;

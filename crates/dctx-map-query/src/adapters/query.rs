@@ -15,6 +15,9 @@ impl Index {
     /// Refreshes current sources before answering; stale files are always marked.
     pub fn query(&mut self, source: &impl Source, request: &Request) -> Result<Answer> {
         request.validate()?;
+        if self.cancelled() {
+            return Err(Error::Request("cancelled".into()));
+        }
         self.refresh(
             source,
             if self.ready {
@@ -33,8 +36,8 @@ impl Index {
         if !self.ready {
             return Err(Error::Request("index has not been refreshed".into()));
         }
-        if !self.graph_loaded && request.verb != Verb::Find {
-            return self.graph_view(request)?.answer(source, request);
+        if !self.graph_loaded {
+            return Err(Error::Request("graph is not loaded".into()));
         }
         let snapshot = self
             .snapshot
@@ -49,7 +52,7 @@ impl Index {
             place: self.place.clone(),
             rev: snapshot.revision.clone(),
             dirty: snapshot.dirty.len(),
-            age_seconds: 0,
+            age_seconds: self.age_seconds(),
             verb: request.verb,
             records: vec![],
             more: 0,
@@ -162,25 +165,22 @@ impl Index {
             .as_ref()
             .ok_or_else(|| Error::Request("index not ready".into()))?;
         let mut records = Vec::new();
-        let hits = if let Some(reader) = &self.reader {
-            super::database::search(reader, &expression)?
-        } else if let Some(store) = &self.store {
-            store
-                .search(&expression, 40)?
-                .into_iter()
-                .filter_map(|hit| {
-                    self.nodes.get(&hit.id).map(|node| {
-                        (
-                            node.clone(),
-                            hit.score,
-                            self.degree.get(&hit.id).copied().unwrap_or(0),
-                        )
-                    })
-                })
-                .collect()
-        } else {
+        let Some(store) = &self.store else {
             return Err(Error::Request("index storage unavailable".into()));
         };
+        let hits: Vec<_> = store
+            .search(&expression, 40)?
+            .into_iter()
+            .filter_map(|hit| {
+                self.nodes.get(&hit.id).map(|node| {
+                    (
+                        node.clone(),
+                        hit.score,
+                        self.degree.get(&hit.id).copied().unwrap_or(0),
+                    )
+                })
+            })
+            .collect();
         for (node, score, degree) in hits {
             let mut record = Record::from(&node);
             if !request.kinds.is_empty()

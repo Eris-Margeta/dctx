@@ -20,11 +20,12 @@ fn eight_readers_and_one_writer_keep_consistent_snapshots_without_busy_errors() 
         .unwrap()
         .query(&source, &Request::new(Verb::Find, "version"))
         .unwrap();
-    fs::write(cache.path().join("writer.lock"), "legacy pid 12345").unwrap();
+    let lock_path = db.with_extension("writer.lock");
+    fs::write(&lock_path, "legacy pid 12345").unwrap();
     let lock = fs::File::options()
         .read(true)
         .write(true)
-        .open(db.with_extension("writer.lock"))
+        .open(&lock_path)
         .unwrap();
     lock.lock().unwrap();
     let (ready_tx, ready_rx) = mpsc::channel();
