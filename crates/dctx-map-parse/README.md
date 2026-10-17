@@ -8,14 +8,14 @@
 (`.go`) to `dctx-lex-go`, Java (`.java`) to `dctx-lex-java`, C/C++
 (`.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hpp`, `.hh`) to `dctx-lex-c`,
 configuration (`.json`, `.jsonc`, `.toml`, `.yaml`, `.yml`) to `dctx-lex-cfg`,
-and C# (`.cs`) to `dctx-lex-cs`,
+C# (`.cs`) to `dctx-lex-cs`, and Kotlin (`.kt`, `.kts`) to `dctx-lex-kt`,
 case-insensitively. Other extensions produce a module with a first-comment
 summary and an opaque precision label. The caller performs scanning and file IO.
 
 Each `ParsedFile` carries a precision label: coverage, completion and parser
 identity. That label is not edge confidence. Complete Rust is `syntax`.
 JavaScript, TypeScript, Markdown, Python, Go, Java, C/C++, configuration and
-C# are `structural`.
+C# and Kotlin are `structural`.
 Unknown files are `opaque`. A partial or diagnostic extraction is
 `ParseError::Syntax`, so an indexer can mask and retry instead of storing
 line-scan facts as a complete parse.
@@ -59,14 +59,14 @@ should consume `RawReference` before adapting results into store `FileFacts`.
 
 The default build depends on `dctx-map-model`, `dctx-lex-rust` (and its `syn`
 closure), `dctx-lex-js`, `dctx-lex-md`, `dctx-lex-py`, `dctx-lex-go`,
-`dctx-lex-java`, `dctx-lex-c`, `dctx-lex-cfg`, `dctx-lex-cs`, `sha2` and
+`dctx-lex-java`, `dctx-lex-c`, `dctx-lex-cfg`, `dctx-lex-cs`, `dctx-lex-kt`, `sha2` and
 `thiserror`. Those lexer crates are path dependencies. This wiring adds no
 external dependency. The default build does not depend on tree-sitter or any
 C code. `syntax-tree-sitter` (default
 off) opts into `tree-sitter`, `tree-sitter-rust`, `tree-sitter-md`,
 `tree-sitter-javascript` and `tree-sitter-typescript` and compiles
 `TreeSitterParser` as the differential oracle. That feature has no grammar for
-Python, Go, Java, C/C++, configuration or C#, so those languages fall back to
+Python, Go, Java, C/C++, configuration, C# or Kotlin, so those languages fall back to
 the pure adapters and keep their structural precision. Without that feature
 the name `TreeSitterParser`
 is `PureParser`, so existing callers keep compiling.

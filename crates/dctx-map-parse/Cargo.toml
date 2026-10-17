@@ -26,6 +26,7 @@ dctx-lex-java = { path = "../dctx-lex-java" }
 dctx-lex-c = { path = "../dctx-lex-c" }
 dctx-lex-cfg = { path = "../dctx-lex-cfg" }
 dctx-lex-cs = { path = "../dctx-lex-cs" }
+dctx-lex-kt = { path = "../dctx-lex-kt" }
 sha2 = "=0.10.9"
 thiserror = "=2.0.18"
 tree-sitter = { version = "=0.25.10", optional = true }

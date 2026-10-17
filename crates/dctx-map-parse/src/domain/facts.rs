@@ -28,6 +28,8 @@ pub enum Language {
     Config,
     /// C# source.
     CSharp,
+    /// Kotlin source (`.kt`) and scripts (`.kts`).
+    Kotlin,
     /// No grammar; only a module node is emitted.
     Unknown,
 }
@@ -52,6 +54,7 @@ impl Language {
             Some("c" | "h" | "cc" | "cpp" | "cxx" | "hpp" | "hh") => Self::C,
             Some("json" | "jsonc" | "toml" | "yaml" | "yml") => Self::Config,
             Some("cs") => Self::CSharp,
+            Some("kt" | "kts") => Self::Kotlin,
             _ => Self::Unknown,
         }
     }
@@ -151,6 +154,8 @@ mod tests {
             );
         }
         assert_eq!(Language::for_path("src/App.CS"), Language::CSharp);
+        assert_eq!(Language::for_path("src/App.kt"), Language::Kotlin);
+        assert_eq!(Language::for_path("scripts/main.KTS"), Language::Kotlin);
         assert_eq!(Language::for_path("pkg/app.pyw"), Language::Unknown);
         assert_eq!(Language::for_path("rs/file.txt"), Language::Unknown);
     }
