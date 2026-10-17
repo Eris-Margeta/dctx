@@ -1,0 +1,10 @@
+[package]
+name = "dctx-lex-rb"
+version = "0.1.0"
+edition = "2024"
+license = "Apache-2.0"
+description = "First-party hand-written Ruby structural extractor for dctx map mode"
+
+[dependencies]
+dctx-hash = { path = "../dctx-hash" }
+dctx-map-model = { path = "../dctx-map-model" }
