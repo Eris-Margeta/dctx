@@ -896,6 +896,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "dctx-desktop-api"
+version = "0.1.0"
+dependencies = [
+ "dctx",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "dctx-ed25519"
 version = "0.1.0"
 dependencies = [
