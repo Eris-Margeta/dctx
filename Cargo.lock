@@ -1004,6 +1004,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "dctx-lex-rb"
+version = "0.1.0"
+dependencies = [
+ "dctx-hash",
+ "dctx-map-model",
+]
+
+[[package]]
 name = "dctx-lex-rust"
 version = "0.1.0"
 dependencies = [
