@@ -1,0 +1,26 @@
+<html><script>function fake() { html_call(); }</script>
+<?php
+# a comment with fake_comment();
+// another comment
+/* function hidden() {} */
+function template(): string {
+    $single = 'function fake_single() { single_call(); }';
+    $double = "text {$object->read("quoted")} ${value} fake_double();";
+    $escaped = "quotes \" fake_escaped();";
+    $document = <<<TEXT
+function fake_heredoc() { heredoc_call(); }
+{$interpolated}
+    TEXT;
+    $raw = <<<'RAW'
+function fake_nowdoc() { nowdoc_call(); }
+?> <?php ${not_interpolated}
+    RAW;
+    return render($single);
+}
+?>
+<div>class FakeHtml { function hidden() {} }</div>
+<?= template() ?>
+<?PHP
+function after_template(): void { real_call(); }
+// closing a line comment ends PHP ?> outside_call();
+</html>
