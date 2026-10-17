@@ -1,12 +1,13 @@
-//! `dctx cache status|gc|purge` over the cache lifecycle adapter and the facade ledger.
+//! `dctx cache status|gc|purge|config|auto` over the persisted facade ledger.
 //! Implements ARCHITECTURE-PROPOSAL §4 and §7 row DX-D2.
-//! Depends on `dctx-adapter-cache` for quotas and on [`crate::host::session_cache`] for the facade call.
+//! Depends on `dctx-adapter-cache` for quotas and on [`crate::host`] for the cache root and facade auto-clean.
 //! Purge apply requires `--root` or `--all`, plus `--yes`. Dry-run changes no bytes.
 
 mod parse;
 mod text;
 
 use std::collections::BTreeMap;
+use std::path::Path;
 
 use dctx_adapter_cache::{
     ClockSample, GcRequest, KnownExport, Lifecycle, PurgeRequest, PurgeScope, RootId, SliceBudget,
@@ -36,13 +37,9 @@ pub struct CacheEnv<'a> {
     pub exports: &'a [KnownExport],
 }
 
-/// Runs a cache command from process arguments against a fresh product ledger.
+/// Runs a cache command against the persisted ledger and prints the report.
 pub fn run(args: &[String]) -> Result<(), String> {
-    let mut life = Lifecycle::product_default();
-    let clock = ClockSample { wall: dctx::Timestamp(host::unix_millis()), monotonic_ms: 0, boot_id: 1 };
-    let roots = RootTable::default();
-    let env = CacheEnv { life: &mut life, clock, roots: &roots, exports: &[] };
-    let report = execute(args, env)?;
+    let report = run_in(args, None)?;
     if report.is_empty() {
         return Ok(());
     }
@@ -53,10 +50,54 @@ pub fn run(args: &[String]) -> Result<(), String> {
     Ok(())
 }
 
-/// Applies `args` to `env` and returns the byte report.
-pub fn execute(args: &[String], mut env: CacheEnv<'_>) -> Result<String, String> {
-    match parse::parse(args)? {
+/// Same as [`run`] for an explicit cache root. `None` uses [`host::cache_root_dir`].
+pub fn run_in(args: &[String], root: Option<&Path>) -> Result<String, String> {
+    let command = parse::parse(args)?;
+    if matches!(command, Command::Help) {
+        return Ok(crate::help::text());
+    }
+    let resolved = match root {
+        Some(path) => path.to_path_buf(),
+        None => host::cache_root_dir()?,
+    };
+    host::ensure_cache_dir(&resolved)?;
+    match command {
         Command::Help => Ok(crate::help::text()),
+        Command::Config { json, auto, max_bytes, ttl_days } => {
+            let policy = host::configure(&resolved, auto, max_bytes, ttl_days)?;
+            Ok(text::config_text(&policy, json))
+        }
+        Command::Auto { json } => Ok(text::auto_text(&host::auto_report(&resolved)?, json)),
+        other => persisted(other, &resolved),
+    }
+}
+
+/// Applies `args` to an injected ledger. Persistence tests use [`run_in`].
+#[cfg(test)]
+fn execute(args: &[String], env: CacheEnv<'_>) -> Result<String, String> {
+    apply(parse::parse(args)?, env)
+}
+
+fn persisted(command: Command, root: &Path) -> Result<String, String> {
+    let store = matches!(command, Command::Gc { dry_run: false, .. } | Command::Purge { dry_run: false, .. });
+    let mut life = host::load_ledger(root)?;
+    let roots = RootTable::default();
+    let exports = Vec::new();
+    let now = host::unix_millis();
+    let clock = ClockSample { wall: dctx::Timestamp(now), monotonic_ms: now, boot_id: 1 };
+    let env = CacheEnv { life: &mut life, clock, roots: &roots, exports: &exports };
+    let report = apply(command, env)?;
+    if store {
+        host::store_ledger(root, &life)?;
+    }
+    Ok(report)
+}
+
+fn apply(command: Command, mut env: CacheEnv<'_>) -> Result<String, String> {
+    match command {
+        Command::Help => Ok(crate::help::text()),
+        Command::Config { .. } => Err("cache config writes the persisted policy".to_string()),
+        Command::Auto { .. } => Err("cache auto reads the persisted ledger".to_string()),
         Command::Status { json, root } => status(&env, json, root),
         Command::Gc { json, dry_run, root, max_bytes, legacy, yes, select } => {
             if legacy {
@@ -275,5 +316,73 @@ mod tests {
         .expect("apply");
         assert!(applied.contains("reclaimed_bytes: 12"));
         assert!(life.adopted_labels().is_empty());
+    }
+
+    #[test]
+    fn persisted_dry_run_keeps_bytes_and_apply_reclaims_them() {
+        let root = scratch("gc");
+        let mut life = Lifecycle::product_default();
+        life.load_staged(1_000, 0).expect("staged");
+        life.load_staged(1_000, 0).expect("staged");
+        host::store_ledger(&root, &life).expect("store");
+        let before = std::fs::read(root.join("ledger.v1")).expect("ledger");
+        let dry = run_in(&args(&["cache", "gc", "--dry-run"]), Some(&root)).expect("dry");
+        assert!(dry.contains("dry_run: true"));
+        assert!(dry.contains("reclaimed_bytes: 2000"));
+        assert_eq!(std::fs::read(root.join("ledger.v1")).expect("ledger"), before);
+        assert_eq!(host::load_ledger(&root).expect("load").admitted(), 2_000);
+        let applied = run_in(&args(&["cache", "gc"]), Some(&root)).expect("apply");
+        assert!(applied.contains("dry_run: false"));
+        assert!(applied.contains("reclaimed_bytes: 2000"));
+        assert_eq!(host::load_ledger(&root).expect("load").admitted(), 0);
+    }
+
+    #[test]
+    fn persisted_purge_dry_run_keeps_the_ledger() {
+        let root = scratch("purge");
+        let mut life = Lifecycle::product_default();
+        let id = RootId::new(7);
+        life.register_root(id).expect("root");
+        life.publish_pack(id, 40, &[]).expect("pack");
+        host::store_ledger(&root, &life).expect("store");
+        let before = std::fs::read(root.join("ledger.v1")).expect("ledger");
+        let dry = run_in(&args(&["cache", "purge", "--all", "--dry-run"]), Some(&root)).expect("dry");
+        assert!(dry.contains("dry_run: true"));
+        assert!(dry.contains("dropped: 1"));
+        assert_eq!(std::fs::read(root.join("ledger.v1")).expect("ledger"), before);
+        let applied = run_in(&args(&["cache", "purge", "--all", "--yes"]), Some(&root)).expect("apply");
+        assert!(applied.contains("dry_run: false"));
+        assert!(applied.contains("dropped: 1"));
+        assert_ne!(std::fs::read(root.join("ledger.v1")).expect("ledger"), before);
+    }
+
+    #[test]
+    fn config_persists_across_two_shows_and_a_corrupt_ledger_is_named() {
+        let root = scratch("config");
+        let set = run_in(
+            &args(&["cache", "config", "auto", "off", "--max-bytes", "1000000", "--ttl-days", "3"]),
+            Some(&root),
+        )
+        .expect("set");
+        assert!(set.contains("auto: off"));
+        assert!(set.contains("max_bytes: 1000000"));
+        assert!(set.contains("ttl_days: 3"));
+        let first = run_in(&args(&["cache", "config"]), Some(&root)).expect("first");
+        let second = run_in(&args(&["cache", "config"]), Some(&root)).expect("second");
+        assert_eq!(first, set);
+        assert_eq!(second, first);
+        let raised = run_in(&args(&["cache", "config", "--max-bytes", "2000000"]), Some(&root)).expect_err("raise");
+        assert!(raised.contains("only tighten"));
+        std::fs::write(root.join("ledger.v1"), b"not-a-ledger").expect("corrupt");
+        let err = run_in(&args(&["cache", "status"]), Some(&root)).expect_err("status");
+        assert!(err.contains("corrupt ledger"), "{err}");
+        assert_eq!(std::fs::read(root.join("ledger.v1")).expect("kept"), b"not-a-ledger");
+    }
+
+    fn scratch(name: &str) -> std::path::PathBuf {
+        let path = std::env::temp_dir().join(format!("dctx-cli-cache-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&path);
+        std::fs::create_dir_all(&path).expect("dir");
+        path
     }
 }

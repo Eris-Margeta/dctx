@@ -4,7 +4,9 @@
 //! JSON is hand-built so the CLI does not add a serializer.
 
 use dctx::CacheReport;
-use dctx_adapter_cache::{Blocker, MaintainReport, PurgeReport, Status};
+use dctx_adapter_cache::{Blocker, MaintainReport, PurgeReport, Status, DAY_MS};
+
+use crate::host::{AutoReport, CachePolicy};
 
 pub fn status(report: &Status, session: &CacheReport, json: bool) -> String {
     if json {
@@ -151,6 +153,78 @@ reclaimed_bytes: {reclaimed}
 {}",
         session_lines(session)
     )
+}
+
+pub fn config_text(policy: &CachePolicy, json: bool) -> String {
+    let ttl_days = policy.auto.overlay_ttl_ms / DAY_MS;
+    if json {
+        return format!(
+            "{{\"command\":\"config\",\"auto\":\"{}\",\"max_bytes\":{},\"ttl_days\":{},\"overlay_ttl_ms\":{},\"preview_ttl_ms\":{},\"root_ttl_ms\":{},\"staging_ttl_ms\":{},\"min_interval_ms\":{}}}\n",
+            on_off(policy.auto.enabled),
+            policy.auto.system_cap_bytes,
+            ttl_days,
+            policy.auto.overlay_ttl_ms,
+            policy.auto.preview_ttl_ms,
+            policy.auto.root_ttl_ms,
+            policy.auto.staging_ttl_ms,
+            policy.auto.min_interval_ms
+        );
+    }
+    format!(
+        "\
+command: config
+auto: {}
+max_bytes: {}
+ttl_days: {ttl_days}
+overlay_ttl_ms: {}
+preview_ttl_ms: {}
+root_ttl_ms: {}
+staging_ttl_ms: {}
+min_interval_ms: {}
+",
+        on_off(policy.auto.enabled),
+        policy.auto.system_cap_bytes,
+        policy.auto.overlay_ttl_ms,
+        policy.auto.preview_ttl_ms,
+        policy.auto.root_ttl_ms,
+        policy.auto.staging_ttl_ms,
+        policy.auto.min_interval_ms
+    )
+}
+
+pub fn auto_text(report: &AutoReport, json: bool) -> String {
+    let last = match report.last_auto_clean_ms {
+        Some(stamp) => stamp.to_string(),
+        None => "none".to_string(),
+    };
+    if json {
+        let last_json = match report.last_auto_clean_ms {
+            Some(stamp) => stamp.to_string(),
+            None => "null".to_string(),
+        };
+        return format!(
+            "{{\"command\":\"auto\",\"enabled\":{},\"last_auto_clean_ms\":{last_json},\"reclaimed_bytes\":{},\"next_due_ms\":{}}}\n",
+            bool_json(report.enabled),
+            report.reclaimed_bytes,
+            report.next_due_ms
+        );
+    }
+    format!(
+        "\
+command: auto
+enabled: {}
+last_auto_clean_ms: {last}
+reclaimed_bytes: {}
+next_due_ms: {}
+",
+        report.enabled,
+        report.reclaimed_bytes,
+        report.next_due_ms
+    )
+}
+
+fn on_off(enabled: bool) -> &'static str {
+    if enabled { "on" } else { "off" }
 }
 
 fn root_lines(report: &Status) -> String {

@@ -165,15 +165,19 @@ impl From<SnapshotConfig> for CliConfig {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    let head = args.get(1).map(String::as_str);
-    if head == Some("--internal-plugin-worker") {
-        std::process::exit(i32::from(plugin::enter_worker(&args[2..])));
+    let raw: Vec<String> = env::args().collect();
+    if raw.get(1).is_some_and(|arg| arg == "--internal-plugin-worker") {
+        std::process::exit(i32::from(plugin::enter_worker(&raw[2..])));
     }
+    let allow_auto_clean = host::auto_clean_allowed(&raw);
+    let args = host::without_auto_flag(raw);
+    let head = args.get(1).map(String::as_str);
     if head.is_some_and(plugin::is_early) {
+        maybe_auto_clean(allow_auto_clean);
         std::process::exit(i32::from(plugin::enter(&args)));
     }
     if args.get(1).is_some_and(|arg| arg == "map") {
+        maybe_auto_clean(allow_auto_clean);
         if let Err(error) = map::run(&args[2..]) {
             eprintln!("map: {error}");
             std::process::exit(1);
@@ -181,6 +185,7 @@ fn main() {
         return;
     }
     if args.get(1).is_some_and(|arg| arg == "pack") {
+        maybe_auto_clean(allow_auto_clean);
         if let Err(error) = pack::run(&args[1..]) {
             eprintln!("pack: {error}");
             std::process::exit(1);
@@ -195,6 +200,7 @@ fn main() {
         return;
     }
     if args.get(1).is_some_and(|arg| arg == "template") {
+        maybe_auto_clean(allow_auto_clean);
         if let Err(error) = template::run(&args[1..]) {
             eprintln!("template: {error}");
             std::process::exit(1);
@@ -202,6 +208,7 @@ fn main() {
         return;
     }
     if args.len() == 1 {
+        maybe_auto_clean(allow_auto_clean);
         run_interactive_mode();
     } else {
         match parse_command(&args) {
@@ -216,6 +223,12 @@ fn main() {
                 std::process::exit(1);
             }
         }
+    }
+}
+
+fn maybe_auto_clean(allow: bool) {
+    if allow {
+        host::piggyback_auto_clean();
     }
 }
 

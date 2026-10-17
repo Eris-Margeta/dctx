@@ -1,4 +1,4 @@
-//! Argument rules for `dctx cache status|gc|purge`.
+//! Argument rules for `dctx cache status|gc|purge|config|auto`.
 //! Implements ARCHITECTURE-PROPOSAL §4 public cache commands.
 //! Depends on nothing but the argument strings. [`super::execute`] applies the parsed command.
 //! Purge is invalid until the caller has `--root` or `--all`. `--yes` is checked later for apply.
@@ -43,6 +43,22 @@ pub enum Command {
         /// Which scope flags were present.
         scope: Scope,
     },
+    /// Show or update the persisted auto-clean policy.
+    Config {
+        /// JSON projection.
+        json: bool,
+        /// `Some` sets auto on or off. `None` leaves the stored flag.
+        auto: Option<bool>,
+        /// Tighten the system cap. `None` leaves it.
+        max_bytes: Option<u64>,
+        /// Idle overlay and preview lifetime in days. `None` leaves it.
+        ttl_days: Option<u64>,
+    },
+    /// Last auto-clean slice, bytes reclaimed and the next due time.
+    Auto {
+        /// JSON projection.
+        json: bool,
+    },
 }
 
 /// Root selection before it is resolved to a ledger id.
@@ -70,7 +86,9 @@ pub fn parse(args: &[String]) -> Result<Command, String> {
         "status" => status(&args[2..]),
         "gc" => gc(&args[2..]),
         "purge" => purge(&args[2..]),
-        other => Err(format!("unknown cache command: {other}. Use status, gc or purge")),
+        "config" => config(&args[2..]),
+        "auto" => auto_cmd(&args[2..]),
+        other => Err(format!("unknown cache command: {other}. Use status, gc, purge, config or auto")),
     }
 }
 
@@ -155,6 +173,58 @@ fn purge(args: &[String]) -> Result<Command, String> {
     Ok(Command::Purge { json, dry_run, yes, scope })
 }
 
+fn config(args: &[String]) -> Result<Command, String> {
+    let mut json = false;
+    let mut auto = None;
+    let mut max_bytes = None;
+    let mut ttl_days = None;
+    let mut index = 0;
+    while index < args.len() {
+        match args[index].as_str() {
+            "--json" => json = flag_once(json, "--json")?,
+            "auto" => {
+                if auto.is_some() {
+                    return Err("auto was already set".to_string());
+                }
+                let raw = value(args, &mut index, "auto")?;
+                auto = Some(match raw.as_str() {
+                    "on" => true,
+                    "off" => false,
+                    _ => return Err("auto expects on or off".to_string()),
+                });
+            }
+            "--max-bytes" => max_bytes = Some(positive(args, &mut index, "--max-bytes", max_bytes)?),
+            "--ttl-days" => ttl_days = Some(positive(args, &mut index, "--ttl-days", ttl_days)?),
+            other => return Err(format!("unknown config flag: {other}")),
+        }
+        index += 1;
+    }
+    Ok(Command::Config { json, auto, max_bytes, ttl_days })
+}
+
+fn auto_cmd(args: &[String]) -> Result<Command, String> {
+    let mut json = false;
+    for arg in args {
+        match arg.as_str() {
+            "--json" => json = flag_once(json, "--json")?,
+            other => return Err(format!("unknown auto flag: {other}")),
+        }
+    }
+    Ok(Command::Auto { json })
+}
+
+fn positive(args: &[String], index: &mut usize, name: &str, already: Option<u64>) -> Result<u64, String> {
+    if already.is_some() {
+        return Err(format!("{name} was already set"));
+    }
+    let raw = value(args, index, name)?;
+    let parsed: u64 = raw.parse().map_err(|_| format!("invalid {name}: {raw}"))?;
+    if parsed == 0 {
+        return Err(format!("{name} must be at least 1"));
+    }
+    Ok(parsed)
+}
+
 fn flag_once(already: bool, name: &str) -> Result<bool, String> {
     if already {
         Err(format!("{name} was already set"))
@@ -190,5 +260,15 @@ mod tests {
         assert!(matches!(rooted, Command::Purge { dry_run: true, scope: Scope::Root(path), .. } if path == "/work"));
         assert!(parse_slice(&["cache", "gc", "--max-bytes", "0"]).is_err());
         assert!(parse_slice(&["cache", "status", "--json"]).is_ok());
+        let config = parse_slice(&["cache", "config", "auto", "off", "--max-bytes", "1000", "--ttl-days", "3"]).expect("config");
+        assert!(matches!(
+            config,
+            Command::Config { auto: Some(false), max_bytes: Some(1000), ttl_days: Some(3), json: false }
+        ));
+        assert!(matches!(parse_slice(&["cache", "config"]).expect("show"), Command::Config { auto: None, .. }));
+        assert!(matches!(parse_slice(&["cache", "auto", "--json"]).expect("auto"), Command::Auto { json: true }));
+        assert!(parse_slice(&["cache", "config", "--ttl-days", "0"]).is_err());
+        assert!(parse_slice(&["cache", "config", "auto", "maybe"]).is_err());
+        assert!(parse_slice(&["cache", "tune"]).is_err());
     }
 }

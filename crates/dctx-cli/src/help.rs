@@ -16,6 +16,8 @@ Usage: dctx [PATH] [OPTIONS]
        dctx cache gc [--dry-run] [--root PATH] [--max-bytes N] [--legacy]
        dctx cache purge --root PATH [--dry-run] [--yes]
        dctx cache purge --all [--dry-run] [--yes]
+       dctx cache config [auto on|off] [--max-bytes N] [--ttl-days N]
+       dctx cache auto [--json]
        dctx template build <PATH> [--output PATH]
        dctx template list [--dir PATH]
        dctx plugin search|install|list|info|enable|disable|remove|update|verify
@@ -27,6 +29,10 @@ Explicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not cr
 `dctx git` routes to the bundled dctx/git plugin. It is not a Git passthrough.
 Cache purge requires `--root PATH` or `--all`, and `--yes` unless `--dry-run` is set.
 `dctx cache gc --legacy` reads only exports the caller already registered. It does not search the home directory.
+`dctx cache config` shows the persisted policy. `auto on|off` enables auto-clean, `--max-bytes` tightens the system cap, and `--ttl-days` sets idle overlay and preview lifetime.
+`dctx cache auto` prints the last auto-clean time, the bytes it reclaimed and the next due time.
+pack, map, template, plugin and the TUI run one bounded auto-clean when it is due. They print nothing unless bytes were reclaimed.
+`--no-auto-clean` and `DCTX_AUTO_CLEAN=0` disable that slice. `DCTX_CACHE_DIR` selects the cache root.
 
 Snapshot Options:
   -c, --clipboard       Copy to clipboard
@@ -59,6 +65,8 @@ Examples:
   dctx cache status --json
   dctx cache gc --dry-run
   dctx cache purge --root /path --dry-run
+  dctx cache config auto off --max-bytes 1000000 --ttl-days 7
+  dctx cache auto
   dctx template build policy.dctx_template
 
 ",
@@ -93,6 +101,13 @@ token estimate: ceil(2 * UTF-8 bytes / 7) is an estimate, not a tokenizer guaran
 cache cap: 2 GiB hard, 1.5 GiB soft watermark, 1.2 GiB eviction target.
 ",
     );
+    out.push_str(&format!(
+        "cache ttl: idle overlays and previews {} days, unpinned roots {} days, staging {} day.\n",
+        dctx_adapter_cache::OVERLAY_TTL_MS / dctx_adapter_cache::DAY_MS,
+        dctx_adapter_cache::ROOT_TTL_MS / dctx_adapter_cache::DAY_MS,
+        dctx_adapter_cache::STAGING_TTL_MS / dctx_adapter_cache::DAY_MS
+    ));
+    out.push_str("auto-clean interval: 1 day.\n");
     out
 }
 
@@ -112,6 +127,11 @@ mod tests {
         let page = text();
         assert!(page.contains("dctx pack"));
         assert!(page.contains("dctx cache purge"));
+        assert!(page.contains("dctx cache config"));
+        assert!(page.contains("dctx cache auto"));
+        assert!(page.contains("--ttl-days"));
+        assert!(page.contains("--no-auto-clean"));
+        assert!(page.contains("DCTX_AUTO_CLEAN=0"));
         assert!(page.contains("--yes"));
         assert!(page.contains("does not create a project text file"));
         assert!(page.contains("dctx ."));
@@ -122,6 +142,10 @@ mod tests {
         assert!(limits.contains("native_code: false"));
         assert!(limits.contains("structural"));
         assert!(limits.contains("features:"));
+        assert!(limits.contains("cache ttl:"));
+        assert!(limits.contains("7 days"));
+        assert!(limits.contains("30 days"));
+        assert!(limits.contains("auto-clean interval: 1 day"));
         assert!(page.contains(&limits));
     }
 }
