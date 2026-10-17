@@ -26,21 +26,31 @@ Legacy `CompiledTemplate::serialize` walks `HashMap` order (`crates/dctx-core/sr
 | benches/pattern_matching.rs glob, cold/warm cache, 1000-path load | needs Eris decision 7 |
 | tools/run-tests.sh, test-cross-platform.sh, test-integrity.sh, performance-test.sh, benchmark-ignore-performance.sh | output and alias promises: needs Eris decision 3. Git and ignore edits in those tools: needs Eris decision 5 |
 
-## Ignored gap tests
+## Closed renderer gap tests
 
-These compile and are skipped. D3-03 owns making them pass against the pinned bytes. Each `#[ignore]` string is the gap.
+DX-D3-03b closes all four gaps against the unchanged D3-01 pinned bytes. These tests now run without `#[ignore]`. `render_markers` remains the body-only API; `render_legacy_snapshot` and `render_legacy_diff` add the legacy envelopes over injected trees, templates, versions and changes.
 
 | Test | Gap |
 |---|---|
-| `crates/dctx-template/tests/legacy_envelopes.rs:snapshot_envelope_matches_legacy_bytes` | D3-03 gap: render_markers does not emit the snapshot version header |
-| `tree_only_envelope_matches_legacy_bytes` | D3-03 gap: render_markers does not emit the snapshot version header |
-| `diff_envelope_matches_legacy_bytes` | D3-03 gap: diff header, version line, summary, updated tree, changed-content-only, SVG diff sentence |
-| `svg_snapshot_sentence_matches_legacy` | D3-03 gap: snapshot SVG sentence is `[SVG file (omit_svg_content=true), content omitted]` |
+| `crates/dctx-template/tests/legacy_envelopes.rs:snapshot_envelope_matches_legacy_bytes` | ~~D3-03 gap: render_markers does not emit the snapshot version header~~ Closed by `render_legacy_snapshot`. |
+| `tree_only_envelope_matches_legacy_bytes` | ~~D3-03 gap: render_markers does not emit the snapshot version header~~ Closed by the snapshot renderer's tree-only option. |
+| `diff_envelope_matches_legacy_bytes` | ~~D3-03 gap: diff header, version line, summary, updated tree, changed-content-only, SVG diff sentence~~ Closed by `render_legacy_diff`. |
+| `svg_snapshot_sentence_matches_legacy` | ~~D3-03 gap: snapshot SVG sentence is `[SVG file (omit_svg_content=true), content omitted]`~~ Closed by explicit legacy SVG handling. |
 
 Today's diff writer (`llm_formatter.rs` `generate_diff_context_with_template`) trims the tree and then `write_all`s it, so the closing tag is glued to the last tree line. `legacy-diff.txt` pins that glue and the diff SVG sentence `[SVG file, content omitted (omit_svg_content=true)]`. The snapshot SVG sentence differs from the diff sentence. `render_markers` emits `[Binary file: SVG file, content omitted]` when `binary_label` is `SVG file`, and `[Content omitted by pattern rules]` when `omit_content` is set. The parity corpus takes the pattern path for `*.svg` because the file is OmitContent and its bytes are never classified.
 
 Passing renderer checks already lock the layout body: project variable `[DIRECTORY:Corpus]`, ids (`ROOT`, `D001`, `F002`, …), two-space indentation, `[IGNORED]` markers, pattern and PNG omission sentences, and the absence of ignored bytes (`SECRET=1`, `sensitive`). Tree-only drops the `LINES=` file blocks and the included file body. The instructions text still names the marker. A file whose bytes end in a newline keeps that newline inside the block, so a blank line sits before the end marker.
 
+## Facade legacy output
+
+`PackRequest::legacy_output` is `None` by default: text and JSON summaries retain their existing bytes. To opt in, supply `dctx_template::LegacyOutput::new(template, layout)` with `LegacyLayout::{Snapshot, TreeOnly, Diff}`. The template already holds project variables. `omit_svg_content` defaults to true and `debug_ignored` to false; both are explicit caller settings. Selection rules remain injected through the session. Turning SVG omission off never restores bytes withheld by a pattern decision.
+
+Diff summaries preserve the injected report's order, while file blocks follow the full tree and retain its ids. A first run or major reset emits a snapshot; `PackReport::legacy_layout` records the actual layout. An unchanged diff has the current version on both sides, an empty summary and no file blocks. Rendering reads no config, environment, filesystem or Git state.
+
+`crates/dctx/tests/legacy_output.rs` checks facade snapshot/tree bytes against the pinned fixtures, a fixed diff document (including SVG, unchanged-file exclusion and full-tree ids), first-run/major-reset behavior, unchanged summaries, and explicit custom-template/SVG settings with a source read spy. It checks both request and session byte caps, including the header and UTF-8 bytes, with exact-cap success and a one-byte-short refusal. Refusal writes no partial page. As in the existing pack operation, the engine publishes before final output encoding; an output-budget refusal does not roll back the published snapshot.
+
 ## Counts
 
 `compatibility.rs` asserts both modes, fixed timestamps, child order, binary classification, a read of `README.md`, and denial for `.env`, `Cargo.lock`, `icon.svg`, `node_modules` and `private`. `malformed_compiled_bytes_are_refused` refuses empty input, a bad magic, a short buffer, version 99 and a non-UTF-8 name, with the sorted fixture as the positive control.
+
+DX-D3-03b remote validation: `cargo test -p dctx-template --test legacy_envelopes --test markers --test v1_parity --test purity` passed 47 tests (zero ignored); `cargo test -p dctx --test legacy_output --test golden` passed 12 tests; `cargo clippy -p dctx-template -p dctx -- -D warnings` passed. All Cargo commands used the packet's remote predicates. No local Cargo or full workspace suite was run. The facade read spy initially assumed output order was scan order; it now checks the exact read multiset, since the engine sorts the rendered tree after scanning.

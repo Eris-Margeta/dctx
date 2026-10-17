@@ -13,6 +13,8 @@ mod binary;
 mod bound;
 mod error;
 mod grant;
+mod legacy_diff;
+mod legacy_output;
 mod lower;
 mod model;
 mod opcode;
@@ -25,6 +27,8 @@ mod v1;
 pub use binary::{from_bytes, to_bytes};
 pub use bound::{authorize_path, narrow_decision, render_plan, AnswerRecord};
 pub use error::{TemplateError, TemplateValidationError};
+pub use legacy_diff::render_legacy_diff;
+pub use legacy_output::{render_legacy_snapshot, LegacyLayout, LegacyOutput};
 pub use lower::compile;
 pub use model::{
     BudgetPlan, ContextPlan, GrantRule, HostCeiling, IndexPlan, Inst, NamedCode, RenderProgram, SelectRule,

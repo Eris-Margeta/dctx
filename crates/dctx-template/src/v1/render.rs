@@ -6,6 +6,7 @@
 use std::collections::HashMap;
 
 use super::parse::{replace_vars, Template};
+use crate::legacy_output::FileMode;
 
 /// One tree node. Content is ignored unless the node is an included file.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -64,11 +65,28 @@ impl MarkerNode {
 
 /// Renders `root` with the v1 marker rules. `template.variables` must already hold `project` when the layout uses it.
 pub fn render_markers(template: &Template, root: &MarkerNode, tree_only: bool) -> String {
-    let mut tree_buf = String::new();
-    let mut files_buf = String::new();
-    let mut counter = 1usize;
-    render_node(root, template, &mut tree_buf, &mut files_buf, &mut counter, 0, tree_only);
-    render_layout(template, tree_buf.trim().to_string(), files_buf.trim().to_string())
+    let (tree, files) = template.marker_components(root, &FileMode::Markers { tree_only });
+    template.marker_layout(tree.trim(), files.trim())
+}
+
+impl Template {
+    pub(crate) fn marker_components(&self, root: &MarkerNode, mode: &FileMode<'_>) -> (String, String) {
+        let mut tree = String::new();
+        let mut files = String::new();
+        let mut counter = 1usize;
+        render_node(root, self, &mut tree, &mut files, &mut counter, 0, mode);
+        (tree, files)
+    }
+
+    pub(crate) fn marker_layout(&self, tree: &str, files: &str) -> String {
+        let mut output = self.layout.clone();
+        output = output.replace("{{{comp.tree}}}", tree);
+        output = output.replace("{{{comp.files}}}", files);
+        if let Some(project) = self.variables.get("project") {
+            output = output.replace("{{{project}}}", project);
+        }
+        replace_vars(&output, &self.variables)
+    }
 }
 
 fn render_node(
@@ -78,7 +96,7 @@ fn render_node(
     files_buf: &mut String,
     counter: &mut usize,
     depth: usize,
-    tree_only: bool,
+    mode: &FileMode<'_>,
 ) {
     let current_id = if depth == 0 && node.is_dir {
         "ROOT".to_string()
@@ -116,8 +134,8 @@ fn render_node(
     tree_buf.push_str(&entry);
     tree_buf.push('\n');
 
-    if !node.is_dir && !tree_only && !node.is_ignored {
-        let (line_count, content) = file_body(node);
+    if !node.is_dir && !node.is_ignored && mode.includes(node) {
+        let (line_count, content) = file_body(node, mode);
         let mut block = template.partial_file_block.clone();
         block = block.replace("{{{file.id}}}", &current_id);
         block = block.replace("{{{file.path}}}", &node.relative_path);
@@ -130,16 +148,13 @@ fn render_node(
     }
 
     for child in &node.children {
-        render_node(child, template, tree_buf, files_buf, counter, depth + 1, tree_only);
+        render_node(child, template, tree_buf, files_buf, counter, depth + 1, mode);
     }
 }
 
-fn file_body(node: &MarkerNode) -> (usize, String) {
-    if let Some(label) = &node.binary_label {
-        return (0, format!("[Binary file: {label}, content omitted]"));
-    }
-    if node.omit_content {
-        return (0, "[Content omitted by pattern rules]".to_string());
+fn file_body(node: &MarkerNode, mode: &FileMode<'_>) -> (usize, String) {
+    if let Some(message) = mode.omission(node) {
+        return (0, message);
     }
     match &node.content {
         Some(bytes) => {
@@ -149,16 +164,6 @@ fn file_body(node: &MarkerNode) -> (usize, String) {
         }
         None => (0, String::new()),
     }
-}
-
-fn render_layout(template: &Template, tree_content: String, files_content: String) -> String {
-    let mut output = template.layout.clone();
-    output = output.replace("{{{comp.tree}}}", &tree_content);
-    output = output.replace("{{{comp.files}}}", &files_content);
-    if let Some(project) = template.variables.get("project") {
-        output = output.replace("{{{project}}}", project);
-    }
-    replace_vars(&output, &template.variables)
 }
 
 /// End-marker prefix used when a plan render escapes file content.

@@ -2,11 +2,14 @@
 //! Fixtures are the bytes the legacy formatter and `CompiledTemplate::serialize` produce
 //! for a fixed tree and the `pin` template. This file calls only `dctx_template`.
 //! Depends on dctx-template. Run by `cargo test -p dctx-template --test legacy_envelopes`.
-//! A test the current renderer cannot match yet is ignored with a D3-03 gap string.
+//! D3-03 closes the envelope gaps without modifying the pinned fixtures.
 
 use std::io::Cursor;
 
-use dctx_template::{render_markers, CompiledTemplate, MarkerNode, Template};
+use dctx_core::datatypes::NodeType;
+use dctx_core::diff::{ChangeType, DiffEntry, DiffReport};
+use dctx_core::version::Version;
+use dctx_template::{render_legacy_diff, render_legacy_snapshot, render_markers, CompiledTemplate, MarkerNode, Template};
 
 const SNAPSHOT: &str = include_str!("fixtures/legacy-snapshot.txt");
 const TREE: &str = include_str!("fixtures/legacy-tree.txt");
@@ -131,9 +134,8 @@ fn snapshot_body_matches_legacy_layout() {
 }
 
 #[test]
-#[ignore = "D3-03 gap: render_markers does not emit the snapshot version header"]
 fn snapshot_envelope_matches_legacy_bytes() {
-    assert_eq!(render_markers(&template(), &snapshot_tree(), false), SNAPSHOT);
+    assert_eq!(render_legacy_snapshot(&template(), &snapshot_tree(), &Version::new_v1(), false, true), SNAPSHOT);
 }
 
 #[test]
@@ -147,9 +149,8 @@ fn tree_only_body_matches_legacy_layout() {
 }
 
 #[test]
-#[ignore = "D3-03 gap: render_markers does not emit the snapshot version header"]
 fn tree_only_envelope_matches_legacy_bytes() {
-    assert_eq!(render_markers(&template(), &snapshot_tree(), true), TREE);
+    assert_eq!(render_legacy_snapshot(&template(), &snapshot_tree(), &Version::new_v1(), true, true), TREE);
 }
 
 #[test]
@@ -169,17 +170,34 @@ fn diff_fixture_pins_the_legacy_diff_envelope() {
 }
 
 #[test]
-#[ignore = "D3-03 gap: diff header, version line, summary, updated tree, changed-content-only, SVG diff sentence"]
 fn diff_envelope_matches_legacy_bytes() {
-    assert_eq!(render_markers(&template(), &snapshot_tree(), false), DIFF);
+    let mut root = MarkerNode::dir("", 1000);
+    root.children = vec![
+        MarkerNode::file("added.txt", b"NEW!", 2000),
+        MarkerNode::file("changed.txt", b"New content", 2100),
+        binary("icon.svg", 6, 2200, "SVG file"),
+        MarkerNode::dir("new_dir", 2300),
+        MarkerNode::file("unchanged.txt", b"Old content", 2400),
+    ];
+    let mut diff = DiffReport::default();
+    for (path, change_type, node_type) in [
+        ("added.txt", ChangeType::Added, NodeType::File),
+        ("changed.txt", ChangeType::Modified, NodeType::File),
+        ("deleted_file.txt", ChangeType::Removed, NodeType::File),
+        ("new_dir", ChangeType::Added, NodeType::Directory),
+        ("icon.svg", ChangeType::Modified, NodeType::File),
+    ] {
+        diff.entries.push(DiffEntry { change_type, node_type, relative_path: path.to_string() });
+    }
+    let got = render_legacy_diff(&template(), &root, &diff, &Version::new_v1(), &Version { major: 1, minor: 1 }, true);
+    assert_eq!(got, DIFF);
 }
 
 #[test]
-#[ignore = "D3-03 gap: snapshot SVG sentence is [SVG file (omit_svg_content=true), content omitted]"]
 fn svg_snapshot_sentence_matches_legacy() {
     let mut root = MarkerNode::dir("", 1);
     root.children.push(binary("icon.svg", 6, 2, "SVG file"));
-    let got = render_markers(&template(), &root, false);
+    let got = render_legacy_snapshot(&template(), &root, &Version::new_v1(), false, true);
     assert!(got.contains("[SVG file (omit_svg_content=true), content omitted]"));
     assert!(!got.contains("<svg/>"));
 }

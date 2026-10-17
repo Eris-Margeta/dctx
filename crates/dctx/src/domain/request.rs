@@ -133,6 +133,9 @@ pub struct PackRequest {
     pub limits: OperationLimits,
     /// `2` is JSON v2, `1` is text.
     pub output_format: u32,
+    /// Optional legacy document instead of the summary selected by `output_format`.
+    /// Template, project variables and SVG handling are supplied by the caller.
+    pub legacy_output: Option<dctx_template::LegacyOutput>,
     /// Any value refuses with `git` before a scan. The core has no git identity.
     pub git_revision: Option<String>,
 }
@@ -145,6 +148,7 @@ impl PackRequest {
             view: String::new(),
             limits: OperationLimits::default(),
             output_format: 2,
+            legacy_output: None,
             git_revision: None,
         }
     }

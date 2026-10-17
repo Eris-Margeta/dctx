@@ -31,6 +31,9 @@ pub struct PackReport {
     pub changes: u64,
     /// How many non-fatal diagnostics the scan recorded.
     pub diagnostics: u64,
+    /// Legacy layout actually emitted, or `None` for the default text/JSON summary.
+    /// A requested diff becomes a snapshot on a first run or major reset.
+    pub legacy_layout: Option<dctx_template::LegacyLayout>,
 }
 
 /// Auto-clean settings for one managed cache root.

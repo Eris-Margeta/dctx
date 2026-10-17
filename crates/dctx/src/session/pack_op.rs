@@ -7,6 +7,7 @@ use dctx_core::budget::PackLimits;
 use dctx_core::datatypes::{DirContextTreeNode, NodeType};
 use dctx_core::ids::ViewKey;
 use dctx_pack::{pack, PackPorts, PackRequest as EngineRequest};
+use dctx_template::{render_legacy_diff, render_legacy_snapshot, LegacyLayout, MarkerNode};
 
 use super::Session;
 use crate::domain::{BoundedSink, PackReport, PackRequest, DctxError, REQUEST_VERSION};
@@ -22,7 +23,8 @@ impl Session {
         }
         reject_format(request.output_format)?;
         reject_git(request.git_revision.as_deref())?;
-        if request.limits.encoded_bytes.is_some_and(|bytes| bytes < 64) {
+        let effective_limits = self.limits.intersect(request.limits);
+        if effective_limits.encoded_bytes.is_some_and(|bytes| bytes < 64) {
             return Err(DctxError::BudgetTooSmall { minimum_bytes: 64 });
         }
         self.cancel.checkpoint().map_err(DctxError::from_core)?;
@@ -30,7 +32,7 @@ impl Session {
         self.touch_cache_root()?;
         let view_name = if request.view.is_empty() { self.view.clone() } else { request.view.clone() };
         let view = ViewKey::parse(&view_name).map_err(DctxError::from_core)?;
-        let scan = crate::domain::resolve_scan(&self.limits.intersect(request.limits))?;
+        let scan = crate::domain::resolve_scan(&effective_limits)?;
         let limits = PackLimits {
             max_entries: scan.entries,
             max_depth: scan.depth,
@@ -45,22 +47,29 @@ impl Session {
                 clock: self.clock.as_ref(),
                 cancel: self.cancel.as_ref(),
             },
-            &EngineRequest { view, policy: &self.selection, debug_ignored: false, max_diff_files: 100_000, limits },
+            &EngineRequest {
+                view,
+                policy: &self.selection,
+                debug_ignored: request.legacy_output.as_ref().is_some_and(|output| output.debug_ignored),
+                max_diff_files: 100_000,
+                limits,
+            },
         )
         .map_err(DctxError::from_core)?;
         let changes = engine.diff.stats.files_added + engine.diff.stats.files_removed + engine.diff.stats.files_modified;
-        let public = PackReport {
+        let mut public = PackReport {
             version: engine.snapshot.version().to_string(),
-            previous: engine.previous_version.map(|version| version.to_string()),
+            previous: engine.previous_version.as_ref().map(|version| version.to_string()),
             published: engine.published,
             major_reset: engine.major_reset,
             digest: engine.snapshot.digest().to_string(),
             files: file_count(engine.snapshot.tree()),
             changes: u64::try_from(changes).unwrap_or(u64::MAX),
             diagnostics: u64::try_from(engine.diagnostics.len()).unwrap_or(u64::MAX),
+            legacy_layout: None,
         };
-        let encoded = encode_pack(request.output_format, &public);
-        if let Some(limit) = request.limits.encoded_bytes {
+        let encoded = encode_output(request, &engine, &mut public);
+        if let Some(limit) = effective_limits.encoded_bytes {
             let len = u64::try_from(encoded.len()).unwrap_or(u64::MAX);
             if len > limit {
                 return Err(DctxError::BudgetTooSmall { minimum_bytes: len });
@@ -69,6 +78,44 @@ impl Session {
         sink.write_page(&encoded)?;
         self.hooks_after_pack()?;
         Ok(public)
+    }
+}
+
+fn encode_output(request: &PackRequest, engine: &dctx_pack::PackReport, report: &mut PackReport) -> Vec<u8> {
+    let Some(output) = &request.legacy_output else {
+        return encode_pack(request.output_format, report);
+    };
+    let tree = marker_tree(engine.snapshot.tree());
+    let version = engine.snapshot.version();
+    if output.layout == LegacyLayout::Diff && !engine.major_reset && let Some(previous) = &engine.previous_version {
+        report.legacy_layout = Some(LegacyLayout::Diff);
+        return render_legacy_diff(
+            &output.template, &tree, &engine.diff, previous, version, output.omit_svg_content,
+        ).into_bytes();
+    }
+    let tree_only = output.layout == LegacyLayout::TreeOnly;
+    report.legacy_layout = Some(if tree_only { LegacyLayout::TreeOnly } else { LegacyLayout::Snapshot });
+    render_legacy_snapshot(&output.template, &tree, version, tree_only, output.omit_svg_content).into_bytes()
+}
+
+fn marker_tree(node: &DirContextTreeNode) -> MarkerNode {
+    let omitted = node.handling_decision == dctx_core::FileHandlingDecision::OmitContent;
+    let ignored = node.is_ignored || !node.handling_decision.should_read_content() && !omitted;
+    let binary_label = if node.is_binary_file {
+        Some(node.binary_file_type.clone().unwrap_or_else(|| "Unknown".to_string()))
+    } else {
+        node.binary_file_type.clone().filter(|label| label == "SVG file")
+    };
+    MarkerNode {
+        relative_path: node.relative_path.clone(),
+        is_dir: node.node_type == NodeType::Directory,
+        is_ignored: ignored,
+        omit_content: omitted,
+        binary_label,
+        content: if ignored || omitted || node.is_binary_file { None } else { node.file_content.clone() },
+        content_size: node.content_size,
+        modified: node.last_modified_timestamp,
+        children: node.children.iter().map(marker_tree).collect(),
     }
 }
 
