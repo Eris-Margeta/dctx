@@ -1,159 +1,60 @@
-// apps/dctx-desktop/src-tauri/src/recent_projects.rs
-//
-// Recent Projects Storage Backend
-// Manages persistent storage of recently accessed projects
+//! Recent-project directory discovery and command wrappers.
+//! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4 (second half, DX-E4b).
+//! Depends on `dctx_desktop_api::RecentStore`, the desktop config directory and `chrono` for the timestamp.
+//! `main.rs` calls these wrappers. Dedup, order and the cap stay in the seam crate.
 
-use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::{Path, PathBuf};
+use dctx_desktop_api::{DesktopError, RecentStore};
 
-/// Maximum number of recent projects to store
-const MAX_RECENT_PROJECTS: usize = 20;
+/// One directory the desktop has opened.
+pub use dctx_desktop_api::RecentProject;
 
-/// RecentProject represents a single project in the recent list
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RecentProject {
-    pub path: String,
-    pub name: String,
-    pub last_accessed: String, // ISO 8601 timestamp
-    pub access_count: u32,
+fn command_error(error: DesktopError) -> String {
+    error.command_string()
 }
 
-/// Get path to recent projects storage file
-fn get_recent_projects_path() -> Result<PathBuf, String> {
-    let config_dir = dirs::config_dir()
-        .ok_or_else(|| "Failed to get config directory".to_string())?;
-
-    let dctx_config = config_dir.join("dctx-desktop");
-
-    // Ensure directory exists
-    if !dctx_config.exists() {
-        fs::create_dir_all(&dctx_config)
-            .map_err(|e| format!("Failed to create config directory: {}", e))?;
-    }
-
-    Ok(dctx_config.join("recent_projects.json"))
+fn store() -> Result<RecentStore, String> {
+    Ok(RecentStore::new(crate::config::desktop_config_dir()?))
 }
 
-/// Load recent projects from disk
+/// UTC timestamp stored on [`RecentStore::add`].
+fn accessed_now() -> String {
+    chrono::Utc::now().to_rfc3339()
+}
+
+/// Loads the recent-project list. A missing file is empty.
 pub fn load_recent_projects() -> Result<Vec<RecentProject>, String> {
-    let path = get_recent_projects_path()?;
-
-    if !path.exists() {
-        // Return empty list if file doesn't exist yet
-        return Ok(Vec::new());
-    }
-
-    let content = fs::read_to_string(&path)
-        .map_err(|e| format!("Failed to read recent projects file: {}", e))?;
-
-    let projects: Vec<RecentProject> = serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse recent projects: {}", e))?;
-
-    Ok(projects)
+    store()?.get().map_err(command_error)
 }
 
-/// Save recent projects to disk
-fn save_recent_projects(projects: &[RecentProject]) -> Result<(), String> {
-    let path = get_recent_projects_path()?;
-
-    let json = serde_json::to_string_pretty(projects)
-        .map_err(|e| format!("Failed to serialize recent projects: {}", e))?;
-
-    fs::write(&path, json)
-        .map_err(|e| format!("Failed to write recent projects file: {}", e))?;
-
-    Ok(())
-}
-
-/// Add or update a project in recent projects list
+/// Records `path` with the current UTC timestamp.
 pub fn add_recent_project(path: &str) -> Result<(), String> {
-    // Validate path exists
-    let project_path = Path::new(path);
-    if !project_path.exists() {
-        return Err(format!("Path does not exist: {}", path));
-    }
-
-    // Extract project name from path
-    let name = project_path
-        .file_name()
-        .and_then(|n| n.to_str())
-        .unwrap_or("Unknown")
-        .to_string();
-
-    // Load existing projects
-    let mut projects = load_recent_projects()?;
-
-    // Get current timestamp in ISO 8601 format
-    let now = chrono::Utc::now().to_rfc3339();
-
-    // Check if project already exists
-    if let Some(existing) = projects.iter_mut().find(|p| p.path == path) {
-        // Update existing project
-        existing.last_accessed = now;
-        existing.access_count += 1;
-    } else {
-        // Add new project
-        let new_project = RecentProject {
-            path: path.to_string(),
-            name,
-            last_accessed: now,
-            access_count: 1,
-        };
-        projects.push(new_project);
-    }
-
-    // Sort by last_accessed (most recent first)
-    projects.sort_by(|a, b| b.last_accessed.cmp(&a.last_accessed));
-
-    // Limit to MAX_RECENT_PROJECTS
-    if projects.len() > MAX_RECENT_PROJECTS {
-        projects.truncate(MAX_RECENT_PROJECTS);
-    }
-
-    // Save to disk
-    save_recent_projects(&projects)?;
-
-    Ok(())
+    let accessed_at = accessed_now();
+    store()?.add(path, &accessed_at).map_err(command_error)
 }
 
-/// Remove a project from recent projects list
+/// Drops `path` from the recent-project list.
 pub fn remove_recent_project(path: &str) -> Result<(), String> {
-    // Load existing projects
-    let mut projects = load_recent_projects()?;
-
-    // Find and remove the project
-    let original_len = projects.len();
-    projects.retain(|p| p.path != path);
-
-    if projects.len() == original_len {
-        return Err(format!("Project not found in recent list: {}", path));
-    }
-
-    // Save to disk
-    save_recent_projects(&projects)?;
-
-    Ok(())
+    store()?.remove(path).map_err(command_error)
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use dctx_desktop_api::DesktopError;
+
+    use super::{accessed_now, command_error};
 
     #[test]
-    fn test_recent_project_serialization() {
-        let project = RecentProject {
-            path: "/home/user/project".to_string(),
-            name: "project".to_string(),
-            last_accessed: "2025-01-15T10:30:00Z".to_string(),
-            access_count: 5,
+    fn current_timestamp_is_utc_rfc3339() {
+        let stamp = accessed_now();
+        let parsed = chrono::DateTime::parse_from_rfc3339(&stamp).expect("rfc3339");
+        assert_eq!(parsed.offset().local_minus_utc(), 0);
+    }
+
+    #[test]
+    fn recent_errors_use_the_api_command_string() {
+        let error = DesktopError::RecentPathMissing {
+            path: "/missing".to_string(),
         };
-
-        let json = serde_json::to_string(&project).unwrap();
-        let deserialized: RecentProject = serde_json::from_str(&json).unwrap();
-
-        assert_eq!(deserialized.path, project.path);
-        assert_eq!(deserialized.name, project.name);
-        assert_eq!(deserialized.access_count, project.access_count);
+        assert_eq!(command_error(error), "Path does not exist: /missing");
     }
 }

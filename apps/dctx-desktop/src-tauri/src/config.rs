@@ -1,269 +1,89 @@
-// apps/dctx-desktop/src-tauri/src/config.rs
-//
-// Desktop-specific configuration that extends dctx-core config
+//! Desktop directory discovery and settings command wrappers.
+//! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4 (second half, DX-E4b).
+//! Depends on `dctx_desktop_api` for settings and on `dirs` for the config and cache directories.
+//! `main.rs` calls these wrappers. Parsing and defaults stay in the seam crate.
 
-use dctx_core::config::{get_config_dir as get_core_config_dir, load_app_config, AppConfig};
-use std::env;
-use std::fs;
 use std::path::PathBuf;
 
-/// Desktop app name (separate from core "dctx")
-pub const DESKTOP_APP_NAME: &str = "dctx-desktop";
+use dctx_desktop_api::{DesktopError, DESKTOP_APP_NAME};
 
-/// Desktop config filename
-pub const DESKTOP_CONFIG_FILENAME: &str = "config.toml";
+/// Desktop settings JSON the UI reads and writes.
+pub use dctx_desktop_api::DesktopConfig;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct DesktopConfig {
-    /// Inherit core dctx config (filters, ignore rules, etc.)
-    /// Not serialized - loaded from ~/.config/dctx/config.toml
-    #[serde(skip)]
-    pub core: AppConfig,
-
-    /// Desktop-specific: Last used directory
-    pub last_directory: Option<String>,
-
-    /// Desktop-specific: Window size
-    pub window_width: u32,
-    pub window_height: u32,
-
-    /// Desktop-specific: File count warning threshold
-    pub file_count_limit: usize,
-
-    /// Desktop-specific: Theme preference (system, light, dark)
-    pub theme: String,
-
-    /// Desktop-specific: Auto-copy snapshot to clipboard after generation
-    pub auto_copy_to_clipboard: bool,
-
-    // Filter settings (desktop-specific defaults)
-    pub filter_extensions: Option<Vec<String>>,
-    pub include_binary: bool,
-    pub only_hidden: bool,
-    pub min_size_mb: Option<f64>,
-    pub max_size_mb: Option<f64>,
-    pub only_empty: bool,
-    pub only_non_empty: bool,
-    pub tree_only: bool,
+/// Joins the desktop app directory onto a platform root from `dirs`.
+fn app_dir(root: PathBuf) -> PathBuf {
+    root.join(DESKTOP_APP_NAME)
 }
 
-impl Default for DesktopConfig {
-    fn default() -> Self {
-        Self {
-            core: AppConfig::default(),
-            last_directory: None,
-            window_width: 1200,
-            window_height: 800,
-            file_count_limit: 10_000,
-            theme: "system".to_string(),
-            auto_copy_to_clipboard: false,
-            filter_extensions: None,
-            include_binary: false,
-            only_hidden: false,
-            min_size_mb: None,
-            max_size_mb: None,
-            only_empty: false,
-            only_non_empty: false,
-            tree_only: false,
-        }
-    }
+/// Config directory under the platform config root.
+pub fn desktop_config_dir() -> Result<PathBuf, String> {
+    dirs::config_dir()
+        .map(app_dir)
+        .ok_or_else(|| "Failed to get config directory".to_string())
 }
 
-/// Get desktop app config directory
-/// ~/.config/dctx-desktop/ (Unix)
-/// %APPDATA%/dctx-desktop/ (Windows)
-pub fn get_desktop_config_dir() -> Option<PathBuf> {
-    if cfg!(target_os = "windows") {
-        env::var("APPDATA")
-            .ok()
-            .map(|p| PathBuf::from(p).join(DESKTOP_APP_NAME))
-    } else if let Ok(xdg_config) = env::var("XDG_CONFIG_HOME") {
-        Some(PathBuf::from(xdg_config).join(DESKTOP_APP_NAME))
-    } else {
-        env::var("HOME")
-            .ok()
-            .map(|h| PathBuf::from(h).join(".config").join(DESKTOP_APP_NAME))
-    }
+/// Cache directory under the platform cache root.
+pub fn desktop_cache_dir() -> Result<PathBuf, String> {
+    dirs::cache_dir()
+        .map(app_dir)
+        .ok_or_else(|| "Failed to get cache directory".to_string())
 }
 
-/// Get desktop app cache directory
-pub fn get_desktop_cache_dir() -> Option<PathBuf> {
-    if cfg!(target_os = "windows") {
-        env::var("LOCALAPPDATA")
-            .ok()
-            .map(|p| PathBuf::from(p).join(DESKTOP_APP_NAME))
-    } else if let Ok(xdg_cache) = env::var("XDG_CACHE_HOME") {
-        Some(PathBuf::from(xdg_cache).join(DESKTOP_APP_NAME))
-    } else {
-        env::var("HOME")
-            .ok()
-            .map(|h| PathBuf::from(h).join(".cache").join(DESKTOP_APP_NAME))
-    }
+fn command_error(error: DesktopError) -> String {
+    error.command_string()
 }
 
-/// Load desktop config, inheriting from core dctx config
+/// Loads settings from the desktop config directory.
+///
+/// A missing directory is [`DesktopConfig::default`], the same outcome as a missing file.
 pub fn load_desktop_config() -> DesktopConfig {
-    // 1. Load core dctx config first (if exists)
-    let mut config = DesktopConfig {
-        core: load_app_config(),
-        ..Default::default()
-    };
-
-    // 2. Load desktop-specific config (overrides core where applicable)
-    if let Some(config_dir) = get_desktop_config_dir() {
-        let config_path = config_dir.join(DESKTOP_CONFIG_FILENAME);
-
-        if config_path.exists() {
-            if let Ok(content) = fs::read_to_string(config_path) {
-                for line in content.lines() {
-                    parse_desktop_config_line(line, &mut config);
-                }
-            }
-        }
-    }
-
-    config
+    desktop_config_dir().map_or_else(
+        |_| DesktopConfig::default(),
+        |dir| dctx_desktop_api::load_desktop_config(&dir),
+    )
 }
 
-fn parse_desktop_config_line(line: &str, config: &mut DesktopConfig) {
-    let line = line.trim();
-    if line.is_empty() || line.starts_with('#') {
-        return;
-    }
-
-    if let Some((key, val)) = line.split_once('=') {
-        let key = key.trim();
-        let val = val.trim().trim_matches('"').trim_matches('\'');
-
-        match key {
-            "last_directory" => {
-                config.last_directory = Some(val.to_string());
-            }
-            "window_width" => {
-                if let Ok(num) = val.parse::<u32>() {
-                    config.window_width = num;
-                }
-            }
-            "window_height" => {
-                if let Ok(num) = val.parse::<u32>() {
-                    config.window_height = num;
-                }
-            }
-            "file_count_limit" => {
-                if let Ok(num) = val.parse::<usize>() {
-                    config.file_count_limit = num;
-                }
-            }
-            "theme" => {
-                config.theme = val.to_string();
-            }
-            "auto_copy_to_clipboard" => {
-                config.auto_copy_to_clipboard = val == "true";
-            }
-            "filter_extensions" => {
-                if !val.is_empty() {
-                    config.filter_extensions = Some(
-                        val.split(',')
-                            .map(|s| s.trim().to_string())
-                            .filter(|s| !s.is_empty())
-                            .collect()
-                    );
-                }
-            }
-            "include_binary" => {
-                config.include_binary = val == "true";
-            }
-            "only_hidden" => {
-                config.only_hidden = val == "true";
-            }
-            "min_size_mb" => {
-                if let Ok(num) = val.parse::<f64>() {
-                    config.min_size_mb = Some(num);
-                }
-            }
-            "max_size_mb" => {
-                if let Ok(num) = val.parse::<f64>() {
-                    config.max_size_mb = Some(num);
-                }
-            }
-            "only_empty" => {
-                config.only_empty = val == "true";
-            }
-            "only_non_empty" => {
-                config.only_non_empty = val == "true";
-            }
-            "tree_only" => {
-                config.tree_only = val == "true";
-            }
-            _ => {
-                // Unknown key - ignore
-            }
-        }
-    }
-}
-
-/// Save desktop config to disk
-#[allow(dead_code)]
+/// Writes `config` into the desktop config directory.
 pub fn save_desktop_config(config: &DesktopConfig) -> Result<(), String> {
-    let config_dir = get_desktop_config_dir().ok_or("Failed to get config directory")?;
-
-    // Ensure directory exists
-    fs::create_dir_all(&config_dir).map_err(|e| format!("Failed to create config dir: {}", e))?;
-
-    let config_path = config_dir.join(DESKTOP_CONFIG_FILENAME);
-
-    let mut content = String::new();
-    content.push_str("# dctx Desktop Configuration\n");
-    content.push_str("# This file is auto-generated\n\n");
-
-    content.push_str("# Desktop-specific settings\n");
-    if let Some(ref dir) = config.last_directory {
-        content.push_str(&format!("last_directory = \"{}\"\n", dir));
-    }
-    content.push_str(&format!("window_width = {}\n", config.window_width));
-    content.push_str(&format!("window_height = {}\n", config.window_height));
-    content.push_str(&format!("file_count_limit = {}\n", config.file_count_limit));
-    content.push_str(&format!("theme = \"{}\"\n", config.theme));
-    content.push_str(&format!("auto_copy_to_clipboard = {}\n", config.auto_copy_to_clipboard));
-
-    content.push_str("\n# Filter settings\n");
-    if let Some(ref exts) = config.filter_extensions {
-        content.push_str(&format!("filter_extensions = \"{}\"\n", exts.join(",")));
-    }
-    content.push_str(&format!("include_binary = {}\n", config.include_binary));
-    content.push_str(&format!("only_hidden = {}\n", config.only_hidden));
-    if let Some(min) = config.min_size_mb {
-        content.push_str(&format!("min_size_mb = {}\n", min));
-    }
-    if let Some(max) = config.max_size_mb {
-        content.push_str(&format!("max_size_mb = {}\n", max));
-    }
-    content.push_str(&format!("only_empty = {}\n", config.only_empty));
-    content.push_str(&format!("only_non_empty = {}\n", config.only_non_empty));
-    content.push_str(&format!("tree_only = {}\n", config.tree_only));
-
-    fs::write(config_path, content).map_err(|e| format!("Failed to write config: {}", e))?;
-
-    Ok(())
+    let dir = desktop_config_dir()?;
+    dctx_desktop_api::save_desktop_config(&dir, config).map_err(command_error)
 }
 
-/// Initialize config directories on first run
+/// Writes default settings into the desktop config directory.
+pub fn reset_desktop_config() -> Result<(), String> {
+    let dir = desktop_config_dir()?;
+    dctx_desktop_api::reset_desktop_config(&dir).map_err(command_error)
+}
+
+/// Creates the desktop config and cache directories.
 pub fn ensure_config_dirs() -> Result<(), String> {
-    if let Some(config_dir) = get_desktop_config_dir() {
-        fs::create_dir_all(&config_dir)
-            .map_err(|e| format!("Failed to create desktop config dir: {}", e))?;
+    let config_dir = desktop_config_dir()?;
+    let cache_dir = desktop_cache_dir()?;
+    dctx_desktop_api::ensure_config_dirs(&config_dir, &cache_dir).map_err(command_error)
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use dctx_desktop_api::{DesktopError, DESKTOP_APP_NAME};
+
+    use super::{app_dir, command_error};
+
+    #[test]
+    fn app_dir_joins_the_desktop_name() {
+        let root = PathBuf::from("/tmp/config");
+        assert_eq!(app_dir(root.clone()), root.join(DESKTOP_APP_NAME));
     }
 
-    if let Some(cache_dir) = get_desktop_cache_dir() {
-        fs::create_dir_all(&cache_dir)
-            .map_err(|e| format!("Failed to create desktop cache dir: {}", e))?;
+    #[test]
+    fn settings_errors_use_the_api_command_string() {
+        let error = DesktopError::CreateDesktopConfigDir {
+            detail: "denied".to_string(),
+        };
+        assert_eq!(
+            command_error(error),
+            "Failed to create desktop config dir: denied"
+        );
     }
-
-    // Also ensure core dctx directories exist
-    if let Some(core_config_dir) = get_core_config_dir() {
-        fs::create_dir_all(&core_config_dir)
-            .map_err(|e| format!("Failed to create core config dir: {}", e))?;
-    }
-
-    Ok(())
 }
