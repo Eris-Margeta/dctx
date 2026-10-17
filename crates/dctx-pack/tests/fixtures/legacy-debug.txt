@@ -1,0 +1,40 @@
+# DX-D3-01 pinned facts. legacy_parity corpus, debug_ignored=true.
+# Excluded items stay in the tree as DebugVisible. Descendants of a
+# DebugVisible directory keep their own decision and are marked ignored.
+# Their content is not read. Timestamps match legacy-normal.txt.
+ENTRIES 19
+CONTENT_BYTES 46
+DIAGNOSTICS 0
+READS
+README.md
+assets/logo.png
+empty.txt
+src/main.rs
+src/nested/deep/util.rs
+NOT_READ
+.env
+Cargo.lock
+assets/icon.svg
+node_modules/pkg/index.js
+private/keep/notes.txt
+UNTOUCHED
+NODES
+0	.	dir	Include	false	0	1700000000000	false	-	-
+1	.env	file	DebugVisible	true	9	1700000001100	false	-	-
+1	Cargo.lock	file	OmitContent	false	7	1700000000700	false	-	-
+1	README.md	file	Include	false	9	1700000000600	false	-	"# corpus\n"
+1	assets	dir	Include	false	0	1700000000800	false	-	-
+2	assets/icon.svg	file	OmitContent	false	6	1700000001000	false	-	-
+2	assets/logo.png	file	Include	false	7	1700000000900	true	PNG image	-
+1	empty.txt	file	Include	false	0	1700000001800	false	-	""
+1	node_modules	dir	DebugVisible	true	0	1700000001200	false	-	-
+2	node_modules/pkg	dir	Include	true	0	1700000001300	false	-	-
+3	node_modules/pkg/index.js	file	Include	true	20	1700000001400	false	-	-
+1	private	dir	DebugVisible	true	0	1700000001500	false	-	-
+2	private/keep	dir	Include	true	0	1700000001600	false	-	-
+3	private/keep/notes.txt	file	Include	true	8	1700000001700	false	-	-
+1	src	dir	Include	false	0	1700000000100	false	-	-
+2	src/main.rs	file	Include	false	13	1700000000400	false	-	"fn main() {}\n"
+2	src/nested	dir	Include	false	0	1700000000200	false	-	-
+3	src/nested/deep	dir	Include	false	0	1700000000300	false	-	-
+4	src/nested/deep/util.rs	file	Include	false	17	1700000000500	false	-	"pub fn util() {}\n"

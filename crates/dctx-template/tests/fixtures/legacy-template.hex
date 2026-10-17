@@ -1,0 +1,23 @@
+# DX-D3-01 compiled v1 bytes for template "pin".
+# Variables alpha=A and zeta=Z. Partials and layout are substituted.
+# SORTED is dctx-template's key order. UNSORTED is one legacy HashMap order
+# (zeta then alpha). Decode accepts both. Encode emits SORTED.
+# Magic DCTXTMPL, version u32le 1, then name, count, key u16le, value u32le.
+SORTED
+44 43 54 58 54 4D 50 4C 01 00 00 00 03 00 00 00
+70 69 6E 02 00 00 00 05 00 61 6C 70 68 61 01 00
+00 00 41 04 00 7A 65 74 61 01 00 00 00 5A 11 00
+00 00 41 20 7B 7B 7B 6E 6F 64 65 2E 70 61 74 68
+7D 7D 7D 14 00 00 00 5A 20 7B 7B 7B 66 69 6C 65
+2E 63 6F 6E 74 65 6E 74 7D 7D 7D 13 00 00 00 41
+2D 5A 0A 7B 7B 7B 63 6F 6D 70 2E 74 72 65 65 7D
+7D 7D
+UNSORTED
+44 43 54 58 54 4D 50 4C 01 00 00 00 03 00 00 00
+70 69 6E 02 00 00 00 04 00 7A 65 74 61 01 00 00
+00 5A 05 00 61 6C 70 68 61 01 00 00 00 41 11 00
+00 00 41 20 7B 7B 7B 6E 6F 64 65 2E 70 61 74 68
+7D 7D 7D 14 00 00 00 5A 20 7B 7B 7B 66 69 6C 65
+2E 63 6F 6E 74 65 6E 74 7D 7D 7D 13 00 00 00 41
+2D 5A 0A 7B 7B 7B 63 6F 6D 70 2E 74 72 65 65 7D
+7D 7D

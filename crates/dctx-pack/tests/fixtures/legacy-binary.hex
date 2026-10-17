@@ -1,0 +1,4 @@
+# DX-D3-01 pinned bytes of assets/logo.png in the legacy_parity corpus.
+# Extension png classifies as OmitBinary "PNG image". The read happens;
+# file_content is cleared and is_binary_file is set. Size is 7.
+89 50 4E 47 00 00 01

@@ -1,0 +1,220 @@
+//! Pinned legacy formatter envelopes and compiled-template bytes (DX-D3-01).
+//! Fixtures are the bytes the legacy formatter and `CompiledTemplate::serialize` produce
+//! for a fixed tree and the `pin` template. This file calls only `dctx_template`.
+//! Depends on dctx-template. Run by `cargo test -p dctx-template --test legacy_envelopes`.
+//! A test the current renderer cannot match yet is ignored with a D3-03 gap string.
+
+use std::io::Cursor;
+
+use dctx_template::{render_markers, CompiledTemplate, MarkerNode, Template};
+
+const SNAPSHOT: &str = include_str!("fixtures/legacy-snapshot.txt");
+const TREE: &str = include_str!("fixtures/legacy-tree.txt");
+const DIFF: &str = include_str!("fixtures/legacy-diff.txt");
+const HEX: &str = include_str!("fixtures/legacy-template.hex");
+const HEADER: &str = "[DCTX_LLM_CONTEXT_SNAPSHOT_V1]";
+
+const PIN: &str = "\
+[VARIABLES]
+zeta = \"Z\"
+alpha = \"A\"
+[PARTIAL:TREE_ENTRY]
+{{alpha}} {{{node.path}}}
+[PARTIAL:FILE_BLOCK]
+{{zeta}} {{{file.content}}}
+[LAYOUT]
+{{alpha}}-{{zeta}}
+{{{comp.tree}}}
+";
+
+fn template() -> Template {
+    let mut parsed = Template::parse(include_str!("../templates/default.dctx_template"));
+    parsed.insert_variable("project", "Corpus");
+    parsed
+}
+
+fn omitted(path: &str, size: u64, modified: u64) -> MarkerNode {
+    let mut node = MarkerNode::file(path, &[], modified);
+    node.content = None;
+    node.content_size = size;
+    node.omit_content = true;
+    node
+}
+
+fn binary(path: &str, size: u64, modified: u64, label: &str) -> MarkerNode {
+    let mut node = MarkerNode::file(path, &[], modified);
+    node.content = None;
+    node.content_size = size;
+    node.binary_label = Some(label.to_string());
+    node
+}
+
+fn ignored(path: &str, bytes: &[u8], modified: u64) -> MarkerNode {
+    let mut node = MarkerNode::file(path, bytes, modified);
+    node.is_ignored = true;
+    node
+}
+
+fn snapshot_tree() -> MarkerNode {
+    let mut git = MarkerNode::dir(".git", 1600);
+    git.is_ignored = true;
+    git.children.push(ignored(".git/config", b"sensitive", 1700));
+    let mut src = MarkerNode::dir("src", 1100);
+    src.children.push(MarkerNode::file("src/main.rs", b"fn main() {}\n", 1200));
+    let mut root = MarkerNode::dir("", 1000);
+    root.children.push(git);
+    root.children.push(omitted("Cargo.lock", 7, 1500));
+    root.children.push(binary("logo.png", 7, 1400, "PNG image"));
+    root.children.push(ignored("secret.env", b"SECRET=1\n", 1300));
+    root.children.push(src);
+    root
+}
+
+fn body(fixture: &str) -> &str {
+    fixture.strip_prefix(HEADER).expect("header").strip_prefix('\n').expect("newline")
+}
+
+fn decode_hex(text: &str) -> Vec<u8> {
+    let mut out = Vec::new();
+    for line in text.lines() {
+        let code = line.split('#').next().unwrap_or("");
+        for token in code.split_whitespace() {
+            out.push(u8::from_str_radix(token, 16).unwrap_or_else(|_| panic!("bad hex {token}")));
+        }
+    }
+    out
+}
+
+fn hex_sections() -> (Vec<u8>, Vec<u8>) {
+    let mut sorted = String::new();
+    let mut unsorted = String::new();
+    let mut which = "";
+    for line in HEX.lines() {
+        match line.trim() {
+            "SORTED" => which = "sorted",
+            "UNSORTED" => which = "unsorted",
+            _ => match which {
+                "sorted" => {
+                    sorted.push_str(line);
+                    sorted.push('\n');
+                }
+                "unsorted" => {
+                    unsorted.push_str(line);
+                    unsorted.push('\n');
+                }
+                _ => {}
+            },
+        }
+    }
+    let sorted = decode_hex(&sorted);
+    let unsorted = decode_hex(&unsorted);
+    assert!(!sorted.is_empty() && sorted != unsorted);
+    (sorted, unsorted)
+}
+
+#[test]
+fn snapshot_body_matches_legacy_layout() {
+    let got = render_markers(&template(), &snapshot_tree(), false);
+    assert_eq!(got, body(SNAPSHOT));
+    assert!(got.contains("[DIRECTORY:Corpus]"));
+    assert!(!got.contains("{Corpus}"));
+    assert!(got.contains("fn main() {}"));
+    assert!(got.contains("secret.env [IGNORED]"));
+    assert!(got.contains("    [F] src/main.rs"));
+    assert!(got.contains(".git [IGNORED]"));
+    assert!(got.contains(".git/config [IGNORED]"));
+    assert!(got.contains("ID:F007"));
+    assert!(got.contains("[Content omitted by pattern rules]"));
+    assert!(got.contains("[Binary file: PNG image, content omitted]"));
+    assert!(!got.contains("SECRET=1"));
+    assert!(!got.contains("sensitive"));
+}
+
+#[test]
+#[ignore = "D3-03 gap: render_markers does not emit the snapshot version header"]
+fn snapshot_envelope_matches_legacy_bytes() {
+    assert_eq!(render_markers(&template(), &snapshot_tree(), false), SNAPSHOT);
+}
+
+#[test]
+fn tree_only_body_matches_legacy_layout() {
+    let got = render_markers(&template(), &snapshot_tree(), true);
+    assert_eq!(got, body(TREE));
+    assert!(got.contains("src/main.rs"));
+    assert!(!got.contains("fn main() {}"));
+    assert!(!got.contains("SECRET=1"));
+    assert!(!got.contains("LINES="));
+}
+
+#[test]
+#[ignore = "D3-03 gap: render_markers does not emit the snapshot version header"]
+fn tree_only_envelope_matches_legacy_bytes() {
+    assert_eq!(render_markers(&template(), &snapshot_tree(), true), TREE);
+}
+
+#[test]
+fn diff_fixture_pins_the_legacy_diff_envelope() {
+    assert!(DIFF.starts_with("[DCTX_LLM_CONTEXT_DIFF_V1.1]\n"));
+    assert!(DIFF.contains("Version Change: V1 -> V1.1\n"));
+    assert!(DIFF.contains("[ADDED] added.txt\n[MODIFIED] changed.txt\n"));
+    assert!(DIFF.contains("[REMOVED] deleted_file.txt\n[ADDED] new_dir/\n[MODIFIED] icon.svg\n"));
+    let glued = "  [F] unchanged.txt (ID:F005, MOD:2400, SIZE:11)</UPDATED_DIRECTORY_TREE>\n";
+    assert!(DIFF.contains(glued), "legacy diff glues the closing tag to the last tree line");
+    assert!(DIFF.contains("[SVG file, content omitted (omit_svg_content=true)]"));
+    assert!(DIFF.contains("NEW!"));
+    assert!(DIFF.contains("New content"));
+    assert!(!DIFF.contains("Old content"));
+    assert!(DIFF.contains("unchanged.txt"));
+    assert!(DIFF.ends_with('\n'));
+}
+
+#[test]
+#[ignore = "D3-03 gap: diff header, version line, summary, updated tree, changed-content-only, SVG diff sentence"]
+fn diff_envelope_matches_legacy_bytes() {
+    assert_eq!(render_markers(&template(), &snapshot_tree(), false), DIFF);
+}
+
+#[test]
+#[ignore = "D3-03 gap: snapshot SVG sentence is [SVG file (omit_svg_content=true), content omitted]"]
+fn svg_snapshot_sentence_matches_legacy() {
+    let mut root = MarkerNode::dir("", 1);
+    root.children.push(binary("icon.svg", 6, 2, "SVG file"));
+    let got = render_markers(&template(), &root, false);
+    assert!(got.contains("[SVG file (omit_svg_content=true), content omitted]"));
+    assert!(!got.contains("<svg/>"));
+}
+
+#[test]
+fn compiled_bytes_match_sorted_fixture_and_accept_legacy_order() {
+    let (sorted, unsorted) = hex_sections();
+    let compiled = Template::parse(PIN).compile("pin").expect("compile");
+    let mut encoded = Vec::new();
+    compiled.serialize(&mut encoded).expect("serialize");
+    assert_eq!(encoded, sorted);
+    let loaded = CompiledTemplate::deserialize(&mut Cursor::new(&sorted)).expect("sorted");
+    let legacy = CompiledTemplate::deserialize(&mut Cursor::new(&unsorted)).expect("unsorted");
+    assert_eq!(loaded, compiled);
+    assert_eq!(legacy, compiled);
+    let mut again = Vec::new();
+    legacy.serialize(&mut again).expect("re-encode");
+    assert_eq!(again, sorted);
+    assert_ne!(unsorted, sorted);
+}
+
+#[test]
+fn malformed_compiled_bytes_are_refused() {
+    let (sorted, _) = hex_sections();
+    let ok = CompiledTemplate::deserialize(&mut Cursor::new(&sorted)).expect("valid bytes decode");
+    assert_eq!(ok.name, "pin");
+    assert!(CompiledTemplate::deserialize(&mut Cursor::new(&b""[..])).is_err());
+    assert!(CompiledTemplate::deserialize(&mut Cursor::new(&b"DCTXTMPX"[..])).is_err());
+    assert!(CompiledTemplate::deserialize(&mut Cursor::new(&sorted[..10])).is_err());
+    let mut bad_version = sorted.clone();
+    bad_version[8] = 99;
+    assert!(CompiledTemplate::deserialize(&mut Cursor::new(&bad_version)).is_err());
+    let mut bad_utf8 = b"DCTXTMPL".to_vec();
+    bad_utf8.extend_from_slice(&1u32.to_le_bytes());
+    bad_utf8.extend_from_slice(&1u32.to_le_bytes());
+    bad_utf8.push(0xFF);
+    assert!(CompiledTemplate::deserialize(&mut Cursor::new(&bad_utf8)).is_err());
+}
