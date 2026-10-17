@@ -4,6 +4,8 @@ This directory contains language bindings for the `dctx-core` Rust library.
 
 **Status**: Planned for post-v1.0
 
+Binding design and approval prerequisites: [Python and Node dossiers](../docs/dossiers/dctx-bindings/README.md).
+
 ---
 
 ## Planned Bindings
@@ -11,7 +13,7 @@ This directory contains language bindings for the `dctx-core` Rust library.
 ### Python (Phase 12)
 **Directory**: `bindings/dctx-py/`
 **Technology**: PyO3
-**License**: MIT
+**License**: Apache-2.0
 **Target**: PyPI (`pip install dctx`)
 
 **Use Cases**:
@@ -36,7 +38,7 @@ context = snapshot.to_llm_format()
 ### Node.js (Phase 13)
 **Directory**: `bindings/dctx-node/`
 **Technology**: NAPI-RS
-**License**: MIT
+**License**: Apache-2.0
 **Target**: npm (`npm install dctx`)
 
 **Use Cases**:
@@ -61,7 +63,7 @@ const context = snapshot.toLlmFormat();
 ### Go (Future - If Demand Exists)
 **Directory**: `bindings/dctx-go/`
 **Technology**: cgo or FFI
-**License**: MIT
+**License**: Apache-2.0
 
 ---
 
