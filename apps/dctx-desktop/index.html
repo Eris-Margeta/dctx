@@ -665,6 +665,37 @@
       [data-section-id="plugins"] > button { margin-bottom: 12px; }
       [data-section-id="plugins"] > [role="status"] { margin-bottom: 16px; }
 
+      @media (max-width: 640px) {
+        .settings-layout {
+          flex-direction: column;
+        }
+
+        .settings-nav {
+          width: auto;
+          border-right: none;
+          border-bottom: 1px solid var(--border);
+          display: flex;
+          overflow-x: auto;
+          padding: 8px 0;
+          white-space: nowrap;
+        }
+
+        .nav-item {
+          padding: 8px 16px;
+          flex: 0 0 auto;
+        }
+
+        .settings-content {
+          padding: 16px;
+          max-height: none;
+        }
+
+        .plugin-card, .plugin-card *, .plugin-consent, .plugin-consent * {
+          min-width: 0;
+          overflow-wrap: anywhere;
+        }
+      }
+
       .section-header {
         margin-bottom: 24px;
       }

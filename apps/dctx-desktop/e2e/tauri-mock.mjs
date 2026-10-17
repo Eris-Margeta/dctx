@@ -27,6 +27,20 @@ export async function installTauriMock(page) {
       state: 'needs-consent', enabled: true, needs_consent: true,
       capabilities: ['required: Read file (path: README.md; scope: project; max bytes: 4096)'],
       last_failure: null,
+      consent: {
+        id: 'example/review', version: '1.0.0', digest: 'a'.repeat(64),
+        capabilities: {
+          required: [{ kind: 'file.read', path: 'README.md', scope: 'project', max_bytes: 4096 }],
+          optional: [], outputs: [], network: [],
+        },
+        capability_lines: ['required: Read file (path: README.md; scope: project; max bytes: 4096)'],
+        scope: { kind: 'user' },
+      },
+    }, {
+      id: 'example/failed', name: 'Failed Example', version: '1.0.0', source: 'installed',
+      state: 'failed', enabled: true, needs_consent: false,
+      capabilities: [], consent: null,
+      last_failure: 'Plugin process exited before initialization (exit code 1).',
     }];
     const callbacks = new Map();
     const listeners = new Map();
