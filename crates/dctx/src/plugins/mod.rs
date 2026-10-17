@@ -3,6 +3,8 @@
 //! Depends on `dctx-plugin-host`, `dctx-plugin-platform` and `dctx-template`.
 //! A session with no [`PluginHost`] discovers no plugin and starts no process.
 
+#[cfg(any(all(feature = "fs", unix), test))]
+mod audit;
 mod boundary;
 mod effects;
 mod plan;
@@ -86,9 +88,31 @@ impl PluginHost {
         Self::from_body(ports::PortBody::fake(), true)
     }
 
-    /// Platform confinement adapter. Launch and git recipes fail closed and spawn nothing.
+    /// Platform confinement adapter without an audit location; all audit admission fails closed.
+    /// Use `platform_with_audit` with the `fs` feature to supply durable storage.
     pub fn platform() -> Self {
-        Self::from_body(ports::PortBody::platform(), false)
+        Self::from_body(ports::PortBody::platform(None), false)
+    }
+
+    /// Platform ports with a bounded, durable audit under an explicit private directory.
+    /// The directory must already exist with owner-only permissions and trusted ancestors.
+    /// Capacity is in bytes (at most 64 MiB); full logs refuse effects without deleting evidence.
+    /// Unsupported owner-only filesystem adapters return `AuditUnavailable`.
+    #[cfg(feature = "fs")]
+    pub fn platform_with_audit(
+        directory: &std::path::Path,
+        capacity: usize,
+    ) -> Result<Self, dctx_plugin_host::ports::AuditUnavailable> {
+        #[cfg(unix)]
+        {
+            let audit = audit::open(directory, capacity)?;
+            Ok(Self::from_body(ports::PortBody::platform(Some(audit)), false))
+        }
+        #[cfg(not(unix))]
+        {
+            let _ = (directory, capacity);
+            Err(dctx_plugin_host::ports::AuditUnavailable)
+        }
     }
 
     /// Script `effects` for `plugin` at `boundary`. Later calls replace that pair.

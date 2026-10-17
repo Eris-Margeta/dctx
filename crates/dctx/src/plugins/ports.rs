@@ -59,7 +59,7 @@ enum Backend {
 }
 
 pub(crate) struct PortBody {
-    audit: FakeAudit,
+    audit: Option<Box<dyn AuditPort + Send>>,
     backend: Backend,
     launch: LaunchKind,
     attempts: u64,
@@ -68,16 +68,16 @@ pub(crate) struct PortBody {
 impl PortBody {
     pub(crate) fn fake() -> Self {
         Self {
-            audit: FakeAudit::default(),
+            audit: Some(Box::new(FakeAudit::default())),
             backend: Backend::Fake { files: FakeFiles::default(), process: FakeProcess::default() },
             launch: LaunchKind::BundledGit,
             attempts: 0,
         }
     }
 
-    pub(crate) fn platform() -> Self {
+    pub(crate) fn platform(audit: Option<Box<dyn AuditPort + Send>>) -> Self {
         Self {
-            audit: FakeAudit::default(),
+            audit,
             backend: Backend::Platform { provider: NativeProvider },
             launch: LaunchKind::BundledGit,
             attempts: 0,
@@ -221,7 +221,7 @@ pub(crate) type LiveSession = HostSession<AuditAdapter, FileAdapter, RecipeAdapt
 impl AuditPort for AuditAdapter {
     fn append(&mut self, record: &AuditRecord) -> Result<(), AuditUnavailable> {
         let mut body = lock(&self.0).map_err(|()| AuditUnavailable)?;
-        body.audit.append(record)
+        body.audit.as_mut().ok_or(AuditUnavailable)?.append(record)
     }
 }
 
