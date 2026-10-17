@@ -1,0 +1,5 @@
+ok: 1
+nested:
+  child: 2
+"unterminated
+items: [1, 2

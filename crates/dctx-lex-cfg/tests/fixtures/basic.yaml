@@ -1,0 +1,15 @@
+# Service demo.
+package:
+  name: demo
+  version: "0.1.0" # semver
+dependencies:
+  serde: "1"
+  local:
+    path: ../local
+anchor: &base
+  enabled: true
+use: *base
+workspace:
+  members:
+    - crates/core
+    - crates/cli

@@ -1,0 +1,21 @@
+# Package demo is a sample.
+[package]
+name = "demo"
+version = "0.1.0" # semver
+
+[dependencies]
+serde = "1"
+local = { path = "../local" }
+
+[workspace]
+members = [
+  "crates/core",
+  "crates/cli",
+]
+
+[[bin]]
+name = "demo"
+path = "src/main.rs"
+
+[profile.release]
+lto = true

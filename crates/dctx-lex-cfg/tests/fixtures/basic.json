@@ -1,0 +1,16 @@
+{
+  "package": {
+    "name": "demo",
+    "version": "0.1.0"
+  },
+  "dependencies": {
+    "serde": "1.0.0",
+    "local": {
+      "path": "../local"
+    }
+  },
+  "workspaces": [
+    "crates/core",
+    "crates/cli"
+  ]
+}
