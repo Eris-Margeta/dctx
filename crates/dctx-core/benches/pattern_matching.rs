@@ -1,14 +1,15 @@
-use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
-use dctx_core::ignore::IgnoreEngine;
+//! Pure selection-policy benchmarks for D3-07: glob cases and a 1000-path workload.
+//! Depends on Criterion and the public SelectionPolicy/ItemContext API.
+//! The former cold/warm cache comparison becomes cold-policy-build versus
+//! repeated-decide: the pure policy has no match cache. Used by Criterion only.
 
-/// Benchmark glob matching performance
-///
-/// Measures performance improvement from iterative implementation.
-/// Expected: 20-30% faster than recursive version.
+use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
+use dctx_core::selection::RuleTexts;
+use dctx_core::{ItemContext, SelectionPolicy};
+
 fn bench_glob_patterns(c: &mut Criterion) {
     let mut group = c.benchmark_group("glob_patterns");
-
-    let test_cases = vec![
+    let test_cases = [
         ("simple_suffix", "*.rs", "main.rs"),
         ("double_star", "**/test.rs", "src/lib/test.rs"),
         ("nested_pattern", "**/*.txt", "docs/guide/readme.txt"),
@@ -16,143 +17,93 @@ fn bench_glob_patterns(c: &mut Criterion) {
         ("no_match", "*.log", "readme.txt"),
     ];
 
-    for (name, pattern, text) in test_cases {
-        let rules = vec![dctx_core::datatypes::IgnoreRule {
-            pattern: pattern.to_string(),
-            pattern_type: dctx_core::datatypes::PatternType::Glob,
-            is_dir_only: false,
-            is_negation: false,
-        }];
-
-        group.bench_with_input(
-            BenchmarkId::new("glob_match", name),
-            &(rules.clone(), text),
-            |b, (r, t)| {
-                b.iter(|| {
-                    dctx_core::ignore::should_ignore_item(
-                        black_box(t),
-                        black_box(t),
-                        black_box(false),
-                        black_box(r),
-                        false,
-                    )
-                });
-            },
-        );
+    for (name, pattern, path) in test_cases {
+        let policy = SelectionPolicy::from_texts(&RuleTexts {
+            local_ignore: Some(pattern),
+            ..RuleTexts::default()
+        });
+        let context = ItemContext {
+            relative_path: path,
+            name: path.rsplit('/').next().unwrap_or(path),
+            is_directory: false,
+            debug_mode: false,
+        };
+        group.bench_with_input(BenchmarkId::new("glob_match", name), &context, |b, item| {
+            b.iter(|| black_box(policy.decide(black_box(item))));
+        });
     }
-
     group.finish();
 }
 
-/// Benchmark cache effectiveness
-///
-/// Measures performance improvement from pattern result caching.
-/// Expected: 40-60% faster on cache hits.
-fn bench_cache_effectiveness(c: &mut Criterion) {
-    let mut group = c.benchmark_group("cache_effectiveness");
-
-    // Create temporary directory for engine
-    let temp_dir = tempfile::tempdir().unwrap();
-    let engine = IgnoreEngine::build(temp_dir.path(), false).unwrap();
-
-    // Test paths that will hit cache
-    let test_paths = vec![
+fn bench_policy_matching(c: &mut Criterion) {
+    let mut group = c.benchmark_group("policy_matching");
+    let texts = RuleTexts {
+        local_ignore: Some("node_modules/\ntarget/\nbuild/\n*.log\n*.tmp"),
+        ..RuleTexts::default()
+    };
+    let policy = SelectionPolicy::from_texts(&texts);
+    let test_paths = [
         ("node_modules", "packages/app/node_modules", true),
         ("target", "crates/core/target", true),
         ("build", "frontend/build", true),
-        ("*.log", "logs/error.log", false),
-        ("*.tmp", "cache/temp.tmp", false),
+        ("error.log", "logs/error.log", false),
+        ("temp.tmp", "cache/temp.tmp", false),
     ];
+    let contexts = test_paths.map(|(name, relative_path, is_directory)| ItemContext {
+        relative_path,
+        name,
+        is_directory,
+        debug_mode: false,
+    });
 
-    group.bench_function("cold_cache", |b| {
+    group.bench_function("cold_policy_build", |b| {
         b.iter(|| {
-            // Clear cache for each iteration (cold cache)
-            engine.match_cache().borrow_mut().clear();
-
-            for (name, path, is_dir) in &test_paths {
-                let _ = dctx_core::ignore::should_ignore_item_cached(
-                    black_box(path),
-                    black_box(name),
-                    black_box(*is_dir),
-                    engine.ignore_rules(),
-                    false,
-                    Some(engine.match_cache()),
-                );
+            let cold_policy = SelectionPolicy::from_texts(black_box(&texts));
+            black_box(cold_policy.ignore_rules());
+            for context in &contexts {
+                black_box(cold_policy.decide(black_box(context)));
             }
         });
     });
-
-    group.bench_function("warm_cache", |b| {
-        // Prime the cache once
-        for (name, path, is_dir) in &test_paths {
-            let _ = dctx_core::ignore::should_ignore_item_cached(
-                path,
-                name,
-                *is_dir,
-                engine.ignore_rules(),
-                false,
-                Some(engine.match_cache()),
-            );
-        }
-
+    group.bench_function("repeated_decide", |b| {
         b.iter(|| {
-            // Reuse cached results (warm cache)
-            for (name, path, is_dir) in &test_paths {
-                let _ = dctx_core::ignore::should_ignore_item_cached(
-                    black_box(path),
-                    black_box(name),
-                    black_box(*is_dir),
-                    engine.ignore_rules(),
-                    false,
-                    Some(engine.match_cache()),
-                );
+            for context in &contexts {
+                black_box(policy.decide(black_box(context)));
             }
         });
     });
-
     group.finish();
 }
 
-/// Benchmark realistic workload
-///
-/// Simulates scanning a monorepo with repeated patterns.
-/// Measures overall performance improvement.
 fn bench_realistic_workload(c: &mut Criterion) {
-    let temp_dir = tempfile::tempdir().unwrap();
-    let engine = IgnoreEngine::build(temp_dir.path(), false).unwrap();
-
-    // Simulate 1000 files in a monorepo
+    let policy = SelectionPolicy::from_texts(&RuleTexts::default());
     let file_paths: Vec<_> = (0..1000)
         .map(|i| {
-            let pkg = i % 10; // 10 packages
-            let name = if i % 5 == 0 {
+            let package = i % 10;
+            let directory = if i % 5 == 0 {
                 "node_modules"
             } else if i % 7 == 0 {
                 "target"
             } else {
                 "src"
             };
-            (
-                name,
-                format!("packages/pkg{}/{}/file{}.rs", pkg, name, i),
-                i % 3 == 0,
-            )
+            format!("packages/pkg{package}/{directory}/file{i}.rs")
+        })
+        .collect();
+    let contexts: Vec<_> = file_paths
+        .iter()
+        .map(|path| ItemContext {
+            relative_path: path,
+            name: path.rsplit('/').next().unwrap_or(path),
+            is_directory: false,
+            debug_mode: false,
         })
         .collect();
 
     c.bench_function("monorepo_scan_1000_files", |b| {
         b.iter(|| {
-            engine.match_cache().borrow_mut().clear();
-
-            for (name, path, is_dir) in &file_paths {
-                let _ = dctx_core::ignore::should_ignore_item_cached(
-                    black_box(path),
-                    black_box(name),
-                    black_box(*is_dir),
-                    engine.ignore_rules(),
-                    false,
-                    Some(engine.match_cache()),
-                );
+            for context in &contexts {
+                black_box(policy.decide(black_box(context)));
             }
         });
     });
@@ -161,7 +112,7 @@ fn bench_realistic_workload(c: &mut Criterion) {
 criterion_group!(
     benches,
     bench_glob_patterns,
-    bench_cache_effectiveness,
+    bench_policy_matching,
     bench_realistic_workload
 );
 criterion_main!(benches);
