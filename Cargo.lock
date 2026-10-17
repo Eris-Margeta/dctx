@@ -823,8 +823,10 @@ name = "dctx-adapter-cache"
 version = "0.1.0"
 dependencies = [
  "dctx-core",
+ "dctx-hash",
  "dctx-ports",
  "proptest",
+ "tempfile",
  "thiserror 2.0.18",
 ]
 
@@ -955,6 +957,9 @@ dependencies = [
 name = "dctx-map-parse"
 version = "0.1.0"
 dependencies = [
+ "dctx-lex-js",
+ "dctx-lex-md",
+ "dctx-lex-rust",
  "dctx-map-model",
  "proptest",
  "sha2",
