@@ -1,0 +1,111 @@
+// Deterministic browser transport for DX-E2E; install before navigating to the app.
+// Mirrors desktop settings/recent-project commands and PL-APP plugin row transport.
+// Used by Playwright specs through addInitScript; no native commands are executed.
+export async function installTauriMock(page) {
+  await page.addInitScript(() => {
+    const clone = value => structuredClone(value);
+    const defaults = {
+      last_directory: null, window_width: 1200, window_height: 800,
+      file_count_limit: 10000, theme: 'system', auto_copy_to_clipboard: false,
+      filter_extensions: null, include_binary: false, only_hidden: false,
+      min_size_mb: null, max_size_mb: null, only_empty: false,
+      only_non_empty: false, tree_only: false,
+    };
+    let settings = clone(defaults);
+    let recent = [{ path: '/fixtures/dctx-demo', name: 'dctx-demo',
+      last_accessed: '2026-10-17T08:00:00.000Z', access_count: 3 }];
+    const plugins = [{
+      id: 'dctx/git', name: 'Git', version: '1.0.0', source: 'bundled',
+      state: 'enabled', enabled: true, needs_consent: false,
+      capabilities: [
+        'required: Read file (path: .gitignore; scope: project; max bytes: 1048576)',
+        'required: Write file (path: .gitignore; scope: project; create: false; max growth bytes: 4096; max bytes: 1052672)',
+        'optional: Run approved program operation (program: git; operation: git.add-ignore; resources: ["git-admin:stage-ignore"]; max output bytes: 65536)',
+      ], last_failure: null,
+    }, {
+      id: 'example/review', name: 'Review Example', version: '1.0.0', source: 'installed',
+      state: 'needs-consent', enabled: true, needs_consent: true,
+      capabilities: ['required: Read file (path: README.md; scope: project; max bytes: 4096)'],
+      last_failure: null,
+    }];
+    const callbacks = new Map();
+    const listeners = new Map();
+    let nextId = 1;
+    const state = { calls: [], clipboard: '', plugins };
+    window.__DCTX_E2E__ = state;
+    window.__TAURI__ = {};
+    window.__TAURI_INTERNALS__ = {
+      transformCallback(callback, once = false) {
+        const id = nextId++;
+        const wrapped = (...args) => {
+          if (once) {
+            callbacks.delete(id);
+            delete window[`_${id}`];
+          }
+          return callback(...args);
+        };
+        callbacks.set(id, wrapped);
+        window[`_${id}`] = wrapped;
+        return id;
+      },
+      unregisterCallback(id) { callbacks.delete(id); delete window[`_${id}`]; },
+      runCallback(id, data) {
+        const callback = callbacks.get(id);
+        if (!callback) throw new Error(`Tauri mock: unknown callback ${id}`);
+        return callback(data);
+      },
+      async invoke(cmd, args = {}) {
+        state.calls.push({ cmd, args: clone(args) });
+        const plugin = () => {
+          const row = plugins.find(row => row.id === args.id);
+          if (!row) throw new Error(`Tauri mock: unknown plugin ${args.id}`);
+          return row;
+        };
+        switch (cmd) {
+          case 'get_desktop_settings': return clone(settings);
+          case 'save_desktop_settings': settings = clone(args.config); return null;
+          case 'reset_desktop_settings': settings = clone(defaults); return null;
+          case 'get_recent_projects': return clone(recent);
+          case 'add_recent_project': {
+            const previous = recent.find(project => project.path === args.path);
+            recent = recent.filter(project => project.path !== args.path);
+            recent.unshift({ path: args.path, name: args.path.split('/').filter(Boolean).at(-1),
+              last_accessed: '2026-10-17T09:00:00.000Z', access_count: (previous?.access_count ?? 0) + 1 });
+            return null;
+          }
+          case 'remove_recent_project': recent = recent.filter(project => project.path !== args.path); return null;
+          case 'generate_snapshot': return { success: true, output: `Fixture snapshot: ${args.request.path}\nREADME.md\nsrc/main.ts`, error: null };
+          case 'copy_to_clipboard': state.clipboard = args.text; return null;
+          case 'list_plugins': return clone(plugins);
+          case 'enable_plugin': {
+            const row = plugin(); row.enabled = true;
+            row.state = row.needs_consent ? 'needs-consent' : 'enabled'; return clone(row);
+          }
+          case 'disable_plugin': {
+            const row = plugin(); row.enabled = false; row.state = 'disabled'; return clone(row);
+          }
+          case 'consent_plugin': {
+            if (!args.approval?.digest || !args.approval?.capabilities || !args.approval?.scope?.kind) {
+              throw new Error('Tauri mock: consent_plugin requires approval {digest, capabilities, scope}');
+            }
+            const row = plugin(); row.needs_consent = false;
+            row.state = row.enabled ? 'enabled' : 'disabled'; return clone(row);
+          }
+          case 'check_plugin_update': {
+            const row = plugin();
+            return { id: row.id, version: null, containing_release: row.source === 'bundled' };
+          }
+          case 'plugin:event|listen': {
+            const id = nextId++; listeners.set(id, args); return id;
+          }
+          case 'plugin:event|unlisten': listeners.delete(args.eventId); return null;
+          case 'plugin:dialog|open': return '/fixtures/dctx-demo';
+          default: throw new Error(`Tauri mock: unimplemented command "${cmd}"; add an explicit fixture in e2e/tauri-mock.mjs`);
+        }
+      },
+    };
+    window.__TAURI_EVENT_PLUGIN_INTERNALS__ = {
+      unregisterListener(_event, id) { listeners.delete(id); },
+    };
+  });
+}

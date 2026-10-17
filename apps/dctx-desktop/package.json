@@ -6,6 +6,7 @@
   "description": "dctx Desktop - Cross-platform GUI for directory context generation",
   "type": "module",
   "scripts": {
+    "e2e": "node e2e/runner.mjs",
     "dev": "bunx --bun vite",
     "build": "bun run build:ts && bunx --bun vite build",
     "build:ts": "bun tsc",
@@ -20,6 +21,7 @@
     "@tauri-apps/plugin-dialog": "^2.0.1"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
     "@tauri-apps/cli": "^2.1.0",
     "typescript": "^5.6.3",
     "vite": "^6.0.3"

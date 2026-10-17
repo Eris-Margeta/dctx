@@ -8,6 +8,8 @@ lerna-debug.log*
 bun.lockb
 
 # Build output
+e2e-runs/
+test-results/
 dist/
 dist-ssr/
 *.local
