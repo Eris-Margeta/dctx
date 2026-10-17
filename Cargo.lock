@@ -883,7 +883,7 @@ name = "dctx-desktop"
 version = "0.11.0"
 dependencies = [
  "chrono",
- "dctx-core",
+ "dctx-desktop-api",
  "dirs 5.0.1",
  "serde",
  "serde_json",
