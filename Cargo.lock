@@ -1036,6 +1036,7 @@ dependencies = [
  "dctx-lex-go",
  "dctx-lex-java",
  "dctx-lex-js",
+ "dctx-lex-kt",
  "dctx-lex-md",
  "dctx-lex-py",
  "dctx-lex-rust",
