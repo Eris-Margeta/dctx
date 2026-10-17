@@ -1,8 +1,8 @@
 //! Stable dctx library facade for pack, map, templates, cache and an optional plugin host.
-//! Implements ARCHITECTURE-PROPOSAL §2 (library contract) and §7 Stage 3 rows DX-D1 and PL-F.
-//! Depends on dctx-core, dctx-hash, dctx-ports, dctx-pack, dctx-template and dctx-map-model.
+//! Implements ARCHITECTURE-PROPOSAL §2 and §4 (DX-D1, DX-D3): explicit ports, no home-directory discovery.
+//! Depends on dctx-core, dctx-ports, dctx-adapter-cache, dctx-lex-js and dctx-lex-md.
 //! Every surface calls this crate. It does not discover a home directory, a global config or a git binary.
-//! A caller may inject a plugin host. The library default starts none and spawns nothing.
+//! A caller may inject a plugin host and a cache root. The library default starts none and spawns nothing.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
@@ -23,7 +23,8 @@ pub const FACADE_VERSION: &str = "0.1.0";
 pub const WIRE_VERSION: u32 = 2;
 
 pub use domain::{
-    encode_answer, object_key, validate_segment, Answer, AnswerRecord, BoundedSink, CacheReport, Capabilities,
+    encode_answer, object_key, validate_segment, Answer, AnswerRecord, AutoCleanConfig, BoundedSink, CacheLedger,
+    CacheReport, Capabilities,
     Direction, DctxError, ErrorCode, Freshness, FreshnessMode, GcRequest, HostGrants, IdentityOutcome, MapRequest,
     OperationLimits, PackReport, PackRequest, Precision, PurgeRequest, PurgeScope, Resource, RuleSources, SegmentInfo,
     SnapshotRequest, VecSink, Verb, REQUEST_VERSION, STRUCTURAL_PARSER,

@@ -2,12 +2,13 @@
 name = "dctx"
 version = "0.1.0"
 edition = "2024"
-license = "MIT"
+license = "Apache-2.0"
 description = "Stable dctx library facade for pack, map, templates and cache"
 
 # `default` is the strict profile: first-party Rust and std, no C and no subprocess.
 # `default-features = false` still builds the pure types; disabled operations return
 # `UnsupportedCapability`. Enhanced parsers and JSON deps are explicit features.
+# `syntax-rust` stays off this set: it links `syn`, and the five-verb corpus stays structural.
 [features]
 default = ["pack", "map", "templates", "fs", "segments", "cache"]
 pack = []
@@ -20,8 +21,12 @@ syntax-rust = ["dep:dctx-lex-rust"]
 wire-json = ["dctx-map-model/wire-json"]
 
 [dependencies]
+dctx-adapter-cache = { path = "../dctx-adapter-cache" }
 dctx-core = { path = "../dctx-core" }
 dctx-hash = { path = "../dctx-hash" }
+dctx-lex-js = { path = "../dctx-lex-js" }
+dctx-lex-md = { path = "../dctx-lex-md" }
+dctx-lex-rust = { path = "../dctx-lex-rust", optional = true }
 dctx-map-model = { path = "../dctx-map-model", default-features = false }
 dctx-pack = { path = "../dctx-pack" }
 dctx-ports = { path = "../dctx-ports" }
@@ -29,7 +34,6 @@ dctx-template = { path = "../dctx-template" }
 dctx-plugin-host = { path = "../dctx-plugin-host" }
 dctx-plugin-platform = { path = "../dctx-plugin-platform" }
 dctx-plugin-protocol = { path = "../dctx-plugin-protocol" }
-dctx-lex-rust = { path = "../dctx-lex-rust", optional = true }
 
 [dev-dependencies]
 proptest = "1"

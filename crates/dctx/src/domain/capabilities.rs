@@ -18,7 +18,7 @@ pub struct Capabilities {
     pub segment_version: u32,
     /// Languages the structural extractor recognises.
     pub languages: &'static [&'static str],
-    /// Parser ids linked into this build.
+    /// Parser ids linked into this build. Answer precision stays structural unless a plan selects syntax coverage.
     pub parsers: Vec<&'static str>,
     /// `buffered-segments` or `caller-ports`.
     pub storage: &'static str,
@@ -42,7 +42,7 @@ impl Capabilities {
     /// Capabilities of the build that is running, independent of session grants.
     pub fn current() -> Self {
         let enhanced = cfg!(feature = "syntax-rust") || cfg!(feature = "wire-json");
-        let mut parsers = vec!["dctx-structural/1"];
+        let mut parsers = vec!["dctx-structural/1", "dctx-lex-js:1", "dctx-lex-md:1"];
         if cfg!(feature = "syntax-rust") {
             parsers.push("dctx-lex-rust/syn-3.0.9");
         }

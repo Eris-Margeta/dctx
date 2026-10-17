@@ -11,9 +11,10 @@ mod common;
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
-use dctx::memory::CancelFlag;
+use dctx::memory::{CancelFlag, FixedClock};
 use dctx::{
-    FsSource, HostGrants, IdentityOutcome, RuleTexts, SelectionPolicy, SnapshotRequest, StoragePolicy, VecSink,
+    AutoCleanConfig, FsSource, HostCeiling, HostGrants, IdentityOutcome, OperationLimits, RuleTexts, SelectionPolicy,
+    Session, SnapshotRequest, Source, StoragePolicy, Timestamp, VecSink,
 };
 
 #[test]
@@ -82,6 +83,143 @@ fn run(root: &Path, selection: SelectionPolicy) -> Probe {
 fn copy_fixture(dest: &Path) {
     let from = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures/repository");
     copy_dir(&from, dest);
+}
+
+#[test]
+fn managed_cache_round_trips_and_isolation_does_not_clean() {
+    let isolated = common::open_session(common::repository());
+    assert!(isolated.cache_ledger().is_none());
+    assert_eq!(isolated.cache_status().reclaimed_bytes, 0);
+
+    let refused = Session::builder(common::repository())
+        .clock(FixedClock(Timestamp(0)))
+        .cancellation(Arc::new(CancelFlag::new()))
+        .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
+        .ceiling(HostCeiling::base())
+        .grants(HostGrants::PermitAll)
+        .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+        .place("fixture")
+        .view("map")
+        .cache_root(Path::new("relative-cache"), 7)
+        .build()
+        .expect_err("relative");
+    assert_eq!(refused.code(), dctx::ErrorCode::InvalidRequest);
+
+    let dir = tempfile::tempdir().expect("temp");
+    let cache = dir.path().join("cache");
+    std::fs::create_dir(&cache).expect("dir");
+    let mut first = open_cached(common::repository(), 0, &cache, 7, AutoCleanConfig::default());
+    let handle = first.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    assert_eq!(handle.generation(), 1);
+    let admitted = first.cache_ledger().expect("ledger").admitted_bytes;
+    assert!(admitted > 0);
+    assert_eq!(first.cache_status().reclaimed_bytes, 0);
+    assert!(object_files(&cache) >= 1);
+    drop(handle);
+    drop(first);
+
+    let second = open_cached(common::repository(), 0, &cache, 7, AutoCleanConfig::default());
+    let ledger = second.cache_ledger().expect("reloaded");
+    assert_eq!(ledger.roots, 1);
+    assert_eq!(ledger.admitted_bytes, admitted);
+    assert_eq!(ledger.last_auto_clean_ms, Some(0));
+    assert_eq!(ledger.expired_roots, 0);
+    assert_eq!(second.cache_status().reclaimed_bytes, 0);
+    assert!(object_files(&cache) >= 1);
+}
+
+#[test]
+fn auto_clean_is_disabled_until_the_policy_and_the_day_say_so() {
+    let dir = tempfile::tempdir().expect("temp");
+    let cache = dir.path().join("cache");
+    std::fs::create_dir(&cache).expect("dir");
+    let mut disabled = AutoCleanConfig::default();
+    disabled.enabled = false;
+    let skipped = open_cached(common::repository(), 50_000_000, &cache, 1, disabled);
+    assert!(skipped.cache_ledger().expect("ledger").last_auto_clean_ms.is_none());
+    assert_eq!(skipped.cache_status().reclaimed_bytes, 0);
+    drop(skipped);
+
+    let fresh = dir.path().join("fresh");
+    std::fs::create_dir(&fresh).expect("dir");
+    let opened = open_cached(common::repository(), 10, &fresh, 2, AutoCleanConfig::default());
+    assert_eq!(opened.cache_ledger().expect("ledger").last_auto_clean_ms, Some(10));
+    drop(opened);
+    let same_day = open_cached(common::repository(), 10, &fresh, 2, AutoCleanConfig::default());
+    assert_eq!(same_day.cache_ledger().expect("ledger").last_auto_clean_ms, Some(10));
+    assert_eq!(same_day.cache_status().reclaimed_bytes, 0);
+    drop(same_day);
+    let next_day = open_cached(common::repository(), 10 + 86_400_000, &fresh, 2, AutoCleanConfig::default());
+    assert_eq!(next_day.cache_ledger().expect("ledger").last_auto_clean_ms, Some(10 + 86_400_000));
+}
+
+#[test]
+fn cap_and_ttl_follow_the_injected_clock() {
+    let dir = tempfile::tempdir().expect("temp");
+    let cache = dir.path().join("cache");
+    std::fs::create_dir(&cache).expect("dir");
+    let mut policy = AutoCleanConfig::default();
+    policy.min_interval_ms = 0;
+    policy.root_ttl_ms = 1_000;
+    let mut first = open_cached(common::repository(), 0, &cache, 3, policy);
+    first.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    assert!(first.cache_ledger().expect("ledger").admitted_bytes > 0);
+    assert_eq!(first.cache_ledger().expect("ledger").expired_roots, 0);
+    assert!(object_files(&cache) >= 1);
+    drop(first);
+
+    policy.system_cap_bytes = 65_536;
+    let aged = open_cached(common::repository(), 1_000, &cache, 3, policy);
+    let ledger = aged.cache_ledger().expect("aged");
+    assert_eq!(ledger.hard_cap, 65_536);
+    assert!(ledger.expired_roots >= 1);
+    assert_eq!(aged.cache_status().reclaimed_bytes, 0);
+    drop(aged);
+
+    let grace = dctx_adapter_cache::UNLINK_GRACE_MS;
+    let mut when = 1_000u64;
+    let mut reclaimed = 0u64;
+    for _ in 0..6 {
+        when = when.saturating_add(grace);
+        let session = open_cached(common::repository(), when, &cache, 3, policy);
+        reclaimed = session.cache_status().reclaimed_bytes;
+        if reclaimed > 0 {
+            break;
+        }
+    }
+    assert!(reclaimed > 0);
+    assert_eq!(object_files(&cache), 0);
+}
+
+fn open_cached(
+    source: impl Source + Send + 'static,
+    clock_ms: u64,
+    cache: &Path,
+    root_id: u64,
+    clean: AutoCleanConfig,
+) -> Session {
+    Session::builder(source)
+        .clock(FixedClock(Timestamp(clock_ms)))
+        .cancellation(Arc::new(CancelFlag::new()))
+        .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
+        .ceiling(HostCeiling::base())
+        .grants(HostGrants::PermitAll)
+        .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+        .limits(OperationLimits::default())
+        .place("fixture")
+        .view("map")
+        .cache_root(cache, root_id)
+        .auto_clean(clean)
+        .build()
+        .expect("session")
+}
+
+fn object_files(cache: &Path) -> usize {
+    let objects = cache.join("objects");
+    let Ok(entries) = std::fs::read_dir(objects) else {
+        return 0;
+    };
+    entries.filter(|entry| entry.as_ref().is_ok_and(|item| item.path().is_file())).count()
 }
 
 fn copy_dir(from: &Path, to: &Path) {

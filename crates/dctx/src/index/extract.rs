@@ -1,7 +1,9 @@
 //! Structural extractor for Rust, JavaScript, TypeScript and Markdown.
-//! Implements the strict parser profile: line facts, coverage `structural`, no C parser.
-//! Depends on nothing outside this crate. The snapshot walk calls [`extract_structural`].
-//! A `fn` inside a string can be misread; the coverage label stays `structural` for that reason.
+//! Implements the strict parser profile: coverage `structural`, no C parser.
+//! Depends on dctx-lex-js and dctx-lex-md. Rust stays line-oriented unless `syntax-rust` selects dctx-lex-rust.
+//! The snapshot walk calls [`extract_structural`]. Answer ids and the structural precision label stay put.
+
+use dctx_map_model::NodeKind;
 
 use super::IndexedNode;
 
@@ -12,8 +14,8 @@ pub(crate) struct Symbol {
     pub name: String,
     /// Wire kind.
     pub kind: String,
-    /// True for a markdown heading (`d:` id). False for a symbol (`s:` id).
-    pub doc: bool,
+    /// Graph category. Doc headings use `d:`; tests use `t:`; other declarations use `s:`.
+    pub graph: NodeKind,
     /// Inclusive 1-based lines.
     pub lines: [u32; 2],
     /// Byte span `[start, end)`.
@@ -35,8 +37,8 @@ pub(crate) fn language_of(path: &str) -> &'static str {
     match ext {
         "rs" => "rust",
         "js" | "jsx" | "mjs" | "cjs" => "javascript",
-        "ts" | "tsx" => "typescript",
-        "md" => "markdown",
+        "ts" | "tsx" | "mts" | "cts" => "typescript",
+        "md" | "markdown" => "markdown",
         _ => "opaque",
     }
 }
@@ -51,8 +53,8 @@ pub(crate) fn extract_structural(path: &str, bytes: &[u8]) -> Vec<Symbol> {
     };
     match language_of(path) {
         "rust" => rust_symbols(text),
-        "javascript" | "typescript" => script_symbols(text),
-        "markdown" => markdown_symbols(text),
+        "javascript" | "typescript" => script_symbols(path, text),
+        "markdown" => markdown_symbols(bytes),
         _ => Vec::new(),
     }
 }
@@ -67,15 +69,14 @@ pub(crate) fn index_symbols(
 ) {
     use std::collections::BTreeMap;
 
-    use dctx_map_model::{NodeKind, StableId};
+    use dctx_map_model::StableId;
 
     let mut seen: BTreeMap<String, u32> = BTreeMap::new();
     for symbol in symbols {
         let count = seen.entry(symbol.name.clone()).or_insert(0);
         *count += 1;
         let ordinal = if *count == 1 { None } else { Some(*count) };
-        let kind = if symbol.doc { NodeKind::Doc } else { NodeKind::Symbol };
-        let Ok(id) = StableId::new(kind, path, Some(&symbol.name), ordinal) else {
+        let Ok(id) = StableId::new(symbol.graph, path, Some(&symbol.name), ordinal) else {
             continue;
         };
         let id = id.as_str().to_string();
@@ -117,7 +118,7 @@ fn rust_symbols(text: &str) -> Vec<Symbol> {
         } else if trimmed.starts_with("#[") || trimmed.starts_with("//!") {
             // An attribute keeps a pending doc. A module doc is not a symbol.
         } else if let Some((kind, name)) = rust_decl(trimmed) {
-            let mut symbol = placed(name, kind, false, line_no, offset, body_len);
+            let mut symbol = placed(name, kind, NodeKind::Symbol, line_no, offset, body_len);
             symbol.signature = signature_text(trimmed);
             symbol.summary_source = if pending.is_some() { "doc".to_string() } else { "sig".to_string() };
             symbol.summary = pending.take().unwrap_or_else(|| symbol.signature.clone());
@@ -139,85 +140,92 @@ fn rust_decl(line: &str) -> Option<(&'static str, String)> {
     None
 }
 
-fn script_symbols(text: &str) -> Vec<Symbol> {
+fn script_symbols(path: &str, text: &str) -> Vec<Symbol> {
+    let lexed = match dctx_lex_js::JsLexer::default().extract(path, text.as_bytes()) {
+        Ok(lexed) => lexed,
+        Err(_) => return Vec::new(),
+    };
     let mut symbols = Vec::new();
-    let mut offset = 0usize;
-    for (line_no, line) in (1u32..).zip(text.split_inclusive('\n')) {
-        let body_len = line.trim_end_matches(['\r', '\n']).len();
-        let trimmed = line[..body_len].trim();
-        if let Some((kind, name)) = script_decl(trimmed) {
-            let mut symbol = placed(name, kind, false, line_no, offset, body_len);
-            symbol.signature = signature_text(trimmed);
-            symbol.summary = symbol.signature.clone();
-            symbol.summary_source = "sig".to_string();
-            symbols.push(symbol);
+    for labeled in lexed.nodes {
+        let node = labeled.fact;
+        if matches!(node.kind, NodeKind::Module | NodeKind::Place | NodeKind::Package) || node.name.is_empty() {
+            continue;
         }
-        offset += line.len();
+        let graph = match node.kind {
+            NodeKind::Doc => NodeKind::Doc,
+            NodeKind::Test => NodeKind::Test,
+            _ => NodeKind::Symbol,
+        };
+        let kind = if graph == NodeKind::Doc {
+            "heading".to_string()
+        } else {
+            node.symbol_kind.map(|kind| kind.as_str().to_string()).unwrap_or_else(|| "fn".to_string())
+        };
+        symbols.push(Symbol {
+            name: node.name,
+            kind,
+            graph,
+            lines: node.lines,
+            span: line_span(text, node.lines),
+            summary: node.summary.text,
+            summary_source: node.summary.source.as_str().to_string(),
+            signature: node.signature,
+        });
     }
     symbols
 }
 
-fn script_decl(line: &str) -> Option<(&'static str, String)> {
-    let mut rest = line;
-    if let Some(after) = rest.strip_prefix("export")
-        && after.starts_with(|ch: char| ch.is_whitespace())
-    {
-        rest = after.trim_start();
-    }
-    if let Some(after) = rest.strip_prefix("default")
-        && after.starts_with(|ch: char| ch.is_whitespace())
-    {
-        rest = after.trim_start();
-    }
-    if let Some(after) = rest.strip_prefix("async")
-        && after.starts_with(|ch: char| ch.is_whitespace())
-    {
-        rest = after.trim_start();
-    }
-    if let Some(after) = rest.strip_prefix("function")
-        && after.starts_with(|ch: char| ch.is_whitespace())
-    {
-        let name_at = after.trim_start();
-        return keyword_name(name_at, "")
-            .map(|name| ("fn", name))
-            .or_else(|| ident_of(name_at).map(|name| ("fn", name)));
-    }
-    if let Some(after) = rest.strip_prefix("class")
-        && after.starts_with(|ch: char| ch.is_whitespace())
-    {
-        return ident_of(after.trim_start()).map(|name| ("class", name));
-    }
-    None
-}
-
-fn markdown_symbols(text: &str) -> Vec<Symbol> {
+fn markdown_symbols(bytes: &[u8]) -> Vec<Symbol> {
+    let document = match dctx_lex_md::extract(bytes) {
+        Ok(document) => document,
+        Err(_) => return Vec::new(),
+    };
     let mut symbols = Vec::new();
-    let mut offset = 0usize;
-    for (line_no, line) in (1u32..).zip(text.split_inclusive('\n')) {
-        let body_len = line.trim_end_matches(['\r', '\n']).len();
-        let body = &line[..body_len];
-        if let Some(title) = heading(body) {
-            let mut symbol = placed(title.clone(), "heading", true, line_no, offset, body_len);
-            symbol.summary = title;
-            symbol.summary_source = "heading".to_string();
-            symbols.push(symbol);
+    for heading in document.headings {
+        if heading.title.is_empty() {
+            continue;
         }
-        offset += line.len();
+        let summary = if heading.summary.is_empty() { heading.title.clone() } else { heading.summary };
+        symbols.push(Symbol {
+            name: heading.title,
+            kind: "heading".to_string(),
+            graph: NodeKind::Doc,
+            lines: heading.lines,
+            span: [
+                u64::try_from(heading.span.start).unwrap_or(u64::MAX),
+                u64::try_from(heading.span.end).unwrap_or(u64::MAX),
+            ],
+            summary,
+            summary_source: "heading".to_string(),
+            signature: String::new(),
+        });
     }
     symbols
 }
 
-fn heading(line: &str) -> Option<String> {
-    let bytes = line.as_bytes();
-    let mut marks = 0usize;
-    while marks < bytes.len() && marks < 6 && bytes[marks] == b'#' {
-        marks += 1;
+fn line_span(text: &str, lines: [u32; 2]) -> [u64; 2] {
+    let start_line = lines[0].max(1);
+    let end_line = lines[1].max(start_line);
+    let mut offset = 0usize;
+    let mut start = 0usize;
+    let mut end = text.len();
+    let mut seen = false;
+    for (index, line) in text.split_inclusive('\n').enumerate() {
+        let line_no = u32::try_from(index.saturating_add(1)).unwrap_or(u32::MAX);
+        if line_no == start_line {
+            start = offset;
+            seen = true;
+        }
+        if line_no == end_line {
+            end = offset.saturating_add(line.trim_end_matches(['\r', '\n']).len());
+            break;
+        }
+        offset = offset.saturating_add(line.len());
     }
-    if marks == 0 || bytes.get(marks).is_none_or(|byte| !byte.is_ascii_whitespace()) {
-        return None;
+    if !seen {
+        return [0, 0];
     }
-    let title = line[marks + 1..].trim();
-    if title.is_empty() { None } else { Some(title.to_string()) }
+    [u64::try_from(start).unwrap_or(u64::MAX), u64::try_from(end).unwrap_or(u64::MAX)]
 }
 
 fn keyword_name(line: &str, keyword: &str) -> Option<String> {
@@ -261,11 +269,11 @@ fn is_ident(byte: u8) -> bool {
     byte == b'_' || byte.is_ascii_alphanumeric()
 }
 
-fn placed(name: String, kind: &str, doc: bool, line_no: u32, offset: usize, body_len: usize) -> Symbol {
+fn placed(name: String, kind: &str, graph: NodeKind, line_no: u32, offset: usize, body_len: usize) -> Symbol {
     Symbol {
         name,
         kind: kind.to_string(),
-        doc,
+        graph,
         lines: [line_no, line_no],
         span: [u64::try_from(offset).unwrap_or(u64::MAX), u64::try_from(offset + body_len).unwrap_or(u64::MAX)],
         summary: String::new(),
@@ -330,8 +338,16 @@ mod tests {
         assert_eq!(symbols.len(), 2);
         assert_eq!(symbols[0].name, symbols[1].name);
         let headings = extract_structural("README.md", b"# Fixture\n");
+        assert_eq!(headings[0].name, "Fixture");
         assert_eq!(headings[0].kind, "heading");
+        assert_eq!(headings[0].summary, "Fixture");
         assert_eq!(headings[0].summary_source, "heading");
+        let script = extract_structural("src/app.js", b"function ping() {}\n");
+        assert_eq!(script.len(), 1);
+        assert_eq!(script[0].name, "ping");
+        assert_eq!(script[0].kind, "fn");
+        assert_eq!(script[0].summary_source, "sig");
         assert!(extract_structural("blob.bin", b"fn ping() {}\0").is_empty());
+        assert!(extract_structural("notes.txt", b"# Fixture\n").is_empty());
     }
 }

@@ -27,6 +27,7 @@ impl Session {
         }
         self.cancel.checkpoint().map_err(DctxError::from_core)?;
         self.hooks_before_pack()?;
+        self.touch_cache_root()?;
         let view_name = if request.view.is_empty() { self.view.clone() } else { request.view.clone() };
         let view = ViewKey::parse(&view_name).map_err(DctxError::from_core)?;
         let scan = crate::domain::resolve_scan(&self.limits.intersect(request.limits))?;

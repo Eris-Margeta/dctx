@@ -3,13 +3,19 @@
 //! Depends on [`super::Session`] and the ledger. A live handle blocks destruction.
 //! Purge does not schedule a hook. Cache collection runs its hook only after an applying reclaim.
 
+use super::ledger::PersistedCache;
 use super::Session;
-use crate::domain::{CacheReport, GcRequest, PurgeRequest, PurgeScope, DctxError};
+use crate::domain::{CacheLedger, CacheReport, GcRequest, PurgeRequest, PurgeScope, DctxError};
 
 impl Session {
-    /// Current ledger totals. `reclaimed_bytes` is 0.
+    /// Current ledger totals. `reclaimed_bytes` is the open-time auto-clean total, or zero in isolation.
     pub fn cache_status(&self) -> CacheReport {
-        self.report(0, 0)
+        self.report(self.managed.as_ref().map(PersistedCache::reclaimed).unwrap_or(0), 0)
+    }
+
+    /// Managed lifecycle figures. `None` in library isolation, where auto-clean does not run.
+    pub fn cache_ledger(&self) -> Option<CacheLedger> {
+        self.managed.as_ref().map(PersistedCache::ledger_view)
     }
 
     /// Drops generations whose handle lease is gone. `apply: false` deletes nothing.

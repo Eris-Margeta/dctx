@@ -1,8 +1,9 @@
 //! Session construction from explicit ports. Nothing is read from the home directory.
 //! Implements ARCHITECTURE-PROPOSAL §2: source, storage, policy, limits and cancellation are arguments.
 //! Depends on [`super::Session`] and the port traits. Hosts call [`Session::builder`].
-//! A missing clock or any other required input is [`crate::domain::DctxError::InvalidRequest`].
+//! A missing clock is [`crate::domain::DctxError::InvalidRequest`]. No cache root means library isolation.
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use dctx_core::selection::SelectionPolicy;
@@ -10,9 +11,9 @@ use dctx_ports::memory::{MemoryCache, MemoryFactStore};
 use dctx_ports::{Cache, Cancellation, Clock, FactStore, Source};
 use dctx_template::HostCeiling;
 
-use super::ledger::AccountingCache;
+use super::ledger::{AccountingCache, PersistedCache};
 use super::Session;
-use crate::domain::{DctxError, HostGrants, OperationLimits, RuleSources};
+use crate::domain::{AutoCleanConfig, DctxError, HostGrants, OperationLimits, RuleSources};
 use crate::plugins::{HookWarning, PluginHost};
 
 /// Where bytes live, with an explicit ceiling.
@@ -46,6 +47,8 @@ pub struct SessionBuilder {
     limits: OperationLimits,
     place: Option<String>,
     view: Option<String>,
+    cache_root: Option<(PathBuf, u64)>,
+    auto_clean: AutoCleanConfig,
 }
 
 impl SessionBuilder {
@@ -65,6 +68,8 @@ impl SessionBuilder {
             limits: OperationLimits::default(),
             place: None,
             view: None,
+            cache_root: None,
+            auto_clean: AutoCleanConfig::default(),
         }
     }
 
@@ -113,6 +118,22 @@ impl SessionBuilder {
     /// Optional caller cache. Required for [`StoragePolicy::CallerOwned`].
     pub fn cache(mut self, cache: impl Cache + Send + 'static) -> Self {
         self.cache = Some(Box::new(cache));
+        self
+    }
+
+    /// Persisted cache root and the caller root id to register on use.
+    ///
+    /// `path` must already be an absolute directory. The library does not create it and does not
+    /// search a home directory. Omitting this method is library isolation: no ledger and no auto-clean.
+    pub fn cache_root(mut self, path: impl Into<PathBuf>, root_id: u64) -> Self {
+        self.cache_root = Some((path.into(), root_id));
+        self
+    }
+
+    /// Auto-clean policy used when a cache root is set. The default is enabled, daily and bounded.
+    /// Isolation ignores this value. `enabled: false` skips the open-time slice.
+    pub fn auto_clean(mut self, policy: AutoCleanConfig) -> Self {
+        self.auto_clean = policy;
         self
     }
 
@@ -170,6 +191,8 @@ impl SessionBuilder {
         };
         let store = self.store.unwrap_or_else(|| Box::new(MemoryFactStore::new()));
         let inner = self.cache.unwrap_or_else(|| Box::new(MemoryCache::new(u64::MAX)));
+        let now_ms = clock.now().millis();
+        let managed = open_managed(self.cache_root, self.auto_clean, now_ms)?;
         Ok(Session {
             source: self.source,
             store,
@@ -192,6 +215,21 @@ impl SessionBuilder {
             pins: std::collections::BTreeMap::new(),
             content_reads: 0,
             cached_content_reads: 0,
+            managed,
         })
     }
+}
+
+fn open_managed(
+    root: Option<(PathBuf, u64)>,
+    policy: AutoCleanConfig,
+    now_ms: u64,
+) -> Result<Option<PersistedCache>, DctxError> {
+    let Some((path, root_id)) = root else {
+        return Ok(None);
+    };
+    if !cfg!(feature = "cache") {
+        return Err(DctxError::unsupported("cache"));
+    }
+    PersistedCache::open(&path, root_id, policy, now_ms).map(Some)
 }

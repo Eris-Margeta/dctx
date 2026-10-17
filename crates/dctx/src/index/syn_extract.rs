@@ -4,6 +4,7 @@
 //! Other languages stay on the structural extractor. Coverage is `syntax` only when syn succeeded.
 
 use dctx_lex_rust::{extract as lex_extract, Completion, Coverage, DeclarationKind, Limits, Refusal};
+use dctx_map_model::NodeKind;
 
 use super::extract::{signature_text, Symbol};
 use crate::domain::{DctxError, Resource};
@@ -45,7 +46,7 @@ pub(crate) fn extract(bytes: &[u8], max_file: u64) -> Result<(Vec<Symbol>, bool)
         symbols.push(Symbol {
             name: declaration.name.clone(),
             kind: kind.to_string(),
-            doc: false,
+            graph: NodeKind::Symbol,
             lines: declaration.span.lines,
             span: [u64::try_from(start).unwrap_or(u64::MAX), u64::try_from(end).unwrap_or(u64::MAX)],
             summary,

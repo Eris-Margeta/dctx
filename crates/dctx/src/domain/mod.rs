@@ -22,7 +22,10 @@ pub use identity::{object_key, STRUCTURAL_PARSER};
 pub use limits::OperationLimits;
 pub use policy::{HostGrants, PolicyView};
 pub use rules::RuleSources;
-pub use report::{validate_segment, CacheReport, GcRequest, PackReport, PurgeRequest, PurgeScope, SegmentInfo};
+pub use report::{
+    validate_segment, AutoCleanConfig, CacheLedger, CacheReport, GcRequest, PackReport, PurgeRequest, PurgeScope,
+    SegmentInfo,
+};
 pub use request::{
     Direction, FreshnessMode, MapRequest, PackRequest, SnapshotRequest, Verb, REQUEST_VERSION,
 };

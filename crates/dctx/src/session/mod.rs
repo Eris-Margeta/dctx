@@ -22,7 +22,7 @@ use dctx_template::{ContextPlan, HostCeiling};
 pub use build::StoragePolicy;
 pub use build::SessionBuilder;
 
-use self::ledger::AccountingCache;
+use self::ledger::{AccountingCache, PersistedCache};
 use crate::domain::{
     ancestors_include, check_deadline, seal_segment, HostGrants, OperationLimits, PolicyView, RuleSources,
     SnapshotRequest, DctxError, REQUEST_VERSION,
@@ -94,6 +94,7 @@ pub struct Session {
     pins: BTreeMap<u64, Weak<Pin>>,
     content_reads: u64,
     cached_content_reads: u64,
+    managed: Option<PersistedCache>,
 }
 
 impl Session {
@@ -149,6 +150,7 @@ impl Session {
             view.parser()?
         };
         self.hooks_before_index()?;
+        self.touch_cache_root()?;
         let started = self.clock.now().millis();
         check_deadline(started, started, scan_limits.deadline_ms)?;
         let walked = walk_source(&WalkArgs {
@@ -178,6 +180,12 @@ impl Session {
         };
         if cfg!(feature = "segments") {
             self.cache.segment_admit(encoded_len)?;
+        }
+        if let Err(error) = self.store_cache_segment(&segment) {
+            if cfg!(feature = "segments") {
+                self.cache.segment_release(encoded_len);
+            }
+            return Err(error);
         }
         let id = self.next_generation;
         let pin = Arc::new(Pin);
