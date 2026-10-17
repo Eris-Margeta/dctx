@@ -1,10 +1,19 @@
 # dctx-map-parse
 
 `Parser::parse(path, bytes)` turns one authorized UTF-8 file into deterministic
-`ParsedFile` facts. `TreeSitterParser` supports Rust (`.rs`), JavaScript (`.js`,
-`.mjs`, `.cjs`, `.jsx`), TypeScript (`.ts`, `.mts`, `.cts`, `.tsx`) and Markdown
-(`.md`, `.markdown`), case-insensitively. Other extensions produce a module with a
-first-comment summary. The caller performs scanning and file IO.
+`ParsedFile` facts. `PureParser` is the default. It sends Rust (`.rs`) to
+`dctx-lex-rust`, JavaScript (`.js`, `.mjs`, `.cjs`, `.jsx`) and TypeScript
+(`.ts`, `.mts`, `.cts`, `.tsx`) to `dctx-lex-js`, and Markdown (`.md`,
+`.markdown`) to `dctx-lex-md`, case-insensitively. Other extensions produce a
+module with a first-comment summary and an opaque precision label. The caller
+performs scanning and file IO.
+
+Each `ParsedFile` carries a precision label: coverage, completion and parser
+identity. That label is not edge confidence. Complete Rust is `syntax`.
+JavaScript, TypeScript and Markdown are `structural`. Unknown files are
+`opaque`. A partial Rust or JavaScript/TypeScript extraction is
+`ParseError::Syntax`, so an indexer can mask and retry instead of storing
+line-scan facts as a complete parse.
 
 Nodes and exact `contains` edges use the public `dctx-map-model` types.
 `RawReference` retains the originating node, relation, lexical scope, alias,
@@ -43,14 +52,21 @@ the parser. The store's current `Unresolved` record has only name and relation;
 it cannot persist the parser's source, scope, alias, or location. Resolution
 should consume `RawReference` before adapting results into store `FileFacts`.
 
+The default build depends on `dctx-map-model`, `dctx-lex-rust` (and its `syn`
+closure), `dctx-lex-js`, `dctx-lex-md`, `sha2` and `thiserror`. It does not
+depend on tree-sitter or any C code. `syntax-tree-sitter` (default off) opts
+into `tree-sitter`, `tree-sitter-rust`, `tree-sitter-md`, `tree-sitter-javascript`
+and `tree-sitter-typescript` and compiles `TreeSitterParser` as the differential
+oracle. Without that feature the name `TreeSitterParser` is `PureParser`, so
+existing callers keep compiling.
+
 Validation uses the packet's remote `cargo test -p dctx-map-parse` and
 `cargo clippy -p dctx-map-parse -- -D warnings` commands. Fixtures specify exact
 node/reference sets and a heading tree; property tests cover identity stability
 and collision-free duplicate endpoints.
 
-JavaScript and TypeScript use `tree-sitter-javascript = "=0.25.0"` and
-`tree-sitter-typescript = "=0.23.2"` with the existing tree-sitter 0.25.10 runtime
-(D1). TSX selects its separate grammar. Declarations, classes, methods, named
+JavaScript and TypeScript use the first-party `dctx-lex-js` extractor.
+TSX is its own dialect. Declarations, classes, methods, named
 arrows and function expressions receive qualified identities. JSDoc contributes
 the first nonempty description line's first sentence. Invalid syntax refuses the
 whole file. Rust and Markdown extraction is unchanged.

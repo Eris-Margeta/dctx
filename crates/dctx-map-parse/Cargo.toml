@@ -4,15 +4,29 @@ version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
 
+# Default build is the pure-Rust extractor (decision 077). Tree-sitter is the optional
+# differential oracle: `cargo test -p dctx-map-parse --features syntax-tree-sitter`.
+[features]
+syntax-tree-sitter = [
+    "dep:tree-sitter",
+    "dep:tree-sitter-rust",
+    "dep:tree-sitter-md",
+    "dep:tree-sitter-javascript",
+    "dep:tree-sitter-typescript",
+]
+
 [dependencies]
 dctx-map-model = { path = "../dctx-map-model" }
+dctx-lex-rust = { path = "../dctx-lex-rust" }
+dctx-lex-js = { path = "../dctx-lex-js" }
+dctx-lex-md = { path = "../dctx-lex-md" }
 sha2 = "=0.10.9"
 thiserror = "=2.0.18"
-tree-sitter = "=0.25.10"
-tree-sitter-rust = "=0.24.0"
-tree-sitter-md = "=0.3.2"
-tree-sitter-javascript = "=0.25.0"
-tree-sitter-typescript = "=0.23.2"
+tree-sitter = { version = "=0.25.10", optional = true }
+tree-sitter-rust = { version = "=0.24.0", optional = true }
+tree-sitter-md = { version = "=0.3.2", optional = true }
+tree-sitter-javascript = { version = "=0.25.0", optional = true }
+tree-sitter-typescript = { version = "=0.23.2", optional = true }
 
 [dev-dependencies]
 proptest = "1"

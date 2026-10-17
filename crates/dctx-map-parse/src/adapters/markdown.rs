@@ -1,12 +1,84 @@
-//! Markdown heading sections and unresolved inline documentation links.
-//! Implements SPEC-MAP-MODE sections 5.1–5.4 and 6.2.
-//! Uses block and inline Markdown grammars; emits model nodes and raw links.
-use super::facts::{Facts, lines, sentence, text};
+//! Markdown sections from dctx-lex-md, plus the optional tree-sitter walker.
+//! Implements SPEC-MAP-MODE sections 5.1–5.4 and 6.2 and the PARSERS-v1 Markdown row.
+//! Headings become doc nodes; inline code and link destinations stay unresolved.
+//! Fenced and indented code never create headings. Tree-sitter is the feature oracle.
+use super::facts::{Facts, file_precision};
+use crate::{Language, ParseError, ParsedFile, body_fingerprint};
+use dctx_lex_md::LexError;
+use dctx_map_model::{
+    Completion, Coverage, EdgeKind, Node, NodeKind, StableId, Summary, SummarySource,
+};
+
+#[cfg(feature = "syntax-tree-sitter")]
+use super::facts::{lines, text};
+#[cfg(feature = "syntax-tree-sitter")]
 use super::rust_items::named_children;
-use crate::{ParseError, body_fingerprint};
-use dctx_map_model::{EdgeKind, Node, NodeKind, StableId, Summary, SummarySource};
+#[cfg(feature = "syntax-tree-sitter")]
 use tree_sitter::Node as Syntax;
 
+/// Maps a Markdown document onto doc nodes and documentation references.
+pub(super) fn parse_pure(path: &str, source: &str, bytes: &[u8]) -> Result<ParsedFile, ParseError> {
+    let document = dctx_lex_md::extract(bytes).map_err(|error| map_error(path, error))?;
+    let precision = file_precision(Coverage::Structural, Completion::Complete, "dctx-lex-md:1")?;
+    let mut facts = Facts::new(path, source, Language::Markdown, precision)?;
+    let mut owners = Vec::with_capacity(document.headings.len());
+    for heading in &document.headings {
+        let parent = heading
+            .parent
+            .and_then(|index| owners.get(index).copied())
+            .unwrap_or(0);
+        let body = heading.body().text(source);
+        let owner = facts.node(
+            Node {
+                id: StableId::new(NodeKind::Doc, &facts.file.path, Some(&heading.name), None)?,
+                kind: NodeKind::Doc,
+                symbol_kind: None,
+                path: facts.file.path.clone(),
+                lines: heading.lines,
+                name: heading.name.clone(),
+                signature: heading.title.clone(),
+                fingerprint: body_fingerprint(body),
+                public: false,
+                summary: Summary {
+                    text: heading.summary.clone(),
+                    source: SummarySource::Heading,
+                },
+            },
+            parent,
+        );
+        owners.push(owner);
+    }
+    for reference in &document.references {
+        let Some(owner) = reference.owner.and_then(|index| owners.get(index).copied()) else {
+            continue;
+        };
+        facts.reference(
+            owner,
+            EdgeKind::Documents,
+            reference.name.clone(),
+            "",
+            None,
+            reference.lines,
+        );
+    }
+    facts.finish()
+}
+
+fn map_error(path: &str, error: LexError) -> ParseError {
+    match error {
+        LexError::TooLarge { .. } => ParseError::TooLarge,
+        LexError::TooDeep { line, .. } => ParseError::Syntax {
+            path: path.into(),
+            line: line.max(1),
+        },
+        LexError::InvalidUtf8 { .. } => ParseError::Syntax {
+            path: path.into(),
+            line: 1,
+        },
+    }
+}
+
+#[cfg(feature = "syntax-tree-sitter")]
 struct Heading<'a> {
     syntax: Syntax<'a>,
     level: usize,
@@ -14,6 +86,7 @@ struct Heading<'a> {
     owner: usize,
 }
 
+#[cfg(feature = "syntax-tree-sitter")]
 pub(super) fn parse(source: &str, facts: &mut Facts) -> Result<(), ParseError> {
     let tree = super::tree(source, tree_sitter_md::LANGUAGE.into())?;
     let mut headings = Vec::new();
@@ -51,7 +124,7 @@ pub(super) fn parse(source: &str, facts: &mut Facts) -> Result<(), ParseError> {
         let summary = inlines
             .iter()
             .find(|inline| inline.start_byte() >= body_start && inline.start_byte() < next_heading)
-            .map(|inline| sentence(text(*inline, source)))
+            .map(|inline| super::facts::sentence(text(*inline, source)))
             .unwrap_or_else(|| current.title.clone());
         let name = slug(&current.title);
         while parents
@@ -91,7 +164,6 @@ pub(super) fn parse(source: &str, facts: &mut Facts) -> Result<(), ParseError> {
             .rev()
             .find(|h| h.syntax.end_byte() <= inline.start_byte())
         {
-            // Heading text belongs to its own title, not to the preceding section.
             if headings
                 .iter()
                 .any(|h| h.syntax.byte_range().contains(&inline.start_byte()))
@@ -104,6 +176,7 @@ pub(super) fn parse(source: &str, facts: &mut Facts) -> Result<(), ParseError> {
     Ok(())
 }
 
+#[cfg(feature = "syntax-tree-sitter")]
 fn heading(node: Syntax<'_>, source: &str) -> (usize, String) {
     let children = named_children(node);
     let level = children
@@ -126,6 +199,7 @@ fn heading(node: Syntax<'_>, source: &str) -> (usize, String) {
     (level, title)
 }
 
+#[cfg(feature = "syntax-tree-sitter")]
 fn slug(title: &str) -> String {
     let mut slug = String::new();
     for c in title.chars().flat_map(char::to_lowercase) {
@@ -143,6 +217,7 @@ fn slug(title: &str) -> String {
     }
 }
 
+#[cfg(feature = "syntax-tree-sitter")]
 fn links(
     inline: Syntax<'_>,
     source: &str,
@@ -183,8 +258,9 @@ fn links(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Parser, TreeSitterParser};
+    use crate::{Parser, PureParser};
 
+    #[cfg(feature = "syntax-tree-sitter")]
     #[test]
     fn slugs_are_unicode_readable_and_valid_id_components() {
         assert_eq!(slug("5.2 Stable IDs!"), "52-stable-ids");
@@ -194,13 +270,14 @@ mod tests {
 
     #[test]
     fn fences_and_inline_code_do_not_make_headings() {
-        let facts = TreeSitterParser
+        let facts = PureParser
             .parse(
                 "spec.md",
                 b"# Real\n\n```md\n# Fake\n`fake`\n```\n\n`Thing` and [source](src/lib.rs).\n",
             )
             .unwrap();
         assert_eq!(facts.nodes.len(), 2);
+        assert_eq!(facts.precision.coverage(), Coverage::Structural);
         assert_eq!(
             facts
                 .references

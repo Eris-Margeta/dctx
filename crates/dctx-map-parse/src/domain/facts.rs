@@ -71,6 +71,9 @@ pub struct ParsedFile {
     pub edges: Vec<Edge>,
     /// Unresolved references; repeated sites remain separate records.
     pub references: Vec<RawReference>,
+    /// Coverage, completion and parser identity for this file.
+    /// Edge confidence stays on each edge; this label is not confidence.
+    pub precision: dctx_map_model::Precision,
 }
 
 /// Parser errors never produce a partial replacement of stored facts.
@@ -82,15 +85,18 @@ pub enum ParseError {
     /// Supplied bytes are not UTF-8.
     #[error(transparent)]
     InvalidUtf8(#[from] std::str::Utf8Error),
-    /// Source or fact counts exceed the model/tree-sitter coordinate space.
+    /// Source or fact counts exceed the parser coordinate space.
     #[error("file exceeds parser coordinate limits")]
     TooLarge,
-    /// Pinned grammar is incompatible with the tree-sitter runtime.
+    /// Optional grammar is incompatible with its runtime.
     #[error("incompatible grammar: {0}")]
-    Grammar(#[from] tree_sitter::LanguageError),
-    /// Tree-sitter did not produce a tree.
+    Grammar(String),
+    /// Optional parser did not produce a tree.
     #[error("tree-sitter did not produce a syntax tree")]
     NoTree,
+    /// A parser identity is not a valid evidence label.
+    #[error(transparent)]
+    Label(#[from] dctx_map_model::InvalidLabel),
     /// Source syntax contains an error or missing token.
     #[error("invalid syntax in {path} at line {line}")]
     Syntax {

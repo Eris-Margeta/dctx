@@ -3,7 +3,7 @@
 //! Uses checked-in fixtures; no filesystem writes or compiler invocation.
 #![forbid(unsafe_code)]
 use dctx_map_model::{Confidence, EdgeKind, NodeKind, SymbolKind};
-use dctx_map_parse::{ParsedFile, Parser, TreeSitterParser};
+use dctx_map_parse::{ParsedFile, Parser, PureParser};
 
 const RUST: &[u8] = include_bytes!("fixtures/rust/src/lib.rs");
 const SUPPORT: &[u8] = include_bytes!("fixtures/rust/src/support.rs");
@@ -21,7 +21,7 @@ fn nodes(facts: &ParsedFile) -> Vec<(&str, NodeKind, Option<SymbolKind>)> {
 fn rust_fixture_has_the_exact_node_set() {
     use NodeKind::{Module, Symbol, Test};
     use SymbolKind::{Const, Enum, Function, Impl, Macro, Method, Struct, Trait, Type};
-    let facts = TreeSitterParser.parse("src/lib.rs", RUST).unwrap();
+    let facts = PureParser.parse("src/lib.rs", RUST).unwrap();
     assert_eq!(
         nodes(&facts),
         [
@@ -49,7 +49,7 @@ fn rust_fixture_has_the_exact_node_set() {
         assert!(facts.nodes.iter().any(|n| n.id == edge.src));
         assert!(facts.nodes.iter().any(|n| n.id == edge.dst));
     }
-    let support = TreeSitterParser.parse("src/support.rs", SUPPORT).unwrap();
+    let support = PureParser.parse("src/support.rs", SUPPORT).unwrap();
     assert_eq!(
         nodes(&support),
         [
@@ -64,7 +64,7 @@ fn rust_fixture_has_the_exact_node_set() {
 #[test]
 fn rust_fixture_has_the_exact_raw_reference_set() {
     use EdgeKind::{Calls, Implements, Imports, Reexports, Tests, UsesType};
-    let facts = TreeSitterParser.parse("src/lib.rs", RUST).unwrap();
+    let facts = PureParser.parse("src/lib.rs", RUST).unwrap();
     let actual = facts
         .references
         .iter()
@@ -160,7 +160,7 @@ fn rust_fixture_has_the_exact_raw_reference_set() {
 
 #[test]
 fn markdown_fixture_has_the_exact_heading_tree_and_links() {
-    let facts = TreeSitterParser.parse("docs/spec.md", MARKDOWN).unwrap();
+    let facts = PureParser.parse("docs/spec.md", MARKDOWN).unwrap();
     let ids = facts
         .nodes
         .iter()
@@ -213,7 +213,7 @@ fn markdown_fixture_has_the_exact_heading_tree_and_links() {
 
 #[test]
 fn same_bytes_produce_identical_complete_facts() {
-    let parser: &dyn Parser = &TreeSitterParser;
+    let parser: &dyn Parser = &PureParser;
     for (path, bytes) in [
         ("src/lib.rs", RUST),
         ("src/support.rs", SUPPORT),

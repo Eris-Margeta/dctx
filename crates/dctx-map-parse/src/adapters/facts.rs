@@ -1,9 +1,10 @@
 //! Source-ordered fact assembly with duplicate-id finalization.
-//! Implements SPEC-MAP-MODE sections 5.1–5.4 for both grammars.
+//! Implements SPEC-MAP-MODE sections 5.1–5.4 for every language adapter.
 //! Uses public model constructors; language adapters supply source facts.
 use crate::{Language, ParseError, ParsedFile, RawReference, body_fingerprint};
 use dctx_map_model::{
-    Confidence, Edge, EdgeKind, Node, NodeKind, StableId, Summary, SummarySource,
+    Completion, Confidence, Coverage, Edge, EdgeKind, EvidenceLabel, Node, NodeKind, Precision,
+    StableId, Summary, SummarySource,
 };
 use std::collections::BTreeMap;
 
@@ -14,7 +15,12 @@ pub(super) struct Facts {
 }
 
 impl Facts {
-    pub fn new(path: &str, source: &str, language: Language) -> Result<Self, ParseError> {
+    pub fn new(
+        path: &str,
+        source: &str,
+        language: Language,
+        precision: Precision,
+    ) -> Result<Self, ParseError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
         let comment = source.lines().find_map(first_comment);
         let module = Node {
@@ -39,6 +45,7 @@ impl Facts {
                 nodes: vec![module],
                 edges: Vec::new(),
                 references: Vec::new(),
+                precision,
             },
             parents: Vec::new(),
             sources: Vec::new(),
@@ -107,10 +114,21 @@ impl Facts {
     }
 }
 
+/// File-level precision. Parser ids are static and must pass [`EvidenceLabel::new`].
+pub(super) fn file_precision(
+    coverage: Coverage,
+    completion: Completion,
+    parser: &str,
+) -> Result<Precision, ParseError> {
+    Ok(Precision::new(coverage, completion, EvidenceLabel::new(parser)?))
+}
+
+#[cfg(feature = "syntax-tree-sitter")]
 pub(super) fn text<'a>(node: tree_sitter::Node<'_>, source: &'a str) -> &'a str {
     &source[node.byte_range()]
 }
 
+#[cfg(feature = "syntax-tree-sitter")]
 pub(super) fn lines(node: tree_sitter::Node<'_>) -> [u32; 2] {
     let start = node.start_position().row as u32 + 1;
     let end = node.end_position();
@@ -120,6 +138,7 @@ pub(super) fn lines(node: tree_sitter::Node<'_>) -> [u32; 2] {
     ]
 }
 
+#[cfg(any(test, feature = "syntax-tree-sitter"))]
 pub(super) fn compact(value: &str) -> String {
     value.chars().filter(|c| !c.is_whitespace()).collect()
 }

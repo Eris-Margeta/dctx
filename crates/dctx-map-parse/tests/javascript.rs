@@ -3,7 +3,7 @@
 //! Checked-in source is parsed without executing code or reading dependencies.
 #![forbid(unsafe_code)]
 use dctx_map_model::{EdgeKind, NodeKind, SummarySource, SymbolKind};
-use dctx_map_parse::{Language, ParseError, ParsedFile, Parser, TreeSitterParser};
+use dctx_map_parse::{Language, ParseError, ParsedFile, Parser, PureParser};
 
 const JS: &[u8] = include_bytes!("fixtures/js/module.mjs");
 const TS: &[u8] = include_bytes!("fixtures/ts/module.ts");
@@ -37,7 +37,7 @@ fn javascript_fixture_has_exact_nodes_and_references() {
     use EdgeKind::{Calls, Imports, Reexports, Tests};
     use NodeKind::{Module, Symbol, Test};
     use SymbolKind::{Class, Function, Method};
-    let facts = TreeSitterParser.parse("module.mjs", JS).unwrap();
+    let facts = PureParser.parse("module.mjs", JS).unwrap();
     assert_eq!(
         symbols(&facts),
         [
@@ -159,7 +159,7 @@ fn typescript_fixture_has_exact_nodes_and_references() {
     use EdgeKind::{Calls, Imports, Reexports, Tests, UsesType};
     use NodeKind::{Module, Symbol, Test};
     use SymbolKind::{Class, Function, Interface, Method, Type};
-    let facts = TreeSitterParser.parse("module.ts", TS).unwrap();
+    let facts = PureParser.parse("module.ts", TS).unwrap();
     assert_eq!(
         symbols(&facts),
         [
@@ -235,7 +235,7 @@ fn typescript_fixture_has_exact_nodes_and_references() {
 #[test]
 fn extensions_jsx_tsx_and_invalid_syntax_are_explicit() {
     for extension in ["js", "mjs", "cjs", "jsx", "JS"] {
-        let facts = TreeSitterParser
+        let facts = PureParser
             .parse(&format!("view.{extension}"), b"const View = () => <div />;")
             .unwrap();
         assert_eq!(facts.language, Language::JavaScript);
@@ -247,32 +247,32 @@ fn extensions_jsx_tsx_and_invalid_syntax_are_explicit() {
             Language::TypeScript
         );
     }
-    let facts = TreeSitterParser
+    let facts = PureParser
         .parse("view.tsx", b"export const View = (x: Props) => <div />;")
         .unwrap();
     assert_eq!(facts.language, Language::Tsx);
     assert_eq!(facts.references[0].name, "Props");
     for path in ["x.js", "x.ts", "x.tsx"] {
         assert!(matches!(
-            TreeSitterParser.parse(path, b"function broken("),
+            PureParser.parse(path, b"function broken("),
             Err(ParseError::Syntax { .. })
         ));
-        assert!(TreeSitterParser.parse(path, b"function valid() {}").is_ok());
+        assert!(PureParser.parse(path, b"function valid() {}").is_ok());
     }
 }
 
 #[test]
 fn duplicate_tests_and_complete_facts_are_deterministic() {
     for (path, bytes) in [("module.mjs", JS), ("module.ts", TS)] {
-        let facts = TreeSitterParser.parse(path, bytes).unwrap();
-        assert_eq!(TreeSitterParser.parse(path, bytes).unwrap(), facts);
+        let facts = PureParser.parse(path, bytes).unwrap();
+        assert_eq!(PureParser.parse(path, bytes).unwrap(), facts);
         assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
         for reference in &facts.references {
             assert_eq!(reference.owner_path, path);
             assert!(reference.lines[0] > 0 && reference.lines[1] >= reference.lines[0]);
         }
     }
-    let facts = TreeSitterParser
+    let facts = PureParser
         .parse(
             "test.js",
             b"it('same', () => run()); it('same', () => run());",
