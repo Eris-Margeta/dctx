@@ -1,10 +1,14 @@
 //! Language dispatch for the pure-Rust parser and the optional tree-sitter oracle.
 //! Implements SPEC-MAP-MODE section 6.2 and PARSERS-v1 for Rust, JavaScript,
-//! TypeScript and Markdown. Unknown extensions stay module-only.
+//! TypeScript, Markdown, Python, Go and Java. Unknown extensions stay module-only.
 //! Uses the dctx-lex crates by default; tree-sitter compiles only with syntax-tree-sitter.
+//! Python, Go and Java have no tree-sitter grammar, so that feature uses their pure adapters.
 mod facts;
+mod go;
+mod java;
 mod javascript;
 mod markdown;
+mod python;
 mod rust;
 
 #[cfg(feature = "syntax-tree-sitter")]
@@ -22,8 +26,8 @@ use facts::{Facts, file_precision};
 
 /// Pure-Rust language adapters with a module-only fallback.
 ///
-/// Rust partial extraction is refused (`ParseError::Syntax`) so callers can
-/// recover by masking. Line-scan facts are not reported as a complete parse.
+/// Partial or diagnostic extraction is refused (`ParseError::Syntax`) so
+/// callers can recover by masking. Line-scan facts are not a complete parse.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct PureParser;
 
@@ -36,12 +40,18 @@ impl Parser for PureParser {
                 javascript::parse_pure(path, bytes)
             }
             Language::Markdown => markdown::parse_pure(path, source, bytes),
+            Language::Python => python::parse_pure(path, bytes),
+            Language::Go => go::parse_pure(path, bytes),
+            Language::Java => java::parse_pure(path, bytes),
             Language::Unknown => fallback(path, source),
         }
     }
 }
 
 /// Tree-sitter language adapters. Compiled only with `syntax-tree-sitter`.
+///
+/// Python, Go and Java have no grammar in this feature. Those paths call the
+/// pure adapters, with the same structural precision and syntax refusals.
 #[cfg(feature = "syntax-tree-sitter")]
 #[derive(Debug, Clone, Copy, Default)]
 pub struct TreeSitterParser;
@@ -51,8 +61,18 @@ impl Parser for TreeSitterParser {
     fn parse(&self, path: &str, bytes: &[u8]) -> Result<ParsedFile, ParseError> {
         let source = prepare(path, bytes)?;
         let language = Language::for_path(path);
-        if language == Language::Unknown {
-            return fallback(path, source);
+        // No tree-sitter grammar ships for these languages. The oracle uses
+        // the pure adapters so the feature still returns structural facts.
+        match language {
+            Language::Python => return python::parse_pure(path, bytes),
+            Language::Go => return go::parse_pure(path, bytes),
+            Language::Java => return java::parse_pure(path, bytes),
+            Language::Unknown => return fallback(path, source),
+            Language::Rust
+            | Language::JavaScript
+            | Language::TypeScript
+            | Language::Tsx
+            | Language::Markdown => {}
         }
         let precision = file_precision(Coverage::Syntax, Completion::Complete, "tree-sitter")?;
         let mut facts = Facts::new(path, source, language, precision)?;
@@ -62,7 +82,7 @@ impl Parser for TreeSitterParser {
                 javascript::parse(source, &mut facts)?;
             }
             Language::Markdown => markdown::parse(source, &mut facts)?,
-            Language::Unknown => {}
+            Language::Python | Language::Go | Language::Java | Language::Unknown => {}
         }
         facts.finish()
     }

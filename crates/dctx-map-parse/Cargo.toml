@@ -20,6 +20,9 @@ dctx-map-model = { path = "../dctx-map-model" }
 dctx-lex-rust = { path = "../dctx-lex-rust" }
 dctx-lex-js = { path = "../dctx-lex-js" }
 dctx-lex-md = { path = "../dctx-lex-md" }
+dctx-lex-py = { path = "../dctx-lex-py" }
+dctx-lex-go = { path = "../dctx-lex-go" }
+dctx-lex-java = { path = "../dctx-lex-java" }
 sha2 = "=0.10.9"
 thiserror = "=2.0.18"
 tree-sitter = { version = "=0.25.10", optional = true }

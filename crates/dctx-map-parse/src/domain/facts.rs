@@ -16,6 +16,12 @@ pub enum Language {
     Tsx,
     /// Markdown block and inline syntax.
     Markdown,
+    /// Python source (`.py`) and stubs (`.pyi`).
+    Python,
+    /// Go source.
+    Go,
+    /// Java source.
+    Java,
     /// No grammar; only a module node is emitted.
     Unknown,
 }
@@ -34,6 +40,9 @@ impl Language {
             Some("ts" | "mts" | "cts") => Self::TypeScript,
             Some("tsx") => Self::Tsx,
             Some("md" | "markdown") => Self::Markdown,
+            Some("py" | "pyi") => Self::Python,
+            Some("go") => Self::Go,
+            Some("java") => Self::Java,
             _ => Self::Unknown,
         }
     }
@@ -116,6 +125,11 @@ mod tests {
         assert_eq!(Language::for_path("src/lib.rs"), Language::Rust);
         assert_eq!(Language::for_path("docs/README.MD"), Language::Markdown);
         assert_eq!(Language::for_path("docs/spec.markdown"), Language::Markdown);
+        assert_eq!(Language::for_path("pkg/app.py"), Language::Python);
+        assert_eq!(Language::for_path("pkg/app.PYI"), Language::Python);
+        assert_eq!(Language::for_path("cmd/main.go"), Language::Go);
+        assert_eq!(Language::for_path("src/App.JAVA"), Language::Java);
+        assert_eq!(Language::for_path("pkg/app.pyw"), Language::Unknown);
         assert_eq!(Language::for_path("rs/file.txt"), Language::Unknown);
     }
 }

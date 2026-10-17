@@ -3,15 +3,16 @@
 `Parser::parse(path, bytes)` turns one authorized UTF-8 file into deterministic
 `ParsedFile` facts. `PureParser` is the default. It sends Rust (`.rs`) to
 `dctx-lex-rust`, JavaScript (`.js`, `.mjs`, `.cjs`, `.jsx`) and TypeScript
-(`.ts`, `.mts`, `.cts`, `.tsx`) to `dctx-lex-js`, and Markdown (`.md`,
-`.markdown`) to `dctx-lex-md`, case-insensitively. Other extensions produce a
-module with a first-comment summary and an opaque precision label. The caller
-performs scanning and file IO.
+(`.ts`, `.mts`, `.cts`, `.tsx`) to `dctx-lex-js`, Markdown (`.md`,
+`.markdown`) to `dctx-lex-md`, Python (`.py`, `.pyi`) to `dctx-lex-py`, Go
+(`.go`) to `dctx-lex-go`, and Java (`.java`) to `dctx-lex-java`,
+case-insensitively. Other extensions produce a module with a first-comment
+summary and an opaque precision label. The caller performs scanning and file IO.
 
 Each `ParsedFile` carries a precision label: coverage, completion and parser
 identity. That label is not edge confidence. Complete Rust is `syntax`.
-JavaScript, TypeScript and Markdown are `structural`. Unknown files are
-`opaque`. A partial Rust or JavaScript/TypeScript extraction is
+JavaScript, TypeScript, Markdown, Python, Go and Java are `structural`.
+Unknown files are `opaque`. A partial or diagnostic extraction is
 `ParseError::Syntax`, so an indexer can mask and retry instead of storing
 line-scan facts as a complete parse.
 
@@ -53,12 +54,16 @@ it cannot persist the parser's source, scope, alias, or location. Resolution
 should consume `RawReference` before adapting results into store `FileFacts`.
 
 The default build depends on `dctx-map-model`, `dctx-lex-rust` (and its `syn`
-closure), `dctx-lex-js`, `dctx-lex-md`, `sha2` and `thiserror`. It does not
-depend on tree-sitter or any C code. `syntax-tree-sitter` (default off) opts
-into `tree-sitter`, `tree-sitter-rust`, `tree-sitter-md`, `tree-sitter-javascript`
-and `tree-sitter-typescript` and compiles `TreeSitterParser` as the differential
-oracle. Without that feature the name `TreeSitterParser` is `PureParser`, so
-existing callers keep compiling.
+closure), `dctx-lex-js`, `dctx-lex-md`, `dctx-lex-py`, `dctx-lex-go`,
+`dctx-lex-java`, `sha2` and `thiserror`. Those lexer crates are path
+dependencies. The crate adds no external dependency for Python, Go or Java.
+It does not depend on tree-sitter or any C code. `syntax-tree-sitter` (default
+off) opts into `tree-sitter`, `tree-sitter-rust`, `tree-sitter-md`,
+`tree-sitter-javascript` and `tree-sitter-typescript` and compiles
+`TreeSitterParser` as the differential oracle. That feature has no grammar for
+Python, Go or Java, so those languages fall back to the pure adapters and keep
+their structural precision. Without that feature the name `TreeSitterParser`
+is `PureParser`, so existing callers keep compiling.
 
 Validation uses the packet's remote `cargo test -p dctx-map-parse` and
 `cargo clippy -p dctx-map-parse -- -D warnings` commands. Fixtures specify exact
@@ -84,3 +89,12 @@ qualified by their enclosing test. Calls in test callbacks emit both `calls`
 and `tests`; registration calls themselves do not. Framework alias resolution,
 escaped string decoding, computed test titles, module execution, and semantic
 type inference remain outside this syntax adapter.
+
+Python, Go and Java use the first-party `dctx-lex-py`, `dctx-lex-go` and
+`dctx-lex-java` extractors. `.py` and `.pyi` are both `Language::Python`.
+Declarations, imports, calls and type uses are copied from the lexer, including
+containment edges. A Go `package` clause is stored as a file-owned symbol: the
+indexer treats `NodeKind::Package` as a structural node and would insert it a
+second time. A partial completion or any diagnostic refuses the file with
+`ParseError::Syntax`. The tree-sitter oracle does not parse these languages
+itself; with `syntax-tree-sitter` enabled it calls the same pure adapters.
