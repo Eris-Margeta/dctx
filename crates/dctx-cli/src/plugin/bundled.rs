@@ -1,6 +1,6 @@
 //! Bundled `dctx/git` row derived from the facade catalog.
 //! Implements PLUGINS.md §5.4 and §7.3 PL-CLI: listed and enabled, capabilities disclosed,
-//! absent when the git worker feature is off. Depends on `dctx::bundled_git_plugin` and the
+//! unavailable when the git worker feature is off. Depends on `dctx::bundled_git_plugin` and the
 //! distribution capability set. Used by list, info, enable, disable, remove and verify.
 
 use dctx_plugin_distribution::{
@@ -86,6 +86,19 @@ mod tests {
         assert_eq!(catalog().id, "dctx/git");
         assert_eq!(catalog().version, "1.0.0");
         assert!(capabilities().unwrap().len() >= 3);
+    }
+
+    #[cfg(feature = "git-worker")]
+    #[test]
+    fn default_build_links_the_bundled_worker() {
         assert!(worker_linked());
+    }
+
+    #[cfg(not(feature = "git-worker"))]
+    #[test]
+    fn strict_build_keeps_catalog_metadata_without_linking_the_worker() {
+        assert!(!worker_linked());
+        assert_eq!(catalog().id, "dctx/git");
+        assert_eq!(installed_version().unwrap().version.as_str(), "1.0.0");
     }
 }

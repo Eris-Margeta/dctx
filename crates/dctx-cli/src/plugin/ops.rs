@@ -400,6 +400,20 @@ fn verify(env: &mut Env<'_>, raw_id: Option<&str>, refresh_trust: bool, json: bo
 }
 
 fn route(env: &mut Env<'_>, raw_id: &str, args: &[String], command: &str, json: bool) -> Outcome {
+    if raw_id == "dctx/git" && !bundled::worker_linked() {
+        let error = super::worker::WorkerError::StrictBuild;
+        return Outcome {
+            code: 1,
+            body: if json {
+                format!(
+                    "{{\"ok\":false,\"command\":{},\"error\":\"StrictBuild\",\"detail\":{},\"spawned\":false}}",
+                    render::json_string(command), render::json_string(&error.to_string())
+                )
+            } else {
+                format!("{command}: {error}")
+            },
+        };
+    }
     let verb = match args.first() {
         Some(verb) => verb.as_str(),
         None => return usage(command, "a verb is required", json),
@@ -417,9 +431,6 @@ fn route(env: &mut Env<'_>, raw_id: &str, args: &[String], command: &str, json: 
     };
     if !known && id.as_str() == "dctx/git" && bundled::worker_linked() {
         return fail(command, &DistributionError::ConsentRequired, json);
-    }
-    if id.as_str() == "dctx/git" && !bundled::worker_linked() {
-        return usage(command, "strict build excludes the git worker", json);
     }
     let admission = match dist(env).admit(&id) {
         Ok(admission) => admission,
@@ -484,23 +495,23 @@ fn is_bundled_selection(env: &Env<'_>, id: &PluginId) -> bool {
 }
 
 fn synthetic(env: &Env<'_>) -> Option<PluginStatus> {
-    if !bundled::worker_linked() {
-        return None;
-    }
     let version = bundled::installed_version().ok()?;
     Some(PluginStatus {
         id: bundled::id().ok()?,
         origin: Origin::Bundled,
         version: Some(version.version),
-        enablement: Enablement::Enabled,
-        needs_consent: true,
-        blocked: false,
+        enablement: if bundled::worker_linked() { Enablement::Enabled } else { Enablement::Disabled },
+        needs_consent: bundled::worker_linked(),
+        blocked: !bundled::worker_linked(),
         revocation_age_secs: env.trust.revocation_age(env.clock.now()),
     })
 }
 
 fn render_status(status: &PluginStatus, json: bool) -> String {
     let alias = if status.id.as_str() == "dctx/git" { bundled::catalog().alias } else { String::new() };
+    if status.id.as_str() == "dctx/git" && !bundled::worker_linked() {
+        return render::status_line(status, &alias, "unavailable", "excluded", json);
+    }
     let worker = if status.origin == Origin::Bundled && bundled::worker_linked() { "same-binary" } else { "host-target" };
     render::status_line(status, &alias, render::consent_name(status.needs_consent, status.enablement), worker, json)
 }
@@ -734,6 +745,7 @@ mod tests {
         outcome
     }
 
+    #[cfg(feature = "git-worker")]
     #[test]
     fn list_and_help_have_no_effects_and_show_the_bundled_plugin() {
         let world = World::new();
@@ -763,6 +775,33 @@ mod tests {
         assert_eq!(search.code, 0);
         assert!(search.body.contains("\"trust\":\"absent\""));
         assert!(world.net.requests().is_empty());
+    }
+
+    #[cfg(not(feature = "git-worker"))]
+    #[test]
+    fn strict_list_reports_unavailable_and_help_still_works_without_effects() {
+        let world = World::new();
+        let before = world.store.load_registry().unwrap();
+        let mut index = IndexCache::default();
+        for args in [vec!["plugin", "list"], vec!["plugin", "list", "--json"]] {
+            let listed = run(&world, &mut index, &args);
+            assert_eq!(listed.code, 0, "{}", listed.body);
+            for label in ["dctx/git", "bundled", "unavailable", "excluded"] {
+                assert!(listed.body.contains(label), "{}", listed.body);
+            }
+            assert!(!listed.body.contains("same-binary"));
+            assert!(!listed.body.contains("needs-consent"));
+        }
+        let info = run(&world, &mut index, &["plugin", "info", "dctx/git", "--json"]);
+        assert_eq!(info.code, 0, "{}", info.body);
+        assert!(info.body.contains("unavailable"));
+        for args in [vec!["plugin", "help"], vec!["plugin", "help", "--json"]] {
+            let help = run(&world, &mut index, &args);
+            assert_eq!(help.code, 0, "{}", help.body);
+            assert!(help.body.contains("plugin search"));
+        }
+        assert!(world.net.requests().is_empty());
+        assert_eq!(world.store.load_registry().unwrap(), before);
     }
 
     #[test]
@@ -806,6 +845,7 @@ mod tests {
         );
     }
 
+    #[cfg(feature = "git-worker")]
     #[test]
     fn bundled_enable_routes_git_and_canonical_run_then_disable_sticks() {
         let world = World::new();
@@ -845,6 +885,47 @@ mod tests {
         let listed = run(&world, &mut index, &["plugin", "list"]);
         assert!(listed.body.contains("disabled"));
         assert!(!listed.body.contains("needs-consent"));
+    }
+
+    #[cfg(not(feature = "git-worker"))]
+    #[test]
+    fn strict_alias_and_canonical_run_refuse_without_effects() {
+        let world = World::new();
+        let mut index = IndexCache::default();
+        for installed in [false, true] {
+            if installed {
+                world.publish("1.0.0", 1);
+                let outcome = run(&world, &mut index, &[
+                    "plugin", "install", "--url", "https://releases.example.org/dctx-git/1.0.0/plugin.json",
+                    "--id", "dctx/git", "--json",
+                ]);
+                assert_eq!(outcome.code, 0, "{}", outcome.body);
+            }
+            let before = world.store.load_registry().unwrap();
+            let requests = world.net.requests().len();
+            for verb in ["status", "protect"] {
+                for json in [false, true] {
+                    let mut alias = vec!["git", verb];
+                    let mut canonical = vec!["plugin", "run", "dctx/git"];
+                    if json {
+                        alias.push("--json");
+                        canonical.push("--json");
+                    }
+                    canonical.extend(["--", verb]);
+                    for args in [alias, canonical] {
+                        let refused = run(&world, &mut index, &args);
+                        assert_eq!(refused.code, 1, "{}", refused.body);
+                        assert!(refused.body.contains("StrictBuild"), "{}", refused.body);
+                        if json {
+                            assert!(refused.body.contains("\"error\":\"StrictBuild\""));
+                            assert!(refused.body.contains("\"spawned\":false"));
+                        }
+                    }
+                }
+            }
+            assert_eq!(world.net.requests().len(), requests);
+            assert_eq!(world.store.load_registry().unwrap(), before);
+        }
     }
 
     #[test]
