@@ -5,13 +5,17 @@
 `dctx-lex-rust`, JavaScript (`.js`, `.mjs`, `.cjs`, `.jsx`) and TypeScript
 (`.ts`, `.mts`, `.cts`, `.tsx`) to `dctx-lex-js`, Markdown (`.md`,
 `.markdown`) to `dctx-lex-md`, Python (`.py`, `.pyi`) to `dctx-lex-py`, Go
-(`.go`) to `dctx-lex-go`, and Java (`.java`) to `dctx-lex-java`,
+(`.go`) to `dctx-lex-go`, Java (`.java`) to `dctx-lex-java`, C/C++
+(`.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hpp`, `.hh`) to `dctx-lex-c`,
+configuration (`.json`, `.jsonc`, `.toml`, `.yaml`, `.yml`) to `dctx-lex-cfg`,
+and C# (`.cs`) to `dctx-lex-cs`,
 case-insensitively. Other extensions produce a module with a first-comment
 summary and an opaque precision label. The caller performs scanning and file IO.
 
 Each `ParsedFile` carries a precision label: coverage, completion and parser
 identity. That label is not edge confidence. Complete Rust is `syntax`.
-JavaScript, TypeScript, Markdown, Python, Go and Java are `structural`.
+JavaScript, TypeScript, Markdown, Python, Go, Java, C/C++, configuration and
+C# are `structural`.
 Unknown files are `opaque`. A partial or diagnostic extraction is
 `ParseError::Syntax`, so an indexer can mask and retry instead of storing
 line-scan facts as a complete parse.
@@ -55,14 +59,16 @@ should consume `RawReference` before adapting results into store `FileFacts`.
 
 The default build depends on `dctx-map-model`, `dctx-lex-rust` (and its `syn`
 closure), `dctx-lex-js`, `dctx-lex-md`, `dctx-lex-py`, `dctx-lex-go`,
-`dctx-lex-java`, `sha2` and `thiserror`. Those lexer crates are path
-dependencies. The crate adds no external dependency for Python, Go or Java.
-It does not depend on tree-sitter or any C code. `syntax-tree-sitter` (default
+`dctx-lex-java`, `dctx-lex-c`, `dctx-lex-cfg`, `dctx-lex-cs`, `sha2` and
+`thiserror`. Those lexer crates are path dependencies. This wiring adds no
+external dependency. The default build does not depend on tree-sitter or any
+C code. `syntax-tree-sitter` (default
 off) opts into `tree-sitter`, `tree-sitter-rust`, `tree-sitter-md`,
 `tree-sitter-javascript` and `tree-sitter-typescript` and compiles
 `TreeSitterParser` as the differential oracle. That feature has no grammar for
-Python, Go or Java, so those languages fall back to the pure adapters and keep
-their structural precision. Without that feature the name `TreeSitterParser`
+Python, Go, Java, C/C++, configuration or C#, so those languages fall back to
+the pure adapters and keep their structural precision. Without that feature
+the name `TreeSitterParser`
 is `PureParser`, so existing callers keep compiling.
 
 Validation uses the packet's remote `cargo test -p dctx-map-parse` and

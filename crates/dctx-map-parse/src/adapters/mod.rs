@@ -1,8 +1,11 @@
 //! Language dispatch for the pure-Rust parser and the optional tree-sitter oracle.
 //! Implements SPEC-MAP-MODE section 6.2 and PARSERS-v1 for Rust, JavaScript,
-//! TypeScript, Markdown, Python, Go and Java. Unknown extensions stay module-only.
+//! TypeScript, Markdown, Python, Go, Java, C/C++, configuration and C#.
 //! Uses the dctx-lex crates by default; tree-sitter compiles only with syntax-tree-sitter.
-//! Python, Go and Java have no tree-sitter grammar, so that feature uses their pure adapters.
+//! Languages without a tree-sitter grammar use their pure adapters in the oracle.
+mod c;
+mod config;
+mod csharp;
 mod facts;
 mod go;
 mod java;
@@ -43,6 +46,9 @@ impl Parser for PureParser {
             Language::Python => python::parse_pure(path, bytes),
             Language::Go => go::parse_pure(path, bytes),
             Language::Java => java::parse_pure(path, bytes),
+            Language::C => c::parse_pure(path, bytes),
+            Language::Config => config::parse_pure(path, bytes),
+            Language::CSharp => csharp::parse_pure(path, bytes),
             Language::Unknown => fallback(path, source),
         }
     }
@@ -50,7 +56,7 @@ impl Parser for PureParser {
 
 /// Tree-sitter language adapters. Compiled only with `syntax-tree-sitter`.
 ///
-/// Python, Go and Java have no grammar in this feature. Those paths call the
+/// Python, Go, Java, C/C++, configuration and C# have no grammar here and call the
 /// pure adapters, with the same structural precision and syntax refusals.
 #[cfg(feature = "syntax-tree-sitter")]
 #[derive(Debug, Clone, Copy, Default)]
@@ -67,6 +73,9 @@ impl Parser for TreeSitterParser {
             Language::Python => return python::parse_pure(path, bytes),
             Language::Go => return go::parse_pure(path, bytes),
             Language::Java => return java::parse_pure(path, bytes),
+            Language::C => return c::parse_pure(path, bytes),
+            Language::Config => return config::parse_pure(path, bytes),
+            Language::CSharp => return csharp::parse_pure(path, bytes),
             Language::Unknown => return fallback(path, source),
             Language::Rust
             | Language::JavaScript
@@ -82,7 +91,13 @@ impl Parser for TreeSitterParser {
                 javascript::parse(source, &mut facts)?;
             }
             Language::Markdown => markdown::parse(source, &mut facts)?,
-            Language::Python | Language::Go | Language::Java | Language::Unknown => {}
+            Language::Python
+            | Language::Go
+            | Language::Java
+            | Language::C
+            | Language::Config
+            | Language::CSharp
+            | Language::Unknown => {}
         }
         facts.finish()
     }

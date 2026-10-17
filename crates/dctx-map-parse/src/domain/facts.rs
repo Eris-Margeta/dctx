@@ -22,6 +22,12 @@ pub enum Language {
     Go,
     /// Java source.
     Java,
+    /// C and C++ source and headers.
+    C,
+    /// JSON, JSONC, TOML and YAML configuration.
+    Config,
+    /// C# source.
+    CSharp,
     /// No grammar; only a module node is emitted.
     Unknown,
 }
@@ -43,6 +49,9 @@ impl Language {
             Some("py" | "pyi") => Self::Python,
             Some("go") => Self::Go,
             Some("java") => Self::Java,
+            Some("c" | "h" | "cc" | "cpp" | "cxx" | "hpp" | "hh") => Self::C,
+            Some("json" | "jsonc" | "toml" | "yaml" | "yml") => Self::Config,
+            Some("cs") => Self::CSharp,
             _ => Self::Unknown,
         }
     }
@@ -129,6 +138,19 @@ mod tests {
         assert_eq!(Language::for_path("pkg/app.PYI"), Language::Python);
         assert_eq!(Language::for_path("cmd/main.go"), Language::Go);
         assert_eq!(Language::for_path("src/App.JAVA"), Language::Java);
+        for extension in ["c", "h", "cc", "cpp", "cxx", "hpp", "hh"] {
+            assert_eq!(
+                Language::for_path(&format!("src/app.{extension}")),
+                Language::C
+            );
+        }
+        for extension in ["json", "jsonc", "toml", "yaml", "yml"] {
+            assert_eq!(
+                Language::for_path(&format!("cfg/app.{extension}")),
+                Language::Config
+            );
+        }
+        assert_eq!(Language::for_path("src/App.CS"), Language::CSharp);
         assert_eq!(Language::for_path("pkg/app.pyw"), Language::Unknown);
         assert_eq!(Language::for_path("rs/file.txt"), Language::Unknown);
     }
