@@ -5,8 +5,10 @@
 //! An acquiring lease is not yet a pin, so a generation can disappear before confirm.
 
 use super::ids::{GenerationId, LeaseId, Physical, SessionId};
+use super::restart::{Put, Take};
 use super::Lifecycle;
 use crate::error::CacheError;
+use std::collections::BTreeMap;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) enum LeasePhase {
@@ -108,4 +110,74 @@ impl Lifecycle {
     pub(super) fn lease_active_count(&self) -> usize {
         self.leases.values().filter(|lease| matches!(lease.phase, LeasePhase::Active { .. })).count()
     }
+}
+
+pub(super) struct Holds {
+    pub leases: BTreeMap<LeaseId, Lease>,
+    pub reservations: BTreeMap<u64, super::Hold>,
+}
+
+pub(super) fn write_holds(life: &Lifecycle, out: &mut Put) -> Result<(), CacheError> {
+    out.count(life.leases.len())?;
+    for (id, lease) in &life.leases {
+        out.u64(id.raw());
+        out.u64(lease.root.raw());
+        out.u64(lease.session.raw());
+        let (tag, generation) = match lease.phase {
+            LeasePhase::Acquiring { observed } => (1u8, observed.raw()),
+            LeasePhase::Active { generation } => (2, generation.raw()),
+            LeasePhase::Released => (3, 0),
+            LeasePhase::OwnerProvenDead => (4, 0),
+        };
+        out.u8(tag);
+        out.u64(generation);
+    }
+    out.count(life.reservations.len())?;
+    for (id, hold) in &life.reservations {
+        out.u64(*id);
+        out.u64(hold.left);
+        out.u64(hold.original);
+        out.opt_u64(hold.root.map(super::RootId::raw));
+        out.u8(hold.class.tag());
+        out.u8(hold.purpose.tag());
+    }
+    Ok(())
+}
+
+pub(super) fn read_holds(inp: &mut Take<'_>) -> Result<Holds, CacheError> {
+    let mut leases = BTreeMap::new();
+    for _ in 0..inp.count()? {
+        let id = LeaseId::new(inp.u64()?);
+        let root = super::RootId::new(inp.u64()?);
+        let session = SessionId::new(inp.u64()?);
+        let tag = inp.u8()?;
+        let generation = inp.u64()?;
+        let phase = match tag {
+            1 => LeasePhase::Acquiring { observed: GenerationId::new(generation) },
+            2 => LeasePhase::Active { generation: GenerationId::new(generation) },
+            3 => LeasePhase::Released,
+            4 => LeasePhase::OwnerProvenDead,
+            _ => return Err(super::restart::corrupt("lease")),
+        };
+        if leases.insert(id, Lease { root, session, phase }).is_some() {
+            return Err(super::restart::corrupt("duplicate"));
+        }
+    }
+    let mut reservations = BTreeMap::new();
+    for _ in 0..inp.count()? {
+        let id = inp.u64()?;
+        let left = inp.u64()?;
+        let original = inp.u64()?;
+        let root = inp.opt_u64()?.map(super::RootId::new);
+        let class = super::ids::ChargeClass::from_tag(inp.u8()?).ok_or_else(|| {
+            super::restart::corrupt("reservation")
+        })?;
+        let purpose = super::ids::Purpose::from_tag(inp.u8()?).ok_or_else(|| {
+            super::restart::corrupt("reservation")
+        })?;
+        if reservations.insert(id, super::Hold { left, original, root, class, purpose }).is_some() {
+            return Err(super::restart::corrupt("duplicate"));
+        }
+    }
+    Ok(Holds { leases, reservations })
 }

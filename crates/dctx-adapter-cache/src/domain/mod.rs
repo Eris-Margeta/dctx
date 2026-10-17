@@ -1,7 +1,7 @@
 //! In-memory cache ledger: quotas, roots, objects, manifests, leases and cursors.
 //! Implements ARCHITECTURE-PROPOSAL §4, CACHE-v1 and the DX-A2 lifecycle model (P3, P4, P8).
-//! Depends on dctx-core timestamps and reservations. The facade drives startup, gc, status and purge.
-//! No daemon, no directory walk, and no version-control identity. Time comes from [`ClockSample`].
+//! Depends on dctx-core timestamps and reservations. The facade drives startup, auto_clean, gc, status and purge.
+//! No daemon and no version-control identity. [`Lifecycle::encode_ledger`] is the versioned image of this state.
 
 mod clock;
 mod compact;
@@ -28,14 +28,14 @@ pub use legacy::{
 pub use maintain::{GcRequest, MaintainReport, SliceBudget};
 pub use purge::{PurgeReport, PurgeRequest, PurgeScope};
 pub use quota::{
-    Quota, ACCOUNTING_UNIT, DAY_MS, DEAD_BYTE_THRESHOLD_PPM, EMERGENCY_METADATA_BYTES,
-    EVICTION_TARGET_BYTES, HARD_CAP_BYTES, LAST_USE_COALESCE_MS, MAX_PACK_SNAPSHOTS,
-    MAX_PREVIEW_GENERATIONS, MAX_VIEW_MANIFESTS, MISSING_GRACE_MS, OVERLAY_TTL_MS,
-    PREVIEW_TTL_MS, RECOGNIZED_LEGACY_VERSION, ROOT_PACK_CEILING_BYTES, ROOT_PREVIEW_CEILING_BYTES,
-    ROOT_TTL_MS, ROOT_VIEW_CEILING_BYTES, SOFT_WATERMARK_BYTES, STAGING_TTL_MS,
-    STARTUP_MAX_OBJECTS, STARTUP_TARGET_MILLIS, UNLINK_GRACE_MS,
+    AutoCleanPolicy, Quota, ACCOUNTING_UNIT, DAY_MS, DEAD_BYTE_THRESHOLD_PPM,
+    EMERGENCY_METADATA_BYTES, EVICTION_TARGET_BYTES, HARD_CAP_BYTES, LAST_USE_COALESCE_MS,
+    MAX_PACK_SNAPSHOTS, MAX_PREVIEW_GENERATIONS, MAX_VIEW_MANIFESTS, MISSING_GRACE_MS,
+    OVERLAY_TTL_MS, PREVIEW_TTL_MS, RECOGNIZED_LEGACY_VERSION, ROOT_PACK_CEILING_BYTES,
+    ROOT_PREVIEW_CEILING_BYTES, ROOT_TTL_MS, ROOT_VIEW_CEILING_BYTES, SOFT_WATERMARK_BYTES,
+    STAGING_TTL_MS, STARTUP_MAX_OBJECTS, STARTUP_TARGET_MILLIS, UNLINK_GRACE_MS,
 };
-pub use restart::RestartEvidence;
+pub use restart::{RestartEvidence, LEDGER_MAGIC, LEDGER_MAX_BYTES, LEDGER_VERSION};
 pub use status::{Blocker, Buckets, RootStatus, Status};
 pub use writer::WriterPhase;
 
@@ -164,6 +164,17 @@ pub struct Lifecycle {
     boot_accelerates: bool,
     logical_revision: u64,
     touches: u64,
+    last_auto_clean: Option<Timestamp>,
+    clean_ttl: Option<CleanTtl>,
+}
+
+/// TTLs used for one [`Lifecycle::auto_clean`] slice. Absent means the product constants.
+#[derive(Debug, Clone, Copy)]
+pub(super) struct CleanTtl {
+    pub overlay: u64,
+    pub preview: u64,
+    pub root: u64,
+    pub staging: u64,
 }
 
 impl Lifecycle {
@@ -203,6 +214,8 @@ impl Lifecycle {
             boot_accelerates: false,
             logical_revision: 0,
             touches: 0,
+            last_auto_clean: None,
+            clean_ttl: None,
         }
     }
 
@@ -438,6 +451,32 @@ impl Lifecycle {
     /// Cursor for the next startup sweep. Zero means the next pass starts at the first object.
     pub fn cursor(&self) -> u64 {
         self.cursor_mark
+    }
+
+    /// Objects currently in the ledger, in id order.
+    pub fn object_ids(&self) -> BTreeSet<ObjectId> {
+        self.objects.keys().copied().collect()
+    }
+
+    /// Wall time of the last auto-clean slice that ran. `None` until the first one.
+    pub fn last_auto_clean(&self) -> Option<Timestamp> {
+        self.last_auto_clean
+    }
+
+    pub(super) fn overlay_ttl(&self) -> u64 {
+        self.clean_ttl.map(|ttl| ttl.overlay).unwrap_or(quota::OVERLAY_TTL_MS)
+    }
+
+    pub(super) fn preview_ttl(&self) -> u64 {
+        self.clean_ttl.map(|ttl| ttl.preview).unwrap_or(quota::PREVIEW_TTL_MS)
+    }
+
+    pub(super) fn root_ttl(&self) -> u64 {
+        self.clean_ttl.map(|ttl| ttl.root).unwrap_or(quota::ROOT_TTL_MS)
+    }
+
+    pub(super) fn staging_ttl(&self) -> u64 {
+        self.clean_ttl.map(|ttl| ttl.staging).unwrap_or(quota::STAGING_TTL_MS)
     }
 
     pub(super) fn debug_check(&self) {

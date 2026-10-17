@@ -168,6 +168,121 @@ pub(super) enum ManifestKind {
     Preview,
 }
 
+impl Physical {
+    pub(super) const fn tag(self) -> u8 {
+        match self {
+            Self::Staged => 1,
+            Self::Published => 2,
+            Self::Retired => 3,
+            Self::PendingUnlink => 4,
+        }
+    }
+
+    pub(super) const fn from_tag(tag: u8) -> Option<Self> {
+        Some(match tag {
+            1 => Self::Staged,
+            2 => Self::Published,
+            3 => Self::Retired,
+            4 => Self::PendingUnlink,
+            _ => return None,
+        })
+    }
+}
+
+impl Purpose {
+    pub(super) const fn tag(self) -> u8 {
+        match self {
+            Self::View => 1,
+            Self::Overlay => 2,
+            Self::Pack => 3,
+            Self::Preview => 4,
+            Self::Fact => 5,
+            Self::Segment => 6,
+            Self::Staging => 7,
+            Self::Payload => 8,
+        }
+    }
+
+    pub(super) const fn from_tag(tag: u8) -> Option<Self> {
+        Some(match tag {
+            1 => Self::View,
+            2 => Self::Overlay,
+            3 => Self::Pack,
+            4 => Self::Preview,
+            5 => Self::Fact,
+            6 => Self::Segment,
+            7 => Self::Staging,
+            8 => Self::Payload,
+            _ => return None,
+        })
+    }
+}
+
+impl ChargeClass {
+    pub(super) const fn tag(self) -> u8 {
+        match self {
+            Self::View => 1,
+            Self::Pack => 2,
+            Self::Preview => 3,
+            Self::Global => 4,
+        }
+    }
+
+    pub(super) const fn from_tag(tag: u8) -> Option<Self> {
+        Some(match tag {
+            1 => Self::View,
+            2 => Self::Pack,
+            3 => Self::Preview,
+            4 => Self::Global,
+            _ => return None,
+        })
+    }
+}
+
+impl ObjectKind {
+    pub(super) const fn tag(self) -> u8 {
+        match self {
+            Self::Fact => 1,
+            Self::Segment => 2,
+            Self::Manifest => 3,
+            Self::LegacyWal => 4,
+            Self::Staging => 5,
+        }
+    }
+
+    pub(super) const fn from_tag(tag: u8) -> Option<Self> {
+        Some(match tag {
+            1 => Self::Fact,
+            2 => Self::Segment,
+            3 => Self::Manifest,
+            4 => Self::LegacyWal,
+            5 => Self::Staging,
+            _ => return None,
+        })
+    }
+}
+
+impl ManifestKind {
+    pub(super) const fn tag(self) -> u8 {
+        match self {
+            Self::View => 1,
+            Self::Overlay => 2,
+            Self::Pack => 3,
+            Self::Preview => 4,
+        }
+    }
+
+    pub(super) const fn from_tag(tag: u8) -> Option<Self> {
+        Some(match tag {
+            1 => Self::View,
+            2 => Self::Overlay,
+            3 => Self::Pack,
+            4 => Self::Preview,
+            _ => return None,
+        })
+    }
+}
+
 impl ManifestKind {
     pub(super) const fn purpose(self) -> Purpose {
         match self {

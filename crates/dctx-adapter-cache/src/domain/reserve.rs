@@ -259,7 +259,7 @@ impl Lifecycle {
             return false;
         }
         let age = self.wall.0.saturating_sub(object.created.0);
-        age >= super::quota::STAGING_TTL_MS || self.boot_accelerates
+        age >= self.staging_ttl() || self.boot_accelerates
     }
 
     pub(super) fn unowned(&self, id: super::ObjectId) -> bool {

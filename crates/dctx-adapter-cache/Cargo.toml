@@ -7,8 +7,10 @@ description = "Quotas, leases and lifecycle for managed dctx cache state"
 
 [dependencies]
 dctx-core = { path = "../dctx-core" }
+dctx-hash = { path = "../dctx-hash" }
 dctx-ports = { path = "../dctx-ports" }
 thiserror = "=2.0.18"
 
 [dev-dependencies]
 proptest = "1"
+tempfile = "=3.24.0"

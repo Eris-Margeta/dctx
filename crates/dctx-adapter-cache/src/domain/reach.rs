@@ -4,7 +4,6 @@
 //! A fact referenced by any retained manifest stays, including a manifest from another root.
 
 use super::ids::{GenerationId, ManifestKind, ObjectKind, Physical};
-use super::quota::{OVERLAY_TTL_MS, PREVIEW_TTL_MS, ROOT_TTL_MS};
 use super::{Lifecycle, Manifest, ObjectId, RootId};
 use crate::error::CacheError;
 use std::collections::BTreeSet;
@@ -118,7 +117,7 @@ impl Lifecycle {
         let Some(record) = self.roots.get(&root) else {
             return false;
         };
-        !record.pinned && self.wall.0.saturating_sub(record.last_use.0) >= ROOT_TTL_MS
+        !record.pinned && self.wall.0.saturating_sub(record.last_use.0) >= self.root_ttl()
     }
 
     pub(super) fn can_retire(&self, manifest: &Manifest) -> bool {
@@ -149,10 +148,10 @@ impl Lifecycle {
         }
         match manifest.kind {
             ManifestKind::Overlay => {
-                self.wall.0.saturating_sub(manifest.last_use.0) >= OVERLAY_TTL_MS
+                self.wall.0.saturating_sub(manifest.last_use.0) >= self.overlay_ttl()
             }
             ManifestKind::Preview => {
-                self.wall.0.saturating_sub(manifest.last_use.0) >= PREVIEW_TTL_MS
+                self.wall.0.saturating_sub(manifest.last_use.0) >= self.preview_ttl()
             }
             ManifestKind::View => self.root_ttl_due(manifest.root),
             ManifestKind::Pack => false,

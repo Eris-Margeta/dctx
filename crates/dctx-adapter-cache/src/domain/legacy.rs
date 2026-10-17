@@ -4,8 +4,10 @@
 //! Unregistered, modified, unknown-version and arbitrary paths stay untouched.
 
 use super::quota::RECOGNIZED_LEGACY_VERSION;
+use super::restart::{Put, Take};
 use super::Lifecycle;
 use crate::error::CacheError;
+use std::collections::BTreeMap;
 
 /// Where the caller found the record. Arbitrary locations are never candidates.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -265,6 +267,30 @@ impl Lifecycle {
     pub fn adopted_labels(&self) -> Vec<String> {
         self.exports.keys().cloned().collect()
     }
+}
+
+pub(super) fn write_exports(life: &Lifecycle, out: &mut Put) -> Result<(), CacheError> {
+    out.count(life.exports.len())?;
+    for (label, export) in &life.exports {
+        out.text(label)?;
+        out.u64(export.bytes);
+        out.u64(export.identity);
+    }
+    Ok(())
+}
+
+pub(super) fn read_exports(
+    inp: &mut Take<'_>,
+) -> Result<BTreeMap<String, AdoptedExport>, CacheError> {
+    let mut exports = BTreeMap::new();
+    for _ in 0..inp.count()? {
+        let label = inp.text()?;
+        let export = AdoptedExport { bytes: inp.u64()?, identity: inp.u64()? };
+        if exports.insert(label, export).is_some() {
+            return Err(super::restart::corrupt("duplicate"));
+        }
+    }
+    Ok(exports)
 }
 
 #[cfg(test)]

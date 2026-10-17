@@ -1,7 +1,7 @@
 //! Admission ceilings from CACHE-v1, in bytes and milliseconds.
 //! Implements ARCHITECTURE-PROPOSAL §4 defaults: 2 GiB hard, 1.5 GiB soft, 1.2 GiB target.
 //! Depends on [`crate::error::CacheError`]. `Lifecycle::new` rejects an unordered quota.
-//! Callers may tighten a ceiling; nothing here raises the product hard cap by itself.
+//! [`AutoCleanPolicy`] may tighten the system cap; nothing here raises [`HARD_CAP_BYTES`].
 
 use crate::error::CacheError;
 
@@ -132,6 +132,51 @@ impl Quota {
     }
 }
 
+/// When [`super::Lifecycle::auto_clean`] may run, and which ceilings it may apply.
+/// A system cap at or above [`HARD_CAP_BYTES`] is refused. A cap above the ledger's current hard cap is ignored.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct AutoCleanPolicy {
+    /// `false` makes auto-clean a no-op.
+    pub enabled: bool,
+    /// Minimum wall gap between slices. The product default is one day.
+    pub min_interval_ms: u64,
+    /// Idle overlay lifetime used by the slice.
+    pub overlay_ttl_ms: u64,
+    /// Preview lifetime used by the slice.
+    pub preview_ttl_ms: u64,
+    /// Unpinned root lifetime used by the slice.
+    pub root_ttl_ms: u64,
+    /// Abandoned staging lifetime used by the slice.
+    pub staging_ttl_ms: u64,
+    /// System-wide hard cap. Defaults to [`HARD_CAP_BYTES`] and can only tighten.
+    pub system_cap_bytes: u64,
+}
+
+impl AutoCleanPolicy {
+    /// Product defaults: enabled, daily, the CACHE-v1 TTLs, and the 2 GiB cap.
+    pub const fn product_default() -> Self {
+        Self {
+            enabled: true,
+            min_interval_ms: DAY_MS,
+            overlay_ttl_ms: OVERLAY_TTL_MS,
+            preview_ttl_ms: PREVIEW_TTL_MS,
+            root_ttl_ms: ROOT_TTL_MS,
+            staging_ttl_ms: STAGING_TTL_MS,
+            system_cap_bytes: HARD_CAP_BYTES,
+        }
+    }
+
+    /// Refuses a cap above the product hard cap. A lower cap is left for the ledger to apply.
+    pub fn check(self) -> Result<(), CacheError> {
+        if self.system_cap_bytes > HARD_CAP_BYTES {
+            return Err(CacheError::InvalidRequest {
+                reason: "system cap cannot exceed the product hard cap",
+            });
+        }
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -159,5 +204,26 @@ mod tests {
         assert!(quota.check().is_err());
         quota.eviction_target = 60;
         assert!(quota.check().is_ok());
+    }
+
+    #[test]
+    fn auto_clean_policy_defaults_match_the_product_and_a_raise_is_refused() {
+        let policy = AutoCleanPolicy::product_default();
+        assert!(policy.enabled);
+        assert_eq!(policy.min_interval_ms, DAY_MS);
+        assert_eq!(policy.overlay_ttl_ms, OVERLAY_TTL_MS);
+        assert_eq!(policy.preview_ttl_ms, PREVIEW_TTL_MS);
+        assert_eq!(policy.root_ttl_ms, ROOT_TTL_MS);
+        assert_eq!(policy.staging_ttl_ms, STAGING_TTL_MS);
+        assert_eq!(policy.system_cap_bytes, HARD_CAP_BYTES);
+        assert!(policy.check().is_ok());
+        let mut raised = policy;
+        raised.system_cap_bytes = HARD_CAP_BYTES - 1;
+        assert!(raised.check().is_ok());
+        raised.system_cap_bytes = HARD_CAP_BYTES + 1;
+        assert!(matches!(
+            raised.check(),
+            Err(CacheError::InvalidRequest { reason: "system cap cannot exceed the product hard cap" })
+        ));
     }
 }
