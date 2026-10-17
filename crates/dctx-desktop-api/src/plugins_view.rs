@@ -2,7 +2,7 @@
 //! Projects public distribution records and the facade's bundled catalog into display data.
 //! Depends on serde and distribution types; used by plugins_ops and later Tauri commands.
 
-use dctx_plugin_distribution::{CapabilitySet, DistributionError, Document, Enablement, Origin, PluginStatus};
+use dctx_plugin_distribution::{CapabilitySet, DistributionError, Document, Enablement, Origin, PluginId, PluginStatus, Registry};
 use serde::{Deserialize, Serialize};
 
 /// Where the selected plugin comes from.
@@ -50,6 +50,50 @@ pub struct PluginRow {
     pub capabilities: Vec<String>,
     /// Last supplied failure or current integrity/trust refusal.
     pub last_failure: Option<String>,
+    /// Exact review payload, attached by the desktop adapter from its registry snapshot.
+    #[serde(default)]
+    pub consent: Option<serde_json::Value>,
+}
+
+impl PluginRow {
+    /// Attaches lossless requested grants for explicit user-wide approval.
+    /// Refuses a stale row rather than combining identity/version from different snapshots.
+    pub fn with_consent(mut self, registry: &Registry) -> Result<Self, crate::DesktopError> {
+        self.consent = None;
+        let id = PluginId::parse(&self.id)?;
+        let bundled;
+        let selected = if let Some(record) = registry.get(&id) {
+            record.active_version().or_else(|| record.versions.iter().max_by_key(|v| v.release_sequence))
+        } else if self.id == dctx::bundled_git_plugin().id {
+            bundled = crate::bundled_plugin_version()?;
+            Some(&bundled)
+        } else {
+            return Err(DistributionError::NotInstalled.into());
+        };
+        if let Some(version) = selected {
+            if self.version.as_deref() != Some(version.version.as_str()) {
+                return Err(DistributionError::ConsentRequired.into());
+            }
+            let mut capabilities = serde_json::json!({
+                "required": [], "optional": [], "outputs": [], "network": []
+            });
+            let malformed = DistributionError::Malformed {
+                document: Document::Registry, reason: "capability-display",
+            };
+            for (section, entry) in version.capabilities.expansion_over(&CapabilitySet::default()) {
+                let entry: serde_json::Value = serde_json::from_str(&entry).map_err(|_| malformed)?;
+                capabilities.get_mut(&section).and_then(|value| value.as_array_mut())
+                    .ok_or(malformed)?.push(entry);
+            }
+            self.consent = Some(serde_json::json!({
+                "id": self.id, "version": version.version.as_str(),
+                "digest": version.digest.to_string(), "capabilities": capabilities,
+                "capability_lines": capability_lines(&version.capabilities)?,
+                "scope": {"kind": "user"}
+            }));
+        }
+        Ok(self)
+    }
 }
 
 pub(crate) fn row(status: &PluginStatus, capabilities: Vec<String>, failure: Option<String>) -> PluginRow {
@@ -77,6 +121,7 @@ pub(crate) fn row(status: &PluginStatus, capabilities: Vec<String>, failure: Opt
         needs_consent: status.needs_consent,
         capabilities,
         last_failure: failure,
+        consent: None,
     }
 }
 

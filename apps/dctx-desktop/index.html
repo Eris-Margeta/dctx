@@ -626,6 +626,45 @@
         margin-bottom: 20px;
       }
 
+      /* PLUGINS.md §7.3: plugin settings and capability review. */
+      .plugin-card, .plugin-consent {
+        padding: 16px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        overflow-wrap: anywhere;
+      }
+
+      .plugin-heading, .plugin-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .plugin-card h3, .plugin-card h4 { margin: 8px 0; }
+      .plugin-badge {
+        padding: 3px 8px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      .plugin-state-enabled { background: var(--accent-light); color: var(--text-primary); }
+      .plugin-state-disabled { background: var(--bg-tertiary); }
+      .plugin-state-needs-consent { border-color: var(--accent); color: var(--text-primary); }
+      .plugin-state-failed { border-style: dashed; color: var(--text-primary); }
+      .plugin-capabilities { padding-left: 24px; margin: 12px 0; }
+      .plugin-capabilities li { margin: 6px 0; }
+      .plugin-failure { border-left: 3px solid var(--accent); padding-left: 12px; }
+      .plugin-consent { max-width: min(560px, 90vw); max-height: 85vh; overflow-y: auto; margin: auto; }
+      .plugin-consent::backdrop { background: rgb(0 0 0 / 45%); }
+      .plugin-consent pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+      [data-section-id="plugins"] > button { margin-bottom: 12px; }
+      [data-section-id="plugins"] > [role="status"] { margin-bottom: 16px; }
+
       .section-header {
         margin-bottom: 24px;
       }
@@ -1063,6 +1102,7 @@
                 <div class="nav-item" data-section="templates">Templates</div>
                 <div class="nav-item" data-section="ignore">Ignore Rules</div>
                 <div class="nav-item" data-section="advanced">Advanced</div>
+                <div class="nav-item" data-section="plugins">Plugins</div>
                 <div class="nav-item" data-section="about">About</div>
               </nav>
 
@@ -1327,6 +1367,8 @@
                     </div>
                   </div>
                 </section>
+
+                <section class="settings-section" data-section-id="plugins"></section>
 
                 <!-- Section 7: About -->
                 <section class="settings-section" data-section-id="about">

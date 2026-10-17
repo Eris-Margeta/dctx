@@ -5,28 +5,40 @@
 
 use dctx_desktop_api::{DesktopError, PluginOps, PluginRow, PluginUpdate};
 use dctx_plugin_distribution::{
-    CapabilitySet, ConsentApproval, ConsentScope, DistributionError, Document, InstallPolicy,
-    NetworkError, Sha256Hex, TrustStore,
+    domain::registry_codec, CapabilitySet, ConsentApproval, ConsentScope, DistributionError,
+    Document, InstallPolicy, NetworkError, Registry, Sha256Hex, Store, TrustStore,
 };
 use dctx_plugin_protocol::{decode_object, DecodeLimits};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::plugin_ports::{host_target, FsStore, Offline, SystemClock};
 
-/// JSON transport of the API's explicit digest, capability and scope approval.
-#[derive(Debug, Deserialize)]
+/// JSON transport echoing the API's identity, version, digest, grants and scope review.
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 pub struct ConsentRequest {
+    id: String,
+    version: String,
     digest: String,
     capabilities: serde_json::Value,
+    capability_lines: Vec<String>,
     scope: ApprovalScope,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 #[serde(tag = "kind", rename_all = "kebab-case", deny_unknown_fields)]
 enum ApprovalScope {
     User,
     Project { path: String },
+}
+
+fn reviewable(rows: Vec<PluginRow>) -> Result<Vec<PluginRow>, String> {
+    let store = FsStore::new(crate::config::desktop_config_dir()?.join("plugins"));
+    let registry = store.load_registry()
+        .and_then(|bytes| bytes.map_or_else(|| Ok(Registry::default()), |bytes| registry_codec::decode(&bytes)))
+        .map_err(|reason| DesktopError::from(reason).command_string())?;
+    rows.into_iter().map(|row| row.with_consent(&registry)
+        .map_err(|error| error.command_string())).collect()
 }
 
 impl ConsentRequest {
@@ -68,7 +80,7 @@ fn with_ops<T>(
 /// Lists cached and bundled rows without creating or updating plugin storage.
 #[tauri::command]
 pub fn list_plugins() -> Result<Vec<PluginRow>, String> {
-    with_ops(|ops| ops.list())
+    reviewable(with_ops(|ops| ops.list())?)
 }
 
 /// Enables using existing consent, or returns a needs-consent row.
@@ -91,10 +103,15 @@ pub fn disable_plugin(id: String) -> Result<PluginRow, String> {
 }
 
 /// Converts the explicit reviewed payload into the API's ConsentApproval and applies it.
-/// Capabilities use the manifest's required/optional/outputs/network object;
-/// scope is {kind: "user"} or {kind: "project", path: "..."}.
+/// Requires the exact consent payload disclosed by list_plugins, including its scope.
+/// Capabilities use the manifest's required/optional/outputs/network object.
 #[tauri::command]
 pub fn consent_plugin(id: String, approval: ConsentRequest) -> Result<PluginRow, String> {
+    let reviewed = serde_json::to_value(&approval).map_err(|error| error.to_string())?;
+    let current = list_plugins()?.into_iter().find(|row| row.id == id);
+    if approval.id != id || current.and_then(|row| row.consent).as_ref() != Some(&reviewed) {
+        return Err(DesktopError::from(DistributionError::ConsentRequired).command_string());
+    }
     with_ops(|ops| ops.consent(&id, &approval.into_approval()?))
 }
 

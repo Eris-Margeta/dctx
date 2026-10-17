@@ -1,6 +1,10 @@
 // apps/dctx-desktop/src/settings.ts
 //
 // Settings screen scroll-sync navigation and section management
+// Implements settings navigation, including PLUGINS.md §7.3 PL-APP.
+// Uses the Plugins DOM adapter; initialized by the desktop entry point.
+
+import { initPlugins } from './plugins';
 
 interface NavigationState {
   activeSection: string;
@@ -43,6 +47,7 @@ export function initSettings() {
   });
 
   // Initial highlight update
+  initPlugins();
   updateNavigationHighlight();
 }
 

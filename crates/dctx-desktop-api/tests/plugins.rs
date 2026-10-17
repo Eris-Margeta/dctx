@@ -293,3 +293,72 @@ fn unknown_plugin_mutations_refuse_without_storage_creation() {
     assert_eq!(f.ops().disable("dctx/git").unwrap(), 0);
     assert_eq!(f.ops().list().unwrap()[0].state, PluginState::Disabled);
 }
+
+#[test]
+fn review_payload_serializes_exact_identity_bounds_and_roundtrips_to_approval() {
+    let f = Fixture::new();
+    let row = f.ops().list().unwrap().remove(0)
+        .with_consent(&Registry::default()).unwrap();
+    let encoded = serde_json::to_value(&row).unwrap();
+    let payload = &encoded["consent"];
+    assert_eq!(payload["id"], row.id);
+    assert_eq!(payload["version"], "1.0.0");
+    assert_eq!(payload["digest"], approval().digest.to_string());
+    assert_eq!(payload["scope"], serde_json::json!({"kind": "user"}));
+    let lines = payload["capability_lines"].as_array().unwrap();
+    assert_eq!(lines.len(), approval().capabilities.len());
+    assert!(lines.iter().all(|line| row.capabilities.contains(&line.as_str().unwrap().to_owned())));
+
+    // Import the transported entries through the public codec to prove every bound
+    // and section survives transport, rather than reconstructing grants from labels.
+    let mut registry = Registry::default();
+    let id = PluginId::parse("dctx/git").unwrap();
+    registry.register_bundled(&id, bundled_plugin_version().unwrap());
+    let mut data: serde_json::Value = serde_json::from_slice(&registry_codec::encode(&registry)).unwrap();
+    let entries: Vec<_> = payload["capabilities"].as_object().unwrap().iter()
+        .flat_map(|(section, entries)| entries.as_array().unwrap().iter()
+            .map(move |entry| serde_json::json!({"section": section, "entry": entry})))
+        .collect();
+    data["plugins"][0]["versions"][0]["capabilities"] = entries.into();
+    let restored = registry_codec::decode(data.to_string().as_bytes()).unwrap();
+    let capabilities = restored.get(&id).unwrap().active_version().unwrap().capabilities.clone();
+    assert_eq!(capabilities, approval().capabilities);
+    let approval = ConsentApproval {
+        digest: Sha256Hex::parse(payload["digest"].as_str().unwrap(),
+            dctx_plugin_distribution::Document::Registry).unwrap(),
+        capabilities,
+        scope: ConsentScope::User,
+    };
+    assert_eq!(f.store.load_registry().unwrap(), None);
+    assert!(f.network.requests().is_empty());
+    assert_eq!(f.ops().consent("dctx/git", &approval).unwrap().state, PluginState::Enabled);
+}
+
+#[test]
+fn review_payload_selects_inactive_candidate_and_refuses_stale_versions() {
+    let f = Fixture::new();
+    let id = f.third_party();
+    let mut registry = f.dist().registry().unwrap();
+    let mut candidate = bundled_plugin_version().unwrap();
+    candidate.version = Version::parse("2.0.0").unwrap();
+    candidate.release_sequence = 2;
+    candidate.digest = Sha256Hex::from_bytes([3; 32]);
+    registry.record_install(&id, Origin::Installed, candidate.clone()).unwrap();
+    f.save(&registry);
+    let row = f.ops().list().unwrap().into_iter().find(|row| row.id == id.as_str()).unwrap();
+    let reviewed = row.clone().with_consent(&registry).unwrap();
+    let payload = reviewed.consent.unwrap();
+    assert_eq!(payload["id"], id.as_str());
+    assert_eq!(payload["version"], "2.0.0");
+    assert_eq!(payload["digest"], candidate.digest.to_string());
+    let mut stale = row.clone();
+    stale.version = Some("1.0.0".into());
+    assert_eq!(stale.with_consent(&registry), Err(DesktopError::PluginNeedsConsent));
+    assert!(row.with_consent(&Registry::default()).is_err());
+    f.dist().activate(&id, &approval().digest).unwrap();
+    let row = f.ops().list().unwrap().into_iter().find(|row| row.id == id.as_str()).unwrap();
+    let registry = f.dist().registry().unwrap();
+    let payload = row.with_consent(&registry).unwrap().consent.unwrap();
+    assert_eq!(payload["version"], "1.0.0");
+    assert_eq!(payload["digest"], approval().digest.to_string());
+}
