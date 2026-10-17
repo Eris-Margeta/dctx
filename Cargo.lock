@@ -927,6 +927,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "dctx-lex-c"
+version = "0.1.0"
+dependencies = [
+ "dctx-hash",
+ "dctx-map-model",
+]
+
+[[package]]
+name = "dctx-lex-cfg"
+version = "0.1.0"
+dependencies = [
+ "dctx-hash",
+ "dctx-map-model",
+]
+
+[[package]]
+name = "dctx-lex-cs"
+version = "0.1.0"
+dependencies = [
+ "dctx-hash",
+ "dctx-map-model",
+]
+
+[[package]]
 name = "dctx-lex-go"
 version = "0.1.0"
 dependencies = [
