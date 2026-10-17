@@ -804,8 +804,11 @@ dependencies = [
 name = "dctx"
 version = "0.1.0"
 dependencies = [
+ "dctx-adapter-cache",
  "dctx-core",
  "dctx-hash",
+ "dctx-lex-js",
+ "dctx-lex-md",
  "dctx-lex-rust",
  "dctx-map-model",
  "dctx-pack",
