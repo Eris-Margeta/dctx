@@ -985,8 +985,11 @@ dependencies = [
 name = "dctx-map-parse"
 version = "0.1.0"
 dependencies = [
+ "dctx-lex-go",
+ "dctx-lex-java",
  "dctx-lex-js",
  "dctx-lex-md",
+ "dctx-lex-py",
  "dctx-lex-rust",
  "dctx-map-model",
  "proptest",
