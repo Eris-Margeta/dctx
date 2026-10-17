@@ -3,13 +3,13 @@
 //! Depends on `dctx-template` and `dctx-plugin-host`. [`super::boundary`] executes the result.
 //! Invalid capability rows are dropped, which can only narrow the grant.
 
-use dctx_plugin_host::{Binding, Decision, GrantLayers, HookEntry, HostRefusal, Origin, Selection};
+use dctx_plugin_host::{Authority, Binding, Decision, GrantLayers, HookEntry, HostRefusal, Origin, Selection};
 use dctx_plugin_protocol::records::capability::{Capability as HostCap, OutputOperation};
 use dctx_plugin_protocol::records::scalars::{Digest, PluginId, ProjectPath, Role, Token};
 use dctx_plugin_protocol::{ErrorCode, Phase};
 use dctx_template::{Capability, PluginBinding, PluginOrigin, PluginPlan, Resolution};
 
-use super::Boundary;
+use super::{Boundary, PluginHost};
 use super::ports::bad_token;
 
 /// Enabled plugins on `boundary`, in the plan's order.
@@ -40,17 +40,53 @@ pub(crate) fn edges(plugins: &[&PluginBinding]) -> Result<Vec<(PluginId, PluginI
     Ok(out)
 }
 
-pub(crate) fn binding_for(plugin: &PluginBinding, invocation: Token, epoch: u64) -> Result<Binding, HostRefusal> {
+pub(crate) type PolicySnapshot = (Binding, GrantLayers, Selection);
+pub(crate) type AuthoritySource = dyn Fn(&str, &Token, u64) -> Result<PolicySnapshot, HostRefusal> + Send + Sync;
+
+pub(crate) fn authority(
+    host: &PluginHost, plugin: &PluginBinding, invocation: &Token, included: bool, epoch: u64,
+) -> Result<Authority, HostRefusal> {
+    let (binding, mut layers, selected) = (host.authority)(&plugin.id, invocation, epoch)?;
     let digest = plugin.digest.ok_or(HostRefusal::new(ErrorCode::IntegrityFailure, Phase::Verify, "artifact-digest"))?;
-    Ok(Binding {
-        plugin: plugin_id(&plugin.id)?,
-        artifact: digest_text(digest)?,
-        root: Token::new("project:1").map_err(|_| bad_token())?,
-        invocation,
-        session: Token::new("s:1").map_err(|_| bad_token())?,
-        generation: epoch,
-        namespace: Token::new("ns:git").map_err(|_| bad_token())?,
-    })
+    if binding.artifact != digest_text(digest)? {
+        return Err(HostRefusal::new(ErrorCode::IntegrityFailure, Phase::Verify, "artifact-mismatch"));
+    }
+    if binding.plugin != plugin_id(&plugin.id)? || &binding.invocation != invocation {
+        return Err(HostRefusal::denied("binding-mismatch"));
+    }
+    if !host.confined() {
+        layers.adapter.clear();
+    }
+    let selected = if included { selected } else { Selection::default() };
+    let policy_epoch = binding.generation;
+    let mut authority = Authority::new(layers, selected, binding, policy_epoch);
+    authority.configure(&wire_caps(plugin));
+    authority.initialize()?;
+    Ok(authority)
+}
+
+pub(crate) fn fixture_authority(
+    plugin: &str, invocation: &Token, epoch: u64, confined: bool,
+) -> Result<PolicySnapshot, HostRefusal> {
+    let fixture = dctx_template::bundled_git_plugin();
+    if plugin != fixture.id {
+        return Err(HostRefusal::denied("authority-missing"));
+    }
+    let digest = fixture.digest.ok_or(bad_token())?;
+    let binding = Binding {
+        plugin: plugin_id(plugin)?, artifact: digest_text(digest)?, invocation: invocation.clone(),
+        root: Token::new("fixture:root").map_err(|_| bad_token())?,
+        session: Token::new("fixture:session").map_err(|_| bad_token())?,
+        namespace: Token::new("fixture:git").map_err(|_| bad_token())?, generation: epoch,
+    };
+    let caps: Vec<_> = fixture.records.iter().filter_map(wire_cap).collect();
+    let layers = if confined {
+        GrantLayers { manifest: caps.clone(), consent: caps.clone(), organization: caps.clone(),
+            host: caps.clone(), adapter: caps, denies: Vec::new() }
+    } else {
+        GrantLayers::default()
+    };
+    Ok((binding, layers, selection(true)?))
 }
 
 pub(crate) fn origin_of(origin: Option<PluginOrigin>) -> Origin {
@@ -65,19 +101,6 @@ pub(crate) fn launch_kind(origin: Origin) -> dctx_plugin_platform::LaunchKind {
     match origin {
         Origin::BundledGit => dctx_plugin_platform::LaunchKind::BundledGit,
         Origin::ThirdParty | Origin::OfficialOverride => dctx_plugin_platform::LaunchKind::ThirdParty,
-    }
-}
-
-pub(crate) fn layers(plugin: &PluginBinding, confined: bool) -> GrantLayers {
-    let caps = wire_caps(plugin);
-    let adapter = if confined { caps.clone() } else { Vec::new() };
-    GrantLayers {
-        manifest: caps.clone(),
-        consent: caps.clone(),
-        organization: caps.clone(),
-        host: caps.clone(),
-        adapter,
-        denies: Vec::new(),
     }
 }
 

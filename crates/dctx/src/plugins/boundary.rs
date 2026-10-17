@@ -1,18 +1,22 @@
 //! Run one hook boundary through the host session and return a truthful commit result.
 //! Implements PLUGINS.md §3.1 and PP10. Required failures before publish block the engine.
-//! Depends on [`super::plan`], [`super::effects`] and the host supervisor. The session calls [`run_plan`].
+//! Depends on [`super::plan`], the request gate and the host supervisor. The session calls [`run_plan`].
 //! A failed launch is a hook failure, never an unrestricted worker.
 
 use dctx_plugin_host::{
-    Authority, Broker, Budget, HookRun, HookStatus, HostSession, LaunchFacts, Ledger, StopReason, Supervisor, WorkerPhase,
+    Broker, Budget, HandleKind, HookRun, HookStatus, HostRefusal, HostSession, LaunchFacts, Ledger, Need, Reply, StopReason, Supervisor, WorkerPhase,
 };
+use dctx_plugin_protocol::records::broker::{ChunkRead, FileReplace, FileStage, GitAddIgnore};
+use dctx_plugin_protocol::records::bytes::Chunk;
 use dctx_plugin_protocol::records::capability::Liveness as WireLiveness;
-use dctx_plugin_protocol::records::scalars::{PluginId, Token};
+use dctx_plugin_protocol::records::requests::Request;
+use dctx_plugin_protocol::records::scalars::{PluginId, ProjectPath, Token};
+use dctx_plugin_protocol::{ErrorCode, Phase};
 use dctx_template::{Liveness as PlanLiveness, PluginBinding, PluginPlan, Resolution};
 
 use super::plan;
 use super::ports::LiveSession;
-use super::{Boundary, HookWarning, PluginHost};
+use super::{Boundary, HookEffect, HookWarning, PluginHost, RequestGate};
 use crate::domain::DctxError;
 
 /// One boundary the session is about to run. The host stays outside so the caller can split borrows.
@@ -90,7 +94,8 @@ fn invoke(
     now: u64,
 ) -> Result<Vec<Token>, (&'static str, Vec<Token>)> {
     let invocation = host.next_token("inv").map_err(|refusal| (refusal.reason, Vec::new()))?;
-    let binding = plan::binding_for(plugin, invocation.clone(), epoch).map_err(|refusal| (refusal.reason, Vec::new()))?;
+    let authority = plan::authority(host, plugin, &invocation, included, epoch).map_err(|refusal| (refusal.reason, Vec::new()))?;
+    let gate = RequestGate::new(plugin, &authority, included, epoch);
     let origin = plan::origin_of(plugin.origin);
     host.set_launch(plan::launch_kind(origin));
     let facts = LaunchFacts {
@@ -99,8 +104,6 @@ fn invoke(
         compatible: matches!(plugin.resolution, Resolution::Available),
         confined: host.confined(),
     };
-    let selection = plan::selection(included).map_err(|refusal| (refusal.reason, Vec::new()))?;
-    let layers = plan::layers(plugin, host.confined());
     let budget = Budget::new(
         &[plan.limits.read_bytes],
         &[plan.limits.actions],
@@ -117,10 +120,6 @@ fn invoke(
     if let Err(refusal) = supervisor.negotiated().and_then(|_| supervisor.initialized()) {
         return Err((refusal.reason, Vec::new()));
     }
-    let mut authority = Authority::new(layers, selection, binding, epoch);
-    if let Err(refusal) = authority.initialize() {
-        return Err((refusal.reason, Vec::new()));
-    }
     let broker = Broker::new(authority, Ledger::new(64), budget, plan.limits.frame_bytes.max(1), (adapters.audit, adapters.files, adapters.recipes));
     let mut session = HostSession::new(broker, supervisor, outstanding);
     if let Err(refusal) = session.supervisor_mut().invoke(now) {
@@ -128,13 +127,57 @@ fn invoke(
         return Err((refusal.reason, Vec::new()));
     }
     let effects = host.effects_for(&plugin.id, boundary);
-    let applied = super::effects::apply(&mut session, host, &effects, now);
+    let applied = apply(&gate, &mut session, host, &effects, now);
     let receipts = session.broker().ledger().committed(&invocation);
     shutdown(&mut session, now);
     match applied {
         Ok(()) => Ok(receipts),
         Err(refusal) => Err((refusal.reason, receipts)),
     }
+}
+
+fn apply(gate: &RequestGate<'_>, session: &mut LiveSession, host: &mut PluginHost, effects: &[HookEffect], now: u64) -> Result<(), HostRefusal> {
+    let path = ProjectPath::new(".gitignore").map_err(|_| super::ports::bad_token())?;
+    let file = session.broker_mut().register(HandleKind::File { path: path.clone() })?;
+    let repository = session.broker_mut().register(HandleKind::Repository)?;
+    for effect in effects {
+        match effect {
+            HookEffect::Fail => return Err(HostRefusal::new(ErrorCode::ExternalProgramFailed, Phase::Invoke, "hook-failed")),
+            HookEffect::Warn => return Err(HostRefusal::new(ErrorCode::ExternalProgramFailed, Phase::Invoke, "hook-warning")),
+            _ => {}
+        }
+        let read = Request::FileRead(ChunkRead { handle: file.clone(), offset: 0, length: 64, precondition: None });
+        let need = Need::FileRead { path: path.clone(), bytes: 64 };
+        let (precondition, size) = match gate.call(session, host, read, need, now)? {
+            Reply::Chunk { precondition: Some(token), size, .. } => (token, size),
+            _ => return Err(super::ports::bad_token()),
+        };
+        let (request, need) = match effect {
+            HookEffect::ReadGitignore => continue,
+            HookEffect::ReplaceGitignore(bytes) => {
+                let need = Need::FileWrite { path: path.clone(), size: bytes.len() as u64,
+                    growth: (bytes.len() as u64).saturating_sub(size), create: false };
+                let stage = Request::FileStage(FileStage {
+                    resource: file.clone(), precondition: precondition.clone(), upload: None, offset: 0,
+                    bytes: Chunk::new(bytes).map_err(|_| HostRefusal::limit("chunk"))?, final_chunk: true,
+                });
+                let upload = match gate.call(session, host, stage, need.clone(), now)? {
+                    Reply::Staged { upload, sealed: true } => upload,
+                    _ => return Err(super::ports::bad_token()),
+                };
+                (Request::FileReplace(FileReplace { resource: file.clone(), precondition, upload,
+                    action_id: host.next_token("a")? }), need)
+            }
+            HookEffect::StageGitignore => (Request::ProgramRun(GitAddIgnore {
+                resource: file.clone(), precondition, repository: repository.clone(), action_id: host.next_token("a")?,
+            }), Need::GitAddIgnore { path: path.clone() }),
+            HookEffect::Fail | HookEffect::Warn => continue,
+        };
+        if !matches!(gate.call(session, host, request, need, now)?, Reply::Receipt { .. }) {
+            return Err(super::ports::bad_token());
+        }
+    }
+    Ok(())
 }
 
 fn shutdown(session: &mut LiveSession, now: u64) {

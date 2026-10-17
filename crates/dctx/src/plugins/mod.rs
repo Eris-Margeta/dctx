@@ -6,7 +6,6 @@
 #[cfg(any(all(feature = "fs", unix), test))]
 mod audit;
 mod boundary;
-mod effects;
 mod plan;
 mod ports;
 
@@ -78,12 +77,14 @@ pub struct HookWarning {
 pub struct PluginHost {
     inner: Arc<Mutex<ports::PortBody>>,
     effects: BTreeMap<(String, Boundary), Vec<HookEffect>>,
-    next: u64,
+    next: Arc<Mutex<u64>>,
     confined: bool,
+    authority: Arc<plan::AuthoritySource>,
 }
 
 impl PluginHost {
-    /// In-memory audit, files and process. Recipe runs count as git children and do not exec.
+    /// In-memory ports with explicit consent for the bundled Git fixture only.
+    /// Recipe runs count as git children and do not exec; templates cannot extend this consent.
     pub fn fake() -> Self {
         Self::from_body(ports::PortBody::fake(), true)
     }
@@ -113,6 +114,22 @@ impl PluginHost {
             let _ = (directory, capacity);
             Err(dctx_plugin_host::ports::AuditUnavailable)
         }
+    }
+
+    /// Inject current trusted identity, manifest ask, consent, organization, host and adapter grants,
+    /// and selection. Called at initialization and at admission and commit of every broker request.
+    /// The source must return a coherent current snapshot, bind the supplied invocation, and advance
+    /// `Binding::generation` on policy changes (including the supplied session policy epoch).
+    /// Root, session, namespace and artifact are trusted caller inputs, never template values.
+    /// Defaults authorize only the in-memory bundled fixture; platform grants default to empty.
+    pub fn with_authority_source<F>(mut self, source: F) -> Self
+    where
+        F: Fn(&str, &dctx_plugin_protocol::records::scalars::Token, u64)
+                -> Result<(dctx_plugin_host::Binding, dctx_plugin_host::GrantLayers, dctx_plugin_host::Selection), dctx_plugin_host::HostRefusal>
+            + Send + Sync + 'static,
+    {
+        self.authority = Arc::new(source);
+        self
     }
 
     /// Script `effects` for `plugin` at `boundary`. Later calls replace that pair.
@@ -155,13 +172,19 @@ impl PluginHost {
     }
 
     pub(crate) fn next_request(&mut self) -> Result<dctx_plugin_protocol::records::scalars::RequestId, dctx_plugin_host::HostRefusal> {
-        self.next = self.next.saturating_add(1);
-        dctx_plugin_protocol::records::scalars::RequestId::new(&format!("p:{}", self.next)).map_err(|_| ports::bad_token())
+        let next = self.next_id()?;
+        dctx_plugin_protocol::records::scalars::RequestId::new(&format!("p:{next}")).map_err(|_| ports::bad_token())
     }
 
     pub(crate) fn next_token(&mut self, prefix: &str) -> Result<dctx_plugin_protocol::records::scalars::Token, dctx_plugin_host::HostRefusal> {
-        self.next = self.next.saturating_add(1);
-        dctx_plugin_protocol::records::scalars::Token::new(&format!("{prefix}-{}", self.next)).map_err(|_| ports::bad_token())
+        let next = self.next_id()?;
+        dctx_plugin_protocol::records::scalars::Token::new(&format!("{prefix}-{next}")).map_err(|_| ports::bad_token())
+    }
+
+    fn next_id(&self) -> Result<u64, dctx_plugin_host::HostRefusal> {
+        let mut next = self.next.lock().map_err(|_| ports::bad_token())?;
+        *next = next.checked_add(1).ok_or(dctx_plugin_host::HostRefusal::limit("identity-exhausted"))?;
+        Ok(*next)
     }
 
     pub(crate) fn set_launch(&self, kind: dctx_plugin_platform::LaunchKind) {
@@ -175,7 +198,10 @@ impl PluginHost {
     }
 
     fn from_body(body: ports::PortBody, confined: bool) -> Self {
-        Self { inner: Arc::new(Mutex::new(body)), effects: BTreeMap::new(), next: 0, confined }
+        Self {
+            inner: Arc::new(Mutex::new(body)), effects: BTreeMap::new(), next: Arc::new(Mutex::new(0)), confined,
+            authority: Arc::new(move |plugin, invocation, epoch| plan::fixture_authority(plugin, invocation, epoch, confined)),
+        }
     }
 }
 
@@ -188,5 +214,55 @@ impl std::fmt::Debug for PluginHost {
             .field("admissions", &self.admissions())
             .field("git_children", &self.git_children())
             .finish()
+    }
+}
+
+/// The invocation binding accompanies every scripted request and its registered handles.
+pub(crate) struct RequestGate<'a> {
+    plugin: &'a dctx_template::PluginBinding,
+    binding: dctx_plugin_host::Binding,
+    grant: Vec<dctx_plugin_protocol::records::capability::Capability>,
+    included: bool,
+    epoch: u64,
+}
+
+impl<'a> RequestGate<'a> {
+    pub(crate) fn new(plugin: &'a dctx_template::PluginBinding, authority: &dctx_plugin_host::Authority, included: bool, epoch: u64) -> Self {
+        Self { plugin, binding: authority.binding().clone(), grant: authority.effective().to_vec(), included, epoch }
+    }
+
+    fn current(&self, host: &PluginHost) -> Result<dctx_plugin_host::Authority, dctx_plugin_host::HostRefusal> {
+        let mut authority = plan::authority(host, self.plugin, &self.binding.invocation, self.included, self.epoch)?;
+        if authority.binding() != &self.binding {
+            return Err(dctx_plugin_host::HostRefusal::denied("binding-mismatch"));
+        }
+        authority.configure(&self.grant);
+        Ok(authority)
+    }
+
+    pub(crate) fn call(
+        &self, session: &mut ports::LiveSession, host: &mut PluginHost,
+        request: dctx_plugin_protocol::records::requests::Request, need: dctx_plugin_host::Need, now: u64,
+    ) -> Result<dctx_plugin_host::Reply, dctx_plugin_host::HostRefusal> {
+        let mut current = self.current(host)?;
+        Self::check_selection(&current, &need)?;
+        let admission = current.admit(&self.binding, need)?;
+        session.receive(host.next_request()?, request, now)?;
+        let mut current = self.current(host)?;
+        Self::check_selection(&current, &admission.need)?;
+        current.commit(&admission)?;
+        *session.broker_mut().authority_mut() = current;
+        match session.serve_next(now) {
+            Some((_, result)) => result,
+            None => Err(ports::bad_token()),
+        }
+    }
+
+    fn check_selection(authority: &dctx_plugin_host::Authority, need: &dctx_plugin_host::Need) -> Result<(), dctx_plugin_host::HostRefusal> {
+        use dctx_plugin_host::Need;
+        match need {
+            Need::FileRead { path, .. } | Need::FileWrite { path, .. } | Need::GitAddIgnore { path } => authority.check_content(path),
+            Need::OutputRead { .. } => Ok(()),
+        }
     }
 }
