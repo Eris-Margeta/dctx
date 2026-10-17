@@ -1,13 +1,20 @@
 //! Desktop error enum and the only text mapping the Tauri layer needs.
-//! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4a. Snapshot, settings and recent projects share it.
-//! Depends on nothing outside this crate. Callers convert with [`DesktopError::command_string`].
+//! Implements ARCHITECTURE-PROPOSAL §7 DX-E4a and PLUGINS.md §7.3 PL-APP refusals.
+//! Depends on distribution's typed errors. Callers convert with [`DesktopError::command_string`].
 //! One match owns every command string. Variants do not format themselves a second way.
 
 use std::fmt;
 
-/// Failure from snapshot, settings or recent-project storage.
+/// Failure from snapshot, settings, recent-project storage or plugin management.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum DesktopError {
+    /// A plugin needs explicit approval of its requested grants.
+    PluginNeedsConsent,
+    /// A plugin distribution operation was refused.
+    Plugin {
+        /// Typed distribution refusal; formatted only by the shared command mapping.
+        reason: dctx_plugin_distribution::DistributionError,
+    },
     /// The snapshot root is not on disk.
     PathMissing,
     /// A recent-project path is not on disk.
@@ -95,6 +102,8 @@ impl DesktopError {
     /// The only string the Tauri command layer returns for this error.
     pub fn command_string(&self) -> String {
         match self {
+            Self::PluginNeedsConsent => "Plugin needs-consent: explicit approval required".to_string(),
+            Self::Plugin { reason } => format!("Plugin operation failed: {reason}"),
             Self::PathMissing => "Path does not exist".to_string(),
             Self::RecentPathMissing { path } => format!("Path does not exist: {path}"),
             Self::IgnoreRules { detail } => format!("Error loading ignore rules: {detail}"),

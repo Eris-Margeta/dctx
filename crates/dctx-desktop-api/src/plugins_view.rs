@@ -1,0 +1,131 @@
+//! Serializable plugin rows for the desktop (PLUGINS.md §7.3 PL-APP).
+//! Projects public distribution records and the facade's bundled catalog into display data.
+//! Depends on serde and distribution types; used by plugins_ops and later Tauri commands.
+
+use dctx_plugin_distribution::{CapabilitySet, DistributionError, Document, Enablement, Origin, PluginStatus};
+use serde::{Deserialize, Serialize};
+
+/// Where the selected plugin comes from.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PluginSource {
+    /// Part of the containing desktop release.
+    Bundled,
+    /// Independently installed, including an explicit bundled override.
+    Installed,
+}
+
+/// Actionable state displayed by the plugin panel.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum PluginState {
+    /// Enabled with recorded consent.
+    Enabled,
+    /// Disabled or installed inactive.
+    Disabled,
+    /// Explicit approval is required before use.
+    NeedsConsent,
+    /// A failure reason is available.
+    Failed,
+}
+
+/// One plugin row, derived without executing plugin code.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PluginRow {
+    /// Canonical publisher/name identity.
+    pub id: String,
+    /// Catalog name, or the installed identity when no display name is exposed.
+    pub name: String,
+    /// Selected version, absent for an inactive install without activation.
+    pub version: Option<String>,
+    /// Bundled or independently installed.
+    pub source: PluginSource,
+    /// State for the primary UI badge.
+    pub state: PluginState,
+    /// Persistent enablement, including bundled enabled / needs-consent.
+    pub enabled: bool,
+    /// Whether the selected version lacks covering consent.
+    pub needs_consent: bool,
+    /// Human-readable requested grants, including bounds and scopes when exposed.
+    pub capabilities: Vec<String>,
+    /// Last supplied failure or current integrity/trust refusal.
+    pub last_failure: Option<String>,
+}
+
+pub(crate) fn row(status: &PluginStatus, capabilities: Vec<String>, failure: Option<String>) -> PluginRow {
+    let enabled = status.enablement == Enablement::Enabled;
+    let state = if failure.is_some() {
+        PluginState::Failed
+    } else if !enabled {
+        PluginState::Disabled
+    } else if status.needs_consent {
+        PluginState::NeedsConsent
+    } else {
+        PluginState::Enabled
+    };
+    PluginRow {
+        id: status.id.as_str().to_owned(),
+        name: status.id.as_str().to_owned(),
+        version: status.version.as_ref().map(|version| version.as_str().to_owned()),
+        source: if status.origin == Origin::Bundled {
+            PluginSource::Bundled
+        } else {
+            PluginSource::Installed
+        },
+        state,
+        enabled,
+        needs_consent: status.needs_consent,
+        capabilities,
+        last_failure: failure,
+    }
+}
+
+pub(crate) fn capability_lines(capabilities: &CapabilitySet) -> Result<Vec<String>, DistributionError> {
+    capabilities
+        .expansion_over(&CapabilitySet::default())
+        .into_iter()
+        .map(|(section, entry)| {
+            let refuse = DistributionError::Malformed {
+                document: Document::Registry,
+                reason: "capability-display",
+            };
+            let value: serde_json::Value = serde_json::from_str(&entry).map_err(|_| refuse)?;
+            let fields = value.as_object().ok_or(refuse)?;
+            let kind = fields
+                .get("kind")
+                .and_then(|kind| kind.as_str())
+                .unwrap_or("capability");
+            let action = match kind {
+                "file.read" => "Read file",
+                "file.write" => "Write file",
+                "program.run" => "Run approved program operation",
+                "outputs.read" => "Read selected outputs",
+                other => other,
+            };
+            let details = fields
+                .iter()
+                .filter(|(key, _)| key.as_str() != "kind")
+                .map(|(key, value)| {
+                    let value = value.as_str().map(str::to_owned).unwrap_or_else(|| value.to_string());
+                    format!("{}: {value}", key.replace('_', " "))
+                })
+                .collect::<Vec<_>>()
+                .join("; ");
+            Ok(format!("{section}: {action} ({details})"))
+        })
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn badge_tokens_match_the_ui_contract() {
+        assert_eq!(
+            serde_json::to_string(&PluginState::NeedsConsent).unwrap(),
+            "\"needs-consent\""
+        );
+        assert_eq!(serde_json::to_string(&PluginSource::Bundled).unwrap(), "\"bundled\"");
+    }
+}
