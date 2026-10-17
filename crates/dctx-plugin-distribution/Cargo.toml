@@ -3,7 +3,7 @@ name = "dctx-plugin-distribution"
 version = "0.1.0"
 edition = "2024"
 description = "dctx plugin installer, trust and discovery client: signed manifests, offline bundles and atomic activation over ports"
-license = "MIT"
+license = "Apache-2.0"
 
 [dependencies]
 dctx-ed25519 = { path = "../dctx-ed25519" }

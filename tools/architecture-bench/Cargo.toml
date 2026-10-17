@@ -3,7 +3,7 @@ name = "architecture-bench"
 version = "0.0.0"
 edition = "2024"
 publish = false
-license = "MIT"
+license = "Apache-2.0"
 description = "DX-A1 baseline measurements for the current dctx map mode"
 
 # Own workspace so this packet does not edit the root Cargo.toml.
