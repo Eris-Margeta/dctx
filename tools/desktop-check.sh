@@ -2,7 +2,7 @@
 # // What: check the dctx-desktop crate from the repo root without a built frontend.
 # // Why: Tauri's build script requires frontendDist ../dist (apps/dctx-desktop/dist), which is gitignored and not built, so cargo check stops before any Rust error.
 # // Spec: DX-E4cb. Depends on cargo, and on Linux on pkg-config webkit2gtk-4.1. The desktop check gate runs this.
-# // Lock: root Cargo.lock includes dctx-desktop. justfile and CI_WORKFLOW.md do not treat that lock as out of sync, so this check passes --locked and does not rewrite it.
+# // Lock: allow path dependency resolution during the check; restore Cargo.lock on exit. CI refreshes the committed lock after landing.
 set -eu
 
 # This file lives in tools/. The check must run at the repo root.
@@ -26,10 +26,22 @@ fi
 
 dist=$root/apps/dctx-desktop/dist
 created=0
+lock_backup=
+lock_saved=0
 
 cleanup() {
   rc=$?
   trap - EXIT
+  if [ "$lock_saved" = 1 ]; then
+    if cp -- "$lock_backup" "$root/Cargo.lock"; then
+      rm -f -- "$lock_backup"
+    else
+      printf 'Failed to restore Cargo.lock; backup: %s\n' "$lock_backup" >&2
+      rc=1
+    fi
+  elif [ -n "$lock_backup" ]; then
+    rm -f -- "$lock_backup"
+  fi
   if [ "$created" = 1 ]; then
     case $dist in
       */apps/dctx-desktop/dist)
@@ -40,6 +52,11 @@ cleanup() {
   exit "$rc"
 }
 trap cleanup EXIT
+
+# The packet may add path dependencies, but only CI owns the committed lock.
+lock_backup=$(mktemp "${TMPDIR:-/tmp}/dctx-desktop-check-lock.XXXXXX")
+cp -- "$root/Cargo.lock" "$lock_backup"
+lock_saved=1
 
 # Only a dist this script created is removed. An existing frontend build stays.
 if [ ! -e "$dist" ]; then
@@ -52,4 +69,4 @@ fi
 CARGO_TARGET_DIR="${TMPDIR:-/tmp}/dctx-desktop-check-target"
 export CARGO_TARGET_DIR
 
-cargo check -p dctx-desktop --locked
+cargo check -p dctx-desktop

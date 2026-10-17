@@ -15,6 +15,8 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 dctx-desktop-api = { path = "../../../crates/dctx-desktop-api" }
+dctx-plugin-distribution = { path = "../../../crates/dctx-plugin-distribution" }
+dctx-plugin-protocol = { path = "../../../crates/dctx-plugin-protocol" }
 tauri = { version = "2", features = [] }
 tauri-plugin-shell = "2"
 tauri-plugin-dialog = "2"

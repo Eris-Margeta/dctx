@@ -11,6 +11,8 @@
 #![cfg_attr(not(test), deny(clippy::panic))]
 
 mod config;
+mod plugin_commands;
+mod plugin_ports;
 mod recent_projects;
 
 use std::path::Path;
@@ -100,7 +102,12 @@ fn main() {
             reset_desktop_settings,
             get_recent_projects,
             add_recent_project,
-            remove_recent_project
+            remove_recent_project,
+            plugin_commands::list_plugins,
+            plugin_commands::enable_plugin,
+            plugin_commands::disable_plugin,
+            plugin_commands::consent_plugin,
+            plugin_commands::check_plugin_update
         ])
         .run(tauri::generate_context!())
     {
