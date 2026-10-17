@@ -4,6 +4,8 @@
 //! Depends on dctx-pack, dctx-core's selection policy and dctx-ports' MemorySource.
 //! Run by `cargo test -p dctx-pack --test compatibility`.
 
+#![forbid(unsafe_code)]
+
 use dctx_core::budget::PackLimits;
 use dctx_core::datatypes::{DirContextTreeNode, NodeType};
 use dctx_core::selection::{RuleTexts, SelectionPolicy};
@@ -252,4 +254,30 @@ fn debug_scan_matches_pinned_legacy_facts() {
     assert!(private.children[0].is_ignored);
     assert!(private.children[0].children[0].file_content.is_none());
     assert_eq!(private.children[0].children[0].relative_path, "private/keep/notes.txt");
+}
+
+#[test]
+fn pinned_png_bytes_survive_the_legacy_wire_format() {
+    use dctx_pack::{decode_legacy, encode_legacy, LegacyBodies, LegacyLimits};
+    // The D3-01 fixture is a PNG body, not a DIRCTXTV document. This fixed
+    // envelope pins the missing wire oracle without rewriting that fixture.
+    let golden = b"DIRCTXTV\x03\0\0\0\x07\0\0\0\
+        \x01\0\0\x01\0\0\0\0\0\0\0\x01\0\0\0\
+        \0\x08\0logo.png\x02\0\0\0\0\0\0\0\
+        \0\0\0\0\0\0\0\0\x07\0\0\0\0\0\0\0\x89PNG\0\0\x01";
+    let mut tree = DirContextTreeNode::new(NodeType::Directory, "", Default::default());
+    tree.last_modified_timestamp = 1;
+    let mut file = DirContextTreeNode::new(NodeType::File, "logo.png", Default::default());
+    file.last_modified_timestamp = 2;
+    file.file_content = Some(decode_hex(PNG_HEX));
+    tree.children.push(file);
+    let version = dctx_core::version::Version { major: 3, minor: 7 };
+    assert_eq!(encode_legacy(&tree, &version, LegacyLimits::default()).unwrap(), golden);
+    let decoded = decode_legacy(golden, LegacyBodies::Include, LegacyLimits::default()).unwrap();
+    assert_eq!(decoded.root.children[0].file_content, Some(decode_hex(PNG_HEX)));
+    assert_eq!(decoded.header.version, version);
+    assert_eq!(decoded.header.data_offset, 66);
+    let metadata = decode_legacy(golden, LegacyBodies::MetadataOnly, LegacyLimits::default()).unwrap();
+    assert!(metadata.root.children[0].file_content.is_none());
+    assert_eq!(metadata.root.children[0].content_size, 7);
 }

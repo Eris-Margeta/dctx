@@ -7,6 +7,7 @@
 mod build;
 mod cache_op;
 mod hooks;
+mod import_op;
 mod ledger;
 mod pack_op;
 mod query_op;
