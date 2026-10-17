@@ -884,6 +884,8 @@ version = "0.11.0"
 dependencies = [
  "chrono",
  "dctx-desktop-api",
+ "dctx-plugin-distribution",
+ "dctx-plugin-protocol",
  "dirs 5.0.1",
  "serde",
  "serde_json",
@@ -1020,6 +1022,9 @@ dependencies = [
 name = "dctx-map-parse"
 version = "0.1.0"
 dependencies = [
+ "dctx-lex-c",
+ "dctx-lex-cfg",
+ "dctx-lex-cs",
  "dctx-lex-go",
  "dctx-lex-java",
  "dctx-lex-js",
