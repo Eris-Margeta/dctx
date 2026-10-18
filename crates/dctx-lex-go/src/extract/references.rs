@@ -6,7 +6,8 @@ use crate::lexer::{keyword, Kind};
 use dctx_map_model::EdgeKind;
 
 impl Walker<'_> {
-    /// Walks a type starting at `index`. Named types are emitted when `emit` is set.
+    /// Walks a type starting at `index`. Named types, map keys and type arguments
+    /// are emitted when `emit` is set. A slice or array bracket is a length, not a type.
     pub(crate) fn skip_type(
         &mut self,
         mut index: usize,
@@ -40,6 +41,8 @@ impl Walker<'_> {
             if self.is(index, "map") {
                 index += 1;
                 if self.is(index, "[") {
+                    let close = self.close_of(index, end);
+                    let _ = self.skip_type(index + 1, close, emit, owner, scope);
                     index = self.after(index).min(end);
                 }
                 continue;
@@ -79,9 +82,6 @@ impl Walker<'_> {
             index += 2;
         }
         let name_end = index;
-        if self.is(index, "[") {
-            index = self.after(index).min(end);
-        }
         if emit {
             let bytes = self.src.get(self.start_byte(start) as usize..self.end_byte(name_end - 1) as usize);
             let spelling = compact(bytes.unwrap_or(""));
@@ -89,7 +89,27 @@ impl Walker<'_> {
                 self.refer(owner, scope, EdgeKind::UsesType, spelling, None, (start, name_end - 1));
             }
         }
+        if self.is(index, "[") {
+            let close = self.close_of(index, end);
+            self.type_arguments(index + 1, close, emit, owner, scope);
+            index = self.after(index).min(end);
+        }
         index
+    }
+
+    /// Comma-separated types inside an instantiation. `end` is the closing bracket.
+    fn type_arguments(&mut self, mut index: usize, end: usize, emit: bool, owner: usize, scope: &str) {
+        let limit = self.toks.len().saturating_add(1) as u32;
+        let mut steps = 0_u32;
+        while index < end && steps < limit {
+            steps += 1;
+            if self.is(index, ",") || self.is_semi(index) {
+                index += 1;
+                continue;
+            }
+            let next = self.skip_type(index, end, emit, owner, scope);
+            index = if next > index { next } else { index + 1 };
+        }
     }
 
     /// Parameter or field list between an opener and its closer, exclusive.
