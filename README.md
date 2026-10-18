@@ -110,6 +110,14 @@ Run without arguments to launch the interactive menu system—discover all featu
 
 ---
 
+## Map mode and plugins
+
+Use `dctx map` for bounded project outlines, symbol searches and source reads.
+See the [Map mode guide](docs/guides/MAP-MODE.md) for commands, languages,
+precision and cache behavior, and the [Plugins guide](docs/guides/PLUGINS.md)
+for the bundled Git plugin, consent, strict builds and current execution limits.
+The [crate map](docs/CRATE-MAP.md) describes the library and adapter boundaries.
+
 ## Features
 
 | Feature | Description |
