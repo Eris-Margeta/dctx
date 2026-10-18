@@ -118,14 +118,16 @@ pub(super) fn heredoc(src: &str, start: usize) -> Literal {
         while first < line_end && matches!(bytes[first], b' ' | b'\t') {
             first += 1;
         }
-        if src[first..].starts_with(label) {
-            let end = first + label.len();
-            if !bytes
-                .get(end)
-                .is_some_and(|b| b.is_ascii_alphanumeric() || *b == b'_' || *b >= 128)
-            {
+        let line = &src[first..line_end];
+        if let Some(rest) = line.strip_prefix(label) {
+            let label_end = first + label.len();
+            let continues = rest
+                .as_bytes()
+                .first()
+                .is_some_and(|b| b.is_ascii_alphanumeric() || *b == b'_' || *b >= 128);
+            if !continues && closer_tail(rest.as_bytes()) {
                 return Literal {
-                    end,
+                    end: label_end,
                     kind: Kind::DynamicString,
                     problem: None,
                 };
@@ -134,6 +136,13 @@ pub(super) fn heredoc(src: &str, start: usize) -> Literal {
         i = line_end.saturating_add(1);
     }
     broken(bytes.len())
+}
+
+/// A closer is the label plus an optional semicolon and nothing else on the line.
+fn closer_tail(rest: &[u8]) -> bool {
+    let rest = rest.strip_prefix(b";").unwrap_or(rest);
+    let rest = rest.strip_prefix(b"\r").unwrap_or(rest);
+    rest.is_empty()
 }
 
 fn broken(end: usize) -> Literal {

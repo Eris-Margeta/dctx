@@ -64,6 +64,9 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
             .map(|(i, _)| i + 1),
     );
     scan::scan(source, &mut result, limits)?;
+    // `?>` inside a block comment ends the PHP region. The byte scanner keeps
+    // going, so retokenize the suffix in HTML mode from that closer.
+    repair_comment_closers(source, &mut result, limits)?;
     result.partner.resize(result.tokens.len(), None);
     let mut stack: Vec<usize> = Vec::new();
     for index in 0..result.tokens.len() {
@@ -121,4 +124,86 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     }
     result.diagnostics.sort_by_key(|d| d.byte);
     Ok(result)
+}
+
+fn repair_comment_closers(
+    source: &str,
+    result: &mut Lexed,
+    limits: &Limits,
+) -> Result<(), LexError> {
+    while let Some((comment_start, at)) = block_comment_closer(source, &result.comments) {
+        result.tokens.retain(|token| token.end <= at);
+        result.diagnostics.retain(|diagnostic| {
+            let byte = diagnostic.byte as usize;
+            byte < at
+                && !(diagnostic.reason == DiagnosticReason::UnterminatedComment
+                    && byte == comment_start)
+        });
+        for comment in &mut result.comments {
+            if comment.0 == comment_start && comment.1 > at {
+                comment.1 = at;
+            }
+        }
+        result.comments.retain(|(start, end)| *end <= at && *start < at);
+        let base = result.line(at);
+        let suffix = &source[at..];
+        let mut extra = Lexed {
+            tokens: Vec::new(),
+            partner: Vec::new(),
+            comments: Vec::new(),
+            diagnostics: Vec::new(),
+            lines: vec![0],
+        };
+        extra.lines.extend(
+            suffix
+                .bytes()
+                .enumerate()
+                .filter(|(_, byte)| *byte == b'\n')
+                .map(|(index, _)| index + 1),
+        );
+        match scan::scan(suffix, &mut extra, limits) {
+            Ok(()) => {}
+            Err(LexError::TooDeep { line, limit }) => {
+                return Err(LexError::TooDeep {
+                    line: base + line - 1,
+                    limit,
+                });
+            }
+            Err(error) => return Err(error),
+        }
+        for token in extra.tokens {
+            result.tokens.push(Token {
+                kind: token.kind,
+                start: token.start + at,
+                end: token.end + at,
+            });
+        }
+        for (start, end) in extra.comments {
+            result.comments.push((start + at, end + at));
+        }
+        for diagnostic in extra.diagnostics {
+            result.problem(diagnostic.byte as usize + at, diagnostic.reason);
+        }
+    }
+    Ok(())
+}
+
+fn block_comment_closer(source: &str, comments: &[(usize, usize)]) -> Option<(usize, usize)> {
+    let mut found: Option<(usize, usize)> = None;
+    for &(start, end) in comments {
+        let Some(body) = source.get(start..end) else {
+            continue;
+        };
+        if !body.starts_with("/*") {
+            continue;
+        }
+        let Some(relative) = body[2..].find("?>") else {
+            continue;
+        };
+        let at = start + 2 + relative;
+        if found.is_none_or(|(_, previous)| at < previous) {
+            found = Some((start, at));
+        }
+    }
+    found
 }
