@@ -169,3 +169,99 @@ fn selection_excludes_or_omits_new_languages_before_content_reads() {
         assert_eq!(session.content_reads(), 1);
     }
 }
+
+/// Same extension list as `dctx-map-parse` `facts.rs` / `lexers_extensions.rs`
+/// and `index/extract.rs`. Basenames are the Ruby lexer set.
+const SHARED_EXTENSIONS: &[&str] = &[
+    "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java", "c", "h",
+    "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts", "rb", "rake", "gemspec",
+    "php", "phtml", "inc", "swift",
+];
+const SHARED_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
+
+#[test]
+fn extension_case_and_ruby_basenames_match_the_shared_literal() {
+    // Rust, JavaScript and Markdown have no row in `FIXTURES`. The facade unit
+    // test covers those extensions. Every other shared extension must.
+    const WITHOUT_SESSION_FIXTURE: &[&str] = &[
+        "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown",
+    ];
+    let root = tempfile::tempdir().expect("temp");
+    std::fs::create_dir_all(root.path().join("lower")).expect("dir");
+    std::fs::create_dir_all(root.path().join("upper")).expect("dir");
+    std::fs::create_dir_all(root.path().join("nested")).expect("dir");
+    let mut pairs = Vec::new();
+    for extension in SHARED_EXTENSIONS {
+        if WITHOUT_SESSION_FIXTURE.contains(extension) {
+            continue;
+        }
+        let fixture = FIXTURES
+            .iter()
+            .find(|item| item.extensions.contains(extension))
+            .unwrap_or_else(|| panic!("shared extension {extension} has no fixture"));
+        let lower = format!("lower/sample.{extension}");
+        let upper = format!("upper/sample.{}", extension.to_ascii_uppercase());
+        std::fs::write(root.path().join(&lower), fixture.source).expect("lower");
+        std::fs::write(root.path().join(&upper), fixture.source).expect("upper");
+        pairs.push((lower, upper, fixture.symbol));
+    }
+    let ruby = FIXTURES.iter().find(|item| item.symbol == "RubyMain").expect("ruby fixture");
+    let mut basenames = Vec::new();
+    for basename in SHARED_RUBY_BASENAMES {
+        let canonical = basename.to_string();
+        let folded = format!("nested/{}", basename.to_ascii_lowercase());
+        std::fs::write(root.path().join(&canonical), ruby.source).expect("basename");
+        std::fs::write(root.path().join(&folded), ruby.source).expect("folded basename");
+        basenames.push(canonical);
+        basenames.push(folded);
+    }
+    assert!(pairs.iter().any(|(lower, _, symbol)| lower == "lower/sample.rb" && *symbol == "RubyMain"));
+    // Not a defect: the Ruby lexer does not accept these basenames.
+    std::fs::write(root.path().join("Guardfile"), "def GuardHidden\nend\n").expect("guard");
+    std::fs::write(root.path().join("config.ru"), "def ConfigHidden\nend\n").expect("ru");
+
+    let mut session = open(root.path(), SelectionPolicy::from_texts(&RuleTexts::default()));
+    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+
+    fn at(session: &mut Session, handle: &dctx::SnapshotHandle, symbol: &str, path: &str) -> dctx::AnswerRecord {
+        let mut request = MapRequest::new(Verb::Find);
+        request.query = symbol.to_string();
+        request.within = Some(path.to_string());
+        let found = session.query(handle, &request, &mut VecSink::new()).unwrap_or_else(|error| panic!("{path}: {error}"));
+        found.records.into_iter().find(|record| record.path == path).unwrap_or_else(|| panic!("{path} has no {symbol}"))
+    }
+
+    for (lower, upper, symbol) in &pairs {
+        let control = at(&mut session, &handle, symbol, lower);
+        let folded = at(&mut session, &handle, symbol, upper);
+        assert_eq!(control.id, format!("s:{lower}#{symbol}"));
+        assert_eq!(folded.id, format!("s:{upper}#{symbol}"));
+        assert_eq!(folded.kind, control.kind);
+        assert_eq!(folded.lines, control.lines);
+        assert_eq!(folded.summary, control.summary);
+        assert_eq!(folded.summary_source, control.summary_source);
+        if *symbol == "RubyMain" && lower == "lower/sample.rb" {
+            assert_eq!(control.kind, "fn");
+            assert_eq!(control.lines, [1, 3]);
+            assert_eq!(control.summary, "def RubyMain");
+            assert_eq!(control.summary_source, "sig");
+        }
+        for path in [lower, upper] {
+            let outline = session.map(&handle, &format!("m:{path}"), &mut VecSink::new()).expect("outline");
+            assert!(outline.records.iter().any(|item| item.id == format!("s:{path}#{symbol}")));
+        }
+    }
+    let control = at(&mut session, &handle, "RubyMain", "lower/sample.rb");
+    for path in &basenames {
+        let record = at(&mut session, &handle, "RubyMain", path);
+        assert_eq!(record.id, format!("s:{path}#RubyMain"));
+        assert_eq!(record.kind, control.kind);
+        assert_eq!(record.lines, control.lines);
+        assert_eq!(record.summary, control.summary);
+        assert_eq!(record.summary_source, control.summary_source);
+    }
+    for hidden in ["GuardHidden", "ConfigHidden"] {
+        let found = session.find(&handle, hidden, &mut VecSink::new()).expect("opaque find");
+        assert!(found.records.is_empty(), "{hidden}");
+    }
+}

@@ -30,7 +30,8 @@ pub enum Language {
     CSharp,
     /// Kotlin source (`.kt`) and scripts (`.kts`).
     Kotlin,
-    /// Ruby source (`.rb`), tasks (`.rake`) and gem specifications (`.gemspec`).
+    /// Ruby source (`.rb`), tasks (`.rake`), gem specifications (`.gemspec`),
+    /// and the basenames `Rakefile` and `Gemfile`.
     Ruby,
     /// PHP source (`.php`), templates (`.phtml`) and includes (`.inc`).
     Php,
@@ -40,32 +41,81 @@ pub enum Language {
     Unknown,
 }
 
+/// Single source for extension dispatch.
+///
+/// `dctx` does not depend on this crate, so `crates/dctx/src/index/extract.rs`
+/// duplicates [`EXTENSIONS`] and [`RUBY_BASENAMES`]. The copies are locked to
+/// the same literal list in this crate's `tests/lexers_extensions.rs` and in
+/// `crates/dctx/tests/map_languages.rs` (plus the facade unit test).
+///
+/// Extensions are lowercase. Matching folds the final segment's extension.
+/// `tsx` is its own grammar here; the facade tags that extension `typescript`.
+const EXTENSIONS: &[(&str, Language)] = &[
+    ("rs", Language::Rust),
+    ("js", Language::JavaScript),
+    ("mjs", Language::JavaScript),
+    ("cjs", Language::JavaScript),
+    ("jsx", Language::JavaScript),
+    ("ts", Language::TypeScript),
+    ("mts", Language::TypeScript),
+    ("cts", Language::TypeScript),
+    ("tsx", Language::Tsx),
+    ("md", Language::Markdown),
+    ("markdown", Language::Markdown),
+    ("py", Language::Python),
+    ("pyi", Language::Python),
+    ("go", Language::Go),
+    ("java", Language::Java),
+    ("c", Language::C),
+    ("h", Language::C),
+    ("cc", Language::C),
+    ("cpp", Language::C),
+    ("cxx", Language::C),
+    ("hpp", Language::C),
+    ("hh", Language::C),
+    ("json", Language::Config),
+    ("jsonc", Language::Config),
+    ("toml", Language::Config),
+    ("yaml", Language::Config),
+    ("yml", Language::Config),
+    ("cs", Language::CSharp),
+    ("kt", Language::Kotlin),
+    ("kts", Language::Kotlin),
+    ("rb", Language::Ruby),
+    ("rake", Language::Ruby),
+    ("gemspec", Language::Ruby),
+    ("php", Language::Php),
+    ("phtml", Language::Php),
+    ("inc", Language::Php),
+    ("swift", Language::Swift),
+];
+
+/// Ruby basenames accepted by `dctx-lex-rb` (`Dialect::for_path`).
+///
+/// Compared case-insensitively on the final path segment, before the extension.
+/// `Gemfile.lock` stays unknown. `Guardfile` and `config.ru` are not in the
+/// lexer, so they are not in this list: classifying them would refuse the file.
+const RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
+
 impl Language {
-    /// Selects a grammar using the final extension, case-insensitively.
+    /// Selects a grammar from the final path segment.
+    ///
+    /// [`RUBY_BASENAMES`] match case-insensitively and win over the extension.
+    /// Otherwise the text after the last `.` is folded and looked up in
+    /// [`EXTENSIONS`]. A segment with no `.` is [`Language::Unknown`].
     pub fn for_path(path: &str) -> Self {
-        match path
-            .rsplit('.')
-            .next()
-            .map(str::to_ascii_lowercase)
-            .as_deref()
-        {
-            Some("rs") => Self::Rust,
-            Some("js" | "mjs" | "cjs" | "jsx") => Self::JavaScript,
-            Some("ts" | "mts" | "cts") => Self::TypeScript,
-            Some("tsx") => Self::Tsx,
-            Some("md" | "markdown") => Self::Markdown,
-            Some("py" | "pyi") => Self::Python,
-            Some("go") => Self::Go,
-            Some("java") => Self::Java,
-            Some("c" | "h" | "cc" | "cpp" | "cxx" | "hpp" | "hh") => Self::C,
-            Some("json" | "jsonc" | "toml" | "yaml" | "yml") => Self::Config,
-            Some("cs") => Self::CSharp,
-            Some("kt" | "kts") => Self::Kotlin,
-            Some("rb" | "rake" | "gemspec") => Self::Ruby,
-            Some("php" | "phtml" | "inc") => Self::Php,
-            Some("swift") => Self::Swift,
-            _ => Self::Unknown,
+        let base = path.rsplit(['/', '\\']).next().unwrap_or(path);
+        if RUBY_BASENAMES.iter().any(|name| base.eq_ignore_ascii_case(name)) {
+            return Self::Ruby;
         }
+        let Some(extension) = base.rsplit_once('.').map(|(_, extension)| extension.to_ascii_lowercase()) else {
+            return Self::Unknown;
+        };
+        EXTENSIONS
+            .iter()
+            .find(|(name, _)| *name == extension)
+            .map(|(_, language)| *language)
+            .unwrap_or(Self::Unknown)
     }
 }
 
@@ -181,5 +231,42 @@ mod tests {
         assert_eq!(Language::for_path("Sources/App.swift"), Language::Swift);
         assert_eq!(Language::for_path("Sources/App.SWIFT"), Language::Swift);
         assert_eq!(Language::for_path("rs/file.txt"), Language::Unknown);
+    }
+
+    #[test]
+    fn dispatch_table_matches_the_shared_literal() {
+        // Same list as `extract.rs`, `tests/lexers_extensions.rs` and
+        // `crates/dctx/tests/map_languages.rs`. `tsx` maps to `Tsx` here and to
+        // the facade tag `typescript`.
+        const LITERAL_EXTENSIONS: &[&str] = &[
+            "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
+            "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
+            "rb", "rake", "gemspec", "php", "phtml", "inc", "swift",
+        ];
+        const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
+        let extensions: Vec<&str> = EXTENSIONS.iter().map(|(extension, _)| *extension).collect();
+        assert_eq!(extensions, LITERAL_EXTENSIONS);
+        assert_eq!(RUBY_BASENAMES, LITERAL_RUBY_BASENAMES);
+        for (extension, language) in EXTENSIONS {
+            assert_eq!(Language::for_path(&format!("src/app.{extension}")), *language);
+            assert_eq!(
+                Language::for_path(&format!("dir.dot/app.{}", extension.to_ascii_uppercase())),
+                *language
+            );
+        }
+        for basename in RUBY_BASENAMES {
+            assert_eq!(Language::for_path(basename), Language::Ruby);
+            assert_eq!(Language::for_path(&format!("lib/{}", basename.to_ascii_lowercase())), Language::Ruby);
+            assert_eq!(Language::for_path(&format!("lib\\{basename}")), Language::Ruby);
+        }
+        // A dot-free segment is not an extension. This matches `language_of`.
+        assert_eq!(Language::for_path("php"), Language::Unknown);
+        assert_eq!(Language::for_path("swift"), Language::Unknown);
+        assert_eq!(Language::for_path("inc"), Language::Unknown);
+        assert_eq!(Language::for_path("Gemfile.lock"), Language::Unknown);
+        // Not a defect: dctx-lex-rb rejects these, so they stay unknown modules.
+        assert_eq!(Language::for_path("Guardfile"), Language::Unknown);
+        assert_eq!(Language::for_path("config.ru"), Language::Unknown);
+        assert_eq!(Language::for_path("lib/CONFIG.RU"), Language::Unknown);
     }
 }

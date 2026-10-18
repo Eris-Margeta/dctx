@@ -28,29 +28,73 @@ pub(crate) struct Symbol {
     pub signature: String,
 }
 
-/// Language tag from the file extension. Anything else is `opaque`.
+/// Duplicate of `dctx-map-parse` `domain::facts::EXTENSIONS`.
+///
+/// This crate does not depend on `dctx-map-parse`, so the table cannot be
+/// shared by a dependency. `tsx` is tagged `typescript` (the JS lexer owns it).
+/// Tests lock this copy to the same literal list as map-parse.
+const EXTENSIONS: &[(&str, &str)] = &[
+    ("rs", "rust"),
+    ("js", "javascript"),
+    ("mjs", "javascript"),
+    ("cjs", "javascript"),
+    ("jsx", "javascript"),
+    ("ts", "typescript"),
+    ("mts", "typescript"),
+    ("cts", "typescript"),
+    ("tsx", "typescript"),
+    ("md", "markdown"),
+    ("markdown", "markdown"),
+    ("py", "python"),
+    ("pyi", "python"),
+    ("go", "go"),
+    ("java", "java"),
+    ("c", "c"),
+    ("h", "c"),
+    ("cc", "c"),
+    ("cpp", "c"),
+    ("cxx", "c"),
+    ("hpp", "c"),
+    ("hh", "c"),
+    ("json", "config"),
+    ("jsonc", "config"),
+    ("toml", "config"),
+    ("yaml", "config"),
+    ("yml", "config"),
+    ("cs", "csharp"),
+    ("kt", "kotlin"),
+    ("kts", "kotlin"),
+    ("rb", "ruby"),
+    ("rake", "ruby"),
+    ("gemspec", "ruby"),
+    ("php", "php"),
+    ("phtml", "php"),
+    ("inc", "php"),
+    ("swift", "swift"),
+];
+
+/// Duplicate of `dctx-map-parse` `domain::facts::RUBY_BASENAMES`.
+///
+/// `dctx-lex-rb` accepts these final segments case-insensitively, and rejects
+/// `Guardfile` and `config.ru`. A basename wins over the extension.
+const RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
+
+/// Language tag from the final path segment. Anything else is `opaque`.
+///
+/// Extensions are case-insensitive. See [`EXTENSIONS`] and [`RUBY_BASENAMES`].
 pub(crate) fn language_of(path: &str) -> &'static str {
-    let ext = match path.rsplit_once('.') {
-        Some((_, ext)) => ext,
-        None => "",
-    };
-    match ext {
-        "rs" => "rust",
-        "js" | "jsx" | "mjs" | "cjs" => "javascript",
-        "ts" | "tsx" | "mts" | "cts" => "typescript",
-        "md" | "markdown" => "markdown",
-        "py" | "pyi" => "python",
-        "go" => "go",
-        "java" => "java",
-        "c" | "h" | "cc" | "cpp" | "cxx" | "hpp" | "hh" => "c",
-        "json" | "jsonc" | "toml" | "yaml" | "yml" => "config",
-        "cs" => "csharp",
-        "kt" | "kts" => "kotlin",
-        "rb" | "rake" | "gemspec" => "ruby",
-        "php" | "phtml" | "inc" => "php",
-        "swift" => "swift",
-        _ => "opaque",
+    let base = path.rsplit(['/', '\\']).next().unwrap_or(path);
+    if RUBY_BASENAMES.iter().any(|name| base.eq_ignore_ascii_case(name)) {
+        return "ruby";
     }
+    let Some(extension) = base.rsplit_once('.').map(|(_, extension)| extension.to_ascii_lowercase()) else {
+        return "opaque";
+    };
+    EXTENSIONS
+        .iter()
+        .find(|(name, _)| *name == extension)
+        .map(|(_, tag)| *tag)
+        .unwrap_or("opaque")
 }
 
 /// Structural facts. NUL bytes yield no symbols; the caller still hashes the file.
@@ -298,5 +342,91 @@ mod tests {
         assert_eq!(script[0].summary_source, "sig");
         assert!(extract_structural("blob.bin", b"fn ping() {}\0").is_empty());
         assert!(extract_structural("notes.txt", b"# Fixture\n").is_empty());
+    }
+
+    #[test]
+    fn dispatch_table_matches_the_shared_literal_and_ruby_basenames() {
+        // Same list as `dctx-map-parse` `facts.rs`, `lexers_extensions.rs` and
+        // `tests/map_languages.rs`. Facade tag for `tsx` is `typescript`.
+        const LITERAL_EXTENSIONS: &[(&str, &str)] = &[
+            ("rs", "rust"),
+            ("js", "javascript"),
+            ("mjs", "javascript"),
+            ("cjs", "javascript"),
+            ("jsx", "javascript"),
+            ("ts", "typescript"),
+            ("mts", "typescript"),
+            ("cts", "typescript"),
+            ("tsx", "typescript"),
+            ("md", "markdown"),
+            ("markdown", "markdown"),
+            ("py", "python"),
+            ("pyi", "python"),
+            ("go", "go"),
+            ("java", "java"),
+            ("c", "c"),
+            ("h", "c"),
+            ("cc", "c"),
+            ("cpp", "c"),
+            ("cxx", "c"),
+            ("hpp", "c"),
+            ("hh", "c"),
+            ("json", "config"),
+            ("jsonc", "config"),
+            ("toml", "config"),
+            ("yaml", "config"),
+            ("yml", "config"),
+            ("cs", "csharp"),
+            ("kt", "kotlin"),
+            ("kts", "kotlin"),
+            ("rb", "ruby"),
+            ("rake", "ruby"),
+            ("gemspec", "ruby"),
+            ("php", "php"),
+            ("phtml", "php"),
+            ("inc", "php"),
+            ("swift", "swift"),
+        ];
+        const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
+        assert_eq!(EXTENSIONS, LITERAL_EXTENSIONS);
+        assert_eq!(RUBY_BASENAMES, LITERAL_RUBY_BASENAMES);
+        for (extension, tag) in LITERAL_EXTENSIONS {
+            assert_eq!(language_of(&format!("src/app.{extension}")), *tag);
+            assert_eq!(language_of(&format!("dir.dot/app.{}", extension.to_ascii_uppercase())), *tag);
+        }
+        for basename in LITERAL_RUBY_BASENAMES {
+            assert_eq!(language_of(basename), "ruby");
+            assert_eq!(language_of(&format!("lib/{}", basename.to_ascii_lowercase())), "ruby");
+            assert_eq!(language_of(&format!("lib\\{basename}")), "ruby");
+        }
+        assert_eq!(language_of("php"), "opaque");
+        assert_eq!(language_of("Gemfile.lock"), "opaque");
+        // Not a defect: the Ruby lexer rejects these paths.
+        assert_eq!(language_of("Guardfile"), "opaque");
+        assert_eq!(language_of("config.ru"), "opaque");
+
+        let source = b"def real\nend\n";
+        let control = extract_structural("src/app.rb", source);
+        assert_eq!(control.len(), 1);
+        assert_eq!(control[0].name, "real");
+        assert_eq!(control[0].kind, "fn");
+        assert_eq!(control[0].lines, [1, 2]);
+        assert_eq!(control[0].signature, "def real");
+        assert_eq!(control[0].summary, "def real");
+        assert_eq!(control[0].summary_source, "sig");
+        for path in ["src/app.RB", "tasks/app.RAKE", "demo.GEMSPEC", "Rakefile", "lib/Gemfile", "pkg/RAKEFILE"] {
+            let symbols = extract_structural(path, source);
+            assert_eq!(symbols.len(), 1, "{path}");
+            assert_eq!(symbols[0].name, control[0].name);
+            assert_eq!(symbols[0].kind, control[0].kind);
+            assert_eq!(symbols[0].lines, control[0].lines);
+            assert_eq!(symbols[0].signature, control[0].signature);
+            assert_eq!(symbols[0].summary, control[0].summary);
+            assert_eq!(symbols[0].summary_source, control[0].summary_source);
+        }
+        assert!(extract_structural("Guardfile", source).is_empty());
+        assert!(extract_structural("config.ru", source).is_empty());
+        assert_eq!(extract_structural("A.RS", b"fn RustMain() {}\n")[0].name, "RustMain");
+        assert_eq!(extract_structural("README.MD", b"# MdMain\n")[0].name, "MdMain");
     }
 }

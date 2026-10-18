@@ -135,6 +135,28 @@ mod tests {
     }
 
     #[test]
+    fn ruby_paths_the_lexer_accepts_keep_the_rb_symbol() {
+        let source = "def real\nend\n";
+        let control = symbols("ruby", "app.rb", source);
+        assert_eq!(control.len(), 1);
+        assert_eq!(control[0].name, "real");
+        assert_eq!(control[0].kind, "fn");
+        assert_eq!(control[0].lines, [1, 2]);
+        assert_eq!(control[0].signature, "def real");
+        for path in ["Rakefile", "lib/Gemfile", "app.RB", "task.RAKE", "demo.GEMSPEC"] {
+            let got = symbols("ruby", path, source);
+            assert_eq!(got.len(), 1, "{path}");
+            assert_eq!(got[0].name, control[0].name);
+            assert_eq!(got[0].kind, control[0].kind);
+            assert_eq!(got[0].lines, control[0].lines);
+            assert_eq!(got[0].signature, control[0].signature);
+        }
+        // Not a defect: dctx-lex-rb returns UnsupportedDialect for these.
+        assert!(symbols("ruby", "Guardfile", source).is_empty());
+        assert!(symbols("ruby", "config.ru", source).is_empty());
+    }
+
+    #[test]
     fn scripts_keep_the_existing_partial_fact_projection() {
         for (language, path) in [("javascript", "a.js"), ("typescript", "a.ts")] {
             let source = "function Ready() {}\n";
