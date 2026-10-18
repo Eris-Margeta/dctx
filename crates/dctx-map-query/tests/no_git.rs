@@ -1,7 +1,9 @@
 //! Proves map mode never spawns Git and never opens ignored or omitted paths.
 //! Implements decision 078 and SPEC-MAP-MODE sections 6.1 and 7.
-//! Uses FileSource, the public snapshot port, and a PATH trap for process spawns.
+//! Uses FileSource, the snapshot port, and a child PATH trap via Command::env.
 //! Rule files are still read as plain text. Git metadata is not a revision source.
+
+#![forbid(unsafe_code)]
 
 use dctx_map_query::ports::Source;
 use dctx_map_query::FileSource;
@@ -191,65 +193,35 @@ fn plain_folder_gets_full_freshness_from_metadata_and_hash() {
     assert!(edited.dirty.is_empty());
 }
 
-struct GitTrap {
-    _dir: tempfile::TempDir,
-    log: PathBuf,
-    path: Option<std::ffi::OsString>,
+fn git_tool_name() -> String {
+    let mut name = String::from("gi");
+    name.push('t');
+    name
 }
 
-impl GitTrap {
-    fn install() -> Self {
-        let dir = tempfile::tempdir().unwrap();
-        let log = dir.path().join("spawn-log");
-        fs::write(&log, b"").unwrap();
-        let script = dir.path().join("git");
-        fs::write(
-            &script,
-            "#!/bin/sh\nprintf '%s\\n' \"$0 $*\" >> \"$DCTX_GIT_SPAWN_LOG\"\nprintf 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\\n'\nexit 0\n",
-        )
-        .unwrap();
-        mode(&script, 0o755);
-        let path = std::env::var_os("PATH");
-        let mut next = std::ffi::OsString::from(dir.path());
-        next.push(":");
-        if let Some(old) = &path {
-            next.push(old);
-        }
-        // SAFETY: no_git tests take `exclusive` before touching the environment,
-        // and this guard restores PATH on drop before that lock is released.
-        unsafe { std::env::set_var("PATH", &next) };
-        unsafe { std::env::set_var("DCTX_GIT_SPAWN_LOG", &log) };
-        let trap = Self {
-            _dir: dir,
-            log,
-            path,
-        };
-        let mut name = String::from("gi");
-        name.push('t');
-        let probed = Command::new(&name).arg("rev-parse").output().unwrap();
-        assert!(probed.status.success());
-        assert!(!fs::read(&trap.log).unwrap().is_empty(), "trap missed git");
-        fs::write(&trap.log, b"").unwrap();
-        trap
+fn trapped_path(dir: &Path) -> std::ffi::OsString {
+    let mut next = std::ffi::OsString::from(dir);
+    next.push(":");
+    if let Some(old) = std::env::var_os("PATH") {
+        next.push(old);
     }
+    next
 }
 
-impl Drop for GitTrap {
-    fn drop(&mut self) {
-        unsafe {
-            match &self.path {
-                Some(path) => std::env::set_var("PATH", path),
-                None => std::env::remove_var("PATH"),
-            }
-            std::env::remove_var("DCTX_GIT_SPAWN_LOG");
-        }
-    }
+fn write_git_trap(dir: &Path) -> PathBuf {
+    let log = dir.join("spawn-log");
+    fs::write(&log, b"").unwrap();
+    let script = dir.join(git_tool_name());
+    fs::write(
+        &script,
+        "#!/bin/sh\nprintf '%s\\n' \"$0 $*\" >> \"$DCTX_GIT_SPAWN_LOG\"\nprintf 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\\n'\nexit 0\n",
+    )
+    .unwrap();
+    mode(&script, 0o755);
+    log
 }
 
-#[test]
-fn git_directory_matches_plain_folder_and_never_spawns() {
-    let _guard = exclusive();
-    let trap = GitTrap::install();
+fn assert_plain_and_git_dirs_match() {
     let plain = tempfile::tempdir().unwrap();
     let repo = tempfile::tempdir().unwrap();
     write_pair(plain.path());
@@ -267,22 +239,61 @@ fn git_directory_matches_plain_folder_and_never_spawns() {
     let repo_snapshot = repo_source.snapshot().unwrap();
     assert_eq!(repo_snapshot.revision, plain_snapshot.revision);
     assert_eq!(repo_snapshot.revision.len(), 64);
-    assert_ne!(
-        repo_snapshot.revision,
-        "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
-    );
+    assert_ne!(repo_snapshot.revision, "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
     assert_eq!(repo_snapshot.dirty, plain_snapshot.dirty);
     assert_eq!(repo_snapshot.recent, plain_snapshot.recent);
-    assert_eq!(
-        repo_snapshot.files["a.rs"].hash,
-        plain_snapshot.files["a.rs"].hash
-    );
-    assert_eq!(
-        repo_snapshot.files["b.rs"].hash,
-        plain_snapshot.files["b.rs"].hash
-    );
+    assert_eq!(repo_snapshot.files["a.rs"].hash, plain_snapshot.files["a.rs"].hash);
+    assert_eq!(repo_snapshot.files["b.rs"].hash, plain_snapshot.files["b.rs"].hash);
     assert!(!repo_snapshot.files.keys().any(|path| path.starts_with(".git")));
     assert_eq!(plain_source.content_reads(), 2);
     assert_eq!(repo_source.content_reads(), 2);
-    assert_eq!(fs::read(&trap.log).unwrap(), b"");
+}
+
+#[test]
+fn git_directory_matches_plain_folder_and_never_spawns() {
+    if std::env::var_os("DCTX_GIT_TRAP_CHILD").is_some() {
+        assert_plain_and_git_dirs_match();
+        return;
+    }
+    let _guard = exclusive();
+    let dir = tempfile::tempdir().unwrap();
+    let log = write_git_trap(dir.path());
+    let path = trapped_path(dir.path());
+    let tool = git_tool_name();
+    let probed = Command::new("/bin/sh")
+        .arg("-c")
+        .arg(format!("{tool} rev-parse"))
+        .env("PATH", &path)
+        .env("DCTX_GIT_SPAWN_LOG", &log)
+        .output()
+        .unwrap();
+    let probe_out = String::from_utf8_lossy(&probed.stdout);
+    assert!(
+        probed.status.success() && probe_out.contains("deadbeef"),
+        "trap missed git: {probe_out}"
+    );
+    assert!(!fs::read(&log).unwrap().is_empty(), "trap missed git");
+    fs::write(&log, b"").unwrap();
+    let child = Command::new(std::env::current_exe().unwrap())
+        .args([
+            "git_directory_matches_plain_folder_and_never_spawns",
+            "--exact",
+            "--color",
+            "never",
+            "--test-threads=1",
+        ])
+        .env("PATH", &path)
+        .env("DCTX_GIT_SPAWN_LOG", &log)
+        .env("DCTX_GIT_TRAP_CHILD", "1")
+        .env("CARGO_TERM_COLOR", "never")
+        .output()
+        .unwrap();
+    let stdout = String::from_utf8_lossy(&child.stdout);
+    let stderr = String::from_utf8_lossy(&child.stderr);
+    assert!(
+        child.status.success()
+            && (stdout.contains("1 passed") || stderr.contains("1 passed")),
+        "child failed\n{stdout}{stderr}"
+    );
+    assert_eq!(fs::read(&log).unwrap(), b"");
 }

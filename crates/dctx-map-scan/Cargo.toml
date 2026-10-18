@@ -9,5 +9,5 @@ description = "Model-independent scan privacy rules"
 tempfile = "3"
 
 [dependencies]
-sha2 = "0.10"
+dctx-hash = { path = "../dctx-hash" }
 thiserror = "2"

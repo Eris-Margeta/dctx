@@ -1,16 +1,20 @@
 //! Model-independent scan records and content hashes.
 //! Implements SPEC-MAP-MODE section 13a.
-//! Uses SHA-256; consumed by downstream map indexers.
+//! Depends on dctx-hash SHA-256. Map indexers consume these records.
 
 use super::FileHandlingDecision;
-use sha2::{Digest, Sha256};
+use dctx_hash::{HashError, Sha256};
 use std::path::PathBuf;
 
 /// SHA-256 digest of exact file bytes.
 pub type ContentHash = [u8; 32];
 /// Hashes complete authorized content.
 pub fn content_hash(bytes: &[u8]) -> ContentHash {
-    Sha256::digest(bytes).into()
+    match Sha256::digest(bytes) {
+        Ok(digest) => *digest.as_bytes(),
+        // The fixed public array cannot carry HashError. Only an over-long message arrives here.
+        Err(HashError::MessageTooLong) => [0; 32],
+    }
 }
 
 /// One visible regular file; directories are traversal structure only.

@@ -1,12 +1,22 @@
 //! Whitespace-normalized fingerprints for rename and move detection.
-//! Implements SPEC-MAP-MODE section 5.2 using SHA-256.
-//! Pure string transformation used by every parser adapter.
-use sha2::{Digest, Sha256};
+//! Implements SPEC-MAP-MODE section 5.2.
+//! Depends on dctx-hash SHA-256. Every parser adapter uses this fingerprint.
+
+use dctx_hash::Sha256;
+
+const HEX: &[u8; 16] = b"0123456789abcdef";
 
 /// SHA-256 of the body with whitespace runs collapsed and edges trimmed.
 pub fn body_fingerprint(body: &str) -> String {
     let normalized = body.split_whitespace().collect::<Vec<_>>().join(" ");
-    format!("{:x}", Sha256::digest(normalized.as_bytes()))
+    let mut hex = String::with_capacity(64);
+    if let Ok(digest) = Sha256::digest(normalized.as_bytes()) {
+        for byte in digest.as_bytes() {
+            hex.push(char::from(HEX[usize::from(byte >> 4)]));
+            hex.push(char::from(HEX[usize::from(byte & 15)]));
+        }
+    }
+    hex
 }
 
 #[cfg(test)]
