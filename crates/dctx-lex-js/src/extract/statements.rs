@@ -60,7 +60,7 @@ impl Walker<'_> {
                         "if" | "for" | "while" | "with" | "catch" | "switch"
                     )
             }
-            (Some(Kind::Ident), "else" | "do" | "try" | "finally") => true,
+            (Some(Kind::Ident), "else" | "do" | "try" | "catch" | "finally") => true,
             _ => false,
         };
         explicit || self.asi(i)
@@ -310,6 +310,12 @@ mod tests {
     fn names(path: &str, source: &str) -> Vec<String> {
         let facts = JsLexer::default().extract(path, source.as_bytes()).unwrap();
         facts.nodes.iter().skip(1).map(|n| n.fact.name.clone()).collect()
+    }
+
+    #[test]
+    fn optional_catch_and_labels_keep_inner_declarations() {
+        let source = "function outer() {\n  loop: for (;;) { break loop }\n  try { throw 1 } catch { function inner() { return 1 } }\n  try { throw 2 } catch (e) { function bound() { return e } }\n}";
+        assert_eq!(names("x.js", source), ["outer", "outer::inner", "outer::bound"]);
     }
 
     #[test]

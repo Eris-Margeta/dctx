@@ -3,17 +3,15 @@
 //! never lex JSX text or attribute strings as code. Used by `scan::Lexer::run`.
 use super::Kind;
 use super::scan::{Frame, Lexer, is_word_start};
-use crate::domain::{DiagnosticReason, Dialect, LexError};
+use crate::domain::{DiagnosticReason, LexError};
 
 impl Lexer<'_> {
-    /// Whether `<` at an expression start opens JSX rather than a TSX generic arrow.
+    /// Whether `<` at an expression start opens JSX rather than a generic arrow.
+    /// `<T,` and `<T extends` are type parameters in TSX and in JSX-free code.
     pub(super) fn jsx_start(&self, start: usize) -> bool {
         match self.char_at(start + 1) {
             Some('>') => true,
             c if is_word_start(c) => {
-                if self.dialect != Dialect::Tsx {
-                    return true;
-                }
                 let end = self.word_end(start + 1);
                 let rest = self.src[end..].trim_start();
                 !(rest.starts_with(',') || rest.starts_with("extends "))
@@ -140,6 +138,7 @@ impl Lexer<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::Dialect;
 
     fn texts(source: &str, dialect: Dialect) -> Vec<(Kind, String)> {
         let mut lexer = Lexer::new(source, dialect, 32);
@@ -182,6 +181,12 @@ mod tests {
     fn tsx_generic_arrows_are_code_and_unclosed_jsx_is_reported() {
         let tokens = texts("f = <T,>(x: T) => x", Dialect::Tsx);
         assert_eq!(tokens[2], (Kind::Punct, "<".into()));
+        let js = texts("f = <T,>(x) => x", Dialect::JavaScript);
+        assert_eq!(js[2], (Kind::Punct, "<".into()));
+        let extended = texts("f = <T extends U>(x) => x", Dialect::JavaScript);
+        assert_eq!(extended[2], (Kind::Punct, "<".into()));
+        let element = texts("v = <div>(note)</div>", Dialect::JavaScript);
+        assert_eq!(element[2].0, Kind::Jsx);
         let mut lexer = Lexer::new("v = <div>{a}", Dialect::JavaScript, 32);
         lexer.run().unwrap();
         assert_eq!(lexer.problems[0].1, DiagnosticReason::UnterminatedJsx);

@@ -346,6 +346,29 @@ mod tests {
     }
 
     #[test]
+    fn private_members_and_keyword_accessors_parse() {
+        let source = "class Box {\n  #count = 1_000n\n  static { Box.ready = true }\n  static #boot() { return 1 }\n  get #size() { return this.#count }\n  set #size(value) { this.#count = value }\n  async * #items() { yield this.#size }\n  #run = () => this.#count\n  get default() { return 1 }\n  set if(value) { this.#count = value }\n  get catch() { return 0 }\n  visible() {}\n}";
+        let facts = JsLexer::default().extract("box.js", source.as_bytes()).unwrap();
+        assert_eq!(facts.completion, crate::Completion::Complete, "{:?}", facts.diagnostics);
+        let found = names("box.js", source);
+        assert_eq!(
+            found,
+            [
+                ("Box".into(), 1),
+                ("Box::.boot".into(), 4),
+                ("Box::.size".into(), 5),
+                ("Box::.size".into(), 6),
+                ("Box::.items".into(), 7),
+                ("Box::.run".into(), 8),
+                ("Box::default".into(), 9),
+                ("Box::if".into(), 10),
+                ("Box::catch".into(), 11),
+                ("Box::visible".into(), 12),
+            ]
+        );
+    }
+
+    #[test]
     fn typescript_signatures_and_abstract_members() {
         let source = "export abstract class S<T> implements I<T> {\n  abstract run(x: T): void;\n  private load(): Promise<T> { return f<T>(); }\n  [key: string]: unknown;\n}";
         let found = names("s.ts", source);

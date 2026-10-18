@@ -192,11 +192,15 @@ impl<'a> Walker<'a> {
         if self.dry > 0 || !self.ok() {
             return scope.clone();
         }
-        let name = if scope.name.is_empty() {
+        let mut name = if scope.name.is_empty() {
             item.local
         } else {
             format!("{}::{}", scope.name, item.local)
         };
+        // A stable id uses `#` as its separator, so private `#slot` is stored as `.slot`.
+        if name.contains('#') {
+            name = name.replace('#', ".");
+        }
         let start = self.start_byte(item.first);
         let end = self.end_byte(item.last).max(start);
         let path = self.draft.path.clone();

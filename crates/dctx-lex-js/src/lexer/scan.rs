@@ -151,7 +151,7 @@ impl<'a> Lexer<'a> {
                 self.single(start);
             }
             '(' => {
-                let control = self.last_is_any(&["if", "for", "while", "with"]);
+                let control = self.control_paren_open();
                 self.push(Frame::Paren { control })?;
                 self.single(start);
             }
@@ -298,6 +298,19 @@ impl<'a> Lexer<'a> {
         matches!(self.last_text(), Some((Kind::Ident, w)) if words.contains(&w))
     }
 
+    /// `if`/`for`/`while`/`with` and `for await` heads, whose `)` may precede a regex.
+    fn control_paren_open(&self) -> bool {
+        if self.last_is_any(&["if", "for", "while", "with"]) {
+            return true;
+        }
+        let n = self.tokens.len();
+        if n < 2 || !self.last_is_any(&["await"]) {
+            return false;
+        }
+        let token = &self.tokens[n - 2];
+        token.kind == Kind::Ident && &self.src[token.start as usize..token.end as usize] == "for"
+    }
+
     /// Whether an expression may start here (regex, JSX, object literal).
     pub(super) fn regex_allowed(&self) -> bool {
         match self.last_text() {
@@ -388,5 +401,36 @@ mod tests {
             .map(|t| &lexed.src[t.start as usize..t.end as usize])
             .collect();
         assert_eq!(texts, ["0x1F", "1e-3", ".5", "10n", "this", ".", "#x", "\\u0061b"]);
+    }
+
+    #[test]
+    fn numeric_separators_stay_inside_the_number() {
+        let lexed = lexer("1_000n 0xFF_FF 0b10_10");
+        let texts: Vec<_> = lexed
+            .tokens
+            .iter()
+            .map(|t| &lexed.src[t.start as usize..t.end as usize])
+            .collect();
+        assert_eq!(texts, ["1_000n", "0xFF_FF", "0b10_10"]);
+    }
+
+    #[test]
+    fn regex_after_control_parens_and_division_after_values() {
+        let re = lexer("for await (const x of y) /[)]/g.test(x)");
+        let texts: Vec<_> = re
+            .tokens
+            .iter()
+            .map(|t| &re.src[t.start as usize..t.end as usize])
+            .collect();
+        assert!(texts.contains(&"/[)]/g"), "{texts:?}");
+        let div = lexer("const o = { a: 1 } / 2; if (x) {} /a/;");
+        let texts: Vec<_> = div
+            .tokens
+            .iter()
+            .map(|t| &div.src[t.start as usize..t.end as usize])
+            .collect();
+        assert!(texts.contains(&"/"), "{texts:?}");
+        assert!(texts.contains(&"/a/"), "{texts:?}");
+        assert!(!texts.iter().any(|t| t.starts_with("/ ")), "{texts:?}");
     }
 }

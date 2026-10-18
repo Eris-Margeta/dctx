@@ -116,11 +116,23 @@ fn nesting_limits_refuse_with_typed_errors_and_positive_controls() {
 }
 
 #[test]
-fn unicode_and_private_names_abstain_instead_of_failing() {
+fn unicode_and_private_names_parse() {
     let facts = JsLexer::default()
         .extract("u.js", "class Ünï { #hidden() {} visible() {} }\nconst ñ = () => 1;".as_bytes())
         .unwrap();
     let names: Vec<_> = facts.nodes.iter().skip(1).map(|n| n.fact.name.as_str()).collect();
-    assert_eq!(names, ["Ünï", "Ünï::visible", "ñ"]);
-    assert_eq!(facts.completion, Completion::Partial);
+    assert_eq!(names, ["Ünï", "Ünï::.hidden", "Ünï::visible", "ñ"]);
+    assert_eq!(facts.completion, Completion::Complete);
+}
+
+#[test]
+fn modern_syntax_parses_to_completion() {
+    let source = "#!/usr/bin/env node\nimport.meta.url\nconst n = 1_000n\nconst q = null ?? 0\nq ??= 1\nconst opt = q?.toString()\nconst text = `a${`b${n}`}c`\nfunction outer() {\n  loop: for (const x of [1]) {\n    if (x) break loop\n  }\n  try {\n    throw 1\n  } catch {\n    return /a/.test('a')\n  }\n}\nconst ratio = (function () { return 4 }) / 2\nconst arrow = <T,>(x) => x\nexport async function* gen() { yield opt ?? text ?? ratio ?? arrow }\n";
+    let facts = JsLexer::default()
+        .extract("modern.mjs", source.as_bytes())
+        .unwrap();
+    assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
+    let names: Vec<_> = facts.nodes.iter().skip(1).map(|n| n.fact.name.as_str()).collect();
+    assert!(names.contains(&"outer"), "{names:?}");
+    assert!(names.contains(&"gen"), "{names:?}");
 }
