@@ -2,6 +2,8 @@
 //! Checks SPEC-MAP-MODE sections 5 and 6.2 through all PureParser adapters.
 //! Uses public parser records, std threads, and common_sweep's store checks.
 //! Run with DCTX_SWEEP_ROOTS and --ignored --nocapture; ordinary tests skip it.
+//! DCTX_SWEEP_LANGS limits parsing to report language names. DCTX_SWEEP_REFUSAL_BUDGET
+//! fails the run when a listed language refuses more files than its budget.
 #![forbid(unsafe_code)]
 
 mod common_sweep;
@@ -9,7 +11,7 @@ mod common_sweep;
 use common_sweep::{CorpusFile, assert_store_accepts, collect_files, read_source};
 use dctx_map_parse::{Language, ParseError, ParsedFile, Parser, PureParser};
 use std::any::Any;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::panic::catch_unwind;
 use std::path::PathBuf;
 use std::sync::mpsc;
@@ -217,7 +219,88 @@ fn run_file(file: &CorpusFile, source: Vec<u8>, repeat: bool) -> Option<(FileRep
     Some((report, elapsed))
 }
 
-fn print_table(reports: &BTreeMap<String, LanguageReport>) {
+fn optional_env_var(name: &str) -> Option<String> {
+    match std::env::var(name) {
+        Ok(value) if !value.is_empty() => Some(value),
+        Ok(_) | Err(std::env::VarError::NotPresent) => None,
+        Err(std::env::VarError::NotUnicode(_)) => panic!("{name} is not valid Unicode"),
+    }
+}
+
+fn parse_sweep_langs(value: &str) -> BTreeSet<String> {
+    value
+        .split(',')
+        .map(str::trim)
+        .filter(|name| !name.is_empty())
+        .map(str::to_owned)
+        .collect()
+}
+
+fn parse_refusal_budget(value: &str) -> Result<BTreeMap<String, usize>, String> {
+    let mut budgets = BTreeMap::new();
+    for part in value.split(',') {
+        let part = part.trim();
+        if part.is_empty() {
+            continue;
+        }
+        let Some((language, limit)) = part.split_once('=') else {
+            return Err(format!("refusal budget entry {part:?} must use Lang=N"));
+        };
+        let language = language.trim();
+        let limit = limit.trim();
+        if language.is_empty() || limit.is_empty() {
+            return Err(format!("refusal budget entry {part:?} must use Lang=N"));
+        }
+        let parsed = limit.parse::<usize>().map_err(|_| {
+            format!("refusal budget for {language} has a non-numeric limit {limit:?}")
+        })?;
+        if budgets.insert(language.to_owned(), parsed).is_some() {
+            return Err(format!("duplicate refusal budget for {language}"));
+        }
+    }
+    Ok(budgets)
+}
+
+fn unknown_languages<'a>(names: impl IntoIterator<Item = &'a str>) -> Vec<&'a str> {
+    let known = LANGUAGES
+        .iter()
+        .map(|language| format!("{language:?}"))
+        .collect::<BTreeSet<_>>();
+    let mut unknown = names
+        .into_iter()
+        .filter(|name| !known.contains(*name))
+        .collect::<Vec<_>>();
+    unknown.sort_unstable();
+    unknown.dedup();
+    unknown
+}
+
+fn language_selected(selected: Option<&BTreeSet<String>>, language: &str) -> bool {
+    selected.is_none_or(|names| names.contains(language))
+}
+
+fn format_budget_line(language: &str, refused: usize, budget: usize) -> String {
+    // Equal to the budget still passes. Only a greater refusal count exceeds it.
+    let status = if refused > budget { "exceeded" } else { "ok" };
+    format!("BUDGET {language} refused={refused} budget={budget} {status}")
+}
+
+fn budget_failures(
+    reports: &BTreeMap<String, LanguageReport>,
+    budgets: &BTreeMap<String, usize>,
+) -> Vec<String> {
+    // Languages with no budget entry are omitted, so their refusals never fail the run.
+    budgets
+        .iter()
+        .filter_map(|(language, budget)| {
+            let refused = reports.get(language).map_or(0, |report| report.refused);
+            (refused > *budget)
+                .then(|| format!("{language} refused {refused} files; budget is {budget}"))
+        })
+        .collect()
+}
+
+fn print_table(reports: &BTreeMap<String, LanguageReport>, budgets: &BTreeMap<String, usize>) {
     println!("language | files | ok | refused | slowest file (wall seconds)");
     for (language, report) in reports {
         let slowest = report
@@ -235,6 +318,9 @@ fn print_table(reports: &BTreeMap<String, LanguageReport>) {
                 refusal.count,
                 refusal.samples.join(", ")
             );
+        }
+        if let Some(budget) = budgets.get(language).copied() {
+            println!("{}", format_budget_line(language, report.refused, budget));
         }
     }
 }
@@ -254,6 +340,27 @@ fn corpus_sweep() {
         println!("no roots");
         return;
     }
+    let selected = optional_env_var("DCTX_SWEEP_LANGS").map(|value| parse_sweep_langs(&value));
+    if let Some(names) = &selected {
+        let unknown = unknown_languages(names.iter().map(String::as_str));
+        assert!(
+            unknown.is_empty(),
+            "DCTX_SWEEP_LANGS has unknown languages: {}",
+            unknown.join(", ")
+        );
+    }
+    let budgets = match optional_env_var("DCTX_SWEEP_REFUSAL_BUDGET") {
+        Some(value) => parse_refusal_budget(&value).unwrap_or_else(|error| {
+            panic!("invalid DCTX_SWEEP_REFUSAL_BUDGET: {error}")
+        }),
+        None => BTreeMap::new(),
+    };
+    let unknown = unknown_languages(budgets.keys().map(String::as_str));
+    assert!(
+        unknown.is_empty(),
+        "DCTX_SWEEP_REFUSAL_BUDGET has unknown languages: {}",
+        unknown.join(", ")
+    );
     let files = collect_files(roots);
     let mut reports = BTreeMap::<String, LanguageReport>::new();
     for language in LANGUAGES {
@@ -263,6 +370,10 @@ fn corpus_sweep() {
     let mut parsed = 0_usize;
     let mut repeated = 0_usize;
     for file in files {
+        // Discovery order and the per-language cap stay as collect_files left them.
+        if !language_selected(selected.as_ref(), &format!("{:?}", file.language)) {
+            continue;
+        }
         let Some(source) = read_source(&file.path) else {
             continue;
         };
@@ -305,7 +416,7 @@ fn corpus_sweep() {
             offenders.push(offender);
         }
     }
-    print_table(&reports);
+    print_table(&reports, &budgets);
     println!(
         "parsed {parsed} files; repeated {repeated}; {} violations",
         offenders.len()
@@ -320,6 +431,12 @@ fn corpus_sweep() {
         offenders.is_empty(),
         "corpus violations:\n{}",
         offenders.join("\n")
+    );
+    let exceeded = budget_failures(&reports, &budgets);
+    assert!(
+        exceeded.is_empty(),
+        "refusal budget exceeded:\n{}",
+        exceeded.join("\n")
     );
 }
 
@@ -342,4 +459,105 @@ fn refusal_messages_preserve_detail_and_separate_syntax_locations() {
     assert_ne!(first.message, second.message);
     assert!(first.message.contains("first diagnostic"));
     assert_eq!(first.line, None);
+}
+
+#[test]
+fn sweep_lang_filter_and_refusal_budget_parse() {
+    assert_eq!(
+        parse_sweep_langs("Ruby,C"),
+        BTreeSet::from(["Ruby".to_owned(), "C".to_owned()])
+    );
+    assert_eq!(
+        parse_sweep_langs(" Ruby, C, Ruby ,, "),
+        BTreeSet::from(["C".to_owned(), "Ruby".to_owned()])
+    );
+    assert!(parse_sweep_langs("").is_empty());
+    assert!(parse_sweep_langs("  ,  , ").is_empty());
+
+    assert!(language_selected(None, "Swift"));
+    let ruby_and_c = parse_sweep_langs("Ruby,C");
+    assert!(language_selected(Some(&ruby_and_c), "Ruby"));
+    assert!(!language_selected(Some(&ruby_and_c), "Swift"));
+    assert!(!language_selected(Some(&BTreeSet::new()), "Ruby"));
+    assert!(unknown_languages(ruby_and_c.iter().map(String::as_str)).is_empty());
+    assert_eq!(
+        unknown_languages(["Unknown", "Swift", "COBOL", "COBOL"]),
+        vec!["COBOL", "Unknown"]
+    );
+
+    let budgets = parse_refusal_budget("Ruby=120,C=60").unwrap();
+    assert_eq!(budgets.get("Ruby").copied(), Some(120));
+    assert_eq!(budgets.get("C").copied(), Some(60));
+    assert_eq!(
+        parse_refusal_budget(" Ruby = 120 , C = 60 , ").unwrap(),
+        budgets
+    );
+    assert_eq!(
+        parse_refusal_budget("Swift=0").unwrap().get("Swift").copied(),
+        Some(0)
+    );
+    assert!(parse_refusal_budget("").unwrap().is_empty());
+    assert!(parse_refusal_budget(" , ").unwrap().is_empty());
+    assert!(parse_refusal_budget("Ruby").unwrap_err().contains("Lang=N"));
+    assert!(parse_refusal_budget("=12").unwrap_err().contains("Lang=N"));
+    assert!(parse_refusal_budget("Ruby=").unwrap_err().contains("Lang=N"));
+    assert!(
+        parse_refusal_budget("Ruby=many")
+            .unwrap_err()
+            .contains("non-numeric")
+    );
+    assert!(
+        parse_refusal_budget("Ruby=-1")
+            .unwrap_err()
+            .contains("non-numeric")
+    );
+    assert!(
+        parse_refusal_budget("Ruby=120,Ruby=60")
+            .unwrap_err()
+            .contains("duplicate")
+    );
+    assert!(unknown_languages(budgets.keys().map(String::as_str)).is_empty());
+
+    let mut reports = BTreeMap::new();
+    reports.insert(
+        "C".to_owned(),
+        LanguageReport {
+            refused: 61,
+            ..LanguageReport::default()
+        },
+    );
+    reports.insert(
+        "Ruby".to_owned(),
+        LanguageReport {
+            refused: 120,
+            ..LanguageReport::default()
+        },
+    );
+    reports.insert(
+        "Swift".to_owned(),
+        LanguageReport {
+            refused: 500,
+            ..LanguageReport::default()
+        },
+    );
+    assert_eq!(
+        format_budget_line("C", 61, 60),
+        "BUDGET C refused=61 budget=60 exceeded"
+    );
+    assert_eq!(
+        format_budget_line("Ruby", 120, 120),
+        "BUDGET Ruby refused=120 budget=120 ok"
+    );
+    assert_eq!(
+        budget_failures(&reports, &budgets),
+        vec!["C refused 61 files; budget is 60".to_owned()]
+    );
+    let mut within = budgets.clone();
+    within.insert("C".to_owned(), 61);
+    assert!(budget_failures(&reports, &within).is_empty());
+    assert!(budget_failures(&reports, &BTreeMap::new()).is_empty());
+    assert_eq!(
+        format_budget_line("Swift", 0, 100),
+        "BUDGET Swift refused=0 budget=100 ok"
+    );
 }
