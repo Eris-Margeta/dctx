@@ -1,14 +1,11 @@
 //! Content pins for the dctx worktree and the generated fixture.
 //! Implements ARCHITECTURE-PROPOSAL §7 Stage 0 reproducible corpus hashes.
-//! Depends on sha2 and the manifest skip lists; the measure adapter stores the digest.
+//! Depends on dctx-hash and the manifest skip lists; the measure adapter stores the digest.
 
 use crate::error::BenchError;
 use crate::manifest::DctxSpec;
-use sha2::{Digest, Sha256};
+use dctx_hash::Sha256;
 use std::{fs, path::Path};
-
-/// SHA-256 of no bytes. Used as the empty-corpus control.
-pub const EMPTY_SHA256: &str = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
 /// Lowercase hex.
 pub fn hex(bytes: &[u8]) -> String {
@@ -22,21 +19,30 @@ pub fn hex(bytes: &[u8]) -> String {
 }
 
 /// Aggregate hash: for each sorted path, absorb `path`, NUL, file sha256 hex, NUL.
-pub fn hash_sequences(files: &[(&str, &[u8])]) -> String {
+///
+/// # Errors
+/// Returns the first-party hasher's typed length refusal. Corpus files fit.
+pub fn hash_sequences(files: &[(&str, &[u8])]) -> Result<String, BenchError> {
     let mut total = Sha256::new();
     for (path, bytes) in files {
-        absorb(&mut total, path, bytes);
+        absorb(&mut total, path, bytes)?;
     }
-    hex(&total.finalize())
+    Ok(hex(total.finalize().as_bytes()))
 }
 
-fn absorb(total: &mut Sha256, path: &str, bytes: &[u8]) {
+fn absorb(total: &mut Sha256, path: &str, bytes: &[u8]) -> Result<(), BenchError> {
     let mut file = Sha256::new();
-    file.update(bytes);
-    total.update(path.as_bytes());
-    total.update([0]);
-    total.update(hex(&file.finalize()).as_bytes());
-    total.update([0]);
+    file.update(bytes).map_err(hash_error)?;
+    let file_hex = hex(file.finalize().as_bytes());
+    total.update(path.as_bytes()).map_err(hash_error)?;
+    total.update(&[0]).map_err(hash_error)?;
+    total.update(file_hex.as_bytes()).map_err(hash_error)?;
+    total.update(&[0]).map_err(hash_error)?;
+    Ok(())
+}
+
+fn hash_error(error: dctx_hash::HashError) -> BenchError {
+    BenchError::Message(error.to_string())
 }
 
 /// Walks `root`, skipping the manifest's directories and prefixes, without following symlinks.
@@ -57,10 +63,10 @@ pub fn hash_tree(root: &Path, spec: &DctxSpec) -> Result<TreePin, BenchError> {
         let bytes = fs::read(&path)?;
         utf8_bytes = utf8_bytes.saturating_add(bytes.len() as u64);
         file_count = file_count.saturating_add(1);
-        absorb(&mut total, rel, &bytes);
+        absorb(&mut total, rel, &bytes)?;
     }
     Ok(TreePin {
-        content_sha256: hex(&total.finalize()),
+        content_sha256: hex(total.finalize().as_bytes()),
         file_count,
         byte_count: utf8_bytes,
     })
@@ -150,6 +156,9 @@ fn revision_or_unversioned(label: Option<String>) -> String {
 mod tests {
     use super::*;
 
+    /// SHA-256 of no bytes. Fixed empty-corpus control (FIPS 180-4).
+    const EMPTY_SHA256: &str = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
+
     #[test]
     fn revision_is_caller_provenance_with_an_explicit_default() {
         assert_eq!(revision_or_unversioned(None), "unversioned");
@@ -162,13 +171,52 @@ mod tests {
 
     #[test]
     fn empty_hash_is_sha256_of_nothing_and_order_changes_the_digest() {
-        assert_eq!(hash_sequences(&[]), EMPTY_SHA256);
-        let forward = hash_sequences(&[("a", b"a"), ("b", b"b")]);
-        let reverse = hash_sequences(&[("b", b"b"), ("a", b"a")]);
+        assert_eq!(hash_sequences(&[]).expect("empty"), EMPTY_SHA256);
+        let forward = hash_sequences(&[("a", b"a"), ("b", b"b")]).expect("forward");
+        let reverse = hash_sequences(&[("b", b"b"), ("a", b"a")]).expect("reverse");
         assert_ne!(forward, reverse);
         assert_eq!(
-            hash_sequences(&[("a", b"a")]),
-            hash_sequences(&[("a", b"a")])
+            hash_sequences(&[("a", b"a")]).expect("left"),
+            hash_sequences(&[("a", b"a")]).expect("right")
+        );
+    }
+
+    /// F9: production hashing is `dctx_hash::Sha256`. Empty and NIST "abc" stay fixed.
+    /// Positive control: those digests match. `sha2` is not a normal dependency.
+    #[test]
+    fn production_hash_uses_dctx_hash_and_keeps_known_vectors() {
+        let manifest = include_str!("../Cargo.toml");
+        let deps = manifest
+            .split("[dependencies]")
+            .nth(1)
+            .expect("dependencies")
+            .split("\n[")
+            .next()
+            .expect("dependency block");
+        assert!(
+            deps.contains("dctx-hash"),
+            "pin must path-depend on dctx-hash"
+        );
+        assert!(
+            !deps.contains("sha2"),
+            "sha2 must not be a production dependency"
+        );
+        let digest = dctx_hash::Sha256::digest(b"abc").expect("abc");
+        assert_eq!(
+            hex(digest.as_bytes()),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+        assert_eq!(digest.byte_length(), 3);
+        assert_eq!(hash_sequences(&[]).expect("empty"), EMPTY_SHA256);
+        let pinned = hash_sequences(&[("src/a.txt", b"abc")]).expect("pin");
+        assert_eq!(
+            pinned,
+            hash_sequences(&[("src/a.txt", b"abc")]).expect("same pin")
+        );
+        assert_eq!(pinned.len(), 64);
+        assert_ne!(
+            pinned,
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         );
     }
 

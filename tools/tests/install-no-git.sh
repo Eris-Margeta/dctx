@@ -38,7 +38,7 @@ GLOBAL_BEFORE=$(sha256 "$HOME/.gitignore_global")
 LOCAL_BEFORE=$(sha256 "$PROJECT/.gitignore")
 
 # Only these tools and our shims are available to the installer.
-for utility in uname dirname tr cat mkdir cp wc chmod; do
+for utility in uname dirname tr cat mkdir cp wc chmod cmp; do
     ln -s "$(command -v "$utility")" "$TEST_ROOT/bin/$utility"
 done
 cat > "$TEST_ROOT/bin/git" <<'EOF'
@@ -69,9 +69,54 @@ if grep -q 'update_local_git_repo_gitignore_rules\|CFG_KEY_GIT_SAFETY' "$XDG_CON
     exit 1
 fi
 CONFIG_BEFORE=$(sha256 "$XDG_CONFIG_HOME/dctx/config.toml")
-PATH="$TEST_ROOT/bin" /bin/sh "$PROJECT/tools/install.sh"
+
+# F8: an edited template and a staged rules update must survive reinstall.
+# Positive controls: a missing template is installed, and a missing *.new is written.
+printf 'USER-TEMPLATE-SENTINEL\n' > "$XDG_CONFIG_HOME/dctx/templates/default.txt"
+printf 'template fixture revised\n' > "$PROJECT/crates/dctx-core/templates/default.txt"
+printf 'fresh-template\n' > "$PROJECT/crates/dctx-core/templates/fresh.txt"
+printf 'USER-IGNORE-NEW-SENTINEL\n' > "$XDG_CONFIG_HOME/dctx/ignore.new"
+printf 'x\n' > "$XDG_CONFIG_HOME/dctx/ignore"
+printf 'y\n' > "$XDG_CONFIG_HOME/dctx/omitcontent"
+
+run_install() {
+  _log=$1
+  if ! PATH="$TEST_ROOT/bin" /bin/sh "$PROJECT/tools/install.sh" > "$_log" 2>&1; then
+    cat "$_log" >&2
+    exit 1
+  fi
+}
+
+run_install "$TEST_ROOT/reinstall.out"
+test "$CONFIG_BEFORE" = "$(sha256 "$XDG_CONFIG_HOME/dctx/config.toml")"
+test "$(cat "$XDG_CONFIG_HOME/dctx/templates/default.txt")" = "USER-TEMPLATE-SENTINEL"
+cmp "$PROJECT/crates/dctx-core/templates/default.txt" "$XDG_CONFIG_HOME/dctx/templates/default.txt.new"
+cmp "$PROJECT/crates/dctx-core/templates/fresh.txt" "$XDG_CONFIG_HOME/dctx/templates/fresh.txt"
+test "$(cat "$XDG_CONFIG_HOME/dctx/ignore.new")" = "USER-IGNORE-NEW-SENTINEL"
+test "$(cat "$XDG_CONFIG_HOME/dctx/ignore")" = "x"
+cmp "$XDG_CONFIG_HOME/dctx/templates/global-omitcontent" "$XDG_CONFIG_HOME/dctx/omitcontent.new"
+test "$(cat "$XDG_CONFIG_HOME/dctx/omitcontent")" = "y"
+if ! grep -q 'wrote new default beside it' "$TEST_ROOT/reinstall.out" \
+  || ! grep -q 'Installed template fresh.txt' "$TEST_ROOT/reinstall.out" \
+  || ! grep -q 'Keeping existing staged update' "$TEST_ROOT/reinstall.out" \
+  || ! grep -q 'New comprehensive rules' "$TEST_ROOT/reinstall.out"; then
+  cat "$TEST_ROOT/reinstall.out" >&2
+  exit 1
+fi
+
+# A later reinstall must not replace the staged template update either.
+printf 'USER-STAGED-TEMPLATE-SENTINEL\n' > "$XDG_CONFIG_HOME/dctx/templates/default.txt.new"
+printf 'template fixture third\n' > "$PROJECT/crates/dctx-core/templates/default.txt"
+run_install "$TEST_ROOT/reinstall-again.out"
+test "$(cat "$XDG_CONFIG_HOME/dctx/templates/default.txt")" = "USER-TEMPLATE-SENTINEL"
+test "$(cat "$XDG_CONFIG_HOME/dctx/templates/default.txt.new")" = "USER-STAGED-TEMPLATE-SENTINEL"
+test "$(cat "$XDG_CONFIG_HOME/dctx/ignore.new")" = "USER-IGNORE-NEW-SENTINEL"
+if ! grep -q 'skipped staged update' "$TEST_ROOT/reinstall-again.out"; then
+  cat "$TEST_ROOT/reinstall-again.out" >&2
+  exit 1
+fi
 test "$CONFIG_BEFORE" = "$(sha256 "$XDG_CONFIG_HOME/dctx/config.toml")"
 test ! -e "$GIT_CALLS"
 test "$GLOBAL_BEFORE" = "$(sha256 "$HOME/.gitignore_global")"
 test "$LOCAL_BEFORE" = "$(sha256 "$PROJECT/.gitignore")"
-echo 'PASS: no Git calls; global and project ignore SHA-256 hashes unchanged; binary and assets installed'
+echo 'PASS: no Git calls; global and project ignore SHA-256 hashes unchanged; binary and assets installed; edited templates kept'

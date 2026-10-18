@@ -41,6 +41,8 @@ pub struct Options {
     pub cache: PathBuf,
     /// Checked-in corpus recipe.
     pub manifest: PathBuf,
+    /// Token stored in creation markers. A parent passes the same id to each child.
+    pub run_id: String,
     /// `dctx` or `fixture` when this process measures one corpus.
     pub only: Option<String>,
     /// Child report path. Required with `only`.
@@ -56,6 +58,7 @@ pub fn parse_args(args: &[String]) -> Result<Options, BenchError> {
     let mut manifest = None;
     let mut only = None;
     let mut out = None;
+    let mut run_id = None;
     let mut index = 0;
     while index < args.len() {
         let flag = &args[index];
@@ -73,6 +76,7 @@ pub fn parse_args(args: &[String]) -> Result<Options, BenchError> {
             "--manifest" => manifest = Some(PathBuf::from(value)),
             "--only" => only = Some(value.clone()),
             "--out" => out = Some(PathBuf::from(value)),
+            "--run-id" => run_id = Some(value.clone()),
             other => {
                 return Err(BenchError::Message(format!(
                     "unknown argument {other}; {usage}",
@@ -82,12 +86,20 @@ pub fn parse_args(args: &[String]) -> Result<Options, BenchError> {
         }
         index += 2;
     }
+    let run_id = match run_id {
+        Some(id) => {
+            measure::validate_run_id(&id)?;
+            id
+        }
+        None => measure::fresh_run_id(),
+    };
     let options = Options {
         repo: required(repo, "--repo")?,
         scratch: required(scratch, "--scratch")?,
         reports: required(reports, "--reports")?,
         cache: required(cache, "--cache")?,
         manifest: required(manifest, "--manifest")?,
+        run_id,
         only,
         out,
     };
@@ -108,7 +120,7 @@ fn required(value: Option<PathBuf>, flag: &str) -> Result<PathBuf, BenchError> {
 }
 
 fn usage() -> String {
-    "usage: architecture-bench --repo PATH --scratch PATH --reports PATH --cache PATH --manifest PATH [--only dctx|fixture --out PATH]".into()
+    "usage: architecture-bench --repo PATH --scratch PATH --reports PATH --cache PATH --manifest PATH [--run-id ID] [--only dctx|fixture --out PATH]".into()
 }
 
 /// Runs one corpus or merges both into the reports directory.
@@ -116,20 +128,25 @@ pub fn run(options: &Options) -> Result<(), BenchError> {
     let manifest = Manifest::parse(&fs::read_to_string(&options.manifest)?)?;
     match options.only.as_deref() {
         Some("dctx") => {
+            // Cache path is the tool component `dctx`, never the manifest id.
+            let cache = corpus_cache(&options.cache, "dctx")?;
             let report = measure::measure_dctx(
                 &options.repo,
-                &corpus_cache(&options.cache, &manifest.dctx.id),
+                &cache,
                 &manifest,
+                &options.run_id,
             )?;
             write_bytes(options.out.as_deref().ok_or_else(|| {
                 BenchError::Message("--out is required".into())
             })?, &to_json(&report)?)
         }
         Some("fixture") => {
+            let cache = corpus_cache(&options.cache, "fixture")?;
             let report = measure::measure_fixture(
                 &options.scratch,
-                &corpus_cache(&options.cache, &manifest.fixture.id),
+                &cache,
                 &manifest,
+                &options.run_id,
             )?;
             write_bytes(options.out.as_deref().ok_or_else(|| {
                 BenchError::Message("--out is required".into())
@@ -141,9 +158,7 @@ pub fn run(options: &Options) -> Result<(), BenchError> {
 }
 
 fn merge(options: &Options) -> Result<(), BenchError> {
-    if options.scratch.exists() {
-        fs::remove_dir_all(&options.scratch)?;
-    }
+    prepare_scratch(&options.scratch, &options.run_id)?;
     fs::create_dir_all(&options.reports)?;
     for name in ["baseline.json", "baseline.md"] {
         let path = options.reports.join(name);
@@ -166,6 +181,10 @@ fn merge(options: &Options) -> Result<(), BenchError> {
     Ok(())
 }
 
+fn prepare_scratch(scratch: &Path, run_id: &str) -> Result<(), BenchError> {
+    measure::claim_owned_dir(scratch, run_id)
+}
+
 fn spawn(options: &Options, only: &str, out: &Path) -> Result<(), BenchError> {
     let exe = std::env::current_exe()?;
     let status = Command::new(exe)
@@ -179,6 +198,8 @@ fn spawn(options: &Options, only: &str, out: &Path) -> Result<(), BenchError> {
         .arg(&options.cache)
         .arg("--manifest")
         .arg(&options.manifest)
+        .arg("--run-id")
+        .arg(&options.run_id)
         .arg("--only")
         .arg(only)
         .arg("--out")
@@ -252,5 +273,53 @@ mod tests {
         bad.push("/tmp/x.json".into());
         assert!(parse_args(&bad).is_err());
         assert!(parse_args(&[]).is_err());
+    }
+
+    #[test]
+    fn run_id_accepts_a_token_and_refuses_a_path() {
+        let mut bad = base();
+        bad.push("--run-id".into());
+        bad.push("../review-victim".into());
+        assert!(parse_args(&bad).is_err());
+        let mut good = base();
+        good.push("--run-id".into());
+        good.push("run-1".into());
+        let options = parse_args(&good).unwrap();
+        assert_eq!(options.run_id, "run-1");
+        let generated = parse_args(&base()).unwrap();
+        super::measure::validate_run_id(&generated.run_id).unwrap();
+    }
+
+    /// F2: parent mode must not delete a scratch it did not create in this run.
+    /// Positive control: a scratch this run created may be removed.
+    #[test]
+    fn preexisting_scratch_is_kept_and_this_run_scratch_can_be_removed() {
+        let root = std::env::temp_dir().join(format!("dx-rvl3-scratch-{}", std::process::id()));
+        let _guard = RemoveOnDrop(root.clone());
+        let scratch = root.join("scratch");
+        std::fs::create_dir_all(&scratch).unwrap();
+        std::fs::write(scratch.join("sentinel"), b"keep").unwrap();
+        let err = super::prepare_scratch(&scratch, "run-a").unwrap_err();
+        assert!(err.to_string().contains("refusing"), "{err}");
+        assert_eq!(std::fs::read(scratch.join("sentinel")).unwrap(), b"keep");
+
+        let owned = root.join("owned");
+        super::prepare_scratch(&owned, "run-a").unwrap();
+        assert_eq!(
+            std::fs::read_to_string(owned.join(".dctx-bench-owned")).unwrap(),
+            "run-a"
+        );
+        super::measure::remove_owned_dir(&owned, "run-a").unwrap();
+        assert!(!owned.exists());
+        assert!(super::measure::remove_owned_dir(&scratch, "run-a").is_err());
+        assert_eq!(std::fs::read(scratch.join("sentinel")).unwrap(), b"keep");
+    }
+
+    struct RemoveOnDrop(std::path::PathBuf);
+
+    impl Drop for RemoveOnDrop {
+        fn drop(&mut self) {
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
     }
 }

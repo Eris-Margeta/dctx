@@ -85,53 +85,66 @@ fi
 echo "dctx never edits ignore files; add any Git ignore patterns yourself if you want them."
 
 # --- 8. Install Templates ---
+# Never overwrite an existing template or a staged <name>.new file.
 SOURCE_TEMPLATES="$PROJECT_ROOT/crates/dctx-core/templates"
 if [ -d "$SOURCE_TEMPLATES" ]; then
   echo "🎨 Installing templates..."
-  cp -r "$SOURCE_TEMPLATES/"* "$TEMPLATES_DIR/"
+  for source in "$SOURCE_TEMPLATES"/*; do
+    [ -f "$source" ] || continue
+    name=${source##*/}
+    dest="$TEMPLATES_DIR/$name"
+    staged="$dest.new"
+    if [ ! -e "$dest" ]; then
+      cp "$source" "$dest"
+      echo "   - Installed template $name"
+    elif [ -e "$staged" ]; then
+      echo "   - Keeping existing template $dest; skipped staged update $staged"
+    elif cmp -s "$source" "$dest"; then
+      echo "   - Template $name already installed; left unchanged"
+    else
+      cp "$source" "$staged"
+      echo "   - Keeping existing template $dest; wrote new default beside it as $staged"
+    fi
+  done
 fi
 
 # --- 9. Deploy Global Ignore/Omit Rules ---
-# Deploy template files to config root where they're loaded at runtime
+# Deploy template files to config root where they're loaded at runtime.
+# An existing rules file is kept. A staged *.new file is never overwritten.
 GLOBAL_IGNORE_FILE="$CONFIG_DIR/ignore"
 GLOBAL_OMIT_FILE="$CONFIG_DIR/omitcontent"
 
-# Deploy global-ignore
-if [ -f "$TEMPLATES_DIR/global-ignore" ]; then
-  if [ ! -f "$GLOBAL_IGNORE_FILE" ]; then
-    echo "📋 Deploying global ignore rules..."
-    cp "$TEMPLATES_DIR/global-ignore" "$GLOBAL_IGNORE_FILE"
-  else
-    # Check if template is newer (larger file = more comprehensive rules)
-    TEMPLATE_SIZE=$(wc -c < "$TEMPLATES_DIR/global-ignore")
-    CURRENT_SIZE=$(wc -c < "$GLOBAL_IGNORE_FILE")
-    if [ "$TEMPLATE_SIZE" -gt "$CURRENT_SIZE" ]; then
-      echo "🔄 Updating global ignore rules (new version has more patterns)..."
-      cp "$TEMPLATES_DIR/global-ignore" "$GLOBAL_IGNORE_FILE.new"
-      echo "   - Your current rules: $GLOBAL_IGNORE_FILE"
-      echo "   - New comprehensive rules: $GLOBAL_IGNORE_FILE.new"
-      echo "   - Review and replace manually if desired"
-    fi
+stage_rules() {
+  _src=$1
+  _dest=$2
+  _label=$3
+  if [ ! -f "$_dest" ]; then
+    echo "📋 Deploying $_label..."
+    cp "$_src" "$_dest"
+    return 0
   fi
+  _template_size=$(wc -c < "$_src")
+  _current_size=$(wc -c < "$_dest")
+  if [ "$_template_size" -gt "$_current_size" ]; then
+    _staged="$_dest.new"
+    if [ -e "$_staged" ]; then
+      echo "Keeping existing staged update $_staged; skipped"
+      return 0
+    fi
+    echo "🔄 Updating $_label (new version has more patterns)..."
+    cp "$_src" "$_staged"
+    echo "   - Your current rules: $_dest"
+    echo "   - New comprehensive rules: $_staged"
+    echo "   - Review and replace manually if desired"
+  fi
+}
+
+if [ -f "$TEMPLATES_DIR/global-ignore" ]; then
+  stage_rules "$TEMPLATES_DIR/global-ignore" "$GLOBAL_IGNORE_FILE" "global ignore rules"
 fi
 
-# Deploy global-omitcontent
 if [ -f "$TEMPLATES_DIR/global-omitcontent" ]; then
-  if [ ! -f "$GLOBAL_OMIT_FILE" ]; then
-    echo "📋 Deploying global omit rules..."
-    cp "$TEMPLATES_DIR/global-omitcontent" "$GLOBAL_OMIT_FILE"
-  else
-    # Check if template is newer
-    TEMPLATE_SIZE=$(wc -c < "$TEMPLATES_DIR/global-omitcontent")
-    CURRENT_SIZE=$(wc -c < "$GLOBAL_OMIT_FILE")
-    if [ "$TEMPLATE_SIZE" -gt "$CURRENT_SIZE" ]; then
-      echo "🔄 Updating global omit rules (new version has more patterns)..."
-      cp "$TEMPLATES_DIR/global-omitcontent" "$GLOBAL_OMIT_FILE.new"
-      echo "   - Your current rules: $GLOBAL_OMIT_FILE"
-      echo "   - New comprehensive rules: $GLOBAL_OMIT_FILE.new"
-      echo "   - Review and replace manually if desired"
-    fi
-  fi
+  stage_rules "$TEMPLATES_DIR/global-omitcontent" "$GLOBAL_OMIT_FILE" "global omit rules"
 fi
 
 echo ""

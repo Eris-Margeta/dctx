@@ -84,11 +84,24 @@ impl Manifest {
     }
 }
 
+fn corpus_id_ok(id: &str) -> Result<(), BenchError> {
+    if id.is_empty()
+        || id == "."
+        || id == ".."
+        || id.contains('/')
+        || id.contains('\\')
+        || id.contains('\0')
+    {
+        return Err(BenchError::Message(format!(
+            "corpus id must be a single path component: {id}"
+        )));
+    }
+    Ok(())
+}
+
 impl DctxSpec {
     fn validate(&self) -> Result<(), BenchError> {
-        if self.id.is_empty() {
-            return Err(BenchError::Message("dctx corpus id is empty".into()));
-        }
+        corpus_id_ok(&self.id)?;
         for name in &self.skip_dir_names {
             if name.is_empty() || name.contains('/') || name.contains("..") {
                 return Err(BenchError::Message(format!(
@@ -124,11 +137,10 @@ impl FixtureSpec {
                 "fixture must be CC0-1.0 public-domain text".into(),
             ));
         }
-        if self.seed.is_empty() || self.id.is_empty() {
-            return Err(BenchError::Message(
-                "fixture seed and id must be non-empty".into(),
-            ));
+        if self.seed.is_empty() {
+            return Err(BenchError::Message("fixture seed must be non-empty".into()));
         }
+        corpus_id_ok(&self.id)?;
         let total = self
             .rust
             .saturating_add(self.javascript)
@@ -178,5 +190,29 @@ mod tests {
         broken["schema"] = serde_json::Value::String("dx-a1-corpus-v1".into());
         broken["fixture"]["seed"] = serde_json::Value::String(String::new());
         assert!(Manifest::parse(&broken.to_string()).is_err());
+    }
+
+    /// F2: a manifest id must not be a path. Positive control: one component parses.
+    #[test]
+    fn corpus_ids_refuse_path_traversal_and_accept_a_single_component() {
+        let mut broken: serde_json::Value = serde_json::from_str(&recipe()).unwrap();
+        for id in [
+            "/tmp/review-victim",
+            "..",
+            ".",
+            "../review-victim",
+            "a/b",
+            r"..\review-victim",
+        ] {
+            broken["dctx"]["id"] = serde_json::Value::String(id.into());
+            assert!(Manifest::parse(&broken.to_string()).is_err(), "{id}");
+        }
+        broken["dctx"]["id"] = serde_json::Value::String("dctx".into());
+        broken["fixture"]["id"] = serde_json::Value::String("../escape".into());
+        assert!(Manifest::parse(&broken.to_string()).is_err());
+        broken["fixture"]["id"] = serde_json::Value::String("public-domain-fixture".into());
+        let manifest = Manifest::parse(&broken.to_string()).expect("single components");
+        assert_eq!(manifest.dctx.id, "dctx");
+        assert_eq!(manifest.fixture.id, "public-domain-fixture");
     }
 }
