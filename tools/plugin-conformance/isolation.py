@@ -10,9 +10,11 @@ from contextlib import contextmanager
 import os
 from pathlib import Path
 import re
+import select
 import shutil
 import subprocess
 import tempfile
+import time
 
 
 FORBIDDEN = frozenset({
@@ -101,23 +103,164 @@ def _one_line(message: str) -> str:
     return " ".join(message.split())
 
 
+_IDLE_SECONDS = 600
+_CEILING_SECONDS = 3600
+_POLL_SECONDS = 1
+_LOCK_WARNING = "WARNING Cargo.lock changed after the gate left it; leaving concurrent bytes"
+
+
+def _read_optional(path: Path):
+    try:
+        return path.read_bytes()
+    except FileNotFoundError:
+        return None
+
+
 @contextmanager
 def _preserve_lockfile(lockfile: Path):
-    """Restore the original lockfile bytes even if resolution fails."""
-    original = lockfile.read_bytes()
+    """Restore bytes this gate left unless a later writer replaced them."""
+    original = _read_optional(lockfile)
     try:
         yield
     finally:
-        if not lockfile.exists() or lockfile.read_bytes() != original:
-            lockfile.write_bytes(original)
+        if original is not None:
+            left = _read_optional(lockfile)
+            current = _read_optional(lockfile)
+            if current != left:
+                print(_LOCK_WARNING)
+            elif current != original:
+                lockfile.write_bytes(original)
+
+
+def _parse_cpu_time(raw: str):
+    text, days = " ".join(raw.split()), 0.0
+    if not text:
+        return None
+    if "-" in text:
+        day_text, text = text.split("-", 1)
+        if not day_text.isdigit():
+            return None
+        days = float(day_text)
+    try:
+        parts = [float(part) for part in text.split(":")]
+    except ValueError:
+        return None
+    if not 1 <= len(parts) <= 3:
+        return None
+    parts = [0.0] * (3 - len(parts)) + parts
+    return ((days * 24 + parts[0]) * 60 + parts[1]) * 60 + parts[2]
+
+
+def _process_cpu_seconds(pid: int):
+    """Cumulative CPU seconds from `ps -o time=` with no shell."""
+    try:
+        completed = subprocess.run(
+            ["ps", "-o", "time=", "-p", str(pid)], capture_output=True,
+            text=True, check=False, shell=False, timeout=5,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if completed.returncode != 0:
+        return None
+    return _parse_cpu_time(completed.stdout)
+
+
+def _read_pipes(proc):
+    streams = [stream for stream in (proc.stdout, proc.stderr) if stream is not None]
+    out, err = bytearray(), bytearray()
+    while True:
+        try:
+            readable, _, _ = select.select(streams, [], [], 0) if streams else ([], [], [])
+        except (OSError, ValueError):
+            break
+        chunks = []
+        for stream in readable:
+            try:
+                chunks.append((stream, os.read(stream.fileno(), 65536)))
+            except OSError:
+                chunks.append((stream, b""))
+        if not any(chunk for _stream, chunk in chunks):
+            break
+        for stream, chunk in chunks:
+            (out if stream is proc.stdout else err).extend(chunk)
+    return bytes(out), bytes(err)
+
+
+class CargoLivenessExpired(subprocess.TimeoutExpired):
+    """Killed because a named liveness rule fired."""
+
+    def __init__(self, rule: str, elapsed: float):
+        super().__init__("cargo", elapsed)
+        self.rule = rule
+
+    def __str__(self) -> str:
+        return f"liveness rule {self.rule} fired after {self.timeout:g} seconds"
+
+
+def _stop_child(proc, rule: str, elapsed: float):
+    try:
+        proc.kill()
+    except OSError:
+        pass
+    try:
+        proc.wait(timeout=5)
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    raise CargoLivenessExpired(rule, elapsed)
+
+
+def _wait_lively(proc, read_output, cpu_seconds, monotonic, sleep):
+    """Extend while output grows or CPU time advances; kill when a rule fires."""
+    started = last_progress = monotonic()
+    produced, last_cpu = 0, None
+    stdout, stderr = bytearray(), bytearray()
+    while True:
+        out_chunk, err_chunk = read_output(proc)
+        stdout += out_chunk or b""
+        stderr += err_chunk or b""
+        total = len(stdout) + len(stderr)
+        try:
+            cpu = cpu_seconds(proc.pid)
+        except OSError:
+            cpu = None
+        now = monotonic()
+        if total > produced or (last_cpu is not None and cpu is not None and cpu > last_cpu):
+            last_progress = now
+        produced = total
+        if cpu is not None:
+            last_cpu = cpu
+        if proc.poll() is not None:
+            out_chunk, err_chunk = read_output(proc)
+            stdout += out_chunk or b""
+            stderr += err_chunk or b""
+            return proc.returncode, bytes(stdout), bytes(stderr)
+        elapsed, idle = now - started, now - last_progress
+        if elapsed >= _CEILING_SECONDS or idle >= _IDLE_SECONDS:
+            rule = "hard-ceiling" if elapsed >= _CEILING_SECONDS else "no-progress"
+            _stop_child(proc, rule, elapsed if rule == "hard-ceiling" else idle)
+        sleep(_POLL_SECONDS)
+
+
+def _run_cargo(command, workspace, env):
+    proc = subprocess.Popen(
+        list(command), cwd=str(workspace), env=env, shell=False,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.DEVNULL,
+    )
+    for stream in (proc.stdout, proc.stderr):
+        if stream is not None:
+            os.set_blocking(stream.fileno(), False)
+    code, out, err = _wait_lively(
+        proc, _read_pipes, _process_cpu_seconds, time.monotonic, time.sleep,
+    )
+    return subprocess.CompletedProcess(
+        list(command), code,
+        out.decode("utf-8", "replace"), err.decode("utf-8", "replace"),
+    )
 
 
 def _cargo_tree(command: list[str], workspace: Path, env: dict[str, str]):
     """Try offline first; retry once only for an unavailable registry entry."""
-    result = subprocess.run(
-        [*command, "--offline"], cwd=workspace, env=env, capture_output=True,
-        text=True, timeout=300, check=False,
-    )
+    result = _run_cargo([*command, "--offline"], workspace, env)
     diagnostic = result.stderr.lower()
     missing_entry = (
         "no matching package named" in diagnostic
@@ -125,10 +268,7 @@ def _cargo_tree(command: list[str], workspace: Path, env: dict[str, str]):
         or ("failed to select a version" in diagnostic and "offline" in diagnostic)
     )
     if result.returncode and missing_entry:
-        result = subprocess.run(
-            command, cwd=workspace, env={**env, "CARGO_NET_OFFLINE": "false"},
-            capture_output=True, text=True, timeout=300, check=False,
-        )
+        result = _run_cargo(command, workspace, {**env, "CARGO_NET_OFFLINE": "false"})
     return result
 
 
