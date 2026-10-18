@@ -8,6 +8,8 @@
     "component": ["type", "bom-ref", "name", "version", "purl", "hashes", "licenses", "properties"],
     "document_properties": ["dctx:target", "dctx:profile", "dctx:source-revision"],
     "component_properties": ["dctx:role", "dctx:license-source"],
+    "optional_document_properties": ["cdx:cargo:cfg-unresolved-count"],
+    "optional_component_properties": ["cdx:cargo:cfg-unresolved"],
     "role_properties": {
       "cli": ["dctx:features"],
       "standalone-git-plugin": ["dctx:features"],
@@ -74,13 +76,14 @@
           }
         }
       },
-      "properties": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"$ref": "#/$defs/property"}}
+      "properties": {"type": "array", "minItems": 3, "maxItems": 4, "uniqueItems": true, "items": {"$ref": "#/$defs/property"}}
     },
     "$defs": {
       "token": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[^\\s]+$"},
       "property": {
         "type": "object", "additionalProperties": false, "required": ["name", "value"],
-        "properties": {"name": {"$ref": "#/$defs/token"}, "value": {"type": "string", "minLength": 1, "maxLength": 4096}}
+        "properties": {"name": {"$ref": "#/$defs/token"}, "value": {"type": "string", "minLength": 1, "maxLength": 4096}},
+        "allOf": [{"if": {"properties": {"name": {"const": "cdx:cargo:cfg-unresolved-count"}}}, "then": {"properties": {"value": {"pattern": "^[0-9]+$"}}}}]
       }
     }
   }

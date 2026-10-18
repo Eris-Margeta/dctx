@@ -129,6 +129,7 @@ Native/system libraries are separate components with reviewed versions, purls, l
 The CLI (`dctx/cli`), standalone plugin (`dctx/git/standalone`) and default's bundled worker (`dctx/git/bundled`) are distinct components.
 The bundled component hashes its containing CLI and names that bom-ref in `dctx:containing-component`; no worker binary is invented.
 Rust package components hash their source closure. Root properties bind target/profile/source; role-specific properties are closed in the profile.
+Amended 18.10.2026 by the PA after the real-workspace run: the only additional optional properties are `cdx:cargo:cfg-unresolved` (nonempty cfg expression text on the affected component) and `cdx:cargo:cfg-unresolved-count` (decimal digits on the document metadata); all other unknown property names remain refused.
 Every component has a dependency row `{ref,dependsOn}`, including empty leaves; refs are unique, no dangling edges, CLI depends on its worker.
 REL-I checks the complete independent Cargo/native closure, real licence expressions and package URLs; the stdlib checker checks shapes/bindings only.
 No Syft, external SBOM generator, random serial number, timestamp or host path enters this deterministic profile.

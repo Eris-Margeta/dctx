@@ -194,7 +194,10 @@ def check_sbom(doc, contract, release=None, provenance=None):
     validate(doc, profile['schema'])
     fields = profile['required_fields']
     context = properties(doc['properties'])
-    require(set(context) == set(fields['document_properties']), 'sbom-context-fields')
+    required_context = set(fields['document_properties'])
+    require(required_context <= set(context) <= required_context | {'cdx:cargo:cfg-unresolved-count'}, 'sbom-context-fields')
+    if 'cdx:cargo:cfg-unresolved-count' in context:
+        require(re.fullmatch(r'[0-9]+', context['cdx:cargo:cfg-unresolved-count']), 'sbom-cfg-unresolved-count')
     require(context['dctx:target'] in contract[0]['$defs']['target']['enum'], 'sbom-target')
     require(context['dctx:profile'] in ('default', 'strict'), 'sbom-profile')
     require(re.fullmatch(r'([0-9a-f]{40}|[0-9a-f]{64})', context['dctx:source-revision']), 'sbom-source-revision')
@@ -205,7 +208,9 @@ def check_sbom(doc, contract, release=None, provenance=None):
         role = props.get('dctx:role')
         require(role in fields['roles'], 'unknown-sbom-role')
         required = set(fields['component_properties'] + fields['role_properties'].get(role, []))
-        require(set(props) == required, 'sbom-component-properties')
+        require(required <= set(props) <= required | {'cdx:cargo:cfg-unresolved'}, 'sbom-component-properties')
+        if 'cdx:cargo:cfg-unresolved' in props:
+            require(isinstance(props['cdx:cargo:cfg-unresolved'], str) and props['cdx:cargo:cfg-unresolved'], 'sbom-cfg-unresolved')
         roles.setdefault(role, []).append(component)
         native = role == 'native-library'
         require(props['dctx:license-source'] == ('native-inventory' if native else 'cargo-metadata'), 'license-source')
@@ -252,7 +257,7 @@ def check_sbom(doc, contract, release=None, provenance=None):
             require(nodes['dctx/git/bundled']['version'] == release['plugin']['version'], 'worker-version')
     if provenance:
         parameters = provenance['predicate']['buildDefinition']['externalParameters']
-        require(context == {'dctx:target': parameters['target'], 'dctx:profile': parameters['profile'],
+        require({key: context[key] for key in required_context} == {'dctx:target': parameters['target'], 'dctx:profile': parameters['profile'],
                             'dctx:source-revision': parameters['source_revision']}, 'sbom-provenance-context')
         materials = {item['uri']: item['digest']['sha256'] for item in provenance['predicate']['buildDefinition']['resolvedDependencies']}
         for component in roles.get('native-library', []) + roles.get('rust-crate', []):
@@ -355,7 +360,13 @@ def self_test(contract):
     promoted['qualification'].update(state='promotable', reason='', native=True, provider='qualified')
     check_release(promoted, contract)  # Shape only: no signature or native proof exists.
     positives += 1
+    unresolved = copy.deepcopy(sbom)
+    unresolved['components'][0]['properties'].append({'name': 'cdx:cargo:cfg-unresolved', 'value': 'cfg(custom_atom)'})
+    unresolved['properties'].append({'name': 'cdx:cargo:cfg-unresolved-count', 'value': '1'})
+    check_sbom(unresolved, contract, release, provenance)
+    positives += 1
     cases = [
+        ('unknown SBOM property', sbom, ('components', 0, 'properties', 0, 'name'), 'cdx:cargo:other'),
         ('missing digest', release, ('artifacts', 'cli', 'sha256'), None),
         ('unknown field', release, ('artifacts', 'cli', 'extra'), 1),
         ('unknown top field', release, ('extra',), 1),

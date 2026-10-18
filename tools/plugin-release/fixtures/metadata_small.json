@@ -1,0 +1,137 @@
+{
+  "version": 1,
+  "workspace_members": [
+    "path+file:///fixture/cli#dctx-cli@0.25.0",
+    "path+file:///fixture/plugin#dctx-plugin-git@1.0.0",
+    "path+file:///fixture/build#build-helper@0.1.0"
+  ],
+  "packages": [
+    {
+      "id": "path+file:///fixture/cli#dctx-cli@0.25.0",
+      "name": "dctx-cli",
+      "version": "0.25.0",
+      "license": "MIT OR Apache-2.0",
+      "source": null,
+      "checksum": null,
+      "dependencies": []
+    },
+    {
+      "id": "path+file:///fixture/plugin#dctx-plugin-git@1.0.0",
+      "name": "dctx-plugin-git",
+      "version": "1.0.0",
+      "license": "MIT OR Apache-2.0",
+      "source": null,
+      "checksum": null,
+      "dependencies": []
+    },
+    {
+      "id": "registry+https://example.invalid/index#serde@1.0.0",
+      "name": "serde",
+      "version": "1.0.0",
+      "license": "MIT OR Apache-2.0",
+      "source": "registry+https://example.invalid/index",
+      "checksum": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "dependencies": []
+    },
+    {
+      "id": "path+file:///fixture/build#build-helper@0.1.0",
+      "name": "build-helper",
+      "version": "0.1.0",
+      "license": "MIT OR Apache-2.0",
+      "source": null,
+      "checksum": null,
+      "dependencies": []
+    }
+  ],
+  "resolve": {
+    "root": "path+file:///fixture/cli#dctx-cli@0.25.0",
+    "nodes": [
+      {
+        "id": "path+file:///fixture/cli#dctx-cli@0.25.0",
+        "deps": [
+          {
+            "name": "registry+https://example.invalid/index#serde@1.0.0",
+            "pkg": "registry+https://example.invalid/index#serde@1.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          },
+          {
+            "name": "path+file:///fixture/build#build-helper@0.1.0",
+            "pkg": "path+file:///fixture/build#build-helper@0.1.0",
+            "dep_kinds": [
+              {
+                "kind": "build",
+                "target": "cfg(all(unix, target_arch = \"aarch64\"))"
+              }
+            ]
+          }
+        ],
+        "features": [
+          "dctx/plugin-runtime",
+          "git-worker"
+        ]
+      },
+      {
+        "id": "path+file:///fixture/plugin#dctx-plugin-git@1.0.0",
+        "deps": [
+          {
+            "name": "registry+https://example.invalid/index#serde@1.0.0",
+            "pkg": "registry+https://example.invalid/index#serde@1.0.0",
+            "dep_kinds": [
+              {
+                "kind": null,
+                "target": null
+              }
+            ]
+          }
+        ],
+        "features": []
+      },
+      {
+        "id": "registry+https://example.invalid/index#serde@1.0.0",
+        "deps": [],
+        "features": []
+      },
+      {
+        "id": "path+file:///fixture/build#build-helper@0.1.0",
+        "deps": [],
+        "features": []
+      }
+    ]
+  },
+  "metadata": {
+    "dctx_release": {
+      "target": "aarch64-apple-darwin",
+      "profile": "default",
+      "source_revision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "standalone_package": "dctx-plugin-git",
+      "source_hashes": {
+        "path+file:///fixture/build#build-helper@0.1.0": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      },
+      "artifacts": {
+        "cli": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "standalone-git-plugin": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+      },
+      "native_libraries": [
+        {
+          "ref": "native/system",
+          "name": "system-sdk",
+          "version": "1.0.0",
+          "purl": "pkg:generic/system-sdk@1.0.0",
+          "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+          "license": "LicenseRef-Reviewed-SDK",
+          "linkage": "system",
+          "depends_on": [],
+          "used_by": [
+            "dctx/cli",
+            "dctx/git/standalone"
+          ]
+        }
+      ]
+    }
+  }
+}
