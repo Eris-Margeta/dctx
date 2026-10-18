@@ -1,0 +1,121 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dctx:release:v1:envelope",
+  "$comment": "PL-RELC; CONTRACT.md sections 2-4. Closed envelope consumed by REL-M/I/G/K. Local schema only; validity is not signature verification or promotion authority.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "kind", "version", "plugin", "target", "profile", "source_revision", "build_inputs_sha256", "artifacts", "bundled_git_component", "authentication", "qualification"],
+  "properties": {
+    "schema": {"const": 1},
+    "kind": {"const": "dctx-release"},
+    "version": {"$ref": "#/$defs/version"},
+    "plugin": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "version", "release_sequence"],
+      "properties": {
+        "id": {"const": "dctx/git"},
+        "version": {"$ref": "#/$defs/version"},
+        "release_sequence": {"$ref": "#/$defs/positive"}
+      }
+    },
+    "target": {"$ref": "#/$defs/target"},
+    "profile": {"enum": ["default", "strict"]},
+    "source_revision": {"$ref": "#/$defs/revision"},
+    "build_inputs_sha256": {"$ref": "#/$defs/sha256"},
+    "artifacts": {
+      "type": "object", "additionalProperties": false,
+      "required": ["cli", "plugin", "manifest", "checksums", "sbom", "provenance"],
+      "properties": {
+        "cli": {"$ref": "#/$defs/artifact"},
+        "plugin": {"$ref": "#/$defs/artifact"},
+        "manifest": {"$ref": "#/$defs/artifact"},
+        "checksums": {"$ref": "#/$defs/artifact"},
+        "sbom": {"$ref": "#/$defs/artifact"},
+        "provenance": {"$ref": "#/$defs/artifact"}
+      }
+    },
+    "bundled_git_component": {"enum": ["dctx/git/bundled", null]},
+    "authentication": {
+      "type": "object", "additionalProperties": false,
+      "required": ["algorithm", "domain", "key_fingerprint", "index_sha256", "index_sequence", "trust"],
+      "properties": {
+        "algorithm": {"const": "Ed25519"},
+        "domain": {"const": "dctx-plugin-index-v1"},
+        "key_fingerprint": {"$ref": "#/$defs/sha256"},
+        "index_sha256": {"$ref": "#/$defs/sha256"},
+        "index_sequence": {"$ref": "#/$defs/positive"},
+        "trust": {"enum": ["test", "production"]}
+      }
+    },
+    "qualification": {
+      "type": "object", "additionalProperties": false,
+      "required": ["state", "reason", "native", "target", "profile", "source_revision", "build_inputs_sha256", "cli_sha256", "plugin_sha256", "provider", "records"],
+      "properties": {
+        "state": {"enum": ["candidate", "promotable"]},
+        "reason": {"type": "string", "maxLength": 1024},
+        "native": {"type": "boolean"},
+        "target": {"$ref": "#/$defs/target"},
+        "profile": {"enum": ["default", "strict"]},
+        "source_revision": {"$ref": "#/$defs/revision"},
+        "build_inputs_sha256": {"$ref": "#/$defs/sha256"},
+        "cli_sha256": {"$ref": "#/$defs/sha256"},
+        "plugin_sha256": {"$ref": "#/$defs/sha256"},
+        "provider": {"enum": ["unqualified", "qualified", "bundled-git-pending-confinement"]},
+        "records": {
+          "type": "object", "additionalProperties": false, "required": [],
+          "properties": {
+            "native": {"$ref": "#/$defs/artifact"},
+            "reproducibility": {"$ref": "#/$defs/artifact"},
+            "crypto": {"$ref": "#/$defs/artifact"},
+            "lifecycle": {"$ref": "#/$defs/artifact"},
+            "privacy": {"$ref": "#/$defs/artifact"},
+            "git": {"$ref": "#/$defs/artifact"},
+            "image_binding": {"$ref": "#/$defs/artifact"},
+            "native_inputs": {"$ref": "#/$defs/artifact"}
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"profile": {"const": "default"}}},
+      "then": {"properties": {"bundled_git_component": {"const": "dctx/git/bundled"}}}
+    },
+    {
+      "if": {"properties": {"profile": {"const": "strict"}}},
+      "then": {"properties": {
+        "bundled_git_component": {"const": null},
+        "qualification": {"properties": {"provider": {"enum": ["qualified", "unqualified"]}}}
+      }}
+    },
+    {
+      "if": {"properties": {"qualification": {"properties": {"state": {"const": "promotable"}}}}},
+      "then": {"properties": {
+        "target": {"enum": ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin"]},
+        "authentication": {"properties": {"trust": {"const": "production"}}},
+        "qualification": {"properties": {
+          "native": {"const": true}, "reason": {"const": ""},
+          "provider": {"enum": ["qualified", "bundled-git-pending-confinement"]},
+          "records": {"required": ["native", "reproducibility", "crypto", "lifecycle", "privacy", "git", "image_binding", "native_inputs"]}
+        }}
+      }}
+    },
+    {
+      "if": {"properties": {"qualification": {"properties": {"state": {"const": "candidate"}}}}},
+      "then": {"properties": {"qualification": {"properties": {"reason": {"minLength": 1}}}}}
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "revision": {"type": "string", "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"},
+    "positive": {"type": "integer", "minimum": 1, "maximum": 9007199254740991},
+    "version": {"type": "string", "minLength": 5, "maxLength": 128, "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(-[0-9A-Za-z.-]+)?(\\+[0-9A-Za-z.-]+)?$"},
+    "file": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9_-])?$"},
+    "target": {"enum": ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin", "x86_64-apple-darwin", "aarch64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]},
+    "artifact": {
+      "type": "object", "additionalProperties": false, "required": ["file", "bytes", "sha256"],
+      "properties": {"file": {"$ref": "#/$defs/file"}, "bytes": {"$ref": "#/$defs/positive"}, "sha256": {"$ref": "#/$defs/sha256"}}
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:dctx:release:v1:provenance",
+  "$comment": "PL-RELC; CONTRACT.md section 5. Closed in-toto Statement v1 / SLSA provenance v1 subset for REL-I. Local references only; no SLSA level or trust claim.",
+  "type": "object", "additionalProperties": false,
+  "required": ["_type", "subject", "predicateType", "predicate"],
+  "properties": {
+    "_type": {"const": "https://in-toto.io/Statement/v1"},
+    "subject": {
+      "type": "array", "minItems": 5, "maxItems": 5, "uniqueItems": true,
+      "items": {
+        "type": "object", "additionalProperties": false, "required": ["name", "digest"],
+        "properties": {"name": {"$ref": "#/$defs/file"}, "digest": {"$ref": "#/$defs/digest"}}
+      }
+    },
+    "predicateType": {"const": "https://slsa.dev/provenance/v1"},
+    "predicate": {
+      "type": "object", "additionalProperties": false, "required": ["buildDefinition", "runDetails"],
+      "properties": {
+        "buildDefinition": {
+          "type": "object", "additionalProperties": false,
+          "required": ["buildType", "externalParameters", "internalParameters", "resolvedDependencies"],
+          "properties": {
+            "buildType": {"const": "urn:dctx:release:build:v1"},
+            "externalParameters": {
+              "type": "object", "additionalProperties": false,
+              "required": ["target", "profile", "source_revision", "toolchain"],
+              "properties": {
+                "target": {"enum": ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin", "x86_64-apple-darwin", "aarch64-unknown-linux-gnu", "x86_64-pc-windows-msvc"]},
+                "profile": {"enum": ["default", "strict"]},
+                "source_revision": {"type": "string", "pattern": "^([0-9a-f]{40}|[0-9a-f]{64})$"},
+                "toolchain": {
+                  "const": {"channel": "1.97.1", "rustc": "1.97.1", "cargo": "1.97.1", "components": ["cargo", "clippy", "rust-std", "rustc", "rustfmt"]}
+                }
+              }
+            },
+            "internalParameters": {
+              "type": "object", "additionalProperties": false, "required": ["source_date_epoch"],
+              "properties": {"source_date_epoch": {"type": "integer", "minimum": 0, "maximum": 9007199254740991}}
+            },
+            "resolvedDependencies": {
+              "type": "array", "minItems": 4, "maxItems": 4096, "uniqueItems": true,
+              "items": {
+                "type": "object", "additionalProperties": false, "required": ["uri", "digest"],
+                "properties": {
+                  "uri": {"type": "string", "minLength": 1, "maxLength": 2048, "pattern": "^[a-z][a-z0-9+.-]*:[^\\s]+$"},
+                  "digest": {"$ref": "#/$defs/digest"}
+                }
+              }
+            }
+          }
+        },
+        "runDetails": {
+          "type": "object", "additionalProperties": false, "required": ["builder"],
+          "properties": {
+            "builder": {
+              "type": "object", "additionalProperties": false, "required": ["id"],
+              "properties": {"id": {"type": "string", "maxLength": 256, "pattern": "^urn:dctx:builder:[a-z0-9][a-z0-9._:-]*$"}}
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "file": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[A-Za-z0-9]([A-Za-z0-9._-]*[A-Za-z0-9_-])?$"},
+    "digest": {
+      "type": "object", "additionalProperties": false, "required": ["sha256"],
+      "properties": {"sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+    }
+  }
+}

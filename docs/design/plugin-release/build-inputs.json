@@ -1,0 +1,80 @@
+{
+  "schema": 1,
+  "kind": "dctx-release-build-inputs",
+  "description": "PL-RELC PA decision under decision 114; CONTRACT.md section 6. Input recipe for REL-T/B/I. Exact Rust distribution approved here; unknown native pins block qualification and are never inferred from cross-builds.",
+  "toolchain": {
+    "channel": "1.97.1", "rustc": "1.97.1", "cargo": "1.97.1",
+    "components": ["cargo", "clippy", "rust-std", "rustc", "rustfmt"]
+  },
+  "toolchain_profile": "minimal",
+  "component_versions": {"cargo": "1.97.1", "clippy": "1.97.1", "rust-std": "1.97.1", "rustc": "1.97.1", "rustfmt": "1.97.1"},
+  "component_version_policy": "These are Rust distribution component versions, not clippy/rustfmt own version banners. Record full observed banners in native-inputs evidence. Cargo 1.97.1 is the approved distribution Cargo; a mismatch refuses.",
+  "rust_std_targets": ["x86_64-unknown-linux-gnu", "aarch64-apple-darwin"],
+  "tools": {"syft": "not-used", "new_external_dependencies": [], "validator": "Python 3 stdlib only", "runtime_git": false, "network": false},
+  "packages": {
+    "cli": {"package": "dctx-cli", "bin": "dctx-cli", "version": "0.25.0"},
+    "plugin": {"package": "dctx-plugin-git", "bin": "dctx-plugin-git", "version": "1.0.0"}
+  },
+  "profiles": {
+    "default": {"cli_default_features": true, "cli_features": ["git-worker", "dctx/plugin-runtime"], "plugin_default_features": true},
+    "strict": {"cli_default_features": false, "cli_features": ["strict"], "plugin_default_features": true}
+  },
+  "targets": {
+    "linux-x64": {
+      "triple": "x86_64-unknown-linux-gnu", "policy": "eligible", "native_inputs": "blocked",
+      "reason": "Exact runner image, kernel, glibc floor, compiler/linker pins and native profile evidence not supplied."
+    },
+    "macos-arm64": {
+      "triple": "aarch64-apple-darwin", "policy": "eligible", "native_inputs": "blocked",
+      "reason": "Observed macOS 26.6.2 (25G83) is not an approved SDK/linker/minimum-OS pin; exact native closure and profile evidence not supplied."
+    },
+    "macos-x64": {
+      "triple": "x86_64-apple-darwin", "policy": "blocked", "native_inputs": "blocked",
+      "reason": "Outside initial promotion set; native Intel Mac runner/tool pins and qualification evidence absent."
+    },
+    "linux-arm64": {
+      "triple": "aarch64-unknown-linux-gnu", "policy": "blocked", "native_inputs": "blocked",
+      "reason": "Outside initial promotion set; native aarch64 runner/tool pins and qualification evidence absent."
+    },
+    "windows-x64": {
+      "triple": "x86_64-pc-windows-msvc", "policy": "blocked", "native_inputs": "blocked",
+      "reason": "Outside initial promotion set; native MSVC/SDK/runner pins and qualification evidence absent."
+    }
+  },
+  "unknown_target": {"policy": "blocked", "reason": "Not in closed manifest target set; includes musl and other CPU/ABI triples. Unspecified OS/libc floors also block promotion."},
+  "required_native_pins": [
+    "runner-image-digest", "os-version", "kernel-version", "cpu-baseline",
+    "compiler-version-and-digest", "linker-version-and-digest",
+    "sdk-version-and-digest-or-explicit-not-applicable",
+    "libc-version-and-minimum-or-explicit-not-applicable", "minimum-os",
+    "archive-tool-version-and-digest-if-used"
+  ],
+  "reproducibility": {
+    "cargo_flags": ["--release", "--locked", "--offline", "--target"],
+    "SOURCE_DATE_EPOCH": {
+      "required": true,
+      "value": "Exact source revision Unix UTC commit seconds from supplied source metadata; no runtime git or wall-clock fallback."
+    },
+    "environment": {"TZ": "UTC", "LC_ALL": "C", "CARGO_INCREMENTAL": "0"},
+    "remap_path_prefix": {
+      "flag": "--remap-path-prefix", "checkout": "/dctx/src", "build": "/dctx/build", "dependencies": "/dctx/deps",
+      "policy": "Map each actual absolute prefix, longest first; preserve required Cargo flags. Refuse unmapped absolute paths."
+    },
+    "rustflags": ["-Ctarget-cpu=generic", "-Cdebuginfo=0"],
+    "cargo_profile_release": {
+      "opt-level": 3, "debug": 0, "strip": "none", "lto": false, "codegen-units": 16,
+      "panic": "unwind", "incremental": false, "overflow-checks": false
+    },
+    "ordering": "ASCII-escaped UTF-8 JSON sorted keys, compact separators, LF termination; no floats/duplicate keys. Sort set-like arrays by identity; SHA256SUMS by filename.",
+    "archive": {"format": "uncompressed DCTXPLG1 if requested", "file_mode": "0755 executable; 0644 data", "uid": 0, "gid": 0, "mtime": "SOURCE_DATE_EPOCH"},
+    "comparison": "Two clean independent absolute build paths, same target/profile and exact approved inputs; compare every unsigned payload, manifest, checksums, SBOM, provenance and optional bundle byte-for-byte.",
+    "excluded": [
+      "release envelope containing observation/evidence digests", "native observations and acceptance receipts; deterministic native input inventory remains in materials",
+      "TEST keys and signatures", "detached real signatures", "notarization and timestamped platform signing", "publication timestamps"
+    ],
+    "refuse": [
+      "unlocked-or-online-build", "floating-toolchain", "missing-native-pin", "target-cpu=native",
+      "unmapped-path", "missing-source-epoch", "different-unsigned-bytes", "unresolved-build-script-input"
+    ]
+  }
+}

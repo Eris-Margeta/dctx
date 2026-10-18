@@ -1,0 +1,87 @@
+{
+  "profile_version": 1,
+  "description": "PL-RELC; CONTRACT.md section 5. REL-I emits this deterministic CycloneDX 1.5 JSON subset from Cargo metadata and native inventory. The stdlib contract validator consumes the closed schema below.",
+  "format": "CycloneDX",
+  "spec_version": "1.5",
+  "required_fields": {
+    "document": ["bomFormat", "specVersion", "version", "components", "dependencies", "properties"],
+    "component": ["type", "bom-ref", "name", "version", "purl", "hashes", "licenses", "properties"],
+    "document_properties": ["dctx:target", "dctx:profile", "dctx:source-revision"],
+    "component_properties": ["dctx:role", "dctx:license-source"],
+    "role_properties": {
+      "cli": ["dctx:features"],
+      "standalone-git-plugin": ["dctx:features"],
+      "rust-crate": ["dctx:features"],
+      "native-library": ["dctx:linkage"],
+      "bundled-git-worker": ["dctx:containing-component", "dctx:features"]
+    },
+    "roles": ["cli", "bundled-git-worker", "standalone-git-plugin", "rust-crate", "native-library"]
+  },
+  "license_policy": "Copy SPDX expressions from locked Cargo metadata. Resolve license_file to a reviewed LicenseRef with licence-content digest in materials. Native libraries use reviewed inventory licences. Missing, guessed, UNKNOWN and NOASSERTION licences refuse.",
+  "hash_policy": "CLI/standalone: completed unsigned file. Bundled worker: containing CLI file explicitly linked by bom-ref, not a fictional separate binary. Rust crates: exact source closure. Native/system libraries: exact file or SDK closure also listed as a material.",
+  "refusals": [
+    "unknown-field", "duplicate-json-key", "wrong-format-or-version", "missing-purl-or-version",
+    "missing-or-invalid-sha256", "missing-or-unresolved-license", "missing-cli-or-standalone",
+    "missing-bundled-worker-in-default", "bundled-worker-in-strict", "missing-native-library-inventory",
+    "missing-feature-closure", "duplicate-component-ref-or-role", "dangling-or-missing-dependency",
+    "wrong-target-profile-source", "digest-mismatch", "unreviewed-system-closure", "timestamp-or-host-path"
+  ],
+  "schema": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$comment": "Local closed CycloneDX 1.5 subset. Semantic property names, roles and closure are checked by validate_contract.py; real inventory completeness belongs to REL-I.",
+    "type": "object", "additionalProperties": false,
+    "required": ["bomFormat", "specVersion", "version", "components", "dependencies", "properties"],
+    "properties": {
+      "bomFormat": {"const": "CycloneDX"},
+      "specVersion": {"const": "1.5"},
+      "version": {"const": 1},
+      "components": {
+        "type": "array", "minItems": 3, "maxItems": 4096, "uniqueItems": true,
+        "items": {
+          "type": "object", "additionalProperties": false,
+          "required": ["type", "bom-ref", "name", "version", "purl", "hashes", "licenses", "properties"],
+          "properties": {
+            "type": {"enum": ["application", "library", "framework"]},
+            "bom-ref": {"$ref": "#/$defs/token"},
+            "name": {"$ref": "#/$defs/token"},
+            "version": {"$ref": "#/$defs/token"},
+            "purl": {"type": "string", "minLength": 8, "maxLength": 2048, "pattern": "^pkg:[a-z][a-z0-9.+-]*/[^\\s]+@[^\\s]+$"},
+            "hashes": {
+              "type": "array", "minItems": 1, "maxItems": 1,
+              "items": {
+                "type": "object", "additionalProperties": false, "required": ["alg", "content"],
+                "properties": {"alg": {"const": "SHA-256"}, "content": {"type": "string", "pattern": "^[0-9a-f]{64}$"}}
+              }
+            },
+            "licenses": {
+              "type": "array", "minItems": 1, "maxItems": 1,
+              "items": {
+                "type": "object", "additionalProperties": false, "required": ["expression"],
+                "properties": {"expression": {"type": "string", "minLength": 1, "maxLength": 1024}}
+              }
+            },
+            "properties": {"type": "array", "minItems": 2, "maxItems": 5, "uniqueItems": true, "items": {"$ref": "#/$defs/property"}}
+          }
+        }
+      },
+      "dependencies": {
+        "type": "array", "minItems": 3, "maxItems": 4096, "uniqueItems": true,
+        "items": {
+          "type": "object", "additionalProperties": false, "required": ["ref", "dependsOn"],
+          "properties": {
+            "ref": {"$ref": "#/$defs/token"},
+            "dependsOn": {"type": "array", "minItems": 0, "maxItems": 4096, "uniqueItems": true, "items": {"$ref": "#/$defs/token"}}
+          }
+        }
+      },
+      "properties": {"type": "array", "minItems": 3, "maxItems": 3, "uniqueItems": true, "items": {"$ref": "#/$defs/property"}}
+    },
+    "$defs": {
+      "token": {"type": "string", "minLength": 1, "maxLength": 256, "pattern": "^[^\\s]+$"},
+      "property": {
+        "type": "object", "additionalProperties": false, "required": ["name", "value"],
+        "properties": {"name": {"$ref": "#/$defs/token"}, "value": {"type": "string", "minLength": 1, "maxLength": 4096}}
+      }
+    }
+  }
+}
