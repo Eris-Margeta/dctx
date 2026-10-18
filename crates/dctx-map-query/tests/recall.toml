@@ -10,16 +10,16 @@ text = "Where does the core decide whether file content is binary?"
 expected = "s:crates/dctx-core/src/file_classifier.rs#classify_file"
 
 [[question]]
-text = "How is the directory structure walked before reading file contents?"
-expected = "s:crates/dctx-core/src/legacy/walker.rs#walk_directory_structure"
+text = "How does the pack scan walk a Source with selection policy and limits?"
+expected = "s:crates/dctx-pack/src/snapshot.rs#scan"
 
 [[question]]
-text = "How is a directory tree filtered with FilterConfig?"
-expected = "s:crates/dctx-core/src/legacy/walker.rs#filter_tree"
+text = "How does the CLI filter_tree prune a directory tree with FilterConfig?"
+expected = "s:crates/dctx-cli/src/lib.rs#filter_tree"
 
 [[question]]
-text = "Where are file contents populated in parallel?"
-expected = "s:crates/dctx-core/src/legacy/walker.rs#populate_file_contents_parallel"
+text = "How does the snapshot Walk read authorized content and record its digest?"
+expected = "s:crates/dctx-pack/src/snapshot.rs#Walk::content"
 
 [[question]]
 text = "How does FilterConfig check for active filters?"
@@ -34,20 +34,20 @@ text = "How does FilterConfig include directories?"
 expected = "s:crates/dctx-core/src/filter.rs#FilterConfig::should_include_directory"
 
 [[question]]
-text = "Where is the compiled templates directory configured?"
-expected = "s:crates/dctx-core/src/legacy/config.rs#get_compiled_templates_dir"
+text = "How does template list load compiled plans from an explicit directory?"
+expected = "s:crates/dctx-cli/src/template.rs#list"
 
 [[question]]
-text = "How is the application config loaded?"
-expected = "s:crates/dctx-core/src/legacy/config.rs#load_app_config"
+text = "How does the CLI app_config load application settings with default fallback?"
+expected = "s:crates/dctx-cli/src/compat.rs#app_config"
 
 [[question]]
-text = "How do I find the project registry path?"
-expected = "s:crates/dctx-core/src/legacy/config.rs#get_project_registry_path"
+text = "How does project_id find or append a mapping in the projects.db registry?"
+expected = "s:crates/dctx-cli/src/compat.rs#project_id"
 
 [[question]]
-text = "Where is the global ignore path defined?"
-expected = "s:crates/dctx-core/src/legacy/config.rs#get_global_ignore_path"
+text = "How does the filesystem adapter load_policy read ignore rules from a supplied global directory?"
+expected = "s:crates/dctx-adapter-fs/src/adapters/rules.rs#load_policy"
 
 [[question]]
 text = "How does Version calculate the next version?"
@@ -58,32 +58,32 @@ text = "How does Version parse V1 and V1.5 strings?"
 expected = "s:crates/dctx-core/src/version.rs#Version::parse"
 
 [[question]]
-text = "Where is a template compiled into CompiledTemplate?"
-expected = "s:crates/dctx-core/src/legacy/template.rs#Template::compile"
+text = "How does the v1 Template compile validated partials into CompiledTemplate?"
+expected = "s:crates/dctx-template/src/v1/compiled.rs#Template::compile"
 
 [[question]]
-text = "How does Template validate missing required sections?"
-expected = "s:crates/dctx-core/src/legacy/template.rs#Template::validate"
+text = "How does the v1 Template validate empty layouts and unresolved variables?"
+expected = "s:crates/dctx-template/src/v1/parse.rs#Template::validate"
 
 [[question]]
-text = "How is CompiledTemplate saved to a file?"
-expected = "s:crates/dctx-core/src/legacy/template.rs#CompiledTemplate::save_to_file"
+text = "How does CompiledTemplate serialize DCTXTMPL bytes into a caller supplied writer?"
+expected = "s:crates/dctx-template/src/v1/compiled.rs#CompiledTemplate::serialize"
 
 [[question]]
-text = "How are template variables replaced in text?"
-expected = "s:crates/dctx-core/src/legacy/template.rs#replace_vars"
+text = "How does the v1 parser replace_vars substitute template variables in text?"
+expected = "s:crates/dctx-template/src/v1/parse.rs#replace_vars"
 
 [[question]]
 text = "Where does compare_trees calculate a DiffReport?"
 expected = "s:crates/dctx-core/src/diff.rs#compare_trees"
 
 [[question]]
-text = "How is previous binary state loaded or reset?"
-expected = "s:crates/dctx-core/src/legacy/state.rs#load_or_reset_state"
+text = "How does the CLI load_state read previous binary history or reset to V1?"
+expected = "s:crates/dctx-cli/src/compat.rs#load_state"
 
 [[question]]
-text = "Where is the dircontxt binary file written?"
-expected = "s:crates/dctx-core/src/legacy/writer.rs#write_dircontxt_file"
+text = "How does encode_legacy_to validate a snapshot before writing binary bytes to a sink?"
+expected = "s:crates/dctx-pack/src/legacy_encode.rs#encode_legacy_to"
 
 [[question]]
 text = "How does FileHandlingDecision control reading content?"
@@ -120,4 +120,3 @@ expected = "s:crates/dctx-map-resolve/src/domain/resolve.rs#resolve"
 [[question]]
 text = "Where does the map scanner hash authorized content?"
 expected = "s:crates/dctx-map-scan/src/domain/scanned_file.rs#content_hash"
-

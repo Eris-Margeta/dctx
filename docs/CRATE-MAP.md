@@ -29,7 +29,7 @@ boundaries in `docs/design/ARCHITECTURE-DECISIONS.md` (DX-ARCH-01).
 | Crate | Purpose from header | Layer | Direct path dependencies | Direct external normal dependencies |
 | --- | --- | --- | --- | --- |
 | dctx-hash | First-party SHA-256 content digests. | pure core | none | none (std-only) |
-| dctx-core | Pure domain: ids, selection decisions, budgets, errors, pack facts; bridge-period legacy IO at old paths. | pure core (legacy IO exception) | dctx-hash | first-party only |
+| dctx-core | Pure domain: ids, selection decisions, budgets, errors, pack facts and settings parsing. | pure core | dctx-hash | first-party only |
 | dctx-ports | Boundary traits Source, FactStore, Cache, Clock, Cancellation; in-memory implementations and spies. | pure core | dctx-core | first-party only |
 | dctx-map-model | IO-free map identities, byte spans, precision, provenance and answers. | pure core | dctx-hash | serde, serde_json (optional `wire-json`, enabled by default) |
 | dctx-map-segment | Pure safe codec for immutable map index segments. | pure core | dctx-hash | thiserror |
@@ -174,20 +174,20 @@ adapters; Unknown takes fallback. This is an oracle feature, not the default.
   `crates/dctx-map-query/tests/source_privacy.rs` checks secrets, ignored files,
   traversal and symlinks, with an included-file positive control.
 - **Pure domain boundary:** `crates/dctx-core/src/lib.rs:1` points to
-  `crates/dctx-core/tests/purity.rs` and explicitly exempts legacy modules.
-  A “pure core” layer label is not a claim that the whole current crate is IO-free.
+  `crates/dctx-core/tests/purity.rs`, which checks every source module without a
+  directory exemption. Comments and unit-test tails are excluded from the IO scan.
+  The crate retains its first-party dctx-hash dependency.
 - **Plugin PP1–PP10:** `docs/design/plugin-evidence/PP-MATRIX.md` maps tests,
   formal evidence and gaps: PP1 authority narrows; PP2 excluded-source privacy;
   PP3 effect audit; PP4 protocol binding; PP5 no blind replay; PP6 strict isolation;
   PP7 bounded resources; PP8 lifecycle progress; PP9 install integrity;
   PP10 hook order/result truth. The matrix is dated scout evidence, not a fresh
   passing test result or certification of today's product acceptance.
-- **Legacy removal:** `docs/design/D3-LEGACY-REMOVAL.md` inventories consumers,
-  migration obligations and coverage under `crates/dctx-core/src/legacy/`:
-  config, content_reader, git_safety, ignore, ignore_debug, llm_formatter,
-  omit_content, reader, registry, state, template, walker and writer.
-  `ignore_debug` is recorded as undeclared/unexported. This is a removal plan;
-  do not assume those modules have already been removed.
+- **Legacy removal:** DX-D3-08b deletes the core IO wrappers and their exports.
+  `docs/design/D3-LEGACY-REMOVAL.md` remains the historical inventory;
+  `docs/design/D3-COMPATIBILITY.md` maps retired families to retained tests.
+  Pack codecs, template rendering, filesystem adapters and CLI compatibility IO
+  own the replacements. Pure core modules, settings and template assets remain.
 
 ## Validation commands
 
