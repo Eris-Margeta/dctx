@@ -18,6 +18,7 @@ use std::time::{Duration, Instant};
 
 const STACK_BYTES: usize = 16 * 1024 * 1024;
 const SLOW_AFTER: Duration = Duration::from_secs(5);
+const MAX_REFUSAL_SAMPLES: usize = 6;
 const LANGUAGES: [Language; 15] = [
     Language::Rust,
     Language::JavaScript,
@@ -39,7 +40,7 @@ const LANGUAGES: [Language; 15] = [
 #[derive(Default)]
 struct FileReport {
     ok: bool,
-    refusal: Option<&'static str>,
+    refusal: Option<Refusal>,
     violations: Vec<String>,
 }
 
@@ -48,8 +49,19 @@ struct LanguageReport {
     files: usize,
     ok: usize,
     refused: usize,
-    reasons: BTreeMap<&'static str, usize>,
+    reasons: BTreeMap<String, RefusalReport>,
     slowest: Option<(Duration, PathBuf)>,
+}
+
+struct Refusal {
+    message: String,
+    line: Option<u32>,
+}
+
+#[derive(Default)]
+struct RefusalReport {
+    count: usize,
+    samples: Vec<String>,
 }
 
 fn panic_reason(payload: &(dyn Any + Send)) -> String {
@@ -65,8 +77,15 @@ fn panic_reason(payload: &(dyn Any + Send)) -> String {
         .to_owned()
 }
 
-fn refusal_reason(error: &ParseError) -> &'static str {
-    match error {
+fn refusal_reason(error: &ParseError) -> Refusal {
+    // Syntax carries only a location; keep it in the sample, not the group key.
+    if let ParseError::Syntax { line, .. } = error {
+        return Refusal {
+            message: "Syntax: invalid syntax".into(),
+            line: Some(*line),
+        };
+    }
+    let kind = match error {
         ParseError::InvalidId(_) => "InvalidId",
         ParseError::InvalidUtf8(_) => "InvalidUtf8",
         ParseError::TooLarge => "TooLarge",
@@ -74,6 +93,10 @@ fn refusal_reason(error: &ParseError) -> &'static str {
         ParseError::NoTree => "NoTree",
         ParseError::Label(_) => "Label",
         ParseError::Syntax { .. } => "Syntax",
+    };
+    Refusal {
+        message: format!("{kind}: {error}"),
+        line: None,
     }
 }
 
@@ -195,26 +218,24 @@ fn run_file(file: &CorpusFile, source: Vec<u8>, repeat: bool) -> Option<(FileRep
 }
 
 fn print_table(reports: &BTreeMap<String, LanguageReport>) {
-    println!("language | files | ok | refused | refusal reasons | slowest file (wall seconds)");
+    println!("language | files | ok | refused | slowest file (wall seconds)");
     for (language, report) in reports {
-        let reasons = report
-            .reasons
-            .iter()
-            .map(|(reason, count)| format!("{reason}={count}"))
-            .collect::<Vec<_>>()
-            .join(", ");
         let slowest = report
             .slowest
             .as_ref()
             .map(|(elapsed, path)| format!("{path:?} ({:.3})", elapsed.as_secs_f64()))
             .unwrap_or_else(|| "-".into());
         println!(
-            "{language} | {} | {} | {} | {} | {slowest}",
-            report.files,
-            report.ok,
-            report.refused,
-            if reasons.is_empty() { "-" } else { &reasons }
+            "{language} | {} | {} | {} | {slowest}",
+            report.files, report.ok, report.refused
         );
+        for (message, refusal) in &report.reasons {
+            println!(
+                "REFUSAL {language} | {message:?} | count={} | samples={}",
+                refusal.count,
+                refusal.samples.join(", ")
+            );
+        }
     }
 }
 
@@ -256,7 +277,15 @@ fn corpus_sweep() {
         report.ok += usize::from(result.ok);
         if let Some(reason) = result.refusal {
             report.refused += 1;
-            *report.reasons.entry(reason).or_default() += 1;
+            let refusal = report.reasons.entry(reason.message).or_default();
+            refusal.count += 1;
+            if refusal.samples.len() < MAX_REFUSAL_SAMPLES {
+                let location = match reason.line {
+                    Some(line) => format!("{:?}:{line}", file.path),
+                    None => format!("{:?}", file.path),
+                };
+                refusal.samples.push(location);
+            }
         }
         if report
             .slowest
@@ -292,4 +321,25 @@ fn corpus_sweep() {
         "corpus violations:\n{}",
         offenders.join("\n")
     );
+}
+
+#[test]
+fn refusal_messages_preserve_detail_and_separate_syntax_locations() {
+    let first = refusal_reason(&ParseError::Syntax {
+        path: "first.py".into(),
+        line: 7,
+    });
+    let second = refusal_reason(&ParseError::Syntax {
+        path: "second.py".into(),
+        line: 19,
+    });
+    assert_eq!(first.message, second.message);
+    assert_eq!(first.line, Some(7));
+    assert_eq!(second.line, Some(19));
+
+    let first = refusal_reason(&ParseError::Grammar("first diagnostic".into()));
+    let second = refusal_reason(&ParseError::Grammar("second diagnostic".into()));
+    assert_ne!(first.message, second.message);
+    assert!(first.message.contains("first diagnostic"));
+    assert_eq!(first.line, None);
 }

@@ -5,13 +5,14 @@
 
 use dctx_map_model::{EdgeKind, NodeKind};
 use dctx_map_parse::{Language, ParsedFile};
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs::{self, File};
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
 pub const MAX_BYTES: u64 = 512 * 1024;
 pub const MAX_FILES: usize = 20_000;
+pub const MAX_FILES_PER_LANGUAGE: usize = 1_500;
 
 pub struct CorpusFile {
     pub path: PathBuf,
@@ -23,7 +24,12 @@ fn excluded(path: &Path) -> bool {
     let mut in_node_modules = false;
     for component in path.components() {
         let name = component.as_os_str();
-        if name == "target" || name == ".git" || (in_node_modules && name == ".cache") {
+        if name == "target"
+            || name == ".git"
+            || name == "build"
+            || name == "Pods"
+            || (in_node_modules && name == ".cache")
+        {
             return true;
         }
         in_node_modules = name == "node_modules";
@@ -34,7 +40,7 @@ fn excluded(path: &Path) -> bool {
 pub fn collect_files(mut roots: Vec<PathBuf>) -> Vec<CorpusFile> {
     roots.sort();
     roots.dedup();
-    let mut files = Vec::new();
+    let mut languages = BTreeMap::<String, Vec<CorpusFile>>::new();
     let mut visited = BTreeSet::new();
     for root in roots {
         match fs::symlink_metadata(&root) {
@@ -52,10 +58,6 @@ pub fn collect_files(mut roots: Vec<PathBuf>) -> Vec<CorpusFile> {
         // A sorted frontier gives lexical order without recursive directory walking.
         let mut pending = BTreeSet::from([root.clone()]);
         while let Some(path) = pending.pop_first() {
-            if files.len() == MAX_FILES {
-                println!("file limit reached: {MAX_FILES}");
-                return files;
-            }
             if excluded(&path) || !visited.insert(path.clone()) {
                 continue;
             }
@@ -92,14 +94,47 @@ pub fn collect_files(mut roots: Vec<PathBuf>) -> Vec<CorpusFile> {
             let parser_path = relative.to_string_lossy().into_owned();
             let language = Language::for_path(&parser_path);
             if language != Language::Unknown {
-                files.push(CorpusFile {
-                    parser_path,
-                    path,
-                    language,
-                });
+                let files = languages.entry(format!("{language:?}")).or_default();
+                if files.len() < MAX_FILES_PER_LANGUAGE {
+                    files.push(CorpusFile {
+                        parser_path,
+                        path,
+                        language,
+                    });
+                }
             }
         }
     }
+    select_files(languages, MAX_FILES)
+}
+
+fn select_files(
+    languages: BTreeMap<String, Vec<CorpusFile>>,
+    total_limit: usize,
+) -> Vec<CorpusFile> {
+    // Discovery retains at most 1,500 candidates per language. Round-robin
+    // selection keeps a late language represented even at the total safety cap.
+    let mut languages = languages
+        .into_values()
+        .map(|files| files.into_iter().take(MAX_FILES_PER_LANGUAGE))
+        .collect::<Vec<_>>();
+    let mut files = Vec::new();
+    'selection: loop {
+        let before = files.len();
+        for language in &mut languages {
+            if files.len() == total_limit {
+                println!("total file safety limit reached: {total_limit}");
+                break 'selection;
+            }
+            if let Some(file) = language.next() {
+                files.push(file);
+            }
+        }
+        if files.len() == before {
+            break;
+        }
+    }
+    files.sort_by(|a, b| a.path.cmp(&b.path));
     files
 }
 
@@ -216,5 +251,58 @@ pub fn assert_store_accepts(facts: &ParsedFile, source: &[u8]) {
             "{} is not owned by the file node",
             node.name
         );
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn candidates() -> BTreeMap<String, Vec<CorpusFile>> {
+        [
+            ("Rust", "rs", MAX_FILES_PER_LANGUAGE + 1),
+            ("Swift", "swift", 1),
+        ]
+        .into_iter()
+        .map(|(language, extension, count)| {
+            let files = (0..count)
+                .map(|index| {
+                    let parser_path = format!("{language}/{index:04}.{extension}");
+                    CorpusFile {
+                        path: PathBuf::from(&parser_path),
+                        language: Language::for_path(&parser_path),
+                        parser_path,
+                    }
+                })
+                .collect();
+            (language.to_owned(), files)
+        })
+        .collect()
+    }
+
+    #[test]
+    fn language_caps_and_total_cap_preserve_later_languages() {
+        let files = select_files(candidates(), MAX_FILES);
+        assert_eq!(files.len(), MAX_FILES_PER_LANGUAGE + 1);
+        assert_eq!(files.last().unwrap().language, Language::Swift);
+        assert!(files.windows(2).all(|pair| pair[0].path < pair[1].path));
+
+        let files = select_files(candidates(), 3);
+        let paths = files
+            .iter()
+            .map(|file| file.parser_path.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(paths, ["Rust/0000.rs", "Rust/0001.rs", "Swift/0000.swift"]);
+        assert!(select_files(BTreeMap::new(), MAX_FILES).is_empty());
+    }
+
+    #[test]
+    fn excluded_directories_are_pruned_by_component() {
+        for directory in ["target", ".git", "build", "Pods", "node_modules/.cache"] {
+            assert!(excluded(Path::new(&format!("root/{directory}/nested"))));
+        }
+        for directory in [".cache", "node_modules/package", "builder", "Podspecs"] {
+            assert!(!excluded(Path::new(&format!("root/{directory}/nested"))));
+        }
     }
 }
