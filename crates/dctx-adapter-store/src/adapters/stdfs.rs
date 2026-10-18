@@ -1,26 +1,16 @@
 //! Std filesystem adapter for durable segment names.
 //! Implements SEGMENTS-v1 sync and rename on a caller-supplied directory.
 //! Depends on [`crate::ports::StoreFs`]. Crash cuts and Windows sharing live in [`super::memory`].
-//! Unix directories are mode 0700 and files 0600. A path that canonicalizes outside the root is refused.
+//! Unix directories are mode 0700 and files 0600. Symlinks and over-ceiling reads are refused.
 
 use std::collections::BTreeMap;
 use std::fs::{self, File, OpenOptions};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::sync::{Mutex, MutexGuard, PoisonError};
 
-use crate::domain::{check_rel, check_root, Boundary, StoreError};
-use crate::ports::{FsCapabilities, StoreFs};
-
-fn io_err(err: std::io::Error) -> StoreError {
-    if err.kind() == std::io::ErrorKind::StorageFull || err.raw_os_error() == Some(28) {
-        return StoreError::DiskFull;
-    }
-    if err.raw_os_error() == Some(32) {
-        return StoreError::SharingViolation;
-    }
-    StoreError::io(err)
-}
+use crate::domain::{check_root, Boundary, StoreError};
+use crate::ports::{self, read_ceiling, FsCapabilities, StoreFs};
 
 /// A real directory of immutable segments and generation pointers.
 pub struct StdFs {
@@ -31,40 +21,26 @@ pub struct StdFs {
 impl StdFs {
     /// Creates `root` if needed and confines later names under its canonical path.
     pub fn open(root: &Path) -> Result<Self, StoreError> {
-        fs::create_dir_all(root).map_err(io_err)?;
+        fs::create_dir_all(root).map_err(ports::io_err)?;
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
             let _ = fs::set_permissions(root, fs::Permissions::from_mode(0o700));
         }
-        let root = fs::canonicalize(root).map_err(io_err)?;
-        Ok(Self {
-            root,
-            locks: Mutex::new(BTreeMap::new()),
-        })
+        let root = fs::canonicalize(root).map_err(ports::io_err)?;
+        Ok(Self { root, locks: Mutex::new(BTreeMap::new()) })
     }
 
     fn guard(&self) -> MutexGuard<'_, BTreeMap<String, File>> {
         self.locks.lock().unwrap_or_else(PoisonError::into_inner)
     }
 
-    fn abs(&self, rel: &str) -> Result<PathBuf, StoreError> {
-        check_rel(rel)?;
-        Ok(self.root.join(rel))
+    fn confine(&self, rel: &str) -> Result<PathBuf, StoreError> {
+        ports::confine_under(&self.root, rel)
     }
 
     fn make_dir(&self, dir: &Path) -> Result<(), StoreError> {
-        fs::create_dir_all(dir).map_err(io_err)?;
-        #[cfg(unix)]
-        {
-            use std::os::unix::fs::PermissionsExt;
-            let _ = fs::set_permissions(dir, fs::Permissions::from_mode(0o700));
-        }
-        let got = fs::canonicalize(dir).map_err(io_err)?;
-        if !got.starts_with(&self.root) {
-            return Err(StoreError::InvalidRequest { reason: "path" });
-        }
-        Ok(())
+        ports::ensure_dir(&self.root, dir)
     }
 
     fn parent_of(&self, path: &Path) -> Result<(), StoreError> {
@@ -73,15 +49,15 @@ impl StdFs {
         }
         Ok(())
     }
+
+    fn open_file(&self, rel: &str, write: bool, truncate: bool) -> Result<File, StoreError> {
+        ports::open_under(&self.root, rel, write, truncate)
+    }
 }
 
 impl StoreFs for StdFs {
     fn capabilities(&self) -> FsCapabilities {
-        FsCapabilities {
-            sync: true,
-            atomic_replace: true,
-            os_lock: true,
-        }
+        FsCapabilities { sync: true, atomic_replace: true, os_lock: true }
     }
 
     fn checkpoint(&self, _boundary: Boundary) -> Result<(), StoreError> {
@@ -94,7 +70,8 @@ impl StoreFs for StdFs {
         if locks.contains_key(root) {
             return Err(StoreError::Busy);
         }
-        let path = self.abs(&format!("roots/{root}/writer.lock"))?;
+        let rel = format!("roots/{root}/writer.lock");
+        let path = self.confine(&rel)?;
         self.parent_of(&path)?;
         let mut options = OpenOptions::new();
         options.read(true).write(true).create(true).truncate(false);
@@ -103,21 +80,22 @@ impl StoreFs for StdFs {
             use std::os::unix::fs::OpenOptionsExt;
             options.mode(0o600);
         }
-        let file = options.open(&path).map_err(io_err)?;
+        ports::set_nofollow(&mut options);
+        let file = options.open(&path).map_err(ports::io_err)?;
         match file.try_lock() {
             Ok(()) => {
                 locks.insert(root.to_string(), file);
                 Ok(())
             }
             Err(std::fs::TryLockError::WouldBlock) => Err(StoreError::Busy),
-            Err(std::fs::TryLockError::Error(err)) => Err(io_err(err)),
+            Err(std::fs::TryLockError::Error(err)) => Err(ports::io_err(err)),
         }
     }
 
     fn unlock(&self, root: &str) -> Result<(), StoreError> {
         let mut locks = self.guard();
         if let Some(file) = locks.remove(root) {
-            file.unlock().map_err(io_err)?;
+            file.unlock().map_err(ports::io_err)?;
         }
         Ok(())
     }
@@ -131,8 +109,11 @@ impl StoreFs for StdFs {
     }
 
     fn create(&self, path: &str) -> Result<(), StoreError> {
-        let path = self.abs(path)?;
+        let path = self.confine(path)?;
         self.parent_of(&path)?;
+        if fs::symlink_metadata(&path).is_ok() {
+            return Err(StoreError::io("exists"));
+        }
         let mut options = OpenOptions::new();
         options.write(true).create_new(true);
         #[cfg(unix)]
@@ -140,115 +121,100 @@ impl StoreFs for StdFs {
             use std::os::unix::fs::OpenOptionsExt;
             options.mode(0o600);
         }
-        options.open(&path).map_err(io_err)?;
+        ports::set_nofollow(&mut options);
+        options.open(&path).map_err(ports::io_err)?;
         Ok(())
     }
 
     fn write(&self, path: &str, bytes: &[u8]) -> Result<(), StoreError> {
-        let path = self.abs(path)?;
-        let mut file = OpenOptions::new().write(true).truncate(true).open(&path).map_err(io_err)?;
-        file.write_all(bytes).map_err(io_err)?;
+        let mut file = self.open_file(path, true, true)?;
+        file.write_all(bytes).map_err(ports::io_err)?;
         Ok(())
     }
 
     fn flush(&self, path: &str) -> Result<(), StoreError> {
-        let path = self.abs(path)?;
-        let mut file = OpenOptions::new().write(true).open(&path).map_err(io_err)?;
-        file.flush().map_err(io_err)?;
+        let mut file = self.open_file(path, true, false)?;
+        file.flush().map_err(ports::io_err)?;
         Ok(())
     }
 
     fn sync_file(&self, path: &str) -> Result<(), StoreError> {
-        let path = self.abs(path)?;
-        let file = OpenOptions::new().write(true).open(&path).map_err(io_err)?;
-        file.sync_all().map_err(io_err)?;
+        let file = self.open_file(path, true, false)?;
+        file.sync_all().map_err(ports::io_err)?;
         Ok(())
     }
 
     fn sync_dir(&self) -> Result<(), StoreError> {
-        let dir = File::open(&self.root).map_err(io_err)?;
-        dir.sync_all().map_err(io_err)?;
+        let dir = File::open(&self.root).map_err(ports::io_err)?;
+        dir.sync_all().map_err(ports::io_err)?;
         Ok(())
     }
 
     fn rename_new(&self, from: &str, to: &str) -> Result<(), StoreError> {
-        let from = self.abs(from)?;
-        let to = self.abs(to)?;
+        let from = self.confine(from)?;
+        let to = self.confine(to)?;
         self.parent_of(&to)?;
-        if to.exists() {
+        if fs::symlink_metadata(&to).is_ok() {
             return Err(StoreError::io("exists"));
         }
-        fs::rename(from, to).map_err(io_err)
+        fs::rename(from, to).map_err(ports::io_err)
     }
 
     fn rename_replace(&self, from: &str, to: &str) -> Result<(), StoreError> {
-        let from = self.abs(from)?;
-        let to = self.abs(to)?;
+        let from = self.confine(from)?;
+        let to = self.confine(to)?;
         self.parent_of(&to)?;
         #[cfg(windows)]
-        if to.exists() {
+        if fs::symlink_metadata(&to).is_ok() {
             return Err(StoreError::UnsupportedDurability { capability: "atomic-replace" });
         }
-        fs::rename(from, to).map_err(io_err)
+        fs::rename(from, to).map_err(ports::io_err)
     }
 
     fn read(&self, path: &str) -> Result<Vec<u8>, StoreError> {
-        let path = self.abs(path)?;
-        fs::read(&path).map_err(io_err)
+        let max = read_ceiling(path);
+        let file = self.open_file(path, false, false)?;
+        let got = file.metadata().map_err(ports::io_err)?.len();
+        if got > max {
+            return Err(StoreError::CorruptIndex { reason: "limit" });
+        }
+        let mut buf = Vec::new();
+        file.take(max.saturating_add(1)).read_to_end(&mut buf).map_err(ports::io_err)?;
+        if u64::try_from(buf.len()).unwrap_or(u64::MAX) > max {
+            return Err(StoreError::CorruptIndex { reason: "limit" });
+        }
+        Ok(buf)
     }
 
     fn exists(&self, path: &str) -> Result<bool, StoreError> {
-        let path = self.abs(path)?;
-        path.try_exists().map_err(io_err)
+        let path = self.confine(path)?;
+        match fs::symlink_metadata(&path) {
+            Ok(meta) if meta.file_type().is_symlink() => Err(StoreError::InvalidRequest { reason: "path" }),
+            Ok(_) => Ok(true),
+            Err(err) if err.kind() == std::io::ErrorKind::NotFound => Ok(false),
+            Err(err) => Err(ports::io_err(err)),
+        }
     }
 
     fn len(&self, path: &str) -> Result<u64, StoreError> {
-        let path = self.abs(path)?;
-        Ok(fs::metadata(path).map_err(io_err)?.len())
+        let path = self.confine(path)?;
+        let meta = fs::symlink_metadata(&path).map_err(ports::io_err)?;
+        if meta.file_type().is_symlink() || !meta.is_file() {
+            return Err(StoreError::InvalidRequest { reason: "path" });
+        }
+        Ok(meta.len())
     }
 
     fn unlink(&self, path: &str) -> Result<(), StoreError> {
-        let path = self.abs(path)?;
-        fs::remove_file(path).map_err(io_err)
+        let path = self.confine(path)?;
+        let meta = fs::symlink_metadata(&path).map_err(ports::io_err)?;
+        if meta.file_type().is_symlink() {
+            return Err(StoreError::InvalidRequest { reason: "path" });
+        }
+        fs::remove_file(path).map_err(ports::io_err)
     }
 
     fn list_prefix(&self, prefix: &str) -> Result<Vec<String>, StoreError> {
-        let mut out = Vec::new();
-        walk(&self.root, &self.root, prefix, &mut out)?;
-        out.sort();
-        Ok(out)
+        ports::list_under(&self.root, prefix)
     }
-}
-
-fn walk(root: &Path, dir: &Path, prefix: &str, out: &mut Vec<String>) -> Result<(), StoreError> {
-    if !dir.exists() {
-        return Ok(());
-    }
-    let entries = match fs::read_dir(dir) {
-        Ok(entries) => entries,
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(()),
-        Err(err) => return Err(io_err(err)),
-    };
-    for entry in entries {
-        let entry = entry.map_err(io_err)?;
-        let kind = entry.file_type().map_err(io_err)?;
-        if kind.is_symlink() {
-            return Err(StoreError::InvalidRequest { reason: "path" });
-        }
-        let path = entry.path();
-        if kind.is_dir() {
-            walk(root, &path, prefix, out)?;
-            continue;
-        }
-        if !kind.is_file() {
-            continue;
-        }
-        let rel = path.strip_prefix(root).map_err(|_| StoreError::InvalidRequest { reason: "path" })?;
-        let text = rel.to_str().ok_or(StoreError::InvalidRequest { reason: "path" })?;
-        let text = text.replace('\\', "/");
-        if text.starts_with(prefix) {
-            out.push(text);
-        }
-    }
-    Ok(())
 }

@@ -345,7 +345,11 @@ impl StoreFs for MemoryFs {
         let mem = self.lock();
         let id = *mem.visible().get(path).ok_or_else(|| StoreError::io("missing"))?;
         let inode = mem.inodes.get(&id).ok_or_else(|| StoreError::io("inode"))?;
-        Ok(inode.dirty.clone().unwrap_or_else(|| inode.durable.clone()))
+        let bytes = inode.dirty.as_ref().unwrap_or(&inode.durable);
+        if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > crate::ports::read_ceiling(path) {
+            return Err(StoreError::CorruptIndex { reason: "limit" });
+        }
+        Ok(bytes.clone())
     }
 
     fn exists(&self, path: &str) -> Result<bool, StoreError> {

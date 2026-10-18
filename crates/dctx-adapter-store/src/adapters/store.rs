@@ -10,9 +10,9 @@ use std::sync::{Mutex, MutexGuard, PoisonError};
 use crate::domain::{
     check_root, current_path, decode_manifest, decode_pointer, manifest_digest, manifest_path,
     previous_path, segment_path, DurabilityMode, Manifest, Pin, PinnedSegment, SegmentRef,
-    StoreError, StoreOptions, EMERGENCY_METADATA, MAX_ACQUIRE,
+    StoreError, StoreOptions, EMERGENCY_METADATA, MAX_ACQUIRE, POINTER_LEN,
 };
-use crate::ports::StoreFs;
+use crate::ports::{self, StoreFs};
 use dctx_map_segment::{decode, segment_object_digest};
 
 pub(crate) struct Lease {
@@ -157,7 +157,7 @@ impl<F: StoreFs> SegmentStore<F> {
         if !self.fs.exists(&path)? {
             return Ok(None);
         }
-        let bytes = self.fs.read(&path)?;
+        let bytes = load_limited(&self.fs, &path, POINTER_LEN)?;
         Ok(Some(decode_pointer(&bytes)?.generation))
     }
 
@@ -226,7 +226,7 @@ impl<F: StoreFs> SegmentStore<F> {
     pub fn read_segment(&self, pin: &Pin, digest: &[u8; 32]) -> Result<Vec<u8>, StoreError> {
         self.ensure_live()?;
         let role = pin.role_of(digest).ok_or(StoreError::InvalidRequest { reason: "pin" })?;
-        let bytes = self.fs.read(&segment_path(digest))?;
+        let bytes = load_limited(&self.fs, &segment_path(digest), ports::OBJECT_MAX)?;
         let actual = segment_object_digest(&bytes).map_err(|_| StoreError::CorruptIndex { reason: "segment" })?;
         if actual != *digest {
             return Err(StoreError::CorruptIndex { reason: "segment" });
@@ -345,11 +345,31 @@ fn still_retained<F: StoreFs>(
     Ok(false)
 }
 
+fn load_limited<F: StoreFs>(fs: &F, path: &str, max: u64) -> Result<Vec<u8>, StoreError> {
+    let len = fs.len(path)?;
+    if len > max {
+        return Err(StoreError::CorruptIndex { reason: "limit" });
+    }
+    let bytes = fs.read(path)?;
+    let got = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
+    if got > max || got != len {
+        return Err(StoreError::CorruptIndex { reason: "limit" });
+    }
+    Ok(bytes)
+}
+
 pub(crate) fn inspect<F: StoreFs>(fs: &F, path: &str) -> Result<PointerView, StoreError> {
     if !fs.exists(path)? {
         return Ok(PointerView::Absent);
     }
-    let bytes = fs.read(path)?;
+    let len = fs.len(path)?;
+    if len > POINTER_LEN {
+        return Err(StoreError::CorruptIndex { reason: "limit" });
+    }
+    if len != POINTER_LEN {
+        return Ok(PointerView::Broken);
+    }
+    let bytes = load_limited(fs, path, POINTER_LEN)?;
     let pointer = match decode_pointer(&bytes) {
         Ok(pointer) => pointer,
         Err(_) => return Ok(PointerView::Broken),
@@ -358,11 +378,17 @@ pub(crate) fn inspect<F: StoreFs>(fs: &F, path: &str) -> Result<PointerView, Sto
     if !fs.exists(&man_path)? {
         return Ok(PointerView::Broken);
     }
-    let man_bytes = fs.read(&man_path)?;
-    let man_len = u64::try_from(man_bytes.len()).unwrap_or(u64::MAX);
+    if pointer.length > ports::OBJECT_MAX {
+        return Err(StoreError::CorruptIndex { reason: "limit" });
+    }
+    let man_len = fs.len(&man_path)?;
+    if man_len > ports::OBJECT_MAX {
+        return Err(StoreError::CorruptIndex { reason: "limit" });
+    }
     if man_len != pointer.length {
         return Ok(PointerView::Broken);
     }
+    let man_bytes = load_limited(fs, &man_path, pointer.length)?;
     let digest = match manifest_digest(&man_bytes) {
         Ok(digest) => digest,
         Err(_) => return Ok(PointerView::Broken),
@@ -401,11 +427,17 @@ fn segment_ok<F: StoreFs>(fs: &F, segment: &SegmentRef) -> Result<bool, StoreErr
     if !fs.exists(&path)? {
         return Ok(false);
     }
-    let bytes = fs.read(&path)?;
-    let len = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
+    if segment.length > ports::OBJECT_MAX {
+        return Err(StoreError::CorruptIndex { reason: "limit" });
+    }
+    let len = fs.len(&path)?;
+    if len > ports::OBJECT_MAX {
+        return Err(StoreError::CorruptIndex { reason: "limit" });
+    }
     if len != segment.length {
         return Ok(false);
     }
+    let bytes = load_limited(fs, &path, segment.length)?;
     let digest = match segment_object_digest(&bytes) {
         Ok(digest) => digest,
         Err(_) => return Ok(false),
