@@ -914,6 +914,7 @@ name = "dctx-desktop-api"
 version = "0.1.0"
 dependencies = [
  "dctx",
+ "dctx-core",
  "dctx-plugin-distribution",
  "dctx-template",
  "serde",
