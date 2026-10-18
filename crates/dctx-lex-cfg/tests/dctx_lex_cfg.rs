@@ -14,6 +14,9 @@ const JSON: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixt
 const TOML: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/basic.toml"));
 const YAML: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/basic.yaml"));
 const PARTIAL: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/incomplete.yaml"));
+const WORKFLOWS: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/workflows.yaml"));
+const SETTINGS: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/settings.json"));
+const EDGE_TOML: &str = include_str!(concat!(env!("CARGO_MANIFEST_DIR"), "/tests/fixtures/edge.toml"));
 
 fn extract(path: &str, source: &str) -> LexedFile {
     CfgLexer::default()
@@ -277,6 +280,136 @@ fn assert_stable(path: &str, bytes: &[u8]) {
     }
 }
 
+#[test]
+fn real_world_dialects_parse_completely() {
+    let yaml = load("workflows.yaml", WORKFLOWS);
+    assert_eq!(yaml.completion, Completion::Complete, "{:?}", yaml.diagnostics);
+    assert_eq!(
+        names(&yaml),
+        [
+            "workflows.yaml",
+            "on",
+            "on.push",
+            "on.push.branches",
+            "on.push.branches.0",
+            "on.push.tags",
+            "on.push.tags.0",
+            "on.schedule",
+            "on.schedule.0",
+            "on.schedule.0.cron",
+            "jobs",
+            "jobs.test",
+            "jobs.test.include",
+            "jobs.test.include.0",
+            "jobs.test.include.0.build",
+            "jobs.test.include.0.os",
+            "jobs.test.include.1",
+            "jobs.test.include.1.build",
+            "jobs.test.include.1.os",
+            "jobs.test.steps",
+            "jobs.test.steps.0",
+            "jobs.test.steps.0.name",
+            "jobs.test.steps.0.run",
+            "jobs.test.steps.1",
+            "jobs.test.steps.1.run",
+            "jobs.lint",
+            "jobs.lint.steps",
+            "jobs.lint.steps.0",
+            "jobs.lint.steps.0.name",
+            "patterns",
+            "patterns.0",
+            "patterns.1",
+            "note",
+            "note.enabled",
+            "use",
+            "env",
+            "env.FOO",
+            "env.BAZ",
+            "list",
+            "list.0",
+            "list.1",
+            "desc",
+        ]
+    );
+    assert_eq!(node(&yaml, "on.push.branches.0").signature, "master");
+    assert_eq!(node(&yaml, "on.schedule.0.cron").signature, "00 01 * * *");
+    assert_eq!(node(&yaml, "jobs.test.include.1.build").signature, "stable");
+    assert_eq!(node(&yaml, "jobs.test.steps.0.run").signature, "echo one echo two");
+    assert_eq!(node(&yaml, "jobs.test.steps.1.run").signature, "echo done");
+    assert_eq!(node(&yaml, "patterns.0").signature, "*");
+    assert_eq!(node(&yaml, "patterns.1").signature, "80:80");
+    assert!(node(&yaml, "note").signature.contains("&base"));
+    assert_eq!(node(&yaml, "use").signature, "*base");
+    assert!(names(&yaml).iter().all(|name| *name != "use.enabled"));
+    assert_eq!(node(&yaml, "env.FOO").signature, "bar");
+    assert_eq!(node(&yaml, "list.1").signature, "stable");
+    assert_eq!(node(&yaml, "desc").signature, "plain text continues");
+
+    let json = load("settings.json", SETTINGS);
+    assert_eq!(json.dialect, Dialect::Json);
+    assert_eq!(json.completion, Completion::Complete, "{:?}", json.diagnostics);
+    assert_eq!(
+        names(&json),
+        [
+            "settings.json",
+            "rust-analyzer.linkedProjects",
+            "rust-analyzer.linkedProjects.0",
+            "editor.tabSize",
+        ]
+    );
+    assert_eq!(node(&json, "rust-analyzer.linkedProjects.0").signature, "Cargo.toml");
+    assert_eq!(node(&json, "editor.tabSize").signature, "4");
+
+    let toml = load("edge.toml", EDGE_TOML);
+    assert_eq!(toml.completion, Completion::Complete, "{:?}", toml.diagnostics);
+    assert_eq!(
+        names(&toml),
+        [
+            "edge.toml",
+            "target",
+            "target.cfg(windows)",
+            "target.cfg(windows).dependencies",
+            "target.cfg(windows).dependencies.winapi",
+            "package",
+            "package.name.full",
+        ]
+    );
+    assert_eq!(node(&toml, "target.cfg(windows).dependencies.winapi").signature, "0.3");
+    assert_eq!(node(&toml, "package.name.full").signature, "demo");
+
+    let paired = load("a.yaml", "a:\n- 1\nb:\n- 2\n");
+    assert_eq!(paired.completion, Completion::Complete, "{:?}", paired.diagnostics);
+    assert_eq!(names(&paired), ["a.yaml", "a", "a.0", "b", "b.0"]);
+
+    let block = load("a.yaml", "lines:\n- |\n  one\n\n  two\nnext: 1\n");
+    assert_eq!(block.completion, Completion::Complete, "{:?}", block.diagnostics);
+    assert_eq!(node(&block, "lines.0").signature, "one two");
+    assert_eq!(node(&block, "next").signature, "1");
+
+    let commented = load("a.yaml", "steps: # build\n- run: test\n");
+    assert_eq!(commented.completion, Completion::Complete, "{:?}", commented.diagnostics);
+    assert_eq!(node(&commented, "steps").summary.text, "build");
+    assert_eq!(node(&commented, "steps.0.run").signature, "test");
+
+    let tabbed = load("a.yaml", "a:\tb # note\nb: 1\n");
+    assert_eq!(tabbed.completion, Completion::Complete, "{:?}", tabbed.diagnostics);
+    assert_eq!(node(&tabbed, "a").signature, "b");
+    assert_eq!(node(&tabbed, "a").summary.text, "note");
+
+    let dashed = load("a.yaml", "items:\n-\t\"*\"\n");
+    assert_eq!(dashed.completion, Completion::Complete, "{:?}", dashed.diagnostics);
+    assert_eq!(node(&dashed, "items.0").signature, "*");
+
+    let directive = load("a.yaml", "%YAML 1.1\n--- # generated\na: 1\n");
+    assert_eq!(directive.completion, Completion::Complete, "{:?}", directive.diagnostics);
+    assert_eq!(names(&directive), ["a.yaml", "a"]);
+
+    let flow = load("a.yaml", "schedule: [cron: \"40 1 * * *\"]\nrust: [nightly, stable]\n");
+    assert_eq!(flow.completion, Completion::Complete, "{:?}", flow.diagnostics);
+    assert!(names(&flow).contains(&"schedule.0"));
+    assert_eq!(node(&flow, "rust.1").signature, "stable");
+}
+
 fn xorshift(state: &mut u64) -> u64 {
     let mut x = *state;
     x ^= x << 13;
@@ -299,7 +432,15 @@ fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
             assert_stable(path, &bytes);
         }
     }
-    let fixtures = [("basic.json", JSON), ("basic.toml", TOML), ("basic.yaml", YAML), ("incomplete.yaml", PARTIAL)];
+    let fixtures = [
+        ("basic.json", JSON),
+        ("basic.toml", TOML),
+        ("basic.yaml", YAML),
+        ("incomplete.yaml", PARTIAL),
+        ("workflows.yaml", WORKFLOWS),
+        ("settings.json", SETTINGS),
+        ("edge.toml", EDGE_TOML),
+    ];
     for (path, source) in fixtures {
         for len in 0..=source.len() {
             let prefix = &source.as_bytes()[..len];

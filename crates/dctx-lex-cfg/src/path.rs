@@ -456,7 +456,7 @@ impl<'a> Draft<'a> {
 fn valid_segment(segment: &str) -> bool {
     !segment.is_empty()
         && segment.len() <= 512
-        && !segment.chars().any(|ch| ch.is_control() || matches!(ch, '#' | '~' | '.'))
+        && !segment.chars().any(|ch| ch.is_control() || matches!(ch, '#' | '~'))
 }
 
 fn bounded(text: &str, max: usize) -> String {

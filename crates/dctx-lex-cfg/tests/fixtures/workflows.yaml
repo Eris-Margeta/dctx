@@ -1,0 +1,36 @@
+on:
+  push:
+    branches:
+    - master
+    tags:
+    - v1
+  schedule:
+  - cron: "00 01 * * *"
+jobs:
+  test:
+    include:
+    - build: pinned
+      os: ubuntu-latest
+    - build: stable
+      os: ubuntu-latest
+    steps:
+    - name: Run
+      run: |
+        echo one
+
+        echo two
+    - run: echo done
+  lint:
+    steps:
+    - name: Lint
+patterns:
+- "*"
+- "80:80"
+note: &base
+  enabled: true
+use: *base
+env: {FOO: bar, BAZ: qux}
+list: [nightly, stable]
+desc:
+  plain text
+  continues

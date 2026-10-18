@@ -1,6 +1,7 @@
 //! JSON and JSONC structural walk.
 //! Implements the configuration extractor for `.json` and `.jsonc` (PARSERS-v1).
-//! Comments are summaries in JSONC and diagnostics in JSON. The draft in `path` owns facts.
+//! Comments are summaries in JSONC and diagnostics in JSON. Trailing commas are
+//! accepted in both. The draft in `path` owns facts.
 use crate::domain::{DiagnosticReason, Dialect, LexError, LexedFile, Limits};
 use crate::path::{Cur, Draft, Kind};
 
@@ -142,16 +143,8 @@ impl<'a> Parser<'a> {
             let _ = self.skip();
             self.value(parent, &key, depth, start, doc)?;
             let _ = self.skip();
+            // Trailing commas are valid in the editor dialects these files use.
             if self.cur.eat(b',') {
-                let save = self.cur.i;
-                let _ = self.skip();
-                if self.cur.byte() == Some(b'}') {
-                    if !self.jsonc {
-                        self.diagnose(save, DiagnosticReason::InvalidSyntax);
-                    }
-                    continue;
-                }
-                self.cur.i = save;
                 continue;
             }
             if self.cur.eat(b'}') {

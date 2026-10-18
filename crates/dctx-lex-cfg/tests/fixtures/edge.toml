@@ -1,0 +1,5 @@
+[target.'cfg(windows)'.dependencies]
+winapi = "0.3"
+
+[package]
+"name.full" = "demo"

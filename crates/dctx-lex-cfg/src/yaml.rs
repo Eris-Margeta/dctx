@@ -55,6 +55,9 @@ impl<'a> Parser<'a> {
                 self.parse_sequence(parent, indent, depth, lead)?;
             } else if self.looks_like_key() {
                 self.parse_mappings(parent, indent, depth, lead)?;
+            } else if self.directive() {
+                self.cur.consume_line();
+                if self.cur.i == mark { self.cur.bump(); }
             } else {
                 self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
                 self.cur.consume_line();
@@ -113,10 +116,28 @@ impl<'a> Parser<'a> {
             self.close(node);
             return Ok(());
         }
+        if matches!(self.cur.byte(), Some(b'|' | b'>')) {
+            let node = self.make(parent, segment, false, child_depth, start)?;
+            self.doc(node, lead.as_deref());
+            let text = self.block_scalar(dash_indent);
+            self.sign(node, &text);
+            self.close(node);
+            return Ok(());
+        }
         if self.looks_like_key() {
+            // The dash column is the line indent; sibling keys align with the key text.
+            let key_indent = self.cursor_column();
             let node = self.make(parent, segment, true, child_depth, start)?;
             self.doc(node, lead.as_deref());
-            self.parse_mappings(node, self.indent(), child_depth, None)?;
+            self.broke = false;
+            let key_at = self.cur.i;
+            if let Some(key) = self.parse_key() {
+                self.mapped_value(node, &key, key_indent, child_depth, key_at, None)?;
+                self.parse_mappings(node, key_indent, child_depth, None)?;
+            } else {
+                if !self.broke { self.diagnose(key_at, DiagnosticReason::InvalidSyntax); }
+                self.cur.consume_line();
+            }
             self.close(node);
             return Ok(());
         }
@@ -138,7 +159,7 @@ impl<'a> Parser<'a> {
         } else if matches!(self.cur.byte(), Some(b'"' | b'\'')) {
             self.read_string(node, start)?;
         } else {
-            let text = self.plain();
+            let text = self.fold_plain(dash_indent);
             self.cite(node, &text, start)?;
         }
         self.close(node);
@@ -177,22 +198,43 @@ impl<'a> Parser<'a> {
             self.read_string(node, start)?;
             if let Some(text) = self.trailing() { self.doc(node, Some(&text)); }
         } else {
-            let text = self.plain();
-            if let Some(next) = text.is_empty().then(|| self.peek_indent()).flatten().filter(|&next| next > indent) {
-                self.parse_block(node, next, depth.saturating_add(1))?;
-            } else if !text.is_empty() {
-                let signature = match &anchor {
-                    Some(anchor) => format!("&{anchor} {text}"),
-                    None => text.clone(),
-                };
-                self.sign(node, &signature);
-                if let Some(index) = node {
-                    self.draft.string_ref(index, &text, start, self.cur.i)?;
-                    if let Some(comment) = self.trailing() { self.draft.set_doc(index, &comment); }
-                }
+            if self.cur.byte() == Some(b'#') {
+                let comment = hash_comment(&mut self.cur);
+                if !comment.is_empty() { self.doc(node, Some(&comment)); }
+            }
+            if matches!(self.cur.byte(), None | Some(b'\n' | b'\r' | b'#')) {
+                self.nest_or_fold(node, indent, depth, &anchor, start)?;
+            } else {
+                let text = self.fold_plain(indent);
+                self.finish_scalar(node, &text, &anchor, start)?;
             }
         }
         self.close(node);
+        Ok(())
+    }
+    fn nest_or_fold(&mut self, node: Option<usize>, indent: usize, depth: u32, anchor: &Option<String>, start: usize) -> Result<(), LexError> {
+        if self.same_indent_sequence(indent) {
+            self.parse_sequence(node, indent, depth.saturating_add(1), None)?;
+        } else if self.peek_nested_block(indent) {
+            if let Some(next) = self.peek_indent().filter(|&next| next > indent) {
+                self.parse_block(node, next, depth.saturating_add(1))?;
+            }
+        } else if self.plain_more(indent) {
+            let text = self.fold_plain(indent);
+            self.finish_scalar(node, &text, anchor, start)?;
+        }
+        Ok(())
+    }
+    fn finish_scalar(&mut self, node: Option<usize>, text: &str, anchor: &Option<String>, start: usize) -> Result<(), LexError> {
+        let Some(index) = node else { return Ok(()) };
+        if text.is_empty() { return Ok(()) }
+        let signature = match anchor {
+            Some(anchor) => format!("&{anchor} {text}"),
+            None => text.to_string(),
+        };
+        self.sign(node, &signature);
+        self.draft.string_ref(index, text, start, self.cur.i)?;
+        if let Some(comment) = self.trailing() { self.draft.set_doc(index, &comment); }
         Ok(())
     }
     fn flow(&mut self, parent: Option<usize>, depth: u32) -> Result<(), LexError> {
@@ -304,28 +346,90 @@ impl<'a> Parser<'a> {
     fn opens_nest(&self, indent: usize) -> bool {
         match self.cur.byte() {
             Some(b'{' | b'[') => true,
-            Some(b'\n' | b'\r' | b'#') | None => self.peek_indent().is_some_and(|next| next > indent),
+            Some(b'\n' | b'\r' | b'#') | None => {
+                self.same_indent_sequence(indent) || self.peek_nested_block(indent)
+            }
             _ => false,
         }
     }
-    fn indent(&self) -> usize { self.column(true).0 }
-    fn column(&self, cursor_limit: bool) -> (usize, bool) {
+    fn indent(&self) -> usize {
         let bytes = self.cur.src.as_bytes();
         let end = self.cur.end.min(bytes.len());
-        let mut start = self.cur.i.min(end);
+        let at = self.cur.i.min(end);
+        let mut start = at;
         while start > 0 && bytes[start - 1] != b'\n' { start -= 1; }
-        let limit = if cursor_limit { self.cur.i.min(end) } else { end };
         let mut cursor = start;
-        while cursor < limit && matches!(bytes.get(cursor), Some(b' ' | b'\t')) { cursor += 1; }
-        let blank = cursor >= end || matches!(bytes.get(cursor), Some(b'\n' | b'\r' | b'#'));
-        (cursor - start, blank)
+        while cursor < at && matches!(bytes.get(cursor), Some(b' ' | b'\t')) { cursor += 1; }
+        visual_columns(&bytes[start..cursor])
     }
-    fn at_dash(&self) -> bool {
-        self.cur.byte() == Some(b'-')
-            && matches!(self.cur.src.as_bytes().get(self.cur.i + 1), None | Some(b' ' | b'\n' | b'\r' | b'#'))
+    fn cursor_column(&self) -> usize {
+        let bytes = self.cur.src.as_bytes();
+        let end = self.cur.end.min(bytes.len());
+        let at = self.cur.i.min(end);
+        let mut start = at;
+        while start > 0 && bytes[start - 1] != b'\n' { start -= 1; }
+        visual_columns(&bytes[start..at])
+    }
+    fn at_dash(&self) -> bool { self.dash_at(self.cur.i) }
+    fn dash_at(&self, index: usize) -> bool {
+        let bytes = self.cur.src.as_bytes();
+        bytes.get(index) == Some(&b'-')
+            && matches!(bytes.get(index + 1), None | Some(b' ' | b'\t' | b'\n' | b'\r' | b'#'))
     }
     fn looks_like_key(&self) -> bool {
-        matches!(self.cur.byte(), Some(b'"' | b'\'')) || self.find_colon(self.cur.i).is_some()
+        match self.cur.byte() {
+            Some(b'"' | b'\'') => self.quoted_key_or_broken(self.cur.i),
+            _ => self.find_colon(self.cur.i).is_some(),
+        }
+    }
+    /// A closed quote is a key only when `:` follows. An unclosed quote still
+    /// counts so the string scanner can report it as unterminated.
+    fn quoted_key_or_broken(&self, start: usize) -> bool {
+        let Some(end) = self.closed_quote_end(start) else { return true };
+        let bytes = self.cur.src.as_bytes();
+        let limit = self.cur.end.min(bytes.len());
+        let mut index = end;
+        while index < limit && matches!(bytes.get(index), Some(b' ' | b'\t')) { index += 1; }
+        index < limit && bytes.get(index) == Some(&b':') && self.colon_value(index)
+    }
+    fn closed_quote_end(&self, start: usize) -> Option<usize> {
+        let bytes = self.cur.src.as_bytes();
+        let limit = self.cur.end.min(bytes.len());
+        let quote = *bytes.get(start)?;
+        if quote != b'"' && quote != b'\'' { return None; }
+        let mut index = start + 1;
+        while index < limit {
+            let byte = bytes[index];
+            if byte == b'\n' { return None; }
+            if byte == b'\\' && quote == b'"' {
+                index += 1;
+                if index >= limit || bytes[index] == b'\n' { return None; }
+                index += 1;
+                continue;
+            }
+            if byte == quote {
+                index += 1;
+                if quote == b'\'' && bytes.get(index) == Some(&b'\'') {
+                    index += 1;
+                    continue;
+                }
+                return Some(index);
+            }
+            index += 1;
+        }
+        None
+    }
+    fn directive(&self) -> bool {
+        let rest = self.cur.rest();
+        rest.starts_with("%YAML") || rest.starts_with("%TAG")
+    }
+    fn same_indent_sequence(&self, indent: usize) -> bool {
+        self.peek_line().is_some_and(|(next, ahead)| next == indent && matches!(ahead, Ahead::Dash))
+    }
+    fn peek_nested_block(&self, indent: usize) -> bool {
+        self.peek_line().is_some_and(|(next, ahead)| {
+            next > indent && matches!(ahead, Ahead::Dash | Ahead::Key)
+        })
     }
     fn parse_key(&mut self) -> Option<String> {
         self.cur.skip_spaces();
@@ -366,7 +470,8 @@ impl<'a> Parser<'a> {
     fn eat_colon(&mut self) -> bool {
         if self.cur.byte() == Some(b':') && self.colon_value(self.cur.i) { self.cur.i += 1; true } else { false }
     }
-    fn peek_indent(&self) -> Option<usize> {
+    fn peek_indent(&self) -> Option<usize> { self.peek_line().map(|(indent, _)| indent) }
+    fn peek_line(&self) -> Option<(usize, Ahead)> {
         let bytes = self.cur.src.as_bytes();
         let end = self.cur.end.min(bytes.len());
         let mut index = self.cur.i;
@@ -381,8 +486,23 @@ impl<'a> Parser<'a> {
                 while index < end && bytes[index] != b'\n' { index += 1; }
                 continue;
             }
-            return Some(index - line_start);
+            let indent = visual_columns(&bytes[line_start..index]);
+            let ahead = if self.dash_at(index) {
+                Ahead::Dash
+            } else if self.key_from(index) {
+                Ahead::Key
+            } else {
+                Ahead::Plain
+            };
+            return Some((indent, ahead));
         }
+    }
+    fn key_from(&self, index: usize) -> bool {
+        let bytes = self.cur.src.as_bytes();
+        if matches!(bytes.get(index), Some(b'"' | b'\'')) {
+            return self.quoted_key_or_broken(index);
+        }
+        self.find_colon(index).is_some()
     }
     fn plain(&mut self) -> String {
         let bytes = self.cur.src.as_bytes();
@@ -391,28 +511,98 @@ impl<'a> Parser<'a> {
         let mut end = start;
         while end < limit {
             let byte = bytes[end];
-            if byte == b'\n' || byte == b'\r' || (byte == b'#' && end > start && bytes[end - 1] == b' ') { break; }
+            if byte == b'\n' || byte == b'\r' || (byte == b'#' && end > start && matches!(bytes[end - 1], b' ' | b'\t')) {
+                break;
+            }
             end += 1;
         }
         let text = self.cur.slice(start, end).trim().to_string();
         self.cur.i = end;
         text
     }
+    fn fold_plain(&mut self, parent_indent: usize) -> String {
+        let mut text = self.plain();
+        while self.plain_more(parent_indent) {
+            let before = self.cur.i;
+            while self.cur.byte().is_some_and(|byte| byte != b'\n') { self.cur.i += 1; }
+            if !self.cur.eat(b'\n') { break; }
+            self.cur.skip_spaces();
+            let more = self.plain();
+            if more.is_empty() || self.cur.i == before { break; }
+            if !text.is_empty() { text.push(' '); }
+            text.push_str(&more);
+        }
+        text
+    }
+    fn plain_more(&self, parent_indent: usize) -> bool {
+        let Some((indent, ahead)) = self.peek_line() else { return false };
+        indent > parent_indent && matches!(ahead, Ahead::Plain)
+    }
     fn block_scalar(&mut self, parent_indent: usize) -> String {
         self.cur.bump();
-        while matches!(self.cur.byte(), Some(b'+' | b'-' | b'0'..=b'9')) { self.cur.bump(); }
+        let mut keep_tail = false;
+        while let Some(byte) = self.cur.byte() {
+            match byte {
+                b'+' => { keep_tail = true; self.cur.bump(); }
+                b'-' => { keep_tail = false; self.cur.bump(); }
+                b'0'..=b'9' => { self.cur.bump(); }
+                _ => break,
+            }
+        }
         self.cur.consume_line();
         let mut parts = Vec::new();
+        let mut content_indent: Option<usize> = None;
         while !self.cur.eof() {
-            let (indent, blank) = self.column(false);
-            if blank || indent <= parent_indent { break; }
+            let (indent, empty) = self.line_shape();
+            if empty {
+                if !self.block_resumes(parent_indent, content_indent) { break; }
+                self.cur.consume_line();
+                if keep_tail { parts.push(String::new()); }
+                continue;
+            }
+            if indent <= parent_indent { break; }
+            if content_indent.is_some_and(|min| indent < min) { break; }
+            if content_indent.is_none() { content_indent = Some(indent); }
             while matches!(self.cur.byte(), Some(b' ' | b'\t')) { self.cur.bump(); }
             let start = self.cur.i;
             while self.cur.byte().is_some_and(|byte| byte != b'\n') { self.cur.i += 1; }
-            parts.push(self.cur.slice(start, self.cur.i).trim().to_string());
+            parts.push(self.cur.slice(start, self.cur.i).trim_end_matches('\r').trim().to_string());
             self.cur.eat(b'\n');
         }
-        parts.join(" ")
+        if !keep_tail {
+            while parts.last().is_some_and(|line| line.is_empty()) { parts.pop(); }
+        }
+        parts.into_iter().filter(|line| !line.is_empty()).collect::<Vec<_>>().join(" ")
+    }
+    fn line_shape(&self) -> (usize, bool) {
+        let bytes = self.cur.src.as_bytes();
+        let end = self.cur.end.min(bytes.len());
+        let start = self.cur.i.min(end);
+        let mut index = start;
+        while index < end && matches!(bytes[index], b' ' | b'\t') { index += 1; }
+        let indent = visual_columns(&bytes[start..index]);
+        let empty = index >= end || matches!(bytes.get(index), Some(b'\n' | b'\r'));
+        (indent, empty)
+    }
+    fn block_resumes(&self, parent_indent: usize, content_indent: Option<usize>) -> bool {
+        let bytes = self.cur.src.as_bytes();
+        let end = self.cur.end.min(bytes.len());
+        let mut index = self.cur.i;
+        loop {
+            if index >= end { return false; }
+            let line_start = index;
+            while index < end && matches!(bytes[index], b' ' | b'\t') { index += 1; }
+            if index >= end { return false; }
+            if matches!(bytes[index], b'\n' | b'\r') {
+                while index < end && bytes[index] != b'\n' { index += 1; }
+                if index < end { index += 1; }
+                continue;
+            }
+            let indent = visual_columns(&bytes[line_start..index]);
+            if indent <= parent_indent { return false; }
+            if content_indent.is_some_and(|min| indent < min) { return false; }
+            return true;
+        }
     }
     fn quoted(&mut self) -> Option<String> {
         let quote = self.cur.byte()?;
@@ -470,6 +660,24 @@ impl<'a> Parser<'a> {
     }
 }
 
+enum Ahead {
+    Dash,
+    Key,
+    Plain,
+}
+
+fn visual_columns(bytes: &[u8]) -> usize {
+    let mut column = 0usize;
+    for &byte in bytes {
+        if byte == b'\t' {
+            column = (column / 8 + 1) * 8;
+        } else {
+            column += 1;
+        }
+    }
+    column
+}
+
 fn documents(source: &str) -> Vec<(usize, usize)> {
     let bytes = source.as_bytes();
     let mut ranges = Vec::new();
@@ -488,10 +696,24 @@ fn documents(source: &str) -> Vec<(usize, usize)> {
     if ranges.is_empty() { ranges.push((0, source.len())); }
     ranges
 }
-fn separator(line: &str) -> bool { matches!(line.trim(), "---" | "...") }
+fn separator(line: &str) -> bool {
+    let text = line.trim();
+    let rest = if let Some(rest) = text.strip_prefix("---") {
+        rest
+    } else if let Some(rest) = text.strip_prefix("...") {
+        rest
+    } else {
+        return false;
+    };
+    let rest = rest.trim_start();
+    rest.is_empty() || rest.starts_with('#')
+}
 fn push_doc(ranges: &mut Vec<(usize, usize)>, source: &str, start: usize, end: usize) {
     let Some(body) = source.get(start..end) else { return };
-    if body.lines().any(|line| { let text = line.trim(); !text.is_empty() && !text.starts_with('#') }) {
+    if body.lines().any(|line| {
+        let text = line.trim();
+        !text.is_empty() && !text.starts_with('#') && !text.starts_with("%YAML") && !text.starts_with("%TAG")
+    }) {
         ranges.push((start, end));
     }
 }

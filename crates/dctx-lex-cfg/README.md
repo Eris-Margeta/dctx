@@ -14,6 +14,8 @@ comment is the summary.
 Extracted:
 
 - JSON objects and arrays. `.jsonc` accepts `//` and `/* */` comments.
+  Trailing commas are accepted in JSON and JSONC. A dot inside a key stays in
+  that key (`rust-analyzer.linkedProjects`).
 - TOML tables, arrays of tables, dotted keys and inline tables.
 - YAML block mappings and sequences, flow collections, multi-document files.
   Anchors and aliases are recorded on the signature and are not expanded.
@@ -23,6 +25,6 @@ a dependency key under a dependencies table, a workspace member, or a relative
 path (`./`, `../`, or a `path` value containing `/`). Anything else is abstained.
 No edge is invented; the only edges are `contains`.
 
-Keys containing `.`, `#`, `~` or a control character are abstained. Malformed
+Keys containing `#`, `~` or a control character are abstained. Malformed
 input yields partial facts and a `Diagnostic`. Oversized input, nesting past
 `Limits`, and too many facts are typed `LexError`s with no facts.
