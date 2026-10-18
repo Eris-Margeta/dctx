@@ -1,8 +1,8 @@
 //! Language dispatch for the pure-Rust parser and the optional tree-sitter oracle.
 //! Implements SPEC-MAP-MODE section 6.2 and PARSERS-v1 for Rust, JavaScript,
-//! TypeScript, Markdown, Python, Go, Java, C/C++, configuration, C#, Kotlin, Ruby and PHP.
+//! TypeScript, Markdown, Python, Go, Java, C/C++, configuration, C#, Kotlin, Ruby, PHP and Swift.
 //! Uses the dctx-lex crates by default; tree-sitter compiles only with syntax-tree-sitter.
-//! Languages without a tree-sitter grammar use their pure adapters in the oracle.
+//! Languages without a tree-sitter grammar, including Swift, use the pure path in the oracle.
 mod c;
 mod config;
 mod csharp;
@@ -16,6 +16,7 @@ mod php;
 mod python;
 mod ruby;
 mod rust;
+mod swift;
 
 #[cfg(feature = "syntax-tree-sitter")]
 mod javascript_items;
@@ -55,6 +56,7 @@ impl Parser for PureParser {
             Language::Kotlin => kotlin::parse_pure(path, bytes),
             Language::Ruby => ruby::parse_pure(path, bytes),
             Language::Php => php::parse_pure(path, bytes),
+            Language::Swift => swift::parse_pure(path, bytes),
             Language::Unknown => fallback(path, source),
         }
     }
@@ -62,7 +64,7 @@ impl Parser for PureParser {
 
 /// Tree-sitter language adapters. Compiled only with `syntax-tree-sitter`.
 ///
-/// Python, Go, Java, C/C++, configuration, C#, Kotlin, Ruby and PHP have no grammar here.
+/// Python, Go, Java, C/C++, configuration, C#, Kotlin, Ruby, PHP and Swift have no grammar here.
 /// The oracle falls back to the pure adapters with the same precision and refusals.
 #[cfg(feature = "syntax-tree-sitter")]
 #[derive(Debug, Clone, Copy, Default)]
@@ -85,6 +87,7 @@ impl Parser for TreeSitterParser {
             Language::Kotlin => return kotlin::parse_pure(path, bytes),
             Language::Ruby => return ruby::parse_pure(path, bytes),
             Language::Php => return php::parse_pure(path, bytes),
+            Language::Swift => return swift::parse_pure(path, bytes),
             Language::Unknown => return fallback(path, source),
             Language::Rust
             | Language::JavaScript
@@ -109,6 +112,7 @@ impl Parser for TreeSitterParser {
             | Language::Kotlin
             | Language::Ruby
             | Language::Php
+            | Language::Swift
             | Language::Unknown => {}
         }
         facts.finish()

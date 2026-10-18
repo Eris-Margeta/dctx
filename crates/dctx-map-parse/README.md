@@ -10,14 +10,15 @@
 configuration (`.json`, `.jsonc`, `.toml`, `.yaml`, `.yml`) to `dctx-lex-cfg`,
 C# (`.cs`) to `dctx-lex-cs`, Kotlin (`.kt`, `.kts`) to `dctx-lex-kt`,
 Ruby (`.rb`, `.rake`, `.gemspec`) to `dctx-lex-rb`,
-and PHP (`.php`, `.phtml`, `.inc`) to `dctx-lex-php`,
+PHP (`.php`, `.phtml`, `.inc`) to `dctx-lex-php`,
+and Swift (`.swift`) to `dctx-lex-swift`,
 case-insensitively. Other extensions produce a module with a first-comment
 summary and an opaque precision label. The caller performs scanning and file IO.
 
 Each `ParsedFile` carries a precision label: coverage, completion and parser
 identity. That label is not edge confidence. Complete Rust is `syntax`.
 JavaScript, TypeScript, Markdown, Python, Go, Java, C/C++, configuration and
-C#, Kotlin, Ruby and PHP are `structural`.
+C#, Kotlin, Ruby, PHP and Swift are `structural`.
 Unknown files are `opaque`. A partial or diagnostic extraction is
 `ParseError::Syntax`, so an indexer can mask and retry instead of storing
 line-scan facts as a complete parse.
@@ -62,14 +63,14 @@ should consume `RawReference` before adapting results into store `FileFacts`.
 The default build depends on `dctx-map-model`, `dctx-lex-rust` (and its `syn`
 closure), `dctx-lex-js`, `dctx-lex-md`, `dctx-lex-py`, `dctx-lex-go`,
 `dctx-lex-java`, `dctx-lex-c`, `dctx-lex-cfg`, `dctx-lex-cs`, `dctx-lex-kt`,
-`dctx-lex-rb`, `dctx-lex-php`, `sha2` and
+`dctx-lex-rb`, `dctx-lex-php`, `dctx-lex-swift`, `sha2` and
 `thiserror`. Those lexer crates are path dependencies. This wiring adds no
 external dependency. The default build does not depend on tree-sitter or any
 C code. `syntax-tree-sitter` (default
 off) opts into `tree-sitter`, `tree-sitter-rust`, `tree-sitter-md`,
 `tree-sitter-javascript` and `tree-sitter-typescript` and compiles
 `TreeSitterParser` as the differential oracle. That feature has no grammar for
-Python, Go, Java, C/C++, configuration, C#, Kotlin, Ruby or PHP, so those
+Python, Go, Java, C/C++, configuration, C#, Kotlin, Ruby, PHP or Swift, so those
 languages fall back to
 the pure adapters and keep their structural precision. Without that feature
 the name `TreeSitterParser`

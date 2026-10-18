@@ -34,6 +34,8 @@ pub enum Language {
     Ruby,
     /// PHP source (`.php`), templates (`.phtml`) and includes (`.inc`).
     Php,
+    /// Swift source (`.swift`).
+    Swift,
     /// No grammar; only a module node is emitted.
     Unknown,
 }
@@ -61,6 +63,7 @@ impl Language {
             Some("kt" | "kts") => Self::Kotlin,
             Some("rb" | "rake" | "gemspec") => Self::Ruby,
             Some("php" | "phtml" | "inc") => Self::Php,
+            Some("swift") => Self::Swift,
             _ => Self::Unknown,
         }
     }
@@ -175,6 +178,8 @@ mod tests {
             );
         }
         assert_eq!(Language::for_path("pkg/app.pyw"), Language::Unknown);
+        assert_eq!(Language::for_path("Sources/App.swift"), Language::Swift);
+        assert_eq!(Language::for_path("Sources/App.SWIFT"), Language::Swift);
         assert_eq!(Language::for_path("rs/file.txt"), Language::Unknown);
     }
 }
