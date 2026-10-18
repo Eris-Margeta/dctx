@@ -4,6 +4,12 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+cd "$PROJECT_ROOT"
+TEST_ROOT=$(mktemp -d)
+trap 'rm -rf "$TEST_ROOT"' EXIT
+
 echo "=================================="
 echo "dctx Cross-Platform Test Suite"
 echo "=================================="
@@ -54,6 +60,14 @@ if [ ! -f target/release/dctx ] && [ -f target/release/dctx-cli ]; then
 fi
 echo ""
 
+export HOME="$TEST_ROOT/home"
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_CACHE_HOME="$HOME/.cache"
+export XDG_DATA_HOME="$HOME/.local/share"
+export XDG_STATE_HOME="$HOME/.local/state"
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME"
+DCTX_BIN="$PROJECT_ROOT/target/release/dctx"
+
 echo -e "${BLUE}Step 2: Path Verification${NC}"
 run_test "Home directory exists" "test -d $HOME"
 run_test "Can create cache directory" "mkdir -p $HOME/.cache/dctx && test -d $HOME/.cache/dctx"
@@ -70,37 +84,35 @@ echo ""
 
 echo -e "${BLUE}Step 4: Functional Tests${NC}"
 # Create a test directory
-mkdir -p /tmp/dctx-test
-cd /tmp/dctx-test
+mkdir -p "$TEST_ROOT/project"
+cd "$TEST_ROOT/project"
 echo "test content" > test.txt
 mkdir -p subdir
 echo "nested content" > subdir/nested.txt
 
-run_test "Generate context from directory" "$OLDPWD/target/release/dctx ."
+run_test "Generate context from directory" "\"$DCTX_BIN\" ."
 run_test "Binary state file created" "test -f $HOME/.cache/dctx/*.dctx"
-run_test "Can run dctx twice (state loading)" "$OLDPWD/target/release/dctx ."
-run_test "Tree-only mode works" "$OLDPWD/target/release/dctx -t ."
-run_test "Reset flag works" "$OLDPWD/target/release/dctx -r ."
+run_test "Can run dctx twice (state loading)" "\"$DCTX_BIN\" ."
+run_test "Tree-only mode works" "\"$DCTX_BIN\" -t ."
+run_test "Reset flag works" "\"$DCTX_BIN\" -r ."
 
 # Cleanup test directory
-cd "$OLDPWD"
-rm -rf /tmp/dctx-test
+cd "$PROJECT_ROOT"
 echo ""
 
 echo -e "${BLUE}Step 5: File Classification${NC}"
 # Create test files
-mkdir -p /tmp/dctx-binary-test
-cd /tmp/dctx-binary-test
+mkdir -p "$TEST_ROOT/binary-project"
+cd "$TEST_ROOT/binary-project"
 echo "text file" > test.txt
 # Create a fake binary file (with null bytes)
 printf '\x00\x01\x02\x03' > test.bin
 touch test.png
 
-run_test "Processes directory with binary files" "$OLDPWD/target/release/dctx ."
+run_test "Processes directory with binary files" "\"$DCTX_BIN\" ."
 
 # Cleanup
-cd "$OLDPWD"
-rm -rf /tmp/dctx-binary-test
+cd "$PROJECT_ROOT"
 echo ""
 
 # Summary

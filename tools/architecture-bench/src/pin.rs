@@ -137,29 +137,28 @@ fn skipped(rel: &str, spec: &DctxSpec) -> bool {
     })
 }
 
-/// `git rev-parse HEAD` when git can see the worktree. Absence is reported, not invented.
-pub fn git_head(root: &Path) -> Option<String> {
-    let output = std::process::Command::new("git")
-        .arg("-C")
-        .arg(root)
-        .args(["rev-parse", "HEAD"])
-        .output()
-        .ok()?;
-    if !output.status.success() {
-        return None;
-    }
-    let text = String::from_utf8(output.stdout).ok()?;
-    let head = text.trim();
-    if matches!(head.len(), 40 | 64) && head.chars().all(|ch| ch.is_ascii_hexdigit()) {
-        Some(head.to_owned())
-    } else {
-        None
-    }
+/// Caller provenance from DCTX_BENCH_REVISION, without inspecting repository metadata.
+pub fn revision_label() -> String {
+    revision_or_unversioned(std::env::var("DCTX_BENCH_REVISION").ok())
+}
+
+fn revision_or_unversioned(label: Option<String>) -> String {
+    label.unwrap_or_else(|| "unversioned".into())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn revision_is_caller_provenance_with_an_explicit_default() {
+        assert_eq!(revision_or_unversioned(None), "unversioned");
+        assert_eq!(
+            revision_or_unversioned(Some("release/next".into())),
+            "release/next"
+        );
+        assert_eq!(revision_or_unversioned(Some("".into())), "");
+    }
 
     #[test]
     fn empty_hash_is_sha256_of_nothing_and_order_changes_the_digest() {

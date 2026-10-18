@@ -17,8 +17,8 @@ NC='\033[0m' # No Color
 # --- Globals ---
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-# CHANGED: Local workspace instead of /tmp
-TEST_ROOT="$SCRIPT_DIR/test_workspace"
+TEST_ROOT=$(mktemp -d)
+trap 'rm -rf "$TEST_ROOT"' EXIT
 MOCK_HOME="$TEST_ROOT/home"
 
 # Generate 5-char random suffix for project uniqueness
@@ -69,9 +69,6 @@ assert_log_contains() {
 # ==============================================================================
 # 1. CLEANUP & BUILD
 # ==============================================================================
-log "Cleaning previous workspace..."
-rm -rf "$TEST_ROOT"
-
 log "Building dctx (Release Mode)..."
 cd "$PROJECT_ROOT"
 cargo build --release -p dctx-cli --quiet || fail "Build failed"
@@ -91,6 +88,9 @@ mkdir -p "$PROJECT_A"
 export XDG_CONFIG_HOME="$MOCK_HOME/.config"
 export XDG_CACHE_HOME="$MOCK_HOME/.cache"
 export HOME="$MOCK_HOME"
+export XDG_DATA_HOME="$MOCK_HOME/.local/share"
+export XDG_STATE_HOME="$MOCK_HOME/.local/state"
+mkdir -p "$XDG_DATA_HOME" "$XDG_STATE_HOME"
 
 # Initial Project State
 echo "def hello(): print('world')" >"$PROJECT_A/main.py"
@@ -319,5 +319,5 @@ pass "Test 6.4: Deeply nested ignored files never read"
 pass "Suite 6 Complete (4/4 privacy tests passed)"
 
 log "========================================"
-pass "ALL TESTS PASSED (6 Suites). Artifacts available in: $TEST_ROOT"
+pass "ALL TESTS PASSED (6 Suites). Temporary artifacts cleaned on exit."
 log "========================================"

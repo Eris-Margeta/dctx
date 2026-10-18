@@ -64,8 +64,8 @@ pub struct CorpusReport {
 pub struct Pin {
     /// `worktree` or `generated`.
     pub kind: String,
-    /// Git commit when `git rev-parse HEAD` succeeds.
-    pub git_head: Option<String>,
+    /// Caller label from DCTX_BENCH_REVISION; `unversioned` by default for worktrees.
+    pub revision: Option<String>,
     /// Aggregate SHA-256.
     pub content_sha256: String,
     /// Generator id for the fixture.
@@ -212,10 +212,10 @@ pub fn markdown(report: &BaselineReport) -> String {
     out.push_str("## Pins\n\n");
     for corpus in &report.corpora {
         out.push_str(&format!(
-            "- `{}`: kind `{}`, git `{}`, sha256 `{}`, files {}, bytes {}.\n",
+            "- `{}`: kind `{}`, revision `{}`, sha256 `{}`, files {}, bytes {}.\n",
             corpus.id,
             corpus.pin.kind,
-            corpus.pin.git_head.as_deref().unwrap_or("none"),
+            corpus.pin.revision.as_deref().unwrap_or("none"),
             corpus.pin.content_sha256,
             corpus.pin.file_count,
             corpus.pin.byte_count,
@@ -305,7 +305,7 @@ mod tests {
             },
             pin: Pin {
                 kind: "generated".into(),
-                git_head: None,
+                revision: None,
                 content_sha256: "abc".into(),
                 generator: Some("dx-a1-fixture-v1".into()),
                 seed: Some("seed".into()),
@@ -345,15 +345,19 @@ mod tests {
 
     #[test]
     fn summary_states_no_threshold_and_roundtrips() {
-        let report = BaselineReport::new(vec![corpus("dctx")]);
+        let mut observed = corpus("dctx");
+        observed.pin.revision = Some("release/next".into());
+        let report = BaselineReport::new(vec![observed]);
         assert!(report.no_performance_assertion);
         let text = markdown(&report);
         assert!(text.contains("does not assert a performance threshold"));
         assert!(text.contains("1.500"));
+        assert!(text.contains("revision `release/next`"));
         assert!(text.contains("`m:.`"));
         let bytes = to_json(&report).unwrap();
         let parsed: BaselineReport = serde_json::from_slice(&bytes).unwrap();
         assert_eq!(parsed.corpora[0].id, "dctx");
+        assert_eq!(parsed.corpora[0].pin.revision.as_deref(), Some("release/next"));
         assert!(BaselineReport::new(vec![]).corpora.is_empty());
     }
 }

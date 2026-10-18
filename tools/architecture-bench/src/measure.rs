@@ -32,7 +32,7 @@ pub fn measure_dctx(
 ) -> Result<CorpusReport, BenchError> {
     let place = repo.canonicalize()?;
     let tree = pin::hash_tree(&place, &manifest.dctx)?;
-    let pin = worktree_pin(&manifest.dctx, &tree, pin::git_head(&place));
+    let pin = worktree_pin(&manifest.dctx, &tree, pin::revision_label());
     measure_place(
         &place,
         cache_dir,
@@ -60,10 +60,10 @@ pub fn measure_fixture(
     )
 }
 
-fn worktree_pin(spec: &DctxSpec, tree: &TreePin, git_head: Option<String>) -> Pin {
+fn worktree_pin(spec: &DctxSpec, tree: &TreePin, revision: String) -> Pin {
     Pin {
         kind: "worktree".into(),
-        git_head,
+        revision: Some(revision),
         content_sha256: tree.content_sha256.clone(),
         generator: None,
         seed: None,
@@ -86,7 +86,7 @@ fn generated_pin(spec: &FixtureSpec, files: &[GeneratedFile]) -> Result<Pin, Ben
     let byte_count = pairs.iter().map(|(_, bytes)| bytes.len() as u64).sum();
     Ok(Pin {
         kind: "generated".into(),
-        git_head: None,
+        revision: None,
         content_sha256: pin::hash_sequences(&pairs),
         generator: Some(spec.generator.clone()),
         seed: Some(spec.seed.clone()),
@@ -137,7 +137,7 @@ fn measure_place(
     let stale = index.report().stale.clone();
     let mut warm_query_us = Vec::with_capacity(WARM_QUERIES.len());
     for term in WARM_QUERIES {
-        let request = Request::new(Verb::Find, *term);
+        let request = Request::new(Verb::Find, term);
         let started = Instant::now();
         index.answer(&source, &request)?;
         warm_query_us.push(microseconds(started.elapsed()));

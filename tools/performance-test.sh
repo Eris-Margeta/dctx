@@ -6,10 +6,23 @@
 
 set -e
 
-# Configuration
-TEST_DIR="${1:-$HOME/internal}"
-OUTPUT_FILE="$(dirname "$0")/performance-results.md"
+# D3-06: require an explicit corpus; isolate application state and report files.
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <test-directory> [dctx-binary]" >&2
+    exit 1
+fi
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TEST_DIR="$1"
+TEST_ROOT=$(mktemp -d)
+trap 'rm -rf "$TEST_ROOT"' EXIT
+OUTPUT_FILE="$TEST_ROOT/performance-results.md"
 DCTX_BIN="${2:-dctx}"
+export HOME="$TEST_ROOT/home"
+export XDG_CONFIG_HOME="$HOME/.config"
+export XDG_CACHE_HOME="$HOME/.cache"
+export XDG_DATA_HOME="$HOME/.local/share"
+export XDG_STATE_HOME="$HOME/.local/state"
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" "$XDG_DATA_HOME" "$XDG_STATE_HOME"
 
 # Colors for terminal output
 RED='\033[0;31m'
@@ -35,14 +48,20 @@ fi
 # Verify dctx is available
 if ! command -v "$DCTX_BIN" &> /dev/null; then
     # Try local build
-    DCTX_BIN="$(dirname "$0")/../target/release/dctx-cli"
+    DCTX_BIN="$SCRIPT_DIR/../target/release/dctx-cli"
     if [ ! -f "$DCTX_BIN" ]; then
-        DCTX_BIN="$(dirname "$0")/../target/debug/dctx-cli"
+        DCTX_BIN="$SCRIPT_DIR/../target/debug/dctx-cli"
     fi
     if [ ! -f "$DCTX_BIN" ]; then
         echo -e "${RED}Error: dctx not found. Please build or install dctx first.${NC}"
         exit 1
     fi
+fi
+
+# Resolve before changing directories to the corpus.
+DCTX_BIN=$(command -v "$DCTX_BIN")
+if [[ "$DCTX_BIN" != /* ]]; then
+    DCTX_BIN="$PWD/$DCTX_BIN"
 fi
 
 echo -e "${GREEN}Using dctx:${NC} $DCTX_BIN"
@@ -156,7 +175,7 @@ echo -e "${YELLOW}[4/5] Running dctx...${NC}"
 cd "$TEST_DIR"
 
 DCTX_START=$(python3 -c 'import time; print(time.time())')
-$DCTX_BIN . -c 2>/dev/null || $DCTX_BIN . -c
+"$DCTX_BIN" . -c
 DCTX_END=$(python3 -c 'import time; print(time.time())')
 DCTX_TIME=$(python3 -c "print(f'{($DCTX_END - $DCTX_START):.3f}')")
 
@@ -211,7 +230,7 @@ cat > "$OUTPUT_FILE" << EOF
 
 **Test Date:** $TEST_DATE
 **Test Directory:** \`$TEST_DIR\`
-**dctx Version:** \`$($DCTX_BIN --version 2>/dev/null || echo "unknown")\`
+**dctx Version:** \`$("$DCTX_BIN" --version 2>/dev/null || echo "unknown")\`
 
 ---
 
@@ -357,7 +376,8 @@ echo -e "${GREEN}═════════════════════
 echo -e "${GREEN}                    Test Complete!                              ${NC}"
 echo -e "${GREEN}═══════════════════════════════════════════════════════════════${NC}"
 echo ""
-echo -e "Results saved to: ${BLUE}$OUTPUT_FILE${NC}"
+cat "$OUTPUT_FILE"
+echo "Temporary report emitted above; workspace cleaned on exit."
 echo ""
 echo -e "${YELLOW}Quick Summary:${NC}"
 echo "  dctx is ${SPEED_RATIO}x faster than bash"
