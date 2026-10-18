@@ -148,6 +148,59 @@ pub fn list_default() -> Result<(), String> {
     Ok(())
 }
 
+/// Load the legacy default asset or a named compiled-v1 template from the legacy cache.
+pub fn legacy_template(name: &str) -> Result<dctx_template::Template, String> {
+    if name == "default" {
+        return Ok(dctx_template::Template::parse(include_str!("../../dctx-template/templates/default.dctx_template")));
+    }
+    let cache = crate::compat::cache_dir().ok_or("Could not determine compiled template path")?;
+    let path = cache.join("templates").join(format!("{name}.bin"));
+    let bytes =
+        std::fs::read(&path).map_err(|error| format!("Compiled template '{name}' at {}: {error}", path.display()))?;
+    dctx_template::CompiledTemplate::deserialize(&mut bytes.as_slice())
+        .map(|compiled| compiled.to_template())
+        .map_err(|error| error.to_string())
+}
+
+/// Interactive template actions use the same explicit facade compiler as the command.
+pub(crate) fn run_menu() {
+    use crate::tui::{create_template_menu, get_input, show_error, show_message};
+    loop {
+        let result = match create_template_menu().show() {
+            Ok('1') => {
+                let _ = show_message("Already using default template.");
+                continue;
+            }
+            Ok('2') => crate::template::list_default(),
+            Ok('3') => match get_input("Enter template file path:") {
+                Ok(path) if !path.is_empty() => crate::template::build_path(&PathBuf::from(path)),
+                Ok(_) => {
+                    let _ = show_error("No path provided.");
+                    continue;
+                }
+                Err(error) => {
+                    let _ = show_error(&format!("Error: {error}"));
+                    continue;
+                }
+            },
+            Ok('0') => return,
+            Ok(_) => {
+                let _ = show_error("Invalid selection. Try again.");
+                continue;
+            }
+            Err(error) => {
+                eprintln!("Error reading input: {error}");
+                return;
+            }
+        };
+        if let Err(error) = result {
+            eprintln!("❌ {error}");
+            std::process::exit(1);
+        }
+        let _ = show_message("Press Enter to continue...");
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -202,7 +255,8 @@ layout = "SNAPSHOT"
         ])
         .expect("build");
         assert!(report.contains("retention=explicit"));
-        let listed = execute(&["template".into(), "list".into(), "--dir".into(), dir.display().to_string()]).expect("list");
+        let listed =
+            execute(&["template".into(), "list".into(), "--dir".into(), dir.display().to_string()]).expect("list");
         assert!(listed.contains("ok "));
         assert!(listed.contains("source_version=2"));
         let bare = execute(&["template".into(), "list".into()]).expect("bare");

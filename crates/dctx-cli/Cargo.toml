@@ -16,7 +16,9 @@ strict = ["dctx/pack", "dctx/map", "dctx/templates", "dctx/fs", "dctx/segments",
 [dependencies]
 dctx = { path = "../dctx", default-features = false, features = ["pack", "map", "templates", "fs", "segments", "cache"] }
 dctx-adapter-cache = { path = "../dctx-adapter-cache" }
+dctx-adapter-fs = { path = "../dctx-adapter-fs" }
 dctx-core = { path = "../dctx-core" }
+dctx-pack = { path = "../dctx-pack" }
 dctx-map-query = { path = "../dctx-map-query" }
 dctx-plugin-distribution = { path = "../dctx-plugin-distribution" }
 dctx-plugin-protocol = { path = "../dctx-plugin-protocol" }

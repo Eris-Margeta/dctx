@@ -3,7 +3,78 @@
 //! Depends on [`dctx::Capabilities`]. `dctx --help` and `dctx --version --verbose` print [`text`] or [`limits`].
 //! Limits describe this binary. They are not a promise that a host tokenizer was linked.
 
+use crate::tui::{Menu, MenuContext};
 use dctx::Capabilities;
+
+/// Build the main menu
+pub fn create_main_menu(context: &MenuContext) -> Menu {
+    let mut menu = Menu::new("dctx - Directory Context Generator");
+
+    menu.add_item('1', "Snapshot Current Directory", "Generate full context snapshot")
+        .add_item('2', "Snapshot to Clipboard", "Generate and copy to clipboard")
+        .add_item('3', "Tree-Only Mode", "Show directory structure only")
+        .add_item('4', "Diff Mode", "Generate diff from last snapshot")
+        .add_item('5', "Advanced Options →", "Filters, templates, and cache")
+        .add_item('0', "Exit", "")
+        .set_footer(&context.format());
+
+    menu
+}
+
+/// Build the advanced menu
+pub fn create_advanced_menu() -> Menu {
+    let mut menu = Menu::new("Advanced Options");
+
+    menu.add_item('1', "Filters →", "Extension, size, content filters")
+        .add_item('2', "Templates →", "Manage output templates")
+        .add_item('3', "Cache & Debug →", "State management and diagnostics")
+        .add_item('0', "← Back to Main Menu", "")
+        .set_footer("Escape or 0 to go back");
+
+    menu
+}
+
+/// Build the filter submenu
+pub fn create_filter_menu() -> Menu {
+    let mut menu = Menu::new("Filter Options");
+
+    menu.add_item('1', "Filter by Extension", "e.g., rs,toml,md")
+        .add_item('2', "Filter by Size", "Large or small files")
+        .add_item('3', "Content Filters", "Empty or non-empty files")
+        .add_item('4', "Hidden Files Only", "Show .hidden files")
+        .add_item('5', "Include Binary Files", "Include binary files in output")
+        .add_item('9', "Clear All Filters", "")
+        .add_item('0', "← Back", "")
+        .set_footer("Filters combine for precise control");
+
+    menu
+}
+
+/// Build the template submenu
+pub fn create_template_menu() -> Menu {
+    let mut menu = Menu::new("Template Management");
+
+    menu.add_item('1', "Use Default Template", "Standard dctx output format")
+        .add_item('2', "List Available Templates", "Show compiled templates")
+        .add_item('3', "Build New Template", "Compile a .dctx_template file")
+        .add_item('0', "← Back", "")
+        .set_footer("Templates customize output format");
+
+    menu
+}
+
+/// Build the cache/debug submenu
+pub fn create_cache_menu() -> Menu {
+    let mut menu = Menu::new("Cache & Debug");
+
+    menu.add_item('1', "Show Ignored Folders", "List .gitignore exclusions")
+        .add_item('2', "Reset Project State", "Force V1 reset")
+        .add_item('3', "Clear Global Cache", "Remove all cached states")
+        .add_item('0', "← Back", "")
+        .set_footer("Manage cached state and diagnostics");
+
+    menu
+}
 
 /// Full help page, including snapshot compatibility and the facade commands.
 pub fn text() -> String {
