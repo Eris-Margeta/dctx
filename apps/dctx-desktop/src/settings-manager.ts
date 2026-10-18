@@ -225,7 +225,7 @@ export async function initSettingsUI(): Promise<void> {
 
   // Wire up Reset to Defaults button
   const resetButton = document.querySelector<HTMLButtonElement>(
-    '.settings-section[data-section-id="advanced"] button.danger:last-of-type'
+    '#reset-settings-btn'
   );
 
   if (resetButton) {
