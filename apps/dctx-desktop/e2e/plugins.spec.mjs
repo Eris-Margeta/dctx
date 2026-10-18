@@ -161,13 +161,114 @@ test('Plugins capabilities, explicit consent, disable, failure, and offline upda
   await failed.scrollIntoViewIfNeeded();
   await capture(page, '05-plugins-failed', 'Failed Example shows Failed and the explicit initialization failure with exit code 1');
 
+  // F21: an installed plugin has no verified index. The native command rejects
+  // Network(Unreachable) instead of returning version:null.
   await review.getByRole('button', { name: 'Check for update', exact: true }).click();
-  await expect(status).toHaveText('Review Example: no cached update. Update discovery is offline; no network adapter is available.');
+  await expect(status).toHaveText('Update discovery is offline; no network adapter is available. Check failed: Plugin operation failed: network failure: Unreachable');
   await expect(section).toHaveAttribute('aria-busy', 'false');
   await expect(review.getByRole('button', { name: 'Check for update', exact: true })).toBeEnabled();
   await expect(section.getByRole('button', { name: 'Refresh plugins', exact: true })).toBeEnabled();
   expect(await calls('check_plugin_update')).toEqual([{ cmd: 'check_plugin_update', args: { id: 'example/review' } }]);
   await status.scrollIntoViewIfNeeded();
   await expect(status).toBeInViewport();
-  await capture(page, '06-plugins-update-offline', 'Check for update honestly reports no cached update and offline discovery without a network adapter');
+  await capture(page, '06-plugins-update-offline', 'Independent Check for update rejects with network unreachable and leaves the controls usable');
+});
+
+test('F21 disabled enable keeps consent, offline update rejects, stale approval does not grant', async ({ page }) => {
+  await page.goto('/');
+  await page.locator('#settings-btn').click();
+  await page.locator('.settings-nav [data-section="plugins"]').click();
+  const section = page.locator('[data-section-id="plugins"]');
+  await expect(section.locator('.section-title')).toHaveText('Plugins');
+  await expect(section).toHaveAttribute('aria-busy', 'false');
+  const card = name => section.locator('article.plugin-card').filter({ has: page.getByRole('heading', { name, exact: true }) });
+  const inactive = card('Inactive Example');
+  const consented = card('Consented Example');
+  const review = card('Review Example');
+  const git = card('Git');
+  const status = section.locator(':scope > [role="status"]');
+  const calls = cmd => page.evaluate(command => window.__DCTX_E2E__.calls.filter(call => call.cmd === command), cmd);
+  const stored = id => page.evaluate(pluginId => {
+    const row = window.__DCTX_E2E__.plugins.find(item => item.id === pluginId);
+    return row ? structuredClone(row) : null;
+  }, id);
+
+  const beforeInactive = await stored('example/inactive');
+  expect(beforeInactive.enabled).toBe(false);
+  expect(beforeInactive.needs_consent).toBe(true);
+  expect(beforeInactive.state).toBe('disabled');
+  await expect(inactive.locator('.plugin-state-disabled')).toHaveText('Disabled');
+  await expect(inactive.getByRole('button', { name: 'Enable', exact: true })).toBeEnabled();
+  await expect(inactive.getByRole('button', { name: 'Grant consent', exact: true })).toHaveCount(0);
+  await inactive.getByRole('button', { name: 'Enable', exact: true }).click();
+  await expect(status).toHaveText('Inactive Example: Needs consent.');
+  await expect(inactive.locator('.plugin-state-needs-consent')).toHaveText('Needs consent');
+  await expect(inactive.getByRole('button', { name: 'Enable', exact: true })).toBeEnabled();
+  await expect(inactive.getByRole('button', { name: 'Disable', exact: true })).toHaveCount(0);
+  await expect(inactive.getByRole('button', { name: 'Grant consent', exact: true })).toBeEnabled();
+  expect(await stored('example/inactive')).toEqual(beforeInactive);
+
+  await consented.getByRole('button', { name: 'Enable', exact: true }).click();
+  await expect(status).toHaveText('Consented Example: Enabled.');
+  await expect(consented.locator('.plugin-state-enabled')).toHaveText('Enabled');
+  await expect(consented.getByRole('button', { name: 'Disable', exact: true })).toBeEnabled();
+  expect(await stored('example/consented')).toMatchObject({ enabled: true, needs_consent: false, state: 'enabled' });
+  expect(await calls('enable_plugin')).toEqual([
+    { cmd: 'enable_plugin', args: { id: 'example/inactive' } },
+    { cmd: 'enable_plugin', args: { id: 'example/consented' } },
+  ]);
+  await inactive.scrollIntoViewIfNeeded();
+  await capture(page, '01-enable-without-consent', 'Enable without consent returns Needs consent and does not persist enablement; a consented plugin enables');
+
+  const beforeReview = await stored('example/review');
+  await review.getByRole('button', { name: 'Check for update', exact: true }).click();
+  await expect(status).toHaveText('Update discovery is offline; no network adapter is available. Check failed: Plugin operation failed: network failure: Unreachable');
+  await expect(section).toHaveAttribute('aria-busy', 'false');
+  await expect(review.getByRole('button', { name: 'Check for update', exact: true })).toBeEnabled();
+  await expect(review.getByRole('button', { name: 'Disable', exact: true })).toBeEnabled();
+  await expect(section.getByRole('button', { name: 'Refresh plugins', exact: true })).toBeEnabled();
+  expect(await stored('example/review')).toEqual(beforeReview);
+
+  await git.getByRole('button', { name: 'Check for update', exact: true }).click();
+  await expect(status).toHaveText('Git: bundled updates come with a desktop release. Update discovery is offline; no network adapter is available.');
+  await expect(git.getByRole('button', { name: 'Check for update', exact: true })).toBeEnabled();
+  await expect(section).toHaveAttribute('aria-busy', 'false');
+  expect(await calls('check_plugin_update')).toEqual([
+    { cmd: 'check_plugin_update', args: { id: 'example/review' } },
+    { cmd: 'check_plugin_update', args: { id: 'dctx/git' } },
+  ]);
+  await status.scrollIntoViewIfNeeded();
+  await capture(page, '02-update-unreachable', 'Independent update rejects with network unreachable; bundled Git still reports its containing release');
+
+  const refusal = 'Plugin needs-consent: explicit approval required';
+  for (const approval of [
+    { ...beforeReview.consent, digest: 'c'.repeat(64) },
+    { ...beforeReview.consent, version: '0.0.1' },
+  ]) {
+    const result = await page.evaluate(async (body) => {
+      try {
+        await window.__TAURI_INTERNALS__.invoke('consent_plugin', body);
+        return { ok: true };
+      } catch (error) {
+        return { ok: false, error: String(error) };
+      }
+    }, { id: beforeReview.id, approval });
+    expect(result).toEqual({ ok: false, error: refusal });
+  }
+  expect(await stored('example/review')).toEqual(beforeReview);
+
+  const granted = await page.evaluate(async () => {
+    const row = window.__DCTX_E2E__.plugins.find(item => item.id === 'example/review');
+    const approval = structuredClone(row.consent);
+    return window.__TAURI_INTERNALS__.invoke('consent_plugin', { id: approval.id, approval });
+  });
+  expect(granted.needs_consent).toBe(false);
+  expect(granted.state).toBe('enabled');
+  expect(granted.consent.digest).toBe(beforeReview.consent.digest);
+  expect(granted.consent.capabilities).toEqual(beforeReview.consent.capabilities);
+  const afterGrant = await stored('example/review');
+  expect(afterGrant.needs_consent).toBe(false);
+  expect(afterGrant.state).toBe('enabled');
+  expect(afterGrant.consent).toEqual(beforeReview.consent);
+  await capture(page, '03-consent-exact-approval', 'Stale and tampered consent are refused; the exact reviewed approval is the one that grants');
 });

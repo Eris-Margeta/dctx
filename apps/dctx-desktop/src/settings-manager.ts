@@ -31,30 +31,66 @@ export interface DesktopConfig {
 let currentSettings: DesktopConfig | null = null;
 
 /**
+ * Starts at zero and increases for every save or reset.
+ * A completion applies only when it is still the latest.
+ */
+let saveSequence = 0;
+
+/** True while syncForm is writing controls, so those writes do not autosave. */
+let applyingForm = false;
+
+function publishSaveSequence(sequence: number): void {
+  (globalThis as { __dctxPendingSeq?: number }).__dctxPendingSeq = sequence;
+}
+
+function closeSaveSequence(sequence: number): void {
+  const scope = globalThis as { __dctxPendingSeq?: number; __dctxClosedSeq?: number };
+  scope.__dctxPendingSeq = sequence;
+  scope.__dctxClosedSeq = sequence;
+}
+
+/**
  * Load settings from backend
  */
 export async function loadSettings(): Promise<DesktopConfig> {
   try {
-    const settings = await invoke<DesktopConfig>("get_desktop_settings");
+    const settings = cloneConfig(await invoke<DesktopConfig>("get_desktop_settings"));
     currentSettings = settings;
     return settings;
   } catch (error) {
     console.error("Failed to load settings:", error);
     // Return defaults on error
-    return getDefaultSettings();
+    const defaults = getDefaultSettings();
+    currentSettings = defaults;
+    return defaults;
   }
 }
 
+function cloneConfig(settings: DesktopConfig): DesktopConfig {
+  const extensions = settings.filter_extensions;
+  return {
+    ...getDefaultSettings(),
+    ...settings,
+    filter_extensions: Array.isArray(extensions) ? [...extensions] : null,
+  };
+}
+
 /**
- * Save settings to backend
+ * Save settings to backend.
+ * A slower save that started earlier is ignored so it cannot restore pre-reset privacy settings.
  */
 export async function saveSettings(settings: DesktopConfig): Promise<void> {
+  const sequence = ++saveSequence;
+  const snapshot = cloneConfig(settings);
+  publishSaveSequence(sequence);
   try {
-    await invoke("save_desktop_settings", { config: settings });
-    currentSettings = settings;
+    await invoke("save_desktop_settings", { config: snapshot });
+    if (sequence !== saveSequence) return;
+    currentSettings = snapshot;
     console.log("Settings saved successfully");
   } catch (error) {
     console.error("Failed to save settings:", error);
+    if (sequence !== saveSequence) return;
     throw error;
   }
 }
@@ -63,6 +99,9 @@ export async function saveSettings(settings: DesktopConfig): Promise<void> {
  * Reset settings to defaults
  */
 export async function resetSettings(): Promise<DesktopConfig> {
+  // Close every save issued before this reset so a late completion cannot restore it.
+  const sequence = ++saveSequence;
+  closeSaveSequence(sequence);
   try {
     await invoke("reset_desktop_settings");
     const settings = await loadSettings();
@@ -102,131 +141,176 @@ export function getCurrentSettings(): DesktopConfig | null {
   return currentSettings;
 }
 
-/**
- * Initialize settings UI by loading values and wiring up form controls
- */
-export async function initSettingsUI(): Promise<void> {
-  // Load settings from backend
-  const settings = await loadSettings();
+async function saveCurrent(update: (settings: DesktopConfig) => void): Promise<void> {
+  if (applyingForm) return;
+  if (!currentSettings) await loadSettings();
+  if (applyingForm || !currentSettings) return;
+  update(currentSettings);
+  await saveSettings(currentSettings);
+}
 
-  // Wire up General settings
+function extensionText(extensions: DesktopConfig["filter_extensions"]): string {
+  return Array.isArray(extensions) ? extensions.join(", ") : "";
+}
+
+function syncForm(settings: DesktopConfig): void {
+  applyingForm = true;
+  try {
+    const themeSelect = document.querySelector<HTMLSelectElement>("#theme-select");
+    const fileCountInput = document.querySelector<HTMLInputElement>("#file-count-input");
+    const autoCopyToggle = document.querySelector<HTMLInputElement>("#auto-copy-toggle");
+    const filterExtensionsInput = document.querySelector<HTMLInputElement>("#filter-extensions-input");
+    const includeBinaryToggle = document.querySelector<HTMLInputElement>("#include-binary-toggle");
+    const onlyHiddenToggle = document.querySelector<HTMLInputElement>("#only-hidden-toggle");
+    const minSizeInput = document.querySelector<HTMLInputElement>("#min-size-input");
+    const maxSizeInput = document.querySelector<HTMLInputElement>("#max-size-input");
+    const treeOnlyToggle = document.querySelector<HTMLInputElement>("#tree-only-toggle");
+    const contentFilterRadios = document.querySelectorAll<HTMLInputElement>('input[name="content-filter"]');
+
+    if (themeSelect) themeSelect.value = settings.theme;
+    if (fileCountInput) fileCountInput.value = settings.file_count_limit.toString();
+    if (autoCopyToggle) autoCopyToggle.checked = settings.auto_copy_to_clipboard;
+    if (filterExtensionsInput) filterExtensionsInput.value = extensionText(settings.filter_extensions);
+    if (includeBinaryToggle) includeBinaryToggle.checked = settings.include_binary;
+    if (onlyHiddenToggle) onlyHiddenToggle.checked = settings.only_hidden;
+    if (minSizeInput) minSizeInput.value = settings.min_size_mb?.toString() || "";
+    if (maxSizeInput) maxSizeInput.value = settings.max_size_mb?.toString() || "";
+    if (treeOnlyToggle) treeOnlyToggle.checked = settings.tree_only;
+
+    let initialValue = "all";
+    if (settings.only_empty) initialValue = "empty";
+    else if (settings.only_non_empty) initialValue = "non-empty";
+    contentFilterRadios.forEach(radio => {
+      radio.checked = radio.value === initialValue;
+    });
+  } finally {
+    applyingForm = false;
+  }
+}
+
+function settingsBound(): boolean {
+  const sentinel = document.querySelector<HTMLElement>("#reset-settings-btn")
+    ?? document.querySelector<HTMLElement>("#clear-all-cache-btn")
+    ?? document.querySelector<HTMLElement>("#theme-select");
+  return sentinel?.dataset.dctxSettingsBound === "true";
+}
+
+function markSettingsBound(): void {
+  for (const id of ["#theme-select", "#reset-settings-btn", "#clear-all-cache-btn"]) {
+    const element = document.querySelector<HTMLElement>(id);
+    if (element) element.dataset.dctxSettingsBound = "true";
+  }
+}
+
+/**
+ * Install each control's listener once. Reset reloads values through the same handlers.
+ */
+function wireSettingsListeners(): void {
   const themeSelect = document.querySelector<HTMLSelectElement>("#theme-select");
   const fileCountInput = document.querySelector<HTMLInputElement>("#file-count-input");
   const autoCopyToggle = document.querySelector<HTMLInputElement>("#auto-copy-toggle");
-
-  if (themeSelect) {
-    themeSelect.value = settings.theme;
-    themeSelect.addEventListener("change", async () => {
-      settings.theme = themeSelect.value;
-      await saveSettings(settings);
-    });
-  }
-
-  if (fileCountInput) {
-    fileCountInput.value = settings.file_count_limit.toString();
-    fileCountInput.addEventListener("change", async () => {
-      const value = parseInt(fileCountInput.value, 10);
-      if (!isNaN(value) && value >= 100) {
-        settings.file_count_limit = value;
-        await saveSettings(settings);
-      }
-    });
-  }
-
-  if (autoCopyToggle) {
-    autoCopyToggle.checked = settings.auto_copy_to_clipboard;
-    autoCopyToggle.addEventListener("change", async () => {
-      settings.auto_copy_to_clipboard = autoCopyToggle.checked;
-      await saveSettings(settings);
-    });
-  }
-
-  // Wire up Filter settings
   const filterExtensionsInput = document.querySelector<HTMLInputElement>("#filter-extensions-input");
   const includeBinaryToggle = document.querySelector<HTMLInputElement>("#include-binary-toggle");
   const onlyHiddenToggle = document.querySelector<HTMLInputElement>("#only-hidden-toggle");
   const minSizeInput = document.querySelector<HTMLInputElement>("#min-size-input");
   const maxSizeInput = document.querySelector<HTMLInputElement>("#max-size-input");
-  const contentFilterRadios = document.querySelectorAll<HTMLInputElement>('input[name="content-filter"]');
   const treeOnlyToggle = document.querySelector<HTMLInputElement>("#tree-only-toggle");
+  const contentFilterRadios = document.querySelectorAll<HTMLInputElement>('input[name="content-filter"]');
+  const clearButton = document.querySelector<HTMLButtonElement>("#clear-all-cache-btn");
+  const resetButton = document.querySelector<HTMLButtonElement>("#reset-settings-btn");
+
+  if (themeSelect) {
+    themeSelect.addEventListener("change", async () => {
+      await saveCurrent(settings => { settings.theme = themeSelect.value; });
+    });
+  }
+
+  if (fileCountInput) {
+    fileCountInput.addEventListener("change", async () => {
+      const value = parseInt(fileCountInput.value, 10);
+      if (!isNaN(value) && value >= 100) {
+        await saveCurrent(settings => { settings.file_count_limit = value; });
+      }
+    });
+  }
+
+  if (autoCopyToggle) {
+    autoCopyToggle.addEventListener("change", async () => {
+      await saveCurrent(settings => { settings.auto_copy_to_clipboard = autoCopyToggle.checked; });
+    });
+  }
 
   if (filterExtensionsInput) {
-    filterExtensionsInput.value = settings.filter_extensions?.join(", ") || "";
     filterExtensionsInput.addEventListener("blur", async () => {
-      const value = filterExtensionsInput.value.trim();
-      if (value) {
-        settings.filter_extensions = value.split(",").map(s => s.trim()).filter(s => s.length > 0);
-      } else {
-        settings.filter_extensions = null;
-      }
-      await saveSettings(settings);
-    });
-  }
-
-  if (includeBinaryToggle) {
-    includeBinaryToggle.checked = settings.include_binary;
-    includeBinaryToggle.addEventListener("change", async () => {
-      settings.include_binary = includeBinaryToggle.checked;
-      await saveSettings(settings);
-    });
-  }
-
-  if (onlyHiddenToggle) {
-    onlyHiddenToggle.checked = settings.only_hidden;
-    onlyHiddenToggle.addEventListener("change", async () => {
-      settings.only_hidden = onlyHiddenToggle.checked;
-      await saveSettings(settings);
-    });
-  }
-
-  if (minSizeInput) {
-    minSizeInput.value = settings.min_size_mb?.toString() || "";
-    minSizeInput.addEventListener("blur", async () => {
-      const value = parseFloat(minSizeInput.value);
-      settings.min_size_mb = !isNaN(value) && value > 0 ? value : null;
-      await saveSettings(settings);
-    });
-  }
-
-  if (maxSizeInput) {
-    maxSizeInput.value = settings.max_size_mb?.toString() || "";
-    maxSizeInput.addEventListener("blur", async () => {
-      const value = parseFloat(maxSizeInput.value);
-      settings.max_size_mb = !isNaN(value) && value > 0 ? value : null;
-      await saveSettings(settings);
-    });
-  }
-
-  if (contentFilterRadios.length > 0) {
-    // Set initial state
-    let initialValue = "all";
-    if (settings.only_empty) initialValue = "empty";
-    else if (settings.only_non_empty) initialValue = "non-empty";
-
-    contentFilterRadios.forEach(radio => {
-      if (radio.value === initialValue) {
-        radio.checked = true;
-      }
-      radio.addEventListener("change", async () => {
-        settings.only_empty = radio.value === "empty";
-        settings.only_non_empty = radio.value === "non-empty";
-        await saveSettings(settings);
+      await saveCurrent(settings => {
+        const value = filterExtensionsInput.value.trim();
+        settings.filter_extensions = value
+          ? value.split(",").map(part => part.trim()).filter(part => part.length > 0)
+          : null;
       });
     });
   }
 
-  if (treeOnlyToggle) {
-    treeOnlyToggle.checked = settings.tree_only;
-    treeOnlyToggle.addEventListener("change", async () => {
-      settings.tree_only = treeOnlyToggle.checked;
-      await saveSettings(settings);
+  if (includeBinaryToggle) {
+    includeBinaryToggle.addEventListener("change", async () => {
+      await saveCurrent(settings => { settings.include_binary = includeBinaryToggle.checked; });
     });
   }
 
-  // Wire up Reset to Defaults button
-  const resetButton = document.querySelector<HTMLButtonElement>(
-    '#reset-settings-btn'
-  );
+  if (onlyHiddenToggle) {
+    onlyHiddenToggle.addEventListener("change", async () => {
+      await saveCurrent(settings => { settings.only_hidden = onlyHiddenToggle.checked; });
+    });
+  }
+
+  if (minSizeInput) {
+    minSizeInput.addEventListener("blur", async () => {
+      await saveCurrent(settings => {
+        const value = parseFloat(minSizeInput.value);
+        settings.min_size_mb = !isNaN(value) && value > 0 ? value : null;
+      });
+    });
+  }
+
+  if (maxSizeInput) {
+    maxSizeInput.addEventListener("blur", async () => {
+      await saveCurrent(settings => {
+        const value = parseFloat(maxSizeInput.value);
+        settings.max_size_mb = !isNaN(value) && value > 0 ? value : null;
+      });
+    });
+  }
+
+  contentFilterRadios.forEach(radio => {
+    radio.addEventListener("change", async () => {
+      await saveCurrent(settings => {
+        settings.only_empty = radio.value === "empty";
+        settings.only_non_empty = radio.value === "non-empty";
+      });
+    });
+  });
+
+  if (treeOnlyToggle) {
+    treeOnlyToggle.addEventListener("change", async () => {
+      await saveCurrent(settings => { settings.tree_only = treeOnlyToggle.checked; });
+    });
+  }
+
+  if (clearButton) {
+    clearButton.addEventListener("click", async () => {
+      const confirmed = confirm(
+        "Are you sure you want to clear all cache? This cannot be undone."
+      );
+      if (!confirmed) return;
+      try {
+        await invoke("clear_all_cache");
+        alert("Cache cleared successfully");
+      } catch (error) {
+        console.error("Failed to clear cache:", error);
+        alert("Failed to clear cache");
+      }
+    });
+  }
 
   if (resetButton) {
     resetButton.addEventListener("click", async () => {
@@ -237,15 +321,26 @@ export async function initSettingsUI(): Promise<void> {
       if (confirmed) {
         try {
           await resetSettings();
-          // Reload UI with new values
           await initSettingsUI();
           alert("Settings reset to defaults successfully");
-        } catch (error) {
+        } catch {
           alert("Failed to reset settings");
         }
       }
     });
   }
+
+  markSettingsBound();
+}
+
+/**
+ * Initialize settings UI by loading values and wiring up form controls
+ */
+export async function initSettingsUI(): Promise<void> {
+  const settings = await loadSettings();
+  syncForm(settings);
+  // One listener set reads the current settings object. Rebinding on reset would stack stale closures.
+  if (!settingsBound()) wireSettingsListeners();
 
   console.log("Settings UI initialized with:", settings);
 }

@@ -13,12 +13,26 @@ export async function installTauriMock(page, fixtures = {}) {
     };
     // Opt-in session storage models native persistence across reloads, isolated per tab/context.
     const settingsKey = 'dctx-e2e-desktop-settings';
-    const storedSettings = fixtures.persistSettings && sessionStorage.getItem(settingsKey);
-    let settings = storedSettings ? JSON.parse(storedSettings) : clone(defaults);
-    const persistSettings = () => {
-      if (fixtures.persistSettings) sessionStorage.setItem(settingsKey, JSON.stringify(settings));
+    const options = fixtures ?? {};
+    let closedSaveSequence = 0;
+    const fullSettings = value => {
+      const merged = { ...clone(defaults), ...(value && typeof value === 'object' ? value : {}) };
+      if (!Array.isArray(merged.filter_extensions)) merged.filter_extensions = null;
+      return merged;
     };
-    let recent = clone(fixtures.recentProjects ?? [{ path: '/fixtures/dctx-demo', name: 'dctx-demo',
+    let settings = clone(defaults);
+    if (options.persistSettings) {
+      try {
+        const storedSettings = sessionStorage.getItem(settingsKey);
+        if (storedSettings) settings = fullSettings(JSON.parse(storedSettings));
+      } catch {
+        settings = clone(defaults);
+      }
+    }
+    const persistSettings = () => {
+      if (options.persistSettings) sessionStorage.setItem(settingsKey, JSON.stringify(settings));
+    };
+    let recent = clone(options.recentProjects ?? [{ path: '/fixtures/dctx-demo', name: 'dctx-demo',
       last_accessed: '2026-10-17T08:00:00.000Z', access_count: 3 }]);
     const plugins = [{
       id: 'dctx/git', name: 'Git', version: '1.0.0', source: 'bundled',
@@ -47,6 +61,25 @@ export async function installTauriMock(page, fixtures = {}) {
       state: 'failed', enabled: true, needs_consent: false,
       capabilities: [], consent: null,
       last_failure: 'Plugin process exited before initialization (exit code 1).',
+    }, {
+      id: 'example/inactive', name: 'Inactive Example', version: '1.0.0', source: 'installed',
+      state: 'disabled', enabled: false, needs_consent: true,
+      capabilities: ['required: Read file (path: README.md; scope: project; max bytes: 4096)'],
+      last_failure: null,
+      consent: {
+        id: 'example/inactive', version: '1.0.0', digest: 'b'.repeat(64),
+        capabilities: {
+          required: [{ kind: 'file.read', path: 'README.md', scope: 'project', max_bytes: 4096 }],
+          optional: [], outputs: [], network: [],
+        },
+        capability_lines: ['required: Read file (path: README.md; scope: project; max bytes: 4096)'],
+        scope: { kind: 'user' },
+      },
+    }, {
+      id: 'example/consented', name: 'Consented Example', version: '1.0.0', source: 'installed',
+      state: 'disabled', enabled: false, needs_consent: false,
+      capabilities: ['required: Read file (path: README.md; scope: project; max bytes: 4096)'],
+      last_failure: null, consent: null,
     }];
     const callbacks = new Map();
     const listeners = new Map();
@@ -85,9 +118,22 @@ export async function installTauriMock(page, fixtures = {}) {
           return row;
         };
         switch (cmd) {
-          case 'get_desktop_settings': return clone(settings);
-          case 'save_desktop_settings': settings = clone(args.config); persistSettings(); return null;
-          case 'reset_desktop_settings': settings = clone(defaults); persistSettings(); return null;
+          case 'get_desktop_settings': return clone(fullSettings(settings));
+          case 'save_desktop_settings': {
+            // Ignore a save issued before reset. The page publishes that sequence before invoke.
+            const seq = window.__dctxPendingSeq ?? closedSaveSequence + 1;
+            if (seq < closedSaveSequence) return null;
+            closedSaveSequence = seq;
+            settings = clone(fullSettings(args.config));
+            persistSettings();
+            return null;
+          }
+          case 'reset_desktop_settings': {
+            closedSaveSequence = window.__dctxClosedSeq ?? closedSaveSequence;
+            settings = clone(defaults);
+            persistSettings();
+            return null;
+          }
           case 'get_recent_projects': return clone(recent);
           case 'add_recent_project': {
             const previous = recent.find(project => project.path === args.path);
@@ -107,30 +153,40 @@ export async function installTauriMock(page, fixtures = {}) {
             });
           }
           case 'copy_to_clipboard': state.clipboard = args.text; return null;
+          case 'clear_all_cache': return null;
           case 'list_plugins': return clone(plugins);
           case 'enable_plugin': {
-            const row = plugin(); row.enabled = true;
-            row.state = row.needs_consent ? 'needs-consent' : 'enabled'; return clone(row);
+            const row = plugin();
+            // PluginOps::enable returns needs-consent without writing enablement.
+            if (row.needs_consent) return clone({ ...row, state: 'needs-consent' });
+            row.enabled = true;
+            row.state = 'enabled';
+            return clone(row);
           }
           case 'disable_plugin': {
             const row = plugin(); row.enabled = false; row.state = 'disabled'; return clone(row);
           }
           case 'consent_plugin': {
-            if (!args.approval?.digest || !args.approval?.capabilities || !args.approval?.scope?.kind) {
-              throw new Error('Tauri mock: consent_plugin requires approval {digest, capabilities, scope}');
+            const row = plugin();
+            // The command accepts only the consent object disclosed by list_plugins.
+            if (JSON.stringify(args.approval ?? null) !== JSON.stringify(row.consent)) {
+              throw 'Plugin needs-consent: explicit approval required';
             }
-            const row = plugin(); row.needs_consent = false;
-            row.state = row.enabled ? 'enabled' : 'disabled'; return clone(row);
+            row.needs_consent = false;
+            row.state = row.enabled ? 'enabled' : 'disabled';
+            return clone(row);
           }
           case 'check_plugin_update': {
             const row = plugin();
-            return { id: row.id, version: null, containing_release: row.source === 'bundled' };
+            // No verified index: independent checks are Network(Unreachable). Bundled checks stay local.
+            if (row.source !== 'bundled') throw 'Plugin operation failed: network failure: Unreachable';
+            return { id: row.id, version: null, containing_release: true };
           }
           case 'plugin:event|listen': {
             const id = nextId++; listeners.set(id, args); return id;
           }
           case 'plugin:event|unlisten': listeners.delete(args.eventId); return null;
-          case 'plugin:dialog|open': return fixtures.dialogPath ?? '/fixtures/dctx-demo';
+          case 'plugin:dialog|open': return options.dialogPath ?? '/fixtures/dctx-demo';
           default: throw new Error(`Tauri mock: unimplemented command "${cmd}"; add an explicit fixture in e2e/tauri-mock.mjs`);
         }
       },
