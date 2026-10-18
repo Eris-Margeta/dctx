@@ -1,22 +1,43 @@
 //! Filesystem plugin root and the product network stub.
-//! Implements PLUGINS.md §5.4 locations: owner-only directories, atomic registry replace,
-//! Directory descriptors pin root traversal; reads are bounded before allocation.
+//! Implements PLUGINS.md §5.4 locations: owner-only directories, atomic registry replace.
+//! Linux pins traversal with directory descriptors: children are `/proc/self/fd/<fd>/<child>`,
+//! so a later rename or symlink swap of the path does not retarget an open handle.
+//! macOS and other non-Linux Unix targets cannot walk `/dev/fd/<fd>/<child>` (ENOTDIR).
+//! Those targets use the canonical root, `symlink_metadata` on every component below it,
+//! rejection of `..` and absolute components, and a parent re-check immediately before
+//! create and rename. Locks are create-exclusive. Publication is write, sync, rename, and
+//! directory sync. A gap remains between each check and the following system call: same-user
+//! code can substitute a symlink in that gap and redirect the create or rename. That is
+//! weaker than Linux descriptor anchoring; this module does not claim equal strength.
+//! Reads are bounded before allocation.
 //! Depends on std and the distribution store port; used by the CLI entry.
 //! The product binary has no TLS stack, so refresh and URL installs refuse with `Unreachable`.
+//! Windows refuses: native replacement, directory sync and ACL semantics are not qualified.
 
 #![forbid(unsafe_code)]
 
+#[cfg(unix)]
 use std::fs::{self, File, OpenOptions};
-use std::io::{self, Read, Write};
-use std::path::{Path, PathBuf};
+#[cfg(unix)]
+use std::io::Read;
+#[cfg(target_os = "linux")]
+use std::io::Write;
+use std::io;
+#[cfg(unix)]
+use std::path::Path;
+use std::path::PathBuf;
+#[cfg(unix)]
 use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::{Mutex, MutexGuard};
+#[cfg(target_os = "linux")]
+use std::sync::MutexGuard;
+use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use dctx_plugin_distribution::{
-    Clock, DistributionError, HttpsUrl, InstallKey, LockToken, Network, NetworkError, Response, SafeFileName, Store,
-    Target,
+    Clock, DistributionError, HttpsUrl, InstallKey, Network, NetworkError, Response, Target,
 };
+#[cfg(any(target_os = "linux", not(unix)))]
+use dctx_plugin_distribution::{LockToken, SafeFileName, Store};
 
 /// Clock from the system wall time. Failure to read it yields zero, which freshness treats as stale.
 #[derive(Debug, Default)]
@@ -78,7 +99,10 @@ pub fn default_root() -> PathBuf {
 
 const REGISTRY_LIMIT: u64 = 16 << 20; // Registry codec ceiling.
 const FILE_LIMIT: u64 = dctx_plugin_distribution::DEFAULT_MAX_ARTIFACT_BYTES;
+#[cfg(unix)]
 static NEXT: AtomicU64 = AtomicU64::new(1);
+#[cfg(all(unix, not(target_os = "linux")))]
+fn next_token() -> u64 { NEXT.fetch_add(1, Ordering::Relaxed) }
 type Ownership = Option<(u64, String)>;
 
 /// Managed private root. Parents must not be controlled by hostile same-user code.
@@ -94,7 +118,10 @@ pub struct FsStore {
 impl FsStore {
     /// Binds `root` without creating it.
     pub fn new(root: impl Into<PathBuf>) -> Self { Self { root: root.into(), held: Mutex::new(None) } }
+}
 
+#[cfg(target_os = "linux")]
+impl FsStore {
     fn root(&self, create: bool) -> io::Result<File> {
         #[cfg(unix)]
         {
@@ -120,6 +147,7 @@ impl FsStore {
     }
 }
 
+#[cfg(target_os = "linux")]
 impl Store for FsStore {
     fn try_lock(&self) -> Result<LockToken, DistributionError> {
         let mut held = self.held.lock().map_err(|_| DistributionError::Interrupted)?;
@@ -233,9 +261,11 @@ impl Store for FsStore {
 }
 
 fn disk<T>(result: io::Result<T>) -> Result<T, DistributionError> { result.map_err(|_| DistributionError::Interrupted) }
+#[cfg(unix)]
 fn limit(size: u64, ceiling: u64) -> Result<(), DistributionError> {
     if size > ceiling { Err(DistributionError::LimitExceeded { limit: ceiling }) } else { Ok(()) }
 }
+#[cfg(unix)]
 fn private_options() -> OpenOptions {
     let mut options = OpenOptions::new();
     options.write(true);
@@ -243,6 +273,7 @@ fn private_options() -> OpenOptions {
     { use std::os::unix::fs::OpenOptionsExt; options.mode(0o600); }
     options
 }
+#[cfg(target_os = "linux")]
 fn entry(directory: &File, name: impl AsRef<Path>) -> Result<PathBuf, DistributionError> {
     #[cfg(unix)]
     {
@@ -253,6 +284,7 @@ fn entry(directory: &File, name: impl AsRef<Path>) -> Result<PathBuf, Distributi
     #[cfg(not(unix))]
     { let _ = (directory, name); Err(DistributionError::Interrupted) }
 }
+#[cfg(unix)]
 fn same_file(before: &fs::Metadata, after: &fs::Metadata) -> Result<(), DistributionError> {
     #[cfg(unix)]
     {
@@ -265,6 +297,7 @@ fn same_file(before: &fs::Metadata, after: &fs::Metadata) -> Result<(), Distribu
     Err(DistributionError::Interrupted)
 }
 // Open each component through a retained directory descriptor; compare identities before use.
+#[cfg(target_os = "linux")]
 fn descend(mut directory: File, path: &Path, create: bool) -> io::Result<File> {
     for part in path.components() {
         let name = match part {
@@ -291,6 +324,7 @@ fn descend(mut directory: File, path: &Path, create: bool) -> io::Result<File> {
     }
     Ok(directory)
 }
+#[cfg(unix)]
 fn bounded_read(path: &Path, ceiling: u64) -> Result<Vec<u8>, DistributionError> {
     let meta = disk(fs::symlink_metadata(path))?;
     if !meta.is_file() { return Err(DistributionError::Interrupted); }
@@ -308,6 +342,7 @@ fn bounded_read(path: &Path, ceiling: u64) -> Result<Vec<u8>, DistributionError>
     if disk(file.read(&mut extra))? != 0 { return Err(DistributionError::LimitExceeded { limit: ceiling }); }
     Ok(bytes)
 }
+#[cfg(target_os = "linux")]
 impl FsStore {
     fn remove(&self, token: LockToken, kind: &str, key: &InstallKey) -> Result<(), DistributionError> {
         let root = disk(self.root(false))?;
@@ -338,6 +373,7 @@ impl FsStore {
         Ok(keys)
     }
 }
+#[cfg(target_os = "linux")]
 fn walk_keys(root: &File, parts: &mut Vec<String>, keys: &mut Vec<InstallKey>, visited: &mut u64) -> Result<(), DistributionError> {
     for item in disk(fs::read_dir(entry(root, "")?))? {
         *visited += 1;
@@ -353,6 +389,7 @@ fn walk_keys(root: &File, parts: &mut Vec<String>, keys: &mut Vec<InstallKey>, v
     }
     Ok(())
 }
+#[cfg(unix)]
 fn install_key(id: &str, version: &str, digest: &str) -> Result<InstallKey, DistributionError> {
     use dctx_plugin_distribution::{Document, PluginId, Sha256Hex, Version};
     Ok(InstallKey {
@@ -362,6 +399,43 @@ fn install_key(id: &str, version: &str, digest: &str) -> Result<InstallKey, Dist
     })
 }
 
+#[cfg(not(unix))]
+impl FsStore {
+    /// Typed refusal until Windows replacement, directory sync and ACLs are qualified.
+    fn unsupported<T>(&self) -> io::Result<T> {
+        let _ = (&self.root, &self.held);
+        Err(io::Error::other("unsupported on this platform"))
+    }
+}
+
+#[cfg(not(unix))]
+impl Store for FsStore {
+    fn try_lock(&self) -> Result<LockToken, DistributionError> { disk(self.unsupported()) }
+    fn unlock(&self, _token: LockToken) { let _ = self.unsupported::<()>(); }
+    fn load_registry(&self) -> Result<Option<Vec<u8>>, DistributionError> { disk(self.unsupported()) }
+    fn save_registry(&self, _token: LockToken, _bytes: &[u8]) -> Result<(), DistributionError> { disk(self.unsupported()) }
+    fn stage_append(
+        &self, _token: LockToken, _key: &InstallKey, _file: &SafeFileName, _bytes: &[u8],
+    ) -> Result<(), DistributionError> {
+        disk(self.unsupported())
+    }
+    fn publish(&self, _token: LockToken, _key: &InstallKey) -> Result<(), DistributionError> { disk(self.unsupported()) }
+    fn discard_staging(&self, _token: LockToken, _key: &InstallKey) -> Result<(), DistributionError> { disk(self.unsupported()) }
+    fn staged(&self) -> Result<Vec<InstallKey>, DistributionError> { disk(self.unsupported()) }
+    fn installed(&self) -> Result<Vec<InstallKey>, DistributionError> { disk(self.unsupported()) }
+    fn read_installed(&self, _key: &InstallKey, _file: &SafeFileName) -> Result<Vec<u8>, DistributionError> {
+        disk(self.unsupported())
+    }
+    fn remove_installed(&self, _token: LockToken, _key: &InstallKey) -> Result<(), DistributionError> { disk(self.unsupported()) }
+}
+
+#[cfg(all(unix, not(target_os = "linux")))]
+#[path = "disk_portable.rs"]
+mod disk_portable;
+
 #[cfg(test)]
 #[path = "store_tests.rs"]
 mod store_tests;
+
+#[cfg(all(test, unix, not(target_os = "linux")))]
+fn crash_cut(phase: &str) { store_tests::crash_cut(phase); }

@@ -6,6 +6,11 @@
 use super::*;
 #[cfg(unix)]
 use std::process::{Command, Stdio};
+// On this target the parent does not import the store trait or `Write`.
+#[cfg(all(unix, not(target_os = "linux")))]
+use std::io::Write;
+#[cfg(all(unix, not(target_os = "linux")))]
+use dctx_plugin_distribution::{SafeFileName, Store};
 
 #[cfg(unix)]
 struct Fixture(PathBuf);
@@ -196,7 +201,7 @@ fn symlinked_roots_children_and_registry_are_refused() {
 }
 
 #[test]
-#[cfg(unix)]
+#[cfg(target_os = "linux")]
 fn retained_directory_handle_survives_a_root_symlink_swap() {
     use std::os::unix::fs::symlink;
     let fixture = Fixture::new();
@@ -257,7 +262,59 @@ fn bounded_reader_exact_limit_and_hardlink_refusal() {
 }
 
 #[test]
-#[ignore = "TODO: execute on Windows with native atomic replacement, directory flush and owner-only ACL assertions"]
+#[cfg(unix)]
+fn temp_root_create_read_publish_and_lock() {
+    let fixture = Fixture::new();
+    let store = fixture.store();
+    assert_eq!(store.load_registry().unwrap(), None);
+    assert!(store.staged().unwrap().is_empty());
+    let lock = store.try_lock().unwrap();
+    store.save_registry(lock, b"{\"active\":\"one\"}").unwrap();
+    assert_eq!(store.load_registry().unwrap().unwrap(), b"{\"active\":\"one\"}");
+    store.stage_append(lock, &key(), &payload(), b"complete").unwrap();
+    store.publish(lock, &key()).unwrap();
+    assert_eq!(store.read_installed(&key(), &payload()).unwrap(), b"complete");
+    assert_eq!(store.installed().unwrap(), [key()]);
+    assert!(store.staged().unwrap().is_empty());
+    assert_eq!(fixture.store().try_lock(), Err(DistributionError::Busy));
+    store.unlock(lock);
+    let regained = store.try_lock().unwrap();
+    store.unlock(regained);
+}
+
+#[test]
+#[cfg(unix)]
+fn symlinked_component_is_refused() {
+    use std::os::unix::fs::symlink;
+    let fixture = Fixture::new();
+    let outside = fixture.0.join("outside");
+    fs::create_dir(&outside).unwrap();
+    fs::write(outside.join("marker"), b"kept").unwrap();
+    let store = fixture.store();
+    let lock = store.try_lock().unwrap();
+    fs::create_dir(store.root.join("staging")).unwrap();
+    symlink(&outside, store.root.join("staging").join("test")).unwrap();
+    assert_eq!(store.stage_append(lock, &key(), &payload(), b"bad"), Err(DistributionError::Interrupted));
+    assert_eq!(fs::read(outside.join("marker")).unwrap(), b"kept");
+    assert!(!outside.join("plugin").exists());
+    assert!(!outside.join(payload().as_str()).exists());
+    store.unlock(lock);
+}
+
+#[test]
+#[cfg(unix)]
+fn dotdot_component_is_refused() {
+    let fixture = Fixture::new();
+    fs::create_dir(fixture.0.join("plugins")).unwrap();
+    let store = FsStore::new(fixture.0.join("plugins").join("..").join("plugins"));
+    assert_eq!(store.load_registry(), Err(DistributionError::Interrupted));
+    assert_eq!(store.try_lock(), Err(DistributionError::Interrupted));
+    assert!(!fixture.0.join("plugins").join("registry.lock").exists());
+    assert!(!fixture.0.join("registry.lock").exists());
+}
+
+#[test]
+#[ignore = "placeholder: Windows store semantics are not qualified and this test does not qualify them"]
 fn windows_replace_and_acl_semantics() {
     // TODO: qualify old/new complete replacement and inherited/explicit ACL refusal on Windows.
     // This test must gain native assertions before Windows store operations are enabled.
