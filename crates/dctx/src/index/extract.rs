@@ -1,6 +1,6 @@
-//! Structural extractor for Rust, JavaScript, TypeScript and Markdown.
-//! Implements the strict parser profile: coverage `structural`, no C parser.
-//! Depends on dctx-lex-js and dctx-lex-md. Rust stays line-oriented unless `syntax-rust` selects dctx-lex-rust.
+//! Structural extractor for the facade's supported source and configuration languages.
+//! Implements the strict parser profile: coverage `structural`.
+//! Uses lex_dispatch and dctx-lex-md. Rust stays line-oriented unless `syntax-rust` selects dctx-lex-rust.
 //! The snapshot walk calls [`extract_structural`]. Answer ids and the structural precision label stay put.
 
 use dctx_map_model::NodeKind;
@@ -39,11 +39,21 @@ pub(crate) fn language_of(path: &str) -> &'static str {
         "js" | "jsx" | "mjs" | "cjs" => "javascript",
         "ts" | "tsx" | "mts" | "cts" => "typescript",
         "md" | "markdown" => "markdown",
+        "py" | "pyi" => "python",
+        "go" => "go",
+        "java" => "java",
+        "c" | "h" | "cc" | "cpp" | "cxx" | "hpp" | "hh" => "c",
+        "json" | "jsonc" | "toml" | "yaml" | "yml" => "config",
+        "cs" => "csharp",
+        "kt" | "kts" => "kotlin",
+        "rb" | "rake" | "gemspec" => "ruby",
+        "php" | "phtml" | "inc" => "php",
+        "swift" => "swift",
         _ => "opaque",
     }
 }
 
-/// Line-oriented facts. NUL bytes yield no symbols; the caller still hashes the file.
+/// Structural facts. NUL bytes yield no symbols; the caller still hashes the file.
 pub(crate) fn extract_structural(path: &str, bytes: &[u8]) -> Vec<Symbol> {
     if bytes.contains(&0) {
         return Vec::new();
@@ -53,9 +63,8 @@ pub(crate) fn extract_structural(path: &str, bytes: &[u8]) -> Vec<Symbol> {
     };
     match language_of(path) {
         "rust" => rust_symbols(text),
-        "javascript" | "typescript" => script_symbols(path, text),
         "markdown" => markdown_symbols(bytes),
-        _ => Vec::new(),
+        language => super::lex_dispatch::symbols(language, path, text),
     }
 }
 
@@ -140,41 +149,6 @@ fn rust_decl(line: &str) -> Option<(&'static str, String)> {
     None
 }
 
-fn script_symbols(path: &str, text: &str) -> Vec<Symbol> {
-    let lexed = match dctx_lex_js::JsLexer::default().extract(path, text.as_bytes()) {
-        Ok(lexed) => lexed,
-        Err(_) => return Vec::new(),
-    };
-    let mut symbols = Vec::new();
-    for labeled in lexed.nodes {
-        let node = labeled.fact;
-        if matches!(node.kind, NodeKind::Module | NodeKind::Place | NodeKind::Package) || node.name.is_empty() {
-            continue;
-        }
-        let graph = match node.kind {
-            NodeKind::Doc => NodeKind::Doc,
-            NodeKind::Test => NodeKind::Test,
-            _ => NodeKind::Symbol,
-        };
-        let kind = if graph == NodeKind::Doc {
-            "heading".to_string()
-        } else {
-            node.symbol_kind.map(|kind| kind.as_str().to_string()).unwrap_or_else(|| "fn".to_string())
-        };
-        symbols.push(Symbol {
-            name: node.name,
-            kind,
-            graph,
-            lines: node.lines,
-            span: line_span(text, node.lines),
-            summary: node.summary.text,
-            summary_source: node.summary.source.as_str().to_string(),
-            signature: node.signature,
-        });
-    }
-    symbols
-}
-
 fn markdown_symbols(bytes: &[u8]) -> Vec<Symbol> {
     let document = match dctx_lex_md::extract(bytes) {
         Ok(document) => document,
@@ -201,31 +175,6 @@ fn markdown_symbols(bytes: &[u8]) -> Vec<Symbol> {
         });
     }
     symbols
-}
-
-fn line_span(text: &str, lines: [u32; 2]) -> [u64; 2] {
-    let start_line = lines[0].max(1);
-    let end_line = lines[1].max(start_line);
-    let mut offset = 0usize;
-    let mut start = 0usize;
-    let mut end = text.len();
-    let mut seen = false;
-    for (index, line) in text.split_inclusive('\n').enumerate() {
-        let line_no = u32::try_from(index.saturating_add(1)).unwrap_or(u32::MAX);
-        if line_no == start_line {
-            start = offset;
-            seen = true;
-        }
-        if line_no == end_line {
-            end = offset.saturating_add(line.trim_end_matches(['\r', '\n']).len());
-            break;
-        }
-        offset = offset.saturating_add(line.len());
-    }
-    if !seen {
-        return [0, 0];
-    }
-    [u64::try_from(start).unwrap_or(u64::MAX), u64::try_from(end).unwrap_or(u64::MAX)]
 }
 
 fn keyword_name(line: &str, keyword: &str) -> Option<String> {

@@ -4,6 +4,7 @@
 //! Callers see an [`crate::domain::Answer`], never this module.
 
 mod extract;
+mod lex_dispatch;
 mod query;
 mod segment;
 #[cfg(feature = "syntax-rust")]

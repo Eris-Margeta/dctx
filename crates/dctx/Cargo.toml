@@ -26,9 +26,19 @@ wire-json = ["dctx-map-model/wire-json"]
 dctx-adapter-cache = { path = "../dctx-adapter-cache" }
 dctx-core = { path = "../dctx-core" }
 dctx-hash = { path = "../dctx-hash" }
+dctx-lex-c = { path = "../dctx-lex-c" }
+dctx-lex-cfg = { path = "../dctx-lex-cfg" }
+dctx-lex-cs = { path = "../dctx-lex-cs" }
+dctx-lex-go = { path = "../dctx-lex-go" }
+dctx-lex-java = { path = "../dctx-lex-java" }
 dctx-lex-js = { path = "../dctx-lex-js" }
+dctx-lex-kt = { path = "../dctx-lex-kt" }
 dctx-lex-md = { path = "../dctx-lex-md" }
+dctx-lex-php = { path = "../dctx-lex-php" }
+dctx-lex-py = { path = "../dctx-lex-py" }
+dctx-lex-rb = { path = "../dctx-lex-rb" }
 dctx-lex-rust = { path = "../dctx-lex-rust", optional = true }
+dctx-lex-swift = { path = "../dctx-lex-swift" }
 dctx-map-model = { path = "../dctx-map-model", default-features = false }
 dctx-pack = { path = "../dctx-pack" }
 dctx-ports = { path = "../dctx-ports" }
@@ -56,6 +66,10 @@ required-features = ["plugin-runtime", "fs"]
 [[test]]
 name = "fs_fixture"
 required-features = ["fs", "map", "cache", "segments"]
+
+[[test]]
+name = "map_languages"
+required-features = ["fs", "map"]
 
 [[test]]
 name = "golden"
