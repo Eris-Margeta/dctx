@@ -3,6 +3,7 @@
 //! Depends on dctx-core, dctx-ports, dctx-adapter-cache, dctx-lex-js and dctx-lex-md.
 //! Every surface calls this crate. It does not discover a home directory, a global config or a git binary.
 //! A caller may inject a plugin host and a cache root. The library default starts none and spawns nothing.
+//! Disable `plugin-runtime` to exclude the host/platform/protocol dependencies and use typed refusal stubs.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
@@ -74,6 +75,7 @@ mod isolation_scan {
             ("session/hooks.rs", include_str!("session/hooks.rs")),
             ("session/template_op.rs", include_str!("session/template_op.rs")),
             ("plugins/mod.rs", include_str!("plugins/mod.rs")),
+            ("plugins/disabled.rs", include_str!("plugins/disabled.rs")),
             ("plugins/ports.rs", include_str!("plugins/ports.rs")),
             ("plugins/plan.rs", include_str!("plugins/plan.rs")),
             ("plugins/effects.rs", include_str!("plugins/effects.rs")),

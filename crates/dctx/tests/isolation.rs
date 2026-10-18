@@ -10,13 +10,17 @@ mod common;
 use std::sync::Arc;
 
 use dctx::memory::{CancelFlag, FixedClock, MemorySource};
+#[cfg(feature = "map")]
+use dctx::{DctxError, SnapshotRequest, VecSink};
 use dctx::{
-    DctxError, ErrorCode, HostCeiling, HostGrants, RuleTexts, SelectionPolicy, Session, SnapshotRequest,
-    StoragePolicy, Timestamp, VecSink,
+    ErrorCode, HostCeiling, HostGrants, RuleTexts, SelectionPolicy, Session, StoragePolicy, Timestamp,
 };
 
-use common::{open_session, session_parts, PING, README};
+use common::{open_session, PING};
+#[cfg(feature = "map")]
+use common::{session_parts, README};
 
+#[cfg(all(feature = "map", feature = "templates"))]
 const STRUCTURAL: &str = "\
 [DTS]
 version = 2
@@ -64,13 +68,14 @@ fn missing_clock_is_invalid_and_place_is_the_one_supplied() {
     assert_eq!(caps.subprocess, "none");
     assert_eq!(caps.unsafe_boundary, "none");
     assert_eq!(caps.cancellation, "checkpoint");
-    assert!(caps.features.contains(&"map"));
-    assert!(caps.features.contains(&"fs"));
+    assert_eq!(caps.features.contains(&"map"), cfg!(feature = "map"));
+    assert_eq!(caps.features.contains(&"fs"), cfg!(feature = "fs"));
     assert!(!caps.features.contains(&"syntax-rust"));
     assert!(caps.parsers.iter().any(|parser| *parser == "dctx-structural/1"));
 }
 
 #[test]
+#[cfg(feature = "map")]
 fn two_sessions_with_the_same_bytes_share_a_digest() {
     let mut left = open_session(ping_source());
     let mut right = open_session(ping_source());
@@ -82,6 +87,7 @@ fn two_sessions_with_the_same_bytes_share_a_digest() {
 }
 
 #[test]
+#[cfg(feature = "map")]
 fn metadata_lists_names_and_a_later_read_is_stale() {
     let mut session = open_session(ping_source());
     let handle = session.snapshot(&SnapshotRequest::metadata()).expect("meta");
@@ -103,6 +109,7 @@ fn metadata_lists_names_and_a_later_read_is_stale() {
 }
 
 #[test]
+#[cfg(feature = "map")]
 fn ceiling_exclude_is_not_expanded_by_an_include_selection() {
     let mut denied = session_parts(
         tree(),
@@ -127,6 +134,7 @@ fn ceiling_exclude_is_not_expanded_by_an_include_selection() {
 }
 
 #[test]
+#[cfg(all(feature = "map", feature = "templates"))]
 fn plan_roots_exclude_readme_and_templates_fail_closed() {
     let mut session = open_session(tree());
     let open = session.snapshot(&SnapshotRequest::immutable()).expect("open");
@@ -200,8 +208,86 @@ fn ping_source() -> MemorySource {
     source
 }
 
+#[cfg(feature = "map")]
 fn tree() -> MemorySource {
     let mut source = ping_source();
     source.insert_file("README.md", README, 0).expect("readme");
     source
+}
+
+#[cfg(not(feature = "plugin-runtime"))]
+#[test]
+fn disabled_host_refuses_ports_and_contains_no_runtime_symbols() {
+    use dctx::{Boundary, DctxError, HookEffect, PluginHost};
+    for host in [PluginHost::fake(), PluginHost::platform()] {
+        let host = host.on("dctx/git", Boundary::BeforePack, vec![HookEffect::StageGitignore]);
+        assert_eq!((host.spawns(), host.admissions(), host.git_children()), (0, 0, 0));
+        assert!(matches!(host.seed(".gitignore", b"#\n"),
+            Err(DctxError::UnsupportedCapability { capability: "plugin-runtime", .. })));
+    }
+    #[cfg(feature = "fs")]
+    assert!(matches!(PluginHost::platform_with_audit(std::path::Path::new("missing"), 1024),
+        Err(DctxError::UnsupportedCapability { capability: "plugin-runtime", .. })));
+    let binary = std::fs::read(std::env::current_exe().expect("executable")).expect("binary");
+    for suffix in ["host", "platform", "protocol"] {
+        let symbol = format!("dctx_plugin_{suffix}");
+        assert!(!binary.windows(symbol.len()).any(|bytes| bytes == symbol.as_bytes()), "{symbol} linked");
+    }
+}
+
+#[cfg(all(not(feature = "plugin-runtime"), feature = "pack", feature = "map", feature = "templates", feature = "cache"))]
+#[test]
+fn disabled_hooks_warn_or_refuse_without_spawning_and_engines_still_work() {
+    use dctx::{Boundary, GcRequest, HookEffect, PackRequest, PluginHost, bundled_git_plugin};
+    for host in [None, Some(PluginHost::fake()), Some(PluginHost::platform())] {
+        for (hook, required) in [("", false), ("before-pack-output-written", true),
+            ("after-pack-output-written", true), ("before-index", true), ("after-index", true), ("cache-gc", true), ("all", false)] {
+            let mut ceiling = HostCeiling::base();
+            let mut plugin = bundled_git_plugin();
+            plugin.hooks = ["before-pack-output-written", "after-pack-output-written", "before-index", "after-index", "cache-gc"]
+                .map(str::to_string).to_vec();
+            ceiling.plugins.push(plugin);
+            let mut builder = Session::builder(ping_source()).clock(FixedClock(Timestamp(0)))
+                .cancellation(Arc::new(CancelFlag::new())).selection(SelectionPolicy::from_texts(&RuleTexts::default()))
+                .ceiling(ceiling).grants(HostGrants::PermitAll).storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+                .place("fixture").view("map");
+            if let Some(host) = host.clone() {
+                builder = builder.plugins(host.on("dctx/git", Boundary::BeforePack, vec![HookEffect::StageGitignore]));
+            }
+            let mut session = builder.build().expect("session");
+            let mut source = STRUCTURAL.to_string();
+            if !hook.is_empty() {
+                let hooks = if hook == "all" { "before-pack-output-written\", \"after-pack-output-written\", \"before-index\", \"after-index\", \"cache-gc" } else { hook };
+                source.push_str(&format!("[PLUGIN:dctx/git]\nversion = \"1.0.0\"\ndigest = \"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"\nhooks = [\"{hooks}\"]\nrequired = {required}\n"));
+            }
+            let plan = session.compile_template(&source).expect("plan");
+            session.install_plan(plan);
+            let mut sink = VecSink::new();
+            let result = if hook.contains("index") {
+                session.snapshot(&SnapshotRequest::immutable()).map(|_| ())
+            } else if hook == "cache-gc" {
+                session.cache_gc(GcRequest { apply: true }).map(|_| ())
+            } else {
+                session.pack(&PackRequest::new(), &mut sink).map(|_| ())
+            };
+            if required {
+                let committed = hook.starts_with("after") || hook == "cache-gc";
+                assert_eq!(result, Err(DctxError::Hook { hook: hook_name(hook), reason: "plugin-runtime-disabled", output_committed: committed }));
+                if hook.starts_with("before") { assert!(sink.is_empty()); assert_eq!(session.content_reads(), 0); }
+            } else {
+                result.expect("pack without runtime");
+                assert!(!sink.is_empty());
+                let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+                let answer = session.map(&handle, "m:src/lib.rs", &mut sink).expect("map");
+                assert!(!answer.records.is_empty());
+                if hook == "all" { assert_eq!(session.hook_warnings().len(), 2); }
+                assert!(session.hook_warnings().iter().all(|w| w.reason == "plugin-runtime-disabled"));
+            }
+            assert_eq!((session.plugin_spawns(), session.plugin_admissions(), session.git_children()), (0, 0, 0));
+        }
+    }
+    fn hook_name(hook: &str) -> &'static str {
+        [Boundary::BeforePack, Boundary::AfterPack, Boundary::BeforeIndex, Boundary::AfterIndex, Boundary::CacheGc]
+            .into_iter().find(|boundary| boundary.as_str() == hook).expect("boundary").as_str()
+    }
 }

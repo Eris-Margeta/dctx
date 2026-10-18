@@ -3,12 +3,15 @@
 //! Depends on [`crate::plugins`] and the session policy. The engines do not import the host.
 //! No installed host means no plugin process. A required plan with no host is refused.
 
+#[cfg(feature = "plugin-runtime")]
 use dctx_core::FileHandlingDecision;
 use dctx_template::PluginPlan;
 
 use super::Session;
 use crate::domain::DctxError;
-use crate::plugins::{participants, run_plan, Boundary, BoundaryInput, HookWarning, IgnoreSnap};
+use crate::plugins::{participants, Boundary, HookWarning};
+#[cfg(feature = "plugin-runtime")]
+use crate::plugins::{run_plan, BoundaryInput, IgnoreSnap};
 
 impl Session {
     /// Advisory warnings from the latest pack, snapshot or cache collection.
@@ -57,6 +60,23 @@ impl Session {
         self.run_after(Boundary::CacheGc)
     }
 
+    #[cfg(not(feature = "plugin-runtime"))]
+    fn run_before(&mut self, boundary: Boundary) -> Result<(), DctxError> {
+        self.run_disabled(boundary, false)
+    }
+
+    #[cfg(not(feature = "plugin-runtime"))]
+    fn run_after(&mut self, boundary: Boundary) -> Result<(), DctxError> {
+        self.run_disabled(boundary, true)
+    }
+
+    #[cfg(not(feature = "plugin-runtime"))]
+    fn run_disabled(&mut self, boundary: Boundary, committed: bool) -> Result<(), DctxError> {
+        let Some(plan) = self.plugin_plan() else { return Ok(()); };
+        self.missing_host(&plan, boundary, committed).unwrap_or(Ok(()))
+    }
+
+    #[cfg(feature = "plugin-runtime")]
     fn run_before(&mut self, boundary: Boundary) -> Result<(), DctxError> {
         let Some(plan) = self.plugin_plan() else {
             return Ok(());
@@ -76,6 +96,7 @@ impl Session {
         reload
     }
 
+    #[cfg(feature = "plugin-runtime")]
     fn run_after(&mut self, boundary: Boundary) -> Result<(), DctxError> {
         let Some(plan) = self.plugin_plan() else {
             return Ok(());
@@ -95,27 +116,29 @@ impl Session {
 
     /// `Some(Err)` when a required participant has no host. `Some(Ok)` records an advisory gap.
     fn missing_host(&mut self, plan: &PluginPlan, boundary: Boundary, committed: bool) -> Option<Result<(), DctxError>> {
-        if self.plugins.is_some() {
+        if cfg!(feature = "plugin-runtime") && self.plugins.is_some() {
             return None;
         }
+        let reason = if cfg!(feature = "plugin-runtime") { "plugin-host-missing" } else { "plugin-runtime-disabled" };
         let people = participants(plan, boundary);
         if people.iter().any(|plugin| plugin.required) {
             return Some(Err(DctxError::Hook {
                 hook: boundary.as_str(),
-                reason: "plugin-host-missing",
+                reason,
                 output_committed: committed,
             }));
         }
         if !people.is_empty() {
             self.warnings.push(HookWarning {
                 hook: boundary.as_str(),
-                reason: "plugin-host-missing",
+                reason,
                 output_committed: committed,
             });
         }
         Some(Ok(()))
     }
 
+    #[cfg(feature = "plugin-runtime")]
     fn invoke(
         &mut self,
         plan: &PluginPlan,
@@ -137,14 +160,17 @@ impl Session {
         result
     }
 
+    #[cfg(feature = "plugin-runtime")]
     fn observe_ignore(&self) -> IgnoreSnap {
         self.plugins.as_ref().map(crate::plugins::PluginHost::observe_gitignore).unwrap_or_else(IgnoreSnap::unknown)
     }
 
+    #[cfg(feature = "plugin-runtime")]
     fn gitignore_included(&self) -> Result<bool, DctxError> {
         Ok(self.policy_view().decide(".gitignore", false)? == FileHandlingDecision::Include)
     }
 
+    #[cfg(feature = "plugin-runtime")]
     fn reload_ignore(&mut self, before: IgnoreSnap, spawned: bool) -> Result<(), DctxError> {
         let after = self.observe_ignore();
         if before.same_file(&after) {

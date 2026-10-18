@@ -5,12 +5,14 @@ edition = "2024"
 license = "Apache-2.0"
 description = "Stable dctx library facade for pack, map, templates and cache"
 
-# `default` is the strict profile: first-party Rust and std, no C and no subprocess.
+# `default` includes the optional plugin runtime; sessions still require an explicit host.
+# Strict composition selects the six engine features without `plugin-runtime`.
 # `default-features = false` still builds the pure types; disabled operations return
 # `UnsupportedCapability`. Enhanced parsers and JSON deps are explicit features.
 # `syntax-rust` stays off this set: it links `syn`, and the five-verb corpus stays structural.
 [features]
-default = ["pack", "map", "templates", "fs", "segments", "cache"]
+default = ["pack", "map", "templates", "fs", "segments", "cache", "plugin-runtime"]
+plugin-runtime = ["dep:dctx-plugin-host", "dep:dctx-plugin-platform", "dep:dctx-plugin-protocol"]
 pack = []
 map = []
 templates = []
@@ -31,10 +33,42 @@ dctx-map-model = { path = "../dctx-map-model", default-features = false }
 dctx-pack = { path = "../dctx-pack" }
 dctx-ports = { path = "../dctx-ports" }
 dctx-template = { path = "../dctx-template" }
-dctx-plugin-host = { path = "../dctx-plugin-host" }
-dctx-plugin-platform = { path = "../dctx-plugin-platform" }
-dctx-plugin-protocol = { path = "../dctx-plugin-protocol" }
+dctx-plugin-host = { path = "../dctx-plugin-host", optional = true }
+dctx-plugin-platform = { path = "../dctx-plugin-platform", optional = true }
+dctx-plugin-protocol = { path = "../dctx-plugin-protocol", optional = true }
 
 [dev-dependencies]
 proptest = "1"
 tempfile = "=3.24.0"
+
+[[test]]
+name = "plugin_audit"
+required-features = ["plugin-runtime"]
+
+[[test]]
+name = "plugin_authority"
+required-features = ["plugin-runtime", "pack", "templates"]
+
+[[test]]
+name = "plugin_recovery"
+required-features = ["plugin-runtime", "fs"]
+
+[[test]]
+name = "fs_fixture"
+required-features = ["fs", "map", "cache", "segments"]
+
+[[test]]
+name = "golden"
+required-features = ["map", "segments"]
+
+[[test]]
+name = "session"
+required-features = ["pack", "map", "templates", "cache", "segments"]
+
+[[test]]
+name = "legacy_import"
+required-features = ["pack"]
+
+[[test]]
+name = "legacy_output"
+required-features = ["pack", "templates"]

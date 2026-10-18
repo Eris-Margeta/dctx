@@ -3,21 +3,26 @@
 //! Engines reach the host only through session methods. A platform launch stays closed.
 
 #![forbid(unsafe_code)]
+#![cfg(all(feature = "pack", feature = "map", feature = "templates", feature = "cache", feature = "segments"))]
 
 #[path = "common/mod.rs"]
 mod common;
 
+#[cfg(feature = "plugin-runtime")]
 use std::sync::Arc;
 
+#[cfg(feature = "plugin-runtime")]
 use dctx::memory::{CancelFlag, FixedClock, MemorySource};
+use dctx::{GcRequest, PackRequest, SnapshotRequest, VecSink};
+#[cfg(feature = "plugin-runtime")]
 use dctx::{
-    bundled_git_plugin, Boundary, ErrorCode, GcRequest, HookEffect, HostCeiling, HostGrants, OperationLimits,
-    PackRequest, PluginHost, RuleSources, RuleTexts, SelectionPolicy, Session, SnapshotRequest, StoragePolicy,
-    Timestamp, VecSink,
+    bundled_git_plugin, Boundary, ErrorCode, HookEffect, HostCeiling, HostGrants, OperationLimits,
+    PluginHost, RuleSources, RuleTexts, SelectionPolicy, Session, StoragePolicy, Timestamp,
 };
 
 use common::{open_session, repository};
 
+#[cfg(feature = "plugin-runtime")]
 const ALL: &[&str] = &[
     "before-pack-output-written",
     "after-pack-output-written",
@@ -25,9 +30,12 @@ const ALL: &[&str] = &[
     "after-index",
     "cache-gc",
 ];
+#[cfg(feature = "plugin-runtime")]
 const SRC: &str = "\"src\"";
+#[cfg(feature = "plugin-runtime")]
 const SRC_IGNORE: &str = "\"src\", \".gitignore\"";
 
+#[cfg(feature = "plugin-runtime")]
 fn ceiling(hooks: &[&str]) -> HostCeiling {
     let mut ceiling = HostCeiling::base();
     let mut plugin = bundled_git_plugin();
@@ -36,6 +44,7 @@ fn ceiling(hooks: &[&str]) -> HostCeiling {
     ceiling
 }
 
+#[cfg(feature = "plugin-runtime")]
 fn source(hooks: &[&str], required: bool, roots: &str) -> String {
     let listed = hooks.iter().map(|hook| format!("\"{hook}\"")).collect::<Vec<_>>().join(", ");
     let flag = if required { "true" } else { "false" };
@@ -63,6 +72,7 @@ allow = [\"file.read:.gitignore\", \"file.write:.gitignore\", \"program:git.add-
     )
 }
 
+#[cfg(feature = "plugin-runtime")]
 fn open(
     tree: MemorySource,
     host: PluginHost,
@@ -92,6 +102,7 @@ fn open(
     session
 }
 
+#[cfg(feature = "plugin-runtime")]
 fn duo() -> MemorySource {
     let mut tree = MemorySource::new();
     tree.insert_file("src/lib.rs", b"pub fn ping() {}\n", 0).expect("lib");
@@ -100,6 +111,7 @@ fn duo() -> MemorySource {
     tree
 }
 
+#[cfg(feature = "plugin-runtime")]
 fn commented() -> RuleSources {
     RuleSources { local_ignore: Some("#\n".to_string()), ..RuleSources::default() }
 }
@@ -143,6 +155,7 @@ fn library_isolation_spawns_nothing() {
     assert_eq!(session.plugin_admissions(), 0);
 }
 
+#[cfg(feature = "plugin-runtime")]
 #[test]
 fn read_only_map_does_not_spawn() {
     let mut session = open(repository(), PluginHost::fake(), None, ALL, false, SRC);
@@ -163,6 +176,7 @@ fn read_only_map_does_not_spawn() {
     assert_eq!(git, 0);
 }
 
+#[cfg(feature = "plugin-runtime")]
 #[test]
 fn corpus_fake_runs_five_hooks_without_git_children() {
     let mut session = open(repository(), PluginHost::fake(), None, ALL, false, SRC);
@@ -180,6 +194,7 @@ fn corpus_fake_runs_five_hooks_without_git_children() {
     assert_eq!(session.plugin_spawns(), 5);
 }
 
+#[cfg(feature = "plugin-runtime")]
 #[test]
 fn corpus_platform_warns_and_spawns_nothing() {
     let mut session = open(repository(), PluginHost::platform(), None, ALL, false, SRC);
@@ -200,6 +215,7 @@ fn corpus_platform_warns_and_spawns_nothing() {
     assert_eq!(seen.len(), 5);
 }
 
+#[cfg(feature = "plugin-runtime")]
 #[test]
 fn before_commit_required_is_not_committed() {
     let host = PluginHost::fake().on("dctx/git", Boundary::BeforePack, vec![HookEffect::Fail]);
@@ -212,6 +228,7 @@ fn before_commit_required_is_not_committed() {
     assert_eq!(session.cache_status().committed_bytes, 0);
 }
 
+#[cfg(feature = "plugin-runtime")]
 #[test]
 fn after_commit_required_stays_committed() {
     let failing = PluginHost::fake().on("dctx/git", Boundary::AfterPack, vec![HookEffect::Fail]);
@@ -230,6 +247,7 @@ fn after_commit_required_stays_committed() {
     assert!(!sink.is_empty());
 }
 
+#[cfg(feature = "plugin-runtime")]
 #[test]
 fn before_index_required_does_not_read() {
     let host = PluginHost::fake().on("dctx/git", Boundary::BeforeIndex, vec![HookEffect::Fail]);
@@ -248,6 +266,7 @@ fn before_index_required_does_not_read() {
     assert_eq!(session.generation_count(), 1);
 }
 
+#[cfg(feature = "plugin-runtime")]
 #[test]
 fn cache_gc_after_failure_is_committed() {
     let host = PluginHost::fake().on("dctx/git", Boundary::CacheGc, vec![HookEffect::Fail]);
@@ -264,6 +283,7 @@ fn cache_gc_after_failure_is_committed() {
     assert_eq!(session.generation_count(), 0);
 }
 
+#[cfg(feature = "plugin-runtime")]
 #[test]
 fn gitignore_revalidate_changes_pack_selection() {
     let quiet = PluginHost::fake().seed(".gitignore", b"#\n").expect("seed");
@@ -281,6 +301,7 @@ fn gitignore_revalidate_changes_pack_selection() {
     assert_eq!(revised.epoch(), untouched.epoch() + 1);
 }
 
+#[cfg(feature = "plugin-runtime")]
 #[test]
 fn gitignore_change_without_rule_sources_refuses() {
     let host = PluginHost::fake()
@@ -296,6 +317,7 @@ fn gitignore_change_without_rule_sources_refuses() {
     assert_eq!(session.cache_status().committed_bytes, 0);
 }
 
+#[cfg(feature = "plugin-runtime")]
 #[test]
 fn stage_git_fake_counts_a_child_and_platform_does_not() {
     let fake = PluginHost::fake()
@@ -318,6 +340,7 @@ fn stage_git_fake_counts_a_child_and_platform_does_not() {
     assert!(!session.hook_warnings()[0].output_committed);
 }
 
+#[cfg(feature = "plugin-runtime")]
 #[test]
 fn real_required_before_blocks_without_children() {
     let host = PluginHost::platform().on("dctx/git", Boundary::BeforePack, vec![HookEffect::Fail]);

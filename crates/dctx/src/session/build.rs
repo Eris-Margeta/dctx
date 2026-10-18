@@ -156,6 +156,7 @@ impl SessionBuilder {
     }
 
     /// Plugin ports. Absent means the session starts no plugin and no git child.
+    /// Without `plugin-runtime`, the supplied host is unavailable: advisory hooks warn and required hooks refuse.
     pub fn plugins(mut self, plugins: PluginHost) -> Self {
         self.plugins = Some(plugins);
         self

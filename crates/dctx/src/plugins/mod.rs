@@ -1,22 +1,37 @@
 //! Facade plugin host: DTS plans sequenced over host and platform ports.
 //! Implements PLUGINS.md §3.1 and §7.3 row PL-F. Engines stay unaware of the host.
-//! Depends on `dctx-plugin-host`, `dctx-plugin-platform` and `dctx-template`.
+//! The `plugin-runtime` feature enables host/platform ports; otherwise only refusal stubs compile.
 //! A session with no [`PluginHost`] discovers no plugin and starts no process.
 
-#[cfg(any(all(feature = "fs", unix), test))]
+#[cfg(all(feature = "plugin-runtime", any(all(feature = "fs", unix), test)))]
 mod audit;
+#[cfg(feature = "plugin-runtime")]
 mod boundary;
+#[cfg(feature = "plugin-runtime")]
 mod plan;
+#[cfg(feature = "plugin-runtime")]
 mod ports;
+#[cfg(not(feature = "plugin-runtime"))]
+mod disabled;
 
+#[cfg(feature = "plugin-runtime")]
 use std::collections::BTreeMap;
+#[cfg(feature = "plugin-runtime")]
 use std::sync::{Arc, Mutex};
 
+#[cfg(feature = "plugin-runtime")]
 use crate::domain::DctxError;
 
+#[cfg(feature = "plugin-runtime")]
 pub(crate) use boundary::{run_plan, BoundaryInput};
+#[cfg(feature = "plugin-runtime")]
 pub(crate) use plan::participants;
+#[cfg(feature = "plugin-runtime")]
 pub(crate) use ports::IgnoreSnap;
+#[cfg(not(feature = "plugin-runtime"))]
+pub(crate) use disabled::participants;
+#[cfg(not(feature = "plugin-runtime"))]
+pub use disabled::PluginHost;
 
 /// Hook boundary the facade runs around an engine operation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -73,6 +88,7 @@ pub struct HookWarning {
 }
 
 /// Caller-supplied plugin ports. Library sessions leave this unset.
+#[cfg(feature = "plugin-runtime")]
 #[derive(Clone)]
 pub struct PluginHost {
     inner: Arc<Mutex<ports::PortBody>>,
@@ -82,6 +98,7 @@ pub struct PluginHost {
     authority: Arc<plan::AuthoritySource>,
 }
 
+#[cfg(feature = "plugin-runtime")]
 impl PluginHost {
     /// In-memory ports with explicit consent for the bundled Git fixture only.
     /// Recipe runs count as git children and do not exec; templates cannot extend this consent.
@@ -205,6 +222,7 @@ impl PluginHost {
     }
 }
 
+#[cfg(feature = "plugin-runtime")]
 impl std::fmt::Debug for PluginHost {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
@@ -218,6 +236,7 @@ impl std::fmt::Debug for PluginHost {
 }
 
 /// The invocation binding accompanies every scripted request and its registered handles.
+#[cfg(feature = "plugin-runtime")]
 pub(crate) struct RequestGate<'a> {
     plugin: &'a dctx_template::PluginBinding,
     binding: dctx_plugin_host::Binding,
@@ -226,6 +245,7 @@ pub(crate) struct RequestGate<'a> {
     epoch: u64,
 }
 
+#[cfg(feature = "plugin-runtime")]
 impl<'a> RequestGate<'a> {
     pub(crate) fn new(plugin: &'a dctx_template::PluginBinding, authority: &dctx_plugin_host::Authority, included: bool, epoch: u64) -> Self {
         Self { plugin, binding: authority.binding().clone(), grant: authority.effective().to_vec(), included, epoch }
