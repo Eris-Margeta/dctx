@@ -30,6 +30,8 @@ pub enum Language {
     CSharp,
     /// Kotlin source (`.kt`) and scripts (`.kts`).
     Kotlin,
+    /// Ruby source (`.rb`), tasks (`.rake`) and gem specifications (`.gemspec`).
+    Ruby,
     /// No grammar; only a module node is emitted.
     Unknown,
 }
@@ -55,6 +57,7 @@ impl Language {
             Some("json" | "jsonc" | "toml" | "yaml" | "yml") => Self::Config,
             Some("cs") => Self::CSharp,
             Some("kt" | "kts") => Self::Kotlin,
+            Some("rb" | "rake" | "gemspec") => Self::Ruby,
             _ => Self::Unknown,
         }
     }
@@ -156,6 +159,12 @@ mod tests {
         assert_eq!(Language::for_path("src/App.CS"), Language::CSharp);
         assert_eq!(Language::for_path("src/App.kt"), Language::Kotlin);
         assert_eq!(Language::for_path("scripts/main.KTS"), Language::Kotlin);
+        for extension in ["rb", "rake", "gemspec", "RB", "RAKE", "GEMSPEC"] {
+            assert_eq!(
+                Language::for_path(&format!("src/app.{extension}")),
+                Language::Ruby
+            );
+        }
         assert_eq!(Language::for_path("pkg/app.pyw"), Language::Unknown);
         assert_eq!(Language::for_path("rs/file.txt"), Language::Unknown);
     }

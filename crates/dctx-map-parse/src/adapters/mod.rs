@@ -1,6 +1,6 @@
 //! Language dispatch for the pure-Rust parser and the optional tree-sitter oracle.
 //! Implements SPEC-MAP-MODE section 6.2 and PARSERS-v1 for Rust, JavaScript,
-//! TypeScript, Markdown, Python, Go, Java, C/C++, configuration, C# and Kotlin.
+//! TypeScript, Markdown, Python, Go, Java, C/C++, configuration, C#, Kotlin and Ruby.
 //! Uses the dctx-lex crates by default; tree-sitter compiles only with syntax-tree-sitter.
 //! Languages without a tree-sitter grammar use their pure adapters in the oracle.
 mod c;
@@ -13,6 +13,7 @@ mod javascript;
 mod kotlin;
 mod markdown;
 mod python;
+mod ruby;
 mod rust;
 
 #[cfg(feature = "syntax-tree-sitter")]
@@ -51,6 +52,7 @@ impl Parser for PureParser {
             Language::Config => config::parse_pure(path, bytes),
             Language::CSharp => csharp::parse_pure(path, bytes),
             Language::Kotlin => kotlin::parse_pure(path, bytes),
+            Language::Ruby => ruby::parse_pure(path, bytes),
             Language::Unknown => fallback(path, source),
         }
     }
@@ -58,7 +60,7 @@ impl Parser for PureParser {
 
 /// Tree-sitter language adapters. Compiled only with `syntax-tree-sitter`.
 ///
-/// Python, Go, Java, C/C++, configuration, C# and Kotlin have no grammar here.
+/// Python, Go, Java, C/C++, configuration, C#, Kotlin and Ruby have no grammar here.
 /// The oracle falls back to the pure adapters with the same precision and refusals.
 #[cfg(feature = "syntax-tree-sitter")]
 #[derive(Debug, Clone, Copy, Default)]
@@ -79,6 +81,7 @@ impl Parser for TreeSitterParser {
             Language::Config => return config::parse_pure(path, bytes),
             Language::CSharp => return csharp::parse_pure(path, bytes),
             Language::Kotlin => return kotlin::parse_pure(path, bytes),
+            Language::Ruby => return ruby::parse_pure(path, bytes),
             Language::Unknown => return fallback(path, source),
             Language::Rust
             | Language::JavaScript
@@ -101,6 +104,7 @@ impl Parser for TreeSitterParser {
             | Language::Config
             | Language::CSharp
             | Language::Kotlin
+            | Language::Ruby
             | Language::Unknown => {}
         }
         facts.finish()
