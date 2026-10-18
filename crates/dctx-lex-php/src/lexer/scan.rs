@@ -43,6 +43,7 @@ pub(super) fn scan(src: &str, out: &mut Lexed, limits: &Limits) -> Result<(), Le
             out.comments.push((start, i));
             continue;
         } else if rest.starts_with("/*") {
+            // Only `//` and `#` comments end at `?>`. A block comment ends at `*/`.
             if let Some(end) = src[i + 2..].find("*/") {
                 i += end + 4;
             } else {

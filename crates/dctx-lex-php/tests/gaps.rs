@@ -65,14 +65,15 @@ function real(): void { real_call(); }
 "#;
     let file = parse("regions.phtml", source);
     assert_eq!(file.completion, Completion::Complete, "{:?}", file.diagnostics);
-    assert_eq!(names(&file), ["kept", "real"]);
-    assert_eq!(calls(&file), ["kept_call", "real_call", "echo_call"]);
+    // `?>` does not end `/* */`, so the function after `*/` is PHP.
+    // Only the `//` and `#` comments above end at `?>`.
+    assert_eq!(names(&file), ["kept", "decoy_block", "real"]);
+    assert_eq!(calls(&file), ["kept_call", "block_call", "real_call", "echo_call"]);
     assert!(file.references.iter().all(|r| {
         !r.fact.name.contains("decoy") && !r.fact.name.contains("html") && !r.fact.name.contains("single")
             && !r.fact.name.contains("double") && !r.fact.name.contains("shell")
             && !r.fact.name.contains("doc_") && !r.fact.name.contains("now_")
             && !r.fact.name.contains("line_") && !r.fact.name.contains("hash")
-            && !r.fact.name.contains("block")
     }));
 }
 
