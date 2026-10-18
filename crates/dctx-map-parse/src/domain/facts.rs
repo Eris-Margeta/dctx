@@ -32,6 +32,8 @@ pub enum Language {
     Kotlin,
     /// Ruby source (`.rb`), tasks (`.rake`) and gem specifications (`.gemspec`).
     Ruby,
+    /// PHP source (`.php`), templates (`.phtml`) and includes (`.inc`).
+    Php,
     /// No grammar; only a module node is emitted.
     Unknown,
 }
@@ -58,6 +60,7 @@ impl Language {
             Some("cs") => Self::CSharp,
             Some("kt" | "kts") => Self::Kotlin,
             Some("rb" | "rake" | "gemspec") => Self::Ruby,
+            Some("php" | "phtml" | "inc") => Self::Php,
             _ => Self::Unknown,
         }
     }
@@ -163,6 +166,12 @@ mod tests {
             assert_eq!(
                 Language::for_path(&format!("src/app.{extension}")),
                 Language::Ruby
+            );
+        }
+        for extension in ["php", "phtml", "inc", "PHP", "PHTML", "INC"] {
+            assert_eq!(
+                Language::for_path(&format!("src/app.{extension}")),
+                Language::Php
             );
         }
         assert_eq!(Language::for_path("pkg/app.pyw"), Language::Unknown);
