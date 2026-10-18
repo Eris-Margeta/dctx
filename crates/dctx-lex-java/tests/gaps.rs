@@ -1,9 +1,11 @@
-//! J1–J3 oracles for Java unicode escapes, graph identity and hostile bounds.
+//! Oracles for Java unicode escapes, graph identity, hostile bounds and damaged containment.
 //! The golden corpus never pinned these inputs; a control sits beside every refusal.
 //! Calls the public extractor only.
 #![forbid(unsafe_code)]
 
-use dctx_lex_java::{Completion, DiagnosticReason, JavaLexer, LexError, LexedFile, Limits};
+use dctx_lex_java::{
+    Completion, DiagnosticReason, JavaLexer, LexError, LexedFile, Limits, Precision,
+};
 
 fn at(path: &str, limits: Limits, bytes: &[u8]) -> Result<LexedFile, LexError> {
     JavaLexer::new(limits).extract(path, bytes)
@@ -253,4 +255,70 @@ fn j3_hostile_token_and_diagnostic_bounds() {
     let clean = at("A.java", Limits::default(), b"class A {}").expect("clean");
     assert_eq!(clean.completion, Completion::Complete);
     assert!(clean.diagnostics.is_empty());
+}
+
+#[test]
+fn j4_review_unicode_escapes_in_raw_source() {
+    // Not a defect: JLS `\u` translation already runs before token classification.
+    // A keyword may start with an escape, and a line comment ends at a `\u` newline
+    // (including a `\\u` run). The unescaped source is the positive control.
+    assert_translates(r"\u0063lass A {}", "class A {}", &["A"], &[]);
+    assert_translates(
+        r"// c\u000a class B {}",
+        "// c\n class B {}",
+        &["B"],
+        &[],
+    );
+    assert_translates(
+        r"// c\\u000a class C {}",
+        "// c\\\n class C {}",
+        &["C"],
+        &[],
+    );
+}
+
+fn containment<'a>(facts: &'a LexedFile, name: &str) -> (Precision, &'a str) {
+    let node = facts
+        .nodes
+        .iter()
+        .find(|candidate| candidate.fact.name == name)
+        .unwrap_or_else(|| panic!("missing {name}"));
+    let edge = facts
+        .edges
+        .iter()
+        .find(|edge| edge.fact.dst == node.fact.id)
+        .unwrap_or_else(|| panic!("missing edge {name}"));
+    (edge.precision, edge.fact.conf.as_str())
+}
+
+#[test]
+fn j5_review_partial_contains_stays_exact() {
+    // Not a defect: a contains edge past the first diagnostic is already
+    // Precision::Partial. EdgeKind::Contains permits only Confidence::Exact,
+    // so the confidence label stays exact while damage lives on precision.
+    let damaged = r#"
+class Half {
+    void ok() { ready(); }
+    void later() {
+        String s = "unterminated
+        laterCall();
+    }
+}
+"#;
+    let facts = at("A.java", Limits::default(), damaged.as_bytes()).expect("damaged");
+    assert_eq!(facts.completion, Completion::Partial);
+    assert!(!facts.diagnostics.is_empty());
+    assert_eq!(containment(&facts, "Half::ok"), (Precision::Structural, "exact"));
+    assert_eq!(containment(&facts, "Half"), (Precision::Partial, "exact"));
+    assert_eq!(containment(&facts, "Half::later"), (Precision::Partial, "exact"));
+    let clean = at(
+        "A.java",
+        Limits::default(),
+        b"class Half { void ok() { ready(); } }",
+    )
+    .expect("clean");
+    assert_eq!(clean.completion, Completion::Complete);
+    assert!(clean.diagnostics.is_empty());
+    assert_eq!(containment(&clean, "Half"), (Precision::Structural, "exact"));
+    assert_eq!(containment(&clean, "Half::ok"), (Precision::Structural, "exact"));
 }
