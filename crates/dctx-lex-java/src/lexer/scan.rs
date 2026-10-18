@@ -49,9 +49,9 @@ impl<'a> Scanner<'a> {
             if self.pos >= self.src.len() {
                 break;
             }
-            if self.starts_with("//") {
+            if self.translated_len("//").is_some() {
                 self.line_comment();
-            } else if self.starts_with("/*") {
+            } else if self.translated_len("/*").is_some() {
                 self.block_comment();
             } else if self.peek() == Some('"') {
                 self.string();
@@ -59,7 +59,7 @@ impl<'a> Scanner<'a> {
                 self.char_lit();
             } else if self.number_start() {
                 self.number();
-            } else if self.peek().is_some_and(is_ident_start) {
+            } else if self.logical_peek().is_some_and(is_ident_start) {
                 self.ident();
             } else {
                 self.punct();
@@ -71,37 +71,43 @@ impl<'a> Scanner<'a> {
     }
 
     fn skip_ws(&mut self) {
-        while self.peek().is_some_and(char::is_whitespace) {
-            self.bump();
+        while self.logical_peek().is_some_and(char::is_whitespace) {
+            self.logical_bump();
         }
     }
 
     fn line_comment(&mut self) {
         let start = self.pos;
-        while let Some(c) = self.peek() {
+        while let Some(c) = self.logical_peek() {
             if c == '\n' {
                 break;
             }
-            self.bump();
+            self.logical_bump();
         }
         self.push_comment(start, false);
     }
 
     fn block_comment(&mut self) {
         let start = self.pos;
-        self.pos += 2;
+        let Some(opener) = self.translated_len("/*") else {
+            self.bump();
+            return;
+        };
+        self.pos += opener;
         let javadoc = self.peek() == Some('*')
             && self
                 .src
                 .get(self.pos + 1..)
                 .is_some_and(|rest| !rest.starts_with('/'));
         while self.pos < self.src.len() {
-            if self.starts_with("*/") {
-                self.pos += 2;
+            if let Some(closer) = self.translated_len("*/") {
+                self.pos += closer;
                 self.push_comment(start, javadoc);
                 return;
             }
-            self.bump();
+            if self.logical_bump().is_none() {
+                break;
+            }
         }
         self.problem(start, DiagnosticReason::UnterminatedComment);
         self.push_comment(start, false);
@@ -336,9 +342,9 @@ impl<'a> Scanner<'a> {
 
     fn ident(&mut self) {
         let start = self.pos;
-        self.bump();
-        while self.peek().is_some_and(is_ident_continue) {
-            self.bump();
+        self.logical_bump();
+        while self.logical_peek().is_some_and(is_ident_continue) {
+            self.logical_bump();
         }
         self.emit(Kind::Word, start);
     }
@@ -394,6 +400,65 @@ impl<'a> Scanner<'a> {
     fn byte_at(&self, index: usize) -> Option<u8> {
         self.src.as_bytes().get(index).copied()
     }
+
+    /// Java translates `\u` escapes before tokenization (JLS 3.3). String and
+    /// character literals keep a separate escape pass on the raw bytes.
+    fn logical_at(&self, pos: usize) -> Option<(char, usize)> {
+        lexical_unit(self.src, pos)
+    }
+
+    fn logical_peek(&self) -> Option<char> {
+        self.logical_at(self.pos).map(|(ch, _)| ch)
+    }
+
+    fn logical_bump(&mut self) -> Option<char> {
+        let (ch, len) = self.logical_at(self.pos)?;
+        self.pos += len;
+        Some(ch)
+    }
+
+    fn translated_len(&self, prefix: &str) -> Option<usize> {
+        let mut pos = self.pos;
+        for ch in prefix.chars() {
+            let (got, len) = self.logical_at(pos)?;
+            if got != ch {
+                return None;
+            }
+            pos += len;
+        }
+        Some(pos - self.pos)
+    }
+}
+
+fn lexical_unit(src: &str, pos: usize) -> Option<(char, usize)> {
+    let bytes = src.as_bytes();
+    if pos >= bytes.len() {
+        return None;
+    }
+    if bytes[pos] == b'\\'
+        && let Some(unit) = unicode_unit(bytes, pos)
+    {
+        return Some(unit);
+    }
+    let ch = src[pos..].chars().next()?;
+    Some((ch, ch.len_utf8()))
+}
+
+fn unicode_unit(bytes: &[u8], pos: usize) -> Option<(char, usize)> {
+    let mut cursor = pos + 1;
+    if bytes.get(cursor) != Some(&b'u') {
+        return None;
+    }
+    while bytes.get(cursor) == Some(&b'u') {
+        cursor += 1;
+    }
+    let end = cursor.checked_add(4)?;
+    if end > bytes.len() || !bytes[cursor..end].iter().all(u8::is_ascii_hexdigit) {
+        return None;
+    }
+    let digits = std::str::from_utf8(&bytes[cursor..end]).ok()?;
+    let code = u32::from_str_radix(digits, 16).ok()?;
+    Some((char::from_u32(code)?, end - pos))
 }
 
 fn is_ident_start(c: char) -> bool {

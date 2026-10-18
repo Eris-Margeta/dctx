@@ -55,7 +55,7 @@ impl<'a> Walker<'a> {
     }
 
     pub(crate) fn is_word(&self, index: usize, spelling: &str) -> bool {
-        self.word(index) && self.text(index) == spelling
+        self.word(index) && lexical_eq(self.text(index), spelling)
     }
 
     pub(crate) fn is_punct(&self, index: usize, spelling: &str) -> bool {
@@ -143,16 +143,19 @@ impl<'a> Walker<'a> {
         if self.is_punct(index, "@") && self.is_word(index + 1, "interface") {
             return Some(DeclKind::Annotation);
         }
-        if !self.word(index) {
-            return None;
+        if self.is_word(index, "class") {
+            return Some(DeclKind::Class);
         }
-        match self.text(index) {
-            "class" => Some(DeclKind::Class),
-            "interface" => Some(DeclKind::Interface),
-            "enum" => Some(DeclKind::Enum),
-            "record" => Some(DeclKind::Record),
-            _ => None,
+        if self.is_word(index, "interface") {
+            return Some(DeclKind::Interface);
         }
+        if self.is_word(index, "enum") {
+            return Some(DeclKind::Enum);
+        }
+        if self.is_word(index, "record") {
+            return Some(DeclKind::Record);
+        }
+        None
     }
 
     pub(crate) fn name_at(&self, keyword: usize, kind: DeclKind) -> usize {
@@ -275,4 +278,56 @@ impl<'a> Walker<'a> {
 
 fn valid_name(name: &str) -> bool {
     !name.is_empty() && !name.contains(['#', '~']) && !name.chars().any(char::is_control)
+}
+
+/// Keyword spelling uses the same `\u` translation as the scanner.
+fn lexical_eq(raw: &str, spelling: &str) -> bool {
+    if raw == spelling {
+        return true;
+    }
+    if !raw.as_bytes().contains(&b'\\') {
+        return false;
+    }
+    let mut pos = 0;
+    for expected in spelling.chars() {
+        let Some((ch, len)) = lexical_unit(raw, pos) else {
+            return false;
+        };
+        if ch != expected {
+            return false;
+        }
+        pos += len;
+    }
+    pos == raw.len()
+}
+
+fn lexical_unit(src: &str, pos: usize) -> Option<(char, usize)> {
+    let bytes = src.as_bytes();
+    if pos >= bytes.len() {
+        return None;
+    }
+    if bytes[pos] == b'\\'
+        && let Some(unit) = unicode_unit(bytes, pos)
+    {
+        return Some(unit);
+    }
+    let ch = src[pos..].chars().next()?;
+    Some((ch, ch.len_utf8()))
+}
+
+fn unicode_unit(bytes: &[u8], pos: usize) -> Option<(char, usize)> {
+    let mut cursor = pos + 1;
+    if bytes.get(cursor) != Some(&b'u') {
+        return None;
+    }
+    while bytes.get(cursor) == Some(&b'u') {
+        cursor += 1;
+    }
+    let end = cursor.checked_add(4)?;
+    if end > bytes.len() || !bytes[cursor..end].iter().all(u8::is_ascii_hexdigit) {
+        return None;
+    }
+    let digits = std::str::from_utf8(&bytes[cursor..end]).ok()?;
+    let code = u32::from_str_radix(digits, 16).ok()?;
+    Some((char::from_u32(code)?, end - pos))
 }
