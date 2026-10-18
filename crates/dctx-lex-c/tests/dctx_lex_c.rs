@@ -4,7 +4,8 @@
 #![forbid(unsafe_code)]
 
 use dctx_lex_c::{
-    Completion, DiagnosticReason, Dialect, LexedFile, Precision, CLexer, PARSER_ID, PARSER_REVISION,
+    Completion, DiagnosticReason, Dialect, LexError, LexedFile, Limits, Precision, CLexer, PARSER_ID,
+    PARSER_REVISION,
 };
 use dctx_map_model::{EdgeKind, NodeKind, SummarySource, SymbolKind};
 use std::collections::BTreeSet;
@@ -370,4 +371,226 @@ fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
             assert_stable(path, prefix);
         }
     }
+}
+
+#[test]
+fn cpp_surfaces_parse_complete() {
+    let source = r#"
+#include_next <stddef.h>
+#define RAW_SAMPLE R"del(
+int Hidden() { fake(); }
+)del"
+
+namespace [[deprecated]] demo::detail {
+extern "C" {
+[[nodiscard]] constexpr int answer() { return 1'000; }
+}
+template <class T>
+struct [[gnu::packed]] Box {
+  Box() = default;
+  Box(const Box&) = delete;
+  auto get() const -> T;
+  T value;
+};
+inline namespace v2 {
+  auto add = [](int a, int b) { return a + b; };
+}
+int operator~(int value);
+constexpr int operator""_u(const char*, unsigned long);
+void constrained() requires true;
+}
+
+#define BEGIN {
+#define END }
+int brace_fn(int x) BEGIN
+  return x;
+END
+
+const char* raw = R"del(
+int Hidden() { fake(); }
+)del";
+
+__attribute__((noreturn)) void die(void);
+int live(void) __attribute__((unused));
+int separated = 0xAB'CD;
+#define STOP }
+int closed(void) { return 1; }
+STOP
+int after_stop(void);
+"#;
+    let facts = extract("surfaces.hpp", source);
+    assert!(facts.diagnostics.is_empty(), "{:?}", facts.diagnostics);
+    assert_eq!(facts.completion, Completion::Complete);
+    check_invariants("surfaces.hpp", source, &facts);
+    let found = names(&facts);
+    for name in [
+        "RAW_SAMPLE",
+        "demo::detail",
+        "demo::detail::answer",
+        "demo::detail::Box",
+        "demo::detail::Box::Box",
+        "demo::detail::Box::get",
+        "demo::detail::Box::value",
+        "demo::detail::v2",
+        "demo::detail::v2::add",
+        "demo::detail::operator_tilde",
+        "demo::detail::operator\"\"_u",
+        "demo::detail::constrained",
+        "BEGIN",
+        "END",
+        "brace_fn",
+        "raw",
+        "die",
+        "live",
+        "separated",
+        "closed",
+        "after_stop",
+    ] {
+        assert!(found.contains(&name), "missing {name} in {found:?}");
+    }
+    assert!(found.iter().filter(|name| **name == "demo::detail::Box::Box").count() >= 2);
+    assert_symbol(&facts, "demo::detail::answer", Some(SymbolKind::Function), true, "");
+    assert_symbol(&facts, "demo::detail::Box", Some(SymbolKind::Struct), true, "");
+    assert_symbol(&facts, "demo::detail::Box::get", Some(SymbolKind::Method), true, "");
+    assert_symbol(&facts, "demo::detail::constrained", Some(SymbolKind::Function), true, "");
+    assert_symbol(&facts, "brace_fn", Some(SymbolKind::Function), true, "");
+    assert_symbol(&facts, "die", Some(SymbolKind::Function), true, "");
+    assert_symbol(&facts, "live", Some(SymbolKind::Function), true, "");
+    assert_symbol(&facts, "closed", Some(SymbolKind::Function), true, "");
+    assert_symbol(&facts, "after_stop", Some(SymbolKind::Function), true, "");
+    assert_eq!(
+        refs(&facts, EdgeKind::Imports),
+        [("stddef.h", Precision::Structural)]
+    );
+    assert!(found.iter().all(|name| {
+        !name.contains("Hidden") && !name.contains("fake") && !name.contains("leaked") && *name != "still"
+    }));
+}
+
+#[test]
+fn conditional_braces_and_directive_comments_stay_complete() {
+    let source = r#"
+#include /* note */ <extra.h>
+#define FOO /* comment
+int leaked(void);
+still */ 1
+int wrapped(void) {
+#if defined(A)
+  if (flag) {
+#else
+  if (!flag) {
+#endif
+    return 1;
+  }
+}
+int use_foo(void);
+"#;
+    let facts = extract("cond.c", source);
+    assert!(facts.diagnostics.is_empty(), "{:?}", facts.diagnostics);
+    assert_eq!(facts.completion, Completion::Complete);
+    check_invariants("cond.c", source, &facts);
+    let found = names(&facts);
+    for name in ["FOO", "wrapped", "use_foo"] {
+        assert!(found.contains(&name), "missing {name} in {found:?}");
+    }
+    assert!(!found.iter().any(|name| *name == "leaked" || *name == "still"));
+    assert_eq!(refs(&facts, EdgeKind::Imports), [("extra.h", Precision::Structural)]);
+    assert_symbol(&facts, "wrapped", Some(SymbolKind::Function), true, "");
+    assert_symbol(&facts, "use_foo", Some(SymbolKind::Function), true, "");
+}
+
+#[test]
+fn comparisons_do_not_accumulate_into_angle_depth() {
+    let lexer = CLexer::new(Limits {
+        max_depth: 3,
+        ..Limits::default()
+    });
+    let mut source = String::from("void f() {\n");
+    for i in 0..6 {
+        source.push_str(&format!("  if (a{i} < b{i}) x++;\n"));
+    }
+    source.push_str("}\n");
+    let facts = lexer
+        .extract("cmp.c", source.as_bytes())
+        .unwrap_or_else(|error| panic!("{error}"));
+    assert!(facts.diagnostics.is_empty(), "{:?}", facts.diagnostics);
+    assert_eq!(facts.completion, Completion::Complete);
+    let deep = "template<class A = B<C<D<int>>>> struct S;\n";
+    assert!(matches!(
+        lexer.extract("deep.hpp", deep.as_bytes()),
+        Err(LexError::TooDeep { .. })
+    ));
+}
+
+#[test]
+fn attribute_macros_do_not_hide_the_declaration() {
+    let source = r#"
+#define DEPRECATED_ENUM __attribute__((deprecated))
+#define DEPRECATED_STRUCT __attribute__((deprecated))
+#define DEPRECATED_ENUM_WITH_NOTE(...) __attribute__((deprecated(__VA_ARGS__)))
+#define DEPRECATED_FUNC_WITH_NOTE(...) __attribute__((deprecated(__VA_ARGS__)))
+#define PACKED __attribute__((packed))
+#define ALIGNED(n) __attribute__((aligned(n)))
+#define SWIFT_NAME(name) __attribute__((swift_name(#name)))
+#define EMPTY_ATTR /* nothing */
+
+enum DEPRECATED_ENUM Color {
+  Red = 0,
+  Green DEPRECATED_ENUM = 1,
+};
+
+enum class DEPRECATED_ENUM_WITH_NOTE("a note") Kind : int {
+  One,
+};
+
+typedef struct DEPRECATED_STRUCT {
+  int a;
+} Opaque;
+
+struct PACKED Point {
+  int x;
+  int y;
+};
+
+union ALIGNED(4) Word {
+  int bits;
+};
+
+enum class EMPTY_ATTR Tag : int {
+  A,
+};
+
+void paint(void) SWIFT_NAME(paint());
+DEPRECATED_FUNC_WITH_NOTE("note") void note(void);
+"#;
+    let facts = extract("attrs.hpp", source);
+    assert!(facts.diagnostics.is_empty(), "{:?}", facts.diagnostics);
+    assert_eq!(facts.completion, Completion::Complete);
+    check_invariants("attrs.hpp", source, &facts);
+    let found = names(&facts);
+    for name in [
+        "DEPRECATED_ENUM",
+        "Color",
+        "Color::Red",
+        "Color::Green",
+        "Kind",
+        "Kind::One",
+        "Opaque",
+        "Point",
+        "Point::x",
+        "Word",
+        "Tag",
+        "Tag::A",
+        "paint",
+        "note",
+    ] {
+        assert!(found.contains(&name), "missing {name} in {found:?}");
+    }
+    assert_symbol(&facts, "Color", Some(SymbolKind::Enum), true, "");
+    assert_symbol(&facts, "Kind", Some(SymbolKind::Enum), true, "");
+    assert_symbol(&facts, "Point", Some(SymbolKind::Struct), true, "");
+    assert_symbol(&facts, "Word", Some(SymbolKind::Type), true, "");
+    assert_symbol(&facts, "Opaque", Some(SymbolKind::Type), true, "");
+    assert_symbol(&facts, "paint", Some(SymbolKind::Function), true, "");
+    assert_symbol(&facts, "note", Some(SymbolKind::Function), true, "");
 }

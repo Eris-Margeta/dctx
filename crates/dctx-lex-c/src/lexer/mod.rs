@@ -6,8 +6,9 @@ mod preprocessor;
 mod scan;
 
 use crate::domain::{Diagnostic, DiagnosticReason, LexError, Limits};
+use std::collections::BTreeMap;
 
-pub(crate) use preprocessor::{classify, hidden_include, Dir};
+pub(crate) use preprocessor::{classify, define_attribute, define_brace, hidden_include, Dir};
 
 /// Token category. Keywords stay [`Kind::Ident`] and are compared by text.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -22,7 +23,8 @@ pub(crate) enum Kind {
     Bad,
     /// Operator or delimiter.
     Punct,
-    /// One preprocessor directive, from `#` through the end of the logical line.
+    /// One preprocessor directive, from `#` through its terminating newline.
+    /// Strings, raw strings and block comments on that directive keep their newlines.
     Directive,
 }
 
@@ -203,6 +205,14 @@ fn splice_len(bytes: &[u8]) -> usize {
     }
 }
 
+/// One unmatched opener. `kind` is the bracket spelling, kept when a macro
+/// stands in for `{` so a later `#undef` cannot hide the match.
+#[derive(Clone, Copy)]
+struct Open {
+    index: usize,
+    kind: &'static str,
+}
+
 fn pair(
     source: &str,
     map: &SourceMap,
@@ -211,17 +221,66 @@ fn pair(
     limits: &Limits,
 ) -> Result<Vec<u32>, LexError> {
     let mut partner = vec![NONE; tokens.len()];
-    let mut stack = Vec::new();
+    let mut stack: Vec<Open> = Vec::new();
+    // `<` used as a comparison is not nesting. Reset at statement boundaries so a
+    // long function does not trip TooDeep; real template nesting still counts.
     let mut angle = 0i32;
+    let mut braces: BTreeMap<String, bool> = BTreeMap::new();
+    // `#if` / `#else` branches share the outer brace stack. Each branch restores
+    // the snapshot so duplicated braces are alternatives, not extras.
+    let mut conds: Vec<(Vec<Open>, i32)> = Vec::new();
     for (index, token) in tokens.iter().enumerate() {
-        if token.kind != Kind::Punct {
+        if token.kind == Kind::Directive {
+            let text = slice(source, token.start, token.end);
+            match classify(text) {
+                Dir::Define(Some(def)) => {
+                    if let Some(open) = define_brace(text) {
+                        braces.insert(def.name, open);
+                    } else {
+                        braces.remove(&def.name);
+                    }
+                }
+                Dir::Undef(name) => {
+                    braces.remove(&name);
+                }
+                Dir::Open => conds.push((stack.clone(), angle)),
+                Dir::Branch => {
+                    if let Some((saved, saved_angle)) = conds.last() {
+                        stack.clear();
+                        stack.extend(saved.iter().copied());
+                        angle = *saved_angle;
+                    }
+                }
+                Dir::Close => {
+                    conds.pop();
+                }
+                _ => {}
+            }
             continue;
         }
-        let text = slice(source, token.start, token.end);
-        match text {
-            "(" | "[" | "{" => push_open(map, tokens, index, &mut stack, limits)?,
+        let spelling = token_spelling(source, token, &braces);
+        match spelling {
+            "(" | "[" | "{" => {
+                if spelling == "{" {
+                    angle = 0;
+                }
+                let kind = match spelling {
+                    "(" => "(",
+                    "[" => "[",
+                    _ => "{",
+                };
+                push_open(map, tokens, index, kind, &mut stack, limits)?;
+            }
             ")" | "]" | "}" => {
-                close_bracket(source, tokens, index, text, &mut stack, &mut partner, problems);
+                let wanted = match spelling {
+                    ")" => "(",
+                    "]" => "[",
+                    _ => "{",
+                };
+                close_bracket(tokens, index, wanted, &mut stack, &mut partner, problems);
+                if spelling == "}" {
+                    angle = 0;
+                }
             }
             "<" => {
                 angle += 1;
@@ -234,23 +293,41 @@ fn pair(
             }
             ">" => angle = angle.saturating_sub(1),
             ">>" => angle = angle.saturating_sub(2),
+            ";" => angle = 0,
             _ => {}
         }
     }
     for open in stack {
-        problems.push((tokens[open].start, DiagnosticReason::UnbalancedBracket));
+        // An object-like `{` macro may be closed by a macro whose body is not a
+        // token yet. A real bracket still reports.
+        if tokens[open.index].kind != Kind::Ident {
+            problems.push((tokens[open.index].start, DiagnosticReason::UnbalancedBracket));
+        }
     }
     Ok(partner)
+}
+
+fn token_spelling<'a>(source: &'a str, token: &Token, braces: &BTreeMap<String, bool>) -> &'a str {
+    let text = slice(source, token.start, token.end);
+    if token.kind == Kind::Ident {
+        return match braces.get(text) {
+            Some(true) => "{",
+            Some(false) => "}",
+            None => text,
+        };
+    }
+    text
 }
 
 fn push_open(
     map: &SourceMap,
     tokens: &[Token],
     index: usize,
-    stack: &mut Vec<usize>,
+    kind: &'static str,
+    stack: &mut Vec<Open>,
     limits: &Limits,
 ) -> Result<(), LexError> {
-    stack.push(index);
+    stack.push(Open { index, kind });
     if stack.len() as u32 > limits.max_depth {
         return Err(LexError::TooDeep {
             line: map.line(tokens[index].start).clamp(1, map.physical_lines),
@@ -261,35 +338,30 @@ fn push_open(
 }
 
 fn close_bracket(
-    source: &str,
     tokens: &[Token],
     index: usize,
-    text: &str,
-    stack: &mut Vec<usize>,
+    wanted: &str,
+    stack: &mut Vec<Open>,
     partner: &mut [u32],
     problems: &mut Problems,
 ) {
-    let wanted = match text {
-        ")" => "(",
-        "]" => "[",
-        _ => "{",
-    };
-    let found = stack.iter().rposition(|&open| {
-        let token = &tokens[open];
-        slice(source, token.start, token.end) == wanted
-    });
+    let found = stack.iter().rposition(|open| open.kind == wanted);
     let Some(position) = found else {
-        problems.push((tokens[index].start, DiagnosticReason::UnbalancedBracket));
+        // `END` whose body is `}` is not a syntax error when the `{` lived in
+        // another macro. A real closer with nothing to close still reports.
+        if tokens[index].kind != Kind::Ident {
+            problems.push((tokens[index].start, DiagnosticReason::UnbalancedBracket));
+        }
         return;
     };
     while stack.len() > position + 1 {
         if let Some(orphan) = stack.pop() {
-            problems.push((tokens[orphan].start, DiagnosticReason::UnbalancedBracket));
+            problems.push((tokens[orphan.index].start, DiagnosticReason::UnbalancedBracket));
         }
     }
     if let Some(open) = stack.pop() {
-        partner[open] = index as u32;
-        partner[index] = open as u32;
+        partner[open.index] = index as u32;
+        partner[index] = open.index as u32;
     }
 }
 

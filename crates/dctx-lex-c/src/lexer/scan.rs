@@ -254,14 +254,78 @@ impl<'a> Lexer<'a> {
         false
     }
 
+    /// A directive ends at a newline, but strings, raw strings and block comments
+    /// on that directive keep their own newlines (phase 3 before phase 4).
     fn directive(&mut self) {
         let start = self.pos;
         self.pos += 1;
-        while self.pos < self.b.len() && self.b[self.pos] != b'\n' {
-            self.pos += 1;
+        while self.pos < self.b.len() {
+            if self.raw_at_boundary() && self.try_raw().is_some() {
+                continue;
+            }
+            let byte = self.b[self.pos];
+            if byte == b'\n' {
+                break;
+            }
+            if byte == b'"' || byte == b'\'' {
+                let reason = if byte == b'\'' {
+                    DiagnosticReason::UnterminatedChar
+                } else {
+                    DiagnosticReason::UnterminatedString
+                };
+                let _ = self.scan_quoted(byte, reason);
+                continue;
+            }
+            if byte == b'/' && self.b.get(self.pos + 1) == Some(&b'/') {
+                while self.pos < self.b.len() && self.b[self.pos] != b'\n' {
+                    self.pos += 1;
+                }
+                break;
+            }
+            if byte == b'/' && self.b.get(self.pos + 1) == Some(&b'*') {
+                self.skip_block_in_directive();
+                continue;
+            }
+            if self.src.is_char_boundary(self.pos) {
+                let ch = self.char_at(self.pos);
+                self.pos += ch.len_utf8().max(1);
+            } else {
+                self.pos += 1;
+            }
         }
         self.push(Kind::Directive, start);
         self.line_token = true;
+    }
+
+    fn skip_block_in_directive(&mut self) {
+        let start = self.pos;
+        self.pos += 2;
+        while self.pos + 1 < self.b.len()
+            && !(self.b[self.pos] == b'*' && self.b[self.pos + 1] == b'/')
+        {
+            self.pos += 1;
+        }
+        if self.pos + 1 >= self.b.len() {
+            self.pos = self.b.len();
+            self.problems
+                .push((start as u32, DiagnosticReason::UnterminatedComment));
+            return;
+        }
+        self.pos += 2;
+    }
+
+    fn raw_at_boundary(&self) -> bool {
+        if !self.src.is_char_boundary(self.pos) {
+            return false;
+        }
+        if self.pos > 0 {
+            let prev = self.src[..self.pos].chars().next_back().unwrap_or('\0');
+            if ident_continue(prev) {
+                return false;
+            }
+        }
+        let rest = &self.b[self.pos..];
+        RAW.iter().any(|prefix| rest.starts_with(prefix))
     }
 
     fn line_comment(&mut self) {

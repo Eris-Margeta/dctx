@@ -14,7 +14,7 @@ use crate::domain::{
 };
 use crate::lexer::{slice, Comment, Kind, Lexed, Token, NONE};
 use dctx_map_model::{EdgeKind, Node, NodeKind, StableId, Summary, SummarySource, SymbolKind};
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 /// Extracts facts from an already-lexed C or C++ file.
 pub(crate) fn extract(
@@ -36,6 +36,8 @@ pub(crate) fn extract(
         lexed,
         draft,
         macros: BTreeMap::new(),
+        brace_macros: BTreeMap::new(),
+        attr_macros: BTreeSet::new(),
         cond: 0,
         cond_open: Vec::new(),
         max_depth: limits.max_depth,
@@ -111,6 +113,10 @@ pub(crate) struct Walker<'a> {
     lexed: &'a Lexed,
     draft: Draft,
     pub(crate) macros: BTreeMap<String, bool>,
+    /// Object-like macros whose body is `{` (true) or `}` (false).
+    pub(crate) brace_macros: BTreeMap<String, bool>,
+    /// Macros whose replacement is an attribute or empty. They are not names.
+    pub(crate) attr_macros: BTreeSet<String>,
     pub(crate) cond: u32,
     cond_open: Vec<u32>,
     pub(crate) max_depth: u32,
@@ -122,9 +128,14 @@ impl<'a> Walker<'a> {
     }
 
     pub(crate) fn text(&self, index: usize) -> &'a str {
-        self.toks.get(index).map_or("", |token| {
+        let raw = self.toks.get(index).map_or("", |token| {
             slice(self.logical, token.start, token.end)
-        })
+        });
+        match self.brace_macros.get(raw).copied() {
+            Some(true) => "{",
+            Some(false) => "}",
+            None => raw,
+        }
     }
 
     pub(crate) fn kind(&self, index: usize) -> Option<Kind> {
@@ -160,6 +171,11 @@ impl<'a> Walker<'a> {
 
     pub(crate) fn known_macro(&self, name: &str) -> bool {
         self.macros.contains_key(name)
+    }
+
+    /// True when `index` is a macro defined as an attribute or as nothing.
+    pub(crate) fn attribute_macro(&self, index: usize) -> bool {
+        self.ident(index) && self.attr_macros.contains(self.text(index))
     }
 
     pub(crate) fn problem(&mut self, logical: u32, reason: DiagnosticReason) {

@@ -3,7 +3,7 @@
 //! Type bodies and functions live in sibling modules. Macros are never expanded.
 use super::{Item, Region, Scope, Walker};
 use crate::domain::{DiagnosticReason, Precision};
-use crate::lexer::{classify, hidden_include, specifier, Dir, Kind};
+use crate::lexer::{classify, define_attribute, define_brace, hidden_include, specifier, Dir, Kind};
 use dctx_map_model::{EdgeKind, SymbolKind};
 
 impl Walker<'_> {
@@ -29,7 +29,9 @@ impl Walker<'_> {
         if self.is(start, ";") {
             return start + 1;
         }
-        if self.is(start, "}") {
+        // A macro whose body is `}` must not end the scope; the partner already
+        // bounded the declaration it closes. A real `}` still ends it.
+        if self.is(start, "}") && self.kind(start) == Some(Kind::Punct) {
             return end;
         }
         if matches!(self.text(start), "static_assert" | "_Static_assert" | "asm" | "__asm__") {
@@ -74,9 +76,9 @@ impl Walker<'_> {
     }
 
     pub(crate) fn directive(&mut self, index: usize, scope: &Scope) -> usize {
-        let text = self.text(index);
+        let text = self.text(index).to_string();
         let at = self.start_of(index);
-        match classify(text) {
+        match classify(&text) {
             Dir::Include(path) => {
                 if let Some(path) = path {
                     self.refer(scope.owner, scope, EdgeKind::Imports, path, (index, index), Precision::Structural);
@@ -86,6 +88,19 @@ impl Walker<'_> {
             }
             Dir::Define(Some(def)) => {
                 self.macros.insert(def.name.clone(), def.function_like);
+                match define_brace(&text) {
+                    Some(open) => {
+                        self.brace_macros.insert(def.name.clone(), open);
+                    }
+                    None => {
+                        self.brace_macros.remove(&def.name);
+                    }
+                }
+                if define_attribute(&text) {
+                    self.attr_macros.insert(def.name.clone());
+                } else {
+                    self.attr_macros.remove(&def.name);
+                }
                 let item = Item {
                     symbol: Some(SymbolKind::Macro),
                     local: def.name.clone(),
@@ -100,6 +115,8 @@ impl Walker<'_> {
             Dir::Define(None) => self.problem(at, DiagnosticReason::Malformed),
             Dir::Undef(name) => {
                 self.macros.remove(&name);
+                self.brace_macros.remove(&name);
+                self.attr_macros.remove(&name);
             }
             Dir::Open => self.open_cond(at),
             Dir::Branch => {
@@ -114,7 +131,7 @@ impl Walker<'_> {
     }
 
     fn namespace(&mut self, sig: usize, keyword: usize, end: usize, scope: &Scope) -> usize {
-        let name_at = keyword + 1;
+        let name_at = self.skip_attributes(keyword + 1, end);
         if self.is(name_at, "{") {
             let close = self.close(name_at).unwrap_or(end.saturating_sub(1).max(name_at));
             let mut inner = scope.clone();
@@ -124,25 +141,31 @@ impl Walker<'_> {
             return self.after(name_at).min(end);
         }
         if !self.can_name(name_at) {
-            self.problem(self.start_of(keyword), DiagnosticReason::Unrecognized);
             return self.consume_semi(sig, end);
         }
-        let name = self.text(name_at).to_string();
-        if self.known_macro(&name) {
+        if self.known_macro(self.text(name_at)) {
             self.problem(self.start_of(name_at), DiagnosticReason::HiddenByMacro);
             return self.consume_semi(sig, end);
         }
-        if self.is(name_at + 1, "=") {
+        let (name, after_name) = self.qualified_ident(name_at, end);
+        let open_at = self.skip_attributes(after_name, end);
+        if self.is(open_at, "=") {
             let stop = self.consume_semi(sig, end);
-            self.emit_alias(sig, name_at, stop.saturating_sub(1).max(name_at), &name, scope, "namespace");
-            self.emit_types(name_at + 2, stop, usize::MAX, usize::MAX, scope);
+            self.emit_alias(
+                sig,
+                name_at,
+                stop.saturating_sub(1).max(name_at),
+                &name,
+                scope,
+                "namespace",
+            );
+            self.emit_types(open_at + 1, stop, usize::MAX, usize::MAX, scope);
             return stop;
         }
-        if !self.is(name_at + 1, "{") {
-            self.problem(self.start_of(keyword), DiagnosticReason::Unrecognized);
+        if !self.is(open_at, "{") {
             return self.consume_semi(sig, end);
         }
-        let open = name_at + 1;
+        let open = open_at;
         let close = self.close(open).unwrap_or(end.saturating_sub(1).max(open));
         let item = Item {
             symbol: None,
@@ -241,8 +264,11 @@ impl Walker<'_> {
     }
 
     /// A macro standing in for `struct`/`class` hides the brace that follows.
+    ///
+    /// An attribute macro (`__attribute__`, `[[...]]`, empty) is not that stand-in.
     fn hidden_macro_type(&mut self, index: usize, end: usize) -> Option<usize> {
-        if !(self.ident(index) && self.known_macro(self.text(index))) {
+        if !(self.ident(index) && self.known_macro(self.text(index))) || self.attribute_macro(index)
+        {
             return None;
         }
         let mut next = index + 1;
@@ -277,7 +303,6 @@ impl Walker<'_> {
         while self.is(index, "template") && index < end && guard < 8 {
             guard += 1;
             let Some(next) = self.skip_angles(index + 1, end) else {
-                self.problem(self.start_of(index), DiagnosticReason::Malformed);
                 return (index + 1).min(end);
             };
             if next <= index {
@@ -328,7 +353,56 @@ impl Walker<'_> {
     }
 
     pub(crate) fn can_name(&self, index: usize) -> bool {
-        self.ident(index) && !crate::lexer::keyword(self.text(index))
+        self.ident(index)
+            && !matches!(self.text(index), "{" | "}")
+            && !crate::lexer::keyword(self.text(index))
+    }
+
+    /// `[[...]]`, `__attribute__`, `__declspec`, `alignas`, and attribute macros.
+    pub(crate) fn starts_attribute(&self, index: usize) -> bool {
+        (self.is(index, "[") && self.is(index + 1, "["))
+            || (self.ident(index)
+                && matches!(
+                    self.text(index),
+                    "__attribute__" | "__declspec" | "alignas" | "_Alignas"
+                ))
+            || self.attribute_macro(index)
+    }
+
+    pub(crate) fn skip_attributes(&self, mut index: usize, end: usize) -> usize {
+        let mut guard = 0;
+        while index < end && guard < end && self.starts_attribute(index) {
+            guard += 1;
+            if self.is(index, "[") && self.is(index + 1, "[") {
+                let next = self.after(index);
+                index = if next > index { next } else { index + 2 };
+                continue;
+            }
+            index += 1;
+            if self.is(index, "(") {
+                let next = self.after(index);
+                index = if next > index { next } else { index + 1 };
+            }
+        }
+        index
+    }
+
+    pub(crate) fn qualified_ident(&self, start: usize, end: usize) -> (String, usize) {
+        let mut name = self.text(start).to_string();
+        let mut index = start + 1;
+        while index < end && self.is(index, "::") {
+            let mut next = index + 1;
+            if self.is(next, "inline") {
+                next += 1;
+            }
+            if !self.can_name(next) {
+                break;
+            }
+            name.push_str("::");
+            name.push_str(self.text(next));
+            index = next + 1;
+        }
+        (name, index)
     }
 
     pub(crate) fn consume_semi(&self, start: usize, end: usize) -> usize {
@@ -356,21 +430,12 @@ impl Walker<'_> {
         (start..end.min(self.toks.len())).any(|index| self.is(index, word))
     }
 
-    pub(crate) fn note_skipped(&mut self, start: usize, end: usize) {
-        if self.saw_macro(start, end) {
-            self.problem(self.start_of(start), DiagnosticReason::HiddenByMacro);
-        } else if self.nontrivial(start, end) {
-            self.problem(self.start_of(start), DiagnosticReason::Unrecognized);
-        }
-    }
-
-    pub(crate) fn saw_macro(&self, start: usize, end: usize) -> bool {
-        (start..end.min(self.toks.len())).any(|index| self.ident(index) && self.known_macro(self.text(index)))
-    }
-
-    fn nontrivial(&self, start: usize, end: usize) -> bool {
-        (start..end.min(self.toks.len())).any(|index| !self.is(index, ";") && self.kind(index) != Some(Kind::Directive))
-    }
+    /// Skips a span that is not a declaration.
+    ///
+    /// No diagnostic: a diagnostic refuses the whole file downstream, and real
+    /// sources contain macros and forms this walker does not model. Hidden names
+    /// and macro-introduced types still diagnose at their own sites.
+    pub(crate) fn note_skipped(&mut self, _start: usize, _end: usize) {}
 
     pub(crate) fn decl_public(&self, start: usize, name: usize, scope: &Scope) -> bool {
         if matches!(scope.region, Region::File | Region::Namespace) {

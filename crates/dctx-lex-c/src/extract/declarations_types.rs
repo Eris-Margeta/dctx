@@ -25,24 +25,36 @@ impl Walker<'_> {
     ) -> usize {
         let keyword = self.text(intro).to_string();
         let mut index = intro + 1;
+        index = self.skip_attributes(index, end);
         if keyword == "enum" && matches!(self.text(index), "class" | "struct") {
             index += 1;
+            index = self.skip_attributes(index, end);
         }
         let tag = if self.can_name(index) && !self.known_macro(self.text(index)) {
-            let name = self.text(index).to_string();
+            let mut local = self.text(index).to_string();
             index += 1;
+            while self.is(index, "::") && self.can_name(index + 1) {
+                local.push_str("::");
+                local.push_str(self.text(index + 1));
+                index += 2;
+            }
             if self.is(index, "<")
                 && let Some(next) = self.skip_angles(index, end)
             {
                 index = next;
             }
-            Some((index.saturating_sub(1), name))
+            Some((index.saturating_sub(1), local))
         } else if self.ident(index) && self.known_macro(self.text(index)) {
             self.problem(self.start_of(index), DiagnosticReason::HiddenByMacro);
             return self.consume_semi(sig, end);
         } else {
             None
         };
+        index = self.skip_attributes(index, end);
+        while matches!(self.text(index), "final" | "override") {
+            index += 1;
+            index = self.skip_attributes(index, end);
+        }
         if self.is(index, ":") {
             let bases = index + 1;
             index += 1;
@@ -96,7 +108,7 @@ impl Walker<'_> {
         } else if let Some((open, close)) = body {
             self.scan_range(open + 1, close.min(end), scope);
         }
-        let trailing = self.decl_names(after_body, stop);
+        let trailing = self.decl_names_forced(after_body, stop, body.is_some());
         for (at, bare) in trailing {
             if tag.as_ref().is_some_and(|(_, name)| name == &bare) {
                 continue;

@@ -94,6 +94,13 @@ impl Walker<'_> {
         let mut depth = 0i32;
         let mut found = None;
         while index < end && depth >= 0 {
+            if self.starts_attribute(index) {
+                let next = self.skip_attributes(index, end);
+                if next > index {
+                    index = next;
+                    continue;
+                }
+            }
             if depth == 0 && self.is(index, ";") {
                 return found.filter(|func: &FoundFn| func.term <= index);
             }
@@ -106,7 +113,12 @@ impl Walker<'_> {
             {
                 found = Some(func);
             } else if depth == 0 && self.is(index, "(") && let Some(func) = self.func_at(index, end) {
-                found = Some(func);
+                let keep_operator = found
+                    .as_ref()
+                    .is_some_and(|found| self.is(found.bare_at, "operator"));
+                if !keep_operator {
+                    found = Some(func);
+                }
             }
             if self.is(index, "(") || self.is(index, "[") || self.is(index, "{") {
                 depth += 1;
@@ -217,10 +229,20 @@ impl Walker<'_> {
         } else if self.kind(index) == Some(Kind::String) || self.kind(index) == Some(Kind::Punct) {
             spelling.push_str(self.text(index));
             index += 1;
+            if self.kind(index - 1) == Some(Kind::String)
+                && self.ident(index)
+                && self.text(index).starts_with('_')
+            {
+                spelling.push_str(self.text(index));
+                index += 1;
+            }
         } else {
             return None;
         }
-        if spelling.contains(['~', '#']) || !self.is(index, "(") {
+        if spelling.contains('~') {
+            spelling = spelling.replace('~', "_tilde");
+        }
+        if spelling.contains('#') || !self.is(index, "(") {
             return None;
         }
         let close = self.close(index)?;
@@ -237,8 +259,26 @@ impl Walker<'_> {
 
     fn postfix_term(&self, mut index: usize, end: usize) -> Option<usize> {
         while index < end {
+            if self.starts_attribute(index) {
+                let next = self.skip_attributes(index, end);
+                if next > index {
+                    index = next;
+                    continue;
+                }
+            }
             if self.is(index, "{") || self.is(index, ";") {
                 return Some(index);
+            }
+            if self.is(index, "requires") {
+                index += 1;
+                while index < end && !self.is(index, "{") && !self.is(index, ";") {
+                    if self.is(index, "(") || self.is(index, "[") || self.is(index, "{") {
+                        index = self.after(index);
+                    } else {
+                        index += 1;
+                    }
+                }
+                continue;
             }
             if self.is(index, ",") || self.is(index, "}") {
                 return None;
@@ -304,9 +344,19 @@ impl Walker<'_> {
     }
 
     pub(crate) fn decl_names(&self, start: usize, end: usize) -> Vec<(usize, String)> {
+        self.decl_names_forced(start, end, false)
+    }
+
+    /// `force_single` accepts one declarator after a type body (`struct S { } name;`).
+    pub(crate) fn decl_names_forced(
+        &self,
+        start: usize,
+        end: usize,
+        force_single: bool,
+    ) -> Vec<(usize, String)> {
         let end = end.min(self.toks.len());
         let mut names = Vec::new();
-        let mut allow_single = self.type_cue(start, end);
+        let mut allow_single = force_single || self.type_cue(start, end);
         let mut segment = start;
         let mut index = start;
         let mut depth = 0i32;
