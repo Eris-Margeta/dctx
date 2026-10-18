@@ -191,7 +191,9 @@ fn registry_keeps_existing_mapping_and_known_fnv_vectors() {
 }
 
 #[test]
-fn filters_do_not_change_state_and_local_omit_stays_presentation_only() {
+fn filters_do_not_change_state_and_local_omit_is_not_cached() {
+    // ADR-014: an omit rule denies the read. The omitted source must not reach the cache or the export.
+    // `notes.txt` is the included-file read control; `--ext rs` only hides it from the text.
     let case = Case::new();
     case.write("kept.rs", b"pub fn kept() {}\n");
     case.write("notes.txt", b"notes\n");
@@ -203,12 +205,13 @@ fn filters_do_not_change_state_and_local_omit_stays_presentation_only() {
     assert!(!output.contains("pub fn kept()"));
     assert!(!output.contains("notes.txt"));
     let bytes = fs::read(case.binary()).unwrap();
+    assert!(!contains(&bytes, b"pub fn kept() {}\n"));
+    assert!(contains(&bytes, b"notes\n"));
     let state = decode_legacy(&bytes, LegacyBodies::Include, LegacyLimits::default()).unwrap();
-    assert!(state.root.children.iter().any(|node| node.relative_path == "notes.txt"));
-    assert_eq!(
-        state.root.children.iter().find(|node| node.relative_path == "kept.rs").unwrap().file_content.as_deref(),
-        Some(b"pub fn kept() {}\n".as_slice())
-    );
+    let notes = state.root.children.iter().find(|node| node.relative_path == "notes.txt").unwrap();
+    assert_eq!(notes.file_content.as_deref(), Some(b"notes\n".as_slice()));
+    let kept = state.root.children.iter().find(|node| node.relative_path == "kept.rs").unwrap();
+    assert!(!contains(kept.file_content.as_deref().unwrap_or_default(), b"pub fn kept()"));
     let failure = case.command().args([".", "--empty", "--non-empty"]).output().unwrap();
     assert!(!failure.status.success());
     assert_eq!(fs::read(case.binary()).unwrap(), bytes);
@@ -293,4 +296,191 @@ fn tui_loads_legacy_version_and_reset_uses_the_alias_host() {
     assert!(output.status.success());
     assert!(String::from_utf8_lossy(&output.stdout).contains("Last Snapshot: V1.1"));
     assert_eq!(case.version(), "V1");
+}
+
+fn contains(haystack: &[u8], needle: &[u8]) -> bool {
+    !needle.is_empty() && haystack.windows(needle.len()).any(|window| window == needle)
+}
+
+fn report(output: &Output) -> String {
+    format!("{}\n{}", String::from_utf8_lossy(&output.stdout), String::from_utf8_lossy(&output.stderr))
+}
+
+#[test]
+fn legacy_writes_stay_inside_the_cache_and_the_project_export() {
+    let case = Case::new();
+    let sentinel = case.base.join("outside-sentinel");
+    fs::write(&sentinel, b"SENTINEL-OUTSIDE").unwrap();
+    case.write("a.txt", b"included\n");
+    case.run(&["."]);
+    assert_eq!(fs::read(&sentinel).unwrap(), b"SENTINEL-OUTSIDE");
+    assert!(contains(&case.text(), b"included\n"));
+    let binary = case.binary();
+    assert!(binary.starts_with(case.base.join("cache/dctx")));
+    assert!(binary.is_file());
+    assert!(contains(&fs::read(&binary).unwrap(), b"included\n"));
+
+    let escaped = case.base.join("cache/review-victim.dctx");
+    fs::write(&escaped, b"SENTINEL-TRAVERSAL").unwrap();
+    let root = fs::canonicalize(&case.root).unwrap();
+    let registry = case.base.join("cache/dctx/projects.db");
+    let saved_registry = fs::read(&registry).unwrap();
+    fs::write(&registry, format!("../review-victim | {}\n", root.display())).unwrap();
+    let traversed = case.command().args(["."]).output().unwrap();
+    assert!(!traversed.status.success(), "{}", report(&traversed));
+    assert_eq!(fs::read(&escaped).unwrap(), b"SENTINEL-TRAVERSAL");
+    assert_eq!(fs::read(&sentinel).unwrap(), b"SENTINEL-OUTSIDE");
+
+    let absolute = case.base.join("abs-victim.dctx");
+    fs::write(&absolute, b"SENTINEL-ABSOLUTE").unwrap();
+    let id = case.base.join("abs-victim");
+    fs::write(&registry, format!("{} | {}\n", id.display(), root.display())).unwrap();
+    let absolute_run = case.command().args(["."]).output().unwrap();
+    assert!(!absolute_run.status.success(), "{}", report(&absolute_run));
+    assert_eq!(fs::read(&absolute).unwrap(), b"SENTINEL-ABSOLUTE");
+    fs::write(&registry, saved_registry).unwrap();
+    case.run(&["."]);
+    assert!(contains(&case.text(), b"included\n"));
+    assert_eq!(fs::read(&sentinel).unwrap(), b"SENTINEL-OUTSIDE");
+    assert_eq!(fs::read(&escaped).unwrap(), b"SENTINEL-TRAVERSAL");
+    assert_eq!(fs::read(&absolute).unwrap(), b"SENTINEL-ABSOLUTE");
+}
+
+#[cfg(unix)]
+#[test]
+fn export_and_cache_links_do_not_overwrite_outside_sentinels() {
+    use std::os::unix::fs::symlink;
+    let case = Case::new();
+    case.write("a.txt", b"included\n");
+    let outside = case.base.join("linked-export");
+    fs::create_dir(&outside).unwrap();
+    let sentinel = outside.join("Corpus.llmcontext.txt");
+    fs::write(&sentinel, b"SENTINEL-DIR").unwrap();
+    symlink(&outside, case.root.join(".dctx")).unwrap();
+    let denied = case.command().args(["."]).output().unwrap();
+    assert!(!denied.status.success(), "{}", report(&denied));
+    assert_eq!(fs::read(&sentinel).unwrap(), b"SENTINEL-DIR");
+    fs::remove_file(case.root.join(".dctx")).unwrap();
+
+    fs::create_dir(case.root.join(".dctx")).unwrap();
+    let file_sentinel = case.base.join("sentinel-export.txt");
+    fs::write(&file_sentinel, b"SENTINEL-FILE").unwrap();
+    symlink(&file_sentinel, case.root.join(".dctx/Corpus.llmcontext.txt")).unwrap();
+    case.run(&["."]);
+    assert_eq!(fs::read(&file_sentinel).unwrap(), b"SENTINEL-FILE");
+    let export = fs::read(case.root.join(".dctx/Corpus.llmcontext.txt")).unwrap();
+    assert!(contains(&export, b"included\n"));
+    assert!(!fs::symlink_metadata(case.root.join(".dctx/Corpus.llmcontext.txt")).unwrap().file_type().is_symlink());
+
+    let cache_sentinel = case.base.join("sentinel-cache.bin");
+    fs::write(&cache_sentinel, b"SENTINEL-CACHE").unwrap();
+    let binary = case.binary();
+    fs::remove_file(&binary).unwrap();
+    symlink(&cache_sentinel, &binary).unwrap();
+    case.write("a.txt", b"included again\n");
+    case.run(&["."]);
+    assert_eq!(fs::read(&cache_sentinel).unwrap(), b"SENTINEL-CACHE");
+    assert!(!fs::symlink_metadata(&binary).unwrap().file_type().is_symlink());
+    assert!(contains(&fs::read(&binary).unwrap(), b"included again\n"));
+    assert_eq!(fs::read(&file_sentinel).unwrap(), b"SENTINEL-FILE");
+}
+
+#[test]
+fn template_failure_keeps_the_previous_export_and_state() {
+    let case = Case::new();
+    case.write("a.txt", b"alpha\n");
+    case.run(&["."]);
+    let text = case.text();
+    let binary = fs::read(case.binary()).unwrap();
+    assert!(contains(&text, b"alpha\n"));
+    assert!(!text.is_empty());
+
+    case.write("a.txt", b"beta-changed\n");
+    case.config("default_template = 'missing'\n");
+    let missing = case.command().args(["."]).output().unwrap();
+    assert!(!missing.status.success(), "{}", report(&missing));
+    assert!(report(&missing).contains("Generation error"), "{}", report(&missing));
+    assert_eq!(case.text(), text);
+    assert_eq!(fs::read(case.binary()).unwrap(), binary);
+
+    let directory = case.base.join("cache/dctx/templates");
+    fs::create_dir_all(&directory).unwrap();
+    fs::write(directory.join("broken.bin"), b"not-a-template").unwrap();
+    case.config("default_template = 'broken'\n");
+    let malformed = case.command().args(["."]).output().unwrap();
+    assert!(!malformed.status.success(), "{}", report(&malformed));
+    assert!(report(&malformed).contains("Generation error"), "{}", report(&malformed));
+    assert_eq!(case.text(), text);
+    assert_eq!(fs::read(case.binary()).unwrap(), binary);
+
+    let template = dctx_template::Template::parse(include_str!("../../dctx-template/templates/default.dctx_template"));
+    let compiled = template.compile("custom").unwrap();
+    compiled.serialize(&mut fs::File::create(directory.join("custom.bin")).unwrap()).unwrap();
+    case.config("default_template = 'custom'\n");
+    case.run(&["."]);
+    let updated = case.text();
+    assert_ne!(updated, text);
+    assert!(contains(&updated, b"beta-changed\n"));
+    assert_ne!(fs::read(case.binary()).unwrap(), binary);
+}
+
+#[test]
+fn injected_file_limit_withholds_oversize_content_and_reads_the_control() {
+    let case = Case::new();
+    case.write("ok.txt", b"hello");
+    case.write("large.txt", b"UNIQUE_OVERSIZE_SENTINEL");
+    let output = case.command().env("DCTX_ALIAS_MAX_FILE_BYTES", "8").args(["."]).output().unwrap();
+    assert!(output.status.success(), "{}", report(&output));
+    let text = case.text();
+    assert!(contains(&text, b"hello"));
+    assert!(!contains(&text, b"UNIQUE_OVERSIZE_SENTINEL"));
+    let cache = fs::read(case.binary()).unwrap();
+    assert!(contains(&cache, b"hello"));
+    assert!(!contains(&cache, b"UNIQUE_OVERSIZE_SENTINEL"));
+}
+
+#[test]
+fn depth_and_entry_bounds_refuse_without_replacing_a_successful_export() {
+    let depth = Case::new();
+    depth.write("a.txt", b"top-level");
+    let ok = depth.command().env("DCTX_ALIAS_MAX_DEPTH", "2").args(["."]).output().unwrap();
+    assert!(ok.status.success(), "{}", report(&ok));
+    let saved = depth.text();
+    assert!(contains(&saved, b"top-level"));
+    depth.write("d/e/f.txt", b"TOO_DEEP_SENTINEL");
+    let denied = depth.command().env("DCTX_ALIAS_MAX_DEPTH", "2").args(["."]).output().unwrap();
+    assert!(!denied.status.success(), "{}", report(&denied));
+    assert_eq!(depth.text(), saved);
+    assert!(!contains(&depth.text(), b"TOO_DEEP_SENTINEL"));
+    assert!(!contains(&fs::read(depth.binary()).unwrap(), b"TOO_DEEP_SENTINEL"));
+
+    let entries = Case::new();
+    entries.write("a.txt", b"one-file");
+    let first = entries.command().env("DCTX_ALIAS_MAX_ENTRIES", "2").args(["."]).output().unwrap();
+    assert!(first.status.success(), "{}", report(&first));
+    let kept = entries.text();
+    assert!(contains(&kept, b"one-file"));
+    entries.write("b.txt", b"ENTRY_SENTINEL");
+    let too_many = entries.command().env("DCTX_ALIAS_MAX_ENTRIES", "2").args(["."]).output().unwrap();
+    assert!(!too_many.status.success(), "{}", report(&too_many));
+    assert_eq!(entries.text(), kept);
+    assert!(!contains(&fs::read(entries.binary()).unwrap(), b"ENTRY_SENTINEL"));
+}
+
+#[test]
+fn oversize_tree_snapshot_refuses_save_and_keeps_the_previous_export() {
+    let case = Case::new();
+    case.write("ok.txt", b"small-control\n");
+    case.run(&["."]);
+    let text = case.text();
+    let binary = fs::read(case.binary()).unwrap();
+    assert!(contains(&text, b"small-control\n"));
+    let large = fs::File::create(case.root.join("large.txt")).unwrap();
+    large.set_len(64 * 1024 * 1024 + 1).unwrap();
+    let denied = case.command().args([".", "--tree"]).output().unwrap();
+    assert!(!denied.status.success(), "{}", report(&denied));
+    assert!(report(&denied).contains("Failed to save binary state"), "{}", report(&denied));
+    assert_eq!(case.text(), text);
+    assert_eq!(fs::read(case.binary()).unwrap(), binary);
+    assert!(!contains(&case.text(), b"large.txt"));
 }

@@ -3,6 +3,7 @@
 //! Depends on [`crate::ports::Source`] and the standard library. The session does not open a path itself.
 //! Symlinks are not followed. A symlink read is [`dctx_core::DctxError::PolicyDenied`].
 
+use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use dctx_core::datatypes::NodeType;
@@ -90,7 +91,14 @@ impl Source for FsSource {
         if meta.len() > max_bytes {
             return Err(CoreError::ResourceLimit { resource: dctx_core::error::Resource::FileBytes, limit: max_bytes });
         }
-        std::fs::read(&full).map_err(map_io)
+        // Stop one byte past the cap so a file that grows after the stat cannot buffer an unbounded body.
+        let file = std::fs::File::open(&full).map_err(map_io)?;
+        let mut bytes = Vec::new();
+        file.take(max_bytes.saturating_add(1)).read_to_end(&mut bytes).map_err(map_io)?;
+        if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > max_bytes {
+            return Err(CoreError::ResourceLimit { resource: dctx_core::error::Resource::FileBytes, limit: max_bytes });
+        }
+        Ok(bytes)
     }
 }
 
@@ -133,5 +141,23 @@ mod tests {
         let grant = ReadGrant::authorize(&path, FileHandlingDecision::Include, true).expect("grant");
         let error = source.read(&grant, 32).expect_err("read");
         assert_eq!(error, CoreError::SourceUnavailable);
+    }
+
+    #[test]
+    fn read_stops_at_the_byte_cap_and_a_fitting_file_is_returned() {
+        let dir = tempfile::tempdir().expect("temp");
+        let path = dir.path().join("note.txt");
+        let mut note = std::fs::File::options().write(true).create_new(true).open(&path).expect("note");
+        std::io::Write::write_all(&mut note, b"01234567").expect("body");
+        drop(note);
+        let source = FsSource::open(dir.path()).expect("open");
+        let rel = RelativePath::parse("note.txt").expect("path");
+        let grant = ReadGrant::authorize(&rel, FileHandlingDecision::Include, true).expect("grant");
+        let denied = source.read(&grant, 4).expect_err("over cap");
+        assert!(matches!(
+            denied,
+            CoreError::ResourceLimit { resource: dctx_core::error::Resource::FileBytes, limit: 4 }
+        ));
+        assert_eq!(source.read(&grant, 8).expect("within cap"), b"01234567");
     }
 }

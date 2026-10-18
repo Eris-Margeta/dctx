@@ -66,6 +66,31 @@ impl Default for SnapshotConfig {
     }
 }
 
+/// Caps aligned with the legacy DIRCTXTV state file (64 MiB, depth 128, 100_000 nodes).
+/// `DCTX_ALIAS_MAX_*` may tighten a cap for tests; a value above the cap is ignored.
+/// Tree-only mode still stores bodies in that file, so it uses these caps instead of skipping reads.
+fn scan_limits() -> PackLimits {
+    const MAX_ENTRIES: u64 = 100_000;
+    const MAX_DEPTH: u64 = 128;
+    const MAX_BYTES: u64 = 64 * 1024 * 1024;
+    PackLimits {
+        max_entries: tightened("DCTX_ALIAS_MAX_ENTRIES", MAX_ENTRIES).unwrap_or(MAX_ENTRIES),
+        max_depth: tightened("DCTX_ALIAS_MAX_DEPTH", MAX_DEPTH).unwrap_or(MAX_DEPTH),
+        max_file_bytes: tightened("DCTX_ALIAS_MAX_FILE_BYTES", MAX_BYTES).unwrap_or(MAX_BYTES),
+        max_source_bytes: tightened("DCTX_ALIAS_MAX_SOURCE_BYTES", MAX_BYTES).unwrap_or(MAX_BYTES),
+    }
+}
+
+fn tightened(name: &str, cap: u64) -> Option<u64> {
+    let Ok(raw) = std::env::var(name) else {
+        return None;
+    };
+    let Ok(value) = raw.trim().parse::<u64>() else {
+        return None;
+    };
+    (1..=cap).contains(&value).then_some(value)
+}
+
 /// The binary and TUI retain the alias's fatal setup-error behavior.
 pub fn run_headless_mode(config: SnapshotConfig) {
     if let Err(error) = snapshot(&config) {
@@ -84,11 +109,9 @@ pub fn snapshot(config: &SnapshotConfig) -> Result<(), String> {
     let cache = compat::cache_dir().ok_or("Could not determine system cache directory.")?;
     let id =
         compat::project_id(&cache, &root).map_err(|error| format!("Failed to initialize project registry: {error}"))?;
-    let binary = cache.join(format!("{id}.dctx"));
-    let output = root.join(".dctx");
-    if !config.clipboard_mode {
-        fs::create_dir_all(&output).map_err(|error| format!("Failed to create output directory .dctx/: {error}"))?;
-    }
+    let binary = compat::state_path(&cache, &id)
+        .map_err(|error| format!("Failed to initialize project registry: {error}"))?;
+    let export_dir = if config.clipboard_mode { None } else { Some(compat::prepare_export_dir(&root)?) };
     println!("🚀 dctx running on: {}\n🔑 Project Hash: {id}", root.display());
     if config.tree_only {
         println!("🌲 Tree-Only Mode Active");
@@ -103,7 +126,7 @@ pub fn snapshot(config: &SnapshotConfig) -> Result<(), String> {
         dctx_pack::ScanOptions {
             policy: &policy,
             debug_ignored: config.debug_ignored,
-            limits: PackLimits::unbounded(),
+            limits: scan_limits(),
         },
     )
     .map_err(|error| error.to_string())?;
@@ -134,40 +157,35 @@ pub fn snapshot(config: &SnapshotConfig) -> Result<(), String> {
     } else {
         println!("💤 No changes detected. Version remains {version}.");
     }
-    match compat::save_state(&binary, &tree, &version) {
-        Ok(()) => println!("💾 Saved binary state to cache."),
-        Err(error) => eprintln!("❌ Failed to save binary state: {error}"),
-    }
-    let Some(filtered) = filter_tree(&tree, &config.filter_config) else {
-        println!("⚠️ All files filtered out! No output will be generated.");
-        return Ok(());
-    };
+    let filtered = filter_tree(&tree, &config.filter_config);
+    let can_diff = changes.has_changes && !major_reset;
+    let diff_only = config.clipboard_mode && config.diff_mode && can_diff;
+    let generate_diff = can_diff
+        && if config.clipboard_mode { config.diff_mode } else { settings.text_output_mode_generates_diff_files };
+    let mut snapshot_body = None;
+    let mut diff_body = None;
     if settings.text_output_enabled {
-        let markers = pack::legacy_markers(&filtered, &compat::output_policy(&root));
-        let can_diff = changes.has_changes && !major_reset;
-        let diff_only = config.clipboard_mode && config.diff_mode && can_diff;
-        let mut body = Vec::new();
-        if !diff_only {
-            match template::legacy_template(&settings.default_template) {
-                Ok(mut template) => {
-                    template.insert_variable("project", &name);
-                    body = dctx_template::render_legacy_snapshot(
+        if let Some(filtered) = &filtered {
+            let markers = pack::legacy_markers(filtered, &compat::output_policy(&root));
+            if !diff_only {
+                let mut template = template::legacy_template(&settings.default_template)
+                    .map_err(|error| format!("Generation error: {error}"))?;
+                template.insert_variable("project", &name);
+                snapshot_body = Some(
+                    dctx_template::render_legacy_snapshot(
                         &template,
                         &markers,
                         &version,
                         config.tree_only,
                         settings.omit_svg_content,
                     )
-                    .into_bytes();
-                }
-                Err(error) => eprintln!("❌ Generation error: {error}"),
+                    .into_bytes(),
+                );
             }
-        }
-        let generate_diff = can_diff
-            && if config.clipboard_mode { config.diff_mode } else { settings.text_output_mode_generates_diff_files };
-        let diff_body = if generate_diff {
-            match template::legacy_template(&settings.default_template) {
-                Ok(template) => Some(
+            if generate_diff {
+                let template = template::legacy_template(&settings.default_template)
+                    .map_err(|error| format!("Diff generation error: {error}"))?;
+                diff_body = Some(
                     dctx_template::render_legacy_diff(
                         &template,
                         &markers,
@@ -177,28 +195,38 @@ pub fn snapshot(config: &SnapshotConfig) -> Result<(), String> {
                         settings.omit_svg_content,
                     )
                     .into_bytes(),
-                ),
-                Err(error) => {
-                    eprintln!("❌ Diff generation error: {error}");
-                    None
-                }
+                );
             }
-        } else {
-            None
-        };
+        }
+    }
+    compat::save_state(&binary, &tree, &version).map_err(|error| format!("Failed to save binary state: {error}"))?;
+    println!("💾 Saved binary state to cache.");
+    if filtered.is_none() {
+        println!("⚠️ All files filtered out! No output will be generated.");
+        return Ok(());
+    }
+    if settings.text_output_enabled {
         if config.clipboard_mode {
             if config.diff_mode && diff_body.is_none() && !diff_only {
                 println!("⚠️ No changes detected. Copying FULL context instead of diff.");
             }
-            let bytes = if diff_only { diff_body.as_deref().unwrap_or_default() } else { &body };
+            let bytes = if diff_only {
+                diff_body.as_deref().unwrap_or_default()
+            } else {
+                snapshot_body.as_deref().unwrap_or_default()
+            };
             match compat::copy_to_clipboard(bytes) {
                 Ok(()) => println!("✨ Copied to clipboard!\nLegacy compatibility alias copied {} bytes and wrote no project text file. Explicit pack: dctx pack", bytes.len()),
                 Err(error) => eprintln!("❌ Clipboard error: {error}"),
             }
         } else {
-            compat::export(&output.join(format!("{name}.llmcontext.txt")), &body, false);
-            if let Some(bytes) = diff_body {
-                compat::export(&output.join(format!("{name}.llmcontext-{version}-diff.txt")), &bytes, true);
+            let dir = export_dir.as_ref().ok_or("Failed to create output directory .dctx/")?;
+            let body = snapshot_body.as_deref().ok_or("Generation error: snapshot was not rendered")?;
+            let snapshot_path = compat::child_file(dir, &format!("{name}.llmcontext.txt"))?;
+            compat::export(&snapshot_path, body, false)?;
+            if let Some(bytes) = &diff_body {
+                let diff_path = compat::child_file(dir, &format!("{name}.llmcontext-{version}-diff.txt"))?;
+                compat::export(&diff_path, bytes, true)?;
             }
         }
     }

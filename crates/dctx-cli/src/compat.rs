@@ -14,8 +14,9 @@ use dctx_pack::{decode_legacy, encode_legacy, LegacyBodies, LegacyLimits};
 use std::{
     env, fs,
     io::{self, Read, Write},
-    path::{Path, PathBuf},
+    path::{Component, Path, PathBuf},
     process::{Command, Stdio},
+    sync::atomic::{AtomicU64, Ordering},
 };
 
 /// Legacy directories are separate from the v2 managed-cache root.
@@ -71,12 +72,124 @@ pub fn project_id(cache: &Path, path: &Path) -> io::Result<String> {
         .filter_map(|line| line.split_once('|'))
         .rfind(|(_, stored)| stored.trim() == path);
     if let Some((id, _)) = existing {
-        return Ok(id.trim().to_string());
+        return checked_id(id.trim());
     }
     let id = path_id(&path);
+    checked_id(&id)?;
     let mut file = fs::OpenOptions::new().create(true).append(true).open(registry)?;
     writeln!(file, "{id} | {path}")?;
     Ok(id)
+}
+
+/// Historical registry ids are one path component. Absolute ids and `..` discard the cache prefix.
+fn checked_id(id: &str) -> io::Result<String> {
+    if single_component(id) {
+        Ok(id.to_string())
+    } else {
+        Err(io::Error::other(format!("invalid project id '{id}'")))
+    }
+}
+
+fn single_component(id: &str) -> bool {
+    if id.is_empty() || id.contains('/') || id.contains('\\') || id.contains('\0') {
+        return false;
+    }
+    let path = Path::new(id);
+    if path.is_absolute() {
+        return false;
+    }
+    let mut components = path.components();
+    let Some(Component::Normal(name)) = components.next() else {
+        return false;
+    };
+    components.next().is_none() && name == id
+}
+
+/// `{id}.dctx` directly inside `cache`. A traversal id fails before any create or replace.
+pub(crate) fn state_path(cache: &Path, id: &str) -> io::Result<PathBuf> {
+    checked_id(id)?;
+    let path = cache.join(format!("{id}.dctx"));
+    if path.parent() != Some(cache) {
+        return Err(io::Error::other("project state escapes the cache"));
+    }
+    Ok(path)
+}
+
+/// `.dctx` must be a real directory inside the canonical project root, never a link.
+pub(crate) fn prepare_export_dir(root: &Path) -> Result<PathBuf, String> {
+    let output = root.join(".dctx");
+    if output.parent() != Some(root) {
+        return Err(format!("refusing output directory {}", output.display()));
+    }
+    if let Ok(meta) = fs::symlink_metadata(&output) {
+        if !meta.is_dir() {
+            return Err(format!("refusing output directory {}", output.display()));
+        }
+    }
+    fs::create_dir_all(&output).map_err(|error| format!("Failed to create output directory .dctx/: {error}"))?;
+    let meta = fs::symlink_metadata(&output).map_err(|error| error.to_string())?;
+    if !meta.is_dir() {
+        return Err(format!("refusing output directory {}", output.display()));
+    }
+    Ok(output)
+}
+
+/// One normal file name inside `parent`. `..` and absolute names cannot discard the parent.
+pub(crate) fn child_file(parent: &Path, name: &str) -> Result<PathBuf, String> {
+    if !single_component(name) {
+        return Err(format!("refusing path component {name}"));
+    }
+    let path = parent.join(name);
+    if path.parent() != Some(parent) {
+        return Err(format!("refusing path {}", path.display()));
+    }
+    Ok(path)
+}
+
+static TEMP_SEQ: AtomicU64 = AtomicU64::new(1);
+
+/// Write `bytes` beside `path` and rename over it only after the temp file is complete.
+/// `rename` replaces a destination symlink; it does not open the link target.
+fn replace_bytes(path: &Path, bytes: &[u8]) -> io::Result<()> {
+    let parent = path.parent().filter(|parent| !parent.as_os_str().is_empty()).ok_or_else(|| {
+        io::Error::other("destination has no parent directory")
+    })?;
+    let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+        return Err(io::Error::other("destination file name is not a single component"));
+    };
+    if !single_component(name) {
+        return Err(io::Error::other("refusing a destination that leaves its parent"));
+    }
+    if !fs::symlink_metadata(parent)?.is_dir() {
+        return Err(io::Error::other("refusing to write through a link or non-directory"));
+    }
+    let temp = parent.join(temp_name(name));
+    let written = (|| -> io::Result<()> {
+        let mut file = fs::OpenOptions::new().write(true).create_new(true).open(&temp)?;
+        file.write_all(bytes)?;
+        file.sync_all()?;
+        Ok(())
+    })();
+    if let Err(error) = written {
+        let _ = fs::remove_file(&temp);
+        return Err(error);
+    }
+    if let Err(error) = fs::rename(&temp, path) {
+        let _ = fs::remove_file(&temp);
+        return Err(error);
+    }
+    Ok(())
+}
+
+fn temp_name(name: &str) -> PathBuf {
+    let mut temp = std::ffi::OsString::from(".");
+    temp.push(name);
+    temp.push(".");
+    temp.push(std::process::id().to_string());
+    temp.push(".");
+    temp.push(TEMP_SEQ.fetch_add(1, Ordering::Relaxed).to_string());
+    temp.push(".tmp");
+    PathBuf::from(temp)
 }
 
 fn read_state(path: &Path) -> Result<(DirContextTreeNode, Version), String> {
@@ -127,29 +240,31 @@ pub fn last_version(path: &Path) -> Option<String> {
     let root = fs::canonicalize(path).ok()?;
     let cache = cache_dir()?;
     let id = project_id(&cache, &root).ok()?;
-    read_state(&cache.join(format!("{id}.dctx"))).ok().map(|(_, version)| version.to_string())
+    let binary = state_path(&cache, &id).ok()?;
+    read_state(&binary).ok().map(|(_, version)| version.to_string())
 }
 
 /// Encode before touching the previous binary, so codec refusal leaves it intact.
 pub fn save_state(path: &Path, tree: &DirContextTreeNode, version: &Version) -> Result<(), String> {
     let bytes = encode_legacy(tree, version, LegacyLimits::default()).map_err(|error| error.to_string())?;
-    fs::write(path, bytes).map_err(|error| error.to_string())
+    replace_bytes(path, &bytes).map_err(|error| error.to_string())
 }
 
 fn rule(path: &Path) -> Result<Option<String>, String> {
     StdFs.read_policy(path).map_err(|error| format!("{}: {error}", path.display()))
 }
 
-/// Preserve the alias's three scan layers; local omit rules historically affect rendering only.
+/// Ignore and omit rules are fixed before any source read. A missing or unreadable omit file adds no rules.
 pub fn scan_policy(root: &Path, verbose: bool) -> Result<SelectionPolicy, String> {
     let global_ignore = config_dir().map(|dir| rule(&dir.join("ignore"))).transpose()?.flatten();
     let global_omit = config_dir().map(|dir| rule(&dir.join("omitcontent"))).transpose()?.flatten();
     let local_ignore = rule(&root.join(".dctxignore"))?;
+    let local_omit = rule(&root.join(".dctxomitcontent")).ok().flatten();
     let policy = SelectionPolicy::from_texts(&RuleTexts {
         global_ignore: global_ignore.as_deref(),
         global_omit: global_omit.as_deref(),
         local_ignore: local_ignore.as_deref(),
-        local_omit: None,
+        local_omit: local_omit.as_deref(),
     });
     let ignore = policy.ignore_layers();
     let omit = policy.omit_layers();
@@ -176,17 +291,17 @@ pub fn output_policy(root: &Path) -> SelectionPolicy {
     })
 }
 
-/// Write one named export. No reset, version bump or corruption path sweeps old exports.
-pub fn export(path: &Path, bytes: &[u8], diff: bool) {
-    match fs::write(path, bytes) {
-        Ok(()) => println!(
-            "Legacy {} wrote {} ({} bytes, retention=legacy-project-text).",
-            if diff { "diff" } else { "compatibility alias" },
-            path.display(),
-            bytes.len()
-        ),
-        Err(error) => eprintln!("❌ Write error for {}: {error}", path.display()),
-    }
+/// Publish one named export by renaming a completed temp file in the same directory.
+/// No reset, version bump or corruption path sweeps old exports.
+pub fn export(path: &Path, bytes: &[u8], diff: bool) -> Result<(), String> {
+    replace_bytes(path, bytes).map_err(|error| format!("Write error for {}: {error}", path.display()))?;
+    println!(
+        "Legacy {} wrote {} ({} bytes, retention=legacy-project-text).",
+        if diff { "diff" } else { "compatibility alias" },
+        path.display(),
+        bytes.len()
+    );
+    Ok(())
 }
 
 /// Resolve clipboard tools without launching a command-discovery child.
