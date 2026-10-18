@@ -1055,6 +1055,7 @@ dependencies = [
  "dctx-lex-kt",
  "dctx-lex-md",
  "dctx-lex-py",
+ "dctx-lex-rb",
  "dctx-lex-rust",
  "dctx-map-model",
  "proptest",
