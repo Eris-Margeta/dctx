@@ -181,8 +181,7 @@ fn cache_gc_respects_pins_and_purge_requires_confirm() {
 
 #[test]
 fn limits_deadline_and_cache_quota_refuse_without_a_generation() {
-    let mut tight = OperationLimits::default();
-    tight.work_units = Some(1);
+    let tight = OperationLimits { work_units: Some(1), ..OperationLimits::default() };
     let mut session = open_session(common::repository());
     let error = session
         .snapshot(&SnapshotRequest { limits: tight, ..SnapshotRequest::immutable() })
@@ -193,8 +192,7 @@ fn limits_deadline_and_cache_quota_refuse_without_a_generation() {
     let handle = session.snapshot(&SnapshotRequest::immutable()).expect("room");
     assert_eq!(handle.generation(), 1);
 
-    let mut frozen = OperationLimits::default();
-    frozen.deadline_ms = Some(0);
+    let frozen = OperationLimits { deadline_ms: Some(0), ..OperationLimits::default() };
     let mut session = open_session(ping_only());
     let handle = session
         .snapshot(&SnapshotRequest { limits: frozen, ..SnapshotRequest::immutable() })

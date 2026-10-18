@@ -247,6 +247,10 @@ fn checksum(bytes: &[u8]) -> Result<String, AuditUnavailable> {
     Sha256::digest(bytes).map(|digest| hex(digest.as_bytes())).map_err(|_| AuditUnavailable)
 }
 
+#[cfg(test)]
+#[path = "audit_tests.rs"]
+mod tests;
+
 #[cfg(feature = "fs")]
 pub(crate) fn open(directory: &std::path::Path, capacity: usize) -> Result<Box<dyn AuditPort + Send>, AuditUnavailable> {
     if capacity > MAX_CAPACITY {

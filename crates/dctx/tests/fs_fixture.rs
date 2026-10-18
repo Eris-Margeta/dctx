@@ -133,8 +133,7 @@ fn auto_clean_is_disabled_until_the_policy_and_the_day_say_so() {
     let dir = tempfile::tempdir().expect("temp");
     let cache = dir.path().join("cache");
     std::fs::create_dir(&cache).expect("dir");
-    let mut disabled = AutoCleanConfig::default();
-    disabled.enabled = false;
+    let disabled = AutoCleanConfig { enabled: false, ..AutoCleanConfig::default() };
     let skipped = open_cached(common::repository(), 50_000_000, &cache, 1, disabled);
     assert!(skipped.cache_ledger().expect("ledger").last_auto_clean_ms.is_none());
     assert_eq!(skipped.cache_status().reclaimed_bytes, 0);
@@ -158,9 +157,7 @@ fn cap_and_ttl_follow_the_injected_clock() {
     let dir = tempfile::tempdir().expect("temp");
     let cache = dir.path().join("cache");
     std::fs::create_dir(&cache).expect("dir");
-    let mut policy = AutoCleanConfig::default();
-    policy.min_interval_ms = 0;
-    policy.root_ttl_ms = 1_000;
+    let mut policy = AutoCleanConfig { min_interval_ms: 0, root_ttl_ms: 1_000, ..AutoCleanConfig::default() };
     let mut first = open_cached(common::repository(), 0, &cache, 3, policy);
     first.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
     assert!(first.cache_ledger().expect("ledger").admitted_bytes > 0);

@@ -322,8 +322,7 @@ mod tests {
 
     #[test]
     fn safety_cap_refuses_a_raised_walk_limit() {
-        let mut limits = OperationLimits::default();
-        limits.work_units = Some(SAFETY_ENTRIES + 1);
+        let mut limits = OperationLimits { work_units: Some(SAFETY_ENTRIES + 1), ..OperationLimits::default() };
         assert!(resolve_scan(&limits).is_err());
         limits.work_units = Some(4);
         assert_eq!(resolve_scan(&limits).expect("narrow").entries, 4);

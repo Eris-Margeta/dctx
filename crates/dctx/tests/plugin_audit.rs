@@ -45,11 +45,11 @@ impl AuditStorage for Memory {
     fn append_sync(&mut self, frame: &[u8]) -> Result<(), AuditUnavailable> {
         let mut io = self.0.borrow_mut();
         io.trace.push("append");
-        if let Some((kind, cut)) = io.fail {
-            if std::str::from_utf8(frame).unwrap().contains(kind) {
-                io.bytes.extend_from_slice(&frame[..cut.min(frame.len())]);
-                return Err(AuditUnavailable);
-            }
+        if let Some((kind, cut)) = io.fail
+            && std::str::from_utf8(frame).unwrap().contains(kind)
+        {
+            io.bytes.extend_from_slice(&frame[..cut.min(frame.len())]);
+            return Err(AuditUnavailable);
         }
         io.bytes.extend_from_slice(frame);
         io.durable = io.bytes.clone();
@@ -58,9 +58,11 @@ impl AuditStorage for Memory {
     }
 }
 
+type BeforeReplace = Box<dyn FnMut(&[u8])>;
+
 struct ObservedFiles {
     inner: FakeFiles,
-    before: Box<dyn FnMut(&[u8])>,
+    before: BeforeReplace,
 }
 
 impl FilePort for ObservedFiles {

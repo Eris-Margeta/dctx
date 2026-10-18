@@ -240,8 +240,7 @@ mod persisted_tests {
         assert_eq!(second.ledger_view().last_auto_clean_ms, Some(5));
         assert_eq!(second.reclaimed(), 0);
 
-        let mut disabled = AutoCleanConfig::default();
-        disabled.enabled = false;
+        let disabled = AutoCleanConfig { enabled: false, ..AutoCleanConfig::default() };
         let third = PersistedCache::open(&root, 4, disabled, 5 + 86_400_000).expect("disabled");
         assert_eq!(third.ledger_view().last_auto_clean_ms, Some(5));
         assert_eq!(third.reclaimed(), 0);

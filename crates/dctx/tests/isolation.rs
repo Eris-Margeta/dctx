@@ -71,7 +71,7 @@ fn missing_clock_is_invalid_and_place_is_the_one_supplied() {
     assert_eq!(caps.features.contains(&"map"), cfg!(feature = "map"));
     assert_eq!(caps.features.contains(&"fs"), cfg!(feature = "fs"));
     assert!(!caps.features.contains(&"syntax-rust"));
-    assert!(caps.parsers.iter().any(|parser| *parser == "dctx-structural/1"));
+    assert!(caps.parsers.contains(&"dctx-structural/1"));
 }
 
 #[test]
