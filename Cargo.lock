@@ -1033,6 +1033,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "dctx-lex-swift"
+version = "0.1.0"
+dependencies = [
+ "dctx-hash",
+ "dctx-map-model",
+]
+
+[[package]]
 name = "dctx-map-model"
 version = "0.1.0"
 dependencies = [
@@ -1054,9 +1062,11 @@ dependencies = [
  "dctx-lex-js",
  "dctx-lex-kt",
  "dctx-lex-md",
+ "dctx-lex-php",
  "dctx-lex-py",
  "dctx-lex-rb",
  "dctx-lex-rust",
+ "dctx-lex-swift",
  "dctx-map-model",
  "proptest",
  "sha2",
