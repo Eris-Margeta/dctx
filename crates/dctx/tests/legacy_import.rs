@@ -6,9 +6,10 @@
 
 mod common;
 
-use dctx::memory::{CancelFlag, FixedClock, MemoryCache, MemoryFactStore};
+use dctx::memory::{CancelFlag, FixedClock, MemoryCache, MemoryFactStore, MemorySource};
 use dctx::{
-    Cache, Cancellation, FactStore, HostCeiling, HostGrants, OperationLimits, Session, StoragePolicy, Timestamp,
+    Cache, Cancellation, DctxError, FactStore, HostCeiling, HostGrants, OperationLimits, PackRequest, Session,
+    StoragePolicy, Timestamp, VecSink,
 };
 use dctx_core::budget::Reservation;
 use dctx_core::error::DctxError as CoreError;
@@ -194,4 +195,67 @@ fn session_limits_cannot_be_raised_by_import_limits() {
         assert!(session.import_legacy(BYTES, "new", LegacyBodies::Include, LegacyLimits::default()).is_err());
         assert_eq!(store.0.lock().unwrap().publishes(), 0);
     }
+}
+
+#[test]
+fn maximum_revision_import_refuses_and_the_prior_revision_packs() {
+    let store = Store::default();
+    let quota = quota(4096);
+    let mut source = MemorySource::new();
+    source.insert_file("logo.png", b"\x89PNG\0\0\x01", 3).expect("png");
+    let source = common::SharedSource::new(source);
+    let handle = source.handle();
+    let session = Session::builder(source)
+        .clock(FixedClock(Timestamp(123)))
+        .cancellation(Arc::new(CancelFlag::new()))
+        .selection(dctx::SelectionPolicy::from_texts(&dctx::RuleTexts::default()))
+        .ceiling(HostCeiling::base())
+        .grants(HostGrants::PermitAll)
+        .storage(StoragePolicy::CallerOwned { max_bytes: 4096 })
+        .store(store.clone())
+        .cache(quota.clone())
+        .limits(OperationLimits::default())
+        .place("fixture")
+        .view("map")
+        .build()
+        .expect("session");
+    let mut session = session;
+
+    let mut exhausted = BYTES.to_vec();
+    exhausted[8..12].copy_from_slice(&u32::MAX.to_le_bytes());
+    let decoded = decode_legacy(&exhausted, LegacyBodies::MetadataOnly, LegacyLimits::default()).expect("decode");
+    assert_eq!(decoded.header.version.major, u32::MAX);
+    assert_eq!(
+        session
+            .import_legacy(&exhausted, "map", LegacyBodies::Include, LegacyLimits::default())
+            .err(),
+        Some(DctxError::invalid("version exhausted"))
+    );
+    assert_eq!(store.0.lock().expect("store").publishes(), 0);
+    assert!(store.load(&key("map")).expect("load").is_none());
+    assert_eq!(quota.0.lock().expect("quota").reserved(), 0);
+    assert_eq!(quota.0.lock().expect("quota").committed(), 0);
+
+    let mut prior = BYTES.to_vec();
+    prior[8..12].copy_from_slice(&(u32::MAX - 1).to_le_bytes());
+    let imported = session.import_legacy(&prior, "map", LegacyBodies::Include, LegacyLimits::default()).expect("import");
+    assert_eq!(imported.version().major, u32::MAX - 1);
+    let mut sink = VecSink::new();
+    let report = session.pack(&PackRequest::new(), &mut sink).expect("pack to maximum");
+    assert_eq!(report.version, format!("V{}", u32::MAX));
+    assert!(report.major_reset);
+    assert!(report.published);
+    let digest = store.load(&key("map")).expect("load").expect("snapshot").digest();
+
+    handle.lock().expect("source").insert_file("logo.png", b"\x89PNG\0\0\x01", 4).expect("mtime");
+    let mut refused = VecSink::new();
+    assert_eq!(
+        session.pack(&PackRequest::new(), &mut refused),
+        Err(DctxError::invalid("version exhausted"))
+    );
+    assert!(refused.is_empty());
+    let stored = store.load(&key("map")).expect("load").expect("snapshot");
+    assert_eq!(stored.version().major, u32::MAX);
+    assert_eq!(stored.version().minor, 0);
+    assert_eq!(stored.digest(), digest);
 }

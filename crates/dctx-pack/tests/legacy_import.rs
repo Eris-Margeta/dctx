@@ -4,7 +4,7 @@
 
 #![forbid(unsafe_code)]
 
-use dctx_pack::legacy_codec::LEGACY_MAX_DEPTH;
+use dctx_pack::legacy_codec::{revision_can_advance, LEGACY_MAX_DEPTH};
 use dctx_pack::{LegacyBodies, LegacyError, LegacyLimits, decode_legacy};
 
 // V3.7; directory "" at time 1; file logo.png at time 2, offset 0, size 7.
@@ -156,4 +156,17 @@ fn arbitrary_bytes_never_panic() {
         }
         let _ = decode(&bytes);
     }
+}
+
+#[test]
+fn maximum_major_decodes_and_the_next_revision_is_a_typed_refusal() {
+    let mut bytes = GOLDEN.to_vec();
+    bytes[8..16].fill(255);
+    let document = decode(&bytes).expect("historical maximum still decodes");
+    assert_eq!(document.header.version.major, u32::MAX);
+    assert!(matches!(revision_can_advance(&document.header.version), Err(LegacyError::Overflow)));
+    let mut prior = document.header.version;
+    prior.major = u32::MAX - 1;
+    assert!(revision_can_advance(&prior).is_ok());
+    assert!(revision_can_advance(&decode(GOLDEN).expect("golden").header.version).is_ok());
 }

@@ -131,6 +131,16 @@ pub(crate) fn check_version(version: &Version) -> Result<(), LegacyError> {
     Ok(())
 }
 
+/// Decoding still accepts every positive major, including `u32::MAX`.
+/// Publication as the base of another pack requires room for one major reset.
+pub fn revision_can_advance(version: &Version) -> Result<(), LegacyError> {
+    check_version(version)?;
+    if version.major.checked_add(1).is_none() {
+        return Err(LegacyError::Overflow);
+    }
+    Ok(())
+}
+
 pub(crate) fn add(left: usize, right: usize) -> Result<usize, LegacyError> {
     left.checked_add(right).ok_or(LegacyError::Overflow)
 }

@@ -198,3 +198,63 @@ fn summaries_remain_the_default() {
     assert!(json.as_bytes().starts_with(b"{\"v\":2,\"version\":\"V1\",\"previous\":\"V1\""));
     assert!(!std::str::from_utf8(json.as_bytes()).expect("utf8").contains("legacy"));
 }
+
+fn repeated_content_request(times: usize, cap: u64) -> PackRequest {
+    let partial = "{{{file.content}}}".repeat(times);
+    let mut raw = String::from("[PARTIAL:FILE_BLOCK]\n");
+    raw.push_str(&partial);
+    raw.push_str("\n[LAYOUT]\n{{{comp.files}}}");
+    let mut request = PackRequest::new();
+    request.legacy_output = Some(LegacyOutput::new(Template::parse(&raw), LegacyLayout::Snapshot));
+    request.limits.encoded_bytes = Some(cap);
+    request
+}
+
+fn capped_text_session(bytes: &[u8], cap: u64) -> Session {
+    let mut source = MemorySource::new();
+    source.insert_file("note.txt", bytes, 1).expect("file");
+    Session::builder(source)
+        .clock(FixedClock(Timestamp(0)))
+        .cancellation(Arc::new(CancelFlag::new()))
+        .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
+        .ceiling(HostCeiling::base())
+        .grants(HostGrants::PermitAll)
+        .storage(StoragePolicy::Ephemeral { max_bytes: 64 * 1024 * 1024 })
+        .limits(OperationLimits { encoded_bytes: Some(cap), ..OperationLimits::default() })
+        .place("fixture")
+        .view("pack")
+        .build()
+        .expect("session")
+}
+
+#[test]
+fn legacy_byte_cap_bounds_file_block_expansion() {
+    // Positive control: one copy of 40 bytes fits an exact 71-byte cap and is written whole.
+    let header = "[DCTX_LLM_CONTEXT_SNAPSHOT_V1]\n";
+    let mut expected = header.as_bytes().to_vec();
+    expected.extend(std::iter::repeat(b'B').take(40));
+    assert_eq!(expected.len(), 71);
+    let mut session = capped_text_session(&expected[header.len()..], 71);
+    let mut sink = VecSink::new();
+    session.pack(&repeated_content_request(1, 71), &mut sink).expect("exact fit");
+    assert_eq!(sink.as_bytes(), expected.as_slice());
+
+    let mut session = capped_text_session(&expected[header.len()..], 70);
+    let mut refused = VecSink::new();
+    assert_eq!(
+        session.pack(&repeated_content_request(1, 70), &mut refused),
+        Err(DctxError::BudgetTooSmall { minimum_bytes: 71 })
+    );
+    assert!(refused.is_empty());
+
+    // F5: 4096 copies of an 8 MiB file expand to 32 GiB before a 1 KiB cap can be applied.
+    let content = vec![b'A'; 8 * 1024 * 1024];
+    let minimum = header.len() as u64 + 4096 * content.len() as u64;
+    let mut session = capped_text_session(&content, 1024);
+    let mut bomb = VecSink::new();
+    assert_eq!(
+        session.pack(&repeated_content_request(4096, 1024), &mut bomb),
+        Err(DctxError::BudgetTooSmall { minimum_bytes: minimum })
+    );
+    assert!(bomb.is_empty());
+}

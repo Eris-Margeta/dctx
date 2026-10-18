@@ -5,9 +5,12 @@
 
 use dctx_core::budget::PackLimits;
 use dctx_core::datatypes::{DirContextTreeNode, NodeType};
+use dctx_core::diff::compare_trees;
 use dctx_core::ids::ViewKey;
-use dctx_pack::{pack, PackPorts, PackRequest as EngineRequest};
+use dctx_pack::{pack, scan, PackPorts, PackRequest as EngineRequest, ScanOptions};
 use dctx_template::{render_legacy_diff, render_legacy_snapshot, LegacyLayout, MarkerNode};
+
+const MAX_DIFF_FILES: u32 = 100_000;
 
 use super::Session;
 use crate::domain::{BoundedSink, PackReport, PackRequest, DctxError, REQUEST_VERSION};
@@ -39,6 +42,7 @@ impl Session {
             max_file_bytes: scan.file_bytes,
             max_source_bytes: scan.source_bytes,
         };
+        self.refuse_exhausted_revision(&view, request, limits)?;
         let engine = pack(
             PackPorts {
                 source: self.source.as_ref(),
@@ -51,7 +55,7 @@ impl Session {
                 view,
                 policy: &self.selection,
                 debug_ignored: request.legacy_output.as_ref().is_some_and(|output| output.debug_ignored),
-                max_diff_files: 100_000,
+                max_diff_files: MAX_DIFF_FILES,
                 limits,
             },
         )
@@ -68,7 +72,7 @@ impl Session {
             diagnostics: u64::try_from(engine.diagnostics.len()).unwrap_or(u64::MAX),
             legacy_layout: None,
         };
-        let encoded = encode_output(request, &engine, &mut public);
+        let encoded = encode_output(request, &engine, &mut public, effective_limits.encoded_bytes)?;
         if let Some(limit) = effective_limits.encoded_bytes {
             let len = u64::try_from(encoded.len()).unwrap_or(u64::MAX);
             if len > limit {
@@ -79,23 +83,75 @@ impl Session {
         self.hooks_after_pack()?;
         Ok(public)
     }
+
+    /// A stored `u32::MAX` major cannot survive another major reset. Refuse before `pack` publishes.
+    fn refuse_exhausted_revision(
+        &self,
+        view: &ViewKey,
+        request: &PackRequest,
+        limits: PackLimits,
+    ) -> Result<(), DctxError> {
+        let Some(previous) = self.store.load(view).map_err(DctxError::from_core)? else {
+            return Ok(());
+        };
+        if previous.version().major != u32::MAX {
+            return Ok(());
+        }
+        let scanned = scan(
+            self.source.as_ref(),
+            self.cancel.as_ref(),
+            ScanOptions {
+                policy: &self.selection,
+                debug_ignored: request.legacy_output.as_ref().is_some_and(|output| output.debug_ignored),
+                limits,
+            },
+        )
+        .map_err(DctxError::from_core)?;
+        let report = compare_trees(Some(previous.tree()), &scanned.tree);
+        if report.has_changes
+            && previous
+                .version()
+                .try_calculate_next(report.stats.files_unchanged, report.stats.total_files_in_new_state, MAX_DIFF_FILES)
+                .is_err()
+        {
+            return Err(DctxError::invalid("version exhausted"));
+        }
+        Ok(())
+    }
 }
 
-fn encode_output(request: &PackRequest, engine: &dctx_pack::PackReport, report: &mut PackReport) -> Vec<u8> {
+fn encode_output(
+    request: &PackRequest,
+    engine: &dctx_pack::PackReport,
+    report: &mut PackReport,
+    limit: Option<u64>,
+) -> Result<Vec<u8>, DctxError> {
     let Some(output) = &request.legacy_output else {
-        return encode_pack(request.output_format, report);
+        return Ok(encode_pack(request.output_format, report));
     };
     let tree = marker_tree(engine.snapshot.tree());
     let version = engine.snapshot.version();
     if output.layout == LegacyLayout::Diff && !engine.major_reset && let Some(previous) = &engine.previous_version {
         report.legacy_layout = Some(LegacyLayout::Diff);
-        return render_legacy_diff(
-            &output.template, &tree, &engine.diff, previous, version, output.omit_svg_content,
-        ).into_bytes();
+        let text = match limit {
+            Some(limit) => output
+                .template
+                .legacy_diff_within(&tree, &engine.diff, previous, version, output.omit_svg_content, limit)
+                .map_err(DctxError::from_template)?,
+            None => render_legacy_diff(&output.template, &tree, &engine.diff, previous, version, output.omit_svg_content),
+        };
+        return Ok(text.into_bytes());
     }
     let tree_only = output.layout == LegacyLayout::TreeOnly;
     report.legacy_layout = Some(if tree_only { LegacyLayout::TreeOnly } else { LegacyLayout::Snapshot });
-    render_legacy_snapshot(&output.template, &tree, version, tree_only, output.omit_svg_content).into_bytes()
+    let text = match limit {
+        Some(limit) => output
+            .template
+            .legacy_snapshot_within(&tree, version, tree_only, output.omit_svg_content, limit)
+            .map_err(DctxError::from_template)?,
+        None => render_legacy_snapshot(&output.template, &tree, version, tree_only, output.omit_svg_content),
+    };
+    Ok(text.into_bytes())
 }
 
 fn marker_tree(node: &DirContextTreeNode) -> MarkerNode {

@@ -9,7 +9,8 @@ use std::collections::BTreeSet;
 use dctx_core::facts::{ContentDigests, PackSnapshot};
 use dctx_core::ids::{RelativePath, ViewKey};
 use dctx_hash::Sha256;
-use dctx_pack::{LegacyBodies, LegacyLimits, LegacyNode, decode_legacy};
+use dctx_pack::legacy_codec::revision_can_advance;
+use dctx_pack::{LegacyBodies, LegacyError, LegacyLimits, LegacyNode, decode_legacy};
 use dctx_ports::Cache;
 
 use super::Session;
@@ -48,6 +49,14 @@ impl Session {
         }
         let document = decode_legacy(bytes, bodies, limits)
             .map_err(|error| DctxError::invalid_detail("legacy import", &error.to_string()))?;
+        // Historical bytes still decode. A major that cannot increase would panic
+        // or wrap on the next pack, so refuse before this publish.
+        if let Err(error) = revision_can_advance(&document.header.version) {
+            return Err(match error {
+                LegacyError::Overflow => DctxError::invalid("version exhausted"),
+                other => DctxError::invalid_detail("legacy import", &other.to_string()),
+            });
+        }
         let digests = import_digests(&document.root, caps.file_bytes)?;
         let snapshot = PackSnapshot::new(document.root, document.header.version, self.clock.now(), digests)
             .map_err(DctxError::from_core)?;
