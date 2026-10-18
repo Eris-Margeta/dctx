@@ -175,6 +175,10 @@ impl Lx<'_> {
         let mut brace = 0i32;
         let mut lambdas = Vec::new();
         loop {
+            // PEP 701: lex a same-quote string before the f-string closer.
+            if self.lex_fexpr_string()? {
+                continue;
+            }
             if self.fexpr_closed(quote, triple)? {
                 return Ok(());
             }
@@ -377,7 +381,7 @@ impl Lx<'_> {
         }
     }
 
-    fn skip_f_ws(&mut self) {
+    pub(super) fn skip_f_ws(&mut self) {
         loop {
             let before = self.i;
             self.skip_spaces();

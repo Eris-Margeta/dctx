@@ -86,6 +86,24 @@ impl Lx<'_> {
         self.take_op()
     }
 
+    /// One string inside a replacement field. Its brackets stay off the statement stack.
+    pub(super) fn lex_fexpr_string(&mut self) -> Result<bool, LexError> {
+        self.skip_f_ws();
+        if self.i >= self.src.len() || self.look_prefix().is_none() {
+            return Ok(false);
+        }
+        let track = self.track_parens;
+        self.track_parens = false;
+        let before = self.i;
+        let scanned = self.scan_one_token();
+        self.track_parens = track;
+        scanned?;
+        if self.i == before {
+            self.bump();
+        }
+        Ok(true)
+    }
+
     fn take_ident(&mut self) -> Emitted {
         let start = self.pos();
         self.bump();
@@ -154,10 +172,12 @@ impl Lx<'_> {
             ")" | "]" | "}" => Emitted::Close(op.as_bytes()[0]),
             _ => Emitted::Other,
         };
-        match emitted {
-            Emitted::Open(kind) => self.push_paren(kind)?,
-            Emitted::Close(kind) => self.pop_paren(kind),
-            _ => {}
+        if self.track_parens {
+            match emitted {
+                Emitted::Open(kind) => self.push_paren(kind)?,
+                Emitted::Close(kind) => self.pop_paren(kind),
+                _ => {}
+            }
         }
         Ok(emitted)
     }

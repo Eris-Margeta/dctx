@@ -70,6 +70,8 @@ struct Lx<'a> {
     line_starts: Vec<u32>,
     fstrings: u32,
     string_closed: bool,
+    /// Statement brackets. False while an f-string field scans a nested literal.
+    track_parens: bool,
 }
 
 pub(crate) fn lex(source: &str, max_depth: u32) -> Result<Lexed, LexError> {
@@ -87,6 +89,7 @@ pub(crate) fn lex(source: &str, max_depth: u32) -> Result<Lexed, LexError> {
         line_starts,
         fstrings: 0,
         string_closed: false,
+        track_parens: true,
     };
     lx.run()?;
     let diagnostics = lx
