@@ -1066,6 +1066,7 @@ dependencies = [
 name = "dctx-map-parse"
 version = "0.1.0"
 dependencies = [
+ "dctx-hash",
  "dctx-lex-c",
  "dctx-lex-cfg",
  "dctx-lex-cs",
@@ -1081,7 +1082,6 @@ dependencies = [
  "dctx-lex-swift",
  "dctx-map-model",
  "proptest",
- "sha2",
  "thiserror 2.0.18",
  "tree-sitter",
  "tree-sitter-javascript",
@@ -1125,7 +1125,7 @@ dependencies = [
 name = "dctx-map-scan"
 version = "0.1.0"
 dependencies = [
- "sha2",
+ "dctx-hash",
  "tempfile",
  "thiserror 2.0.18",
 ]
