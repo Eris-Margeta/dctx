@@ -34,15 +34,31 @@ impl Network for NoTls {
     fn get(&self, _url: &HttpsUrl) -> Result<Response, NetworkError> { Err(NetworkError::Unreachable) }
 }
 
-/// Compile-time host target. Unknown pairs still parse as a manifest target or Apple arm64.
-pub fn host_target() -> Target {
-    match (std::env::consts::OS, std::env::consts::ARCH) {
-        ("macos", "aarch64") => Target::AppleArm64,
-        ("macos", "x86_64") => Target::AppleX64,
-        ("linux", "x86_64") => Target::LinuxX64,
-        ("linux", "aarch64") => Target::LinuxArm64,
-        ("windows", "x86_64") => Target::WindowsX64,
-        _ => Target::AppleArm64,
+/// Compile-time host target; libc selection never probes the running system.
+pub fn host_target() -> Result<Target, super::UnsupportedTarget> {
+    let env = if cfg!(target_env = "gnu") { "gnu" }
+        else if cfg!(target_env = "musl") { "musl" }
+        else if cfg!(target_env = "msvc") { "msvc" }
+        else if cfg!(target_env = "uclibc") { "uclibc" }
+        else if cfg!(target_env = "") { "" } else { "unknown" };
+    target_for(std::env::consts::OS, std::env::consts::ARCH, env)
+}
+
+/// Closed artifact mapping, independent of the machine running the command.
+pub(crate) fn target_for(os: &str, arch: &str, env: &str) -> Result<Target, super::UnsupportedTarget> {
+    use super::UnsupportedTarget::{Cpu, Libc, Os};
+    let platform = || format!("{os}-{arch}-{env}");
+    if !matches!(os, "macos" | "linux" | "windows") { return Err(Os(platform())); }
+    if !matches!((os, arch), ("macos" | "linux", "aarch64" | "x86_64") | ("windows", "x86_64")) {
+        return Err(Cpu(platform()));
+    }
+    match (os, arch, env) {
+        ("macos", "aarch64", "") => Ok(Target::AppleArm64),
+        ("macos", "x86_64", "") => Ok(Target::AppleX64),
+        ("linux", "x86_64", "gnu") => Ok(Target::LinuxX64),
+        ("linux", "aarch64", "gnu") => Ok(Target::LinuxArm64),
+        ("windows", "x86_64", "msvc") => Ok(Target::WindowsX64),
+        _ => Err(Libc(platform())),
     }
 }
 
