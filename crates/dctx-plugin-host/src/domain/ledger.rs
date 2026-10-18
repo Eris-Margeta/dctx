@@ -3,13 +3,14 @@
 //! and `Rotate` (PP3, PP5). Pure state; the broker appends audit records before calling each step.
 //! Depends on binding and trace. Used by the broker service and hook reports (PP10 truth).
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use dctx_plugin_protocol::records::scalars::Token;
 
 use crate::domain::binding::{ActionKey, ArgDigest};
 use crate::domain::trace::{ModelAction, Trace};
 use crate::error::HostRefusal;
+use crate::ports::{MAX_RECOVERY_RECORDS, RecoveryRecord, RecoveryState};
 
 /// Status of one ledger entry.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -57,12 +58,66 @@ pub struct Ledger {
     capacity: usize,
     next: u64,
     trace: Trace,
+    pub(crate) recovered: bool,
 }
 
 impl Ledger {
     /// An empty ledger retaining at most `capacity` keys.
     pub fn new(capacity: usize) -> Self {
-        Self { entries: BTreeMap::new(), capacity, next: 1, trace: Trace::default() }
+        Self { entries: BTreeMap::new(), capacity, next: 1, trace: Trace::default(), recovered: false }
+    }
+
+    /// Atomically restores ordered durable transitions. Unfinished intents become unknown.
+    /// Archives retain keys; malformed, incomplete or over-capacity evidence refuses admission.
+    pub fn restore(&mut self, records: &[RecoveryRecord]) -> Result<(), HostRefusal> {
+        let invalid = || HostRefusal::audit("invalid-recovery-evidence");
+        if records.len() > MAX_RECOVERY_RECORDS || (!records.is_empty() && !self.entries.is_empty()) {
+            return Err(invalid());
+        }
+        let mut restored = self.clone();
+        let mut receipts = BTreeSet::new();
+        for r in records {
+            let number = r.receipt.as_str().strip_prefix("receipt:").and_then(|s| s.parse::<u64>().ok()).ok_or_else(invalid)?;
+            restored.next = restored.next.max(number.checked_add(1).ok_or_else(invalid)?);
+            if r.state == RecoveryState::Pending {
+                if !receipts.insert(r.receipt.clone()) || restored.entries.len() >= self.capacity {
+                    return Err(invalid());
+                }
+                restored.intent(r.key.clone(), r.args, r.receipt.clone()).map_err(|_| invalid())?;
+                continue;
+            }
+            let entry = restored.entries.get_mut(&r.key).ok_or_else(invalid)?;
+            if entry.args != r.args || entry.receipt != r.receipt {
+                return Err(invalid());
+            }
+            match r.state {
+                RecoveryState::Committed | RecoveryState::Unknown | RecoveryState::Partial if entry.status == EntryStatus::Pending => {
+                    entry.status = match r.state {
+                        RecoveryState::Committed => EntryStatus::Committed,
+                        RecoveryState::Partial => EntryStatus::Partial,
+                        _ => EntryStatus::Unknown,
+                    };
+                    entry.executions = 1;
+                }
+                RecoveryState::Reconciled if matches!(entry.status, EntryStatus::Pending | EntryStatus::Unknown | EntryStatus::Partial) => {
+                    entry.status = EntryStatus::Committed;
+                    entry.executions = 1;
+                }
+                RecoveryState::Archived if entry.status == EntryStatus::Committed => entry.archived = true,
+                RecoveryState::NotRun if entry.status == EntryStatus::Pending => {
+                    restored.entries.remove(&r.key);
+                }
+                _ => return Err(invalid()),
+            }
+        }
+        for entry in restored.entries.values_mut() {
+            if entry.status == EntryStatus::Pending {
+                entry.status = EntryStatus::Unknown;
+            }
+        }
+        restored.recovered = true;
+        *self = restored;
+        Ok(())
     }
 
     /// `Receipts.Repeat` guard: existing receipt, conflict, or uncertain refusal; never a re-execution.
@@ -87,7 +142,7 @@ impl Ledger {
             return Err(HostRefusal::limit("ledger-full"));
         }
         let receipt = Token::new(&format!("receipt:{}", self.next)).map_err(|_| HostRefusal::limit("receipt-id"))?;
-        self.next = self.next.saturating_add(1);
+        self.next = self.next.checked_add(1).ok_or(HostRefusal::limit("receipt-id"))?;
         Ok(receipt)
     }
 
@@ -141,10 +196,11 @@ impl Ledger {
     /// `Receipts.Reconcile`: trusted evidence shows the single execution committed.
     pub fn reconcile(&mut self, key: &ActionKey) -> Result<Token, HostRefusal> {
         let entry = self.entries.get_mut(key).ok_or(HostRefusal::conflict("unknown-action"))?;
-        if !matches!(entry.status, EntryStatus::Unknown | EntryStatus::Partial) || entry.executions != 1 {
+        if !matches!(entry.status, EntryStatus::Unknown | EntryStatus::Partial) {
             return Err(HostRefusal::conflict("nothing-to-reconcile"));
         }
         entry.status = EntryStatus::Committed;
+        entry.executions = 1;
         let receipt = entry.receipt.clone();
         self.trace.push(ModelAction::ReceiptsReconcile);
         Ok(receipt)

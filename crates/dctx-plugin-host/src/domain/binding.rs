@@ -58,11 +58,21 @@ impl ActionKey {
 pub struct ArgDigest([u8; 32]);
 
 impl ArgDigest {
+    /// Reconstructs a validated hexadecimal SHA-256 digest without rehashing its text.
+    pub fn from_hex(value: &str) -> Result<Self, HostRefusal> {
+        if value.len() != 64 || !value.bytes().all(|b| b.is_ascii_hexdigit()) {
+            return Err(HostRefusal::audit("invalid-argument-digest"));
+        }
+        let mut bytes = [0; 32];
+        for (index, byte) in bytes.iter_mut().enumerate() {
+            *byte = u8::from_str_radix(&value[index * 2..index * 2 + 2], 16).map_err(|_| HostRefusal::audit("invalid-argument-digest"))?;
+        }
+        Ok(Self(bytes))
+    }
+
     /// Digests canonical argument bytes.
     pub fn of(bytes: &[u8]) -> Result<Self, HostRefusal> {
-        Sha256::digest(bytes)
-            .map(|digest| Self(*digest.as_bytes()))
-            .map_err(|_| HostRefusal::limit("argument-digest-too-long"))
+        Sha256::digest(bytes).map(|digest| Self(*digest.as_bytes())).map_err(|_| HostRefusal::limit("argument-digest-too-long"))
     }
 
     /// Replay key and argument digest of an effect request; `None` for requests without `action_id`.

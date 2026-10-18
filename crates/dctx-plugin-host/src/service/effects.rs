@@ -15,7 +15,10 @@ use crate::domain::grant::Need;
 use crate::domain::ledger::Lookup;
 use crate::domain::trace::ModelAction;
 use crate::error::HostRefusal;
-use crate::ports::{AuditKind, AuditPort, FileFault, FileIdentity, FilePort, Recipe, RecipeOutcome, RecipePort};
+use crate::ports::{
+    AuditKind, AuditPort, AuditUnavailable, FileFault, FileIdentity, FilePort, MAX_RECOVERY_RECORDS, Recipe, RecipeOutcome, RecipePort,
+    RecoveryRecord, RecoveryState,
+};
 use crate::service::broker::{Broker, Reply, fault};
 use crate::service::handles::HandleKind;
 
@@ -27,7 +30,17 @@ enum Ran {
 }
 
 impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
+    /// Loads durable evidence before effect admission, reconciliation or rotation.
+    pub fn recover(&mut self) -> Result<(), HostRefusal> {
+        if !self.ledger.recovered {
+            let records = self.audit.recover(MAX_RECOVERY_RECORDS).map_err(|_| HostRefusal::audit("recovery-unavailable"))?;
+            self.ledger.restore(&records)?;
+        }
+        Ok(())
+    }
+
     pub(crate) fn file_replace(&mut self, request: &Request, replace: &FileReplace) -> Result<Reply, HostRefusal> {
+        self.recover()?;
         let (key, args) = self.replay_key(request)?;
         if let Lookup::Existing(receipt) = self.ledger.lookup(&key, &args)? {
             return Ok(Reply::Receipt { receipt, precondition: None, replayed: true });
@@ -68,6 +81,7 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     }
 
     pub(crate) fn program_run(&mut self, request: &Request, run: &GitAddIgnore) -> Result<Reply, HostRefusal> {
+        self.recover()?;
         let (key, args) = self.replay_key(request)?;
         if let Lookup::Existing(receipt) = self.ledger.lookup(&key, &args)? {
             return Ok(Reply::Receipt { receipt, precondition: None, replayed: true });
@@ -88,12 +102,8 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
         let recipe = Recipe::GitAddIgnore { path, expected };
         let (receipt, _) = self.effect(key, args, "program.run", 0, &admission, |broker| match broker.recipes.run(&recipe) {
             RecipeOutcome::Succeeded => Ran::Done(None),
-            RecipeOutcome::Failed => {
-                Ran::NotRun(HostRefusal::new(ErrorCode::ExternalProgramFailed, Phase::Broker, "recipe-failed"))
-            }
-            RecipeOutcome::Missing => {
-                Ran::NotRun(HostRefusal::new(ErrorCode::ExternalProgramMissing, Phase::Broker, "program-missing"))
-            }
+            RecipeOutcome::Failed => Ran::NotRun(HostRefusal::new(ErrorCode::ExternalProgramFailed, Phase::Broker, "recipe-failed")),
+            RecipeOutcome::Missing => Ran::NotRun(HostRefusal::new(ErrorCode::ExternalProgramMissing, Phase::Broker, "program-missing")),
             RecipeOutcome::Uncertain => Ran::Uncertain,
         })?;
         self.authority.record(ModelAction::AuthorityAdmin);
@@ -102,24 +112,35 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
 
     /// `Receipts.Reconcile`: the host verified that the single uncertain execution committed.
     pub fn reconcile(&mut self, key: &ActionKey, verified_committed: bool) -> Result<Token, HostRefusal> {
+        self.recover()?;
         if !verified_committed {
             return Err(HostRefusal::new(ErrorCode::EffectUnknown, Phase::Broker, "explicit-retry-required"));
         }
-        let receipt = self.ledger.get(key).map(|e| e.receipt.clone()).ok_or(HostRefusal::conflict("unknown-action"))?;
-        let record = self.record(AuditKind::Completion, "reconcile", Some(receipt), 0, "reconciled");
-        self.audit.append(&record).map_err(|_| HostRefusal::audit("reconcile-not-audited"))?;
-        self.ledger.reconcile(key)
+        let mut reconciled = self.ledger.clone();
+        let receipt = reconciled.reconcile(key)?;
+        self.completion(key, "reconcile", 0, "reconciled", RecoveryState::Reconciled)
+            .map_err(|_| HostRefusal::audit("reconcile-not-audited"))?;
+        self.ledger = reconciled;
+        Ok(receipt)
     }
 
     /// `Receipts.Rotate`: archive a completed entry; unresolved intents stay pinned.
     pub fn rotate(&mut self, key: &ActionKey) -> Result<(), HostRefusal> {
-        self.ledger.rotate(key)
+        self.recover()?;
+        let mut archived = self.ledger.clone();
+        archived.rotate(key)?;
+        self.completion(key, "rotate", 0, "archived", RecoveryState::Archived).map_err(|_| HostRefusal::audit("rotation-not-audited"))?;
+        self.ledger = archived;
+        Ok(())
     }
 
     /// Replay key bound to the session context (the plugin supplies only `action_id`).
     pub fn replay_key(&self, request: &Request) -> Result<(ActionKey, ArgDigest), HostRefusal> {
-        ArgDigest::of_request(self.authority.binding(), request)?
-            .ok_or(HostRefusal::new(ErrorCode::InvalidMessage, Phase::Broker, "no-action-id"))
+        ArgDigest::of_request(self.authority.binding(), request)?.ok_or(HostRefusal::new(
+            ErrorCode::InvalidMessage,
+            Phase::Broker,
+            "no-action-id",
+        ))
     }
 
     /// Intent → commit check → execute → completion; uncertain outcomes stay pinned and unknown.
@@ -136,7 +157,8 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
         let receipt = self.ledger.reserve()?;
         let mut intent = self.record(AuditKind::Intent, method, Some(receipt.clone()), bytes, "intent");
         intent.args = Some(args);
-        if self.audit.append(&intent).is_err() {
+        let recovery = RecoveryRecord { key: key.clone(), args, receipt: receipt.clone(), state: RecoveryState::Pending };
+        if self.audit.append_effect(&intent, &recovery).is_err() {
             self.ledger.audit_failed();
             self.budget.release(Dimension::Actions, 1);
             return Err(HostRefusal::audit("intent-not-durable"));
@@ -150,14 +172,12 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
             Ran::Uncertain => {
                 self.ledger.executed(&key)?;
                 let receipt = self.ledger.uncertain(&key, false)?;
-                let record = self.record(AuditKind::Completion, method, Some(receipt.clone()), 0, "unknown");
-                let _ = self.audit.append(&record);
+                let _ = self.completion(&key, method, 0, "unknown", RecoveryState::Unknown);
                 Err(HostRefusal::unknown(receipt, "effect-outcome-unknown"))
             }
             Ran::Done(identity) => {
                 self.ledger.executed(&key)?;
-                let record = self.record(AuditKind::Completion, method, Some(receipt.clone()), bytes, "committed");
-                if self.audit.append(&record).is_err() {
+                if self.completion(&key, method, bytes, "committed", RecoveryState::Committed).is_err() {
                     self.ledger.audit_failed();
                     let receipt = self.ledger.uncertain(&key, false)?;
                     return Err(HostRefusal::unknown(receipt, "completion-not-durable"));
@@ -169,13 +189,31 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
 
     /// The effect provably did not run: log completion and drop the intent, or keep it pinned.
     fn resolve_not_run(&mut self, key: &ActionKey, method: &'static str, receipt: Token, refusal: HostRefusal) -> HostRefusal {
-        let record = self.record(AuditKind::Completion, method, Some(receipt.clone()), 0, refusal.reason);
-        if self.audit.append(&record).is_err() {
+        if self.completion(key, method, 0, refusal.reason, RecoveryState::NotRun).is_err() {
             self.ledger.audit_failed();
             return HostRefusal { receipt: Some(receipt), ..HostRefusal::audit("refusal-not-durable") };
         }
         let _ = self.ledger.abandon(key);
         self.budget.release(Dimension::Actions, 1);
         refusal
+    }
+
+    fn completion(
+        &mut self,
+        key: &ActionKey,
+        method: &'static str,
+        bytes: u64,
+        reason: &'static str,
+        state: RecoveryState,
+    ) -> Result<(), AuditUnavailable> {
+        if ActionKey::bind(self.authority.binding(), &key.action_id) != *key {
+            return Err(AuditUnavailable);
+        }
+        let entry = self.ledger.get(key).ok_or(AuditUnavailable)?;
+        let recovery = RecoveryRecord { key: key.clone(), args: entry.args, receipt: entry.receipt.clone(), state };
+        let kind = if state == RecoveryState::Archived { AuditKind::Lifecycle } else { AuditKind::Completion };
+        let mut record = self.record(kind, method, Some(entry.receipt.clone()), bytes, reason);
+        record.args = Some(entry.args);
+        self.audit.append_effect(&record, &recovery)
     }
 }

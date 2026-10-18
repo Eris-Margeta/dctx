@@ -5,7 +5,7 @@
 
 use dctx_plugin_protocol::records::scalars::{PluginId, ProjectPath, Token};
 
-use crate::domain::binding::ArgDigest;
+use crate::domain::binding::{ActionKey, ArgDigest};
 
 /// Kind of a host audit record (PLUGINS.md §4.4).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -51,10 +51,86 @@ pub struct AuditRecord {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct AuditUnavailable;
 
+/// Maximum number of retained recovery transitions, including archived evidence.
+pub const MAX_RECOVERY_RECORDS: usize = 4096;
+
+/// Durable action transition; an intent alone never proves whether execution happened.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum RecoveryState {
+    /// Intent synced before execution.
+    Pending,
+    /// Successful completion synced.
+    Committed,
+    /// Some of the effect happened; never automatically retry.
+    Partial,
+    /// Outcome cannot be established; never automatically retry.
+    Unknown,
+    /// Trusted evidence proves that the effect did not run.
+    NotRun,
+    /// Trusted reconciliation proves the effect committed.
+    Reconciled,
+    /// Committed evidence archived without discarding its replay key.
+    Archived,
+}
+
+impl RecoveryState {
+    /// Stable, source-free storage tag.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Pending => "pending",
+            Self::Committed => "committed",
+            Self::Partial => "partial",
+            Self::Unknown => "unknown",
+            Self::NotRun => "not-run",
+            Self::Reconciled => "reconciled",
+            Self::Archived => "archived",
+        }
+    }
+
+    /// Validates a durable transition tag; unknown tags fail closed.
+    pub fn parse(value: &str) -> Result<Self, AuditUnavailable> {
+        match value {
+            "pending" => Ok(Self::Pending),
+            "committed" => Ok(Self::Committed),
+            "partial" => Ok(Self::Partial),
+            "unknown" => Ok(Self::Unknown),
+            "not-run" => Ok(Self::NotRun),
+            "reconciled" => Ok(Self::Reconciled),
+            "archived" => Ok(Self::Archived),
+            _ => Err(AuditUnavailable),
+        }
+    }
+}
+
+/// Typed recovery metadata; contains digests and opaque identities, never source bytes.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct RecoveryRecord {
+    /// Full host-bound action key.
+    pub key: ActionKey,
+    /// Original argument digest.
+    pub args: ArgDigest,
+    /// Original receipt, also retained after archival.
+    pub receipt: Token,
+    /// Durable transition.
+    pub state: RecoveryState,
+}
+
 /// Durable, owner-only local audit log.
 pub trait AuditPort {
     /// Appends `record` durably, or reports that logging is unavailable or full.
     fn append(&mut self, record: &AuditRecord) -> Result<(), AuditUnavailable>;
+
+    /// Atomically syncs an audit event and its recovery metadata.
+    /// The default is for volatile adapters only; persistent adapters must override it.
+    fn append_effect(&mut self, record: &AuditRecord, _recovery: &RecoveryRecord) -> Result<(), AuditUnavailable> {
+        self.append(record)
+    }
+
+    /// Reads all retained transitions in order, including archives; never silently truncates.
+    /// Refuses damaged, legacy unbound or over-limit evidence. Volatile adapters return empty.
+    fn recover(&mut self, _limit: usize) -> Result<Vec<RecoveryRecord>, AuditUnavailable> {
+        Ok(Vec::new())
+    }
 }
 
 /// A host-checked file object identity and version; equal identities mean an unchanged file.

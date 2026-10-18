@@ -7,8 +7,8 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use dctx_plugin_host::fakes::{FakeAudit, FakeFiles, FakeProcess};
 use dctx_plugin_host::ports::{
-    AuditPort, AuditRecord, AuditUnavailable, FileFault, FileIdentity, FilePort, ProcessId, ProcessPort, Recipe, RecipeOutcome,
-    RecipePort, SpawnFault,
+    AuditPort, AuditRecord, AuditUnavailable, FileFault, FileIdentity, FilePort, ProcessId, ProcessPort, Recipe, RecipeOutcome, RecipePort,
+    RecoveryRecord, SpawnFault,
 };
 use dctx_plugin_host::{HostRefusal, HostSession};
 use dctx_plugin_platform::{ConfinementProvider, LaunchKind, NativeProvider, PlatformError};
@@ -76,12 +76,7 @@ impl PortBody {
     }
 
     pub(crate) fn platform(audit: Option<Box<dyn AuditPort + Send>>) -> Self {
-        Self {
-            audit,
-            backend: Backend::Platform { provider: NativeProvider },
-            launch: LaunchKind::BundledGit,
-            attempts: 0,
-        }
+        Self { audit, backend: Backend::Platform { provider: NativeProvider }, launch: LaunchKind::BundledGit, attempts: 0 }
     }
 
     pub(crate) fn set_launch(&mut self, kind: LaunchKind) {
@@ -223,6 +218,16 @@ impl AuditPort for AuditAdapter {
         let mut body = lock(&self.0).map_err(|()| AuditUnavailable)?;
         body.audit.as_mut().ok_or(AuditUnavailable)?.append(record)
     }
+
+    fn append_effect(&mut self, record: &AuditRecord, recovery: &RecoveryRecord) -> Result<(), AuditUnavailable> {
+        let mut body = lock(&self.0).map_err(|()| AuditUnavailable)?;
+        body.audit.as_mut().ok_or(AuditUnavailable)?.append_effect(record, recovery)
+    }
+
+    fn recover(&mut self, limit: usize) -> Result<Vec<RecoveryRecord>, AuditUnavailable> {
+        let mut body = lock(&self.0).map_err(|()| AuditUnavailable)?;
+        body.audit.as_mut().ok_or(AuditUnavailable)?.recover(limit)
+    }
 }
 
 impl FilePort for FileAdapter {
@@ -314,10 +319,7 @@ mod tests {
         let host = crate::plugins::PluginHost::platform();
         let mut adapters = host.adapters();
         assert!(adapters.process.spawn().is_err());
-        let recipe = Recipe::GitAddIgnore {
-            path: ignore(),
-            expected: FileIdentity { object: 1, version: 1, size: 0 },
-        };
+        let recipe = Recipe::GitAddIgnore { path: ignore(), expected: FileIdentity { object: 1, version: 1, size: 0 } };
         assert_eq!(adapters.recipes.run(&recipe), RecipeOutcome::Missing);
         assert_eq!(host.spawns(), 0);
         assert_eq!(host.git_children(), 0);
@@ -330,10 +332,7 @@ mod tests {
         let host = crate::plugins::PluginHost::fake();
         let mut adapters = host.adapters();
         assert!(adapters.process.spawn().is_ok());
-        let recipe = Recipe::GitAddIgnore {
-            path: ignore(),
-            expected: FileIdentity { object: 1, version: 1, size: 0 },
-        };
+        let recipe = Recipe::GitAddIgnore { path: ignore(), expected: FileIdentity { object: 1, version: 1, size: 0 } };
         assert_eq!(adapters.recipes.run(&recipe), RecipeOutcome::Succeeded);
         assert_eq!(host.spawns(), 1);
         assert_eq!(host.git_children(), 1);

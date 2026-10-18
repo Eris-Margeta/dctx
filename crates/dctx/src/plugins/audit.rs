@@ -8,8 +8,9 @@
 use std::collections::BTreeMap;
 
 use dctx_hash::Sha256;
-use dctx_plugin_host::ports::{AuditKind, AuditPort, AuditRecord, AuditUnavailable};
-use dctx_plugin_protocol::records::scalars::{PluginId, Token};
+use dctx_plugin_host::ports::{AuditKind, AuditPort, AuditRecord, AuditUnavailable, MAX_RECOVERY_RECORDS, RecoveryRecord, RecoveryState};
+use dctx_plugin_host::{ActionKey, ArgDigest};
+use dctx_plugin_protocol::records::scalars::{Digest, PluginId, Token};
 
 const MAX_CAPACITY: usize = 64 * 1024 * 1024;
 const MAX_FRAME: usize = 2048;
@@ -28,19 +29,21 @@ struct Evidence {
     sequence: u64,
     // Completed links remain reserved, so receipt reuse cannot hide an older intent.
     links: BTreeMap<Link, bool>,
+    recovery: Vec<RecoveryRecord>,
+    legacy_effects: bool,
 }
 
 struct Entry {
     kind: AuditKind,
     link: Option<Link>,
     uncertain: bool,
+    recovery: Option<RecoveryRecord>,
 }
 
 impl Evidence {
     fn parse(&self, payload: &str) -> Result<Entry, AuditUnavailable> {
         let f: Vec<_> = payload.split('\t').collect();
-        if f.len() != 12
-            || f[0] != "1"
+        if !matches!((f.first().copied(), f.len()), (Some("1"), 12) | (Some("2"), 16))
             || f[1].parse::<u64>().ok() != self.sequence.checked_add(1)
             || PluginId::new(f[3]).is_err()
             || Token::new(f[4]).is_err()
@@ -71,11 +74,42 @@ impl Evidence {
                 return Err(AuditUnavailable);
             }
         }
-        Ok(Entry { kind, link, uncertain: f[11] == "unknown" })
+        let recovery = if f[0] == "2" {
+            let state = RecoveryState::parse(f[15])?;
+            let expected = match state {
+                RecoveryState::Pending => AuditKind::Intent,
+                RecoveryState::Archived => AuditKind::Lifecycle,
+                _ => AuditKind::Completion,
+            };
+            if kind != expected || self.recovery.len() >= MAX_RECOVERY_RECORDS {
+                return Err(AuditUnavailable);
+            }
+            Some(RecoveryRecord {
+                key: ActionKey {
+                    artifact: Digest::new(f[12]).map_err(|_| AuditUnavailable)?,
+                    root: Token::new(f[13]).map_err(|_| AuditUnavailable)?,
+                    invocation: Token::new(f[4]).map_err(|_| AuditUnavailable)?,
+                    action_id: Token::new(f[14]).map_err(|_| AuditUnavailable)?,
+                },
+                args: ArgDigest::from_hex(f[8]).map_err(|_| AuditUnavailable)?,
+                receipt: Token::new(f[10]).map_err(|_| AuditUnavailable)?,
+                state,
+            })
+        } else {
+            None
+        };
+        let uncertain =
+            recovery.as_ref().map_or(f[11] == "unknown", |r| matches!(r.state, RecoveryState::Unknown | RecoveryState::Partial));
+        Ok(Entry { kind, link, uncertain, recovery })
     }
 
     fn accept(&mut self, entry: Entry) {
         self.sequence += 1;
+        if let Some(record) = entry.recovery {
+            self.recovery.push(record);
+        } else if matches!(entry.kind, AuditKind::Intent | AuditKind::Completion) {
+            self.legacy_effects = true;
+        }
         if let Some(link) = entry.link.filter(|_| matches!(entry.kind, AuditKind::Intent | AuditKind::Completion)) {
             self.links.insert(link, entry.kind == AuditKind::Intent || entry.uncertain);
         }
@@ -130,8 +164,8 @@ impl<S: AuditStorage> DurableAudit<S> {
     }
 }
 
-impl<S: AuditStorage> AuditPort for DurableAudit<S> {
-    fn append(&mut self, r: &AuditRecord) -> Result<(), AuditUnavailable> {
+impl<S: AuditStorage> DurableAudit<S> {
+    fn write(&mut self, r: &AuditRecord, recovery: Option<&RecoveryRecord>) -> Result<(), AuditUnavailable> {
         if self.damaged || !safe_name(r.method) || !safe_name(r.reason) {
             return Err(AuditUnavailable);
         }
@@ -144,8 +178,9 @@ impl<S: AuditStorage> AuditPort for DurableAudit<S> {
         };
         let sequence = self.evidence.sequence.checked_add(1).ok_or(AuditUnavailable)?;
         let args = r.args.map_or_else(|| "-".to_owned(), |d| hex(d.as_bytes()));
-        let payload = format!(
-            "1\t{sequence}\t{kind}\t{}\t{}\t{}\t{}\t{}\t{args}\t{}\t{}\t{}",
+        let version = if recovery.is_some() { 2 } else { 1 };
+        let mut payload = format!(
+            "{version}\t{sequence}\t{kind}\t{}\t{}\t{}\t{}\t{}\t{args}\t{}\t{}\t{}",
             r.plugin.as_str(),
             r.invocation.as_str(),
             r.epoch,
@@ -155,6 +190,18 @@ impl<S: AuditStorage> AuditPort for DurableAudit<S> {
             r.receipt.as_ref().map_or("-", Token::as_str),
             r.reason
         );
+        if let Some(bound) = recovery {
+            if r.invocation != bound.key.invocation || r.args != Some(bound.args) || r.receipt.as_ref() != Some(&bound.receipt) {
+                return Err(AuditUnavailable);
+            }
+            payload.push_str(&format!(
+                "\t{}\t{}\t{}\t{}",
+                bound.key.artifact.as_str(),
+                bound.key.root.as_str(),
+                bound.key.action_id.as_str(),
+                bound.state.as_str()
+            ));
+        }
         let entry = self.evidence.parse(&payload)?;
         let frame = format!("{}\t{payload}\n", checksum(payload.as_bytes())?);
         if frame.len() > MAX_FRAME || frame.len() > self.capacity.saturating_sub(self.used) {
@@ -167,6 +214,23 @@ impl<S: AuditStorage> AuditPort for DurableAudit<S> {
         self.used += frame.len();
         self.evidence.accept(entry);
         Ok(())
+    }
+}
+
+impl<S: AuditStorage> AuditPort for DurableAudit<S> {
+    fn append(&mut self, record: &AuditRecord) -> Result<(), AuditUnavailable> {
+        self.write(record, None)
+    }
+
+    fn append_effect(&mut self, record: &AuditRecord, recovery: &RecoveryRecord) -> Result<(), AuditUnavailable> {
+        self.write(record, Some(recovery))
+    }
+
+    fn recover(&mut self, limit: usize) -> Result<Vec<RecoveryRecord>, AuditUnavailable> {
+        if self.damaged || self.evidence.legacy_effects || self.evidence.recovery.len() > limit.min(MAX_RECOVERY_RECORDS) {
+            return Err(AuditUnavailable);
+        }
+        Ok(self.evidence.recovery.clone())
     }
 }
 
