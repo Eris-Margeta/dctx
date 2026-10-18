@@ -120,3 +120,83 @@ expected = "s:crates/dctx-map-resolve/src/domain/resolve.rs#resolve"
 [[question]]
 text = "Where does the map scanner hash authorized content?"
 expected = "s:crates/dctx-map-scan/src/domain/scanned_file.rs#content_hash"
+
+[[question]]
+text = "Where does the Python sample run the job and return the current working directory?"
+expected = "s:crates/dctx-map-parse/tests/fixtures/sample.py#run"
+
+[[question]]
+text = "How does the Python sample Box size method delegate to run?"
+expected = "s:crates/dctx-map-parse/tests/fixtures/sample.py#Box::size"
+
+[[question]]
+text = "Where is the Go basic fixture's generic Add function for integer arguments?"
+expected = "s:crates/dctx-lex-go/tests/fixtures/basic.go#Add"
+
+[[question]]
+text = "How does the Go basic fixture's Box Serve method handle a Reader?"
+expected = "s:crates/dctx-lex-go/tests/fixtures/basic.go#Box::Serve"
+
+[[question]]
+text = "Where does the Java basic fixture declare the Box capacity constant?"
+expected = "s:crates/dctx-lex-java/tests/fixtures/basic.java#Box::capacity"
+
+[[question]]
+text = "Where is the Java basic fixture's Point record doubled method?"
+expected = "s:crates/dctx-lex-java/tests/fixtures/basic.java#Point::doubled"
+
+[[question]]
+text = "Where does the C basic fixture define the SHOW macro that adds one to its argument?"
+expected = "s:crates/dctx-lex-c/tests/fixtures/basic.c#SHOW"
+
+[[question]]
+text = "Where does the C basic fixture declare the Word union with integer and byte representations?"
+expected = "s:crates/dctx-lex-c/tests/fixtures/basic.c#Word"
+
+[[question]]
+text = "Where is the C# basic fixture's Box Name property with a getter and setter?"
+expected = "s:crates/dctx-lex-cs/tests/fixtures/basic.cs#App.Sample::Box::Name"
+
+[[question]]
+text = "Where is the C# basic fixture's Point Doubled method in the App.Sample namespace?"
+expected = "s:crates/dctx-lex-cs/tests/fixtures/basic.cs#App.Sample::Point::Doubled"
+
+[[question]]
+text = "Where does the Kotlin basic fixture define the generic identity function that returns its value?"
+expected = "s:crates/dctx-lex-kt/tests/fixtures/basic.kt#identity"
+
+[[question]]
+text = "Where is the Kotlin basic fixture's trimmed extension function on nullable String?"
+expected = "s:crates/dctx-lex-kt/tests/fixtures/basic.kt#trimmed"
+
+[[question]]
+text = "How does the Ruby basic fixture's Demo Box area method measure the box with a scale?"
+expected = "s:crates/dctx-lex-rb/tests/fixtures/basic.rb#Demo::Box::area"
+
+[[question]]
+text = "Where is the Ruby basic fixture's Demo Box build class method that constructs a named box?"
+expected = "s:crates/dctx-lex-rb/tests/fixtures/basic.rb#Demo::Box::build"
+
+[[question]]
+text = "How does the PHP basic fixture's Service run method process a request with a port and options?"
+expected = "s:crates/dctx-lex-php/tests/fixtures/basic.php#App\\Domain::Service::run"
+
+[[question]]
+text = "Where does the PHP basic fixture define the create function that constructs a Service?"
+expected = "s:crates/dctx-lex-php/tests/fixtures/basic.php#App\\Domain::create"
+
+[[question]]
+text = "How does the Swift basic fixture's Box map method transform its stored value?"
+expected = "s:crates/dctx-lex-swift/tests/fixtures/basic.swift#Box::map"
+
+[[question]]
+text = "Where is the Swift basic fixture's indirect Choice branch case for recursive choices?"
+expected = "s:crates/dctx-lex-swift/tests/fixtures/basic.swift#Choice::branch"
+
+[[question]]
+text = "Where does the configuration lexer TOML basic fixture enable release profile lto?"
+expected = "s:crates/dctx-lex-cfg/tests/fixtures/basic.toml#profile.release.lto"
+
+[[question]]
+text = "Where does the configuration lexer YAML basic fixture set enabled under the base anchor?"
+expected = "s:crates/dctx-lex-cfg/tests/fixtures/basic.yaml#anchor.enabled"
