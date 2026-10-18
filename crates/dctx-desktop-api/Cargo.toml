@@ -7,6 +7,7 @@ description = "Pure desktop engine seam for snapshot, settings and recent projec
 
 [dependencies]
 dctx = { path = "../dctx" }
+dctx-core = { path = "../dctx-core" }
 dctx-plugin-distribution = { path = "../dctx-plugin-distribution" }
 dctx-template = { path = "../dctx-template" }
 serde = { version = "=1.0.228", features = ["derive"] }

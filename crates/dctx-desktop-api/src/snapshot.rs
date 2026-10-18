@@ -1,26 +1,31 @@
 //! Snapshot response built through the `dctx` facade.
 //! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4a and the `generate_snapshot` limits.
-//! Depends on the `dctx` session, [`crate::settings::DesktopConfig`] and [`crate::error::DesktopError`].
+//! Depends on the `dctx` session, the desktop rule loader, the filtered source and [`crate::settings::DesktopConfig`].
 //! The Tauri layer serializes [`SnapshotResponse`]. This module never spawns git or reads `.git`.
 
+#[cfg(test)]
 use std::fs;
 use std::path::Path;
 use std::sync::Arc;
 
 use dctx::memory::{CancelFlag, FixedClock};
 use dctx::{
-    BoundedSink, FsSource, HostCeiling, HostGrants, PackRequest, RuleTexts, SelectionPolicy, Session, SnapshotRequest,
-    StoragePolicy, Timestamp, VecSink,
+    BoundedSink, HostCeiling, HostGrants, PackRequest, SelectionPolicy, Session, SnapshotRequest, StoragePolicy,
+    Timestamp, VecSink,
 };
 use serde::{Deserialize, Serialize};
 
 use crate::error::DesktopError;
 use crate::settings::DesktopConfig;
+use crate::snapshot_rules::{load_project_rules, ProjectRules};
+use crate::snapshot_source::{desktop_source, survey};
+
+/// Drops negations that name a builtin-excluded literal. Wildcard and nested negations stay.
+#[cfg(test)]
+pub(crate) use crate::snapshot_rules::without_builtin_negations;
 
 /// Bytes the ephemeral facade ledger will admit. This is an accounting ceiling, not an allocation.
 const SESSION_BYTES: u64 = 2 * 1024 * 1024 * 1024;
-/// Matches the facade safety depth. Deeper entries are not counted.
-const MAX_DEPTH: u32 = 256;
 
 /// JSON body `main.ts` reads from `generate_snapshot`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
@@ -35,36 +40,30 @@ pub struct SnapshotResponse {
     pub is_formatted: bool,
 }
 
-#[derive(Debug, Default)]
-struct Survey {
-    files: u64,
-    included: u64,
-}
-
 /// Counts files, applies desktop filters, then builds a facade snapshot.
 ///
-/// The count runs before any file contents are read. Builtin ignore names, including `.git`,
-/// are not opened. A negation in `.dctxignore` cannot put `.git` back into the walk.
+/// Rule files load first. Filters and the `.git` boundary sit on the source, so a
+/// content read happens only for a file the desktop selection still includes.
 pub fn generate_snapshot(root: &Path, config: &DesktopConfig) -> SnapshotResponse {
     if !root.exists() {
         return refuse(DesktopError::PathMissing);
     }
-    let local_ignore = match read_local_ignore(root) {
-        Ok(text) => text,
+    let rules = match load_project_rules(root) {
+        Ok(rules) => rules,
         Err(error) => return refuse(error),
     };
-    let survey = match survey(root, config) {
-        Ok(survey) => survey,
+    let surveyed = match survey(root, config) {
+        Ok(surveyed) => surveyed,
         Err(error) => return refuse(error),
     };
     let limit = u64::try_from(config.file_count_limit).unwrap_or(u64::MAX);
-    if survey.files > limit {
-        return refuse(DesktopError::DirectoryTooLarge { files: survey.files, limit });
+    if surveyed.files > limit {
+        return refuse(DesktopError::DirectoryTooLarge { files: surveyed.files, limit });
     }
-    if config.has_active_filters() && survey.files > 0 && survey.included == 0 {
+    if config.has_active_filters() && surveyed.files > 0 && surveyed.included == 0 {
         return refuse(DesktopError::AllFiltered);
     }
-    match render(root, config, local_ignore.as_deref()) {
+    match render(root, config, &rules) {
         Ok(output) => SnapshotResponse { success: true, output, error: None, is_formatted: true },
         Err(error) => refuse(error),
     }
@@ -74,192 +73,14 @@ fn refuse(error: DesktopError) -> SnapshotResponse {
     SnapshotResponse { success: false, output: String::new(), error: Some(error.command_string()), is_formatted: false }
 }
 
-fn read_local_ignore(root: &Path) -> Result<Option<String>, DesktopError> {
-    let path = root.join(".dctxignore");
-    if !path.is_file() {
-        return Ok(None);
-    }
-    let text = fs::read_to_string(&path)
-        .map_err(|error| DesktopError::IgnoreRules { detail: error.to_string() })?;
-    Ok(Some(without_builtin_negations(&text)))
+fn render(root: &Path, config: &DesktopConfig, rules: &ProjectRules) -> Result<String, DesktopError> {
+    let mut session = open_session(root, config, rules)?;
+    if config.tree_only { render_metadata(&mut session) } else { render_pack(&mut session) }
 }
 
-/// Drops negations that would re-include a builtin-excluded name. `.git` stays closed (decision 078).
-fn without_builtin_negations(text: &str) -> String {
-    let mut kept = String::new();
-    for line in text.lines() {
-        if negation_lifts_builtin(line) {
-            continue;
-        }
-        kept.push_str(line);
-        kept.push('\n');
-    }
-    kept
-}
-
-fn negation_lifts_builtin(line: &str) -> bool {
-    let trimmed = line.trim();
-    let Some(rest) = trimmed.strip_prefix('!') else {
-        return false;
-    };
-    let token = rest.split('#').next().unwrap_or(rest).trim().trim_matches('/');
-    let name = token.split('/').next().unwrap_or(token);
-    excluded_by_builtin(name, true) || excluded_by_builtin(name, false)
-}
-
-fn survey(root: &Path, config: &DesktopConfig) -> Result<Survey, DesktopError> {
-    let meta = fs::metadata(root).map_err(|error| DesktopError::Walk { detail: error.to_string() })?;
-    let mut survey = Survey::default();
-    if meta.is_dir() {
-        survey_dir(root, 0, true, config, &mut survey)?;
-    } else {
-        survey.files = 1;
-        let name = root.file_name().and_then(|item| item.to_str()).unwrap_or("");
-        if file_visible(name, meta.len(), config) {
-            survey.included = 1;
-        }
-    }
-    Ok(survey)
-}
-
-fn survey_dir(dir: &Path, depth: u32, admit: bool, config: &DesktopConfig, survey: &mut Survey) -> Result<(), DesktopError> {
-    if depth > MAX_DEPTH {
-        return Ok(());
-    }
-    let entries = match fs::read_dir(dir) {
-        Ok(entries) => entries,
-        Err(error) if depth == 0 => return Err(DesktopError::Walk { detail: error.to_string() }),
-        Err(_) => return Ok(()),
-    };
-    for entry in entries {
-        let Ok(entry) = entry else {
-            continue;
-        };
-        let file_name = entry.file_name();
-        let Some(name) = file_name.to_str() else {
-            continue;
-        };
-        if name.is_empty() || name == "." || name == ".." || name == ".git" {
-            continue;
-        }
-        let is_dir = entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false);
-        if excluded_by_builtin(name, is_dir) {
-            continue;
-        }
-        if is_dir {
-            let child_admit = admit && directory_visible(name, config);
-            survey_dir(&entry.path(), depth.saturating_add(1), child_admit, config, survey)?;
-        } else {
-            survey.files = survey.files.saturating_add(1);
-            let len = entry.metadata().map(|meta| meta.len()).unwrap_or(0);
-            if admit && file_visible(name, len, config) {
-                survey.included = survey.included.saturating_add(1);
-            }
-        }
-    }
-    Ok(())
-}
-
-fn excluded_by_builtin(name: &str, is_dir: bool) -> bool {
-    if is_dir {
-        return matches!(
-            name,
-            ".git" | ".svn" | ".hg" | "node_modules" | "bower_components" | "dist" | "build" | "target" | "bin"
-                | "obj" | ".venv" | "venv" | "__pycache__" | ".dctx" | ".cursor" | ".aider" | ".eris-code"
-                | ".continue"
-        );
-    }
-    matches!(name, ".DS_Store" | "Thumbs.db" | ".dctxignore") || has_extension(name, "pyc") || has_extension(name, "dctx")
-        || has_extension(name, "dircontxt")
-}
-
-fn has_extension(name: &str, extension: &str) -> bool {
-    Path::new(name)
-        .extension()
-        .and_then(|value| value.to_str())
-        .is_some_and(|value| value.eq_ignore_ascii_case(extension))
-}
-
-fn directory_visible(name: &str, config: &DesktopConfig) -> bool {
-    if config.has_active_filters() && config.only_hidden && !is_hidden(name) {
-        return false;
-    }
-    true
-}
-
-fn file_visible(name: &str, len: u64, config: &DesktopConfig) -> bool {
-    if !config.has_active_filters() {
-        return true;
-    }
-    if config.only_hidden && !is_hidden(name) {
-        return false;
-    }
-    if let Some(exts) = config.filter_extensions.as_ref().filter(|exts| !exts.is_empty()) {
-        let Some(ext) = extension_of(name) else {
-            return false;
-        };
-        if !exts.iter().any(|wanted| wanted.eq_ignore_ascii_case(ext)) {
-            return false;
-        }
-    }
-    if config.only_empty && len > 0 {
-        return false;
-    }
-    if config.only_non_empty && len == 0 {
-        return false;
-    }
-    if let Some(min) = config.min_size_mb {
-        if len < mb_to_bytes(min) {
-            return false;
-        }
-    }
-    if let Some(max) = config.max_size_mb {
-        if len > mb_to_bytes(max) {
-            return false;
-        }
-    }
-    true
-}
-
-fn is_hidden(name: &str) -> bool {
-    name.starts_with('.') && name != "." && name != ".."
-}
-
-fn extension_of(file_name: &str) -> Option<&str> {
-    let pos = file_name.rfind('.')?;
-    if pos == 0 && file_name.len() > 1 {
-        return Some(&file_name[1..]);
-    }
-    if pos > 0 && pos + 1 < file_name.len() {
-        return Some(&file_name[pos + 1..]);
-    }
-    None
-}
-
-fn mb_to_bytes(mb: f64) -> u64 {
-    let bytes = mb * 1_048_576.0;
-    if !bytes.is_finite() || bytes <= 0.0 {
-        return 0;
-    }
-    if bytes >= u64::MAX as f64 {
-        u64::MAX
-    } else {
-        bytes as u64
-    }
-}
-
-fn render(root: &Path, config: &DesktopConfig, local_ignore: Option<&str>) -> Result<String, DesktopError> {
-    let mut session = open_session(root, local_ignore)?;
-    if config.tree_only {
-        render_metadata(&mut session)
-    } else {
-        render_pack(&mut session)
-    }
-}
-
-fn open_session(root: &Path, local_ignore: Option<&str>) -> Result<Session, DesktopError> {
-    let source = FsSource::open(root).map_err(|error| DesktopError::Walk { detail: error.to_string() })?;
-    let texts = RuleTexts { local_ignore, ..RuleTexts::default() };
+fn open_session(root: &Path, config: &DesktopConfig, rules: &ProjectRules) -> Result<Session, DesktopError> {
+    let source = desktop_source(root, config)?;
+    let texts = rules.texts();
     Session::builder(source)
         .clock(FixedClock(Timestamp(0)))
         .cancellation(Arc::new(CancelFlag::new()))
@@ -274,11 +95,7 @@ fn open_session(root: &Path, local_ignore: Option<&str>) -> Result<Session, Desk
 }
 
 fn place_name(root: &Path) -> String {
-    root.file_name()
-        .and_then(|name| name.to_str())
-        .filter(|name| !name.is_empty())
-        .unwrap_or("project")
-        .to_string()
+    root.file_name().and_then(|name| name.to_str()).filter(|name| !name.is_empty()).unwrap_or("project").to_string()
 }
 
 fn render_metadata(session: &mut Session) -> Result<String, DesktopError> {

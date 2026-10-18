@@ -16,6 +16,8 @@ mod plugins_view;
 mod recent;
 mod settings;
 mod snapshot;
+mod snapshot_rules;
+mod snapshot_source;
 
 pub use error::DesktopError;
 pub use plugins::{
@@ -28,6 +30,10 @@ pub use settings::{
     DESKTOP_APP_NAME, DESKTOP_CONFIG_FILENAME,
 };
 pub use snapshot::{generate_snapshot, SnapshotResponse};
+/// Records list, metadata and content reads that reach the confined snapshot source.
+pub use snapshot_source::SourceSpy;
+/// Largest rule file the desktop will read from one opened handle, in bytes.
+pub use snapshot_rules::MAX_RULE_FILE_BYTES;
 
 #[cfg(test)]
 mod isolation {
@@ -42,6 +48,8 @@ mod isolation {
             ("settings.rs", include_str!("settings.rs")),
             ("recent.rs", include_str!("recent.rs")),
             ("snapshot.rs", include_str!("snapshot.rs")),
+            ("snapshot_rules.rs", include_str!("snapshot_rules.rs")),
+            ("snapshot_source.rs", include_str!("snapshot_source.rs")),
         ];
         let needles = [
             ["std::", "process"].concat(),
