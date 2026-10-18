@@ -869,8 +869,10 @@ version = "0.25.0"
 dependencies = [
  "dctx",
  "dctx-adapter-cache",
+ "dctx-adapter-fs",
  "dctx-core",
  "dctx-map-query",
+ "dctx-pack",
  "dctx-plugin-distribution",
  "dctx-plugin-git",
  "dctx-plugin-protocol",
