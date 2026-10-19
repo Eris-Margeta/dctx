@@ -6,7 +6,9 @@
 use dctx_core::budget::PackLimits;
 use dctx_core::datatypes::{DirContextTreeNode, NodeType};
 use dctx_core::diff::compare_trees;
-use dctx_core::ids::ViewKey;
+use dctx_core::error::DctxError as CoreError;
+use dctx_core::facts::{EntryMeta, ReadGrant, SourceEntry};
+use dctx_core::ids::{RelativePath, ViewKey};
 use dctx_pack::{pack, scan, PackPorts, PackRequest as EngineRequest, ScanOptions};
 use dctx_template::{render_legacy_diff, render_legacy_snapshot, LegacyLayout, MarkerNode};
 
@@ -14,6 +16,79 @@ const MAX_DIFF_FILES: u32 = 100_000;
 
 use super::Session;
 use crate::domain::{BoundedSink, PackReport, PackRequest, DctxError, REQUEST_VERSION};
+use crate::Source;
+
+/// Hides paths [`PackRequest`] rejects so the scan never opens them.
+/// `apply_filters == false` forwards every call unchanged.
+struct FilteredSource<'a> {
+    inner: &'a dyn Source,
+    request: &'a PackRequest,
+}
+
+impl Source for FilteredSource<'_> {
+    fn root_kind(&self) -> Result<NodeType, CoreError> {
+        self.inner.root_kind()
+    }
+
+    fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, CoreError> {
+        let entries = self.inner.entries(dir)?;
+        if !self.request.apply_filters {
+            return Ok(entries);
+        }
+        let mut kept = Vec::with_capacity(entries.len());
+        for entry in entries {
+            let Ok(path) = dir.child(&entry.name) else {
+                kept.push(entry);
+                continue;
+            };
+            if entry.is_dir() {
+                if self.request.admits_directory(path.as_str(), &entry.name) {
+                    kept.push(entry);
+                }
+                continue;
+            }
+            let size = if self.request.filters_need_size() {
+                match self.inner.metadata(&path) {
+                    Ok(meta) => meta.size,
+                    Err(CoreError::Cancelled) => return Err(CoreError::Cancelled),
+                    Err(_) => {
+                        kept.push(entry);
+                        continue;
+                    }
+                }
+            } else {
+                0
+            };
+            if self.request.admits_file(path.as_str(), &entry.name, size) {
+                kept.push(entry);
+            }
+        }
+        Ok(kept)
+    }
+
+    fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
+        self.inner.metadata(path)
+    }
+
+    fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
+        if self.request.apply_filters {
+            let path = grant.path();
+            let size = if self.request.filters_need_size() {
+                match self.inner.metadata(path) {
+                    Ok(meta) => meta.size,
+                    Err(CoreError::Cancelled) => return Err(CoreError::Cancelled),
+                    Err(_) => return self.inner.read(grant, max_bytes),
+                }
+            } else {
+                0
+            };
+            if !self.request.admits_file(path.as_str(), path.name(), size) {
+                return Err(CoreError::PolicyDenied);
+            }
+        }
+        self.inner.read(grant, max_bytes)
+    }
+}
 
 impl Session {
     /// Runs pack and writes one page. A budget under 64 bytes is refused before publish.
@@ -43,9 +118,10 @@ impl Session {
             max_source_bytes: scan.source_bytes,
         };
         self.refuse_exhausted_revision(&view, request, limits)?;
+        let filtered = FilteredSource { inner: self.source.as_ref(), request };
         let engine = pack(
             PackPorts {
-                source: self.source.as_ref(),
+                source: &filtered,
                 store: self.store.as_mut(),
                 cache: &mut self.cache,
                 clock: self.clock.as_ref(),
@@ -97,8 +173,9 @@ impl Session {
         if previous.version().major != u32::MAX {
             return Ok(());
         }
+        let filtered = FilteredSource { inner: self.source.as_ref(), request };
         let scanned = scan(
-            self.source.as_ref(),
+            &filtered,
             self.cancel.as_ref(),
             ScanOptions {
                 policy: &self.selection,
@@ -215,4 +292,99 @@ fn encode_pack(format: u32, report: &PackReport) -> Vec<u8> {
         report.diagnostics
     )
     .into_bytes()
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::{Arc, Mutex};
+
+    use dctx_core::{SelectionPolicy, Timestamp};
+    use dctx_ports::memory::{CancelFlag, FixedClock, MemorySource};
+
+    use super::*;
+    use crate::domain::{HostGrants, VecSink};
+    use crate::{HostCeiling, RuleTexts, StoragePolicy};
+
+    struct Spy {
+        inner: MemorySource,
+        reads: Arc<Mutex<Vec<String>>>,
+    }
+
+    impl Source for Spy {
+        fn root_kind(&self) -> Result<NodeType, CoreError> {
+            self.inner.root_kind()
+        }
+
+        fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, CoreError> {
+            self.inner.entries(dir)
+        }
+
+        fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
+            self.inner.metadata(path)
+        }
+
+        fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
+            if let Ok(mut guard) = self.reads.lock() {
+                guard.push(grant.path().as_str().to_string());
+            }
+            self.inner.read(grant, max_bytes)
+        }
+    }
+
+    fn sample(reads: &Arc<Mutex<Vec<String>>>) -> Spy {
+        let mut inner = MemorySource::new();
+        inner.insert_file("a.rs", b"fn a() {}\n", 1).expect("a");
+        inner.insert_file("b.md", b"md\n", 1).expect("b");
+        inner.insert_file("logo.png", b"\x89PNG\0", 1).expect("png");
+        inner.insert_file("nested/yes.rs", b"fn yes() {}\n", 1).expect("yes");
+        inner.insert_file("nested/nope.md", b"nope\n", 1).expect("nope");
+        Spy { inner, reads: Arc::clone(reads) }
+    }
+
+    fn open_session(source: Spy) -> Session {
+        Session::builder(source)
+            .clock(FixedClock(Timestamp(0)))
+            .cancellation(Arc::new(CancelFlag::new()))
+            .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
+            .ceiling(HostCeiling::base())
+            .grants(HostGrants::PermitAll)
+            .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+            .place("fixture")
+            .view("default")
+            .build()
+            .expect("session")
+    }
+
+    fn taken(reads: &Mutex<Vec<String>>) -> Vec<String> {
+        let mut paths = reads.lock().expect("reads").clone();
+        paths.sort();
+        paths
+    }
+
+    #[test]
+    fn an_extension_filter_opens_only_rust_and_the_default_request_still_reads_the_png() {
+        let reads = Arc::new(Mutex::new(Vec::new()));
+        let mut filtered = PackRequest::new();
+        filtered.apply_filters = true;
+        filtered.extensions = vec!["rs".to_string()];
+        let mut filtered_session = open_session(sample(&reads));
+        let mut sink = VecSink::new();
+        filtered_session.pack(&filtered, &mut sink).expect("pack");
+        assert_eq!(taken(&reads), vec!["a.rs".to_string(), "nested/yes.rs".to_string()]);
+
+        let open_reads = Arc::new(Mutex::new(Vec::new()));
+        let mut unfiltered = open_session(sample(&open_reads));
+        let mut sink = VecSink::new();
+        unfiltered.pack(&PackRequest::new(), &mut sink).expect("pack");
+        assert_eq!(
+            taken(&open_reads),
+            vec![
+                "a.rs".to_string(),
+                "b.md".to_string(),
+                "logo.png".to_string(),
+                "nested/nope.md".to_string(),
+                "nested/yes.rs".to_string(),
+            ]
+        );
+    }
 }

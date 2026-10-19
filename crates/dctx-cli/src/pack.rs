@@ -3,16 +3,19 @@
 //! Depends on the facade host, the `dctx-pack` scan, and [`FilterConfig`].
 //! Used by `dctx pack`. `--json` stays the facade summary and refuses view filters.
 //! Binaries are omitted unless `--binary`. Include and exclude globs are selection rules.
-//! The facade [`PackRequest`] cannot carry those view filters, so the CLI applies them.
+//! View filters ride on [`PackRequest`] and hide non-matching files before a read.
 
 use std::path::{Path, PathBuf};
 
-use dctx::{PackRequest, VecSink};
+use dctx::{PackRequest, Source, VecSink};
 use dctx_core::budget::PackLimits;
 use dctx_core::datatypes::{DirContextTreeNode, IgnoreRule, NodeType};
+use dctx_core::error::DctxError as CoreError;
+use dctx_core::facts::{EntryMeta, ReadGrant, SourceEntry};
 use dctx_core::file_classifier::{classify_file, FileContentHandling};
 use dctx_core::filter::FilterConfig;
-use dctx_core::selection::{parse_ignore_pattern_line, rule_matches, RuleTexts, SelectionPolicy};
+use dctx_core::ids::RelativePath;
+use dctx_core::selection::{parse_ignore_pattern_line, rule_matches};
 use dctx_core::version::Version;
 
 use crate::compat;
@@ -36,12 +39,21 @@ struct Filters {
     config: FilterConfig,
     include: Vec<IgnoreRule>,
     exclude: Vec<IgnoreRule>,
+    include_patterns: Vec<String>,
+    exclude_patterns: Vec<String>,
     debug_ignored: bool,
 }
 
 impl Filters {
     fn new() -> Self {
-        Self { config: FilterConfig::default(), include: Vec::new(), exclude: Vec::new(), debug_ignored: false }
+        Self {
+            config: FilterConfig::default(),
+            include: Vec::new(),
+            exclude: Vec::new(),
+            include_patterns: Vec::new(),
+            exclude_patterns: Vec::new(),
+            debug_ignored: false,
+        }
     }
 
     /// True when the caller asked for a view the JSON summary cannot show.
@@ -141,12 +153,14 @@ fn facade_summary(plan: &Plan) -> Result<PackOutcome, String> {
     emit(&plan.destination, sink.as_bytes(), report.files, &report.version)
 }
 
-/// Source page. `debug_ignored` is the scan bit `Session::pack` copies from
-/// `legacy_output.debug_ignored`. The other ADR filters are not fields on `PackRequest`.
+/// Source page. Selection comes from the repository rules. View filters hide files first.
 fn source_page(plan: &Plan) -> Result<(Vec<u8>, u64, String), String> {
-    let _session = host::open_dir(&plan.path)?;
-    let policy = SelectionPolicy::from_texts(&RuleTexts::default());
-    let source = dctx::FsSource::open(&plan.path).map_err(|error| error.to_string())?;
+    let rules = host::project_rules(&plan.path)?;
+    let policy = rules.policy();
+    let request = view_request(&plan.filters);
+    let inner = dctx::FsSource::open(&plan.path).map_err(|error| error.to_string())?;
+    let report_reads = std::env::var("DCTX_READ_REPORT").ok().as_deref() == Some("1");
+    let source = NarrowedSource { inner, request: &request, report_reads };
     let cancel = dctx::memory::CancelFlag::new();
     let scanned = dctx_pack::scan(
         &source,
@@ -171,6 +185,102 @@ fn source_page(plan: &Plan) -> Result<(Vec<u8>, u64, String), String> {
         output.omit_svg_content,
     );
     Ok((text.into_bytes(), files, version.to_string()))
+}
+
+fn view_request(filters: &Filters) -> PackRequest {
+    let mut request = PackRequest::new();
+    request.apply_filters = true;
+    request.extensions = filters.config.extensions.clone();
+    request.include_patterns = filters.include_patterns.clone();
+    request.exclude_patterns = filters.exclude_patterns.clone();
+    request.include_binary = filters.config.include_binary;
+    request.only_empty = filters.config.only_empty;
+    request.only_non_empty = filters.config.only_non_empty;
+    request.min_size_bytes = filters.config.min_size_bytes;
+    request.max_size_bytes = filters.config.max_size_bytes;
+    request.only_hidden = filters.config.only_hidden;
+    request
+}
+
+/// Drops files the view filters reject before `dctx-pack` can open them.
+/// `DCTX_READ_REPORT=1` prints each content read. The facade wrapper stays quiet.
+struct NarrowedSource<'a, S> {
+    inner: S,
+    request: &'a PackRequest,
+    report_reads: bool,
+}
+
+impl<S: Source> Source for NarrowedSource<'_, S> {
+    fn root_kind(&self) -> Result<NodeType, CoreError> {
+        self.inner.root_kind()
+    }
+
+    fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, CoreError> {
+        let entries = self.inner.entries(dir)?;
+        if !self.request.apply_filters {
+            return Ok(entries);
+        }
+        let mut kept = Vec::with_capacity(entries.len());
+        for entry in entries {
+            let Ok(path) = dir.child(&entry.name) else {
+                kept.push(entry);
+                continue;
+            };
+            if entry.is_dir() {
+                if self.request.admits_directory(path.as_str(), &entry.name) {
+                    kept.push(entry);
+                }
+                continue;
+            }
+            let size = if self.request.filters_need_size() {
+                match self.inner.metadata(&path) {
+                    Ok(meta) => meta.size,
+                    Err(CoreError::Cancelled) => return Err(CoreError::Cancelled),
+                    Err(_) => {
+                        kept.push(entry);
+                        continue;
+                    }
+                }
+            } else {
+                0
+            };
+            if self.request.admits_file(path.as_str(), &entry.name, size) {
+                kept.push(entry);
+            }
+        }
+        Ok(kept)
+    }
+
+    fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
+        self.inner.metadata(path)
+    }
+
+    fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
+        if self.request.apply_filters {
+            let path = grant.path();
+            let size = if self.request.filters_need_size() {
+                match self.inner.metadata(path) {
+                    Ok(meta) => meta.size,
+                    Err(CoreError::Cancelled) => return Err(CoreError::Cancelled),
+                    Err(_) => {
+                        if self.report_reads {
+                            eprintln!("read {}", path.as_str());
+                        }
+                        return self.inner.read(grant, max_bytes);
+                    }
+                }
+            } else {
+                0
+            };
+            if !self.request.admits_file(path.as_str(), path.name(), size) {
+                return Err(CoreError::PolicyDenied);
+            }
+        }
+        if self.report_reads {
+            eprintln!("read {}", grant.path().as_str());
+        }
+        self.inner.read(grant, max_bytes)
+    }
 }
 
 /// Safety caps from `crates/dctx/src/domain/limits.rs`. `resolve_scan` is crate-private.
@@ -308,8 +418,10 @@ fn parse(args: &[String]) -> Result<Plan, String> {
                 let rule = parse_pattern(flag, value)?;
                 if flag == "--include" {
                     filters.include.push(rule);
+                    filters.include_patterns.push(value.clone());
                 } else {
                     filters.exclude.push(rule);
+                    filters.exclude_patterns.push(value.clone());
                 }
             }
             other if other.starts_with('-') => return Err(format!("unknown pack flag: {other}")),

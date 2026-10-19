@@ -10,7 +10,7 @@ use dctx_core::FileHandlingDecision;
 use dctx_hash::ContentDigest;
 
 use super::Session;
-use crate::domain::{FreshnessMode, ParserChoice, ScanLimits, SnapshotRequest, DctxError, STRUCTURAL_PARSER};
+use crate::domain::{FreshnessMode, ParserChoice, RuleSources, ScanLimits, SnapshotRequest, DctxError, STRUCTURAL_PARSER};
 use crate::index::{walk_source, Generation, IndexedEdge, IndexedFile, IndexedNode, WalkArgs};
 
 const REUSE_ATTEMPTS: u32 = 32;
@@ -35,9 +35,10 @@ impl Session {
         if self.managed.is_none() || source_key.is_empty() {
             return self.snapshot(request);
         }
+        let key = scoped_source_key(source_key, self.rules.as_ref());
         let mut last = DctxError::Busy;
         for _ in 0..REUSE_ATTEMPTS {
-            match self.snapshot_reusable_once(request, source_key) {
+            match self.snapshot_reusable_once(request, &key) {
                 Err(error) if retryable(&error) => {
                     last = error;
                     std::thread::yield_now();
@@ -172,6 +173,38 @@ impl Session {
             return Ok(None);
         };
         cache.pin_current(now_ms)
+    }
+}
+
+/// Sessions with no rule texts keep `source_key`, so a cache written before rules were loaded still matches.
+/// Loaded texts, including a comment that does not change the file inventory, change the key.
+fn scoped_source_key(source_key: &str, rules: Option<&RuleSources>) -> String {
+    let Some(rules) = rules else {
+        return source_key.to_string();
+    };
+    format!("{source_key}\0{}", rule_stamp(rules))
+}
+
+fn rule_stamp(rules: &RuleSources) -> String {
+    let mut bytes = Vec::new();
+    push_rule(&mut bytes, rules.global_ignore.as_deref());
+    push_rule(&mut bytes, rules.global_omit.as_deref());
+    push_rule(&mut bytes, rules.local_ignore.as_deref());
+    push_rule(&mut bytes, rules.local_omit.as_deref());
+    match crate::domain::digest_text(&bytes) {
+        Ok(digest) => digest.to_string(),
+        Err(_) => format!("rules-unavailable:{}", bytes.len()),
+    }
+}
+
+fn push_rule(out: &mut Vec<u8>, text: Option<&str>) {
+    match text {
+        None => out.push(0),
+        Some(text) => {
+            out.push(1);
+            out.extend_from_slice(text.as_bytes());
+            out.push(0xff);
+        }
     }
 }
 
@@ -580,5 +613,52 @@ mod tests {
         assert!(!handle.reused());
         assert!(other.content_reads() >= 1);
         assert_eq!(other.cached_content_reads(), 0);
+    }
+
+    fn open_with_rules(source: MemorySource, cache: &std::path::Path, rules: crate::domain::RuleSources) -> Session {
+        let mut auto = AutoCleanConfig::default();
+        auto.enabled = false;
+        let selection = rules.policy();
+        Session::builder(source)
+            .clock(FixedClock(Timestamp(0)))
+            .cancellation(Arc::new(CancelFlag::new()))
+            .selection(selection)
+            .rule_sources(rules)
+            .ceiling(HostCeiling::base())
+            .grants(HostGrants::PermitAll)
+            .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+            .place("fixture")
+            .view("default")
+            .cache_root(cache, 1)
+            .auto_clean(auto)
+            .build()
+            .expect("session")
+    }
+
+    #[test]
+    fn a_comment_only_rule_edit_rebuilds_and_the_same_text_reuses() {
+        let dir = tempfile::tempdir().expect("temp");
+        let cache = dir.path().join("cache");
+        std::fs::create_dir(&cache).expect("dir");
+        let first = crate::domain::RuleSources { local_ignore: Some("# one\n".to_string()), ..crate::domain::RuleSources::default() };
+        let mut session = open_with_rules(source(b"fn kept() {}\n"), &cache, first);
+        let handle = session.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("cold");
+        assert!(!handle.reused());
+        drop(handle);
+        drop(session);
+
+        let same = crate::domain::RuleSources { local_ignore: Some("# one\n".to_string()), ..crate::domain::RuleSources::default() };
+        let mut warm = open_with_rules(source(b"fn kept() {}\n"), &cache, same);
+        let handle = warm.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("warm");
+        assert!(handle.reused());
+        assert_eq!(warm.content_reads(), 0);
+        drop(handle);
+        drop(warm);
+
+        let edited = crate::domain::RuleSources { local_ignore: Some("# two\n".to_string()), ..crate::domain::RuleSources::default() };
+        let mut third = open_with_rules(source(b"fn kept() {}\n"), &cache, edited);
+        let handle = third.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("edited");
+        assert!(!handle.reused());
+        assert!(third.content_reads() >= 1);
     }
 }
