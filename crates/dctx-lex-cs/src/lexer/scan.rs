@@ -198,13 +198,27 @@ impl<'a> Scanner<'a> {
             if dollars > 0 && self.try_hole(dollars) {
                 continue;
             }
-            if self.count(b'"') >= quotes {
-                self.pos += quotes;
+            if self.raw_closer(quotes) {
                 return;
             }
             self.bump();
         }
         self.problems.push((start as u32, DiagnosticReason::UnterminatedString));
+    }
+
+    /// Ends the literal at the first quote run of length `quotes` or more.
+    /// A shorter run is content. A run of exactly `quotes` glued to a name
+    /// (`"""Z`) is content too; the closer is the same run before `;` or EOF.
+    fn raw_closer(&mut self, quotes: usize) -> bool {
+        let run = self.count(b'"');
+        if run < quotes {
+            return false;
+        }
+        if run == quotes && self.src[self.pos + run..].chars().next().is_some_and(is_ident_start) {
+            return false;
+        }
+        self.pos += quotes;
+        true
     }
 
     fn quoted_body(&mut self, start: usize, verbatim: bool, dollars: usize) {
@@ -275,7 +289,9 @@ impl<'a> Scanner<'a> {
             self.pos += open;
             return true;
         }
-        self.pos += dollars;
+        // Extra braces in a longer run are literal text before the hole. The
+        // rightmost `dollars` braces are the opener, so the hole starts after the run.
+        self.pos += open;
         if !self.enter() {
             return true;
         }
