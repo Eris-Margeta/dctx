@@ -1,6 +1,7 @@
 //! Explicit pack. Output is stdout, the clipboard, or `--output`.
 //! Implements ARCHITECTURE-PROPOSAL §4 normal outputs: no unsolicited project text file.
-//! Depends on the facade [`crate::host::open_dir`] and the host's clipboard-only process boundary.
+//! Depends on the facade [`crate::host::open_dir`] and the default legacy template.
+//! The default page carries each packed path and body. `--json` keeps the summary report.
 //! A clipboard failure returns an error and does not write a fallback file.
 
 use std::path::PathBuf;
@@ -26,7 +27,8 @@ enum Destination {
 struct Plan {
     path: PathBuf,
     destination: Destination,
-    output_format: u32,
+    /// Summary report encoding. `None` selects the source-bearing page.
+    report_format: Option<u32>,
 }
 
 /// Result of one explicit pack. `wrote` is set only for `--output`.
@@ -61,7 +63,11 @@ pub fn execute(args: &[String]) -> Result<PackOutcome, String> {
     let plan = parse(args)?;
     let mut session = host::open_dir(&plan.path)?;
     let mut request = PackRequest::new();
-    request.output_format = plan.output_format;
+    if let Some(format) = plan.report_format {
+        request.output_format = format;
+    } else {
+        request.legacy_output = Some(source_document(&plan.path)?);
+    }
     let mut sink = VecSink::new();
     let report = session.pack(&request, &mut sink).map_err(|error| error.to_string())?;
     let body = sink.as_bytes().to_vec();
@@ -184,7 +190,24 @@ fn parse(args: &[String]) -> Result<Plan, String> {
         (None, true) => Destination::Clipboard,
         (Some(path), true) => Destination::FileAndClipboard(path),
     };
-    Ok(Plan { path, destination, output_format: if json { 2 } else { 1 } })
+    Ok(Plan { path, destination, report_format: if json { Some(2) } else { None } })
+}
+
+/// Source-bearing page. Scan caps in the facade bound which files are packed.
+fn source_document(path: &std::path::Path) -> Result<dctx_template::LegacyOutput, String> {
+    let mut template = crate::template::legacy_template("default")?;
+    template.insert_variable("project", &project_name(path));
+    Ok(dctx_template::LegacyOutput::new(template, dctx_template::LegacyLayout::Snapshot))
+}
+
+fn project_name(path: &std::path::Path) -> String {
+    let canonical = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    canonical
+        .file_name()
+        .and_then(|name| name.to_str())
+        .filter(|name| !name.is_empty() && *name != "." && *name != "..")
+        .unwrap_or("project")
+        .to_string()
 }
 
 /// Project the scanned facts into pure renderer input, preserving presentation-only omit rules.
@@ -235,7 +258,9 @@ mod tests {
         assert!(outcome.wrote.is_none());
         assert!(!outcome.clipboard);
         assert!(!path.join(".dctx").exists());
-        assert!(std::str::from_utf8(&outcome.body).expect("utf8").contains("files="));
+        let text = std::str::from_utf8(&outcome.body).expect("utf8");
+        assert!(text.contains("PATH=\"kept.rs\""), "{text}");
+        assert!(text.contains("fn kept() {}"), "{text}");
         assert!(outcome.report_line.contains("retention=stdout"));
         assert!(outcome.report_line.contains(&format!("bytes={}", outcome.body.len())));
         let listed: Vec<_> = std::fs::read_dir(&path).expect("list").flatten().collect();
