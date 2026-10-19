@@ -3,7 +3,8 @@
 //! Depends on [`crate::Lifecycle`] for admission and on std filesystem calls for reclaimed names.
 //! Root ceilings stay on `reserve_for`. Unlink refuses symlinks and `..` instead of following them.
 
-use super::{ensure_dir, list_orphans, locate, real_root, write_private};
+use super::publish::publish_immutable;
+use super::{ensure_dir, locate, orphans, real_root};
 use crate::domain::{Lifecycle, ObjectId, Purpose};
 use crate::error::CacheError;
 use crate::ports::{ObjectStore, OrphanFile};
@@ -39,7 +40,7 @@ impl FsObjectStore {
         Ok(Self { root: real_root(root)? })
     }
 
-    /// Writes one object file. The parent directory is created when it is absent.
+    /// Publishes one object file. An existing object is never truncated.
     pub fn put_object(&self, raw: u64, bytes: &[u8]) -> Result<(), CacheError> {
         let dir = self.root.join("objects");
         ensure_dir(&dir)?;
@@ -47,7 +48,7 @@ impl FsObjectStore {
         if !path.starts_with(&self.root) {
             return Err(CacheError::OutsideCacheRoot);
         }
-        write_private(&path, bytes)
+        publish_immutable(&path, bytes)
     }
 
     /// Unlinks `relative` only when every ancestor inside the root is a real directory.
@@ -75,7 +76,7 @@ impl ObjectStore for FsObjectStore {
 
     fn orphans(&self, known: &BTreeSet<ObjectId>) -> Result<Vec<OrphanFile>, CacheError> {
         let ids = known.iter().copied().map(ObjectId::raw).collect();
-        list_orphans(&self.root, &ids)
+        orphans::list_orphans(&self.root, &ids)
     }
 }
 
