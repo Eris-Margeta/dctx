@@ -274,3 +274,28 @@ struct Item {
 fn normalize(s: &str) -> String {
     s.split_whitespace().collect::<Vec<_>>().join(" ")
 }
+
+/// Compiler directives that are expressions or availability checks, not macros.
+/// Unknown `#name` tokens stay opaque and produce a diagnostic.
+pub(super) fn expression_directive(text: &str) -> bool {
+    matches!(
+        text,
+        "#available"
+            | "#unavailable"
+            | "#selector"
+            | "#keyPath"
+            | "#colorLiteral"
+            | "#imageLiteral"
+            | "#fileLiteral"
+            | "#file"
+            | "#fileID"
+            | "#filePath"
+            | "#line"
+            | "#column"
+            | "#function"
+            | "#dsohandle"
+            | "#warning"
+            | "#error"
+            | "#sourceLocation"
+    )
+}

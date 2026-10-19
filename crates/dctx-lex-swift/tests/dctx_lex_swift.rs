@@ -407,3 +407,96 @@ fn access_operators_bindings_and_generic_calls_keep_lexical_evidence() {
     assert!(!facts.references.iter().any(|r| r.fact.name == "ready"));
     invariants(&facts, source);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const SCRIPTS: &str = include_str!("fixtures/scripts.swift");
+
+    #[test]
+    fn scripts_availability_attributes_and_trailing_closures_parse() {
+        let facts = extract(SCRIPTS);
+        assert_eq!(
+            facts.completion,
+            Completion::Complete,
+            "{:?}",
+            facts.diagnostics
+        );
+        let names: Vec<_> = facts
+            .nodes
+            .iter()
+            .skip(1)
+            .map(|n| n.fact.name.as_str())
+            .collect();
+        assert_eq!(
+            names,
+            [
+                "Plugin",
+                "Plugin::title",
+                "Plugin::Rows",
+                "Plugin::render",
+                "Session",
+                "Session::load",
+                "kept",
+            ]
+        );
+        let plugin = &facts
+            .nodes
+            .iter()
+            .find(|n| n.fact.name == "Plugin")
+            .unwrap()
+            .fact;
+        assert!(plugin.signature.contains("@objc(Plugin)"));
+        assert!(plugin.public);
+        let render = &facts
+            .nodes
+            .iter()
+            .find(|n| n.fact.name == "Plugin::render")
+            .unwrap()
+            .fact;
+        assert!(render.signature.contains("async"));
+        assert!(render.signature.contains("some Rows"));
+        let title = &facts
+            .nodes
+            .iter()
+            .find(|n| n.fact.name == "Plugin::title")
+            .unwrap()
+            .fact;
+        assert!(title.signature.contains("@Wrapper(name: \"title\")"));
+        let load = &facts
+            .nodes
+            .iter()
+            .find(|n| n.fact.name == "Session::load")
+            .unwrap()
+            .fact;
+        assert!(load.signature.contains("any Sendable"));
+        for call in [
+            "optionalName",
+            "show",
+            "banner",
+            "showLegacy",
+            "fallback",
+            "finish",
+            "report",
+            "fetch",
+            "print",
+            "use",
+        ] {
+            assert!(
+                facts
+                    .references
+                    .iter()
+                    .any(|r| r.fact.kind == EdgeKind::Calls && r.fact.name == call),
+                "{call}: {:?}",
+                facts
+                    .references
+                    .iter()
+                    .map(|r| r.fact.name.as_str())
+                    .collect::<Vec<_>>()
+            );
+        }
+        assert!(!facts.references.iter().any(|r| r.fact.name == "items"));
+        invariants(&facts, SCRIPTS);
+    }
+}

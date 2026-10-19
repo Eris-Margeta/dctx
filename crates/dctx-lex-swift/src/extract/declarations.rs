@@ -23,7 +23,7 @@ impl Walker<'_> {
                 let line = self.lex.line(self.start(i));
                 let directive = self.text(i);
                 let conditional = matches!(directive, "#if" | "#elseif" | "#else" | "#endif");
-                if !conditional {
+                if !conditional && !super::expression_directive(directive) {
                     self.problem(i, DiagnosticReason::Unrecognized);
                 }
                 i += 1;
@@ -80,9 +80,10 @@ impl Walker<'_> {
                 "let" => Some(SymbolKind::Const),
                 "var" => None,
                 "operator" => Some(SymbolKind::Function),
+                // Scripts and statement-only spans are valid Swift. Skip them
+                // without a diagnostic; calls inside stay lexical references.
                 _ => {
-                    self.problem(at, DiagnosticReason::Unrecognized);
-                    i = self.close(at).map_or(at + 1, |j| j + 1).min(end);
+                    i = self.skip_statement(at, end, owner)?;
                     continue;
                 }
             };
@@ -171,6 +172,36 @@ impl Walker<'_> {
             i = last + 1;
         }
         Ok(())
+    }
+
+    /// Skips one statement, including an `else` chain, and records calls in it.
+    fn skip_statement(
+        &mut self,
+        at: usize,
+        end: usize,
+        owner: usize,
+    ) -> Result<usize, crate::LexError> {
+        let mut next = self.statement_end(at, end);
+        while next < end && self.text(next) == "else" {
+            next = self.statement_end(next, end);
+        }
+        self.references(at, next, owner)?;
+        Ok(next)
+    }
+
+    /// Index of the first token after the statement that starts at `at`.
+    fn statement_end(&self, at: usize, end: usize) -> usize {
+        if at >= end {
+            return end;
+        }
+        if matches!(self.text(at), "{" | "(" | "[") {
+            return self.close(at).map_or(at + 1, |j| (j + 1).min(end));
+        }
+        if at + 1 >= end {
+            return end;
+        }
+        let (last, _, _) = self.boundary(at + 1, end);
+        (last.max(at) + 1).min(end).max(at + 1)
     }
 
     fn prefix(&self, mut i: usize, end: usize) -> (usize, bool) {

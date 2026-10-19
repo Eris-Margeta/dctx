@@ -60,6 +60,13 @@ impl<'a> Scanner<'a> {
                 self.pos += ch.len_utf8();
                 continue;
             }
+            // A script hashbang is only meaningful as the first bytes.
+            if self.pos == 0 && rest.starts_with("#!") {
+                let end = rest.find('\n').unwrap_or(rest.len());
+                self.pos = start + end;
+                self.comments.push((start as u32, self.pos as u32));
+                continue;
+            }
             if rest.starts_with("//") {
                 self.pos += rest.find('\n').unwrap_or(rest.len());
                 self.comments.push((start as u32, self.pos as u32));

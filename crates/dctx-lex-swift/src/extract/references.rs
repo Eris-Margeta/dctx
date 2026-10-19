@@ -69,8 +69,10 @@ impl Walker<'_> {
         let mut control_header = false;
         while i < end {
             if self.lex.tokens[i].kind == Kind::Directive {
-                let conditional = matches!(self.text(i), "#if" | "#elseif" | "#else" | "#endif");
-                if !conditional {
+                let directive = self.text(i);
+                let conditional = matches!(directive, "#if" | "#elseif" | "#else" | "#endif");
+                let expression = super::expression_directive(directive);
+                if !conditional && !expression {
                     self.problem(i, crate::DiagnosticReason::Unrecognized);
                 }
                 let line = self.lex.line(self.start(i));
@@ -83,7 +85,10 @@ impl Walker<'_> {
                     if self.text(i) == "(" {
                         i = self.close(i).map_or(end, |j| j + 1);
                     }
-                    if self.text(i) == "{" {
+                    // An unknown macro may own a brace body. Availability and
+                    // expression directives do not: the brace is the enclosing
+                    // `if` or call.
+                    if !expression && self.text(i) == "{" {
                         i = self.close(i).map_or(end, |j| j + 1);
                     }
                 }
