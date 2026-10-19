@@ -162,9 +162,12 @@ impl<'a> Lexer<'a> {
             }
         } else {
             self.scan_digits(false);
-            if self.b.get(self.pos) == Some(&b'.') && self.digit_at(self.pos + 1, false) {
+            // `1.` and `1.e2` are one float so a following newline inserts a semicolon.
+            if self.b.get(self.pos) == Some(&b'.') {
                 self.pos += 1;
-                self.scan_digits(false);
+                if self.digit_at(self.pos, false) {
+                    self.scan_digits(false);
+                }
             }
             if matches!(self.b.get(self.pos), Some(b'e' | b'E')) {
                 self.scan_exponent(false);
