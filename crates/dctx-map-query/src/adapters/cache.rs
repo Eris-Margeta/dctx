@@ -1,6 +1,7 @@
 //! Loads and repairs a segment journal beside the sqlite comparison store.
 //! Implements SPEC-MAP-MODE sections 7 and 8 without query-owned SQL tables.
 //! A missing generation may still import a version-1 `query.json` cache.
+//! Each live index owns one sqlite mirror. Drop and replacement delete the previous copy.
 use super::segment;
 use super::{Index, IndexReport};
 use crate::{
@@ -154,10 +155,35 @@ impl Index {
             "mirror-{}.sqlite",
             MIRROR_SEQUENCE.fetch_add(1, Ordering::Relaxed)
         );
-        fs.create(&mirror_name)?;
-        fs.write(&mirror_name, &bytes)?;
-        self.store = Some(SqliteStore::open(parent.join(mirror_name))?);
+        let mirror_path = parent.join(&mirror_name);
+        if let Err(error) = write_mirror(&fs, &mirror_name, &bytes) {
+            let _ = fs.unlink(&mirror_name);
+            return Err(error);
+        }
+        let opened = match SqliteStore::open(&mirror_path) {
+            Ok(store) => store,
+            Err(error) => {
+                let _ = fs.unlink(&mirror_name);
+                return Err(error.into());
+            }
+        };
+        self.adopt_mirror(opened, mirror_path);
         Ok(())
+    }
+
+    pub(super) fn release_mirror(&mut self) {
+        self.store = None;
+        if let Some(path) = self.mirror.take() {
+            remove_mirror(&path);
+        }
+    }
+
+    fn adopt_mirror(&mut self, opened: SqliteStore, path: std::path::PathBuf) {
+        let previous = self.mirror.replace(path);
+        self.store = Some(opened);
+        if let Some(old) = previous {
+            remove_mirror(&old);
+        }
     }
 
     /// JSON payload retained for one indexed path.
@@ -254,6 +280,28 @@ impl Index {
 
 static MIRROR_SEQUENCE: AtomicU64 = AtomicU64::new(1);
 
+fn write_mirror(fs: &dctx_adapter_store::StdFs, name: &str, bytes: &[u8]) -> Result<()> {
+    fs.create(name)?;
+    fs.write(name, bytes)?;
+    Ok(())
+}
+
+fn remove_mirror(path: &Path) {
+    let mut sidecars = Vec::new();
+    if let (Some(parent), Some(name)) = (
+        path.parent(),
+        path.file_name().and_then(|name| name.to_str()),
+    ) {
+        for suffix in ["-journal", "-wal", "-shm"] {
+            sidecars.push(parent.join(format!("{name}{suffix}")));
+        }
+    }
+    let _ = std::fs::remove_file(path);
+    for sidecar in sidecars {
+        let _ = std::fs::remove_file(sidecar);
+    }
+}
+
 fn same_nodes(expected: &[Node], stored: &[Node]) -> bool {
     let mut left: Vec<_> = expected.iter().map(|node| node.id.as_str()).collect();
     let mut right: Vec<_> = stored
@@ -269,4 +317,59 @@ fn same_nodes(expected: &[Node], stored: &[Node]) -> bool {
     left.sort_unstable();
     right.sort_unstable();
     left == right
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::Index;
+
+    fn mirror_files(dir: &std::path::Path) -> Vec<String> {
+        let mut names = std::fs::read_dir(dir)
+            .expect("cache dir")
+            .filter_map(|entry| entry.ok())
+            .filter_map(|entry| entry.file_name().into_string().ok())
+            .filter(|name| name.starts_with("mirror-"))
+            .collect::<Vec<_>>();
+        names.sort();
+        names
+    }
+
+    #[test]
+    fn each_live_index_owns_one_mirror_and_drop_removes_it() {
+        let dir = tempfile::tempdir().expect("temp");
+        let database = dir.path().join("index.sqlite");
+        let first = Index::open("fixture", &database).expect("open");
+        assert_eq!(mirror_files(dir.path()).len(), 1);
+        let second = Index::open("fixture", &database).expect("open");
+        assert_eq!(mirror_files(dir.path()).len(), 2);
+        drop(first);
+        assert_eq!(mirror_files(dir.path()).len(), 1);
+        drop(second);
+        assert!(mirror_files(dir.path()).is_empty());
+        for _ in 0..6 {
+            drop(Index::open("fixture", &database).expect("reopen"));
+            assert!(mirror_files(dir.path()).is_empty());
+        }
+    }
+
+    #[test]
+    fn refresh_replaces_the_mirror_instead_of_keeping_every_copy() {
+        let root = tempfile::tempdir().expect("root");
+        let cache = tempfile::tempdir().expect("cache");
+        std::fs::write(root.path().join("a.rs"), "pub fn a() {}\n").expect("fixture");
+        let source = crate::FileSource::new(root.path()).expect("source");
+        let database = cache.path().join("index.sqlite");
+        let mut index = Index::open("fixture", &database).expect("open");
+        for generation in 0..4 {
+            std::fs::write(
+                root.path().join("a.rs"),
+                format!("pub fn a() {{ let _ = {generation}; }}\n"),
+            )
+            .expect("edit");
+            index.refresh(&source, None).expect("refresh");
+            assert_eq!(mirror_files(cache.path()).len(), 1, "refresh {generation}");
+        }
+        drop(index);
+        assert!(mirror_files(cache.path()).is_empty());
+    }
 }

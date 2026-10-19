@@ -43,6 +43,7 @@ pub struct Index {
     pub(crate) disk: Option<SqliteStore>,
     pub(crate) segments: Option<super::segment::Segments>,
     pub(crate) database: Option<std::path::PathBuf>,
+    pub(crate) mirror: Option<std::path::PathBuf>,
     pub(crate) graph_loaded: bool,
     pub(crate) files: BTreeMap<String, CachedFile>,
     pub(crate) nodes: BTreeMap<StableId, Node>,
@@ -77,6 +78,7 @@ impl Index {
             disk: None,
             segments: None,
             database: None,
+            mirror: None,
             graph_loaded: true,
             place: place.split_whitespace().collect::<Vec<_>>().join("_"),
             files: BTreeMap::new(),
@@ -247,5 +249,11 @@ impl Index {
             self.incoming.entry(edge.dst.clone()).or_default().push(i);
             self.outgoing.entry(edge.src.clone()).or_default().push(i);
         }
+    }
+}
+
+impl Drop for Index {
+    fn drop(&mut self) {
+        self.release_mirror();
     }
 }
