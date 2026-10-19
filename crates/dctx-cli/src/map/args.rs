@@ -13,12 +13,15 @@ pub(super) struct Options {
     pub continuation: Option<String>,
     /// True when the caller passed `--budget`. Read otherwise uses the facade default.
     pub budget_set: bool,
+    /// True when the caller passed `--profile`. `DCTX_PROFILE=1` is applied by the caller.
+    pub profile: bool,
 }
 pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read> <TARGET> [OPTIONS]
   TARGET                  Required. map accepts a stable id or a place-relative file.
                           A file path is read as m:<path>. Omitting TARGET does not scan.
   --json                  Facade JSON v2, including the precision label
   --place PATH            Place or worktree root (default: current directory)
+  --profile               Stderr stage timings and the five slowest files. DCTX_PROFILE=1 is the same switch.
   --budget TOKENS         Output tokens, 1..2000 (explain max: 1000).
                           Read with no --budget uses the 2,000-token hard cap.
   --depth N               Map: 1..3; neighbors: 1..2. Explain and read take no depth.
@@ -59,6 +62,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     let mut target = None;
     let mut continuation = None;
     let mut budget_set = false;
+    let mut profile = false;
     let mut index = 1;
     while index < args.len() {
         let flag = &args[index];
@@ -69,6 +73,10 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         }
         if flag == "--full" {
             request.full = true;
+            continue;
+        }
+        if flag == "--profile" {
+            profile = true;
             continue;
         }
         if !flag.starts_with('-') {
@@ -172,6 +180,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         place,
         continuation,
         budget_set,
+        profile,
     })
 }
 fn number<T: std::str::FromStr>(value: &str) -> Result<T, String> {
@@ -213,6 +222,12 @@ mod tests {
         assert!(sized.budget_set);
         assert_eq!(sized.request.budget.tokens(), 8);
         assert!(options(&["map", "m:a.rs", "--cursor", "v1|1|map|s:a.rs#a"]).is_ok());
+        let profiled = options(&["find", "--profile", "kept"]).expect("profile");
+        assert!(profiled.profile);
+        assert_eq!(profiled.request.target, "kept");
+        assert!(!options(&["find", "kept"]).expect("plain").profile);
+        assert!(HELP.contains("--profile"));
+        assert!(HELP.contains("DCTX_PROFILE=1"));
         assert_eq!(
             options(&["read", "s:a.rs#a", "--lines", "35-36"])
                 .expect("lines")

@@ -28,8 +28,8 @@ pub use build::SessionBuilder;
 
 use self::ledger::{AccountingCache, PersistedCache, SnapshotLease};
 use crate::domain::{
-    ancestors_include, check_deadline, seal_segment, HostGrants, OperationLimits, PolicyView, RuleSources,
-    SnapshotRequest, DctxError, REQUEST_VERSION,
+    ancestors_include, check_deadline, seal_segment, Answer, BoundedSink, HostGrants, MapRequest, OperationLimits,
+    PolicyView, RuleSources, SnapshotRequest, DctxError, REQUEST_VERSION,
 };
 use crate::index::{canonical_bytes, walk_source, Generation, WalkArgs};
 use crate::plugins::{HookWarning, PluginHost};
@@ -183,6 +183,55 @@ impl Session {
         &self.place
     }
 
+    /// Starts per-stage and per-file counters for this thread. Off until this is called.
+    pub fn enable_profile(&mut self) {
+        crate::index::profile::enable();
+    }
+
+    /// Drops counters after a failed snapshot or query.
+    pub fn discard_profile(&mut self) {
+        crate::index::profile::discard();
+    }
+
+    /// Stderr report, then clears the counters. `None` when [`Self::enable_profile`] was not called.
+    pub fn profile_report(&mut self) -> Option<String> {
+        crate::index::profile::report()
+    }
+
+    /// Same as [`Self::snapshot_reusable`]. When profiling is on, an unaccounted reuse path is charged here.
+    ///
+    /// A cold build records canonicalize and persist inside the snapshot. This wall is not added
+    /// on top of those stages. A reused generation never enters that path, so the remainder after
+    /// its metadata walk is the persist/reuse stage.
+    pub fn snapshot_reusable_for_profile(
+        &mut self,
+        request: &SnapshotRequest,
+        source_key: &str,
+    ) -> Result<SnapshotHandle, DctxError> {
+        let start = crate::index::profile::start();
+        let handle = self.snapshot_reusable(request, source_key)?;
+        if let Some(start) = start {
+            crate::index::profile::observe_snapshot_wall(start.elapsed());
+        }
+        Ok(handle)
+    }
+
+    /// Same as [`Self::query`]. The sample starts after file watches have closed, so it is not parse time.
+    pub fn query_for_profile(
+        &mut self,
+        handle: &SnapshotHandle,
+        request: &MapRequest,
+        sink: &mut dyn BoundedSink,
+    ) -> Result<Answer, DctxError> {
+        let _span = crate::index::profile::Elapsed::begin(crate::index::profile::Stage::Query);
+        self.query(handle, request, sink)
+    }
+
+    /// Charges a snapshot wall that this session did not already account. Cold builds ignore it.
+    pub fn observe_profile_snapshot(&mut self, elapsed: std::time::Duration) {
+        crate::index::profile::observe_snapshot_wall(elapsed);
+    }
+
     /// Takes a snapshot. Cancellation and a cache refusal leave `generation_count` unchanged.
     pub fn snapshot(&mut self, request: &SnapshotRequest) -> Result<SnapshotHandle, DctxError> {
         self.snapshot_inner(request, None, true)
@@ -214,7 +263,10 @@ impl Session {
             now_ms: started,
         })?;
         self.content_reads += walked.reads;
-        let (payload, digest) = canonical_bytes(&walked.files, &walked.nodes, &walked.edges)?;
+        let (payload, digest) = {
+            let _span = crate::index::profile::Elapsed::begin(crate::index::profile::Stage::CanonicalizeSeal);
+            canonical_bytes(&walked.files, &walked.nodes, &walked.edges)?
+        };
         let id = self.next_generation;
         let mut generation = Generation {
             id,
@@ -235,33 +287,44 @@ impl Session {
             _ => None,
         };
         let stored = if let Some(key) = reuse_key {
+            let encoded = {
+                let _span = crate::index::profile::Elapsed::begin(crate::index::profile::Stage::PersistReuse);
+                reuse::encode_generation(key, &self.view, &limits, &generation)?
+            };
             drop(payload);
-            reuse::encode_generation(key, &self.view, &limits, &generation)?
+            encoded
         } else {
-            let sealed = seal_segment(&payload)?;
+            let sealed = {
+                let _span = crate::index::profile::Elapsed::begin(crate::index::profile::Stage::CanonicalizeSeal);
+                seal_segment(&payload)?
+            };
             drop(payload);
             sealed
         };
-        let encoded_len = if cfg!(feature = "segments") {
-            u64::try_from(stored.len()).unwrap_or(u64::MAX)
-        } else {
-            0
-        };
-        generation.encoded_len = encoded_len;
-        if cfg!(feature = "segments") {
-            self.cache.segment_admit(encoded_len)?;
-        }
-        let ticket = match self.store_cache_segment(&stored) {
-            Ok(ticket) => ticket,
-            Err(error) => {
-                if cfg!(feature = "segments") {
-                    self.cache.segment_release(encoded_len);
-                }
-                return Err(error);
+        let handle = {
+            let _span = crate::index::profile::Elapsed::begin(crate::index::profile::Stage::PersistReuse);
+            let encoded_len = if cfg!(feature = "segments") {
+                u64::try_from(stored.len()).unwrap_or(u64::MAX)
+            } else {
+                0
+            };
+            generation.encoded_len = encoded_len;
+            if cfg!(feature = "segments") {
+                self.cache.segment_admit(encoded_len)?;
             }
+            let ticket = match self.store_cache_segment(&stored) {
+                Ok(ticket) => ticket,
+                Err(error) => {
+                    if cfg!(feature = "segments") {
+                        self.cache.segment_release(encoded_len);
+                    }
+                    return Err(error);
+                }
+            };
+            self.pin_generation(generation, ticket, false)
         };
-        let handle = self.pin_generation(generation, ticket, false);
         self.hooks_after_index()?;
+        crate::index::profile::mark_snapshot_accounted();
         Ok(handle)
     }
 
@@ -385,5 +448,69 @@ mod tests {
         assert_eq!(second.snapshot, first.snapshot);
         let (live, seen) = session.generation_shares(&handle).expect("still");
         assert_eq!((live, seen), (1, 2));
+    }
+
+    #[test]
+    fn a_profiled_snapshot_keeps_finalization_off_the_file_rows() {
+        struct Reset;
+        impl Drop for Reset {
+            fn drop(&mut self) {
+                crate::index::profile::discard();
+            }
+        }
+        let _reset = Reset;
+        let mut source = MemorySource::new();
+        let alpha = b"fn alpha() {}\n";
+        let beta = b"fn beta() {}\nfn gamma() {}\n";
+        source.insert_file("src/a.rs", alpha, 0).expect("a");
+        source.insert_file("src/b.rs", beta, 0).expect("b");
+        let mut session = Session::builder(source)
+            .clock(FixedClock(Timestamp(0)))
+            .cancellation(Arc::new(CancelFlag::new()))
+            .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
+            .ceiling(HostCeiling::base())
+            .grants(HostGrants::PermitAll)
+            .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+            .place("fixture")
+            .view("map")
+            .build()
+            .expect("session");
+        session.enable_profile();
+        let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+        let persist = crate::index::profile::stage_ns(crate::index::profile::Stage::PersistReuse);
+        session.observe_profile_snapshot(std::time::Duration::from_nanos(999_000_000_000_000));
+        assert_eq!(crate::index::profile::stage_ns(crate::index::profile::Stage::PersistReuse), persist);
+        let mut request = MapRequest::new(Verb::Find);
+        request.query = "alpha".to_string();
+        let mut sink = VecSink::new();
+        session.query_for_profile(&handle, &request, &mut sink).expect("find");
+        let report = session.profile_report().expect("report");
+        for name in [
+            "walk",
+            "read",
+            "hash",
+            "parse/lex",
+            "span conversion",
+            "graph assembly",
+            "canonicalize/seal",
+            "persist/reuse",
+            "query",
+        ] {
+            assert!(report.contains(&format!("stage {name} ")), "{name}\n{report}");
+        }
+        let rows: Vec<_> = report
+            .lines()
+            .filter_map(|line| {
+                let rest = line.strip_prefix("file ")?;
+                let mut parts = rest.splitn(4, ' ');
+                let bytes: u64 = parts.nth(1)?.parse().ok()?;
+                let symbols: u64 = parts.next()?.parse().ok()?;
+                let path = parts.next()?;
+                Some((path.to_string(), bytes, symbols))
+            })
+            .collect();
+        assert!(rows.contains(&("src/a.rs".to_string(), alpha.len() as u64, 1)), "{report}");
+        assert!(rows.contains(&("src/b.rs".to_string(), beta.len() as u64, 2)), "{report}");
+        assert!(!report.contains("999000000000000"), "{report}");
     }
 }

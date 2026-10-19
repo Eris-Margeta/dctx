@@ -5,6 +5,7 @@
 
 mod extract;
 mod lex_dispatch;
+pub(crate) mod profile;
 mod query;
 mod segment;
 mod span_index;

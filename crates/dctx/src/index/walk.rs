@@ -10,6 +10,7 @@ use dctx_map_model::{NodeKind, StableId};
 use dctx_ports::{Cancellation, Source};
 
 use super::extract::{extract_structural, index_symbols, language_of, Symbol};
+use super::profile::{self, FileWatch, Stage, WalkSpan};
 use super::{IndexedEdge, IndexedFile, IndexedNode};
 use crate::domain::{
     ancestors_include, check_deadline, digest_text, FreshnessMode, ParserChoice, PolicyView, ScanLimits, DctxError,
@@ -71,6 +72,8 @@ struct State {
 
 /// Walks `args.source` from the root. The root is listed even when a plan root would skip `""`.
 pub(crate) fn walk_source(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
+    // File watches inside this span close per file. Seal and query are not part of it.
+    let _walk = WalkSpan::begin();
     checkpoint(args)?;
     args.source.root_kind().map_err(DctxError::from_core)?;
     let languages = args.policy.languages()?;
@@ -151,7 +154,12 @@ fn visit_file(args: &WalkArgs<'_>, path: RelativePath, decision: FileHandlingDec
     if state.source_bytes.saturating_add(meta.size) > args.limits.source_bytes {
         return Err(limit(Resource::SourceBytes, args.limits.source_bytes));
     }
-    let bytes = match read_file(args, &path, state) {
+    // Drop writes this file before the function returns, so seal and query cannot join its parse.
+    let mut watch = FileWatch::begin(path.as_str());
+    let read_mark = profile::start();
+    let read = read_file(args, &path, state);
+    watch.charge(Stage::Read, read_mark);
+    let bytes = match read {
         Ok(bytes) => bytes,
         Err(DctxError::Cancelled) => return Err(DctxError::Cancelled),
         Err(DctxError::ResourceLimit { resource, limit }) => return Err(DctxError::ResourceLimit { resource, limit }),
@@ -166,16 +174,29 @@ fn visit_file(args: &WalkArgs<'_>, path: RelativePath, decision: FileHandlingDec
         return Err(limit(Resource::SourceBytes, args.limits.source_bytes));
     }
     state.source_bytes += len;
-    let digest = digest_text(&bytes)?;
-    let module = push_module(&mut state.nodes, path.as_str(), len, [1, line_span(&bytes)]);
+    watch.set_bytes(len);
+    let hash_mark = profile::start();
+    let digested = digest_text(&bytes);
+    watch.charge(Stage::Hash, hash_mark);
+    let digest = digested?;
+    let span_mark = profile::start();
+    let lines = line_span(&bytes);
+    watch.charge(Stage::SpanConversion, span_mark);
+    let module = push_module(&mut state.nodes, path.as_str(), len, [1, lines]);
     if let Some(module_id) = module {
-        let (symbols, syntax) = symbols_for(args, path.as_str(), &bytes)?;
+        let parse_mark = profile::start();
+        let parsed = symbols_for(args, path.as_str(), &bytes);
+        watch.charge(Stage::ParseLex, parse_mark);
+        let (symbols, syntax) = parsed?;
         if syntax {
             state.syntax_files += 1;
         } else if args.parser != ParserChoice::Opaque {
             state.other_files += 1;
         }
+        watch.set_symbols(u64::try_from(symbols.len()).unwrap_or(u64::MAX));
+        let graph_mark = profile::start();
         index_symbols(path.as_str(), &module_id, &symbols, &mut state.nodes, &mut state.edges);
+        watch.charge(Stage::GraphAssembly, graph_mark);
     }
     state.files.push(file_row(path.as_str(), decision, Some(digest), meta.size, meta.modified.millis()));
     Ok(())
@@ -335,5 +356,100 @@ mod tests {
         .expect("walk");
         assert!(walked.files.iter().all(|file| !file.path.starts_with(".git")));
         assert_eq!(source.reads(), vec!["src/lib.rs".to_string()]);
+    }
+
+    #[test]
+    fn profiled_files_report_bytes_symbols_and_leave_finalization_out() {
+        struct Reset;
+        impl Drop for Reset {
+            fn drop(&mut self) {
+                profile::discard();
+            }
+        }
+        let _reset = Reset;
+        profile::enable();
+        let mut source = MemorySource::new();
+        let mut expected = Vec::new();
+        for count in 1..=5 {
+            let mut body = String::new();
+            for index in 0..count {
+                body.push_str(&format!("fn f{index}() {{}}\n"));
+            }
+            let path = format!("f{count}.rs");
+            source.insert_file(&path, body.as_bytes(), 0).expect("file");
+            expected.push((path, body.len() as u64, count as u64));
+        }
+        let selection = SelectionPolicy::from_texts(&RuleTexts::default());
+        let ceiling = HostCeiling::base();
+        let limits = crate::domain::resolve_scan(&OperationLimits::default()).expect("limits");
+        let walked = walk_source(&WalkArgs {
+            source: &source,
+            cancel: &CancelFlag::new(),
+            policy: PolicyView {
+                selection: &selection,
+                ceiling: &ceiling,
+                grants: HostGrants::PermitAll,
+                plan: None,
+                view: "map",
+            },
+            limits: &limits,
+            freshness: FreshnessMode::ImmutableSnapshot,
+            parser: ParserChoice::Structural,
+            deadline_ms: None,
+            started_ms: 0,
+            now_ms: 0,
+        })
+        .expect("walk");
+        assert_eq!(walked.files.len(), 5);
+        profile::add_ns(Stage::CanonicalizeSeal, 1_000);
+        profile::add_ns(Stage::PersistReuse, 2_000);
+        profile::add_ns(Stage::Query, 4_000);
+        let report = profile::report().expect("report");
+        let mut files = Vec::new();
+        let mut stages = Vec::new();
+        for line in report.lines() {
+            if let Some(rest) = line.strip_prefix("file ") {
+                let mut parts = rest.splitn(4, ' ');
+                let nanos: u128 = parts.next().and_then(|value| value.parse().ok()).expect("file ns");
+                let bytes: u64 = parts.next().and_then(|value| value.parse().ok()).expect("bytes");
+                let symbols: u64 = parts.next().and_then(|value| value.parse().ok()).expect("symbols");
+                let path = parts.next().expect("path").to_string();
+                files.push((nanos, bytes, symbols, path));
+            } else if let Some(rest) = line.strip_prefix("stage ") {
+                let (name, value) = rest.rsplit_once(' ').expect("stage");
+                stages.push((name.to_string(), value.parse::<u128>().expect("stage ns")));
+            }
+        }
+        let names: Vec<_> = stages.iter().map(|(name, _)| name.as_str()).collect();
+        assert_eq!(
+            names,
+            [
+                "walk",
+                "read",
+                "hash",
+                "parse/lex",
+                "span conversion",
+                "graph assembly",
+                "canonicalize/seal",
+                "persist/reuse",
+                "query",
+            ]
+        );
+        assert!(files.windows(2).all(|pair| pair[0].0 >= pair[1].0), "{report}");
+        assert_eq!(files.len(), 5, "{report}");
+        let mut seen: Vec<_> = files.iter().map(|(_, bytes, symbols, path)| (path.clone(), *bytes, *symbols)).collect();
+        seen.sort();
+        expected.sort();
+        assert_eq!(seen, expected, "{report}");
+        let file_sum: u128 = files.iter().map(|row| row.0).sum();
+        let stage_sum: u128 = stages
+            .iter()
+            .filter(|(name, _)| matches!(name.as_str(), "read" | "hash" | "parse/lex" | "span conversion" | "graph assembly"))
+            .map(|(_, ns)| *ns)
+            .sum();
+        assert_eq!(file_sum, stage_sum, "{report}");
+        assert_eq!(stages.iter().find(|(name, _)| name == "canonicalize/seal").map(|(_, ns)| *ns), Some(1_000));
+        assert_eq!(stages.iter().find(|(name, _)| name == "persist/reuse").map(|(_, ns)| *ns), Some(2_000));
+        assert_eq!(stages.iter().find(|(name, _)| name == "query").map(|(_, ns)| *ns), Some(4_000));
     }
 }
