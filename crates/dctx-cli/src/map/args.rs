@@ -8,25 +8,32 @@ pub(super) struct Options {
     pub request: Request,
     pub format: Format,
     pub place: PathBuf,
+    /// Opaque `next` token from an earlier page. Forwarded as `MapRequest.continuation`.
+    pub continuation: Option<String>,
 }
-pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read> [TARGET] [OPTIONS]
+pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read> <TARGET> [OPTIONS]
+  TARGET                  Required. map accepts a stable id or a place-relative file.
+                          A file path is read as m:<path>. Omitting TARGET does not scan.
   --json                  Facade JSON v2, including the precision label
   --place PATH            Place or worktree root (default: current directory)
   --budget TOKENS         Output tokens, 1..2000 (explain max: 1000)
-  --depth N               Map: 1..3; neighbors: 1..2
-  --limit N --offset N    Offset above 0 is refused; pages use the next cursor
+  --depth N               Map: 1..3; neighbors: 1..2. Explain and read take no depth.
+  --limit N               Map, find and neighbors page size. Explain and read accept only 1.
+  --offset N              Refused. Pass the previous page's next value to --cursor.
+  --cursor TOKEN          Opaque continuation. A stale token is rejected.
   --kind fn,type,doc      Find kinds
-  --in PATH              Find within a relative path
-  --edge calls,imports   Neighbor edge filter
+  --in PATH               Find within a relative path
+  --edge calls,imports    Neighbor edge filter
   --dir in|out|both       Neighbor direction
-  --lines A-B --full      Read exact source lines; full permits 400
-  --rev SHA              Refused: this build does not link git
+  --lines A-B --full      Read those absolute source lines inside the node; full permits 400
+  --rev SHA               Refused: this build does not link git
 Precision: structural declarations, imports, headings and conservative calls.
 Not exact semantic calls, type resolution or macro expansion.
 Token estimate ceil(2 * UTF-8 bytes / 7) is not a tokenizer guarantee.
 Examples:
   dctx map find 'ignore rules' --json
-  dctx map map crates/dctx-core --depth 2
+  dctx map map crates/dctx-cli/src/lib.rs --depth 2
+  dctx map map m:crates/dctx-cli/src/lib.rs --cursor '<next from the previous page>'
 ";
 
 pub(super) fn parse(args: &[String]) -> Result<Options, String> {
@@ -46,6 +53,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     let mut place = PathBuf::from(".");
     let mut format = Format::Text;
     let mut target = None;
+    let mut continuation = None;
     let mut index = 1;
     while index < args.len() {
         let flag = &args[index];
@@ -73,11 +81,23 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
             "--budget" => {
                 request.budget = AnswerBudget::new(number(value)?).map_err(|e| e.to_string())?
             }
+            "--cursor" => {
+                if value.is_empty() {
+                    return Err("continuation cursor is empty".into());
+                }
+                if continuation.replace(value.clone()).is_some() {
+                    return Err("--cursor was given twice".into());
+                }
+            }
             "--depth" if matches!(verb, Verb::Map | Verb::Neighbors) => {
                 request.depth = number(value)?
             }
-            "--limit" if matches!(verb, Verb::Map | Verb::Find | Verb::Neighbors) => {
-                request.limit = number(value)?
+            "--limit" if matches!(verb, Verb::Map | Verb::Find | Verb::Neighbors | Verb::Explain | Verb::Read) => {
+                let limit = number(value)?;
+                if matches!(verb, Verb::Explain | Verb::Read) && limit != 1 {
+                    return Err("limit exceeds the verb hard cap: records".into());
+                }
+                request.limit = limit;
             }
             "--offset" if matches!(verb, Verb::Map | Verb::Find | Verb::Neighbors) => {
                 request.offset = number(value)?
@@ -134,11 +154,17 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         }
     }
     request.target = target.unwrap_or_default();
+    if request.verb == Verb::Map && request.target.is_empty() {
+        return Err(
+            "map requires a target: a stable id (m:, s:, …) or a place-relative file path".into(),
+        );
+    }
     request.validate().map_err(|e| e.to_string())?;
     Ok(Options {
         request,
         format,
         place,
+        continuation,
     })
 }
 fn number<T: std::str::FromStr>(value: &str) -> Result<T, String> {
@@ -171,7 +197,17 @@ mod tests {
         for verb in ["find", "neighbors", "explain", "read"] {
             assert!(options(&[verb, "target", "--json"]).is_ok());
         }
-        assert!(options(&["map"]).is_ok());
+        let missing = options(&["map"]).err().expect("target");
+        assert!(missing.contains("requires a target"), "{missing}");
+        assert!(options(&["read", "s:a.rs#a", "--limit", "1"]).is_ok());
+        assert!(options(&["map", "m:a.rs", "--cursor", "v1|1|map|s:a.rs#a"]).is_ok());
+        assert_eq!(
+            options(&["read", "s:a.rs#a", "--lines", "35-36"])
+                .expect("lines")
+                .request
+                .lines,
+            Some([35, 36])
+        );
         for args in [
             vec!["index"],
             vec!["stats"],
@@ -179,7 +215,10 @@ mod tests {
             vec!["find", "x", "--budget", "2001"],
             vec!["neighbors", "x", "--depth", "3"],
             vec!["read", "x", "--lines", "4-2"],
+            vec!["read", "x", "--limit", "2"],
             vec!["map", "--dir", "out"],
+            vec!["map", "m:a.rs", "--cursor", ""],
+            vec!["explain", "s:a.rs#a", "--limit", "60"],
         ] {
             assert!(options(&args).is_err(), "{args:?}");
         }

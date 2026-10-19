@@ -1,7 +1,8 @@
 //! The five verbs. Convenience methods only fill a [`MapRequest`] and call [`Session::query`].
 //! Implements contracts/API-PORTS-v1.md query, budgets and continuation.
 //! Depends on the index and the wire encoder. A refusal does not write the sink.
-//! Read-only map does not schedule plugins. Read hashes the source again when the digest matches.
+//! Read hashes the source again when the digest matches. Plugins are not scheduled.
+//! When read sets both `lines` and `depth`, `depth` is the absolute start line, not a hop count.
 
 use dctx_core::facts::ReadGrant;
 use dctx_core::ids::RelativePath;
@@ -45,7 +46,7 @@ impl Session {
                 return write_answer(sink, request, &self.place, answer, &resolved);
             }
             Collected::Read(record) => {
-                let record = self.read_record(&generation, *record, resolved.lines)?;
+                let record = self.read_record(&generation, *record, resolved.lines, read_start(request))?;
                 vec![record]
             }
             Collected::Records(records) => {
@@ -176,6 +177,7 @@ impl Session {
         generation: &crate::index::Generation,
         mut record: AnswerRecord,
         lines: u32,
+        absolute_start: Option<u32>,
     ) -> Result<AnswerRecord, DctxError> {
         self.authorize(&record.path)?;
         let expected = generation
@@ -186,7 +188,8 @@ impl Session {
             .ok_or(DctxError::Stale { reason: "no stored digest" })?;
         let bytes = self.read_verified(&record.path, expected)?;
         let span = record.span.ok_or(DctxError::CorruptIndex { reason: "missing span" })?;
-        record.source_utf8 = Some(slice_span(&bytes, span, lines)?);
+        let node_lines = record.lines;
+        record.source_utf8 = Some(slice_span(&bytes, span, node_lines, lines, absolute_start)?);
         Ok(record)
     }
 
@@ -251,7 +254,18 @@ fn encode_page(format: u32, place: &str, answer: &Answer) -> Vec<u8> {
     if format == 1 { encode_text(place, answer).into_bytes() } else { encode_answer(place, answer).into_bytes() }
 }
 
-fn slice_span(bytes: &[u8], span: [u64; 2], lines: u32) -> Result<String, DctxError> {
+/// `depth` on a read that also sets `lines` is the absolute 1-based start. The count stays in `lines`.
+fn read_start(request: &MapRequest) -> Option<u32> {
+    if request.verb == Verb::Read && request.lines.is_some() { request.depth } else { None }
+}
+
+fn slice_span(
+    bytes: &[u8],
+    span: [u64; 2],
+    node_lines: [u32; 2],
+    lines: u32,
+    absolute_start: Option<u32>,
+) -> Result<String, DctxError> {
     let start = usize::try_from(span[0]).map_err(|_| DctxError::CorruptIndex { reason: "span" })?;
     let end = usize::try_from(span[1]).map_err(|_| DctxError::CorruptIndex { reason: "span" })?;
     if start > end || end > bytes.len() {
@@ -261,18 +275,70 @@ fn slice_span(bytes: &[u8], span: [u64; 2], lines: u32) -> Result<String, DctxEr
     if lines == 0 {
         return Ok(text.to_string());
     }
+    let (skip, take) = match absolute_start {
+        None => (0usize, usize::try_from(lines).unwrap_or(usize::MAX)),
+        Some(line) => absolute_window(line, lines, node_lines)?,
+    };
     let mut out = String::new();
+    let mut index = 0usize;
+    let mut taken = 0usize;
     let mut truncated = false;
-    let limit = usize::try_from(lines).unwrap_or(usize::MAX);
-    for (count, line) in text.split_inclusive('\n').enumerate() {
-        if count >= limit {
+    for line in text.split_inclusive('\n') {
+        if index < skip {
+            index += 1;
+            continue;
+        }
+        if taken >= take {
             truncated = true;
             break;
         }
         out.push_str(line);
+        taken += 1;
+        index += 1;
     }
-    if truncated {
+    if absolute_start.is_some() && taken != take {
+        return Err(DctxError::invalid("lines are outside the node span"));
+    }
+    if truncated && absolute_start.is_none() {
         out.push_str("[DCTX_OMITTED]\n");
     }
     Ok(out)
+}
+
+fn absolute_window(line: u32, lines: u32, node_lines: [u32; 2]) -> Result<(usize, usize), DctxError> {
+    let last = line.checked_add(lines.saturating_sub(1)).ok_or_else(|| DctxError::invalid("lines are outside the node span"))?;
+    if line == 0 || line < node_lines[0] || last > node_lines[1] {
+        return Err(DctxError::invalid("lines are outside the node span"));
+    }
+    let skip = usize::try_from(line - node_lines[0]).unwrap_or(usize::MAX);
+    let take = usize::try_from(lines).unwrap_or(usize::MAX);
+    Ok((skip, take))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::slice_span;
+
+    #[test]
+    fn absolute_lines_match_the_file_and_a_prefix_shift_does_not() {
+        let bytes = b"L01\nL02\nL03\nL04\n";
+        let span = [0, u64::try_from(bytes.len()).unwrap_or(0)];
+        let exact = slice_span(bytes, span, [1, 4], 2, Some(3)).expect("range");
+        assert_eq!(exact, "L03\nL04\n");
+        let prefix = slice_span(bytes, span, [1, 4], 2, None).expect("prefix");
+        assert_eq!(prefix, "L01\nL02\n[DCTX_OMITTED]\n");
+        let outside = slice_span(bytes, span, [1, 4], 2, Some(4)).expect_err("past end");
+        assert!(outside.to_string().contains("outside"), "{outside}");
+    }
+
+    #[test]
+    fn a_noninitial_range_inside_a_span_is_not_the_span_prefix() {
+        let bytes = b"line01\nline02\nline03\nline04\nline05\n";
+        let span = [7, 28];
+        let inner = slice_span(bytes, span, [2, 4], 2, Some(3)).expect("inner");
+        assert_eq!(inner, "line03\nline04\n");
+        assert_ne!(inner, "line02\nline03\n");
+        let outside = slice_span(bytes, span, [2, 4], 1, Some(1)).expect_err("before node");
+        assert!(outside.to_string().contains("outside"), "{outside}");
+    }
 }
