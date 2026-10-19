@@ -1,6 +1,7 @@
 //! Reader pin handshake.
 //! Implements the DX-A2 model: begin observes one pointer, confirm pins it only while that
 //! generation is still retained and complete, release drops the pin.
+//! The last release finishes a purge that was waiting on the lease.
 //! Depends on [`super::Lifecycle`] pointers and manifests. GC treats only an active lease as a root.
 //! An acquiring lease is not yet a pin, so a generation can disappear before confirm.
 
@@ -72,13 +73,26 @@ impl Lifecycle {
         Ok(observed)
     }
 
-    /// Ends an active pin. Bytes can be reclaimed on a later sweep once nothing else retains them.
+    /// Ends an active pin. A purge marked on this generation drops logical retention
+    /// when no other lease still holds it. Physical bytes wait for a later sweep.
     pub fn reader_release(&mut self, id: LeaseId) -> Result<(), CacheError> {
-        let Some(lease) = self.leases.get_mut(&id) else {
+        let Some(lease) = self.leases.get(&id) else {
             return Err(CacheError::InvalidRequest { reason: "unknown lease" });
         };
-        lease.phase = LeasePhase::Released;
+        let generation = match lease.phase {
+            LeasePhase::Active { generation } => Some(generation),
+            LeasePhase::Acquiring { .. } | LeasePhase::Released | LeasePhase::OwnerProvenDead => None,
+        };
+        if let Some(lease) = self.leases.get_mut(&id) {
+            lease.phase = LeasePhase::Released;
+        }
+        if let Some(generation) = generation
+            && !self.lease_holds(generation)
+        {
+            self.finish_requested_deletion(generation);
+        }
         self.bump();
+        self.debug_check();
         Ok(())
     }
 

@@ -1,7 +1,7 @@
 //! Explicit purge. Confirmation is part of the request; a dry-run does not take the ledger `&mut`.
-//! Implements CACHE-v1 purge: managed references drop, active handles keep their bytes.
+//! Implements CACHE-v1 purge: managed references drop, active handles keep their physical bytes.
+//! A leased generation keeps those bytes and loses logical retention when the last lease releases.
 //! Depends on manifests and leases in [`super::Lifecycle`]. Exports, config and template sources are not in scope.
-//! Shared facts survive while another root's manifest still references them.
 
 use super::{Lifecycle, ManifestId, RootId};
 use crate::error::CacheError;
@@ -85,31 +85,56 @@ impl Lifecycle {
                 held_by_lease += 1;
                 continue;
             }
-            if let Some(record) = self.manifests.get_mut(&id) {
-                record.available = false;
-                record.pinned = false;
+            if self.drop_logical_retention(id) {
+                dropped += 1;
             }
-            self.clear_generation(manifest.root, manifest.generation);
-            let Some(manifest) = self.manifests.get(&id).cloned() else {
-                continue;
-            };
-            if self.can_retire(&manifest) {
-                self.retire_manifest(id);
-            } else if let Some(record) = self.manifests.get(&id) {
-                let object_id = record.object;
-                if let Some(object) = self.objects.get_mut(&object_id) {
-                    if object.state == super::Physical::Published {
-                        object.state = super::Physical::Retired;
-                        object.retired_at = Some(self.wall);
-                    }
-                    object.deletion_requested = true;
-                }
-            }
-            dropped += 1;
         }
         self.bump();
         self.debug_check();
         PurgeReport { dropped, held_by_lease, dry_run: false }
+    }
+
+    /// Finishes a purge that only marked `deletion_requested` while a lease held the generation.
+    pub(super) fn finish_requested_deletion(&mut self, generation: super::GenerationId) {
+        let ids: Vec<ManifestId> = self
+            .manifests
+            .values()
+            .filter(|manifest| manifest.generation == generation)
+            .filter(|manifest| {
+                self.objects.get(&manifest.object).is_some_and(|object| object.deletion_requested)
+            })
+            .map(|manifest| manifest.id)
+            .collect();
+        for id in ids {
+            self.drop_logical_retention(id);
+        }
+    }
+
+    fn drop_logical_retention(&mut self, id: ManifestId) -> bool {
+        let Some(manifest) = self.manifests.get(&id).cloned() else {
+            return false;
+        };
+        if let Some(record) = self.manifests.get_mut(&id) {
+            record.available = false;
+            record.pinned = false;
+        }
+        self.clear_generation(manifest.root, manifest.generation);
+        let Some(manifest) = self.manifests.get(&id).cloned() else {
+            return false;
+        };
+        if self.can_retire(&manifest) {
+            self.retire_manifest(id);
+        } else if let Some(record) = self.manifests.get(&id) {
+            let object_id = record.object;
+            if let Some(object) = self.objects.get_mut(&object_id) {
+                if object.state == super::Physical::Published {
+                    object.state = super::Physical::Retired;
+                    object.retired_at = Some(self.wall);
+                }
+                object.deletion_requested = true;
+            }
+        }
+        true
     }
 
     fn clear_generation(&mut self, root: RootId, generation: super::GenerationId) {

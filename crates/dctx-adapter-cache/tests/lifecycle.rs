@@ -117,15 +117,49 @@ fn purge_requires_confirmation_and_keeps_leased_bytes() {
     assert!(life.status().deletion_requested_bytes >= 4);
     assert_eq!(life.open_current(left).expect("open"), generation);
     life.reader_release(lease).expect("release");
-    let dropped = life
-        .purge(PurgeRequest { scope: PurgeScope::Root(left), confirm: true, dry_run: false })
-        .expect("purge");
-    assert_eq!(dropped.dropped, 1);
     support::drain(&mut life, true);
+    assert!(life.open_current(left).is_err());
+    assert!(life.open_current(right).is_ok());
     assert_eq!(life.object_bytes(shared), Some(12));
     assert!(life.object_bytes(only_left).is_none());
     assert_eq!(life.adopted_labels(), vec!["registry/owned.bin".to_string()]);
     assert!(life.p3_holds());
+}
+
+#[test]
+fn leased_purge_is_reclaimed_after_release_and_gc() {
+    let mut life = ledger();
+    let root = RootId::new(1);
+    life.register_root(root).expect("root");
+    let generation = life.publish_view(root, 4, &[]).expect("view");
+    let manifest = life.manifest_of(root, generation).expect("manifest");
+    let object = life.manifest_object(manifest).expect("object");
+    let lease = life.reader_begin(root, SessionId::new(1)).expect("begin");
+    life.reader_confirm(lease).expect("confirm");
+    let purged = life
+        .purge(PurgeRequest { scope: PurgeScope::Root(root), confirm: true, dry_run: false })
+        .expect("purge");
+    assert_eq!(purged.held_by_lease, 1);
+    assert_eq!(purged.dropped, 0);
+    assert_eq!(life.object_bytes(object), Some(4));
+    assert_eq!(life.open_current(root).expect("leased"), generation);
+    life.reader_release(lease).expect("release");
+    support::drain(&mut life, true);
+    assert!(life.open_current(root).is_err());
+    assert!(life.object_bytes(object).is_none());
+    assert!(life.p3_holds() && life.p4_holds());
+
+    let mut kept = ledger();
+    kept.register_root(root).expect("root");
+    let generation = kept.publish_view(root, 4, &[]).expect("view");
+    let manifest = kept.manifest_of(root, generation).expect("manifest");
+    let object = kept.manifest_object(manifest).expect("object");
+    let lease = kept.reader_begin(root, SessionId::new(2)).expect("begin");
+    kept.reader_confirm(lease).expect("confirm");
+    kept.reader_release(lease).expect("release");
+    support::drain(&mut kept, true);
+    assert_eq!(kept.open_current(root).expect("control"), generation);
+    assert_eq!(kept.object_bytes(object), Some(4));
 }
 
 #[test]

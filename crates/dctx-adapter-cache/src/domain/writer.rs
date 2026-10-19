@@ -288,7 +288,10 @@ impl Lifecycle {
         let Some(writer) = self.writers.get(&root) else {
             return;
         };
-        if writer.lock != WriterLock::Dead || os_lock_held {
+        // Abrupt death leaves Held. A missing session OS lock, not the stored tag, means the holder is gone.
+        // A changed boot id does not override a lock that is still held; reconcile uses it for unowned staging.
+        let restart_dead = matches!(writer.lock, WriterLock::Held | WriterLock::Dead) && !os_lock_held;
+        if !restart_dead {
             return;
         }
         let swapped = writer.step == WriterStep::Swapped;

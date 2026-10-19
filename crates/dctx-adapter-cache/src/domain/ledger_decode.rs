@@ -1,6 +1,7 @@
-//! Ledger body parsing and id-cursor validation.
-//! Implements CACHE-v1 reconstruction with duplicate, flag and cursor refusals.
+//! Ledger body parsing, cursor checks and lifecycle invariant refusals.
+//! Implements CACHE-v1 reconstruction. A checksum does not prove accounting or ownership.
 //! Depends on domain map codecs and ledger primitives; restart verifies the frame first.
+//! Hostile but checksum-valid images return [`CacheError::CorruptLedger`] before acceptance.
 
 use super::ids::{GenerationId, ManifestId, ObjectId, SessionId};
 use super::restart::{
@@ -92,8 +93,85 @@ impl Lifecycle {
         if !life.ids_cover() {
             return Err(corrupt("id cursor"));
         }
+        life.refuse_hostile_lifecycle()?;
         life.debug_check();
         Ok(life)
+    }
+
+    fn refuse_hostile_lifecycle(&self) -> Result<(), CacheError> {
+        if !self.accounting_holds() {
+            return Err(corrupt("accounting"));
+        }
+        if !self.ownership_holds() {
+            return Err(corrupt("ownership"));
+        }
+        if !self.referential_holds() {
+            return Err(corrupt("referential"));
+        }
+        if !self.state_holds() {
+            return Err(corrupt("state"));
+        }
+        Ok(())
+    }
+
+    fn accounting_holds(&self) -> bool {
+        self.p4_holds()
+            && self.objects.values().all(|object| object.bytes == object.born)
+            && self.reservations.values().all(|hold| hold.left <= hold.original)
+    }
+
+    fn ownership_holds(&self) -> bool {
+        self.writers.values().all(|writer| self.writer_owned(writer))
+            && self.leases.values().all(|lease| self.lease_owned(lease))
+    }
+
+    fn writer_owned(&self, writer: &Writer) -> bool {
+        let identity = match writer.lock {
+            WriterLock::Free => {
+                writer.session.is_none()
+                    && writer.reservation.is_none()
+                    && writer.segment.is_none()
+                    && writer.manifest_object.is_none()
+                    && matches!(writer.step, WriterStep::Idle | WriterStep::Refused)
+            }
+            WriterLock::Held | WriterLock::Dead => writer.session.is_some(),
+        };
+        identity
+            && writer.reservation.is_none_or(|id| self.reservations.contains_key(&id))
+            && writer.segment.is_none_or(|id| self.objects.contains_key(&id))
+            && writer.manifest_object.is_none_or(|id| self.objects.contains_key(&id))
+            && writer.manifest.is_none_or(|id| {
+                writer.lock == WriterLock::Free || self.manifests.contains_key(&id)
+            })
+            && writer_step_owned(writer)
+    }
+
+    fn lease_owned(&self, lease: &super::lease::Lease) -> bool {
+        match lease.phase {
+            super::lease::LeasePhase::Active { .. } | super::lease::LeasePhase::Acquiring { .. } => {
+                self.roots.contains_key(&lease.root)
+            }
+            super::lease::LeasePhase::Released | super::lease::LeasePhase::OwnerProvenDead => true,
+        }
+    }
+
+    fn referential_holds(&self) -> bool {
+        let manifests = self.manifests.values().all(|manifest| {
+            self.roots.contains_key(&manifest.root)
+                && self.objects.contains_key(&manifest.object)
+                && manifest.refs.iter().all(|id| self.objects.contains_key(id))
+        });
+        let objects = self.objects.values().all(|object| {
+            object.roots.iter().all(|root| self.roots.contains_key(root))
+                && object.refs.iter().all(|id| self.objects.contains_key(id))
+        });
+        manifests && objects && self.p3_holds()
+    }
+
+    fn state_holds(&self) -> bool {
+        self.objects.values().all(|object| {
+            object.state != super::Physical::Retired || object.retired_at.is_some()
+        })
     }
 
     fn ids_cover(&self) -> bool {
@@ -115,6 +193,23 @@ impl Lifecycle {
             && self.leases.keys().all(|id| id.raw() < self.ids.lease)
             && self.reservations.keys().all(|id| *id < self.ids.reservation)
             && generations
+    }
+}
+
+fn writer_step_owned(writer: &Writer) -> bool {
+    match writer.step {
+        WriterStep::Idle | WriterStep::Refused | WriterStep::Held => true,
+        WriterStep::Reserved => writer.reservation.is_some(),
+        WriterStep::Staged | WriterStep::SegmentValid => {
+            writer.reservation.is_some() && writer.segment.is_some()
+        }
+        WriterStep::Manifest | WriterStep::Ready | WriterStep::Swapped => {
+            writer.reservation.is_some()
+                && writer.segment.is_some()
+                && writer.manifest.is_some()
+                && writer.manifest_object.is_some()
+                && writer.generation.is_some()
+        }
     }
 }
 
