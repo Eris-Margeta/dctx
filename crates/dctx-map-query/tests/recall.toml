@@ -51,7 +51,7 @@ expected = "s:crates/dctx-adapter-fs/src/adapters/rules.rs#load_policy"
 
 [[question]]
 text = "How does Version calculate the next version?"
-expected = "s:crates/dctx-core/src/version.rs#Version::calculate_next"
+expected = "s:crates/dctx-core/src/version/advance.rs#Version::calculate_next"
 
 [[question]]
 text = "How does Version parse V1 and V1.5 strings?"
