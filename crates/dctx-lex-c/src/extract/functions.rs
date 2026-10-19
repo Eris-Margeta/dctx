@@ -4,7 +4,7 @@
 //! Out-of-line `Type::name` definitions stay methods of the enclosing scope.
 use super::{Item, Region, Scope, Walker};
 use crate::domain::DiagnosticReason;
-use crate::lexer::{keyword, Kind};
+use crate::lexer::{keyword, opens_template_args, AngleDepth, Kind};
 use dctx_map_model::SymbolKind;
 
 pub(crate) struct FoundFn {
@@ -359,20 +359,16 @@ impl Walker<'_> {
         let mut allow_single = force_single || self.type_cue(start, end);
         let mut segment = start;
         let mut index = start;
-        let mut depth = 0i32;
+        let mut nest = AngleDepth::new();
         while index < end {
-            if depth == 0 && (self.is(index, ",") || self.is(index, ";")) {
+            if nest.at_statement_level() && (self.is(index, ",") || self.is(index, ";")) {
                 if let Some(name) = self.segment_name(segment, index, allow_single) {
                     allow_single = true;
                     names.push(name);
                 }
                 segment = index + 1;
-            } else if self.is(index, "(") || self.is(index, "[") || self.is(index, "{") || self.is(index, "<") {
-                depth += 1;
-            } else if self.is(index, ")") || self.is(index, "]") || self.is(index, "}") || self.is(index, ">") {
-                depth -= 1;
-            } else if self.is(index, ">>") {
-                depth -= 2;
+            } else {
+                self.observe_nest(index, end, &mut nest);
             }
             index += 1;
         }
@@ -405,27 +401,20 @@ impl Walker<'_> {
 
     fn segment_name(&self, start: usize, end: usize, allow_single: bool) -> Option<(usize, String)> {
         let mut limit = end;
-        let mut depth = 0i32;
+        let mut nest = AngleDepth::new();
         for index in start..end.min(self.toks.len()) {
-            if self.is(index, "(") || self.is(index, "[") || self.is(index, "<") {
-                depth += 1;
-            } else if self.is(index, ")") || self.is(index, "]") || self.is(index, ">") {
-                depth -= 1;
-            } else if depth == 0 && matches!(self.text(index), "=" | ":" | "{") {
+            if nest.at_statement_level() && matches!(self.text(index), "=" | ":" | "{") {
                 limit = index;
                 break;
             }
+            self.observe_nest(index, end, &mut nest);
         }
         let mut chosen = None;
         let mut idents = 0;
         let mut index = start;
-        let mut nest = 0i32;
+        let mut nest = AngleDepth::new();
         while index < limit {
-            if self.is(index, "(") || self.is(index, "[") || self.is(index, "<") {
-                nest += 1;
-            } else if self.is(index, ")") || self.is(index, "]") || self.is(index, ">") {
-                nest -= 1;
-            } else if self.can_name(index) && !self.known_macro(self.text(index)) && nest <= 1 {
+            if self.can_name(index) && !self.known_macro(self.text(index)) && nest.nest() <= 1 {
                 let preceded = index > start && self.is(index - 1, "::");
                 let followed = self.is(index + 1, "::");
                 if !preceded && !followed {
@@ -433,6 +422,7 @@ impl Walker<'_> {
                     chosen = Some(index);
                 }
             }
+            self.observe_nest(index, end, &mut nest);
             index += 1;
         }
         let at = chosen?;
@@ -440,6 +430,12 @@ impl Walker<'_> {
             return None;
         }
         Some((at, self.text(at).to_string()))
+    }
+
+    fn observe_nest(&self, index: usize, end: usize, nest: &mut AngleDepth) {
+        let spelling = self.text(index);
+        let opens = spelling == "<" && opens_template_args(|at| self.text(at), end, index);
+        nest.observe(spelling, opens);
     }
 }
 

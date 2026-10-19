@@ -6,21 +6,28 @@ use dctx_map_model::{Edge, EdgeKind, Node, StableId};
 /// Source dialect selected by the final path extension.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Dialect {
-    /// `.c` and `.h`, case-insensitively.
+    /// `.c` and `.h`, case-insensitively. The exact suffix `.C` is C++.
     C,
-    /// `.cc`, `.cpp`, `.cxx`, `.hpp` and `.hh`, case-insensitively.
+    /// C++ suffixes, case-insensitively, plus the exact suffix `.C`.
     Cpp,
 }
 
 impl Dialect {
     /// Selects C or C++ from the final extension. Other extensions are unsupported.
+    ///
+    /// GCC treats the exact suffix `.C` as C++. `.c` and `.h` stay C.
     pub fn for_path(path: &str) -> Option<Self> {
         let extension = path.rsplit_once('.')?.1;
+        if extension == "C" {
+            return Some(Self::Cpp);
+        }
         if extension.eq_ignore_ascii_case("c") || extension.eq_ignore_ascii_case("h") {
-            Some(Self::C)
-        } else if matches!(
-            extension.to_ascii_lowercase().as_str(),
-            "cc" | "cpp" | "cxx" | "hpp" | "hh"
+            return Some(Self::C);
+        }
+        let lower = extension.to_ascii_lowercase();
+        if matches!(
+            lower.as_str(),
+            "cc" | "cpp" | "cxx" | "c++" | "hpp" | "hh" | "hxx" | "ixx" | "cppm"
         ) {
             Some(Self::Cpp)
         } else {
@@ -144,13 +151,18 @@ mod tests {
 
     #[test]
     fn dialect_follows_the_final_extension() {
-        assert_eq!(Dialect::for_path("a/b.C"), Some(Dialect::C));
+        assert_eq!(Dialect::for_path("a/b.c"), Some(Dialect::C));
+        assert_eq!(Dialect::for_path("a/b.C"), Some(Dialect::Cpp));
         assert_eq!(Dialect::for_path("include/box.H"), Some(Dialect::C));
         assert_eq!(Dialect::for_path("src/box.cc"), Some(Dialect::Cpp));
         assert_eq!(Dialect::for_path("src/box.CPP"), Some(Dialect::Cpp));
         assert_eq!(Dialect::for_path("src/box.cxx"), Some(Dialect::Cpp));
         assert_eq!(Dialect::for_path("include/box.hpp"), Some(Dialect::Cpp));
         assert_eq!(Dialect::for_path("include/box.hh"), Some(Dialect::Cpp));
+        assert_eq!(Dialect::for_path("include/Widget.hxx"), Some(Dialect::Cpp));
+        assert_eq!(Dialect::for_path("unit.c++"), Some(Dialect::Cpp));
+        assert_eq!(Dialect::for_path("mod.ixx"), Some(Dialect::Cpp));
+        assert_eq!(Dialect::for_path("part.cppm"), Some(Dialect::Cpp));
         assert_eq!(Dialect::for_path("notes.md"), None);
         assert_eq!(Dialect::for_path("Makefile"), None);
         assert!(Precision::Partial > Precision::Convention);
