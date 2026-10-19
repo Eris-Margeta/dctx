@@ -1,8 +1,8 @@
 //! Binary checks that `map read` of a normal module fits its default budget.
 //! Covers SPEC-MAP-MODE §4 and contracts/API-PORTS-v1.md read token caps.
 //! Depends on the compiled dctx-cli and a temporary source file. No network.
-//! Used by `cargo nextest -p dctx-cli`. A tiny `--budget` must name the needed size.
-//! The default is the facade hard cap. A page that cannot fit is refused exactly.
+//! Used by `cargo nextest -p dctx-cli`. The default is the facade hard cap.
+//! A budget below the signature still names that needed size exactly.
 
 #![forbid(unsafe_code)]
 
@@ -107,14 +107,20 @@ fn tiny_budget_names_the_needed_size() {
     let repo = Repository::new("tiny");
     let source = module_source();
     fs::write(repo.repo().join("wide.rs"), &source).expect("source");
-    // 400 tokens admit 1,400 bytes: the envelope can fit, the module page cannot.
-    let output = repo.output(&["map", "read", "m:wide.rs", "--limit", "1", "--json", "--budget", "400"]);
+    // E-02n: `--budget 400` used to refuse with the full page size. A budget that fits
+    // the signature now returns a marked prefix (map_read_followups). This budget is
+    // below that signature, so the refusal stays and names the signature page.
+    let output = repo.output(&["map", "read", "m:wide.rs", "--limit", "1", "--json", "--budget", "8"]);
     let stdout = String::from_utf8_lossy(&output.stdout);
     let stderr = String::from_utf8_lossy(&output.stderr);
     assert!(!output.status.success(), "tiny budget succeeded: {stdout}");
     assert!(stdout.is_empty(), "stdout on refusal: {stdout}");
     let needed = needed_bytes(&stderr).unwrap_or_else(|| panic!("no needed size in {stderr}"));
-    let ceiling = 400u64 * 7 / 2;
+    let ceiling = 8u64 * 7 / 2;
     assert!(needed > ceiling, "needed {needed} is not above the {ceiling}-byte ceiling: {stderr}");
-    assert!(needed > source.len() as u64, "needed {needed} does not cover the module: {stderr}");
+    assert!(
+        needed < u64::try_from(source.len()).unwrap_or(u64::MAX),
+        "needed {needed} still reports the whole module ({} bytes)",
+        source.len(),
+    );
 }

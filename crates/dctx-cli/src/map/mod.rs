@@ -137,9 +137,10 @@ fn facade_request(
     mapped.full = request.full;
     if let Some([start, end]) = request.lines {
         mapped.lines = Some(end.saturating_sub(start).saturating_add(1));
-        // MapRequest.lines is only a count. Read's hard depth is 0, so depth carries the absolute start.
-        mapped.depth = Some(start);
-    } else if single {
+        mapped.line_start = Some(start);
+    }
+    // Explain and read hard-cap depth at 0. The absolute line stays in line_start.
+    if single {
         mapped.depth = None;
         mapped.limits.depth = None;
     } else {
@@ -225,7 +226,8 @@ mod tests {
         let mapped = facade_request(&read, Format::Json, Some("v1|1|read|m:a.rs".into()), false);
         assert_eq!(mapped.limits.records, Some(1));
         assert_eq!(mapped.lines, Some(2));
-        assert_eq!(mapped.depth, Some(35));
+        assert_eq!(mapped.line_start, Some(35));
+        assert!(mapped.depth.is_none(), "absolute lines must leave depth unset");
         assert!(mapped.limits.depth.is_none());
         assert_eq!(mapped.continuation.as_deref(), Some("v1|1|read|m:a.rs"));
         assert!(mapped.limits.estimated_tokens.is_none());
@@ -244,9 +246,11 @@ mod tests {
         assert_eq!(mapped.limits.estimated_tokens, Some(8));
         assert_eq!(mapped.limits.encoded_bytes, Some(u64::try_from(tiny.request.budget.bytes()).unwrap_or(0)));
 
-        let map = args::parse(&["map".into(), "m:a.rs".into()]).expect("map");
+        let map = args::parse(&["map".into(), "m:a.rs".into(), "--depth".into(), "2".into()]).expect("map");
         let mapped = facade_request(&map.request, map.format, map.continuation, map.budget_set);
         assert_eq!(mapped.limits.estimated_tokens, Some(500));
+        assert_eq!(mapped.depth, Some(2));
+        assert!(mapped.line_start.is_none());
     }
 
     #[test]
