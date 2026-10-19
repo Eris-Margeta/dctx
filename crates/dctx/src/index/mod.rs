@@ -7,6 +7,7 @@ mod extract;
 mod lex_dispatch;
 mod query;
 mod segment;
+mod span_index;
 #[cfg(feature = "syntax-rust")]
 mod syn_extract;
 mod walk;

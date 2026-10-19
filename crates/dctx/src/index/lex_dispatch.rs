@@ -6,6 +6,7 @@
 use dctx_map_model::{Node, NodeKind};
 
 use super::extract::Symbol;
+use super::span_index::SpanIndex;
 
 /// Converts the selected lexer's facts, abstaining on failed or unsupported input.
 pub(super) fn symbols(language: &str, path: &str, text: &str) -> Vec<Symbol> {
@@ -42,6 +43,7 @@ pub(super) fn symbols(language: &str, path: &str, text: &str) -> Vec<Symbol> {
 }
 
 fn from_nodes(text: &str, nodes: impl IntoIterator<Item = Node>) -> Vec<Symbol> {
+    let spans = SpanIndex::build(text);
     let mut symbols = Vec::new();
     for node in nodes {
         if matches!(node.kind, NodeKind::Module | NodeKind::Place | NodeKind::Package) || node.name.is_empty() {
@@ -62,7 +64,7 @@ fn from_nodes(text: &str, nodes: impl IntoIterator<Item = Node>) -> Vec<Symbol> 
             kind,
             graph,
             lines: node.lines,
-            span: line_span(text, node.lines),
+            span: spans.line_span(node.lines),
             summary: node.summary.text,
             summary_source: node.summary.source.as_str().to_string(),
             signature: node.signature,
@@ -71,7 +73,9 @@ fn from_nodes(text: &str, nodes: impl IntoIterator<Item = Node>) -> Vec<Symbol> 
     symbols
 }
 
-fn line_span(text: &str, lines: [u32; 2]) -> [u64; 2] {
+/// Pre-index span scan. Tests compare [`super::span_index::SpanIndex`] with this oracle.
+#[cfg(test)]
+pub(crate) fn line_span_oracle(text: &str, lines: [u32; 2]) -> [u64; 2] {
     let start_line = lines[0].max(1);
     let end_line = lines[1].max(start_line);
     let mut offset = 0usize;
@@ -166,6 +170,28 @@ mod tests {
             let lexed = dctx_lex_js::JsLexer::default().extract(path, partial.as_bytes()).expect("partial");
             assert_eq!(lexed.completion, dctx_lex_js::Completion::Partial);
             assert_eq!(symbols(language, path, &partial), complete);
+        }
+    }
+
+    #[test]
+    fn symbol_spans_match_the_pre_index_scan() {
+        let fixtures = [
+            ("compact.json", "{\"Alpha\":1,\"Beta\":{\"Gamma\":2},\"Delta\":[3]}"),
+            ("pretty.json", "{\n  \"Alpha\": 1,\n\n  \"Beta\": {\n    \"Gamma\": 2\n  }\n}\n"),
+            ("crlf.json", "{\r\n  \"Alpha\": 1,\r\n\r\n  \"Beta\": 2\r\n}\r\n"),
+            ("multi.json", "{\n  \"名前\": \"café\",\n  \"Key\": \"🔑\"\n}\n"),
+            ("tail.json", "{\n  \"Alpha\": 1,\n\n  \"Tail\": \"é\"}"),
+        ];
+        for (path, text) in fixtures {
+            let found = symbols("config", path, text);
+            assert!(!found.is_empty(), "{path}");
+            for symbol in &found {
+                assert_eq!(symbol.span, line_span_oracle(text, symbol.lines), "{path} {}", symbol.name);
+                let start = usize::try_from(symbol.span[0]).unwrap_or(usize::MAX);
+                let end = usize::try_from(symbol.span[1]).unwrap_or(usize::MAX);
+                assert!(text.is_char_boundary(start) && text.is_char_boundary(end), "{path} {}", symbol.name);
+                assert!(start <= end && end <= text.len(), "{path} {}", symbol.name);
+            }
         }
     }
 }
