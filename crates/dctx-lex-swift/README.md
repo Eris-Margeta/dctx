@@ -16,8 +16,12 @@ properties/cases to const or an unspecified symbol kind in the shared vocabulary
 
 Nested comments, regular/multiline/raw strings and nested interpolation are lexed.
 Literal text never produces declarations or references. Compiler condition tokens
-remain unevaluated: declarations in every branch are retained. Macros produce a
-diagnostic and their argument/body tokens are skipped. No dispatch or macro edge
+remain unevaluated: declarations in every branch are retained. Availability
+(`#available`, `#unavailable`) and expression directives (`#selector`, `#file`,
+`#warning`) are transparent. A leading `#!` hashbang is a comment. Top-level
+statements in scripts are accepted; their calls are references on the file.
+Unknown macros produce a diagnostic and their argument/body tokens are skipped.
+No dispatch or macro edge
 is resolved. Member reads are convention-labeled unresolved uses-type hints because
 the shared model has no member-read relation. Closure bodies contribute lexical
 references to their enclosing declaration; local bindings are not graph symbols.
