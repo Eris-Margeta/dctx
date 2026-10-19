@@ -1,6 +1,7 @@
 //! Parsing for the five read-only map verbs and their bounded options.
 //! Implements SPEC-MAP-MODE sections 4 and 9.1 with no admin commands.
 //! Uses map-query request validation. Execution is the facade in the parent module.
+//! A read with no `--budget` leaves the facade read default, which fits a typical module.
 use dctx_map_query::{AnswerBudget, Direction, EdgeKind, Format, Request, Verb};
 use std::path::PathBuf;
 
@@ -10,13 +11,16 @@ pub(super) struct Options {
     pub place: PathBuf,
     /// Opaque `next` token from an earlier page. Forwarded as `MapRequest.continuation`.
     pub continuation: Option<String>,
+    /// True when the caller passed `--budget`. Read otherwise uses the facade default.
+    pub budget_set: bool,
 }
 pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read> <TARGET> [OPTIONS]
   TARGET                  Required. map accepts a stable id or a place-relative file.
                           A file path is read as m:<path>. Omitting TARGET does not scan.
   --json                  Facade JSON v2, including the precision label
   --place PATH            Place or worktree root (default: current directory)
-  --budget TOKENS         Output tokens, 1..2000 (explain max: 1000)
+  --budget TOKENS         Output tokens, 1..2000 (explain max: 1000).
+                          Read with no --budget uses the 2,000-token hard cap.
   --depth N               Map: 1..3; neighbors: 1..2. Explain and read take no depth.
   --limit N               Map, find and neighbors page size. Explain and read accept only 1.
   --offset N              Refused. Pass the previous page's next value to --cursor.
@@ -54,6 +58,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     let mut format = Format::Text;
     let mut target = None;
     let mut continuation = None;
+    let mut budget_set = false;
     let mut index = 1;
     while index < args.len() {
         let flag = &args[index];
@@ -79,7 +84,8 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         match flag.as_str() {
             "--place" => place = PathBuf::from(value),
             "--budget" => {
-                request.budget = AnswerBudget::new(number(value)?).map_err(|e| e.to_string())?
+                request.budget = AnswerBudget::new(number(value)?).map_err(|e| e.to_string())?;
+                budget_set = true;
             }
             "--cursor" => {
                 if value.is_empty() {
@@ -165,6 +171,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         format,
         place,
         continuation,
+        budget_set,
     })
 }
 fn number<T: std::str::FromStr>(value: &str) -> Result<T, String> {
@@ -200,6 +207,11 @@ mod tests {
         let missing = options(&["map"]).err().expect("target");
         assert!(missing.contains("requires a target"), "{missing}");
         assert!(options(&["read", "s:a.rs#a", "--limit", "1"]).is_ok());
+        let plain = options(&["read", "m:a.rs"]).expect("read");
+        assert!(!plain.budget_set);
+        let sized = options(&["read", "m:a.rs", "--budget", "8"]).expect("budget");
+        assert!(sized.budget_set);
+        assert_eq!(sized.request.budget.tokens(), 8);
         assert!(options(&["map", "m:a.rs", "--cursor", "v1|1|map|s:a.rs#a"]).is_ok());
         assert_eq!(
             options(&["read", "s:a.rs#a", "--lines", "35-36"])

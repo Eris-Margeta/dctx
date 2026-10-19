@@ -51,13 +51,18 @@ pub(crate) fn execute(arguments: &[String]) -> Result<String, String> {
         eprintln!("content_reads {}", session.content_reads());
         eprintln!("cached_content_reads {}", session.cached_content_reads());
     }
-    let request = facade_request(&options.request, options.format, options.continuation);
+    let request = facade_request(&options.request, options.format, options.continuation, options.budget_set);
     let mut sink = VecSink::new();
     session.query(&handle, &request, &mut sink).map_err(|error| error.to_string())?;
     Ok(String::from_utf8_lossy(sink.as_bytes()).into_owned())
 }
 
-fn facade_request(request: &Request, format: Format, continuation: Option<String>) -> MapRequest {
+fn facade_request(
+    request: &Request,
+    format: Format,
+    continuation: Option<String>,
+    budget_set: bool,
+) -> MapRequest {
     let single = matches!(request.verb, QueryVerb::Explain | QueryVerb::Read);
     let mut mapped = MapRequest::new(match request.verb {
         QueryVerb::Map => Verb::Map,
@@ -84,8 +89,13 @@ fn facade_request(request: &Request, format: Format, continuation: Option<String
     } else {
         Some(u64::try_from(request.limit).unwrap_or(u64::MAX))
     };
-    mapped.limits.estimated_tokens = Some(u64::from(request.budget.tokens()));
-    mapped.limits.encoded_bytes = Some(u64::try_from(request.budget.bytes()).unwrap_or(u64::MAX));
+    // map-query's read default is 500 tokens (1,750 bytes). A module page is larger, and the
+    // facade drops the one record instead of cutting it. Leave the budget unset so the facade
+    // read default (its hard cap) applies. An explicit --budget is forwarded unchanged.
+    if request.verb != QueryVerb::Read || budget_set {
+        mapped.limits.estimated_tokens = Some(u64::from(request.budget.tokens()));
+        mapped.limits.encoded_bytes = Some(u64::try_from(request.budget.bytes()).unwrap_or(u64::MAX));
+    }
     mapped.output_format = if matches!(format, Format::Json) { 2 } else { 1 };
     mapped.within = request.within.clone();
     mapped.continuation = continuation;
@@ -169,19 +179,39 @@ mod tests {
     #[test]
     fn explain_and_read_stay_inside_the_facade_caps() {
         let explain = Request::new(QueryVerb::Explain, "s:a.rs#kept");
-        let mapped = facade_request(&explain, Format::Json, None);
+        let mapped = facade_request(&explain, Format::Json, None, false);
         assert_eq!(mapped.limits.records, Some(1));
         assert!(mapped.depth.is_none());
         assert!(mapped.limits.depth.is_none());
+        assert_eq!(mapped.limits.estimated_tokens, Some(400));
 
         let mut read = Request::new(QueryVerb::Read, "m:a.rs");
         read.lines = Some([35, 36]);
-        let mapped = facade_request(&read, Format::Json, Some("v1|1|read|m:a.rs".into()));
+        let mapped = facade_request(&read, Format::Json, Some("v1|1|read|m:a.rs".into()), false);
         assert_eq!(mapped.limits.records, Some(1));
         assert_eq!(mapped.lines, Some(2));
         assert_eq!(mapped.depth, Some(35));
         assert!(mapped.limits.depth.is_none());
         assert_eq!(mapped.continuation.as_deref(), Some("v1|1|read|m:a.rs"));
+        assert!(mapped.limits.estimated_tokens.is_none());
+        assert!(mapped.limits.encoded_bytes.is_none());
+    }
+
+    #[test]
+    fn an_explicit_read_budget_is_forwarded_and_the_default_is_not_500() {
+        let plain = args::parse(&["read".into(), "m:a.rs".into()]).expect("parse");
+        let mapped = facade_request(&plain.request, plain.format, plain.continuation, plain.budget_set);
+        assert!(mapped.limits.estimated_tokens.is_none(), "default read must not send 500 tokens");
+        assert!(mapped.limits.encoded_bytes.is_none());
+
+        let tiny = args::parse(&["read".into(), "m:a.rs".into(), "--budget".into(), "8".into()]).expect("tiny");
+        let mapped = facade_request(&tiny.request, tiny.format, tiny.continuation, tiny.budget_set);
+        assert_eq!(mapped.limits.estimated_tokens, Some(8));
+        assert_eq!(mapped.limits.encoded_bytes, Some(u64::try_from(tiny.request.budget.bytes()).unwrap_or(0)));
+
+        let map = args::parse(&["map".into(), "m:a.rs".into()]).expect("map");
+        let mapped = facade_request(&map.request, map.format, map.continuation, map.budget_set);
+        assert_eq!(mapped.limits.estimated_tokens, Some(500));
     }
 
     #[test]

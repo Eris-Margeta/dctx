@@ -2,6 +2,7 @@
 //! Implements contracts/API-PORTS-v1.md budgets: `ceil(2 * utf8_bytes / 7)` and verb hard caps.
 //! Depends on dctx-core's estimate and on [`super::request::Verb`]. The session intersects these
 //! with the host ceiling and the DTS budget. A caller cannot raise the verb hard cap or the safety cap.
+//! Read defaults to its hard cap so a typical module page fits; a smaller request is still exact.
 
 use dctx_core::budget::{byte_ceiling, estimate_tokens};
 use dctx_template::{BudgetPlan, HostCeiling};
@@ -17,6 +18,10 @@ pub(crate) const SAFETY_ENTRIES: u64 = 100_000;
 pub(crate) const SAFETY_FILE: u64 = 8 * 1024 * 1024;
 /// Most content bytes read from one snapshot.
 pub(crate) const SAFETY_SOURCE: u64 = 64 * 1024 * 1024;
+/// Read token budget when the caller sets none. Equal to the verb hard cap.
+/// `floor(7 * 2000 / 2)` is 7,000 bytes, enough for a typical module page (~5 KB encoded).
+/// The old 500-token default admitted 1,750 bytes and dropped that single record.
+const READ_DEFAULT_TOKENS: u64 = 2_000;
 
 /// Caller limits. `None` means "use the verb default, then the safety cap", not "unlimited".
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -181,8 +186,8 @@ fn verb_cap(verb: Verb) -> VerbCap {
             hard_lines: 0,
         },
         Verb::Read => VerbCap {
-            default_tokens: 500,
-            hard_tokens: 2_000,
+            default_tokens: READ_DEFAULT_TOKENS,
+            hard_tokens: READ_DEFAULT_TOKENS,
             default_records: 1,
             hard_records: 1,
             default_depth: 0,
@@ -309,6 +314,25 @@ mod tests {
         let defaulted = resolve_query(Verb::Find, &MapRequest::new(Verb::Find), OperationLimits::default()).expect("default");
         assert_eq!(defaulted.records, 10);
         assert_eq!(defaulted.tokens, 500);
+    }
+
+    #[test]
+    fn read_default_fits_a_typical_module_and_cannot_pass_the_hard_cap() {
+        let read = resolve_query(Verb::Read, &MapRequest::new(Verb::Read), OperationLimits::default()).expect("read");
+        assert_eq!(read.tokens, super::READ_DEFAULT_TOKENS);
+        assert!(read.bytes >= 5_250, "a ~5 KB module page must fit, got {} bytes", read.bytes);
+        assert!(super::estimate_tokens(5_250) <= read.tokens);
+
+        let mut narrow = MapRequest::new(Verb::Read);
+        narrow.limits.estimated_tokens = Some(500);
+        let narrow = resolve_query(Verb::Read, &narrow, OperationLimits::default()).expect("narrow");
+        assert_eq!(narrow.tokens, 500);
+        assert!(narrow.bytes < 5_250, "an explicit 500-token budget stays narrow");
+
+        let mut over = MapRequest::new(Verb::Read);
+        over.limits.estimated_tokens = Some(super::READ_DEFAULT_TOKENS + 1);
+        let error = resolve_query(Verb::Read, &over, OperationLimits::default()).expect_err("cap");
+        assert!(error.to_string().contains("hard cap"), "{error}");
     }
 
     #[test]
