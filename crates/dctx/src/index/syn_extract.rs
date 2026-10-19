@@ -72,3 +72,28 @@ fn kind_of(kind: DeclarationKind) -> Option<&'static str> {
         DeclarationKind::Module | DeclarationKind::Union => return None,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const DECOYS: &[u8] = b"// fn Phantom() {}\n/* fn Blocked() {} */\nfn Real() {\n    let _text = \"fn Ghost() {}\";\n    let _raw = r#\"fn RawDecoy() {}\"#;\n}\n";
+
+    #[test]
+    fn bounded_input_refuses_before_a_parse() {
+        let error = extract(b"fn Real() {}\n", 4).expect_err("bound");
+        match error {
+            DctxError::ResourceLimit { resource: Resource::FileBytes, limit } => assert_eq!(limit, 4),
+            other => panic!("file bound, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn comment_and_string_decoys_are_not_declarations() {
+        let (symbols, syntax) = extract(DECOYS, 8 * 1024).expect("syn");
+        assert!(syntax);
+        assert_eq!(symbols.len(), 1);
+        assert_eq!(symbols[0].name, "Real");
+        assert_eq!(symbols[0].kind, "fn");
+    }
+}

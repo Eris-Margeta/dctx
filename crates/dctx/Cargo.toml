@@ -8,10 +8,10 @@ description = "Stable dctx library facade for pack, map, templates and cache"
 # `default` includes the optional plugin runtime; sessions still require an explicit host.
 # Strict composition selects the six engine features without `plugin-runtime`.
 # `default-features = false` still builds the pure types; disabled operations return
-# `UnsupportedCapability`. Enhanced parsers and JSON deps are explicit features.
-# `syntax-rust` stays off this set: it links `syn`, and the five-verb corpus stays structural.
+# `UnsupportedCapability`. `syntax-rust` is in the shipped default: PARSERS-v1 requires
+# syn for Rust. A build without that feature refuses it instead of scanning Rust lines.
 [features]
-default = ["pack", "map", "templates", "fs", "segments", "cache", "plugin-runtime"]
+default = ["pack", "map", "templates", "fs", "segments", "cache", "plugin-runtime", "syntax-rust"]
 plugin-runtime = ["dep:dctx-plugin-host", "dep:dctx-plugin-platform", "dep:dctx-plugin-protocol"]
 pack = []
 map = []
@@ -74,6 +74,10 @@ required-features = ["fs", "map"]
 [[test]]
 name = "golden"
 required-features = ["map", "segments"]
+
+[[test]]
+name = "rust_default"
+required-features = ["map", "syntax-rust"]
 
 [[test]]
 name = "session"
