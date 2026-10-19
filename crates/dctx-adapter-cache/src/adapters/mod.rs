@@ -1,50 +1,108 @@
 //! Filesystem ledger and the in-memory `Cache` port.
-//! Implements CACHE-v1 publication of the lifecycle image: temp file, sync, then rename.
+//! Implements CACHE-v1 publication: a unique temp file, sync, then rename, under a revision check.
 //! Depends on [`crate::Lifecycle`] and std filesystem calls. Load reports orphans and does not delete them.
 //! Object bytes live in [`cache`]. A symlink is never a reason to touch a path outside the cache root.
 
 mod cache;
+mod coordinate;
+mod lock;
+mod orphans;
+mod publish;
 
 use crate::domain::{Lifecycle, ObjectId, Quota, LEDGER_MAX_BYTES};
 use crate::error::CacheError;
-use crate::ports::{LedgerStore, LoadedLedger, ObjectStore, OrphanFile};
-use std::collections::BTreeSet;
+use crate::ports::{LedgerStore, LoadedLedger};
 use std::fs::{self, File, OpenOptions};
-use std::io::Write;
+use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Mutex;
 
 pub use cache::FsObjectStore;
+pub use coordinate::auto_clean;
 pub use dctx_ports::Cache;
 
 /// Committed ledger name inside the cache root.
 pub const LEDGER_FILE: &str = "ledger.v1";
-/// Temp name used before the atomic rename. A crash leaves this file in place.
+/// Historical fixed temp name. Stages now use a unique name so one store cannot commit another's bytes.
 pub const LEDGER_TEMP: &str = "ledger.v1.tmp";
+
+/// Revision this store last observed on the committed ledger.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Observed {
+    /// `load` or `store` has not looked at the committed file yet.
+    Unknown,
+    /// The committed file was absent.
+    Absent,
+    /// The committed file was corrupt, an unknown version, or not a regular file.
+    Unreadable,
+    /// Logical revision of the committed image.
+    Revision(u64),
+}
+
+#[derive(Clone, Debug)]
+struct Staged {
+    path: PathBuf,
+    revision: u64,
+}
+
+static TEMP_SEQ: AtomicU64 = AtomicU64::new(1);
 
 /// Versioned ledger file for one cache root.
 #[derive(Debug)]
 pub struct FsLedgerStore {
     root: PathBuf,
+    observed: Mutex<Observed>,
+    staged: Mutex<Option<Staged>>,
 }
 
 impl FsLedgerStore {
     /// `root` must already be a real directory. A symlink root is refused.
     pub fn open(root: &Path) -> Result<Self, CacheError> {
-        Ok(Self { root: real_root(root)? })
+        Ok(Self {
+            root: real_root(root)?,
+            observed: Mutex::new(Observed::Unknown),
+            staged: Mutex::new(None),
+        })
     }
 
-    /// Writes and syncs the temp file. The committed name is unchanged until [`Self::commit`].
+    /// Holds the cache lock for `body`. `store` and `load` take the same lock.
+    pub(super) fn exclusive<T>(&self, body: impl FnOnce() -> Result<T, CacheError>) -> Result<T, CacheError> {
+        let _guard = lock::LockGuard::acquire(&self.root)?;
+        body()
+    }
+
+    /// Writes and syncs a unique temp file. The committed name is unchanged until [`Self::commit`].
     pub fn stage(&self, ledger: &Lifecycle) -> Result<(), CacheError> {
-        let bytes = ledger.encode_ledger()?;
-        let path = self.root.join(LEDGER_TEMP);
-        write_private(&path, &bytes)
+        self.exclusive(|| self.stage_locked(ledger))
     }
 
-    /// Renames the temp file over the committed ledger and syncs the directory.
+    /// Renames this store's temp file over the committed ledger when the revision still matches.
     pub fn commit(&self) -> Result<(), CacheError> {
-        let from = self.root.join(LEDGER_TEMP);
+        self.exclusive(|| self.commit_locked())
+    }
+
+    fn stage_locked(&self, ledger: &Lifecycle) -> Result<(), CacheError> {
+        let bytes = ledger.encode_ledger()?;
+        let path = self.fresh_temp()?;
+        write_exclusive(&path, &bytes)?;
+        let previous = {
+            let mut slot = self.staged.lock().unwrap_or_else(|err| err.into_inner());
+            slot.replace(Staged { path, revision: ledger.logical_revision() })
+        };
+        if let Some(previous) = previous {
+            remove_regular_file(&previous.path);
+        }
+        Ok(())
+    }
+
+    fn commit_locked(&self) -> Result<(), CacheError> {
+        let Some(staged) = self.staged_slot() else {
+            return Err(CacheError::LedgerIo { reason: "missing temp" });
+        };
+        self.ensure_current()?;
         let to = self.root.join(LEDGER_FILE);
-        match fs::symlink_metadata(&from) {
+        match fs::symlink_metadata(&staged.path) {
             Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
                 return Err(CacheError::LedgerIo { reason: "missing temp" });
             }
@@ -59,67 +117,139 @@ impl FsLedgerStore {
         {
             return Err(CacheError::OutsideCacheRoot);
         }
-        fs::rename(&from, &to).map_err(|_| CacheError::LedgerIo { reason: "rename" })?;
-        sync_dir(&self.root)
+        fs::rename(&staged.path, &to).map_err(|_| CacheError::LedgerIo { reason: "rename" })?;
+        sync_dir(&self.root)?;
+        self.set_observed(Observed::Revision(staged.revision));
+        self.clear_staged();
+        Ok(())
     }
 
-    fn empty_load(&self, empty_quota: Quota, fault: Option<CacheError>) -> Result<LoadedLedger, CacheError> {
-        Ok(LoadedLedger {
-            lifecycle: Lifecycle::new(empty_quota)?,
-            fault,
-            orphans: list_orphans(&self.root, &BTreeSet::new())?,
-        })
+    /// Stores `ledger` while the caller already holds [`Self::exclusive`].
+    pub(super) fn store_locked(&self, ledger: &Lifecycle) -> Result<(), CacheError> {
+        self.ensure_current()?;
+        self.stage_locked(ledger)?;
+        self.commit_locked()
     }
-}
 
-impl LedgerStore for FsLedgerStore {
-    fn load(&self, empty_quota: Quota) -> Result<LoadedLedger, CacheError> {
+    fn load_locked(&self, empty_quota: Quota) -> Result<LoadedLedger, CacheError> {
         let path = self.root.join(LEDGER_FILE);
         match read_committed(&path)? {
-            LedgerRead::Absent => Ok(self.empty_load(empty_quota, None)?),
-            LedgerRead::Rejected(error) => Ok(self.empty_load(empty_quota, Some(error))?),
+            LedgerRead::Absent => {
+                self.set_observed(Observed::Absent);
+                self.empty_load(empty_quota, None)
+            }
+            LedgerRead::Rejected(error) => {
+                self.set_observed(Observed::Unreadable);
+                self.empty_load(empty_quota, Some(error))
+            }
             LedgerRead::Bytes(bytes) => match Lifecycle::decode_ledger(&bytes) {
                 Ok(lifecycle) => {
+                    self.set_observed(Observed::Revision(lifecycle.logical_revision()));
                     let known = lifecycle.object_ids().into_iter().map(ObjectId::raw).collect();
                     Ok(LoadedLedger {
                         lifecycle,
                         fault: None,
-                        orphans: list_orphans(&self.root, &known)?,
+                        orphans: orphans::list_orphans(&self.root, &known)?,
                     })
                 }
                 Err(error @ (CacheError::CorruptLedger { .. } | CacheError::UnknownLedgerVersion { .. })) => {
-                    Ok(self.empty_load(empty_quota, Some(error))?)
+                    self.set_observed(Observed::Unreadable);
+                    self.empty_load(empty_quota, Some(error))
                 }
                 Err(error) => Err(error),
             },
         }
     }
 
-    fn store(&self, ledger: &Lifecycle) -> Result<(), CacheError> {
-        self.stage(ledger)?;
-        self.commit()
+    fn empty_load(&self, empty_quota: Quota, fault: Option<CacheError>) -> Result<LoadedLedger, CacheError> {
+        Ok(LoadedLedger {
+            lifecycle: Lifecycle::new(empty_quota)?,
+            fault,
+            orphans: orphans::list_orphans(&self.root, &std::collections::BTreeSet::new())?,
+        })
+    }
+
+    fn ensure_current(&self) -> Result<(), CacheError> {
+        if revision_matches(self.observed(), self.disk_token()?) {
+            Ok(())
+        } else {
+            Err(CacheError::InvalidRequest { reason: "stale ledger" })
+        }
+    }
+
+    fn disk_token(&self) -> Result<Observed, CacheError> {
+        match read_committed(&self.root.join(LEDGER_FILE))? {
+            LedgerRead::Absent => Ok(Observed::Absent),
+            LedgerRead::Rejected(_) => Ok(Observed::Unreadable),
+            LedgerRead::Bytes(bytes) => match Lifecycle::decode_ledger(&bytes) {
+                Ok(lifecycle) => Ok(Observed::Revision(lifecycle.logical_revision())),
+                Err(CacheError::CorruptLedger { .. } | CacheError::UnknownLedgerVersion { .. }) => {
+                    Ok(Observed::Unreadable)
+                }
+                Err(error) => Err(error),
+            },
+        }
+    }
+
+    fn fresh_temp(&self) -> Result<PathBuf, CacheError> {
+        for _ in 0..8 {
+            let path = self.root.join(format!(
+                "ledger.{}.{}.tmp",
+                lock::owner_id(),
+                TEMP_SEQ.fetch_add(1, Ordering::Relaxed)
+            ));
+            if !path.starts_with(&self.root) {
+                return Err(CacheError::OutsideCacheRoot);
+            }
+            match fs::symlink_metadata(&path) {
+                Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(path),
+                Err(_) => return Err(CacheError::LedgerIo { reason: "metadata" }),
+                Ok(meta) if meta.file_type().is_symlink() || meta.is_dir() => {
+                    return Err(CacheError::OutsideCacheRoot);
+                }
+                Ok(_) => {}
+            }
+        }
+        Err(CacheError::LedgerIo { reason: "create" })
+    }
+
+    fn staged_slot(&self) -> Option<Staged> {
+        self.staged.lock().unwrap_or_else(|err| err.into_inner()).clone()
+    }
+
+    #[cfg(test)]
+    fn staged_path(&self) -> Option<PathBuf> {
+        self.staged_slot().map(|staged| staged.path)
+    }
+
+    fn clear_staged(&self) {
+        *self.staged.lock().unwrap_or_else(|err| err.into_inner()) = None;
+    }
+
+    fn observed(&self) -> Observed {
+        *self.observed.lock().unwrap_or_else(|err| err.into_inner())
+    }
+
+    fn set_observed(&self, observed: Observed) {
+        *self.observed.lock().unwrap_or_else(|err| err.into_inner()) = observed;
     }
 }
 
-/// Runs one auto-clean slice, unlinks objects the slice dropped, and stores the ledger when it ran.
-pub fn auto_clean(
-    ledger: &FsLedgerStore,
-    objects: &FsObjectStore,
-    life: &mut Lifecycle,
-    clock: crate::ClockSample,
-    policy: crate::AutoCleanPolicy,
-) -> Result<crate::MaintainReport, CacheError> {
-    let before = life.object_ids();
-    let report = life.auto_clean(clock, policy)?;
-    for id in before {
-        if life.object_state(id).is_none() {
-            objects.unlink_object(id)?;
-        }
+fn revision_matches(observed: Observed, disk: Observed) -> bool {
+    match observed {
+        Observed::Unknown => matches!(disk, Observed::Absent),
+        other => other == disk,
     }
-    if report.ran {
-        ledger.store(life)?;
+}
+
+impl LedgerStore for FsLedgerStore {
+    fn load(&self, empty_quota: Quota) -> Result<LoadedLedger, CacheError> {
+        self.exclusive(|| self.load_locked(empty_quota))
     }
-    Ok(report)
+
+    fn store(&self, ledger: &Lifecycle) -> Result<(), CacheError> {
+        self.exclusive(|| self.store_locked(ledger))
+    }
 }
 
 pub(super) fn real_root(root: &Path) -> Result<PathBuf, CacheError> {
@@ -195,14 +325,15 @@ pub(super) fn ensure_dir(path: &Path) -> Result<(), CacheError> {
     Ok(())
 }
 
-pub(super) fn write_private(path: &Path, bytes: &[u8]) -> Result<(), CacheError> {
-    if let Ok(meta) = fs::symlink_metadata(path)
-        && (meta.file_type().is_symlink() || meta.is_dir())
-    {
-        return Err(CacheError::OutsideCacheRoot);
+pub(super) fn write_exclusive(path: &Path, bytes: &[u8]) -> Result<(), CacheError> {
+    if let Ok(meta) = fs::symlink_metadata(path) {
+        if meta.file_type().is_symlink() || meta.is_dir() {
+            return Err(CacheError::OutsideCacheRoot);
+        }
+        return Err(CacheError::LedgerIo { reason: "create" });
     }
     let mut options = OpenOptions::new();
-    options.write(true).create(true).truncate(true);
+    options.write(true).create_new(true);
     #[cfg(unix)]
     {
         use std::os::unix::fs::OpenOptionsExt;
@@ -213,6 +344,15 @@ pub(super) fn write_private(path: &Path, bytes: &[u8]) -> Result<(), CacheError>
     file.write_all(bytes).map_err(|_| CacheError::LedgerIo { reason: "write" })?;
     file.sync_all().map_err(|_| CacheError::LedgerIo { reason: "sync" })?;
     Ok(())
+}
+
+fn remove_regular_file(path: &Path) {
+    match fs::symlink_metadata(path) {
+        Ok(meta) if meta.is_file() && !meta.file_type().is_symlink() => {
+            let _ = fs::remove_file(path);
+        }
+        _ => {}
+    }
 }
 
 pub(super) fn sync_dir(path: &Path) -> Result<(), CacheError> {
@@ -228,52 +368,6 @@ pub(super) fn sync_dir(path: &Path) -> Result<(), CacheError> {
     Ok(())
 }
 
-pub(super) fn list_orphans(root: &Path, known: &BTreeSet<u64>) -> Result<Vec<OrphanFile>, CacheError> {
-    let mut found = Vec::new();
-    walk(root, "", known, &mut found)?;
-    found.sort();
-    Ok(found)
-}
-
-fn walk(dir: &Path, prefix: &str, known: &BTreeSet<u64>, found: &mut Vec<OrphanFile>) -> Result<(), CacheError> {
-    let entries = fs::read_dir(dir).map_err(|_| CacheError::LedgerIo { reason: "read directory" })?;
-    for entry in entries {
-        let entry = entry.map_err(|_| CacheError::LedgerIo { reason: "read directory" })?;
-        let name = entry.file_name().to_string_lossy().into_owned();
-        let relative = if prefix.is_empty() { name } else { format!("{prefix}/{name}") };
-        let path = entry.path();
-        let meta = fs::symlink_metadata(&path).map_err(|_| CacheError::LedgerIo { reason: "metadata" })?;
-        if meta.file_type().is_symlink() {
-            if relative != LEDGER_FILE {
-                found.push(OrphanFile { relative });
-            }
-            continue;
-        }
-        if meta.is_dir() {
-            walk(&path, &relative, known, found)?;
-            continue;
-        }
-        if relative == LEDGER_FILE || known_object(&relative, known) {
-            continue;
-        }
-        found.push(OrphanFile { relative });
-    }
-    Ok(())
-}
-
-fn known_object(relative: &str, known: &BTreeSet<u64>) -> bool {
-    let Some(name) = relative.strip_prefix("objects/") else {
-        return false;
-    };
-    if name.contains('/') {
-        return false;
-    }
-    let Ok(id) = name.parse::<u64>() else {
-        return false;
-    };
-    id.to_string() == name && known.contains(&id)
-}
-
 enum LedgerRead {
     Absent,
     Bytes(Vec<u8>),
@@ -281,7 +375,9 @@ enum LedgerRead {
 }
 
 fn read_committed(path: &Path) -> Result<LedgerRead, CacheError> {
-    let limit = u64::try_from(LEDGER_MAX_BYTES).unwrap_or(u64::MAX);
+    let Ok(limit) = u64::try_from(LEDGER_MAX_BYTES) else {
+        return Ok(LedgerRead::Rejected(CacheError::CorruptLedger { reason: "ledger is too large" }));
+    };
     match fs::symlink_metadata(path) {
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(LedgerRead::Absent),
         Err(_) => return Err(CacheError::LedgerIo { reason: "metadata" }),
@@ -296,14 +392,28 @@ fn read_committed(path: &Path) -> Result<LedgerRead, CacheError> {
         }
         Ok(_) => {}
     }
-    match fs::read(path) {
-        Ok(bytes) => Ok(LedgerRead::Bytes(bytes)),
-        Err(_) => Err(CacheError::LedgerIo { reason: "read" }),
+    let mut options = OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.custom_flags(no_follow());
     }
+    let file = options.open(path).map_err(|_| CacheError::LedgerIo { reason: "read" })?;
+    let mut limited = file.take(limit.saturating_add(1));
+    let mut bytes = Vec::new();
+    limited.read_to_end(&mut bytes).map_err(|_| CacheError::LedgerIo { reason: "read" })?;
+    let Ok(len) = u64::try_from(bytes.len()) else {
+        return Ok(LedgerRead::Rejected(CacheError::CorruptLedger { reason: "ledger is too large" }));
+    };
+    if len > limit {
+        return Ok(LedgerRead::Rejected(CacheError::CorruptLedger { reason: "ledger is too large" }));
+    }
+    Ok(LedgerRead::Bytes(bytes))
 }
 
 #[cfg(unix)]
-const fn no_follow() -> i32 {
+pub(super) const fn no_follow() -> i32 {
     #[cfg(target_os = "linux")]
     {
         0x20000
@@ -341,15 +451,17 @@ mod tests {
         let mut second = first.clone();
         second.register_root(crate::RootId::new(1)).expect("root");
         store.stage(&second).expect("stage");
-        assert!(root.join(LEDGER_TEMP).is_file());
+        let staged = store.staged_path().expect("temp");
+        assert!(staged.is_file());
+        assert_ne!(staged.file_name().and_then(|name| name.to_str()), Some(LEDGER_TEMP));
         let loaded = store.load(Quota::scaled(10)).expect("load");
         assert!(loaded.fault.is_none());
         assert_eq!(loaded.lifecycle.encode_ledger().expect("encode"), bytes);
-        assert!(root.join(LEDGER_TEMP).is_file());
+        assert!(staged.is_file());
         store.commit().expect("commit");
         let loaded = store.load(Quota::scaled(10)).expect("load");
         assert_eq!(loaded.lifecycle.encode_ledger().expect("encode"), second.encode_ledger().expect("encode"));
-        assert!(!root.join(LEDGER_TEMP).exists());
+        assert!(!staged.exists());
     }
 
     #[test]

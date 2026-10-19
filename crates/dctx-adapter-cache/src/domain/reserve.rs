@@ -122,6 +122,7 @@ impl Lifecycle {
         if root.is_some_and(|id| !self.roots.contains_key(&id)) {
             return Err(CacheError::InvalidRequest { reason: "unknown root" });
         }
+        // Pending files stay charged. Dropping them here would free bytes the disk still holds.
         self.reclaim_safe();
         if !self.admission_allows(bytes) {
             return Err(self.limit(bytes));
@@ -216,31 +217,38 @@ impl Lifecycle {
         }
     }
 
-    /// Frees pending and grace-elapsed garbage before a new admission. Does not retire manifests.
+    /// Admission does not drop objects. The adapter unlinks the file, then a sweep drops the charge.
     pub(super) fn reclaim_safe(&mut self) {
-        for _ in 0..super::quota::STARTUP_MAX_OBJECTS {
-            let Some(id) = self.objects.keys().copied().find(|id| self.immediately_reclaimable(*id)) else {
-                break;
-            };
-            self.remove_object(id);
-        }
+        let _kept = self.pending_bytes();
     }
 
-    fn immediately_reclaimable(&self, id: super::ObjectId) -> bool {
-        if self.unlink_failures.contains(&id) || self.live_objects(true).contains(&id) {
-            return false;
+    /// Puts `id` back as a charged pending unlink after the filesystem refused to remove it.
+    pub(crate) fn restore_pending_charge(
+        &mut self,
+        prior: &Lifecycle,
+        id: super::ObjectId,
+    ) -> Result<(), CacheError> {
+        if self.objects.contains_key(&id) {
+            return Ok(());
         }
-        let Some(object) = self.objects.get(&id) else {
-            return false;
+        let Some(mut object) = prior.objects.get(&id).cloned() else {
+            return Err(CacheError::InvalidRequest { reason: "unknown object" });
         };
-        if object.corrupt {
-            return false;
+        object.state = Physical::PendingUnlink;
+        object.deletion_requested = true;
+        self.objects.insert(id, object);
+        if id.raw() >= self.ids.object {
+            self.ids.object = id.raw().saturating_add(1);
         }
-        match object.state {
-            Physical::PendingUnlink => true,
-            Physical::Staged => self.staged_reclaimable(id),
-            Physical::Published | Physical::Retired => self.grace_due(object, false),
+        if self.admitted() > self.payload_ceiling() && self.staged_bytes() == 0 && self.reserved_bytes() == 0 {
+            self.legacy_frozen = true;
+            if self.admitted() > self.legacy_ceiling {
+                self.legacy_ceiling = self.admitted();
+            }
         }
+        self.bump();
+        self.debug_check();
+        Ok(())
     }
 
     pub(super) fn grace_due(&self, object: &CacheObject, bypass: bool) -> bool {
