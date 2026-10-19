@@ -184,12 +184,29 @@ impl Lx<'_> {
     }
 
     fn slash(&mut self) -> Result<(), LexError> {
-        if self.fname || !self.expr {
+        if self.fname || (!self.expr && !self.command_regexp()) {
             return self.operator();
         }
         let start = self.i;
         self.i += 1;
         self.scan_body(start, b'/', false, true, false)
+    }
+
+    fn command_regexp(&self) -> bool {
+        // Ruby command arguments use `puts /re/`; `value / divisor` is division.
+        // Resolving a bare name as a local variable requires a parser's scope table.
+        let Some(token) = self.tokens.last().filter(|token| token.kind == Kind::Ident) else {
+            return false;
+        };
+        let name = self.src.get(token.start as usize..token.end as usize).unwrap_or("");
+        let gap = self.src.get(token.end as usize..self.i).unwrap_or("");
+        !matches!(name, "nil" | "true" | "false" | "self" | "end")
+            && name.chars().next().is_some_and(|ch| ch.is_lowercase() || ch == '_')
+            && !gap.is_empty()
+            && gap.bytes().all(|byte| matches!(byte, b' ' | b'\t'))
+            && self.byte_at(self.i + 1).is_some_and(|byte| {
+                !byte.is_ascii_whitespace() && byte != b'='
+            })
     }
 
     fn colon(&mut self) -> Result<(), LexError> {
@@ -241,7 +258,7 @@ impl Lx<'_> {
             Some(byte) if byte == b'@' || byte == b'$' || is_name_start_byte(byte) || byte >= 0x80 => {
                 self.i += 1;
                 self.consume_name();
-                self.consume_suffix();
+                self.consume_suffix(true);
                 self.emit(Kind::Symbol, start, self.i, false);
                 self.expr = false;
                 self.fname = false;
@@ -259,13 +276,13 @@ impl Lx<'_> {
                 self.i += 1;
             }
             self.consume_name();
-            self.consume_suffix();
+            self.consume_suffix(false);
         } else if self.b[self.i] == b'$' {
             self.i += 1;
             self.consume_global_body();
         } else {
             self.consume_name();
-            self.consume_suffix();
+            self.consume_suffix(self.fname);
         }
         let text = self.src.get(start..self.i).unwrap_or("");
         self.emit(Kind::Ident, start, self.i, false);
@@ -404,13 +421,13 @@ impl Lx<'_> {
         }
     }
 
-    fn consume_suffix(&mut self) {
+    fn consume_suffix(&mut self, setter: bool) {
         let byte = self.byte_at(self.i);
         if matches!(byte, Some(b'!' | b'?')) {
             self.i += 1;
             return;
         }
-        if byte == Some(b'=') && !matches!(self.byte_at(self.i + 1), Some(b'=' | b'>')) {
+        if setter && byte == Some(b'=') && !matches!(self.byte_at(self.i + 1), Some(b'=' | b'>')) {
             self.i += 1;
         }
     }

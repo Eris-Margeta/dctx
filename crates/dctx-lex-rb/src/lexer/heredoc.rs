@@ -58,7 +58,7 @@ impl Lx<'_> {
             b'\'' => self.quoted_term(j, b'\'').map(|(term, end)| (term, false, end)),
             b'"' => self.quoted_term(j, b'"').map(|(term, end)| (term, true, end)),
             b'`' => self.quoted_term(j, b'`').map(|(term, end)| (term, true, end)),
-            byte if is_ident_byte(byte) => {
+            byte if is_ident_byte(byte) || byte >= 0x80 => {
                 let end = ident_end(self.src, j);
                 let term = self.src[j..end].to_owned();
                 (!term.is_empty()).then_some((term, true, end))
@@ -71,20 +71,21 @@ impl Lx<'_> {
         let mut k = j + 1;
         let mut term = String::new();
         while k < self.b.len() {
-            let byte = self.b[k];
-            if byte == b'\\' && k + 1 < self.b.len() {
-                term.push(char::from(self.b[k + 1]));
-                k += 2;
+            let ch = self.src.get(k..)?.chars().next()?;
+            if ch == '\\' && k + 1 < self.b.len() {
+                let escaped = self.src.get(k + 1..)?.chars().next()?;
+                term.push(escaped);
+                k += 1 + escaped.len_utf8();
                 continue;
             }
-            if byte == quote {
+            if ch == char::from(quote) {
                 return Some((term, k + 1));
             }
-            if byte == b'\n' {
+            if ch == '\n' {
                 return None;
             }
-            term.push(char::from(byte));
-            k += 1;
+            term.push(ch);
+            k += ch.len_utf8();
         }
         None
     }
@@ -286,12 +287,11 @@ fn is_ident_byte(byte: u8) -> bool {
 }
 
 fn ident_end(src: &str, start: usize) -> usize {
-    let mut k = start;
-    let bytes = src.as_bytes();
-    while k < bytes.len() && (bytes[k].is_ascii_alphanumeric() || bytes[k] == b'_') {
-        k += 1;
-    }
-    k
+    let rest = src.get(start..).unwrap_or("");
+    start + rest.chars()
+        .take_while(|ch| ch.is_ascii_alphanumeric() || *ch == '_' || !ch.is_ascii())
+        .map(char::len_utf8)
+        .sum::<usize>()
 }
 
 #[cfg(test)]
@@ -326,5 +326,38 @@ mod tests {
         assert!(names.contains(&"hook".to_owned()), "{names:?}");
         assert!(names.contains(&"self".to_owned()), "{names:?}");
         assert!(!names.iter().any(|name| name == "alpha"), "{names:?}");
+    }
+
+    #[test]
+    fn unicode_heredoc_terminators_preserve_utf8_and_resume_code() {
+        for (opener, terminator) in [
+            ("<<ÉOF", "ÉOF"),
+            ("<<FIN終", "FIN終"),
+            ("<<'終わり'", "終わり"),
+            ("<<-\"É終\"", "\tÉ終"),
+            ("<<~`終é`", "  終é"),
+        ] {
+            let source = format!("puts {opener}\r\nclass Ghost; end\r\n{terminator}\r\ndef real\nend\n");
+            let lexed = lex(&source, &Limits::default()).expect("lex");
+            assert!(lexed.diagnostics.is_empty(), "{opener}: {:?}", lexed.diagnostics);
+            assert_eq!(idents(&source), ["puts", "def", "real", "end"], "{opener}");
+            for token in lexed.tokens {
+                assert!(source.is_char_boundary(token.start as usize));
+                assert!(source.is_char_boundary(token.end as usize));
+            }
+        }
+    }
+
+    #[test]
+    fn queued_unicode_heredocs_keep_interpolation_and_missing_terminator_diagnostics() {
+        let source = "puts <<~終, <<-'ÉOF'\n#{kept()}\n終\n#{hidden()}\nÉOF\ndef real\nend\n";
+        let lexed = lex(source, &Limits::default()).expect("lex");
+        assert!(lexed.diagnostics.is_empty(), "{:?}", lexed.diagnostics);
+        assert_eq!(idents(source), ["puts", "kept", "def", "real", "end"]);
+
+        let incomplete = lex("puts <<'終'\nbody\n終x\n", &Limits::default()).expect("lex");
+        assert!(incomplete.diagnostics.iter().any(|item| {
+            item.reason == crate::domain::DiagnosticReason::UnterminatedString
+        }));
     }
 }

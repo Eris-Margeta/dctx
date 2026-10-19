@@ -19,6 +19,12 @@ Lexed, so they do not invent declarations: heredocs (plain, squiggly, quoted,
 several per line), `%`-literals, interpolated code, regex versus division,
 symbols, `=begin`/`=end`, `__END__`, and backslash continuation.
 
+Slash classification uses expression position and command-argument whitespace:
+`puts /pattern/` is a regexp, while `value / divisor`, `value/2`, and `/=`
+after a value remain operators. Ambiguous bare names use this heuristic rather
+than a local-variable scope table. Heredoc terminators retain UTF-8 in bare,
+quoted, indented, and queued forms.
+
 Abstains instead of inventing an edge. `define_method`, `const_set`,
 `class_eval`, and any other metaprogramming call is not resolved. A bare
 identifier is not a call. A `require` whose argument is not a string literal
