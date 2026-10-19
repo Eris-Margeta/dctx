@@ -40,11 +40,26 @@ pub(crate) fn execute(arguments: &[String]) -> Result<String, String> {
         return Err("the facade pages with the next cursor, not --offset".to_string());
     }
     options.request.target = prepare_target(options.request.verb, &options.request.target, &options.place)?;
+    let profiling = profile_requested(options.profile);
     let (mut session, key) = host::open_mapped(&options.place)?;
+    if profiling {
+        session.enable_profile();
+    }
     // Reuse checks content with digest_text, the same comparison as read_verified. Size and mtime are only a prefilter.
-    let handle = session
-        .snapshot_reusable(&SnapshotRequest::strict(), &key)
-        .map_err(|error| error.to_string())?;
+    let built = if profiling {
+        session.snapshot_reusable_for_profile(&SnapshotRequest::strict(), &key)
+    } else {
+        session.snapshot_reusable(&SnapshotRequest::strict(), &key)
+    };
+    let handle = match built {
+        Ok(handle) => handle,
+        Err(error) => {
+            if profiling {
+                session.discard_profile();
+            }
+            return Err(error.to_string());
+        }
+    };
     if host::reuse_report_enabled() {
         let status = if handle.reused() { "generation reused" } else { "generation built" };
         eprintln!("{status}");
@@ -53,8 +68,28 @@ pub(crate) fn execute(arguments: &[String]) -> Result<String, String> {
     }
     let request = facade_request(&options.request, options.format, options.continuation, options.budget_set);
     let mut sink = VecSink::new();
-    session.query(&handle, &request, &mut sink).map_err(|error| error.to_string())?;
+    let queried = if profiling {
+        session.query_for_profile(&handle, &request, &mut sink)
+    } else {
+        session.query(&handle, &request, &mut sink)
+    };
+    if let Err(error) = queried {
+        if profiling {
+            session.discard_profile();
+        }
+        return Err(error.to_string());
+    }
+    if profiling {
+        if let Some(report) = session.profile_report() {
+            eprint!("{report}");
+        }
+    }
     Ok(String::from_utf8_lossy(sink.as_bytes()).into_owned())
+}
+
+/// `--profile` or `DCTX_PROFILE=1`. Map switches are flags; this env matches `DCTX_REUSE_REPORT`.
+fn profile_requested(flag: bool) -> bool {
+    flag || std::env::var("DCTX_PROFILE").ok().as_deref() == Some("1")
 }
 
 fn facade_request(
