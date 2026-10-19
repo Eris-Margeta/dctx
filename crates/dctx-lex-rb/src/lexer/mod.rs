@@ -1,4 +1,5 @@
-//! Token stream for Ruby source, including heredocs, `%`-literals and interpolation.
+//! Token stream for Ruby source, including heredocs, `%`-literals, interpolation,
+//! character literals and globals.
 //! Implements PARSERS-v1 lexing bounded by `Limits`. The structural walker consumes this.
 //! Comments, `__END__` data and string bodies never become declaration tokens.
 mod heredoc;
@@ -214,5 +215,40 @@ mod tests {
         assert!(!div.iter().any(|text| text.starts_with("/2")), "{div:?}");
         let regex = texts("return /cd/\n");
         assert!(regex.iter().any(|text| text.starts_with("/cd")), "{regex:?}");
+    }
+
+    #[test]
+    fn operators_globals_and_character_literals_stay_intact() {
+        let assign = texts("ratio %= 2\n");
+        assert!(assign.iter().any(|text| text == "%="), "{assign:?}");
+        assert!(assign.iter().any(|text| text == "2"), "{assign:?}");
+        let quoted = texts("x = %q=secret=\n");
+        assert!(quoted.iter().any(|text| text.contains("secret")), "{quoted:?}");
+        assert!(!quoted.iter().any(|text| text == "secret"), "{quoted:?}");
+        let lambda = texts("f = ->(x) { x }\n");
+        assert!(lambda.iter().any(|text| text == "->"), "{lambda:?}");
+        let chars = texts("c = ?x\n");
+        assert!(chars.iter().any(|text| text == "?x"), "{chars:?}");
+        let slash = texts("c = ?/\n");
+        assert!(slash.iter().any(|text| text == "?/"), "{slash:?}");
+        assert!(!slash.iter().any(|text| text.starts_with('/')), "{slash:?}");
+        let escaped = texts("c = ?\\n\n");
+        assert!(escaped.iter().any(|text| text == "?\\n"), "{escaped:?}");
+        let post = texts("g = $'\n");
+        assert!(post.iter().any(|text| text == "$'"), "{post:?}");
+        let loaded = texts("g = $\"\n");
+        assert!(loaded.iter().any(|text| text == "$\""), "{loaded:?}");
+        let pre = texts("g = $`\n");
+        assert!(pre.iter().any(|text| text == "$`"), "{pre:?}");
+        let flag = texts("a = $-w\n");
+        assert!(flag.iter().any(|text| text == "$-w"), "{flag:?}");
+        let group = texts("a = $10\n");
+        assert!(group.iter().any(|text| text == "$10"), "{group:?}");
+        let stack = texts("a = $@\n");
+        assert!(stack.iter().any(|text| text == "$@"), "{stack:?}");
+        let tern = texts("n > 0 ? 1 : 2\n");
+        assert!(tern.iter().any(|text| text == "?"), "{tern:?}");
+        assert!(tern.iter().any(|text| text == "1"), "{tern:?}");
+        assert!(tern.iter().any(|text| text == ":"), "{tern:?}");
     }
 }

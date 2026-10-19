@@ -193,7 +193,12 @@ impl Walker<'_> {
             self.recover(scope);
             return;
         };
-        self.skip_params();
+        // `def name = expr` and `def name() = expr` have no `end`.
+        let eq_before_params = self.at_punct("=");
+        if !eq_before_params {
+            self.skip_params();
+        }
+        let endless = eq_before_params || self.at_punct("=");
         let header_end = self.prev_end().max(start);
         let name = method_name(scope, &head);
         let kind = if scope.name.is_empty() && !head.singleton && head.explicit.is_none() {
@@ -219,7 +224,10 @@ impl Walker<'_> {
             name: if idx.is_some() { name } else { scope.name.clone() },
             defining: false,
         };
-        if self.nest() {
+        if endless {
+            self.bump();
+            self.scan_statement(&child);
+        } else if self.nest() {
             self.until_end(&child, true);
             self.unnest();
         }

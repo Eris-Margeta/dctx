@@ -173,9 +173,10 @@ impl<'a> Walker<'a> {
                 }
                 return;
             }
-            if self.at_word("end") {
+            if self.at_word("end") && !self.prev_member() {
                 if expect {
                     self.bump();
+                    self.finish_block(scope);
                     return;
                 }
                 self.problem_here(DiagnosticReason::Malformed);
@@ -185,7 +186,7 @@ impl<'a> Walker<'a> {
             if self.mid_keyword() {
                 let word = self.cur().to_owned();
                 self.bump();
-                if matches!(word.as_str(), "elsif" | "when" | "rescue") {
+                if matches!(word.as_str(), "elsif" | "when" | "rescue" | "in") {
                     self.skip_header(scope);
                 }
                 continue;
@@ -246,6 +247,19 @@ impl<'a> Walker<'a> {
         };
         self.until_end(&inner, true);
         self.unnest();
+    }
+
+    fn finish_block(&mut self, scope: &Scope) {
+        // `end if cond`, `end while cond`, and `end rescue expr` belong to the block.
+        if self.at_word("if")
+            || self.at_word("unless")
+            || self.at_word("while")
+            || self.at_word("until")
+            || self.at_word("rescue")
+        {
+            self.bump();
+            self.scan_statement(scope);
+        }
     }
 
     pub(super) fn nest(&mut self) -> bool {
