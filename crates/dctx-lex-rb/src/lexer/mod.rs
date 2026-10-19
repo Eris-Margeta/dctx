@@ -218,6 +218,41 @@ mod tests {
     }
 
     #[test]
+    fn regexp_command_arguments_and_division_keep_the_next_declaration() {
+        for prefix in [
+            "puts /class Ghost; end/",
+            "logger.match /class Ghost; end/",
+            "return /class Ghost; end/",
+            "pattern=/class Ghost; end/",
+        ] {
+            let source = format!("{prefix}\ndef real\nend\n");
+            let lexed = lex(&source, &Limits::default()).expect("lex");
+            assert!(lexed.diagnostics.is_empty(), "{prefix}: {:?}", lexed.diagnostics);
+            assert!(lexed.tokens.iter().any(|token| {
+                token.kind == Kind::Str
+                    && &source[token.start as usize..token.end as usize] == "/class Ghost; end/"
+            }), "{prefix}");
+            let identifiers: Vec<_> = lexed.tokens.iter()
+                .filter(|token| token.kind == Kind::Ident)
+                .map(|token| &source[token.start as usize..token.end as usize])
+                .collect();
+            assert!(identifiers.contains(&"real"), "{identifiers:?}");
+            assert!(!identifiers.contains(&"Ghost"), "{identifiers:?}");
+        }
+
+        for expression in [
+            "10 / 2", "value / divisor", "value/2", "value /= 2", "obj./(2)",
+            "@value /2", "$value /2", "VALUE /2", "self /2", "nil /2", "true /2", "false /2",
+        ] {
+            let source = format!("{expression}\ndef real\nend\n");
+            let lexed = lex(&source, &Limits::default()).expect("lex");
+            assert!(lexed.diagnostics.is_empty(), "{expression}: {:?}", lexed.diagnostics);
+            assert!(!lexed.tokens.iter().any(|token| token.kind == Kind::Str), "{expression}");
+            assert!(texts(&source).iter().any(|text| text == "real"), "{expression}");
+        }
+    }
+
+    #[test]
     fn operators_globals_and_character_literals_stay_intact() {
         let assign = texts("ratio %= 2\n");
         assert!(assign.iter().any(|text| text == "%="), "{assign:?}");
