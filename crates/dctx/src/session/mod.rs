@@ -16,6 +16,7 @@ mod reuse;
 mod template_op;
 
 use std::collections::BTreeMap;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Weak};
 
 use dctx_core::selection::SelectionPolicy;
@@ -32,6 +33,21 @@ use crate::domain::{
 };
 use crate::index::{canonical_bytes, walk_source, Generation, WalkArgs};
 use crate::plugins::{HookWarning, PluginHost};
+
+/// The stored generation. A query clones this `Arc` and borrows the rows.
+struct SharedGeneration {
+    generation: Generation,
+    /// `Arc` owners while the latest query held its clone. `0` before the first query.
+    borrowed_shares: AtomicUsize,
+}
+
+impl std::ops::Deref for SharedGeneration {
+    type Target = Generation;
+
+    fn deref(&self) -> &Self::Target {
+        &self.generation
+    }
+}
 
 /// Lease that keeps one generation reachable. The value is the allocation, not its fields.
 struct Pin {
@@ -110,7 +126,7 @@ pub struct Session {
     view: String,
     epoch: u64,
     next_generation: u64,
-    generations: BTreeMap<u64, Generation>,
+    generations: BTreeMap<u64, Arc<SharedGeneration>>,
     pins: BTreeMap<u64, Weak<Pin>>,
     content_reads: u64,
     cached_content_reads: u64,
@@ -142,6 +158,19 @@ impl Session {
     /// Generations still stored.
     pub fn generation_count(&self) -> u64 {
         u64::try_from(self.generations.len()).unwrap_or(u64::MAX)
+    }
+
+    /// Live `Arc` owners of `handle`'s generation, and the owner count sampled by the latest query.
+    ///
+    /// The first number is the owners alive now. The second was sampled while the latest query
+    /// borrowed this generation, and it is `0` before that query. After a query the sample is the
+    /// live count plus one: the query shares the stored rows and then drops that share.
+    pub fn generation_shares(&self, handle: &SnapshotHandle) -> Result<(usize, usize), DctxError> {
+        let shared = self
+            .generations
+            .get(&handle.generation)
+            .ok_or(DctxError::Stale { reason: "generation reclaimed" })?;
+        Ok((Arc::strong_count(shared), shared.borrowed_shares.load(Ordering::Relaxed)))
     }
 
     /// Policy epoch. Installing a plan or revising the selection increments it.
@@ -201,11 +230,17 @@ impl Session {
             completion: walked.completion,
             parser: walked.parser,
         };
-        let stored = match source_key {
-            Some(key) if self.managed.is_some() => {
-                reuse::encode_generation(key, &self.view, &limits, &generation)?
-            }
-            _ => seal_segment(&payload)?,
+        let reuse_key = match source_key {
+            Some(key) if self.managed.is_some() => Some(key),
+            _ => None,
+        };
+        let stored = if let Some(key) = reuse_key {
+            drop(payload);
+            reuse::encode_generation(key, &self.view, &limits, &generation)?
+        } else {
+            let sealed = seal_segment(&payload)?;
+            drop(payload);
+            sealed
         };
         let encoded_len = if cfg!(feature = "segments") {
             u64::try_from(stored.len()).unwrap_or(u64::MAX)
@@ -257,7 +292,8 @@ impl Session {
         let digest = generation.digest.clone();
         let pin = Arc::new(Pin { release: ticket });
         self.pins.insert(id, Arc::downgrade(&pin));
-        if let Some(previous) = self.generations.insert(id, generation) {
+        let shared = Arc::new(SharedGeneration { generation, borrowed_shares: AtomicUsize::new(0) });
+        if let Some(previous) = self.generations.insert(id, shared) {
             self.cache.segment_release(previous.encoded_len);
         }
         self.next_generation = id.saturating_add(1).max(self.next_generation);
@@ -279,11 +315,14 @@ impl Session {
         if allowed { Ok(()) } else { Err(DctxError::PolicyDenied) }
     }
 
-    fn generation(&self, handle: &SnapshotHandle) -> Result<Generation, DctxError> {
-        self.generations
+    fn generation(&self, handle: &SnapshotHandle) -> Result<Arc<SharedGeneration>, DctxError> {
+        let shared = self
+            .generations
             .get(&handle.generation)
-            .cloned()
-            .ok_or(DctxError::Stale { reason: "generation reclaimed" })
+            .map(Arc::clone)
+            .ok_or(DctxError::Stale { reason: "generation reclaimed" })?;
+        shared.borrowed_shares.store(Arc::strong_count(&shared), Ordering::Relaxed);
+        Ok(shared)
     }
 }
 
@@ -296,5 +335,55 @@ impl std::fmt::Debug for Session {
             .field("epoch", &self.epoch)
             .field("generations", &self.generations.len())
             .finish()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::Arc;
+
+    use dctx_core::selection::{RuleTexts, SelectionPolicy};
+    use dctx_core::Timestamp;
+    use dctx_ports::memory::{CancelFlag, FixedClock, MemorySource};
+    use dctx_template::HostCeiling;
+
+    use super::{Session, StoragePolicy};
+    use crate::domain::{HostGrants, MapRequest, SnapshotRequest, VecSink, Verb};
+
+    #[test]
+    fn a_query_borrows_the_stored_generation() {
+        let mut source = MemorySource::new();
+        source.insert_file("src/a.rs", b"fn alpha() {}\n", 0).expect("a");
+        source.insert_file("src/b.rs", b"fn beta() {}\n", 0).expect("b");
+        let mut session = Session::builder(source)
+            .clock(FixedClock(Timestamp(0)))
+            .cancellation(Arc::new(CancelFlag::new()))
+            .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
+            .ceiling(HostCeiling::base())
+            .grants(HostGrants::PermitAll)
+            .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+            .place("fixture")
+            .view("map")
+            .build()
+            .expect("session");
+        let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+        let (live, seen) = session.generation_shares(&handle).expect("before");
+        assert_eq!((live, seen), (1, 0));
+        let mut request = MapRequest::new(Verb::Find);
+        request.query = "alpha".to_string();
+        let mut sink = VecSink::new();
+        let first = session.query(&handle, &request, &mut sink).expect("find");
+        assert_eq!(first.records.len(), 1);
+        assert_eq!(first.records[0].path, "src/a.rs");
+        assert_eq!(first.snapshot, handle.digest());
+        let (live, seen) = session.generation_shares(&handle).expect("after");
+        assert_eq!(live, 1);
+        assert_eq!(seen, 2);
+        let mut sink = VecSink::new();
+        let second = session.query(&handle, &request, &mut sink).expect("again");
+        assert_eq!(second.records, first.records);
+        assert_eq!(second.snapshot, first.snapshot);
+        let (live, seen) = session.generation_shares(&handle).expect("still");
+        assert_eq!((live, seen), (1, 2));
     }
 }
