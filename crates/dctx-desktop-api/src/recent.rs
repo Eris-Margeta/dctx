@@ -1,7 +1,7 @@
 //! Recent projects: add, remove and get with dedup, newest-first order and a cap of 20.
-//! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4a, matching `recent_projects.rs`.
+//! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4a and review F18, matching `recent_projects.rs`.
 //! Depends on [`crate::error::DesktopError`] and serde_json. The caller injects the storage directory and the timestamp.
-//! This module does not read a clock, a home directory or a git repository.
+//! Parse errors are `recent_parse` plus a bounded category. This module does not read a clock or a home directory.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -14,6 +14,12 @@ use crate::error::DesktopError;
 pub const MAX_RECENT_PROJECTS: usize = 20;
 
 const RECENT_FILE: &str = "recent_projects.json";
+
+/// Stable code stored on [`DesktopError::ParseRecent`]. Never a fragment of the file.
+const RECENT_PARSE_CODE: &str = "recent_parse";
+
+/// Largest line or column reported for a recent-project parse failure.
+const PARSE_LOCATION_MAX: u32 = 1_000_000;
 
 /// One directory the desktop has opened.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -48,8 +54,7 @@ impl RecentStore {
         }
         let content = fs::read_to_string(&path)
             .map_err(|error| DesktopError::ReadRecent { detail: error.to_string() })?;
-        serde_json::from_str(&content)
-            .map_err(|error| DesktopError::ParseRecent { detail: error.to_string() })
+        serde_json::from_str(&content).map_err(|error| parse_recent_error(&error))
     }
 
     /// Inserts or refreshes `path`, then sorts newest-first and drops past the cap.
@@ -101,6 +106,28 @@ impl RecentStore {
         let json = serde_json::to_string_pretty(projects)
             .map_err(|error| DesktopError::SerializeRecent { detail: error.to_string() })?;
         fs::write(path, json).map_err(|error| DesktopError::WriteRecent { detail: error.to_string() })
+    }
+}
+
+fn parse_recent_error(error: &serde_json::Error) -> DesktopError {
+    let category = match error.classify() {
+        serde_json::error::Category::Io => "io",
+        serde_json::error::Category::Syntax => "syntax",
+        serde_json::error::Category::Data => "data",
+        serde_json::error::Category::Eof => "eof",
+    };
+    DesktopError::ParseRecent {
+        code: RECENT_PARSE_CODE,
+        category,
+        line: bound_location(error.line()),
+        column: bound_location(error.column()),
+    }
+}
+
+fn bound_location(value: usize) -> u32 {
+    match u32::try_from(value) {
+        Ok(value) if value <= PARSE_LOCATION_MAX => value,
+        _ => PARSE_LOCATION_MAX,
     }
 }
 

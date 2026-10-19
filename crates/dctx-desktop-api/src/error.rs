@@ -1,7 +1,7 @@
 //! Desktop error enum and the only text mapping the Tauri layer needs.
 //! Implements ARCHITECTURE-PROPOSAL §7 DX-E4a and PLUGINS.md §7.3 PL-APP refusals.
 //! Depends on distribution's typed errors. Callers convert with [`DesktopError::command_string`].
-//! One match owns every command string. Variants do not format themselves a second way.
+//! One match owns every command string. Recent parse text is a code and category, never file bytes.
 
 use std::fmt;
 
@@ -76,10 +76,23 @@ pub enum DesktopError {
         /// Filesystem detail.
         detail: String,
     },
-    /// The recent-project file was not valid JSON.
+    /// The recent-project file was not a JSON array of projects.
     ParseRecent {
-        /// Parser detail.
-        detail: String,
+        /// Stable code `recent_parse`. Never the file text.
+        code: &'static str,
+        /// `syntax`, `data`, `eof`, or `io`. Never the offending value.
+        category: &'static str,
+        /// 1-based line, clamped to one million.
+        line: u32,
+        /// 1-based column, clamped to one million.
+        column: u32,
+    },
+    /// A desktop setting is outside the accepted enum, range or extension shape.
+    InvalidSetting {
+        /// `DesktopConfig` field name. Never the rejected value.
+        field: &'static str,
+        /// `enum`, `range`, or `extension`.
+        reason: &'static str,
     },
     /// The recent-project list could not be encoded.
     SerializeRecent {
@@ -123,7 +136,10 @@ impl DesktopError {
             }
             Self::WriteConfig { detail } => format!("Failed to write config: {detail}"),
             Self::ReadRecent { detail } => format!("Failed to read recent projects file: {detail}"),
-            Self::ParseRecent { detail } => format!("Failed to parse recent projects: {detail}"),
+            Self::ParseRecent { code, category, line, column } => {
+                format!("Failed to parse recent projects: {code} {category} line {line} column {column}")
+            }
+            Self::InvalidSetting { field, reason } => format!("Invalid desktop setting: {field} {reason}"),
             Self::SerializeRecent { detail } => format!("Failed to serialize recent projects: {detail}"),
             Self::WriteRecent { detail } => format!("Failed to write recent projects file: {detail}"),
             Self::RecentMissing { path } => format!("Project not found in recent list: {path}"),
@@ -179,5 +195,23 @@ mod tests {
             DesktopError::RecentMissing { path: "/p".to_string() }.command_string(),
             "Project not found in recent list: /p"
         );
+    }
+
+    #[test]
+    fn settings_and_recent_parse_strings_name_the_code_only() {
+        let parse = DesktopError::ParseRecent {
+            code: "recent_parse",
+            category: "data",
+            line: 1,
+            column: 19,
+        };
+        assert_eq!(
+            parse.command_string(),
+            "Failed to parse recent projects: recent_parse data line 1 column 19"
+        );
+        let setting = DesktopError::InvalidSetting { field: "theme", reason: "enum" };
+        assert_eq!(setting.command_string(), "Invalid desktop setting: theme enum");
+        assert!(!parse.command_string().contains("PRIVATE_SENTINEL"));
+        assert!(!format!("{parse:?}").contains("PRIVATE_SENTINEL"));
     }
 }
