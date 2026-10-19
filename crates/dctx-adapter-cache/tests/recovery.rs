@@ -186,3 +186,41 @@ fn startup_stops_on_the_time_budget() {
         .expect("startup");
     assert_eq!(report.examined, 1);
 }
+
+fn abrupt_image(boot: u64, held: &[SessionId]) -> (WriterPhase, u64) {
+    let mut life = life(100);
+    let session = SessionId::new(1);
+    life.writer_acquire(root(), session).expect("acquire");
+    life.writer_reserve(root(), 10).expect("reserve");
+    life.writer_stage_segment(root(), 6).expect("stage");
+    assert_eq!(life.writer_phase(root()), WriterPhase::Held);
+    let charged = life.admitted();
+    assert!(charged > 0);
+    let image = life.encode_ledger().expect("encode");
+    let mut restored = Lifecycle::decode_ledger(&image).expect("decode");
+    assert_eq!(restored.writer_phase(root()), WriterPhase::Held);
+    assert_eq!(restored.admitted(), charged);
+    restored.reconcile(&evidence(boot, held));
+    (restored.writer_phase(root()), restored.admitted())
+}
+
+#[test]
+fn abrupt_death_recovers_a_held_writer_from_restart_evidence() {
+    let (phase, admitted) = abrupt_image(0, &[]);
+    assert_eq!(phase, WriterPhase::Free);
+    assert_eq!(admitted, 0);
+    let (phase, admitted) = abrupt_image(9, &[]);
+    assert_eq!(phase, WriterPhase::Free);
+    assert_eq!(admitted, 0);
+}
+
+#[test]
+fn held_os_lock_keeps_an_abrupt_writer_held() {
+    let session = SessionId::new(1);
+    let (phase, admitted) = abrupt_image(0, &[session]);
+    assert_eq!(phase, WriterPhase::Held);
+    assert!(admitted > 0);
+    let (phase, admitted_again) = abrupt_image(9, &[session]);
+    assert_eq!(phase, WriterPhase::Held);
+    assert_eq!(admitted_again, admitted);
+}
