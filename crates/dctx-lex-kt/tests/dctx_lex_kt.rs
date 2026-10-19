@@ -257,3 +257,59 @@ fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    const CTOR_ANN: &str = include_str!("fixtures/ctor_ann.kt");
+
+    #[test]
+    fn annotated_primary_constructors_parse_complete() {
+        let facts = extract("src/Ctor.kt", CTOR_ANN);
+        check_store(CTOR_ANN, &facts);
+        assert_eq!(facts.completion, Completion::Complete);
+        assert!(facts.diagnostics.is_empty(), "{:?}", facts.diagnostics);
+        assert_eq!(
+            names(&facts),
+            [
+                "src/Ctor.kt",
+                "PluginResult",
+                "PluginResult::PluginResult",
+                "PluginResult::put",
+                "ReadClipDataSerializer",
+                "ReadClipDataSerializer::ReadClipDataSerializer",
+                "Marked",
+                "Marked::Marked",
+                "Marked::n",
+                "Split",
+                "Split::Split",
+                "Split::ready",
+            ]
+        );
+        assert!(node(&facts, "PluginResult").public);
+        assert!(!node(&facts, "ReadClipDataSerializer").public);
+        assert!(node(&facts, "Marked::n").public);
+        let ann_scopes: Vec<&str> = facts
+            .references
+            .iter()
+            .filter(|item| item.fact.kind.as_str() == "uses-type" && item.fact.name == "JvmOverloads")
+            .map(|item| item.fact.scope.as_str())
+            .collect();
+        assert_eq!(
+            ann_scopes,
+            [
+                "PluginResult::PluginResult",
+                "ReadClipDataSerializer::ReadClipDataSerializer",
+                "Split::Split",
+            ]
+        );
+        assert!(facts.references.iter().any(|item| {
+            item.fact.kind.as_str() == "uses-type" && item.fact.name == "Keep" && item.fact.scope == "Marked::Marked"
+        }));
+        assert_eq!(calls(&facts), ["JSObject", "StdSerializer", "zero"]);
+        for name in ["JSObject", "Class", "ReadClipData", "StdSerializer", "Int"] {
+            assert!(uses(&facts).contains(&name), "missing uses-type {name}");
+        }
+    }
+}
