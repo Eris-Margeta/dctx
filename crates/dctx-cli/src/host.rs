@@ -7,6 +7,7 @@
 use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::{Component, Path, PathBuf};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -25,6 +26,9 @@ const LEDGER_FILE: &str = "ledger.v1";
 const POLICY_FILE: &str = "policy.v1";
 /// Root id the facade registers when a command piggy-backs auto-clean.
 const CLI_ROOT_ID: u64 = 1;
+
+/// Set when this process ran piggy-back auto-clean before the map query.
+static MAP_AUTO_CLEAN: AtomicBool = AtomicBool::new(false);
 
 /// Persisted auto-clean policy and the last reported reclaim.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -55,6 +59,38 @@ pub fn open_memory() -> Result<Session, String> {
 
 /// Opens `path` as a facade source with the product cache ceiling.
 pub fn open_dir(path: &Path) -> Result<Session, String> {
+    let (source, place, _) = open_source(path)?;
+    build(source, &place, "default")
+}
+
+/// Opens `path` for a map query and returns the canonical source key.
+///
+/// An absolute cache root is attached when one can be created. A relative `DCTX_CACHE_DIR`,
+/// or a cache that will not open, falls back to an ephemeral session. Nothing is written
+/// inside the scanned project.
+pub fn open_mapped(path: &Path) -> Result<(Session, String), String> {
+    let (source, place, key) = open_source(path)?;
+    let Ok(root) = cache_root_dir() else {
+        return Ok((build(source, &place, "default")?, key));
+    };
+    if ensure_cache_dir(&root).is_err() {
+        return Ok((build(source, &place, "default")?, key));
+    }
+    match build_cached(source, &place, &root) {
+        Ok(session) => Ok((session, key)),
+        Err(_) => {
+            let (source, place, key) = open_source(path)?;
+            Ok((build(source, &place, "default")?, key))
+        }
+    }
+}
+
+/// True when map should print whether the generation was reused. Set `DCTX_REUSE_REPORT=1`.
+pub fn reuse_report_enabled() -> bool {
+    std::env::var("DCTX_REUSE_REPORT").ok().as_deref() == Some("1")
+}
+
+fn open_source(path: &Path) -> Result<(FsSource, String, String), String> {
     if path.as_os_str().is_empty() {
         return Err("source path is empty".to_string());
     }
@@ -64,8 +100,13 @@ pub fn open_dir(path: &Path) -> Result<Session, String> {
         .file_name()
         .and_then(|name| name.to_str())
         .filter(|name| !name.is_empty())
-        .unwrap_or("place");
-    build(source, place, "default")
+        .unwrap_or("place")
+        .to_string();
+    let key = match canonical.to_str() {
+        Some(text) => text.to_string(),
+        None => canonical.to_string_lossy().into_owned(),
+    };
+    Ok((source, place, key))
 }
 
 /// Which session-ledger operation the cache command mirrors.
@@ -226,6 +267,7 @@ pub fn auto_report(root: &Path) -> Result<AutoReport, String> {
 
 /// One bounded facade auto-clean. Failures are ignored so the command still runs.
 pub fn piggyback_auto_clean() {
+    MAP_AUTO_CLEAN.store(true, Ordering::Relaxed);
     let Ok(root) = cache_root_dir() else {
         return;
     };
@@ -428,6 +470,27 @@ fn facade_error(error: DctxError) -> String {
         DctxError::CorruptIndex { reason } => format!("corrupt ledger: {reason}"),
         other => other.to_string(),
     }
+}
+
+fn build_cached(source: impl Source + Send + 'static, place: &str, root: &Path) -> Result<Session, String> {
+    let mut policy = load_policy(root).map(|item| item.auto).unwrap_or_else(|_| AutoCleanConfig::default());
+    let env_off = std::env::var("DCTX_AUTO_CLEAN").ok().as_deref() == Some("0");
+    if !MAP_AUTO_CLEAN.load(Ordering::Relaxed) || env_off {
+        policy.enabled = false;
+    }
+    Session::builder(source)
+        .clock(FixedClock(Timestamp(unix_millis())))
+        .cancellation(Arc::new(CancelFlag::new()))
+        .selection(SelectionPolicy::from_texts(&RuleTexts::default()))
+        .ceiling(HostCeiling::base())
+        .grants(HostGrants::PermitAll)
+        .storage(StoragePolicy::Ephemeral { max_bytes: HARD_CAP_BYTES })
+        .place(place)
+        .view("default")
+        .cache_root(root, CLI_ROOT_ID)
+        .auto_clean(policy)
+        .build()
+        .map_err(facade_error)
 }
 
 fn build(source: impl Source + Send + 'static, place: &str, view: &str) -> Result<Session, String> {

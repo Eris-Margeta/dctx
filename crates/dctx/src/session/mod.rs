@@ -12,6 +12,7 @@ mod import_op;
 mod ledger;
 mod pack_op;
 mod query_op;
+mod reuse;
 mod template_op;
 
 use std::collections::BTreeMap;
@@ -51,6 +52,8 @@ pub struct SnapshotHandle {
     epoch: u64,
     digest: String,
     pin: Arc<Pin>,
+    /// True when the generation was loaded after every stored content digest still matched.
+    reused: bool,
 }
 
 impl SnapshotHandle {
@@ -68,6 +71,11 @@ impl SnapshotHandle {
     pub fn digest(&self) -> &str {
         &self.digest
     }
+
+    /// True when this handle was installed from a persisted generation whose digests still matched.
+    pub fn reused(&self) -> bool {
+        self.reused
+    }
 }
 
 impl std::fmt::Debug for SnapshotHandle {
@@ -77,6 +85,7 @@ impl std::fmt::Debug for SnapshotHandle {
             .field("generation", &self.generation)
             .field("epoch", &self.epoch)
             .field("digest", &self.digest)
+            .field("reused", &self.reused)
             .field("lease", &std::sync::Arc::strong_count(&self.pin))
             .finish()
     }
@@ -124,7 +133,8 @@ impl Session {
         self.content_reads
     }
 
-    /// Cached content reads. This facade never serves cached file bytes, so the value stays 0.
+    /// Content reads that confirmed a retained digest and did not rebuild the generation.
+    /// A cold snapshot leaves this at 0.
     pub fn cached_content_reads(&self) -> u64 {
         self.cached_content_reads
     }
@@ -146,6 +156,84 @@ impl Session {
 
     /// Takes a snapshot. Cancellation and a cache refusal leave `generation_count` unchanged.
     pub fn snapshot(&mut self, request: &SnapshotRequest) -> Result<SnapshotHandle, DctxError> {
+        self.snapshot_inner(request, None, true)
+    }
+
+    /// Walks `request` and stores the generation. `hooks` false means the caller already ran the before-index hook.
+    fn snapshot_inner(
+        &mut self,
+        request: &SnapshotRequest,
+        source_key: Option<&str>,
+        hooks: bool,
+    ) -> Result<SnapshotHandle, DctxError> {
+        let (limits, parser, scan_limits) = self.reject_snapshot(request)?;
+        if hooks {
+            self.hooks_before_index()?;
+        }
+        self.touch_cache_root()?;
+        let started = self.clock.now().millis();
+        check_deadline(started, started, scan_limits.deadline_ms)?;
+        let walked = walk_source(&WalkArgs {
+            source: self.source.as_ref(),
+            cancel: self.cancel.as_ref(),
+            policy: self.policy_view(),
+            limits: &limits,
+            freshness: request.freshness,
+            parser,
+            deadline_ms: scan_limits.deadline_ms,
+            started_ms: started,
+            now_ms: started,
+        })?;
+        self.content_reads += walked.reads;
+        let (payload, digest) = canonical_bytes(&walked.files, &walked.nodes, &walked.edges)?;
+        let id = self.next_generation;
+        let mut generation = Generation {
+            id,
+            digest: digest.clone(),
+            encoded_len: 0,
+            files: walked.files,
+            nodes: walked.nodes,
+            edges: walked.edges,
+            freshness: request.freshness,
+            taken_at: started,
+            epoch: self.epoch,
+            coverage: walked.coverage,
+            completion: walked.completion,
+            parser: walked.parser,
+        };
+        let stored = match source_key {
+            Some(key) if self.managed.is_some() => {
+                reuse::encode_generation(key, &self.view, &limits, &generation)?
+            }
+            _ => seal_segment(&payload)?,
+        };
+        let encoded_len = if cfg!(feature = "segments") {
+            u64::try_from(stored.len()).unwrap_or(u64::MAX)
+        } else {
+            0
+        };
+        generation.encoded_len = encoded_len;
+        if cfg!(feature = "segments") {
+            self.cache.segment_admit(encoded_len)?;
+        }
+        let ticket = match self.store_cache_segment(&stored) {
+            Ok(ticket) => ticket,
+            Err(error) => {
+                if cfg!(feature = "segments") {
+                    self.cache.segment_release(encoded_len);
+                }
+                return Err(error);
+            }
+        };
+        let handle = self.pin_generation(generation, ticket, false);
+        self.hooks_after_index()?;
+        Ok(handle)
+    }
+
+    fn reject_snapshot(
+        &self,
+        request: &SnapshotRequest,
+    ) -> Result<(crate::domain::ScanLimits, crate::domain::ParserChoice, OperationLimits), DctxError> {
         if !cfg!(feature = "map") {
             return Err(DctxError::unsupported("map"));
         }
@@ -160,71 +248,20 @@ impl Session {
             view.check()?;
             view.parser()?
         };
-        self.hooks_before_index()?;
-        self.touch_cache_root()?;
-        let started = self.clock.now().millis();
-        check_deadline(started, started, scan_limits.deadline_ms)?;
-        let walked = walk_source(&WalkArgs {
-            source: self.source.as_ref(),
-            cancel: self.cancel.as_ref(),
-            policy: PolicyView {
-                selection: &self.selection,
-                ceiling: &self.ceiling,
-                grants: self.grants,
-                plan: self.plan.as_ref(),
-                view: &self.view,
-            },
-            limits: &limits,
-            freshness: request.freshness,
-            parser,
-            deadline_ms: scan_limits.deadline_ms,
-            started_ms: started,
-            now_ms: started,
-        })?;
-        self.content_reads += walked.reads;
-        let (payload, digest) = canonical_bytes(&walked.files, &walked.nodes, &walked.edges)?;
-        let segment = seal_segment(&payload)?;
-        let encoded_len = if cfg!(feature = "segments") {
-            u64::try_from(segment.len()).unwrap_or(u64::MAX)
-        } else {
-            0
-        };
-        if cfg!(feature = "segments") {
-            self.cache.segment_admit(encoded_len)?;
-        }
-        let ticket = match self.store_cache_segment(&segment) {
-            Ok(ticket) => ticket,
-            Err(error) => {
-                if cfg!(feature = "segments") {
-                    self.cache.segment_release(encoded_len);
-                }
-                return Err(error);
-            }
-        };
-        let id = self.next_generation;
+        Ok((limits, parser, scan_limits))
+    }
+
+    fn pin_generation(&mut self, generation: Generation, ticket: Option<SnapshotLease>, reused: bool) -> SnapshotHandle {
+        let id = generation.id;
+        let epoch = generation.epoch;
+        let digest = generation.digest.clone();
         let pin = Arc::new(Pin { release: ticket });
         self.pins.insert(id, Arc::downgrade(&pin));
-        self.generations.insert(
-            id,
-            Generation {
-                id,
-                digest: digest.clone(),
-                encoded_len,
-                files: walked.files,
-                nodes: walked.nodes,
-                edges: walked.edges,
-                freshness: request.freshness,
-                taken_at: started,
-                epoch: self.epoch,
-                coverage: walked.coverage,
-                completion: walked.completion,
-                parser: walked.parser,
-            },
-        );
-        self.next_generation = self.next_generation.saturating_add(1);
-        let handle = SnapshotHandle { generation: id, epoch: self.epoch, digest, pin };
-        self.hooks_after_index()?;
-        Ok(handle)
+        if let Some(previous) = self.generations.insert(id, generation) {
+            self.cache.segment_release(previous.encoded_len);
+        }
+        self.next_generation = id.saturating_add(1).max(self.next_generation);
+        SnapshotHandle { generation: id, epoch, digest, pin, reused }
     }
 
     fn policy_view(&self) -> PolicyView<'_> {
