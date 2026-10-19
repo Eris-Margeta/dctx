@@ -1,7 +1,7 @@
 //! JSON and JSONC structural walk.
 //! Implements the configuration extractor for `.json` and `.jsonc` (PARSERS-v1).
-//! Comments are summaries in JSONC and diagnostics in JSON. Trailing commas are
-//! accepted in both. The draft in `path` owns facts.
+//! Comments are summaries in JSONC and diagnostics in JSON. Object trailing
+//! commas are accepted; array trailing commas are JSONC-only. `path` owns facts.
 use crate::domain::{DiagnosticReason, Dialect, LexError, LexedFile, Limits};
 use crate::path::{Cur, Draft, Kind};
 
@@ -104,6 +104,16 @@ impl<'a> Parser<'a> {
         None
     }
 
+    fn closer_after_space(&self, close: u8) -> bool {
+        let bytes = self.cur.src.as_bytes();
+        let end = self.cur.end.min(bytes.len());
+        let mut index = self.cur.i;
+        while index < end && matches!(bytes[index], b' ' | b'\t' | b'\r' | b'\n') {
+            index += 1;
+        }
+        bytes.get(index) == Some(&close)
+    }
+
     fn trailing(&mut self) -> Option<String> {
         if !self.jsonc {
             return None;
@@ -177,6 +187,11 @@ impl<'a> Parser<'a> {
             self.value(parent, &seg, depth, start, doc)?;
             let _ = self.skip();
             if self.cur.eat(b',') {
+                // RFC 8259 refuses `[1,]`. JSONC keeps the comma. Objects stay
+                // permissive: settings.json locks a trailing comma as complete.
+                if !self.jsonc && self.closer_after_space(b']') {
+                    self.diagnose(self.cur.i.saturating_sub(1), DiagnosticReason::InvalidSyntax);
+                }
                 continue;
             }
             if self.cur.eat(b']') {
@@ -312,21 +327,24 @@ impl<'a> Parser<'a> {
                         Some(b't') => out.push('\t'),
                         Some(b'u') => {
                             self.cur.i += 1;
-                            let hex = self.cur.slice(self.cur.i, self.cur.i.saturating_add(4));
-                            if hex.len() != 4 || !hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-                                self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
-                                return None;
+                            let Some(code) = self.unicode_unit() else { return None };
+                            if let Some(ch) = char::from_u32(code) {
+                                out.push(ch);
+                                continue;
                             }
-                            let Ok(code) = u32::from_str_radix(hex, 16) else {
-                                self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
-                                return None;
-                            };
-                            self.cur.i += 4;
-                            let Some(ch) = char::from_u32(code) else {
-                                self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
-                                return None;
-                            };
-                            out.push(ch);
+                            if (0xD800..=0xDBFF).contains(&code)
+                                && let Some(low) = self.low_surrogate()
+                            {
+                                let scalar = 0x10000 + (((code - 0xD800) << 10) | (low - 0xDC00));
+                                if let Some(ch) = char::from_u32(scalar) {
+                                    out.push(ch);
+                                } else {
+                                    self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
+                                }
+                                continue;
+                            }
+                            // A lone surrogate is invalid, but the rest of the value stays.
+                            self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
                             continue;
                         }
                         _ => {
@@ -345,6 +363,49 @@ impl<'a> Parser<'a> {
                     }
                 }
             }
+        }
+    }
+
+    fn unicode_unit(&mut self) -> Option<u32> {
+        let hex = self.cur.slice(self.cur.i, self.cur.i.saturating_add(4));
+        if hex.len() != 4 || !hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
+            return None;
+        }
+        let Ok(code) = u32::from_str_radix(hex, 16) else {
+            self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
+            return None;
+        };
+        self.cur.i += 4;
+        Some(code)
+    }
+
+    fn low_surrogate(&mut self) -> Option<u32> {
+        let save = self.cur.i;
+        if self.cur.byte() != Some(b'\\') {
+            return None;
+        }
+        self.cur.i += 1;
+        if self.cur.byte() != Some(b'u') {
+            self.cur.i = save;
+            return None;
+        }
+        self.cur.i += 1;
+        let hex = self.cur.slice(self.cur.i, self.cur.i.saturating_add(4));
+        if hex.len() != 4 || !hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            self.cur.i = save;
+            return None;
+        }
+        let Ok(code) = u32::from_str_radix(hex, 16) else {
+            self.cur.i = save;
+            return None;
+        };
+        if (0xDC00..=0xDFFF).contains(&code) {
+            self.cur.i += 4;
+            Some(code)
+        } else {
+            self.cur.i = save;
+            None
         }
     }
 
@@ -382,5 +443,65 @@ mod tests {
         let json = extract("a.json", source, false, &limits).unwrap();
         assert_eq!(json.completion, Completion::Partial);
         assert!(json.nodes.iter().any(|node| node.fact.name == "n"));
+    }
+
+    fn names(file: &LexedFile) -> Vec<&str> {
+        file.nodes.iter().map(|node| node.fact.name.as_str()).collect()
+    }
+
+    fn signature<'a>(file: &'a LexedFile, name: &str) -> &'a str {
+        file.nodes
+            .iter()
+            .find(|node| node.fact.name == name)
+            .map(|node| node.fact.signature.as_str())
+            .unwrap_or("")
+    }
+
+    #[test]
+    fn surrogate_pairs_keep_the_rest_of_the_object() {
+        let limits = Limits::default();
+        let pair = extract("a.json", r#"{"emoji":"\uD83D\uDE00","keep":1}"#, false, &limits).unwrap();
+        assert_eq!(pair.completion, Completion::Complete, "{:?}", pair.diagnostics);
+        assert_eq!(names(&pair), ["a.json", "emoji", "keep"]);
+        assert_eq!(signature(&pair, "emoji"), "\u{1F600}");
+        assert_eq!(signature(&pair, "keep"), "1");
+
+        let literal = extract("a.json", r#"{"a":"\u0041","keep":1}"#, false, &limits).unwrap();
+        assert_eq!(literal.completion, Completion::Complete, "{:?}", literal.diagnostics);
+        assert_eq!(signature(&literal, "a"), "A");
+        assert_eq!(names(&literal), ["a.json", "a", "keep"]);
+
+        let lone = extract("a.json", r#"{"emoji":"\uD800","keep":1}"#, false, &limits).unwrap();
+        assert_eq!(lone.completion, Completion::Partial);
+        assert!(lone.diagnostics.iter().any(|item| item.reason == DiagnosticReason::InvalidSyntax));
+        assert_eq!(names(&lone), ["a.json", "emoji", "keep"]);
+        assert_eq!(signature(&lone, "keep"), "1");
+
+        let low = extract("a.json", r#"{"emoji":"A\uDE00B","keep":1}"#, false, &limits).unwrap();
+        assert_eq!(low.completion, Completion::Partial);
+        assert_eq!(signature(&low, "emoji"), "AB");
+        assert!(names(&low).contains(&"keep"));
+    }
+
+    #[test]
+    fn array_trailing_commas_follow_the_dialect() {
+        let limits = Limits::default();
+        let strict = extract("a.json", "[1,]", false, &limits).unwrap();
+        assert_eq!(strict.completion, Completion::Partial);
+        assert!(strict.diagnostics.iter().any(|item| item.reason == DiagnosticReason::InvalidSyntax));
+        assert_eq!(signature(&strict, "0"), "1");
+
+        let clean = extract("a.json", "[1]", false, &limits).unwrap();
+        assert_eq!(clean.completion, Completion::Complete, "{:?}", clean.diagnostics);
+        assert_eq!(signature(&clean, "0"), "1");
+        assert_eq!(names(&clean), ["a.json", "0"]);
+
+        let jsonc = extract("a.jsonc", "[1,]", true, &limits).unwrap();
+        assert_eq!(jsonc.completion, Completion::Complete, "{:?}", jsonc.diagnostics);
+        assert_eq!(signature(&jsonc, "0"), "1");
+
+        let object = extract("a.json", r#"{"editor.tabSize":4,}"#, false, &limits).unwrap();
+        assert_eq!(object.completion, Completion::Complete, "{:?}", object.diagnostics);
+        assert_eq!(signature(&object, "editor.tabSize"), "4");
     }
 }
