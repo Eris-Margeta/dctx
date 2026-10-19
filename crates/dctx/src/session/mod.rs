@@ -1,7 +1,8 @@
 //! Session: one explicit source, one policy and the operations every surface calls.
 //! Implements ARCHITECTURE-PROPOSAL §2 and §7 row DX-D1. The facade is synchronous.
 //! Depends on the domain types, the index and the pack and template engines.
-//! Handles pin a generation with an [`std::sync::Arc`] lease. Dropping the last lease allows collection.
+//! A cache root is shared: admission, snapshot leases and purge/GC use one ledger.
+//! Handles keep that lease alive. Dropping the last one allows collection.
 //! A plugin host is optional. The library default starts none and schedules no hook.
 
 mod build;
@@ -23,7 +24,7 @@ use dctx_template::{ContextPlan, HostCeiling};
 pub use build::StoragePolicy;
 pub use build::SessionBuilder;
 
-use self::ledger::{AccountingCache, PersistedCache};
+use self::ledger::{AccountingCache, PersistedCache, SnapshotLease};
 use crate::domain::{
     ancestors_include, check_deadline, seal_segment, HostGrants, OperationLimits, PolicyView, RuleSources,
     SnapshotRequest, DctxError, REQUEST_VERSION,
@@ -32,7 +33,16 @@ use crate::index::{canonical_bytes, walk_source, Generation, WalkArgs};
 use crate::plugins::{HookWarning, PluginHost};
 
 /// Lease that keeps one generation reachable. The value is the allocation, not its fields.
-struct Pin;
+struct Pin {
+    /// Persisted reader pin. `None` in library isolation. Drop releases the ledger lease.
+    release: Option<SnapshotLease>,
+}
+
+impl Drop for Pin {
+    fn drop(&mut self) {
+        drop(self.release.take());
+    }
+}
 
 /// A pinned snapshot generation. Cloning increments the lease.
 #[derive(Clone)]
@@ -182,14 +192,17 @@ impl Session {
         if cfg!(feature = "segments") {
             self.cache.segment_admit(encoded_len)?;
         }
-        if let Err(error) = self.store_cache_segment(&segment) {
-            if cfg!(feature = "segments") {
-                self.cache.segment_release(encoded_len);
+        let ticket = match self.store_cache_segment(&segment) {
+            Ok(ticket) => ticket,
+            Err(error) => {
+                if cfg!(feature = "segments") {
+                    self.cache.segment_release(encoded_len);
+                }
+                return Err(error);
             }
-            return Err(error);
-        }
+        };
         let id = self.next_generation;
-        let pin = Arc::new(Pin);
+        let pin = Arc::new(Pin { release: ticket });
         self.pins.insert(id, Arc::downgrade(&pin));
         self.generations.insert(
             id,

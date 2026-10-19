@@ -70,6 +70,7 @@ mod isolation_scan {
             ("session/build.rs", include_str!("session/build.rs")),
             ("session/cache_op.rs", include_str!("session/cache_op.rs")),
             ("session/ledger.rs", include_str!("session/ledger.rs")),
+            ("session/ledger/cache_bind.rs", include_str!("session/ledger/cache_bind.rs")),
             ("session/pack_op.rs", include_str!("session/pack_op.rs")),
             ("session/query_op.rs", include_str!("session/query_op.rs")),
             ("session/hooks.rs", include_str!("session/hooks.rs")),
