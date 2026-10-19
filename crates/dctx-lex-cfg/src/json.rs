@@ -2,8 +2,10 @@
 //! Implements the configuration extractor for `.json` and `.jsonc` (PARSERS-v1).
 //! Comments are summaries in JSONC and diagnostics in JSON. Object trailing
 //! commas are accepted; array trailing commas are JSONC-only. `path` owns facts.
+//! Unescaped strings are borrowed from the source; escapes decode in one pass.
 use crate::domain::{DiagnosticReason, Dialect, LexError, LexedFile, Limits};
 use crate::path::{Cur, Draft, Kind};
+use std::borrow::Cow;
 
 pub(crate) fn extract(
     path: &str,
@@ -11,11 +13,34 @@ pub(crate) fn extract(
     jsonc: bool,
     limits: &Limits,
 ) -> Result<LexedFile, LexError> {
+    walk(path, source, jsonc, limits, false)
+}
+
+#[cfg(test)]
+pub(crate) fn extract_oracle(
+    path: &str,
+    source: &str,
+    jsonc: bool,
+    limits: &Limits,
+) -> Result<LexedFile, LexError> {
+    walk(path, source, jsonc, limits, true)
+}
+
+fn walk(
+    path: &str,
+    source: &str,
+    jsonc: bool,
+    limits: &Limits,
+    legacy: bool,
+) -> Result<LexedFile, LexError> {
+    let _legacy = legacy;
     let mut parser = Parser {
         cur: Cur::new(source),
         draft: Draft::open(path, source, limits.max_facts, limits.max_depth)?,
         jsonc,
         max_depth: limits.max_depth,
+        #[cfg(test)]
+        legacy_strings: legacy,
     };
     parser.skip();
     if !parser.cur.eof() {
@@ -37,6 +62,9 @@ struct Parser<'a> {
     draft: Draft<'a>,
     jsonc: bool,
     max_depth: u32,
+    /// Test builds keep the pre-change per-character string decoder as an oracle.
+    #[cfg(test)]
+    legacy_strings: bool,
 }
 
 impl<'a> Parser<'a> {
@@ -46,9 +74,16 @@ impl<'a> Parser<'a> {
 
     fn skip(&mut self) -> Option<String> {
         let mut lead: Option<String> = None;
+        let bytes = self.cur.src.as_bytes();
+        let limit = self.cur.end.min(bytes.len());
         loop {
+            if self.cur.i < limit && matches!(bytes[self.cur.i], b' ' | b'\t' | b'\r') {
+                while self.cur.i < limit && matches!(bytes[self.cur.i], b' ' | b'\t' | b'\r') {
+                    self.cur.i += 1;
+                }
+                continue;
+            }
             match self.cur.byte() {
-                Some(b' ' | b'\t' | b'\r') => self.cur.i += 1,
                 Some(b'\n') => {
                     self.cur.i += 1;
                     let save = self.cur.i;
@@ -181,7 +216,8 @@ impl<'a> Parser<'a> {
                 self.diagnose(self.cur.i, DiagnosticReason::UnbalancedBracket);
                 break;
             }
-            let seg = index.to_string();
+            let mut numerals = [0u8; 10];
+            let seg = format_index(&mut numerals, index);
             index = index.saturating_add(1);
             let start = self.cur.i;
             self.value(parent, &seg, depth, start, doc)?;
@@ -299,7 +335,123 @@ impl<'a> Parser<'a> {
         true
     }
 
-    fn string(&mut self) -> Option<String> {
+    fn string(&mut self) -> Option<Cow<'a, str>> {
+        #[cfg(test)]
+        if self.legacy_strings {
+            return self.string_legacy().map(Cow::Owned);
+        }
+        self.string_scan()
+    }
+
+    /// One forward scan. A string with no escape is a slice of the source.
+    fn string_scan(&mut self) -> Option<Cow<'a, str>> {
+        if !self.cur.eat(b'"') {
+            return None;
+        }
+        let src = self.cur.src;
+        let bytes = src.as_bytes();
+        let limit = self.cur.end.min(bytes.len());
+        let start = self.cur.i;
+        let mut index = start;
+        while index < limit {
+            match bytes[index] {
+                b'"' => {
+                    self.cur.i = index + 1;
+                    return Some(Cow::Borrowed(&src[start..index]));
+                }
+                b'\\' | b'\n' => break,
+                _ => index += 1,
+            }
+        }
+        if index >= limit || bytes[index] == b'\n' {
+            self.cur.i = index.min(limit);
+            self.diagnose(self.cur.i, DiagnosticReason::UnterminatedString);
+            return None;
+        }
+        let mut out = String::new();
+        out.push_str(&src[start..index]);
+        self.cur.i = index;
+        self.string_escape_tail(&mut out)?;
+        Some(Cow::Owned(out))
+    }
+
+    fn string_escape_tail(&mut self, out: &mut String) -> Option<()> {
+        loop {
+            let bytes = self.cur.src.as_bytes();
+            let limit = self.cur.end.min(bytes.len());
+            if self.cur.i >= limit {
+                self.diagnose(self.cur.i, DiagnosticReason::UnterminatedString);
+                return None;
+            }
+            match bytes[self.cur.i] {
+                b'\n' => {
+                    self.diagnose(self.cur.i, DiagnosticReason::UnterminatedString);
+                    return None;
+                }
+                b'"' => {
+                    self.cur.i += 1;
+                    return Some(());
+                }
+                b'\\' => {
+                    self.cur.i += 1;
+                    if self.cur.i >= limit {
+                        self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
+                        return None;
+                    }
+                    match bytes[self.cur.i] {
+                        b'"' => out.push('"'),
+                        b'\\' => out.push('\\'),
+                        b'/' => out.push('/'),
+                        b'b' => out.push('\u{0008}'),
+                        b'f' => out.push('\u{000c}'),
+                        b'n' => out.push('\n'),
+                        b'r' => out.push('\r'),
+                        b't' => out.push('\t'),
+                        b'u' => {
+                            self.cur.i += 1;
+                            let Some(code) = self.unicode_unit() else { return None };
+                            if let Some(ch) = char::from_u32(code) {
+                                out.push(ch);
+                                continue;
+                            }
+                            if (0xD800..=0xDBFF).contains(&code)
+                                && let Some(low) = self.low_surrogate()
+                            {
+                                let scalar = 0x10000 + (((code - 0xD800) << 10) | (low - 0xDC00));
+                                if let Some(ch) = char::from_u32(scalar) {
+                                    out.push(ch);
+                                } else {
+                                    self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
+                                }
+                                continue;
+                            }
+                            // A lone surrogate is invalid, but the rest of the value stays.
+                            self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
+                            continue;
+                        }
+                        _ => {
+                            self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
+                            return None;
+                        }
+                    }
+                    self.cur.i += 1;
+                }
+                _ => {
+                    let run = self.cur.i;
+                    let mut index = run + 1;
+                    while index < limit && !matches!(bytes[index], b'"' | b'\\' | b'\n') {
+                        index += 1;
+                    }
+                    out.push_str(&self.cur.src[run..index]);
+                    self.cur.i = index;
+                }
+            }
+        }
+    }
+
+    /// Pre-change decoder: one `chars()` step and one `String` push per scalar.
+    #[cfg(test)]
+    fn string_legacy(&mut self) -> Option<String> {
         if !self.cur.eat(b'"') {
             return None;
         }
@@ -343,7 +495,6 @@ impl<'a> Parser<'a> {
                                 }
                                 continue;
                             }
-                            // A lone surrogate is invalid, but the rest of the value stays.
                             self.diagnose(self.cur.i, DiagnosticReason::InvalidSyntax);
                             continue;
                         }
@@ -427,6 +578,27 @@ impl<'a> Parser<'a> {
     }
 }
 
+/// Decimal spelling of an array index. The buffer holds every `u32`.
+fn format_index(buf: &mut [u8; 10], mut value: u32) -> &str {
+    if value == 0 {
+        buf[9] = b'0';
+        return match std::str::from_utf8(&buf[9..]) {
+            Ok(text) => text,
+            Err(_) => "0",
+        };
+    }
+    let mut end = buf.len();
+    while value > 0 {
+        end -= 1;
+        buf[end] = b'0' + (value % 10) as u8;
+        value /= 10;
+    }
+    match std::str::from_utf8(&buf[end..]) {
+        Ok(text) => text,
+        Err(_) => "0",
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -503,5 +675,97 @@ mod tests {
         let object = extract("a.json", r#"{"editor.tabSize":4,}"#, false, &limits).unwrap();
         assert_eq!(object.completion, Completion::Complete, "{:?}", object.diagnostics);
         assert_eq!(signature(&object, "editor.tabSize"), "4");
+    }
+
+    fn assert_oracle(path: &str, source: &str, jsonc: bool, limits: &Limits) {
+        assert_eq!(
+            extract(path, source, jsonc, limits),
+            extract_oracle(path, source, jsonc, limits),
+            "{path} jsonc={jsonc}"
+        );
+    }
+
+    #[test]
+    fn fast_json_matches_the_character_decoder() {
+        let limits = Limits::default();
+        let fixtures = [
+            ("basic.json", include_str!("../tests/fixtures/basic.json"), false),
+            ("settings.json", include_str!("../tests/fixtures/settings.json"), false),
+        ];
+        for (path, source, jsonc) in fixtures {
+            assert_oracle(path, source, jsonc, &limits);
+        }
+        let samples = [
+            ("empty.json", "", false),
+            ("obj.json", "{}", false),
+            ("arr.json", "[]", false),
+            ("scalar.json", "1", false),
+            ("nest.json", r#"{"a":{"b":[1,{"c":"x"},true,null]},"d":"plain"}"#, false),
+            ("esc.json", r#"{"q":"a\"b\\c\/d\b\f\n\r\t","u":"\u0041","emoji":"\uD83D\uDE00"}"#, false),
+            ("lone.json", r#"{"emoji":"\uD800","keep":1}"#, false),
+            ("low.json", r#"{"emoji":"A\uDE00B","keep":1}"#, false),
+            ("dot.json", r#"{"a.b":1,"a":{"b":2},"keep":3}"#, false),
+            ("dup.json", r#"{"a":1,"a":2}"#, false),
+            ("trail.json", r#"{"a":1,}"#, false),
+            ("badarr.json", "[1,]", false),
+            ("okarr.jsonc", "[1,]", true),
+            ("comment.json", "{\n// Name.\n\"n\": \"./a.rs\"\n}\n", false),
+            ("comment.jsonc", "{\n// Name.\n\"n\": \"./a.rs\"\n}\n", true),
+            ("block.jsonc", "{\"n\": 1 /* tail */}", true),
+            ("deps.json", r#"{"dependencies":{"serde":"1.0","local":{"path":"../local"}},"workspaces":["crates/core"]}"#, false),
+            ("ws.json", "{\n  \"name\": \"café\",\n  \"gap\": \"a\\nb\"\n}\n", false),
+            ("cut.json", r#"{"ready":1,"broken":"#, false),
+            ("badesc.json", r#"{"a":"\q","b":1}"#, false),
+            ("vt.json", "{\"a\":\"a\u{000b}b\"}", false),
+        ];
+        for (path, source, jsonc) in samples {
+            assert_oracle(path, source, jsonc, &limits);
+        }
+        let mut long = String::from("{");
+        for index in 0..40 {
+            if index > 0 {
+                long.push(',');
+            }
+            long.push_str(&format!("\"k{index}\":\"{}\"", "z".repeat(200)));
+        }
+        long.push('}');
+        assert_oracle("long.json", &long, false, &limits);
+        assert_oracle("wide.json", &large_nested(), false, &limits);
+        assert_oracle("pretty.json", &large_pretty(), false, &limits);
+        let tight = Limits { max_facts: 8, ..Limits::default() };
+        assert_oracle("wide.json", &large_nested(), false, &tight);
+        let deep = Limits { max_depth: 2, ..Limits::default() };
+        assert_oracle("nest.json", r#"{"a":{"b":{"c":1}}}"#, false, &deep);
+        assert_oracle("shallow.json", r#"{"a":{"b":1}}"#, false, &deep);
+    }
+
+    fn large_nested() -> String {
+        let mut out = String::from("{\"rows\":[");
+        for index in 0..400 {
+            if index > 0 {
+                out.push(',');
+            }
+            let ok = if index % 2 == 0 { "true" } else { "false" };
+            let hash = "ab".repeat(32);
+            out.push_str(&format!(
+                r#"{{"id":{index},"name":"item-{index}","path":"./p/{index}.rs","ok":{ok},"note":"line\n{index}","emoji":"\uD83D\uDE00","hash":"{hash}","nested":{{"a.b":1,"a":{{"b":2}},"arr":[1,2,{{"k":"v"}}]}},"deps":{{"serde":"1"}}}}"#
+            ));
+        }
+        out.push_str("]}");
+        out
+    }
+
+    fn large_pretty() -> String {
+        let mut out = String::from("{\n  \"items\": [\n");
+        for index in 0..80 {
+            if index > 0 {
+                out.push_str(",\n");
+            }
+            out.push_str(&format!(
+                "    {{\"n\": {index}, \"text\": \"word {index}\", \"path\": \"../x/{index}\"}}"
+            ));
+        }
+        out.push_str("\n  ]\n}\n");
+        out
     }
 }
