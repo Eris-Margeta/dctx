@@ -18,7 +18,7 @@ pub struct Capabilities {
     pub segment_version: u32,
     /// Languages the structural extractor recognises.
     pub languages: &'static [&'static str],
-    /// Parser ids linked into this build. Answer precision stays structural unless a plan selects syntax coverage.
+    /// Parser ids linked into this build. No plan uses `syn` for Rust when that feature is linked.
     pub parsers: Vec<&'static str>,
     /// `buffered-segments` or `caller-ports`.
     pub storage: &'static str,

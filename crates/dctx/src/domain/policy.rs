@@ -61,10 +61,10 @@ impl<'a> PolicyView<'a> {
         Ok(narrower(narrower(host, selected), planned))
     }
 
-    /// Parser named by the plan. No plan means structural.
+    /// Parser named by the plan. No plan means the shipped Rust default (`syn`).
     pub(crate) fn parser(&self) -> Result<ParserChoice, DctxError> {
         let Some(plan) = self.plan else {
-            return Ok(ParserChoice::Structural);
+            return Ok(ParserChoice::Syn);
         };
         let view = plan
             .views
@@ -261,5 +261,28 @@ mod tests {
         ceiling.grants.push(GrantRule { pattern: "src/**".to_string(), decision: Include });
         assert_eq!(host_decision(HostGrants::Ceiling, &ceiling, "src/lib.rs"), Include);
         assert_eq!(host_decision(HostGrants::Ceiling, &ceiling, "README.md"), Exclude);
+    }
+
+    #[test]
+    fn no_plan_selects_bounded_syn_and_a_minimal_build_refuses_it() {
+        use dctx_core::selection::RuleTexts;
+
+        let selection = SelectionPolicy::from_texts(&RuleTexts::default());
+        let ceiling = HostCeiling::base();
+        let view = PolicyView {
+            selection: &selection,
+            ceiling: &ceiling,
+            grants: HostGrants::PermitAll,
+            plan: None,
+            view: "map",
+        };
+        assert_eq!(view.parser().expect("parser"), ParserChoice::Syn);
+        let checked = view.check();
+        if cfg!(feature = "syntax-rust") {
+            checked.expect("syn is linked");
+        } else {
+            let error = checked.expect_err("minimal build");
+            assert!(matches!(error, DctxError::UnsupportedCapability { capability: "syntax-rust", .. }));
+        }
     }
 }
