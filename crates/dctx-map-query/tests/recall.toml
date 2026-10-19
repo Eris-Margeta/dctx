@@ -27,11 +27,11 @@ expected = "s:crates/dctx-core/src/filter.rs#FilterConfig::has_active_filters"
 
 [[question]]
 text = "Where does FilterConfig decide which files to include?"
-expected = "s:crates/dctx-core/src/filter.rs#FilterConfig::should_include_file"
+expected = "s:crates/dctx-core/src/filter/include.rs#FilterConfig::should_include_file"
 
 [[question]]
 text = "How does FilterConfig include directories?"
-expected = "s:crates/dctx-core/src/filter.rs#FilterConfig::should_include_directory"
+expected = "s:crates/dctx-core/src/filter/include.rs#FilterConfig::should_include_directory"
 
 [[question]]
 text = "How does template list load compiled plans from an explicit directory?"
@@ -75,7 +75,7 @@ expected = "s:crates/dctx-template/src/v1/parse.rs#replace_vars"
 
 [[question]]
 text = "Where does compare_trees calculate a DiffReport?"
-expected = "s:crates/dctx-core/src/diff.rs#compare_trees"
+expected = "s:crates/dctx-core/src/diff/compare.rs#compare_trees"
 
 [[question]]
 text = "How does the CLI load_state read previous binary history or reset to V1?"
