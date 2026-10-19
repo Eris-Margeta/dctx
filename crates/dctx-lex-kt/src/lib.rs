@@ -57,6 +57,28 @@ mod tests {
     use super::*;
 
     #[test]
+    fn escaped_non_ascii_characters_preserve_following_declarations() {
+        // Invalid Kotlin escapes still need bounded recovery without losing facts.
+        // ASCII escapes are the positive control for every UTF-8 character width.
+        for escaped in ["n", "é", "€", "😀"] {
+            for quote in ['"', '\''] {
+                for separator in ["; ", "\n"] {
+                    let source = format!(
+                        "fun earlier() = 1\nval x = {quote}\\{escaped}{quote}{separator}fun after() {{}}\n"
+                    );
+                    let facts = KotlinLexer::default()
+                        .extract("Escape.kt", source.as_bytes())
+                        .expect("extract escaped literal");
+                    let names: Vec<_> = facts.nodes.iter().map(|node| node.fact.name.as_str()).collect();
+                    assert_eq!(names, ["Escape.kt", "earlier", "x", "after"], "{source:?}");
+                    assert_eq!(facts.completion, Completion::Complete, "{source:?}");
+                    assert!(facts.diagnostics.is_empty(), "{source:?}: {:?}", facts.diagnostics);
+                }
+            }
+        }
+    }
+
+    #[test]
     fn refusals_are_typed_with_positive_controls() {
         let lexer = KotlinLexer::default();
         assert!(matches!(
