@@ -6,7 +6,6 @@
 #![deny(missing_docs)]
 
 pub mod domain;
-mod digest;
 mod json;
 mod path;
 mod toml;

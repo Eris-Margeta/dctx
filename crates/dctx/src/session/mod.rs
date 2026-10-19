@@ -265,7 +265,7 @@ impl Session {
         self.content_reads += walked.reads;
         let (payload, digest) = {
             let _span = crate::index::profile::Elapsed::begin(crate::index::profile::Stage::CanonicalizeSeal);
-            canonical_bytes(&walked.files, &walked.nodes, &walked.edges)?
+            canonical_bytes(&walked.files, &walked.nodes, &walked.edges, &walked.text)?
         };
         let id = self.next_generation;
         let mut generation = Generation {
@@ -275,6 +275,7 @@ impl Session {
             files: walked.files,
             nodes: walked.nodes,
             edges: walked.edges,
+            text: walked.text,
             freshness: request.freshness,
             taken_at: started,
             epoch: self.epoch,

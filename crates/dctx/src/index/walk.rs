@@ -9,9 +9,9 @@ use dctx_core::FileHandlingDecision;
 use dctx_map_model::{NodeKind, StableId};
 use dctx_ports::{Cancellation, Source};
 
-use super::extract::{extract_structural, index_symbols, language_of, Symbol};
+use super::extract::{index_prepared, language_of, prepare_structural, Prepared, Symbol};
 use super::profile::{self, FileWatch, Stage, WalkSpan};
-use super::{IndexedEdge, IndexedFile, IndexedNode};
+use super::{IndexedEdge, IndexedFile, IndexedNode, TextBlob, TextSpan};
 use crate::domain::{
     ancestors_include, check_deadline, digest_text, FreshnessMode, ParserChoice, PolicyView, ScanLimits, DctxError,
     Resource, STRUCTURAL_PARSER,
@@ -26,6 +26,8 @@ pub(crate) struct Walked {
     pub nodes: Vec<IndexedNode>,
     /// Contains edges.
     pub edges: Vec<IndexedEdge>,
+    /// Ids, paths and edge labels addressed by the node and edge spans.
+    pub text: TextBlob,
     /// Coverage label.
     pub coverage: String,
     /// Completion label.
@@ -62,6 +64,7 @@ struct State {
     files: Vec<IndexedFile>,
     nodes: Vec<IndexedNode>,
     edges: Vec<IndexedEdge>,
+    text: TextBlob,
     entries: u64,
     source_bytes: u64,
     reads: u64,
@@ -81,6 +84,7 @@ pub(crate) fn walk_source(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
         files: Vec::new(),
         nodes: Vec::new(),
         edges: Vec::new(),
+        text: TextBlob::default(),
         entries: 1,
         source_bytes: 0,
         reads: 0,
@@ -141,7 +145,7 @@ fn visit_file(args: &WalkArgs<'_>, path: RelativePath, decision: FileHandlingDec
         && ancestors_include(|item, is_dir| args.policy.decide(item, is_dir), path.as_str())?;
     if !readable {
         if args.freshness == FreshnessMode::Metadata {
-            push_module(&mut state.nodes, path.as_str(), 0, [1, 1]);
+            push_module(&mut state.nodes, &mut state.text, path.as_str(), 0, [1, 1]);
         }
         state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis()));
         return Ok(());
@@ -182,20 +186,29 @@ fn visit_file(args: &WalkArgs<'_>, path: RelativePath, decision: FileHandlingDec
     let span_mark = profile::start();
     let lines = line_span(&bytes);
     watch.charge(Stage::SpanConversion, span_mark);
-    let module = push_module(&mut state.nodes, path.as_str(), len, [1, lines]);
-    if let Some(module_id) = module {
+    let module = push_module(&mut state.nodes, &mut state.text, path.as_str(), len, [1, lines]);
+    if let Some((module_id, path_span)) = module {
         let parse_mark = profile::start();
-        let parsed = symbols_for(args, path.as_str(), &bytes);
+        let parsed = prepare_file(args, path.as_str(), &bytes);
         watch.charge(Stage::ParseLex, parse_mark);
-        let (symbols, syntax) = parsed?;
+        let (prepared, syntax) = parsed?;
         if syntax {
             state.syntax_files += 1;
         } else if args.parser != ParserChoice::Opaque {
             state.other_files += 1;
         }
-        watch.set_symbols(u64::try_from(symbols.len()).unwrap_or(u64::MAX));
         let graph_mark = profile::start();
-        index_symbols(path.as_str(), &module_id, &symbols, &mut state.nodes, &mut state.edges);
+        let count = index_prepared(
+            path.as_str(),
+            &bytes,
+            path_span,
+            module_id,
+            prepared,
+            &mut state.nodes,
+            &mut state.edges,
+            &mut state.text,
+        );
+        watch.set_symbols(u64::try_from(count).unwrap_or(u64::MAX));
         watch.charge(Stage::GraphAssembly, graph_mark);
     }
     state.files.push(file_row(path.as_str(), decision, Some(digest), meta.size, meta.modified.millis()));
@@ -209,14 +222,15 @@ fn read_file(args: &WalkArgs<'_>, path: &RelativePath, state: &mut State) -> Res
     args.source.read(&grant, args.limits.file_bytes).map_err(DctxError::from_core)
 }
 
-fn symbols_for(args: &WalkArgs<'_>, path: &str, bytes: &[u8]) -> Result<(Vec<Symbol>, bool), DctxError> {
+fn prepare_file(args: &WalkArgs<'_>, path: &str, bytes: &[u8]) -> Result<(Prepared, bool), DctxError> {
     if bytes.contains(&0) || args.parser == ParserChoice::Opaque || language_of(path) == "opaque" {
-        return Ok((Vec::new(), false));
+        return Ok((Prepared::Symbols(Vec::new()), false));
     }
     if args.parser == ParserChoice::Syn && language_of(path) == "rust" {
-        return extract_syn(bytes, args.limits.file_bytes);
+        let (symbols, syntax) = extract_syn(bytes, args.limits.file_bytes)?;
+        return Ok((Prepared::Symbols(symbols), syntax));
     }
-    Ok((extract_structural(path, bytes), false))
+    Ok((prepare_structural(path, bytes), false))
 }
 
 fn extract_syn(bytes: &[u8], max_file: u64) -> Result<(Vec<Symbol>, bool), DctxError> {
@@ -231,21 +245,29 @@ fn extract_syn(bytes: &[u8], max_file: u64) -> Result<(Vec<Symbol>, bool), DctxE
     }
 }
 
-fn push_module(nodes: &mut Vec<IndexedNode>, path: &str, len: u64, lines: [u32; 2]) -> Option<String> {
-    let id = StableId::new(NodeKind::Module, path, None, None).ok()?;
-    let id = id.as_str().to_string();
+fn push_module(
+    nodes: &mut Vec<IndexedNode>,
+    text: &mut TextBlob,
+    path: &str,
+    len: u64,
+    lines: [u32; 2],
+) -> Option<(u32, TextSpan)> {
+    StableId::new(NodeKind::Module, path, None, None).ok()?;
+    let module_index = u32::try_from(nodes.len()).ok()?;
+    let path_span = text.push(path);
     nodes.push(IndexedNode {
-        id: id.clone(),
+        letter: b'm',
+        ordinal: 0,
         kind: "module".to_string(),
         name: String::new(),
-        path: path.to_string(),
+        path: path_span,
         lines,
         span: [0, len],
         summary: String::new(),
         summary_source: String::new(),
         signature: String::new(),
     });
-    Some(id)
+    Some((module_index, path_span))
 }
 
 fn file_row(path: &str, decision: FileHandlingDecision, digest: Option<dctx_hash::ContentDigest>, size: u64, modified: u64) -> IndexedFile {
@@ -281,6 +303,7 @@ fn finish(args: &WalkArgs<'_>, state: State) -> Walked {
         files: state.files,
         nodes: state.nodes,
         edges: state.edges,
+        text: state.text,
         coverage: coverage.to_string(),
         completion: completion.to_string(),
         parser: parser.to_string(),
