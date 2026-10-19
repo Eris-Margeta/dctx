@@ -1,13 +1,19 @@
-//! Cache ledger. Segment bytes live here because the cache port cannot release a commit.
-//! Implements API-PORTS-v1 `Cache.reserve` and CACHE-v1 startup auto-clean for a configured root.
-//! Depends on the [`dctx_ports::Cache`] port and `dctx-adapter-cache` ledger and object-store adapters.
+//! Cache ledger. Segment bytes and snapshot leases live in one shared root.
+//! Implements API-PORTS-v1 `Cache.reserve` and CACHE-v1 auto-clean, purge, and collection.
+//! Depends on the [`dctx_ports::Cache`] port, `dctx-adapter-cache`, and [`cache_bind`].
 //! The session is the only caller. Library isolation leaves the managed ledger unset.
+//! Two sessions on one root reload before they admit, pin, or collect.
 
-use std::path::{Component, Path};
+mod cache_bind;
+
+use std::path::{Component, Path, PathBuf};
+use std::sync::atomic::{AtomicU64, Ordering};
 
 use dctx_adapter_cache::adapters::{auto_clean, FsLedgerStore, FsObjectStore};
 use dctx_adapter_cache::ports::LedgerStore;
-use dctx_adapter_cache::{CacheError, ClockSample, Lifecycle, Quota, RootId};
+use dctx_adapter_cache::{CacheError, ClockSample, Lifecycle, Quota, RootId, SessionId};
+
+pub(in crate::session) use cache_bind::{DiskReclaim, SnapshotLease};
 use dctx_core::budget::Reservation;
 use dctx_core::error::DctxError as CoreError;
 use dctx_core::ids::Timestamp;
@@ -47,6 +53,11 @@ impl AccountingCache {
     /// Outstanding pack reservations.
     pub(crate) fn reserved(&self) -> u64 {
         self.pack_reserved
+    }
+
+    /// Session cap and pack bytes that are not yet in the shared ledger.
+    fn admission_budget(&self) -> (u64, u64, u64) {
+        (self.capacity, self.pack_committed, self.pack_reserved)
     }
 
     /// Charges `bytes` of segment storage, or [`DctxError::CacheLimit`].
@@ -111,7 +122,15 @@ pub(crate) struct PersistedCache {
     objects: FsObjectStore,
     life: Lifecycle,
     root_id: RootId,
+    root_path: PathBuf,
+    session: SessionId,
     reclaimed: u64,
+}
+
+static SESSION_IDS: AtomicU64 = AtomicU64::new(1);
+
+fn next_session() -> SessionId {
+    SessionId::new(SESSION_IDS.fetch_add(1, Ordering::Relaxed))
 }
 
 impl PersistedCache {
@@ -135,9 +154,26 @@ impl PersistedCache {
         } else {
             0
         };
-        let mut cache = Self { ledger, objects, life, root_id: RootId::new(root_id), reclaimed };
+        let mut cache = Self {
+            ledger,
+            objects,
+            life,
+            root_id: RootId::new(root_id),
+            root_path: path.to_path_buf(),
+            session: next_session(),
+            reclaimed,
+        };
         cache.register_and_touch(now_ms)?;
         Ok(cache)
+    }
+
+    fn reload(&mut self) -> Result<(), DctxError> {
+        let loaded = self.ledger.load(Quota::product_default()).map_err(map_cache)?;
+        if let Some(fault) = loaded.fault {
+            return Err(map_cache(fault));
+        }
+        self.life = loaded.lifecycle;
+        Ok(())
     }
 
     /// Bytes reclaimed by the open-time slice. Zero when the policy was disabled or the slice was not due.
@@ -159,28 +195,22 @@ impl PersistedCache {
         }
     }
 
-    /// Refreshes last use and persists the ledger. A root that auto-clean removed is registered again.
+    /// Reloads, refreshes last use, and persists. A root that auto-clean removed is registered again.
     pub(crate) fn register_and_touch(&mut self, now_ms: u64) -> Result<(), DctxError> {
-        self.life.observe(clock_sample(now_ms));
-        if !self.life.status().roots.iter().any(|root| root.id == self.root_id) {
-            self.life.register_root(self.root_id).map_err(map_cache)?;
+        for _ in 0..cache_bind::COMMIT_ATTEMPTS {
+            self.reload()?;
+            self.life.observe(clock_sample(now_ms));
+            if !self.life.status().roots.iter().any(|root| root.id == self.root_id) {
+                self.life.register_root(self.root_id).map_err(map_cache)?;
+            }
+            self.life.touch(self.root_id).map_err(map_cache)?;
+            match self.ledger.store(&self.life) {
+                Ok(()) => return Ok(()),
+                Err(error) if cache_bind::is_conflict(&error) => continue,
+                Err(error) => return Err(map_cache(error)),
+            }
         }
-        self.life.touch(self.root_id).map_err(map_cache)?;
-        self.ledger.store(&self.life).map_err(map_cache)?;
-        Ok(())
-    }
-
-    /// Records one segment for the registered root and writes its bytes under the cache root.
-    pub(crate) fn admit_segment(&mut self, now_ms: u64, bytes: &[u8]) -> Result<(), DctxError> {
-        self.register_and_touch(now_ms)?;
-        if bytes.is_empty() {
-            return Ok(());
-        }
-        let len = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
-        let id = self.life.insert_segment(len, 0, &[self.root_id]).map_err(map_cache)?;
-        self.objects.put_object(id.raw(), bytes).map_err(map_cache)?;
-        self.ledger.store(&self.life).map_err(map_cache)?;
-        Ok(())
+        Err(DctxError::invalid("stale ledger"))
     }
 }
 
@@ -194,13 +224,14 @@ impl Session {
         Ok(())
     }
 
-    /// Persists `bytes` as a segment of the configured root. Isolation is a no-op.
-    pub(super) fn store_cache_segment(&mut self, bytes: &[u8]) -> Result<(), DctxError> {
+    /// Persists `bytes` as a leased view of the configured root. Isolation stores nothing.
+    pub(super) fn store_cache_segment(&mut self, bytes: &[u8]) -> Result<Option<SnapshotLease>, DctxError> {
         let now = self.clock.now().millis();
-        if let Some(cache) = self.managed.as_mut() {
-            cache.admit_segment(now, bytes)?;
-        }
-        Ok(())
+        let Some(cache) = self.managed.as_mut() else {
+            return Ok(None);
+        };
+        let (capacity, pack_committed, pack_reserved) = self.cache.admission_budget();
+        cache.admit_snapshot(now, bytes, capacity, pack_committed, pack_reserved)
     }
 }
 

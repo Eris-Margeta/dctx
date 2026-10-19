@@ -1,9 +1,9 @@
 //! Cache status, reachability collection and explicit purge.
 //! Implements contracts/API-PORTS-v1.md cache administration.
-//! Depends on [`super::Session`] and the ledger. A live handle blocks destruction.
-//! Purge does not schedule a hook. Cache collection runs its hook only after an applying reclaim.
+//! Depends on [`super::Session`] and the shared ledger. A live lease blocks destruction.
+//! Applying purge and collection unlink unleased bytes. A dry-run writes nothing.
 
-use super::ledger::PersistedCache;
+use super::ledger::{DiskReclaim, PersistedCache};
 use super::Session;
 use crate::domain::{CacheLedger, CacheReport, GcRequest, PurgeRequest, PurgeScope, DctxError};
 
@@ -24,7 +24,9 @@ impl Session {
             return Err(DctxError::unsupported("cache"));
         }
         self.reset_hook_warnings();
-        let report = self.reclaim(request.apply, None);
+        let disk = self.disk_reclaim(request.apply)?;
+        let mut report = self.reclaim(request.apply, None);
+        apply_disk(&mut report, disk);
         if request.apply {
             self.hooks_after_cache()?;
         }
@@ -43,7 +45,19 @@ impl Session {
             PurgeScope::All => None,
             PurgeScope::Generation(id) => Some(id),
         };
-        Ok(self.reclaim(request.apply, only))
+        let disk = if only.is_none() { self.disk_reclaim(request.apply)? } else { None };
+        let mut report = self.reclaim(request.apply, only);
+        apply_disk(&mut report, disk);
+        Ok(report)
+    }
+
+    /// Shared-root purge and unlink. Isolation has no ledger, so the effect is `None`.
+    fn disk_reclaim(&mut self, apply: bool) -> Result<Option<DiskReclaim>, DctxError> {
+        let now = self.clock.now().millis();
+        match self.managed.as_mut() {
+            Some(cache) => cache.reclaim_unleased(now, apply).map(Some),
+            None => Ok(None),
+        }
     }
 
     fn reclaim(&mut self, apply: bool, only: Option<u64>) -> CacheReport {
@@ -83,5 +97,15 @@ impl Session {
             reclaimed_bytes,
             blocked_generations,
         }
+    }
+}
+
+fn apply_disk(report: &mut CacheReport, disk: Option<DiskReclaim>) {
+    let Some(disk) = disk else {
+        return;
+    };
+    report.reclaimed_bytes = disk.reclaimed_bytes;
+    if disk.held_by_lease > report.blocked_generations {
+        report.blocked_generations = disk.held_by_lease;
     }
 }
