@@ -223,7 +223,20 @@ mod tests {
         let place = path.display().to_string();
         let by_id = execute(&["map".into(), "m:kept.rs".into(), "--json".into(), "--place".into(), place.clone()]).expect("id");
         let by_path = execute(&["map".into(), "kept.rs".into(), "--json".into(), "--place".into(), place]).expect("path");
-        assert_eq!(by_path, by_id);
+        let without_age = |page: &str| {
+            use dctx_plugin_protocol::{decode_object, DecodeLimits, Json};
+
+            let Json::Object(mut fields) = decode_object(page.as_bytes(), DecodeLimits::WIRE).expect("JSON page") else {
+                panic!("page must be an object");
+            };
+            let (_, Json::Object(freshness)) = fields.iter_mut().find(|(key, _)| key == "freshness").expect("freshness") else {
+                panic!("freshness must be an object");
+            };
+            // Separate calls can straddle a second boundary; all other page fields must match.
+            freshness.retain(|(key, _)| key != "age_s");
+            Json::Object(fields)
+        };
+        assert_eq!(without_age(&by_path), without_age(&by_id));
         assert!(by_path.contains("\"id\":\"s:kept.rs#kept\""), "{by_path}");
         assert!(!by_path.contains("gone"), "{by_path}");
         let directory = execute(&["map".into(), "nested".into(), "--place".into(), path.display().to_string()]).expect_err("dir");
