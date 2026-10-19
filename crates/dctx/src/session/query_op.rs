@@ -18,6 +18,7 @@ use crate::domain::{
     BoundedSink, Direction, Freshness, IdentityOutcome, MapRequest, OperationLimits, Precision, ResolvedLimits, Verb,
     DctxError, REQUEST_VERSION,
 };
+use crate::index::profile::{self, FileWatch, Stage};
 use crate::index::{collect, Collected};
 
 impl Session {
@@ -319,7 +320,7 @@ impl Session {
     /// True when `path` still hashes to `expected`. This does not increment content reads.
     ///
     /// The comparison is `digest_text` equality, the same check `read_verified` uses before
-    /// it returns `SourceChanged`.
+    /// it returns `SourceChanged`. Read/hash samples close before shared cache finalization.
     pub(in crate::session) fn digest_matches_source(
         &self,
         path: &str,
@@ -328,8 +329,16 @@ impl Session {
     ) -> Result<bool, DctxError> {
         let relative = RelativePath::parse(path).map_err(DctxError::from_core)?;
         let grant = ReadGrant::authorize(&relative, FileHandlingDecision::Include, true).ok_or(DctxError::PolicyDenied)?;
-        let bytes = self.source.read(&grant, max_bytes).map_err(DctxError::from_core)?;
-        hashes_to(&bytes, expected)
+        let mut watch = FileWatch::begin(path);
+        let read_mark = profile::start();
+        let read = self.source.read(&grant, max_bytes).map_err(DctxError::from_core);
+        watch.charge(Stage::Read, read_mark);
+        let bytes = read?;
+        watch.set_bytes(u64::try_from(bytes.len()).unwrap_or(u64::MAX));
+        let hash_mark = profile::start();
+        let matches = hashes_to(&bytes, expected);
+        watch.charge(Stage::Hash, hash_mark);
+        matches
     }
 
     fn answer_of(

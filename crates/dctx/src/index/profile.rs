@@ -25,7 +25,7 @@ pub(crate) enum Stage {
     GraphAssembly = 5,
     /// Canonical payload and, on the ephemeral path, segment seal.
     CanonicalizeSeal = 6,
-    /// Persisted generation encode, cache store, or reuse verification.
+    /// Persisted generation encode, cache store, or shared reuse finalization.
     PersistReuse = 7,
     /// Query against the pinned generation. It starts after the last file watch closed.
     Query = 8,
@@ -143,7 +143,8 @@ pub(crate) fn mark_snapshot_accounted() {
 /// Charges the part of `wall` that no stage recorded yet to persist/reuse.
 ///
 /// Cold builds set [`mark_snapshot_accounted`] and this is a no-op. A reused generation never
-/// enters that path; its metadata walk is already in `walk`, and the digest re-read stays here.
+/// enters that path; its metadata walk is in `walk`, and digest verification is in `read`/`hash`.
+/// Only the remaining shared cache work belongs in persist/reuse.
 pub(crate) fn observe_snapshot_wall(wall: Duration) {
     with_profile(|profile| {
         if profile.snapshot_accounted {
@@ -242,7 +243,7 @@ impl Drop for WalkSpan {
     }
 }
 
-/// One included file. Drop writes the row, which is before canonicalize, persist and query.
+/// One included file, scanned or digest-verified. Drop writes the row before shared finalization.
 pub(crate) struct FileWatch {
     path: String,
     bytes: u64,
@@ -377,5 +378,23 @@ mod tests {
         observe_snapshot_wall(Duration::from_nanos(999_000_000_000_000));
         assert_eq!(stage_ns(Stage::PersistReuse), 15);
         assert_eq!(stage_ns(Stage::Walk), 10);
+    }
+
+    #[test]
+    fn reuse_remainder_excludes_verification_stages_and_file_samples() {
+        let _reset = Reset;
+        enable();
+        // Synthetic counters keep the accounting check independent of clock resolution.
+        add_ns(Stage::Walk, 10);
+        add_ns(Stage::Read, 20);
+        add_ns(Stage::Hash, 30);
+        push_file("verified.rs".to_string(), 100, 0, 50);
+        observe_snapshot_wall(Duration::from_nanos(75));
+        observe_snapshot_wall(Duration::from_nanos(150));
+        let text = report().expect("report");
+        assert_eq!(stage_line(&text, "persist/reuse"), 15);
+        assert_eq!(stage_line(&text, "read"), 20);
+        assert_eq!(stage_line(&text, "hash"), 30);
+        assert_eq!(file_rows(&text), [(50, 100, 0, "verified.rs")]);
     }
 }
