@@ -1,7 +1,7 @@
 //! Type declarations: classes, interfaces, objects, enums and data classes.
 //! A primary constructor exists only when a parameter list is present.
 //! Supertypes are uses-type facts, and calls only when arguments follow.
-use super::{Prefix, Scope, Walker};
+use super::{Ann, Prefix, Scope, Walker};
 use crate::domain::DiagnosticReason;
 use dctx_map_model::{EdgeKind, SymbolKind};
 
@@ -9,6 +9,7 @@ struct Header {
     paren: Option<usize>,
     close: Option<usize>,
     ctor_public: bool,
+    ctor_anns: Vec<Ann>,
     supers: Option<(usize, usize)>,
     where_clause: Option<(usize, usize)>,
     body: Option<usize>,
@@ -75,7 +76,9 @@ impl<'a> Walker<'a> {
         if let Some((from, to)) = angles {
             self.colon_types(from, to, &child);
         }
-        let _ = self.emit_ctor(&child, local, open, open, header.ctor_public);
+        if let Some(ctor) = self.emit_ctor(&child, local, open, open, header.ctor_public) {
+            self.flush_anns(&ctor, &header.ctor_anns);
+        }
         self.recover_open(open, end)
     }
 
@@ -110,7 +113,9 @@ impl<'a> Walker<'a> {
             self.colon_types(from, to, &child);
         }
         if let (Some(open), Some(close)) = (header.paren, header.close) {
-            let _ = self.emit_ctor(&child, &local, open, close, header.ctor_public);
+            if let Some(ctor) = self.emit_ctor(&child, &local, open, close, header.ctor_public) {
+                self.flush_anns(&ctor, &header.ctor_anns);
+            }
             self.walk_params(open, close, &child, Some(&child));
         }
         if let Some((from, to)) = header.supers {
@@ -176,13 +181,14 @@ impl<'a> Walker<'a> {
     }
 
     fn type_header(&self, cursor: usize, end: usize, public: bool) -> Header {
-        let (at_paren, paren, ctor_public) = self.peel_ctor(cursor, end, public);
+        let (at_paren, paren, ctor_public, ctor_anns) = self.peel_ctor(cursor, end, public);
         if let Some(open) = paren {
             let Some(close) = self.matched(open, end) else {
                 return Header {
                     paren: Some(open),
                     close: None,
                     ctor_public,
+                    ctor_anns,
                     supers: None,
                     where_clause: None,
                     body: None,
@@ -194,30 +200,60 @@ impl<'a> Walker<'a> {
             tail.paren = Some(open);
             tail.close = Some(close);
             tail.ctor_public = ctor_public;
+            tail.ctor_anns = ctor_anns;
             return tail;
         }
         let _ = at_paren;
         self.header_tail(cursor, end, self.end_byte(cursor.saturating_sub(1).max(cursor)))
     }
 
-    fn peel_ctor(&self, cursor: usize, end: usize, public: bool) -> (usize, Option<usize>, bool) {
+    /// Annotations and modifiers may sit between the type name and `constructor`,
+    /// including across a newline. An inserted semicolon there is not a new statement.
+    fn peel_ctor(&self, cursor: usize, end: usize, public: bool) -> (usize, Option<usize>, bool, Vec<Ann>) {
         let mut look = cursor;
         let mut ctor_public = public;
-        while look < end && self.modifier_word(look) {
-            match self.text(look) {
-                "private" | "protected" | "internal" => ctor_public = false,
-                "public" => ctor_public = true,
-                _ => {}
+        let mut anns = Vec::new();
+        loop {
+            look = self.skip_inserted(look, end);
+            if look >= end {
+                break;
             }
-            look += 1;
+            if self.is(look, "@") {
+                let ann = self.read_ann(look, end);
+                if ann.to <= look {
+                    break;
+                }
+                look = ann.to;
+                anns.push(ann);
+                continue;
+            }
+            if self.modifier_word(look) {
+                match self.text(look) {
+                    "private" | "protected" | "internal" => ctor_public = false,
+                    "public" => ctor_public = true,
+                    _ => {}
+                }
+                look += 1;
+                continue;
+            }
+            break;
         }
+        look = self.skip_inserted(look, end);
         if self.is(look, "constructor") {
             look += 1;
+            look = self.skip_inserted(look, end);
         }
-        if self.is(look, "(") && look >= cursor && (look > cursor || self.is(cursor, "(")) {
-            return (look, Some(look), ctor_public);
+        if self.is(look, "(") && (look > cursor || self.is(cursor, "(")) {
+            return (look, Some(look), ctor_public, anns);
         }
-        (cursor, None, public)
+        (cursor, None, public, Vec::new())
+    }
+
+    fn skip_inserted(&self, mut index: usize, end: usize) -> usize {
+        while index < end && self.is_inserted_semi(index) {
+            index += 1;
+        }
+        index
     }
 
     fn header_tail(&self, mut cursor: usize, end: usize, fallback: u32) -> Header {
@@ -240,6 +276,7 @@ impl<'a> Walker<'a> {
             paren: None,
             close: None,
             ctor_public: true,
+            ctor_anns: Vec::new(),
             supers,
             where_clause,
             body,
