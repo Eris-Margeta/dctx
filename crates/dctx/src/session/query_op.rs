@@ -2,7 +2,8 @@
 //! Implements contracts/API-PORTS-v1.md query, budgets and continuation.
 //! Depends on the index and the wire encoder. A refusal does not write the sink.
 //! Read hashes the source again when the digest matches. Plugins are not scheduled.
-//! When read sets both `lines` and `depth`, `depth` is the absolute start line, not a hop count.
+//! `line_start` is the absolute read line. `depth` is the hop count only.
+//! An over-budget read keeps a marked prefix and a continuation; a signature that does not fit is refused.
 
 use dctx_core::facts::ReadGrant;
 use dctx_core::ids::RelativePath;
@@ -31,10 +32,15 @@ impl Session {
             return Err(DctxError::unsupported("map"));
         }
         self.reject_transport(request)?;
+        request.validate()?;
         let generation = self.generation(handle)?;
         let cursor_id = match &request.continuation {
             Some(token) => Some(parse_cursor(token, generation.id, request.verb)?),
             None => None,
+        };
+        let resume = match (&cursor_id, request.verb) {
+            (Some(id), Verb::Read) => Some(parse_resume(id)?),
+            _ => None,
         };
         let resolved = self.query_limits(request)?;
         let now = self.clock.now().millis();
@@ -46,8 +52,24 @@ impl Session {
                 return write_answer(sink, request, &self.place, answer, &resolved);
             }
             Collected::Read(record) => {
-                let record = self.read_record(&generation, *record, resolved.lines, read_start(request))?;
-                vec![record]
+                if let Some(resume) = &resume
+                    && resume.id != record.id
+                {
+                    return Err(DctxError::StaleContinuation);
+                }
+                let (start, count) = match &resume {
+                    Some(item) => (Some(item.start), item.end.saturating_sub(item.start).saturating_add(1)),
+                    None => (request.line_start, resolved.lines),
+                };
+                let (mut record, sliced_cap) = self.read_record(&generation, *record, count, start)?;
+                let resume_beyond = resume.as_ref().is_some_and(|item| item.beyond);
+                if resume_beyond && !sliced_cap {
+                    if let Some(source) = record.source_utf8.as_mut() {
+                        source.push_str(OMITTED_LINE);
+                    }
+                }
+                let origin = start.unwrap_or(record.lines[0].max(1));
+                return self.finish_read(sink, request, &generation, record, &resolved, origin, sliced_cap || resume_beyond);
             }
             Collected::Records(records) => {
                 let explain_path = records.first().map(|record| record.path.clone());
@@ -178,7 +200,7 @@ impl Session {
         mut record: AnswerRecord,
         lines: u32,
         absolute_start: Option<u32>,
-    ) -> Result<AnswerRecord, DctxError> {
+    ) -> Result<(AnswerRecord, bool), DctxError> {
         self.authorize(&record.path)?;
         let expected = generation
             .files
@@ -189,8 +211,98 @@ impl Session {
         let bytes = self.read_verified(&record.path, expected)?;
         let span = record.span.ok_or(DctxError::CorruptIndex { reason: "missing span" })?;
         let node_lines = record.lines;
-        record.source_utf8 = Some(slice_span(&bytes, span, node_lines, lines, absolute_start)?);
-        Ok(record)
+        let sliced = slice_span(&bytes, span, node_lines, lines, absolute_start)?;
+        record.source_utf8 = Some(sliced.text);
+        Ok((record, sliced.capped))
+    }
+
+    /// Writes one read page. A body that does not fit keeps the first lines that do.
+    fn finish_read(
+        &self,
+        sink: &mut dyn BoundedSink,
+        request: &MapRequest,
+        generation: &crate::index::Generation,
+        record: AnswerRecord,
+        resolved: &ResolvedLimits,
+        origin: u32,
+        capped: bool,
+    ) -> Result<Answer, DctxError> {
+        let (answer, encoded) = self.package(request, generation, &record, record.source_utf8.clone(), None, 0);
+        if within_budget(&encoded, resolved) {
+            sink.write_page(&encoded)?;
+            return Ok(answer);
+        }
+        let full_len = encoded.len().max(1);
+        let source = record.source_utf8.as_deref().unwrap_or("");
+        let body = if capped { source.strip_suffix(OMITTED_LINE).unwrap_or(source) } else { source };
+        let lines: Vec<&str> = if body.is_empty() { Vec::new() } else { body.split_inclusive('\n').collect() };
+        // One line is the signature. Splitting it would hide the refusal size.
+        if lines.len() < 2 {
+            return Err(DctxError::BudgetTooSmall { minimum_bytes: u64::try_from(full_len).unwrap_or(u64::MAX) });
+        }
+        let end_line = origin.saturating_add(u32::try_from(lines.len()).unwrap_or(u32::MAX).saturating_sub(1));
+        let minimum = self.cut_page(request, generation, &record, &lines, 1, origin, end_line, capped);
+        if !within_budget(&minimum.1, resolved) {
+            let needed = minimum.1.len().min(full_len).max(1);
+            return Err(DctxError::BudgetTooSmall { minimum_bytes: u64::try_from(needed).unwrap_or(u64::MAX) });
+        }
+        let mut best = minimum;
+        for kept in 2..lines.len() {
+            let page = self.cut_page(request, generation, &record, &lines, kept, origin, end_line, capped);
+            if within_budget(&page.1, resolved) {
+                best = page;
+            } else {
+                break;
+            }
+        }
+        sink.write_page(&best.1)?;
+        Ok(best.0)
+    }
+
+    fn cut_page(
+        &self,
+        request: &MapRequest,
+        generation: &crate::index::Generation,
+        record: &AnswerRecord,
+        lines: &[&str],
+        kept: usize,
+        origin: u32,
+        end_line: u32,
+        beyond: bool,
+    ) -> (Answer, Vec<u8>) {
+        let mut source = String::new();
+        for line in lines.iter().take(kept) {
+            source.push_str(line);
+        }
+        let remaining = u64::try_from(lines.len().saturating_sub(kept)).unwrap_or(u64::MAX);
+        let next_line = origin.saturating_add(u32::try_from(kept).unwrap_or(u32::MAX));
+        let next = if remaining == 0 {
+            if beyond {
+                source.push_str(OMITTED_LINE);
+            }
+            None
+        } else {
+            source.push_str(&truncation_line(next_line, end_line));
+            Some(read_cursor(generation.id, &record.id, next_line, end_line, beyond))
+        };
+        let more = if next.is_some() { remaining } else { 0 };
+        self.package(request, generation, record, Some(source), next, more)
+    }
+
+    fn package(
+        &self,
+        request: &MapRequest,
+        generation: &crate::index::Generation,
+        record: &AnswerRecord,
+        source: Option<String>,
+        next: Option<String>,
+        more: u64,
+    ) -> (Answer, Vec<u8>) {
+        let mut record = record.clone();
+        record.source_utf8 = source;
+        let answer = self.answer_of(generation, request.verb, vec![record], more, next, None);
+        let encoded = encode_page(request.output_format, &self.place, &answer);
+        (answer, encoded)
     }
 
     fn read_verified(&mut self, path: &str, expected: ContentDigest) -> Result<Vec<u8>, DctxError> {
@@ -273,9 +385,46 @@ fn encode_page(format: u32, place: &str, answer: &Answer) -> Vec<u8> {
     if format == 1 { encode_text(place, answer).into_bytes() } else { encode_answer(place, answer).into_bytes() }
 }
 
-/// `depth` on a read that also sets `lines` is the absolute 1-based start. The count stays in `lines`.
-fn read_start(request: &MapRequest) -> Option<u32> {
-    if request.verb == Verb::Read && request.lines.is_some() { request.depth } else { None }
+const OMITTED_LINE: &str = "[DCTX_OMITTED]\n";
+const TRUNCATED_MARK: &str = "[DCTX_TRUNCATED]";
+
+#[derive(Debug)]
+struct SlicedSource {
+    text: String,
+    capped: bool,
+}
+
+struct ReadResume {
+    id: String,
+    start: u32,
+    end: u32,
+    beyond: bool,
+}
+
+fn truncation_line(next_line: u32, end_line: u32) -> String {
+    format!("{TRUNCATED_MARK} lines {next_line}-{end_line}\n")
+}
+
+fn read_cursor(generation: u64, id: &str, start: u32, end: u32, beyond: bool) -> String {
+    let flag = if beyond { "1" } else { "0" };
+    format!("v1|{generation}|read|{id}|{start}|{end}|{flag}")
+}
+
+fn parse_resume(id: &str) -> Result<ReadResume, DctxError> {
+    let (head, flag) = id.rsplit_once('|').ok_or(DctxError::StaleContinuation)?;
+    let (head, end_text) = head.rsplit_once('|').ok_or(DctxError::StaleContinuation)?;
+    let (node, start_text) = head.rsplit_once('|').ok_or(DctxError::StaleContinuation)?;
+    let start = start_text.parse::<u32>().map_err(|_| DctxError::StaleContinuation)?;
+    let end = end_text.parse::<u32>().map_err(|_| DctxError::StaleContinuation)?;
+    let beyond = match flag {
+        "1" => true,
+        "0" => false,
+        _ => return Err(DctxError::StaleContinuation),
+    };
+    if node.is_empty() || start == 0 || end < start {
+        return Err(DctxError::StaleContinuation);
+    }
+    Ok(ReadResume { id: node.to_string(), start, end, beyond })
 }
 
 fn slice_span(
@@ -284,7 +433,7 @@ fn slice_span(
     node_lines: [u32; 2],
     lines: u32,
     absolute_start: Option<u32>,
-) -> Result<String, DctxError> {
+) -> Result<SlicedSource, DctxError> {
     let start = usize::try_from(span[0]).map_err(|_| DctxError::CorruptIndex { reason: "span" })?;
     let end = usize::try_from(span[1]).map_err(|_| DctxError::CorruptIndex { reason: "span" })?;
     if start > end || end > bytes.len() {
@@ -292,7 +441,7 @@ fn slice_span(
     }
     let text = std::str::from_utf8(&bytes[start..end]).map_err(|_| DctxError::CorruptIndex { reason: "span" })?;
     if lines == 0 {
-        return Ok(text.to_string());
+        return Ok(SlicedSource { text: text.to_string(), capped: false });
     }
     let (skip, take) = match absolute_start {
         None => (0usize, usize::try_from(lines).unwrap_or(usize::MAX)),
@@ -318,10 +467,11 @@ fn slice_span(
     if absolute_start.is_some() && taken != take {
         return Err(DctxError::invalid("lines are outside the node span"));
     }
-    if truncated && absolute_start.is_none() {
-        out.push_str("[DCTX_OMITTED]\n");
+    let capped = truncated && absolute_start.is_none();
+    if capped {
+        out.push_str(OMITTED_LINE);
     }
-    Ok(out)
+    Ok(SlicedSource { text: out, capped })
 }
 
 fn absolute_window(line: u32, lines: u32, node_lines: [u32; 2]) -> Result<(usize, usize), DctxError> {
@@ -336,16 +486,18 @@ fn absolute_window(line: u32, lines: u32, node_lines: [u32; 2]) -> Result<(usize
 
 #[cfg(test)]
 mod tests {
-    use super::slice_span;
+    use super::{parse_resume, read_cursor, slice_span, truncation_line};
 
     #[test]
     fn absolute_lines_match_the_file_and_a_prefix_shift_does_not() {
         let bytes = b"L01\nL02\nL03\nL04\n";
         let span = [0, u64::try_from(bytes.len()).unwrap_or(0)];
         let exact = slice_span(bytes, span, [1, 4], 2, Some(3)).expect("range");
-        assert_eq!(exact, "L03\nL04\n");
+        assert_eq!(exact.text, "L03\nL04\n");
+        assert!(!exact.capped);
         let prefix = slice_span(bytes, span, [1, 4], 2, None).expect("prefix");
-        assert_eq!(prefix, "L01\nL02\n[DCTX_OMITTED]\n");
+        assert_eq!(prefix.text, "L01\nL02\n[DCTX_OMITTED]\n");
+        assert!(prefix.capped);
         let outside = slice_span(bytes, span, [1, 4], 2, Some(4)).expect_err("past end");
         assert!(outside.to_string().contains("outside"), "{outside}");
     }
@@ -355,9 +507,24 @@ mod tests {
         let bytes = b"line01\nline02\nline03\nline04\nline05\n";
         let span = [7, 28];
         let inner = slice_span(bytes, span, [2, 4], 2, Some(3)).expect("inner");
-        assert_eq!(inner, "line03\nline04\n");
-        assert_ne!(inner, "line02\nline03\n");
+        assert_eq!(inner.text, "line03\nline04\n");
+        assert_ne!(inner.text, "line02\nline03\n");
         let outside = slice_span(bytes, span, [2, 4], 1, Some(1)).expect_err("before node");
         assert!(outside.to_string().contains("outside"), "{outside}");
+    }
+
+    #[test]
+    fn a_read_cursor_names_the_next_line_and_keeps_the_id() {
+        use crate::domain::Verb;
+
+        let cursor = read_cursor(4, "s:a.rs#inner", 12, 40, true);
+        let id = crate::domain::parse_cursor(&cursor, 4, Verb::Read).expect("cursor");
+        let resume = parse_resume(&id).expect("resume");
+        assert_eq!(resume.id, "s:a.rs#inner");
+        assert_eq!(resume.start, 12);
+        assert_eq!(resume.end, 40);
+        assert!(resume.beyond);
+        assert_eq!(truncation_line(12, 40), "[DCTX_TRUNCATED] lines 12-40\n");
+        assert!(parse_resume("m:a.rs").is_err());
     }
 }

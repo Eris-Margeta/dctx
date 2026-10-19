@@ -275,6 +275,9 @@ pub struct MapRequest {
     pub continuation: Option<String>,
     /// Source lines for read. Above the hard cap is [`DctxError::InvalidRequest`].
     pub lines: Option<u32>,
+    /// Absolute 1-based first line for read. `None` starts at the node.
+    /// `depth` is the hop count and is never a line number. Zero is invalid.
+    pub line_start: Option<u32>,
     /// When set, and `lines` is `None`, read uses the hard line cap.
     pub full: bool,
     /// Any value refuses with `git` before a read.
@@ -299,10 +302,33 @@ impl MapRequest {
             output_format: 2,
             continuation: None,
             lines: None,
+            line_start: None,
             full: false,
             git_revision: None,
             within: None,
         }
+    }
+
+    /// Checks the read line window. A positive read `depth` is the hop cap, not a line.
+    pub fn validate(&self) -> Result<(), DctxError> {
+        if let Some(start) = self.line_start {
+            if self.verb != Verb::Read {
+                return Err(DctxError::invalid("line start applies only to read"));
+            }
+            if start == 0 {
+                return Err(DctxError::invalid("line start must be positive"));
+            }
+        }
+        if self.verb == Verb::Read {
+            if self.line_start.is_some() && self.continuation.is_some() {
+                return Err(DctxError::invalid("line start and a continuation both select the window"));
+            }
+            // Read's hard depth is 0. A positive depth used to carry `--lines` start.
+            if self.depth.is_some_and(|depth| depth > 0) {
+                return Err(DctxError::invalid_detail("limit exceeds the verb hard cap", "depth"));
+            }
+        }
+        Ok(())
     }
 }
 
@@ -317,7 +343,40 @@ mod tests {
         }
         assert!(Verb::parse("pack").is_err());
         assert_eq!(MapRequest::new(Verb::Find).output_format, 2);
+        assert!(MapRequest::new(Verb::Read).line_start.is_none());
         assert_eq!(SnapshotRequest::metadata().freshness, FreshnessMode::Metadata);
+    }
+
+    #[test]
+    fn a_read_depth_is_not_a_line_start() {
+        let mut request = MapRequest::new(Verb::Read);
+        request.target = "m:lines.rs".to_string();
+        request.depth = Some(35);
+        request.lines = Some(2);
+        let error = request.validate().expect_err("smuggled start");
+        assert!(error.to_string().contains("depth"), "{error}");
+
+        request.depth = Some(2);
+        request.line_start = Some(35);
+        let error = request.validate().expect_err("depth and lines");
+        assert!(error.to_string().contains("depth"), "{error}");
+
+        request.depth = Some(0);
+        assert!(request.validate().is_ok(), "depth 0 is the read hop cap");
+        request.depth = None;
+        assert!(request.validate().is_ok());
+
+        request.line_start = Some(0);
+        assert!(request.validate().is_err());
+        request.line_start = Some(35);
+        request.continuation = Some("v1|1|read|m:lines.rs|36|40|0".to_string());
+        assert!(request.validate().is_err());
+
+        request.continuation = None;
+        request.verb = Verb::Map;
+        request.depth = Some(1);
+        let error = request.validate().expect_err("map line start");
+        assert!(error.to_string().contains("line start"), "{error}");
     }
 
     #[test]
