@@ -79,18 +79,16 @@ fn execute(args: &[String], env: CacheEnv<'_>) -> Result<String, String> {
 }
 
 fn persisted(command: Command, root: &Path) -> Result<String, String> {
-    let store = matches!(command, Command::Gc { dry_run: false, .. } | Command::Purge { dry_run: false, .. });
-    let mut life = host::load_ledger(root)?;
-    let roots = RootTable::default();
-    let exports = Vec::new();
-    let now = host::unix_millis();
-    let clock = ClockSample { wall: dctx::Timestamp(now), monotonic_ms: now, boot_id: 1 };
-    let env = CacheEnv { life: &mut life, clock, roots: &roots, exports: &exports };
-    let report = apply(command, env)?;
-    if store {
-        host::store_ledger(root, &life)?;
-    }
-    Ok(report)
+    let commit = matches!(command, Command::Gc { dry_run: false, .. } | Command::Purge { dry_run: false, .. });
+    host::with_ledger(root, |life| {
+        let roots = RootTable::default();
+        let exports = Vec::new();
+        let now = host::unix_millis();
+        let clock = ClockSample { wall: dctx::Timestamp(now), monotonic_ms: now, boot_id: 1 };
+        let env = CacheEnv { life, clock, roots: &roots, exports: &exports };
+        let report = apply(command, env)?;
+        Ok((report, commit))
+    })
 }
 
 fn apply(command: Command, mut env: CacheEnv<'_>) -> Result<String, String> {

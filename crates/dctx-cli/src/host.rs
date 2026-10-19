@@ -1,7 +1,8 @@
 //! Facade session for pack, map, template and the persisted cache ledger.
 //! Implements ARCHITECTURE-PROPOSAL §2 and §4: the CLI injects the clock, policy and cache root.
 //! Depends on the `dctx` facade and `dctx-adapter-cache` for the ledger file the facade opens.
-//! Pack, map, template, plugin and the TUI call [`piggyback_auto_clean`]. Cache admin calls [`load_ledger`].
+//! Pack, map, template, plugin and the TUI call [`piggyback_auto_clean`].
+//! A cache edit holds one ledger store across the load and the store.
 
 use std::fs::{self, OpenOptions};
 use std::io::Write;
@@ -141,17 +142,34 @@ pub fn ensure_cache_dir(root: &Path) -> Result<(), String> {
 /// Loads the facade ledger. A missing file is an empty product ledger. Corruption is returned.
 pub fn load_ledger(root: &Path) -> Result<Lifecycle, String> {
     let store = FsLedgerStore::open(root).map_err(|error| error.to_string())?;
+    read_opened(&store)
+}
+
+/// Atomically replaces an absent facade ledger.
+/// A fresh store has not observed a committed revision, so an existing `ledger.v1` is `stale ledger`.
+/// A load-modify-store cycle uses [`with_ledger`] on the store that observed the revision.
+pub fn store_ledger(root: &Path, life: &Lifecycle) -> Result<(), String> {
+    debug_assert_eq!(LEDGER_FILE, dctx_adapter_cache::adapters::LEDGER_FILE);
+    FsLedgerStore::open(root).and_then(|store| store.store(life)).map_err(|error| error.to_string())
+}
+
+/// Loads, runs `body`, and stores through one [`FsLedgerStore`] while that store holds the cache lock.
+/// `body` returns `(value, commit)`. A false `commit` leaves the committed file unchanged.
+/// The store observes the revision on load. A different store that missed that observation still gets `stale ledger`.
+pub(crate) fn with_ledger<T>(
+    root: &Path,
+    body: impl FnOnce(&mut Lifecycle) -> Result<(T, bool), String>,
+) -> Result<T, String> {
+    let store = FsLedgerStore::open(root).map_err(|error| error.to_string())?;
+    store.update(Quota::product_default(), body).map_err(|error| error.to_string())
+}
+
+fn read_opened(store: &FsLedgerStore) -> Result<Lifecycle, String> {
     let loaded = store.load(Quota::product_default()).map_err(|error| error.to_string())?;
     match loaded.fault {
         Some(error) => Err(error.to_string()),
         None => Ok(loaded.lifecycle),
     }
-}
-
-/// Atomically replaces the facade ledger.
-pub fn store_ledger(root: &Path, life: &Lifecycle) -> Result<(), String> {
-    debug_assert_eq!(LEDGER_FILE, dctx_adapter_cache::adapters::LEDGER_FILE);
-    FsLedgerStore::open(root).and_then(|store| store.store(life)).map_err(|error| error.to_string())
 }
 
 /// Reads `policy.v1`. A missing file is the product default.
@@ -258,15 +276,16 @@ fn apply_cap(root: &Path, policy: &mut CachePolicy, cap: u64) -> Result<(), Stri
     if cap > HARD_CAP_BYTES {
         return Err("system cap cannot exceed the product hard cap".to_string());
     }
-    let mut life = load_ledger(root)?;
-    let current = life.status().hard_cap;
-    if cap > current {
-        return Err("max-bytes can only tighten the system cap".to_string());
-    }
-    if cap < current {
-        life.set_hard_cap(cap).map_err(|error| error.to_string())?;
-        store_ledger(root, &life)?;
-    }
+    with_ledger(root, |life| {
+        let current = life.status().hard_cap;
+        if cap > current {
+            return Err("max-bytes can only tighten the system cap".to_string());
+        }
+        if cap < current {
+            life.set_hard_cap(cap).map_err(|error| error.to_string())?;
+        }
+        Ok(((), cap < current))
+    })?;
     policy.auto.system_cap_bytes = cap;
     Ok(())
 }
@@ -488,6 +507,9 @@ mod tests {
         let report = auto_report(&root).expect("auto");
         assert_eq!(report.reclaimed_bytes, 2_000);
         assert!(report.enabled);
+        configure(&root, None, Some(1_000_000), None).expect("first cap");
+        configure(&root, None, Some(500_000), None).expect("second cap");
+        assert_eq!(load_ledger(&root).expect("load").status().hard_cap, 500_000);
         let page = crate::cache::run_in(&args(&["cache", "auto"]), Some(&root)).expect("page");
         assert!(page.contains("reclaimed_bytes: 2000"));
         assert!(page.contains("last_auto_clean_ms: "));
