@@ -2,6 +2,7 @@
 //! Implements contracts/API-PORTS-v1.md ("Requests, budgets and results").
 //! Depends on [`super::limits::OperationLimits`]. The session validates these before any source read.
 //! Callers own the request; the facade does not discover a view, a clock or a policy from the environment.
+//! Pack view filters are fields on [`PackRequest`]. Unset, they admit every path.
 
 use super::error::DctxError;
 use super::limits::OperationLimits;
@@ -138,6 +139,27 @@ pub struct PackRequest {
     pub legacy_output: Option<dctx_template::LegacyOutput>,
     /// Any value refuses with `git` before a scan. The core has no git identity.
     pub git_revision: Option<String>,
+    /// When false, every path is admitted and the scan is unchanged.
+    /// The CLI sets this so extension, size and binary filters hide files before they are opened.
+    pub apply_filters: bool,
+    /// Extensions admitted when [`Self::apply_filters`] is set. Empty admits every extension.
+    pub extensions: Vec<String>,
+    /// Include globs. Empty admits every file the other filters keep. Directories are not dropped.
+    pub include_patterns: Vec<String>,
+    /// Exclude globs. A hit drops the file or the directory.
+    pub exclude_patterns: Vec<String>,
+    /// When false, an extension binary is omitted. A sniff-only binary is not classified here.
+    pub include_binary: bool,
+    /// Admit only empty files.
+    pub only_empty: bool,
+    /// Admit only non-empty files.
+    pub only_non_empty: bool,
+    /// Minimum file size in bytes, when set.
+    pub min_size_bytes: Option<u64>,
+    /// Maximum file size in bytes, when set.
+    pub max_size_bytes: Option<u64>,
+    /// Admit only hidden names. A non-hidden directory is dropped with its children.
+    pub only_hidden: bool,
 }
 
 impl PackRequest {
@@ -150,8 +172,74 @@ impl PackRequest {
             output_format: 2,
             legacy_output: None,
             git_revision: None,
+            apply_filters: false,
+            extensions: Vec::new(),
+            include_patterns: Vec::new(),
+            exclude_patterns: Vec::new(),
+            include_binary: false,
+            only_empty: false,
+            only_non_empty: false,
+            min_size_bytes: None,
+            max_size_bytes: None,
+            only_hidden: false,
         }
     }
+
+    /// True when a directory may be listed. Include patterns do not drop directories.
+    pub fn admits_directory(&self, path: &str, name: &str) -> bool {
+        if !self.apply_filters {
+            return true;
+        }
+        self.view_filter().should_include_directory(name) && !pattern_hit(&self.exclude_patterns, path, name, true)
+    }
+
+    /// True when a file may be opened. `size` is used only for the empty and byte-size filters.
+    pub fn admits_file(&self, path: &str, name: &str, size: u64) -> bool {
+        if !self.apply_filters {
+            return true;
+        }
+        let binary = extension_binary(name);
+        if !self.view_filter().should_include_file(name, size, binary, std::path::Path::new(path)) {
+            return false;
+        }
+        if !self.include_patterns.is_empty() && !pattern_hit(&self.include_patterns, path, name, false) {
+            return false;
+        }
+        !pattern_hit(&self.exclude_patterns, path, name, false)
+    }
+
+    /// True when admission needs a size, so the caller stats the file before deciding.
+    pub fn filters_need_size(&self) -> bool {
+        self.apply_filters
+            && (self.only_empty || self.only_non_empty || self.min_size_bytes.is_some() || self.max_size_bytes.is_some())
+    }
+
+    fn view_filter(&self) -> dctx_core::filter::FilterConfig {
+        dctx_core::filter::FilterConfig {
+            extensions: self.extensions.clone(),
+            include_binary: self.include_binary,
+            only_empty: self.only_empty,
+            only_non_empty: self.only_non_empty,
+            min_size_bytes: self.min_size_bytes,
+            max_size_bytes: self.max_size_bytes,
+            only_hidden: self.only_hidden,
+            collect_ignored_folders: false,
+        }
+    }
+}
+
+fn extension_binary(name: &str) -> bool {
+    matches!(
+        dctx_core::file_classifier::classify_file(std::path::Path::new(name), b""),
+        dctx_core::file_classifier::FileContentHandling::OmitBinary { .. }
+    )
+}
+
+fn pattern_hit(patterns: &[String], path: &str, name: &str, is_dir: bool) -> bool {
+    patterns.iter().any(|pattern| {
+        dctx_core::selection::parse_ignore_pattern_line(pattern)
+            .is_some_and(|rule| dctx_core::selection::rule_matches(&rule, path, name, is_dir))
+    })
 }
 
 impl Default for PackRequest {
@@ -230,5 +318,29 @@ mod tests {
         assert!(Verb::parse("pack").is_err());
         assert_eq!(MapRequest::new(Verb::Find).output_format, 2);
         assert_eq!(SnapshotRequest::metadata().freshness, FreshnessMode::Metadata);
+    }
+
+    #[test]
+    fn unset_filters_admit_everything_and_an_extension_filter_drops_the_rest() {
+        let open = PackRequest::new();
+        assert!(!open.filters_need_size());
+        assert!(open.admits_file("b.md", "b.md", 4));
+        assert!(open.admits_file("logo.png", "logo.png", 8));
+        assert!(open.admits_directory("src", "src"));
+        let mut rust_only = PackRequest::new();
+        rust_only.apply_filters = true;
+        rust_only.extensions = vec!["rs".to_string()];
+        assert!(rust_only.admits_file("src/a.rs", "a.rs", 4));
+        assert!(!rust_only.admits_file("b.md", "b.md", 4));
+        assert!(!rust_only.admits_file("logo.png", "logo.png", 8));
+        assert!(rust_only.admits_directory("src", "src"));
+        rust_only.include_binary = true;
+        rust_only.extensions.clear();
+        rust_only.min_size_bytes = Some(100);
+        assert!(rust_only.filters_need_size());
+        assert!(rust_only.admits_file("logo.png", "logo.png", 100));
+        assert!(!rust_only.admits_file("logo.png", "logo.png", 99));
+        rust_only.exclude_patterns = vec!["secret/".to_string()];
+        assert!(!rust_only.admits_directory("secret", "secret"));
     }
 }

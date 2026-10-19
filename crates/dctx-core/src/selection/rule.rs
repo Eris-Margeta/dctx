@@ -84,6 +84,12 @@ pub fn glob_subject<'a>(rule: &IgnoreRule, relative_path: &'a str, name: &'a str
     }
 }
 
+/// Drops one leading `/` so a gitignore pattern anchored at the repository root
+/// matches the walker's root-relative path (`/corpus/` against `corpus`).
+fn anchored(pattern: &str) -> &str {
+    pattern.strip_prefix('/').unwrap_or(pattern)
+}
+
 /// Returns true if `rule` matches the item, ignoring negation.
 pub fn rule_matches(rule: &IgnoreRule, relative_path: &str, name: &str, is_dir: bool) -> bool {
     if rule.is_dir_only && !is_dir {
@@ -91,14 +97,24 @@ pub fn rule_matches(rule: &IgnoreRule, relative_path: &str, name: &str, is_dir: 
     }
     match rule.pattern_type {
         PatternType::Invalid => false,
-        PatternType::Path => relative_path == rule.pattern,
-        PatternType::Prefix => relative_path.starts_with(&rule.pattern),
+        PatternType::Path => relative_path == anchored(&rule.pattern),
+        PatternType::Prefix => {
+            let pattern = anchored(&rule.pattern);
+            if pattern.is_empty() {
+                !relative_path.is_empty() && !relative_path.contains('/')
+            } else {
+                relative_path.starts_with(pattern)
+            }
+        }
         PatternType::Basename => name == rule.pattern,
         PatternType::Suffix => name.ends_with(&rule.pattern),
-        PatternType::Glob => glob_match(
-            rule.pattern.as_bytes(),
-            glob_subject(rule, relative_path, name).as_bytes(),
-        ),
+        PatternType::Glob => {
+            let (pattern, subject) = match rule.pattern.strip_prefix('/') {
+                Some(pattern) => (pattern, relative_path),
+                None => (rule.pattern.as_str(), glob_subject(rule, relative_path, name)),
+            };
+            glob_match(pattern.as_bytes(), subject.as_bytes())
+        }
     }
 }
 
@@ -226,5 +242,26 @@ mod tests {
         assert!(!rule_matches(&path_rule, "lib/gen_x.rs", "gen_x.rs", false));
         let name_rule = parse_ignore_pattern_line("gen_?.rs").unwrap();
         assert!(rule_matches(&name_rule, "deep/dir/gen_x.rs", "gen_x.rs", false));
+    }
+
+    #[test]
+    fn a_leading_slash_anchors_the_pattern_at_the_repository_root() {
+        let corpus = parse_ignore_pattern_line("/corpus/").expect("rule");
+        assert!(rule_matches(&corpus, "corpus", "corpus", true));
+        assert!(!rule_matches(&corpus, "src/corpus", "corpus", true));
+        assert!(!rule_matches(&corpus, "corpus/ready.json", "ready.json", false));
+        let rooted = parse_rules("/*.log\n");
+        assert!(last_match(&rooted, "a.log", "a.log", false));
+        assert!(!last_match(&rooted, "sub/a.log", "a.log", false));
+        let anywhere = parse_rules("*.log\n");
+        assert!(last_match(&anywhere, "a.log", "a.log", false));
+        assert!(last_match(&anywhere, "sub/a.log", "a.log", false));
+        let negated = parse_rules("/corpus/*\n!/corpus/keep.json\n");
+        assert!(last_match(&negated, "corpus/drop.json", "drop.json", false));
+        assert!(!last_match(&negated, "corpus/keep.json", "keep.json", false));
+        assert!(!last_match(&negated, "other/drop.json", "drop.json", false));
+        let root_children = parse_rules("/*\n");
+        assert!(last_match(&root_children, "README", "README", false));
+        assert!(!last_match(&root_children, "src/main.rs", "main.rs", false));
     }
 }
