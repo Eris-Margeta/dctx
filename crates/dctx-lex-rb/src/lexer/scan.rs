@@ -6,7 +6,7 @@ use crate::domain::{DiagnosticReason, LexError};
 
 const LONG_OPS: &[&str] = &[
     "...", "===", "<=>", "**=", "&&=", "||=", "==", "=~", "!=", "!~", "<=", ">=", "**", "<<", ">>",
-    "&&", "||", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "=>", "..", "::", "&.",
+    "&&", "||", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "=>", "->", "..", "::", "&.",
 ];
 
 impl Lx<'_> {
@@ -75,6 +75,12 @@ impl Lx<'_> {
         if byte == b'@' || byte == b'$' || is_name_start_byte(byte) || byte >= 0x80 {
             self.ident();
             return Ok(());
+        }
+        if byte == b'?' {
+            if self.try_char_literal() {
+                return Ok(());
+            }
+            return self.operator();
         }
         self.operator()
     }
@@ -164,7 +170,8 @@ impl Lx<'_> {
         let Some(delim) = self.byte_at(j).filter(|byte| is_delim(*byte)) else {
             return Ok(false);
         };
-        if letter.is_none() && self.byte_at(self.i + 1) != Some(delim) {
+        // `%=` is modulo-assign. `=` delimits only after a type letter (`%q=...=`).
+        if letter.is_none() && (delim == b'=' || self.byte_at(self.i + 1) != Some(delim)) {
             return Ok(false);
         }
         self.i = j + 1;
@@ -251,15 +258,135 @@ impl Lx<'_> {
             if self.byte_at(self.i) == Some(b'@') {
                 self.i += 1;
             }
+            self.consume_name();
+            self.consume_suffix();
         } else if self.b[self.i] == b'$' {
             self.i += 1;
+            self.consume_global_body();
+        } else {
+            self.consume_name();
+            self.consume_suffix();
         }
-        self.consume_name();
-        self.consume_suffix();
         let text = self.src.get(start..self.i).unwrap_or("");
         self.emit(Kind::Ident, start, self.i, false);
         self.expr = expr_keyword(text);
         self.fname = text == "def" || text == "alias";
+    }
+
+    fn consume_global_body(&mut self) {
+        let Some(byte) = self.byte_at(self.i) else {
+            return;
+        };
+        // `$-w` is a two-character global. `$1` and `$foo` keep the name body.
+        if byte == b'-' {
+            self.i += 1;
+            if self
+                .byte_at(self.i)
+                .is_some_and(|next| is_name_start_byte(next) || next.is_ascii_digit())
+            {
+                self.i += 1;
+            }
+            return;
+        }
+        if is_name_start_byte(byte) || byte.is_ascii_digit() || byte >= 0x80 {
+            self.consume_name();
+            return;
+        }
+        // One punctuation global: $~, $!, $', $", $`, $@, $:, $\.
+        if byte.is_ascii_punctuation() {
+            self.i += 1;
+        }
+    }
+
+    fn try_char_literal(&mut self) -> bool {
+        // After a value, `?` is the ternary operator. At expression start it is `?x`.
+        if !self.expr {
+            return false;
+        }
+        let Some(next) = self.byte_at(self.i + 1) else {
+            return false;
+        };
+        if matches!(next, b'\n' | b'\r') {
+            return false;
+        }
+        let start = self.i;
+        self.i += 1;
+        if next == b'\\' {
+            self.i += 1;
+            self.consume_char_escape();
+        } else {
+            self.advance_char();
+        }
+        if self.i <= start {
+            self.i = start + 1;
+        }
+        self.emit(Kind::Str, start, self.i, false);
+        self.expr = false;
+        self.fname = false;
+        true
+    }
+
+    fn consume_char_escape(&mut self) {
+        let mut guard = 0u8;
+        loop {
+            if guard > 4 || self.i >= self.b.len() {
+                return;
+            }
+            guard += 1;
+            let kind = self.b[self.i];
+            if kind == b'c' || (matches!(kind, b'C' | b'M') && self.byte_at(self.i + 1) == Some(b'-'))
+            {
+                self.i += 1;
+                if self.byte_at(self.i) == Some(b'-') {
+                    self.i += 1;
+                }
+                if self.byte_at(self.i) == Some(b'\\') {
+                    self.i += 1;
+                    continue;
+                }
+                self.advance_char();
+                return;
+            }
+            if kind == b'x' {
+                self.i += 1;
+                for _ in 0..2 {
+                    if self.byte_at(self.i).is_some_and(|byte| byte.is_ascii_hexdigit()) {
+                        self.i += 1;
+                    }
+                }
+                return;
+            }
+            if kind == b'u' {
+                self.i += 1;
+                if self.byte_at(self.i) == Some(b'{') {
+                    self.i += 1;
+                    while self.byte_at(self.i).is_some_and(|byte| byte.is_ascii_hexdigit()) {
+                        self.i += 1;
+                    }
+                    if self.byte_at(self.i) == Some(b'}') {
+                        self.i += 1;
+                    }
+                } else {
+                    for _ in 0..4 {
+                        if self.byte_at(self.i).is_some_and(|byte| byte.is_ascii_hexdigit()) {
+                            self.i += 1;
+                        }
+                    }
+                }
+                return;
+            }
+            if matches!(kind, b'0'..=b'7') {
+                self.i += 1;
+                for _ in 0..2 {
+                    if self.byte_at(self.i).is_some_and(|byte| matches!(byte, b'0'..=b'7')) {
+                        self.i += 1;
+                    }
+                }
+                return;
+            }
+            self.advance_char();
+            return;
+        }
     }
 
     fn consume_name(&mut self) {

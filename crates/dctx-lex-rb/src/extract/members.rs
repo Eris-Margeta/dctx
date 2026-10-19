@@ -412,27 +412,31 @@ impl Walker<'_> {
     }
 
     pub(super) fn block_word(&self) -> bool {
-        matches!(
-            self.cur(),
-            "class"
-                | "module"
-                | "def"
-                | "if"
-                | "unless"
-                | "while"
-                | "until"
-                | "for"
-                | "begin"
-                | "case"
-                | "do"
-        ) && self.kind_at(self.i) == Some(Kind::Ident)
+        !self.prev_member()
+            && matches!(
+                self.cur(),
+                "class"
+                    | "module"
+                    | "def"
+                    | "if"
+                    | "unless"
+                    | "while"
+                    | "until"
+                    | "for"
+                    | "begin"
+                    | "case"
+                    | "do"
+            )
+            && self.kind_at(self.i) == Some(Kind::Ident)
     }
 
     pub(super) fn mid_keyword(&self) -> bool {
-        matches!(
-            self.cur(),
-            "else" | "elsif" | "when" | "rescue" | "ensure" | "then"
-        ) && self.kind_at(self.i) == Some(Kind::Ident)
+        !self.prev_member()
+            && matches!(
+                self.cur(),
+                "else" | "elsif" | "when" | "rescue" | "ensure" | "then" | "in"
+            )
+            && self.kind_at(self.i) == Some(Kind::Ident)
     }
 
     pub(super) fn plain_string(&self) -> bool {

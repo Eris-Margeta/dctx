@@ -15,6 +15,10 @@ const INCOMPLETE: &str = include_str!(concat!(
     env!("CARGO_MANIFEST_DIR"),
     "/tests/fixtures/incomplete.rb"
 ));
+const REAL: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/tests/fixtures/realworld.rb"
+));
 
 fn extract(path: &str, source: &str) -> LexedFile {
     RubyLexer::default()
@@ -266,6 +270,46 @@ fn golden_heredoc_keeps_literals_and_end_data_out_of_the_graph() {
     assert!(!refs(&facts, EdgeKind::Calls).iter().any(|name| {
         matches!(*name, "alpha" | "beta" | "not_called" | "hidden_q" | "gamma" | "commented" | "ghost")
     }));
+}
+
+#[test]
+fn realworld_constructs_parse_completely() {
+    let facts = extract("realworld.rb", REAL);
+    assert!(facts.diagnostics.is_empty(), "{:?}", facts.diagnostics);
+    assert_eq!(facts.completion, Completion::Complete);
+    check_invariants("realworld.rb", REAL, &facts);
+    for name in [
+        "Certifi",
+        "Certifi::<<self",
+        "Certifi::metaclass_hook",
+        "Certifi::pythons",
+        "Certifi::install",
+        "square",
+        "tagged",
+        "anchor",
+        "show",
+        "spin",
+        "wrapped",
+        "wait_loop",
+        "classify",
+        "touch",
+        "punct",
+    ] {
+        assert!(names(&facts).contains(&name), "missing {name} in {:?}", names(&facts));
+    }
+    assert_symbol(&facts, "Certifi", SymbolKind::Class, true, "");
+    assert_symbol(&facts, "Certifi::pythons", SymbolKind::Method, true, "");
+    assert_symbol(&facts, "square", SymbolKind::Function, true, "");
+    assert_symbol(&facts, "tagged", SymbolKind::Function, true, "");
+    assert_symbol(&facts, "anchor", SymbolKind::Function, true, "");
+    let calls = refs(&facts, EdgeKind::Calls);
+    assert!(calls.contains(&"dep.to_formula"), "{calls:?}");
+    assert!(calls.contains(&"joined.tail"), "{calls:?}");
+    assert!(calls.contains(&"value.class"), "{calls:?}");
+    assert!(calls.contains(&"obj&.save"), "{calls:?}");
+    assert!(!calls.contains(&"alpha"), "{calls:?}");
+    assert!(!calls.contains(&"beta"), "{calls:?}");
+    assert!(refs(&facts, EdgeKind::UsesType).contains(&"Formula"), "{:?}", facts.references);
 }
 
 #[test]

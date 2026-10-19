@@ -40,33 +40,29 @@ impl Walker<'_> {
     pub(super) fn scan_statement(&mut self, scope: &Scope) {
         let mut brackets = 0i32;
         let mut ends = 0i32;
-        let mut started = false;
         while !self.eof() && self.refused.is_none() {
-            if self.at_word("end") && brackets == 0 {
-                if ends == 0 {
-                    return;
+            if self.at_word("end") && !self.prev_member() {
+                if ends > 0 {
+                    ends -= 1;
+                    self.unnest();
+                    self.bump();
+                    continue;
                 }
-                ends -= 1;
-                self.unnest();
-                self.bump();
-                started = true;
-                continue;
+                return;
             }
             if brackets == 0 && ends == 0 && self.is_sep() {
                 self.bump();
                 return;
             }
-            if self.ender() && !self.modifier_kw(started, brackets, ends) {
+            if self.ender() && !self.modifier_kw() {
                 if !self.open_ender(scope, &mut ends) {
                     return;
                 }
-                started = true;
                 continue;
             }
             if self.opens() {
                 brackets += 1;
                 self.bump();
-                started = true;
                 continue;
             }
             if self.closes() {
@@ -74,12 +70,10 @@ impl Walker<'_> {
                     brackets -= 1;
                 }
                 self.bump();
-                started = true;
                 continue;
             }
             self.note_call(scope);
             self.bump();
-            started = true;
         }
     }
 
@@ -118,7 +112,11 @@ impl Walker<'_> {
     }
 
     fn note_call(&mut self, scope: &Scope) {
-        if self.kind_at(self.i) != Some(Kind::Ident) || is_keyword(self.cur()) {
+        if self.kind_at(self.i) != Some(Kind::Ident) {
+            return;
+        }
+        // `value.class` is a call. A bare `class` keyword is not.
+        if is_keyword(self.cur()) && !self.prev_member() {
             return;
         }
         let next_paren = self.peek_punct("(");
@@ -199,7 +197,7 @@ impl Walker<'_> {
         self.tok_end()
     }
 
-    fn prev_member(&self) -> bool {
+    pub(super) fn prev_member(&self) -> bool {
         self.i > 0 && matches!(self.text_at(self.i - 1), "." | "::" | "&.")
     }
 
@@ -208,7 +206,8 @@ impl Walker<'_> {
     }
 
     fn ender(&self) -> bool {
-        self.kind_at(self.i) == Some(Kind::Ident)
+        !self.prev_member()
+            && self.kind_at(self.i) == Some(Kind::Ident)
             && matches!(
                 self.cur(),
                 "class"
@@ -225,11 +224,24 @@ impl Walker<'_> {
             )
     }
 
-    fn modifier_kw(&self, started: bool, brackets: i32, ends: i32) -> bool {
-        started
-            && brackets == 0
-            && ends == 0
-            && matches!(self.cur(), "if" | "unless" | "while" | "until")
+    // A modifier follows a value (`return if ready`, `"llvm" if mac?`), including
+    // inside `do` and braces. A block keyword follows a statement boundary.
+    fn modifier_kw(&self) -> bool {
+        matches!(self.cur(), "if" | "unless" | "while" | "until")
+            && self.kind_at(self.i) == Some(Kind::Ident)
+            && self.prev_is_value()
+    }
+
+    fn prev_is_value(&self) -> bool {
+        if self.i == 0 {
+            return false;
+        }
+        match self.kind_at(self.i - 1) {
+            Some(Kind::Symbol | Kind::Str | Kind::Number) => true,
+            Some(Kind::Ident) => !is_nonvalue_keyword(self.text_at(self.i - 1)),
+            Some(Kind::Punct) => matches!(self.text_at(self.i - 1), ")" | "]" | "}"),
+            _ => false,
+        }
     }
 
     fn opens(&self) -> bool {
@@ -265,6 +277,32 @@ impl Walker<'_> {
         blocks.reverse();
         comment_summary(&blocks.join("\n"))
     }
+}
+
+fn is_nonvalue_keyword(word: &str) -> bool {
+    matches!(
+        word,
+        "if" | "unless"
+            | "while"
+            | "until"
+            | "for"
+            | "case"
+            | "begin"
+            | "class"
+            | "module"
+            | "def"
+            | "do"
+            | "else"
+            | "elsif"
+            | "when"
+            | "rescue"
+            | "ensure"
+            | "then"
+            | "and"
+            | "or"
+            | "not"
+            | "in"
+    )
 }
 
 pub(super) fn is_keyword(word: &str) -> bool {

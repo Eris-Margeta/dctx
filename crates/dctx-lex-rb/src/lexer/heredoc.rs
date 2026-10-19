@@ -17,6 +17,10 @@ impl Lx<'_> {
         if self.fname || !self.src.get(self.i..).unwrap_or("").starts_with("<<") {
             return Ok(false);
         }
+        // `class <<self` is a singleton class, even with no space before `self`.
+        if self.prev_token_is("class") {
+            return Ok(false);
+        }
         let start = self.i;
         let mut j = self.i + 2;
         let mut indent = false;
@@ -40,6 +44,13 @@ impl Lx<'_> {
         self.expr = false;
         self.fname = false;
         Ok(true)
+    }
+
+    fn prev_token_is(&self, word: &str) -> bool {
+        let Some(token) = self.tokens.last() else {
+            return false;
+        };
+        self.src.get(token.start as usize..token.end as usize) == Some(word)
     }
 
     fn heredoc_term(&self, j: usize) -> Option<(String, bool, usize)> {
@@ -305,5 +316,15 @@ mod tests {
         assert!(names.contains(&"puts".to_owned()), "{names:?}");
         assert!(names.contains(&"real".to_owned()), "{names:?}");
         assert!(!names.iter().any(|name| name == "alpha" || name == "beta" || name == "ghost"));
+    }
+
+    #[test]
+    fn squiggly_method_call_and_singleton_class_keep_their_bodies() {
+        let source = "def show\n  puts <<~EOS.chomp\n    alpha()\n  EOS\nend\nclass <<self\n  def hook\n  end\nend\n";
+        let names = idents(source);
+        assert!(names.contains(&"show".to_owned()), "{names:?}");
+        assert!(names.contains(&"hook".to_owned()), "{names:?}");
+        assert!(names.contains(&"self".to_owned()), "{names:?}");
+        assert!(!names.iter().any(|name| name == "alpha"), "{names:?}");
     }
 }
