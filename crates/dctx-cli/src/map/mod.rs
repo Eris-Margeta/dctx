@@ -113,8 +113,13 @@ mod tests {
             path.display().to_string(),
         ])
         .expect("find");
-        assert!(page.contains("\"precision\""));
-        assert!(page.contains("structural") || page.contains("dctx-structural"));
+        assert!(page.contains("\"id\":\"s:kept.rs#kept\""), "{page}");
+        assert!(
+            page.contains(
+                "\"precision\":{\"coverage\":\"syntax\",\"completion\":\"complete\",\"parser\":\"dctx-lex-rust/syn-3.0.9\"}"
+            ),
+            "{page}"
+        );
         assert!(!path.join(".dctx").exists());
         let listed: Vec<_> = std::fs::read_dir(&path).expect("list").flatten().collect();
         assert_eq!(listed.len(), 1);

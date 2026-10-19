@@ -11,10 +11,11 @@ git-worker = ["dep:dctx-plugin-git"]
 # Cargo features are additive: strict requires --no-default-features.
 # cargo tree -p dctx-cli --no-default-features --features strict -e normal
 # Must exclude dctx-plugin-host, dctx-plugin-platform and dctx-plugin-git.
-strict = ["dctx/pack", "dctx/map", "dctx/templates", "dctx/fs", "dctx/segments", "dctx/cache"]
+strict = ["dctx/pack", "dctx/map", "dctx/templates", "dctx/fs", "dctx/segments", "dctx/cache", "dctx/syntax-rust"]
 
 [dependencies]
-dctx = { path = "../dctx", default-features = false, features = ["pack", "map", "templates", "fs", "segments", "cache"] }
+# syntax-rust is explicit: this crate disables dctx defaults, and without it every .rs file is refused.
+dctx = { path = "../dctx", default-features = false, features = ["pack", "map", "templates", "fs", "segments", "cache", "syntax-rust"] }
 dctx-adapter-cache = { path = "../dctx-adapter-cache" }
 dctx-adapter-fs = { path = "../dctx-adapter-fs" }
 dctx-core = { path = "../dctx-core" }
