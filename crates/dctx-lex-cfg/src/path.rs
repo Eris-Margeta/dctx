@@ -1,14 +1,16 @@
 //! Dotted-path assembly, ownership edges and cross-file reference policy.
 //! Implements SPEC-MAP-MODE 5.1–5.4 for configuration keys.
 //! JSON, TOML and YAML walkers emit into a [`Draft`]; callers consume `LexedFile`.
+//! Names are hashed from the parent hash plus the new segment; collisions compare the path.
+//! Identities and fingerprints are built only after the walk succeeds, in parallel when it is large.
 use crate::domain::{
-    body_fingerprint, Completion, Diagnostic, DiagnosticReason, Dialect, Labeled, LexError,
-    LexedFile, Precision, RawReference,
+    body_fingerprint, fingerprint_plain, has_whitespace, Completion, Diagnostic, DiagnosticReason,
+    Dialect, Labeled, LexError, LexedFile, Precision, RawReference,
 };
 use dctx_map_model::{
     Confidence, Edge, EdgeKind, Node, NodeKind, StableId, Summary, SummarySource, SymbolKind,
 };
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 /// Byte cursor. `end` is an exclusive limit so one document can be parsed alone.
 pub(crate) struct Cur<'a> {
@@ -102,9 +104,95 @@ impl Declared {
     }
 }
 
+const FNV_OFFSET: u64 = 0xcbf29ce484222325;
+const FNV_PRIME: u64 = 0x100000001b3;
+
+fn fnv(mut hash: u64, bytes: &[u8]) -> u64 {
+    for &byte in bytes {
+        hash ^= u64::from(byte);
+        hash = hash.wrapping_mul(FNV_PRIME);
+    }
+    hash
+}
+
+/// Full dotted names keyed by hash. The node stores the only copy of the name.
+struct NameIndex {
+    first: HashMap<u64, usize>,
+    more: Vec<(u64, usize)>,
+}
+
+impl NameIndex {
+    fn with_capacity(capacity: usize) -> Self {
+        Self { first: HashMap::with_capacity(capacity), more: Vec::new() }
+    }
+
+    fn find(&self, hash: u64, name: &str, nodes: &[DraftNode], buf: &str) -> Option<usize> {
+        let index = *self.first.get(&hash)?;
+        if nodes.get(index).is_some_and(|node| name_at(buf, node) == name) {
+            return Some(index);
+        }
+        self.more.iter().find_map(|&(candidate, index)| {
+            (candidate == hash && nodes.get(index).is_some_and(|node| name_at(buf, node) == name)).then_some(index)
+        })
+    }
+
+    fn insert(&mut self, hash: u64, index: usize) {
+        if self.first.contains_key(&hash) {
+            self.more.push((hash, index));
+        } else {
+            self.first.insert(hash, index);
+        }
+    }
+}
+
+/// Text kept as a source span until finish, so a refused file does not allocate it.
+#[derive(Clone)]
+enum Stored {
+    Empty,
+    Span(u32, u32),
+    Owned(String),
+}
+
+impl Stored {
+    fn is_empty(&self) -> bool {
+        match self {
+            Self::Empty => true,
+            Self::Owned(text) => text.is_empty(),
+            Self::Span(start, end) => start == end,
+        }
+    }
+
+    fn render(&self, source: &str) -> String {
+        match self {
+            Self::Empty => String::new(),
+            Self::Owned(text) => text.clone(),
+            Self::Span(start, end) => source
+                .get(*start as usize..*end as usize)
+                .map(str::to_string)
+                .unwrap_or_default(),
+        }
+    }
+}
+
 struct DraftNode {
-    node: Node, parent: usize, start: u32, end: u32, precision_end: u32,
-    container: bool, opened: bool, array: bool, noted: bool,
+    /// Byte range of the dotted name inside [`Draft::names_buf`].
+    name_start: u32,
+    name_end: u32,
+    name_hash: u64,
+    parent: usize,
+    start: u32,
+    end: u32,
+    precision_end: u32,
+    lines: [u32; 2],
+    container: bool,
+    opened: bool,
+    array: bool,
+    noted: bool,
+    module: bool,
+    symbol_kind: Option<SymbolKind>,
+    signature: Stored,
+    summary_text: Stored,
+    summary_source: SummarySource,
 }
 struct DraftRef {
     src: usize,
@@ -144,9 +232,22 @@ impl Lines {
 
 /// Owns the file node and every key emitted for one extract.
 pub(crate) struct Draft<'a> {
-    path: String, source: &'a str, lines: Lines, nodes: Vec<DraftNode>,
-    names: BTreeMap<String, usize>, refs: Vec<DraftRef>, diagnostics: Vec<Diagnostic>,
-    partial: bool, max_facts: usize, max_depth: u32,
+    path: String,
+    source: &'a str,
+    lines: Lines,
+    nodes: Vec<DraftNode>,
+    names: NameIndex,
+    /// Every dotted name, packed. A refused file drops this buffer with the draft.
+    names_buf: String,
+    refs: Vec<DraftRef>,
+    diagnostics: Vec<Diagnostic>,
+    partial: bool,
+    max_facts: usize,
+    max_depth: u32,
+    plain: bool,
+    one_line: bool,
+    /// Proves the path is a model id. Symbol ids are built from the same path at finish.
+    module_id: StableId,
 }
 impl<'a> Draft<'a> {
     pub(crate) fn open(path: &str, source: &'a str, max_facts: usize, max_depth: u32) -> Result<Self, LexError> {
@@ -154,51 +255,61 @@ impl<'a> Draft<'a> {
             return Err(LexError::TooManyFacts { limit: 0 });
         }
         let lines = Lines::new(source);
-        let module = Node {
-            id: StableId::new(NodeKind::Module, path, None, None)?,
-            kind: NodeKind::Module,
-            symbol_kind: None,
-            path: path.to_string(),
+        let one_line = lines.starts.len() == 1;
+        let plain = !has_whitespace(source);
+        let guess = (source.len() / 16).clamp(1, max_facts);
+        let module_id = StableId::new(NodeKind::Module, path, None, None).map_err(LexError::InvalidId)?;
+        let mut names_buf = String::with_capacity((guess.saturating_mul(24)).min(8 << 20));
+        names_buf.push_str(path);
+        let mut nodes = Vec::with_capacity(guess);
+        nodes.push(DraftNode {
+            name_start: 0,
+            name_end: u32::try_from(names_buf.len()).unwrap_or(u32::MAX),
+            name_hash: 0,
+            parent: 0,
+            start: 0,
+            end: u32::try_from(source.len()).unwrap_or(u32::MAX),
+            precision_end: u32::MAX,
             lines: [1, lines.file_end()],
-            name: path.to_string(),
-            signature: String::new(),
-            fingerprint: String::new(),
-            public: false,
-            summary: Summary { text: String::new(), source: SummarySource::Doc },
-        };
+            container: true,
+            opened: true,
+            array: false,
+            noted: true,
+            module: true,
+            symbol_kind: None,
+            signature: Stored::Empty,
+            summary_text: Stored::Empty,
+            summary_source: SummarySource::Doc,
+        });
         Ok(Self {
             path: path.to_string(),
             source,
             lines,
-            nodes: vec![DraftNode {
-                node: module,
-                parent: 0,
-                start: 0,
-                end: u32::try_from(source.len()).unwrap_or(u32::MAX),
-                precision_end: u32::MAX,
-                container: true,
-                opened: true,
-                array: false,
-                noted: true,
-            }],
-            names: BTreeMap::new(),
+            nodes,
+            names: NameIndex::with_capacity(guess),
+            names_buf,
             refs: Vec::new(),
             diagnostics: Vec::new(),
             partial: false,
             max_facts,
             max_depth,
+            plain,
+            one_line,
+            module_id,
         })
     }
     pub(crate) fn line(&self, byte: usize) -> u32 {
         self.lines.line(byte)
     }
+    fn name_of(&self, index: usize) -> &str {
+        self.nodes.get(index).map(|node| name_at(&self.names_buf, node)).unwrap_or("")
+    }
     fn segment(&self, index: usize) -> &str {
-        self.nodes.get(index).map(|node| {
-            node.node.name.rsplit_once('.').map_or(node.node.name.as_str(), |(_, tail)| tail)
-        }).unwrap_or("")
+        let name = self.name_of(index);
+        name.rsplit_once('.').map_or(name, |(_, tail)| tail)
     }
     pub(crate) fn full_name(&self, index: usize) -> String {
-        self.nodes.get(index).map(|node| node.node.name.clone()).unwrap_or_default()
+        self.name_of(index).to_string()
     }
 
     /// Inserts `segment` under `parent`. Depth above the ceiling refuses the file.
@@ -218,18 +329,17 @@ impl<'a> Draft<'a> {
             self.diagnose(start, DiagnosticReason::UnsupportedName);
             return Ok(Declared::Skip);
         }
-        let name = if parent == 0 {
-            segment.to_string()
-        } else {
-            format!("{}.{}", self.nodes[parent].node.name, segment)
+        let name_at = self.names_buf.len();
+        let (name_start, name_end, hash) = self.append_name(parent, segment);
+        let found = {
+            let name = name_at_range(&self.names_buf, name_start, name_end);
+            self.names.find(hash, name, &self.nodes, &self.names_buf)
         };
-        if let Some(&index) = self.names.get(&name) {
+        if let Some(index) = found {
+            self.names_buf.truncate(name_at);
             return self.reuse(index, kind, start, end);
         }
-        let Ok(id) = StableId::new(NodeKind::Symbol, &self.path, Some(&name), None) else {
-            self.diagnose(start, DiagnosticReason::UnsupportedName);
-            return Ok(Declared::Skip);
-        };
+        // A segment that passes `valid_segment` builds a symbol id whenever the module id did.
         self.charge()?;
         let (container, opened, array) = match kind {
             Kind::Implicit => (true, false, false),
@@ -239,29 +349,27 @@ impl<'a> Draft<'a> {
         };
         let end = end.max(start);
         let index = self.nodes.len();
+        let lines = if self.one_line { [1, 1] } else { self.lines.span(start, end) };
         self.nodes.push(DraftNode {
-            node: Node {
-                id,
-                kind: NodeKind::Symbol,
-                symbol_kind: container.then_some(SymbolKind::Struct),
-                path: self.path.clone(),
-                lines: self.lines.span(start, end),
-                name: name.clone(),
-                signature: String::new(),
-                fingerprint: String::new(),
-                public: false,
-                summary: Summary { text: String::new(), source: SummarySource::Signature },
-            },
+            name_start,
+            name_end,
+            name_hash: hash,
             parent,
             start: u32::try_from(start).unwrap_or(u32::MAX),
             end: u32::try_from(end).unwrap_or(u32::MAX),
             precision_end: u32::try_from(end).unwrap_or(u32::MAX),
+            lines,
             container,
             opened,
             array,
             noted: false,
+            module: false,
+            symbol_kind: container.then_some(SymbolKind::Struct),
+            signature: Stored::Empty,
+            summary_text: Stored::Empty,
+            summary_source: SummarySource::Signature,
         });
-        self.names.insert(name, index);
+        self.names.insert(hash, index);
         if !matches!(kind, Kind::Implicit) {
             self.note_dependency(index, start, end)?;
         }
@@ -295,16 +403,20 @@ impl<'a> Draft<'a> {
 
     pub(crate) fn extend(&mut self, index: usize, end: usize) {
         let mut current = index;
+        let end_u = u32::try_from(end).unwrap_or(u32::MAX);
+        // One lookup for the shared end byte; ancestors only grow their last line.
+        let end_line = if self.one_line { 1 } else { self.lines.line(end.saturating_sub(1)) };
         while current != 0 && current < self.nodes.len() {
-            let end_u = u32::try_from(end).unwrap_or(u32::MAX);
             if end_u > self.nodes[current].end {
                 self.nodes[current].end = end_u;
                 self.nodes[current].precision_end = end_u;
             }
-            let start = self.nodes[current].start as usize;
-            let lines = self.lines.span(start, end.max(start));
-            if lines[1] > self.nodes[current].node.lines[1] {
-                self.nodes[current].node.lines[1] = lines[1];
+            if !self.one_line {
+                let start = self.nodes[current].start as usize;
+                let line = if start > end.saturating_sub(1) { self.lines.line(start) } else { end_line };
+                if line > self.nodes[current].lines[1] {
+                    self.nodes[current].lines[1] = line;
+                }
             }
             let parent = self.nodes[current].parent;
             if parent == current {
@@ -315,31 +427,52 @@ impl<'a> Draft<'a> {
     }
 
     pub(crate) fn set_signature(&mut self, index: usize, text: &str) {
-        let Some(node) = self.nodes.get_mut(index) else { return };
-        let text = bounded(text, 160);
-        if text.is_empty() {
+        if index >= self.nodes.len() || text.is_empty() {
             return;
         }
-        if node.node.signature.is_empty() {
-            node.node.signature = text.clone();
+        let need_sig = self.nodes[index].signature.is_empty();
+        let need_sum = self.nodes[index].summary_text.is_empty();
+        if !need_sig && !need_sum {
+            return;
         }
-        if node.node.summary.text.is_empty() {
-            node.node.summary = Summary { text, source: SummarySource::Signature };
+        let stored = self.store_text(text, 160);
+        if stored.is_empty() {
+            return;
+        }
+        if need_sig && need_sum {
+            self.nodes[index].signature = stored.clone();
+            self.nodes[index].summary_text = stored;
+            self.nodes[index].summary_source = SummarySource::Signature;
+        } else if need_sig {
+            self.nodes[index].signature = stored;
+        } else if need_sum {
+            self.nodes[index].summary_text = stored;
+            self.nodes[index].summary_source = SummarySource::Signature;
         }
     }
 
     pub(crate) fn set_doc(&mut self, index: usize, text: &str) {
-        let text = bounded(text, 100);
-        if text.is_empty() || index >= self.nodes.len() {
+        if index >= self.nodes.len() {
             return;
         }
-        let summary = &self.nodes[index].node.summary;
-        if summary.source == SummarySource::Doc && !summary.text.is_empty() {
+        let source = self.nodes[index].summary_source;
+        let empty = self.nodes[index].summary_text.is_empty();
+        if source == SummarySource::Doc && !empty {
             return;
         }
-        self.nodes[index].node.summary = Summary { text: text.clone(), source: SummarySource::Doc };
-        if self.nodes[0].node.summary.text.is_empty() {
-            self.nodes[0].node.summary = Summary { text, source: SummarySource::Doc };
+        let stored = self.store_text(text, 100);
+        if stored.is_empty() {
+            return;
+        }
+        let module_empty = self.nodes[0].summary_text.is_empty();
+        if module_empty && index != 0 {
+            self.nodes[index].summary_text = stored.clone();
+            self.nodes[index].summary_source = SummarySource::Doc;
+            self.nodes[0].summary_text = stored;
+            self.nodes[0].summary_source = SummarySource::Doc;
+        } else {
+            self.nodes[index].summary_text = stored;
+            self.nodes[index].summary_source = SummarySource::Doc;
         }
     }
 
@@ -348,28 +481,39 @@ impl<'a> Draft<'a> {
             return Ok(());
         }
         let value = value.trim();
-        let key = self.segment(index).to_string();
-        let parent = self.nodes[index].parent;
-        let scope = if parent == 0 { String::new() } else { self.nodes[parent].node.name.clone() };
-        if obvious_member(&scope, value) || obvious_path(&key, value) {
-            self.emit(index, value, &scope, start, end)?;
+        let hit = {
+            let key = self.segment(index);
+            let parent = self.nodes[index].parent;
+            let scope = if parent == 0 { "" } else { self.name_of(parent) };
+            obvious_member(scope, value) || obvious_path(key, value)
+        };
+        if !hit {
+            return Ok(());
         }
-        Ok(())
+        let parent = self.nodes[index].parent;
+        let scope = if parent == 0 { String::new() } else { self.name_of(parent).to_string() };
+        self.emit(index, value, &scope, start, end)
     }
 
     fn note_dependency(&mut self, index: usize, start: usize, end: usize) -> Result<(), LexError> {
         if self.nodes.get(index).is_some_and(|node| node.noted) {
             return Ok(());
         }
-        let parent = self.nodes[index].parent;
-        let scope = if parent == 0 { String::new() } else { self.nodes[parent].node.name.clone() };
-        if !dependency_table(&scope) {
+        let Some(parent) = self.nodes.get(index).map(|node| node.parent) else {
+            return Ok(());
+        };
+        let hit = {
+            let scope = if parent == 0 { "" } else { self.name_of(parent) };
+            dependency_table(scope)
+        };
+        if !hit {
             return Ok(());
         }
         let name = self.segment(index).to_string();
         if name.is_empty() {
             return Ok(());
         }
+        let scope = if parent == 0 { String::new() } else { self.name_of(parent).to_string() };
         self.nodes[index].noted = true;
         self.emit(index, &name, &scope, start, end)
     }
@@ -398,50 +542,162 @@ impl<'a> Draft<'a> {
         self.diagnostics.push(Diagnostic { line: self.line(byte), byte: byte_u, reason });
     }
 
-    pub(crate) fn finish(mut self, dialect: Dialect) -> Result<LexedFile, LexError> {
+    pub(crate) fn finish(self, dialect: Dialect) -> Result<LexedFile, LexError> {
+        let workers = worker_count(self.nodes.len());
+        self.finish_with(dialect, workers)
+    }
+
+    fn finish_with(mut self, dialect: Dialect, workers: usize) -> Result<LexedFile, LexError> {
         self.diagnostics.sort_by_key(|item| (item.byte, item.reason as u8));
         let first = self.diagnostics.first().map(|item| item.byte).unwrap_or(u32::MAX);
         let completion = if self.partial { Completion::Partial } else { Completion::Complete };
+        let prepared = self.prepare_all(workers)?;
+        // Small files lose to allocator contention when edges are built on many threads.
+        let edge_workers = if self.nodes.len() >= 100_000 { workers } else { 1 };
+        let edges = self.edges_from(&prepared, first, edge_workers)?;
+        let references = self.references_from(&prepared, first);
         let path = self.path.clone();
-        let label = |end: u32, base: Precision| {
-            if end != u32::MAX && end > first { Precision::Partial } else { base }
-        };
-        for node in &mut self.nodes {
-            let start = node.start as usize;
-            let end = (node.end as usize).min(self.source.len()).max(start);
-            node.node.fingerprint = if node.precision_end == u32::MAX {
-                body_fingerprint(self.source)
-            } else {
-                body_fingerprint(self.source.get(start..end).unwrap_or(""))
-            };
-        }
-        let edges = self.nodes.iter().skip(1).map(|child| Labeled {
-            precision: label(child.precision_end, Precision::Structural),
-            fact: Edge {
-                src: self.nodes[child.parent].node.id.clone(),
-                dst: child.node.id.clone(),
-                kind: EdgeKind::Contains,
-                conf: Confidence::Exact,
-                owner_path: path.clone(),
+        let nodes = self.nodes.into_iter().zip(prepared).map(|(draft, item)| Labeled {
+            precision: precision_at(draft.precision_end, first, Precision::Structural),
+            fact: Node {
+                id: item.id,
+                kind: if draft.module { NodeKind::Module } else { NodeKind::Symbol },
+                symbol_kind: draft.symbol_kind,
+                path: item.path,
+                lines: draft.lines,
+                name: item.name,
+                signature: item.signature,
+                fingerprint: item.fingerprint,
+                public: false,
+                summary: Summary { text: item.summary, source: draft.summary_source },
             },
-        }).collect();
-        let references = self.refs.iter().map(|reference| Labeled {
-            precision: label(reference.end, Precision::Convention),
-            fact: RawReference {
-                src: self.nodes[reference.src].node.id.clone(),
-                kind: EdgeKind::Imports,
-                name: reference.name.clone(),
-                scope: reference.scope.clone(),
-                alias: None,
-                lines: reference.lines,
-                owner_path: path.clone(),
-            },
-        }).collect();
-        let nodes = self.nodes.into_iter().map(|draft| Labeled {
-            precision: label(draft.precision_end, Precision::Structural),
-            fact: draft.node,
         }).collect();
         Ok(LexedFile { path, dialect, completion, diagnostics: self.diagnostics, nodes, edges, references })
+    }
+
+    /// A slice of `source` stays a span. Anything else is the bounded owned string.
+    fn store_text(&self, text: &str, max: usize) -> Stored {
+        if text.is_empty() {
+            return Stored::Empty;
+        }
+        let inside = self.byte_span(text);
+        let whitespace = match inside {
+            Some(_) if self.plain => false,
+            _ => has_whitespace(text),
+        };
+        if text.len() <= max && !whitespace {
+            if let Some((start, end)) = inside {
+                return Stored::Span(start, end);
+            }
+            return Stored::Owned(text.to_string());
+        }
+        let owned = bounded(text, max);
+        if owned.is_empty() { Stored::Empty } else { Stored::Owned(owned) }
+    }
+
+    fn byte_span(&self, text: &str) -> Option<(u32, u32)> {
+        let base = self.source.as_ptr() as usize;
+        let start = text.as_ptr() as usize;
+        let end = start.checked_add(text.len())?;
+        let source_end = base.checked_add(self.source.len())?;
+        if start < base || end > source_end {
+            return None;
+        }
+        let offset = start - base;
+        Some((u32::try_from(offset).ok()?, u32::try_from(offset + text.len()).ok()?))
+    }
+
+    fn prepare_all(&self, workers: usize) -> Result<Vec<Prepared>, LexError> {
+        let ranges = byte_ranges(&self.nodes, workers);
+        let buf = self.names_buf.as_str();
+        dispatch(&ranges, |start, end| {
+            prepare_range(&self.nodes[start..end], self.source, &self.path, self.plain, &self.module_id, buf)
+        })
+    }
+
+    fn edges_from(&self, prepared: &[Prepared], first: u32, workers: usize) -> Result<Vec<Labeled<Edge>>, LexError> {
+        if self.nodes.len() <= 1 {
+            return Ok(Vec::new());
+        }
+        let ranges = count_ranges(1, self.nodes.len(), workers);
+        let path = self.path.as_str();
+        dispatch(&ranges, |start, end| {
+            let mut edges = Vec::with_capacity(end.saturating_sub(start));
+            for index in start..end {
+                let Some(child) = self.nodes.get(index) else {
+                    return Err(LexError::InvalidId(dctx_map_model::InvalidId));
+                };
+                let Some(src) = prepared.get(child.parent) else {
+                    return Err(LexError::InvalidId(dctx_map_model::InvalidId));
+                };
+                let Some(dst) = prepared.get(index) else {
+                    return Err(LexError::InvalidId(dctx_map_model::InvalidId));
+                };
+                edges.push(Labeled {
+                    precision: precision_at(child.precision_end, first, Precision::Structural),
+                    fact: Edge {
+                        src: src.id.clone(),
+                        dst: dst.id.clone(),
+                        kind: EdgeKind::Contains,
+                        conf: Confidence::Exact,
+                        owner_path: path.to_string(),
+                    },
+                });
+            }
+            Ok(edges)
+        })
+    }
+
+    fn references_from(&self, prepared: &[Prepared], first: u32) -> Vec<Labeled<RawReference>> {
+        let mut references = Vec::with_capacity(self.refs.len());
+        for reference in &self.refs {
+            let Some(src) = prepared.get(reference.src) else { continue };
+            references.push(Labeled {
+                precision: precision_at(reference.end, first, Precision::Convention),
+                fact: RawReference {
+                    src: src.id.clone(),
+                    kind: EdgeKind::Imports,
+                    name: reference.name.clone(),
+                    scope: reference.scope.clone(),
+                    alias: None,
+                    lines: reference.lines,
+                    owner_path: self.path.clone(),
+                },
+            });
+        }
+        references
+    }
+
+    /// Appends `parent.name + '.' + segment` (or just `segment` at the root) to `names_buf`.
+    fn append_name(&mut self, parent: usize, segment: &str) -> (u32, u32, u64) {
+        let start = self.names_buf.len();
+        let hash = if parent == 0 || parent >= self.nodes.len() {
+            self.names_buf.push_str(segment);
+            fnv(FNV_OFFSET, segment.as_bytes())
+        } else {
+            let ps = self.nodes[parent].name_start as usize;
+            let pe = self.nodes[parent].name_end as usize;
+            let parent_hash = self.nodes[parent].name_hash;
+            let parent_len = pe.saturating_sub(ps);
+            if parent_len <= 128 {
+                let mut tmp = [0u8; 128];
+                let bytes = self.names_buf.as_bytes();
+                let from = ps.min(bytes.len());
+                let to = pe.min(bytes.len()).max(from);
+                let len = to - from;
+                tmp[..len].copy_from_slice(&bytes[from..to]);
+                if let Ok(text) = std::str::from_utf8(&tmp[..len]) {
+                    self.names_buf.push_str(text);
+                }
+            } else if let Some(text) = self.names_buf.get(ps..pe) {
+                let owned = text.to_string();
+                self.names_buf.push_str(&owned);
+            }
+            self.names_buf.push('.');
+            self.names_buf.push_str(segment);
+            fnv(fnv(parent_hash, b"."), segment.as_bytes())
+        };
+        (u32::try_from(start).unwrap_or(0), u32::try_from(self.names_buf.len()).unwrap_or(u32::MAX), hash)
     }
 
     fn charge(&self) -> Result<(), LexError> {
@@ -453,6 +709,164 @@ impl<'a> Draft<'a> {
     }
 }
 
+struct Prepared {
+    id: StableId,
+    path: String,
+    fingerprint: String,
+    signature: String,
+    summary: String,
+    name: String,
+}
+
+fn name_at<'a>(buf: &'a str, node: &DraftNode) -> &'a str {
+    name_at_range(buf, node.name_start, node.name_end)
+}
+
+fn name_at_range(buf: &str, start: u32, end: u32) -> &str {
+    buf.get(start as usize..end as usize).unwrap_or("")
+}
+
+fn worker_count(nodes: usize) -> usize {
+    if nodes < 1024 {
+        return 1;
+    }
+    let available = std::thread::available_parallelism().map(|count| count.get()).unwrap_or(1);
+    available.clamp(1, (nodes / 512).max(1))
+}
+
+fn precision_at(end: u32, first: u32, base: Precision) -> Precision {
+    if end != u32::MAX && end > first { Precision::Partial } else { base }
+}
+
+fn span_len(node: &DraftNode) -> u64 {
+    u64::from(node.end.saturating_sub(node.start)).max(1)
+}
+
+/// Splits nodes into `workers` ranges with similar fingerprint byte counts.
+fn byte_ranges(nodes: &[DraftNode], workers: usize) -> Vec<(usize, usize)> {
+    if nodes.is_empty() {
+        return Vec::new();
+    }
+    let workers = workers.max(1).min(nodes.len());
+    if workers == 1 {
+        return vec![(0, nodes.len())];
+    }
+    let total = nodes.iter().map(span_len).sum::<u64>().max(1);
+    let target = (total / workers as u64).max(1);
+    let mut ranges = Vec::with_capacity(workers);
+    let mut start = 0usize;
+    let mut acc = 0u64;
+    for (index, node) in nodes.iter().enumerate() {
+        acc += span_len(node);
+        let last = index + 1 == nodes.len();
+        let enough = acc >= target && ranges.len() + 1 < workers;
+        if enough || last {
+            ranges.push((start, index + 1));
+            start = index + 1;
+            acc = 0;
+        }
+    }
+    ranges
+}
+
+fn count_ranges(start: usize, end: usize, workers: usize) -> Vec<(usize, usize)> {
+    let len = end.saturating_sub(start);
+    if len == 0 {
+        return Vec::new();
+    }
+    let workers = workers.max(1).min(len);
+    let chunk = len.div_ceil(workers);
+    let mut ranges = Vec::with_capacity(workers);
+    let mut cursor = start;
+    while cursor < end {
+        let next = (cursor + chunk).min(end);
+        ranges.push((cursor, next));
+        cursor = next;
+    }
+    ranges
+}
+
+/// Runs `build` over `ranges` and concatenates in range order.
+fn dispatch<T, F>(ranges: &[(usize, usize)], build: F) -> Result<Vec<T>, LexError>
+where
+    T: Send,
+    F: Fn(usize, usize) -> Result<Vec<T>, LexError> + Sync,
+{
+    if ranges.len() <= 1 {
+        let (start, end) = ranges.first().copied().unwrap_or((0, 0));
+        return build(start, end);
+    }
+    let (tx, rx) = std::sync::mpsc::channel();
+    let build = &build;
+    std::thread::scope(|scope| {
+        for (index, &(start, end)) in ranges.iter().enumerate() {
+            let tx = tx.clone();
+            scope.spawn(move || {
+                let _ = tx.send((index, build(start, end)));
+            });
+        }
+    });
+    drop(tx);
+    let mut parts = Vec::with_capacity(ranges.len());
+    for _ in 0..ranges.len() {
+        parts.push(None);
+    }
+    while let Ok((index, result)) = rx.recv() {
+        if index < parts.len() {
+            parts[index] = Some(result);
+        }
+    }
+    let mut out = Vec::new();
+    for part in parts {
+        match part {
+            Some(Ok(items)) => out.extend(items),
+            Some(Err(error)) => return Err(error),
+            None => return Err(LexError::InvalidId(dctx_map_model::InvalidId)),
+        }
+    }
+    Ok(out)
+}
+
+fn node_body<'a>(node: &DraftNode, source: &'a str) -> &'a str {
+    if node.precision_end == u32::MAX {
+        return source;
+    }
+    let start = node.start as usize;
+    let end = (node.end as usize).min(source.len()).max(start);
+    source.get(start..end).unwrap_or("")
+}
+
+fn prepare_range(
+    nodes: &[DraftNode],
+    source: &str,
+    path: &str,
+    plain: bool,
+    module_id: &StableId,
+    names: &str,
+) -> Result<Vec<Prepared>, LexError> {
+    let mut prepared = Vec::with_capacity(nodes.len());
+    for node in nodes {
+        let name = name_at(names, node).to_string();
+        let id = if node.module {
+            module_id.clone()
+        } else {
+            StableId::new(NodeKind::Symbol, path, Some(name.as_str()), None).map_err(LexError::InvalidId)?
+        };
+        let body = node_body(node, source);
+        // `plain` is file-wide, so every source span is free of whitespace and hashes raw.
+        let fingerprint = if plain { fingerprint_plain(body) } else { body_fingerprint(body) };
+        prepared.push(Prepared {
+            id,
+            path: path.to_string(),
+            fingerprint,
+            signature: node.signature.render(source),
+            summary: node.summary_text.render(source),
+            name,
+        });
+    }
+    Ok(prepared)
+}
+
 fn valid_segment(segment: &str) -> bool {
     !segment.is_empty()
         && segment.len() <= 512
@@ -460,6 +874,9 @@ fn valid_segment(segment: &str) -> bool {
 }
 
 fn bounded(text: &str, max: usize) -> String {
+    if text.len() <= max && !has_whitespace(text) {
+        return text.to_string();
+    }
     let mut out = String::new();
     for word in text.split_whitespace() {
         let room = max.saturating_sub(out.chars().count());
@@ -493,4 +910,106 @@ fn plain_token(value: &str) -> bool {
         && value != "."
         && value != ".."
         && value.bytes().all(|byte| byte.is_ascii_alphanumeric() || matches!(byte, b'.' | b'_' | b'-' | b'/' | b'+' | b'~'))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn child_hash_matches_the_dotted_name() {
+        let root = fnv(FNV_OFFSET, b"workspace");
+        let child = fnv(fnv(root, b"."), b"dependencies");
+        assert_eq!(child, fnv(FNV_OFFSET, b"workspace.dependencies"));
+        assert_eq!(fnv(FNV_OFFSET, b"0"), fnv(FNV_OFFSET, b"0"));
+    }
+
+    fn symbol(start: u32, end: u32, hash_name: &str) -> DraftNode {
+        DraftNode {
+            name_start: start,
+            name_end: end,
+            name_hash: fnv(FNV_OFFSET, hash_name.as_bytes()),
+            parent: 0,
+            start: 0,
+            end: 1,
+            precision_end: 1,
+            lines: [1, 1],
+            container: false,
+            opened: true,
+            array: false,
+            noted: false,
+            module: false,
+            symbol_kind: None,
+            signature: Stored::Empty,
+            summary_text: Stored::Empty,
+            summary_source: SummarySource::Signature,
+        }
+    }
+
+    #[test]
+    fn name_index_keeps_distinct_paths_that_share_a_hash() {
+        let buf = "a.ba.c";
+        let nodes = vec![symbol(0, 3, "a.b"), symbol(3, 6, "a.c")];
+        let mut names = NameIndex::with_capacity(2);
+        names.insert(7, 0);
+        names.insert(7, 1);
+        assert_eq!(names.find(7, "a.b", &nodes, buf), Some(0));
+        assert_eq!(names.find(7, "a.c", &nodes, buf), Some(1));
+        assert_eq!(names.find(7, "missing", &nodes, buf), None);
+        assert_eq!(names.find(8, "a.b", &nodes, buf), None);
+    }
+
+    #[test]
+    fn rejected_names_skip_before_a_fact_is_charged() {
+        let mut draft = Draft::open("a.json", r#"{"a#b":1,"a~1":2}"#, 8, 8).unwrap();
+        assert!(draft.put(0, "a#b", Kind::Value(false), 1, 2, 1).unwrap().index().is_none());
+        assert!(draft.put(0, "a~1", Kind::Value(false), 1, 2, 1).unwrap().index().is_none());
+        assert!(draft.put(0, "", Kind::Value(false), 1, 2, 1).unwrap().index().is_none());
+        let file = draft.finish(Dialect::Json).unwrap();
+        assert_eq!(file.nodes.len(), 1);
+        assert_eq!(file.completion, Completion::Partial);
+    }
+
+    #[test]
+    fn spanned_signature_matches_the_bounded_string() {
+        let source = r#"{"n":"hello"}"#;
+        let mut draft = Draft::open("a.json", source, 8, 8).unwrap();
+        let index = draft.put(0, "n", Kind::Value(false), 5, 12, 1).unwrap().index().unwrap();
+        draft.set_signature(index, &source[6..11]);
+        let file = draft.finish(Dialect::Json).unwrap();
+        assert_eq!(file.nodes[1].fact.signature, "hello");
+        assert_eq!(file.nodes[1].fact.summary.text, "hello");
+        assert_eq!(
+            file.nodes[1].fact.id,
+            StableId::new(NodeKind::Symbol, "a.json", Some("n"), None).unwrap()
+        );
+        let mut spaced = Draft::open("a.json", source, 8, 8).unwrap();
+        let index = spaced.put(0, "n", Kind::Value(false), 5, 12, 1).unwrap().index().unwrap();
+        spaced.set_signature(index, "a  b\tc");
+        let file = spaced.finish(Dialect::Json).unwrap();
+        assert_eq!(file.nodes[1].fact.signature, "a b c");
+    }
+
+    fn wide(source: &str) -> Draft<'_> {
+        let mut draft = Draft::open("dir/a.json", source, 100_000, 8).unwrap();
+        for index in 0..3000 {
+            let name = format!("k{index}");
+            let Some(at) = draft.put(0, &name, Kind::Value(false), 0, source.len(), 1).unwrap().index() else {
+                continue;
+            };
+            draft.set_signature(at, &source[..source.len().min(4)]);
+        }
+        draft
+    }
+
+    #[test]
+    fn parallel_finish_matches_one_worker() {
+        for source in ["abcdefghij", "a b\tc d"] {
+            let one = wide(source).finish_with(Dialect::Json, 1).unwrap();
+            let many = wide(source).finish_with(Dialect::Json, 4).unwrap();
+            assert_eq!(one, many, "{source:?}");
+            assert_eq!(one.nodes.len(), 3001);
+            assert_eq!(one.edges.len(), 3000);
+        }
+    }
 }
