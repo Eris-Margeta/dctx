@@ -198,11 +198,26 @@ impl Session {
         let grant = ReadGrant::authorize(&relative, FileHandlingDecision::Include, true).ok_or(DctxError::PolicyDenied)?;
         self.content_reads += 1;
         let bytes = self.source.read(&grant, READ_CAP).map_err(DctxError::from_core)?;
-        let actual = crate::domain::digest_text(&bytes)?;
-        if actual != expected {
+        if !hashes_to(&bytes, expected)? {
             return Err(DctxError::SourceChanged);
         }
         Ok(bytes)
+    }
+
+    /// True when `path` still hashes to `expected`. This does not increment content reads.
+    ///
+    /// The comparison is `digest_text` equality, the same check `read_verified` uses before
+    /// it returns `SourceChanged`.
+    pub(in crate::session) fn digest_matches_source(
+        &self,
+        path: &str,
+        expected: ContentDigest,
+        max_bytes: u64,
+    ) -> Result<bool, DctxError> {
+        let relative = RelativePath::parse(path).map_err(DctxError::from_core)?;
+        let grant = ReadGrant::authorize(&relative, FileHandlingDecision::Include, true).ok_or(DctxError::PolicyDenied)?;
+        let bytes = self.source.read(&grant, max_bytes).map_err(DctxError::from_core)?;
+        hashes_to(&bytes, expected)
     }
 
     fn answer_of(
@@ -232,6 +247,10 @@ impl Session {
             outcome,
         }
     }
+}
+
+fn hashes_to(bytes: &[u8], expected: ContentDigest) -> Result<bool, DctxError> {
+    Ok(crate::domain::digest_text(bytes)? == expected)
 }
 
 fn write_answer(

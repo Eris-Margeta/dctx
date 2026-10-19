@@ -1,8 +1,8 @@
 //! Read-only map verbs through the facade session.
 //! Implements SPEC-MAP-MODE sections 4 and 9.1 and ARCHITECTURE-PROPOSAL §7 row DX-D2.
 //! Depends on map-query for request bounds and on the `dctx` facade for the snapshot and the query.
-//! The command does not open a home-directory sqlite cache.
-//! A missing target or an unsupported path is refused before the snapshot scan.
+//! The command reuses a verified generation from the shared cache root.
+//! It does not write inside the scanned project. A bad target is refused before the scan.
 
 mod args;
 
@@ -40,8 +40,17 @@ pub(crate) fn execute(arguments: &[String]) -> Result<String, String> {
         return Err("the facade pages with the next cursor, not --offset".to_string());
     }
     options.request.target = prepare_target(options.request.verb, &options.request.target, &options.place)?;
-    let mut session = host::open_dir(&options.place)?;
-    let handle = session.snapshot(&SnapshotRequest::strict()).map_err(|error| error.to_string())?;
+    let (mut session, key) = host::open_mapped(&options.place)?;
+    // Reuse checks content with digest_text, the same comparison as read_verified. Size and mtime are only a prefilter.
+    let handle = session
+        .snapshot_reusable(&SnapshotRequest::strict(), &key)
+        .map_err(|error| error.to_string())?;
+    if host::reuse_report_enabled() {
+        let status = if handle.reused() { "generation reused" } else { "generation built" };
+        eprintln!("{status}");
+        eprintln!("content_reads {}", session.content_reads());
+        eprintln!("cached_content_reads {}", session.cached_content_reads());
+    }
     let request = facade_request(&options.request, options.format, options.continuation);
     let mut sink = VecSink::new();
     session.query(&handle, &request, &mut sink).map_err(|error| error.to_string())?;
