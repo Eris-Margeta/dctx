@@ -48,6 +48,27 @@ struct Staged {
 
 static TEMP_SEQ: AtomicU64 = AtomicU64::new(1);
 
+/// Failure of [`FsLedgerStore::update`].
+/// `Body` is the edit's own error. The committed ledger is unchanged in that case.
+#[derive(Debug)]
+pub enum LedgerUpdateError<E> {
+    /// The lock, the load, a corrupt image, or the store refused the write.
+    Cache(CacheError),
+    /// `body` refused the edit.
+    Body(E),
+}
+
+impl<E: std::fmt::Display> std::fmt::Display for LedgerUpdateError<E> {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Cache(error) => write!(formatter, "{error}"),
+            Self::Body(error) => write!(formatter, "{error}"),
+        }
+    }
+}
+
+impl<E: std::fmt::Debug + std::fmt::Display> std::error::Error for LedgerUpdateError<E> {}
+
 /// Versioned ledger file for one cache root.
 #[derive(Debug)]
 pub struct FsLedgerStore {
@@ -129,6 +150,28 @@ impl FsLedgerStore {
         self.ensure_current()?;
         self.stage_locked(ledger)?;
         self.commit_locked()
+    }
+
+    /// Loads, runs `body`, and stores when `body` commits, all under the cache lock.
+    /// `body` returns `(value, commit)`. A false `commit` leaves the committed file unchanged.
+    /// Public load and store each take this try-lock, and it is not reentrant, so a caller cannot span them.
+    /// A different store that observed an older revision still fails with `stale ledger`.
+    pub fn update<T, E>(
+        &self,
+        empty_quota: Quota,
+        body: impl FnOnce(&mut Lifecycle) -> Result<(T, bool), E>,
+    ) -> Result<T, LedgerUpdateError<E>> {
+        let _guard = lock::LockGuard::acquire(&self.root).map_err(LedgerUpdateError::Cache)?;
+        let loaded = self.load_locked(empty_quota).map_err(LedgerUpdateError::Cache)?;
+        if let Some(error) = loaded.fault {
+            return Err(LedgerUpdateError::Cache(error));
+        }
+        let mut life = loaded.lifecycle;
+        let (value, commit) = body(&mut life).map_err(LedgerUpdateError::Body)?;
+        if commit {
+            self.store_locked(&life).map_err(LedgerUpdateError::Cache)?;
+        }
+        Ok(value)
     }
 
     fn load_locked(&self, empty_quota: Quota) -> Result<LoadedLedger, CacheError> {
@@ -493,5 +536,35 @@ mod tests {
         assert!(matches!(loaded.fault, Some(CacheError::UnknownLedgerVersion { found: 99 })));
         assert_eq!(fs::read(root.join("stray.bin")).expect("stray"), b"x");
         assert_eq!(fs::read(root.join("notes.txt")).expect("notes"), b"keep");
+    }
+
+    #[test]
+    fn update_commits_one_observed_revision_and_a_rival_store_stays_stale() {
+        let (_dir, root) = root();
+        let quota = Quota::scaled(80);
+        let store = FsLedgerStore::open(&root).expect("open");
+        let rival = FsLedgerStore::open(&root).expect("rival");
+        store
+            .update(quota, |life| life.load_staged(10, 0).map(|_| ((), true)))
+            .expect("create");
+        rival.load(quota).expect("observe");
+        let before = fs::read(root.join(LEDGER_FILE)).expect("bytes");
+        let admitted = store
+            .update(quota, |life| {
+                let admitted = life.admitted();
+                life.load_staged(4, 0)?;
+                Ok::<(u64, bool), CacheError>((admitted, false))
+            })
+            .expect("keep");
+        assert_eq!(admitted, 10);
+        assert_eq!(fs::read(root.join(LEDGER_FILE)).expect("bytes"), before);
+        store
+            .update(quota, |life| life.load_staged(4, 0).map(|_| ((), true)))
+            .expect("commit");
+        let stale = rival.store(&Lifecycle::new(quota).expect("fresh"));
+        assert!(matches!(stale, Err(CacheError::InvalidRequest { reason: "stale ledger" })));
+        let reloaded = rival.load(quota).expect("reload");
+        assert!(reloaded.fault.is_none());
+        rival.store(&reloaded.lifecycle).expect("current");
     }
 }
