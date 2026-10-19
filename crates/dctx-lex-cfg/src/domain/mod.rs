@@ -1,6 +1,7 @@
 //! IO-free extraction vocabulary: facts, precision labels, limits and refusals.
 //! Implements PARSERS-v1 (ParseResult, completion, limits) for configuration files.
 //! Used by the JSON, TOML and YAML walkers and by callers of the public API.
+//! Body fingerprints stream through `dctx_hash::Sha256` over whitespace-skipped runs.
 mod facts;
 mod limits;
 
@@ -39,11 +40,36 @@ pub(crate) fn has_whitespace(source: &str) -> bool {
 }
 
 fn digest_hex(bytes: &[u8]) -> String {
-    crate::digest::sha256_hex(bytes)
+    let mut hasher = dctx_hash::Sha256::new();
+    // A file cannot reach the SHA-256 length cap. On refusal the hasher is unchanged.
+    let _ = hasher.update(bytes);
+    hex_digest(hasher.finalize().as_bytes())
 }
 
+/// SHA-256 of `split_whitespace` words joined by one space, without building that buffer.
 fn digest_normalized(body: &str) -> String {
-    crate::digest::sha256_hex_whitespace(body)
+    let mut hasher = dctx_hash::Sha256::new();
+    let mut separate = false;
+    for word in body.split_whitespace() {
+        if separate && hasher.update(b" ").is_err() {
+            break;
+        }
+        if hasher.update(word.as_bytes()).is_err() {
+            break;
+        }
+        separate = true;
+    }
+    hex_digest(hasher.finalize().as_bytes())
+}
+
+fn hex_digest(bytes: &[u8; 32]) -> String {
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    let mut hex = String::with_capacity(64);
+    for byte in bytes {
+        hex.push(char::from(HEX[usize::from(byte >> 4)]));
+        hex.push(char::from(HEX[usize::from(byte & 15)]));
+    }
+    hex
 }
 
 #[cfg(test)]
@@ -87,5 +113,32 @@ mod tests {
                 assert_eq!(fingerprint_plain(sample), body_fingerprint(sample), "{sample:?}");
             }
         }
+    }
+
+    #[test]
+    fn digests_match_dctx_hash_across_block_edges() {
+        let samples: [&[u8]; 8] = [
+            b"",
+            b"a",
+            b"abc",
+            b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq",
+            &[0u8; 55],
+            &[0u8; 56],
+            &[0u8; 63],
+            &[0u8; 64],
+        ];
+        for sample in samples {
+            let digest = dctx_hash::Sha256::digest(sample).expect("length");
+            let hex = super::hex_digest(digest.as_bytes());
+            assert_eq!(super::digest_hex(sample), hex, "len {}", sample.len());
+        }
+        assert_eq!(
+            body_fingerprint("abc"),
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
+        );
+        assert_eq!(
+            body_fingerprint(""),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        );
     }
 }

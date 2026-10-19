@@ -3,9 +3,18 @@
 //! Uses lex_dispatch and dctx-lex-md. Explicit structural Rust stays line-oriented; the default walk uses syn.
 //! The snapshot walk calls [`extract_structural`]. Answer ids and the structural precision label stay put.
 
-use dctx_map_model::NodeKind;
+use dctx_map_model::{NodeKind, StableId};
 
-use super::IndexedNode;
+use super::span_index::SpanIndex;
+use super::{IndexedNode, TextBlob, TextSpan};
+
+/// Facts ready to enter the graph. A complete config lex is projected once.
+pub(crate) enum Prepared {
+    /// Rust, Markdown and other languages, already projected to symbols.
+    Symbols(Vec<Symbol>),
+    /// Complete configuration lex. Names are unique, so ids have no `~` ordinal.
+    Config(dctx_lex_cfg::LexedFile),
+}
 
 /// One declaration before stable ids are assigned.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -97,6 +106,111 @@ pub(crate) fn language_of(path: &str) -> &'static str {
         .unwrap_or("opaque")
 }
 
+/// Lexer output for one included file. Config keeps the lex so the graph can move it once.
+pub(crate) fn prepare_structural(path: &str, bytes: &[u8]) -> Prepared {
+    if bytes.contains(&0) || std::str::from_utf8(bytes).is_err() {
+        return Prepared::Symbols(Vec::new());
+    }
+    if language_of(path) == "config" {
+        return match dctx_lex_cfg::CfgLexer::default().extract(path, bytes) {
+            Ok(lexed) if lexed.completion == dctx_lex_cfg::Completion::Complete => Prepared::Config(lexed),
+            _ => Prepared::Symbols(Vec::new()),
+        };
+    }
+    Prepared::Symbols(extract_structural(path, bytes))
+}
+
+/// Projects `prepared` into `nodes` and `edges`. Returns the symbol count charged to the file.
+pub(crate) fn index_prepared(
+    path: &str,
+    bytes: &[u8],
+    path_span: TextSpan,
+    module_index: u32,
+    prepared: Prepared,
+    nodes: &mut Vec<IndexedNode>,
+    edges: &mut Vec<super::IndexedEdge>,
+    text: &mut TextBlob,
+) -> usize {
+    match prepared {
+        Prepared::Symbols(symbols) => {
+            let count = symbols.len();
+            index_symbols(path, path_span, module_index, symbols, nodes, edges, text);
+            count
+        }
+        Prepared::Config(lexed) => append_cfg(path, bytes, path_span, module_index, lexed, nodes, edges, text),
+    }
+}
+
+/// Moves a complete config lex into the graph. Duplicate keys never reach a complete lex.
+fn append_cfg(
+    path: &str,
+    bytes: &[u8],
+    path_span: TextSpan,
+    module_index: u32,
+    mut lexed: dctx_lex_cfg::LexedFile,
+    nodes: &mut Vec<IndexedNode>,
+    edges: &mut Vec<super::IndexedEdge>,
+    text: &mut TextBlob,
+) -> usize {
+    let Ok(body) = std::str::from_utf8(bytes) else {
+        return 0;
+    };
+    let spans = SpanIndex::build(body);
+    let facts = std::mem::take(&mut lexed.nodes);
+    drop(lexed);
+    let edge = text.push("contains");
+    let confidence = text.push("exact");
+    let path_ok = StableId::new(NodeKind::Module, path, None, None).is_ok();
+    nodes.reserve(facts.len());
+    edges.reserve(facts.len());
+    let mut kept = 0usize;
+    for labeled in facts {
+        let node = labeled.fact;
+        if matches!(node.kind, NodeKind::Module | NodeKind::Place | NodeKind::Package) || node.name.is_empty() {
+            continue;
+        }
+        let graph = match node.kind {
+            NodeKind::Doc => NodeKind::Doc,
+            NodeKind::Test => NodeKind::Test,
+            _ => NodeKind::Symbol,
+        };
+        if stored_ordinal(graph, path, &node.name, None, path_ok).is_none() {
+            continue;
+        }
+        let Some(dst) = u32::try_from(nodes.len()).ok() else {
+            break;
+        };
+        let kind_label = if graph == NodeKind::Doc {
+            "heading"
+        } else {
+            node.symbol_kind.map(|kind| kind.as_str()).unwrap_or("fn")
+        };
+        let source_label = node.summary.source.as_str();
+        let lines = node.lines;
+        nodes.push(IndexedNode {
+            letter: letter_byte(graph),
+            ordinal: 0,
+            kind: reuse_label(node.fingerprint, kind_label),
+            name: node.name,
+            path: path_span,
+            lines,
+            span: spans.line_span(lines),
+            summary: node.summary.text,
+            summary_source: reuse_label(node.path, source_label),
+            signature: node.signature,
+        });
+        edges.push(super::IndexedEdge { src: module_index, dst, edge, confidence });
+        kept = kept.saturating_add(1);
+    }
+    kept
+}
+
+fn reuse_label(mut slot: String, label: &str) -> String {
+    slot.clear();
+    slot.push_str(label);
+    slot
+}
+
 /// Structural facts. NUL bytes yield no symbols; the caller still hashes the file.
 pub(crate) fn extract_structural(path: &str, bytes: &[u8]) -> Vec<Symbol> {
     if bytes.contains(&0) {
@@ -113,44 +227,150 @@ pub(crate) fn extract_structural(path: &str, bytes: &[u8]) -> Vec<Symbol> {
 }
 
 /// Assigns stable ids and contains edges for one file's symbols.
+///
+/// Consumes `symbols` so names, kinds and summaries move into the graph.
+/// The id text is not built here. Rows keep the letter, the ordinal and the shared path.
+/// `module_index` is the module node already pushed for this file.
 pub(crate) fn index_symbols(
     path: &str,
-    module_id: &str,
-    symbols: &[Symbol],
+    path_span: TextSpan,
+    module_index: u32,
+    symbols: Vec<Symbol>,
     nodes: &mut Vec<IndexedNode>,
     edges: &mut Vec<super::IndexedEdge>,
+    text: &mut TextBlob,
 ) {
-    use std::collections::BTreeMap;
-
-    use dctx_map_model::StableId;
-
-    let mut seen: BTreeMap<String, u32> = BTreeMap::new();
-    for symbol in symbols {
-        let count = seen.entry(symbol.name.clone()).or_insert(0);
-        *count += 1;
-        let ordinal = if *count == 1 { None } else { Some(*count) };
-        let Ok(id) = StableId::new(symbol.graph, path, Some(&symbol.name), ordinal) else {
+    let ordinals = duplicate_ordinals(&symbols);
+    let path_ok = StableId::new(NodeKind::Module, path, None, None).is_ok();
+    let edge = text.push("contains");
+    let confidence = text.push("exact");
+    nodes.reserve(ordinals.len());
+    edges.reserve(ordinals.len());
+    for (symbol, ordinal) in symbols.into_iter().zip(ordinals) {
+        let Some(ordinal) = stored_ordinal(symbol.graph, path, &symbol.name, ordinal, path_ok) else {
             continue;
         };
-        let id = id.as_str().to_string();
+        let Some(dst) = u32::try_from(nodes.len()).ok() else {
+            break;
+        };
         nodes.push(IndexedNode {
-            id: id.clone(),
-            kind: symbol.kind.clone(),
-            name: symbol.name.clone(),
-            path: path.to_string(),
+            letter: letter_byte(symbol.graph),
+            ordinal,
+            kind: symbol.kind,
+            name: symbol.name,
+            path: path_span,
             lines: symbol.lines,
             span: symbol.span,
-            summary: symbol.summary.clone(),
-            summary_source: symbol.summary_source.clone(),
-            signature: symbol.signature.clone(),
+            summary: symbol.summary,
+            summary_source: symbol.summary_source,
+            signature: symbol.signature,
         });
-        edges.push(super::IndexedEdge {
-            src: module_id.to_string(),
-            dst: id,
-            edge: "contains".to_string(),
-            confidence: "exact".to_string(),
-        });
+        edges.push(super::IndexedEdge { src: module_index, dst, edge, confidence });
     }
+}
+
+/// First occurrence keeps an empty ordinal. Later copies use 2, 3, … in source order.
+fn duplicate_ordinals(symbols: &[Symbol]) -> Vec<Option<u32>> {
+    let capacity = table_len(symbols.len());
+    let mask = capacity - 1;
+    let mut slots = vec![Slot { hash: 0, index: 0, count: 0 }; capacity];
+    let mut ordinals = Vec::with_capacity(symbols.len());
+    for (index, symbol) in symbols.iter().enumerate() {
+        let mut hash = fx_hash(symbol.name.as_bytes());
+        if hash == 0 {
+            hash = 1;
+        }
+        let mut slot = (hash as usize) & mask;
+        let stored = loop {
+            let entry = &mut slots[slot];
+            if entry.hash == 0 {
+                entry.hash = hash;
+                entry.index = u32::try_from(index).unwrap_or(u32::MAX);
+                entry.count = 1;
+                break None;
+            }
+            if entry.hash == hash {
+                let prior = usize::try_from(entry.index).unwrap_or(usize::MAX);
+                if symbols.get(prior).is_some_and(|other| other.name == symbol.name) {
+                    entry.count = entry.count.saturating_add(1);
+                    break (entry.count > 1).then_some(entry.count);
+                }
+            }
+            slot = (slot + 1) & mask;
+        };
+        ordinals.push(stored);
+    }
+    ordinals
+}
+
+/// `0` when this is the first copy. [`StableId`] still rejects a name that cannot be stored.
+fn stored_ordinal(kind: NodeKind, path: &str, name: &str, ordinal: Option<u32>, path_ok: bool) -> Option<u32> {
+    if ordinal == Some(0) {
+        return None;
+    }
+    let stored = ordinal.unwrap_or(0);
+    if path_ok && name_is_plain(name) {
+        return Some(stored);
+    }
+    StableId::new(kind, path, Some(name), ordinal).ok()?;
+    Some(stored)
+}
+
+fn letter_byte(kind: NodeKind) -> u8 {
+    match kind {
+        NodeKind::Place => b'p',
+        NodeKind::Package => b'k',
+        NodeKind::Module => b'm',
+        NodeKind::Test => b't',
+        NodeKind::Doc => b'd',
+        NodeKind::Symbol => b's',
+    }
+}
+
+#[derive(Clone, Copy)]
+struct Slot {
+    hash: u64,
+    index: u32,
+    count: u32,
+}
+
+fn table_len(count: usize) -> usize {
+    count.saturating_mul(2).max(16).checked_next_power_of_two().unwrap_or(1_usize << (usize::BITS - 1))
+}
+
+fn fx_hash(bytes: &[u8]) -> u64 {
+    let mut hash: u64 = 0;
+    let mut offset = 0;
+    while offset + 8 <= bytes.len() {
+        let mut chunk = [0u8; 8];
+        chunk.copy_from_slice(&bytes[offset..offset + 8]);
+        hash = (hash.rotate_left(5) ^ u64::from_le_bytes(chunk)).wrapping_mul(0x517cc1b727220a95);
+        offset += 8;
+    }
+    if offset < bytes.len() {
+        let mut tail: u64 = 0;
+        for (shift, byte) in bytes[offset..].iter().copied().enumerate() {
+            tail |= u64::from(byte) << (shift * 8);
+        }
+        hash = (hash.rotate_left(5) ^ tail).wrapping_mul(0x517cc1b727220a95);
+    }
+    hash
+}
+
+fn name_is_plain(name: &str) -> bool {
+    if name.is_empty() {
+        return false;
+    }
+    let mut ascii = true;
+    for byte in name.bytes() {
+        if byte < 0x20 || byte == 0x7f || byte == b'#' || byte == b'~' {
+            return false;
+        }
+        if byte >= 0x80 {
+            ascii = false;
+        }
+    }
+    ascii || !name.chars().any(char::is_control)
 }
 
 fn rust_symbols(text: &str) -> Vec<Symbol> {
@@ -428,5 +648,171 @@ mod tests {
         assert!(extract_structural("config.ru", source).is_empty());
         assert_eq!(extract_structural("A.RS", b"fn RustMain() {}\n")[0].name, "RustMain");
         assert_eq!(extract_structural("README.MD", b"# MdMain\n")[0].name, "MdMain");
+    }
+
+    #[test]
+    fn plain_ids_match_stable_id_and_rejected_names_stay_rejected() {
+        let path = "src/lib.rs";
+        let path_ok = dctx_map_model::StableId::new(NodeKind::Module, path, None, None).is_ok();
+        assert!(path_ok);
+        let mut text = super::TextBlob::default();
+        let path_span = text.push(path);
+        let names = ["ping", "Chain::append", "名前", "k0.events.0", "a~2", "a~01", "a#b", "has\nline", ""];
+        for name in names {
+            for ordinal in [None, Some(2)] {
+                for kind in [NodeKind::Symbol, NodeKind::Test] {
+                    let got = super::stored_ordinal(kind, path, name, ordinal, path_ok);
+                    let old = dctx_map_model::StableId::new(kind, path, Some(name), ordinal).ok();
+                    let formatted = got.map(|stored| {
+                        let mut out = String::new();
+                        super::super::write_stable_id(&mut out, super::letter_byte(kind), path, name, stored);
+                        out
+                    });
+                    assert_eq!(formatted.as_deref(), old.as_ref().map(|id| id.as_str()), "{kind:?} {name:?} {ordinal:?}");
+                    if let Some(id) = &formatted {
+                        let node = node_of(super::letter_byte(kind), got.unwrap_or(0), name, path_span);
+                        assert!(super::super::id_matches(&text, &node, id), "{id}");
+                        assert!(!super::super::id_matches(&text, &node, &format!("{id}~02")));
+                    }
+                }
+            }
+        }
+        let bad = "../x";
+        assert!(!dctx_map_model::StableId::new(NodeKind::Module, bad, None, None).is_ok());
+        assert!(super::stored_ordinal(NodeKind::Symbol, bad, "ping", None, false).is_none());
+    }
+
+    #[test]
+    fn duplicate_ordinals_match_the_pre_change_index() {
+        let symbols = vec![
+            sample("ping"),
+            sample("pong"),
+            sample("ping"),
+            sample("a#b"),
+            sample("ping"),
+            sample("名前"),
+        ];
+        let mut text = super::TextBlob::default();
+        let path_span = text.push("p.rs");
+        let mut nodes = Vec::new();
+        let mut edges = Vec::new();
+        super::index_symbols("p.rs", path_span, 0, symbols.clone(), &mut nodes, &mut edges, &mut text);
+        assert_eq!(shown(&text, &nodes, &edges), index_oracle("p.rs", "m:p.rs", &symbols));
+        assert_eq!(
+            nodes.iter().map(|node| node_text(&text, node)).collect::<Vec<_>>(),
+            ["s:p.rs#ping", "s:p.rs#pong", "s:p.rs#ping~2", "s:p.rs#ping~3", "s:p.rs#名前"]
+        );
+    }
+
+    #[test]
+    fn large_index_matches_the_pre_change_index() {
+        let mut symbols = Vec::with_capacity(5_000);
+        for index in 0..5_000 {
+            let name = match index % 500 {
+                0 => "a#b".to_string(),
+                1 => "a~2".to_string(),
+                2 => "ping".to_string(),
+                _ => format!("n{index}"),
+            };
+            symbols.push(sample(&name));
+        }
+        symbols.push(sample("has\nline"));
+        let mut text = super::TextBlob::default();
+        let path_span = text.push("p.rs");
+        let mut nodes = Vec::new();
+        let mut edges = Vec::new();
+        super::index_symbols("p.rs", path_span, 0, symbols.clone(), &mut nodes, &mut edges, &mut text);
+        assert!(nodes.len() > 4_000);
+        assert_eq!(shown(&text, &nodes, &edges), index_oracle("p.rs", "m:p.rs", &symbols));
+        assert!(nodes.iter().any(|node| node_text(&text, node) == "s:p.rs#ping~2"));
+        assert!(!nodes.iter().any(|node| node.name == "a#b"));
+    }
+
+    fn sample(name: &str) -> super::Symbol {
+        super::Symbol {
+            name: name.to_string(),
+            kind: "fn".to_string(),
+            graph: NodeKind::Symbol,
+            lines: [1, 4],
+            span: [0, 10],
+            summary: format!("sum {name}"),
+            summary_source: "sig".to_string(),
+            signature: format!("sig {name}"),
+        }
+    }
+
+    fn node_of(letter: u8, ordinal: u32, name: &str, path: super::TextSpan) -> crate::index::IndexedNode {
+        crate::index::IndexedNode {
+            letter,
+            ordinal,
+            kind: "fn".to_string(),
+            name: name.to_string(),
+            path,
+            lines: [1, 1],
+            span: [0, 0],
+            summary: String::new(),
+            summary_source: String::new(),
+            signature: String::new(),
+        }
+    }
+
+    fn node_text(text: &super::TextBlob, node: &crate::index::IndexedNode) -> String {
+        let mut out = String::new();
+        super::super::write_node_id(&mut out, text, node);
+        out
+    }
+
+    fn shown(text: &super::TextBlob, nodes: &[crate::index::IndexedNode], edges: &[crate::index::IndexedEdge]) -> Vec<String> {
+        nodes
+            .iter()
+            .zip(edges)
+            .map(|(node, edge)| {
+                let id = node_text(text, node);
+                format!(
+                    "{id}\t{}\t{}\t{}\t{:?}\t{:?}\t{}\t{}\t{}\tm:p.rs\t{id}\t{}\t{}",
+                    node.kind,
+                    node.name,
+                    text.get(node.path),
+                    node.lines,
+                    node.span,
+                    node.summary,
+                    node.summary_source,
+                    node.signature,
+                    text.get(edge.edge),
+                    text.get(edge.confidence)
+                )
+            })
+            .collect()
+    }
+
+    fn index_oracle(path: &str, module_id: &str, symbols: &[super::Symbol]) -> Vec<String> {
+        use std::collections::BTreeMap;
+        let mut rows = Vec::new();
+        let mut seen: BTreeMap<String, u32> = BTreeMap::new();
+        for symbol in symbols {
+            let count = seen.entry(symbol.name.clone()).or_insert(0);
+            *count += 1;
+            let ordinal = if *count == 1 { None } else { Some(*count) };
+            let Ok(id) = dctx_map_model::StableId::new(symbol.graph, path, Some(&symbol.name), ordinal) else {
+                continue;
+            };
+            rows.push(format!(
+                "{}\t{}\t{}\t{}\t{:?}\t{:?}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+                id.as_str(),
+                symbol.kind,
+                symbol.name,
+                path,
+                symbol.lines,
+                symbol.span,
+                symbol.summary,
+                symbol.summary_source,
+                symbol.signature,
+                module_id,
+                id.as_str(),
+                "contains",
+                "exact"
+            ));
+        }
+        rows
     }
 }

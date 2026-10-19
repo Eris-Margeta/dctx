@@ -4,14 +4,17 @@
 //! The CLI calls Session::snapshot_reusable. Isolation without a cache root does not.
 //! Size and mtime are a prefilter. A same-stamp byte change still rebuilds.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 
 use dctx_core::FileHandlingDecision;
 use dctx_hash::ContentDigest;
 
 use super::Session;
 use crate::domain::{FreshnessMode, ParserChoice, RuleSources, ScanLimits, SnapshotRequest, DctxError, STRUCTURAL_PARSER};
-use crate::index::{walk_source, Generation, IndexedEdge, IndexedFile, IndexedNode, WalkArgs};
+use crate::index::{
+    ordinal_suffix, walk_source, write_endpoint, write_node_id, Generation, IndexedEdge, IndexedFile, IndexedNode, TextBlob,
+    WalkArgs,
+};
 
 const REUSE_ATTEMPTS: u32 = 32;
 const MAGIC: &[u8] = b"dctxgen1";
@@ -285,11 +288,14 @@ pub(super) fn encode_generation(
         push_u64(&mut out, file.modified);
     }
     push_count(&mut out, generation.nodes.len())?;
+    let mut id = String::new();
     for node in &generation.nodes {
-        push_str(&mut out, &node.id)?;
+        id.clear();
+        write_node_id(&mut id, &generation.text, node);
+        push_str(&mut out, &id)?;
         push_str(&mut out, &node.kind)?;
         push_str(&mut out, &node.name)?;
-        push_str(&mut out, &node.path)?;
+        push_str(&mut out, generation.text.get(node.path))?;
         push_str(&mut out, &node.summary)?;
         push_str(&mut out, &node.summary_source)?;
         push_str(&mut out, &node.signature)?;
@@ -299,11 +305,17 @@ pub(super) fn encode_generation(
         push_u64(&mut out, node.span[1]);
     }
     push_count(&mut out, generation.edges.len())?;
+    let mut src = String::new();
+    let mut dst = String::new();
     for edge in &generation.edges {
-        push_str(&mut out, &edge.src)?;
-        push_str(&mut out, &edge.dst)?;
-        push_str(&mut out, &edge.edge)?;
-        push_str(&mut out, &edge.confidence)?;
+        src.clear();
+        dst.clear();
+        write_endpoint(&mut src, &generation.nodes, &generation.text, edge.src);
+        write_endpoint(&mut dst, &generation.nodes, &generation.text, edge.dst);
+        push_str(&mut out, &src)?;
+        push_str(&mut out, &dst)?;
+        push_str(&mut out, generation.text.get(edge.edge))?;
+        push_str(&mut out, generation.text.get(edge.confidence))?;
     }
     Ok(out)
 }
@@ -347,14 +359,29 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
         };
         files.push(IndexedFile { path, decision, digest, size: reader.u64()?, modified: reader.u64()? });
     }
+    let mut text = TextBlob::default();
     let node_count = reader.count()?;
     let mut nodes = Vec::with_capacity(node_count);
+    let mut by_id: HashMap<String, u32> = HashMap::with_capacity(node_count);
     for _ in 0..node_count {
+        let id = reader.string()?;
+        let kind = reader.string()?;
+        let name = reader.string()?;
+        let path = reader.string()?;
+        let letter = id.bytes().next().unwrap_or(b'm');
+        let ordinal = ordinal_suffix(&id, &name);
+        let Some(index) = u32::try_from(nodes.len()).ok() else {
+            return Err(DctxError::CorruptIndex { reason: "generation count" });
+        };
+        if let std::collections::hash_map::Entry::Vacant(slot) = by_id.entry(id) {
+            slot.insert(index);
+        }
         nodes.push(IndexedNode {
-            id: reader.string()?,
-            kind: reader.string()?,
-            name: reader.string()?,
-            path: reader.string()?,
+            letter,
+            ordinal,
+            kind,
+            name,
+            path: text.push(&path),
             summary: reader.string()?,
             summary_source: reader.string()?,
             signature: reader.string()?,
@@ -365,11 +392,21 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
     let edge_count = reader.count()?;
     let mut edges = Vec::with_capacity(edge_count);
     for _ in 0..edge_count {
+        let src = reader.string()?;
+        let dst = reader.string()?;
+        let edge = reader.string()?;
+        let confidence = reader.string()?;
+        let Some(&src) = by_id.get(&src) else {
+            return Err(DctxError::CorruptIndex { reason: "generation edge" });
+        };
+        let Some(&dst) = by_id.get(&dst) else {
+            return Err(DctxError::CorruptIndex { reason: "generation edge" });
+        };
         edges.push(IndexedEdge {
-            src: reader.string()?,
-            dst: reader.string()?,
-            edge: reader.string()?,
-            confidence: reader.string()?,
+            src,
+            dst,
+            edge: text.push(&edge),
+            confidence: text.push(&confidence),
         });
     }
     if !reader.rest.is_empty() {
@@ -386,6 +423,7 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
             files,
             nodes,
             edges,
+            text,
             freshness,
             taken_at,
             epoch,

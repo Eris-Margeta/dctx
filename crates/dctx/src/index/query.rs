@@ -3,7 +3,7 @@
 //! Depends on the in-memory generation. Map, find and neighbors do not read the source.
 //! A missing id is [`Collected::Outcome`], not an empty success.
 
-use super::{Generation, IndexedNode};
+use super::{id_matches, write_node_id, Generation, IndexedNode, TextBlob};
 use crate::domain::{AnswerRecord, Direction, IdentityOutcome, MapRequest, Verb, DctxError};
 
 /// Records for a page, a verified read, or a normal identity outcome.
@@ -29,34 +29,44 @@ pub(crate) fn collect(generation: &Generation, request: &MapRequest, depth: u32)
 }
 
 /// The node named `target`, or `None` when it is absent. An `@` alias is never guessed.
-pub(crate) fn lookup<'a>(nodes: &'a [IndexedNode], target: &str) -> Option<&'a IndexedNode> {
-    nodes.iter().find(|node| node.id == target)
+pub(crate) fn lookup<'a>(nodes: &'a [IndexedNode], text: &TextBlob, target: &str) -> Option<&'a IndexedNode> {
+    let index = lookup_index(nodes, text, target)?;
+    nodes.get(index)
+}
+
+fn lookup_index(nodes: &[IndexedNode], text: &TextBlob, target: &str) -> Option<usize> {
+    nodes.iter().position(|node| id_matches(text, node, target))
+}
+
+fn node_at(nodes: &[IndexedNode], index: u32) -> Option<&IndexedNode> {
+    nodes.get(usize::try_from(index).unwrap_or(usize::MAX))
 }
 
 fn map_children(generation: &Generation, request: &MapRequest, depth: u32) -> Result<Collected, DctxError> {
-    let Some(root) = require(&generation.nodes, &request.target)? else {
+    let text = &generation.text;
+    let Some(root) = require_index(&generation.nodes, text, &request.target)? else {
         return Ok(missing(&request.target));
     };
-    let mut frontier = vec![root.id.clone()];
+    let mut frontier = vec![root];
     let mut children = Vec::new();
     for _ in 0..depth {
         let mut next = Vec::new();
         for id in &frontier {
             for edge in &generation.edges {
-                if edge.src == *id && edge.edge == "contains" {
-                    next.push(edge.dst.clone());
+                if edge.src == *id && text.get(edge.edge) == "contains" {
+                    next.push(edge.dst);
                 }
             }
         }
-        children.extend(next.iter().cloned());
+        children.extend_from_slice(&next);
         frontier = next;
     }
     let mut records = Vec::new();
     for id in children {
-        if let Some(node) = lookup(&generation.nodes, &id)
-            && admit(node, request)
+        if let Some(node) = node_at(&generation.nodes, id)
+            && admit(text, node, request)
         {
-            records.push(record_of(node));
+            records.push(record_of(text, node));
         }
     }
     records.sort_by(|left, right| left.id.cmp(&right.id));
@@ -64,16 +74,17 @@ fn map_children(generation: &Generation, request: &MapRequest, depth: u32) -> Re
 }
 
 fn find(generation: &Generation, request: &MapRequest) -> Vec<AnswerRecord> {
+    let text = &generation.text;
     let mut records = Vec::new();
     for node in &generation.nodes {
-        if node.kind == "module" || !admit(node, request) {
+        if node.kind == "module" || !admit(text, node, request) {
             continue;
         }
-        let score = score_of(node, &request.query);
+        let score = score_of(text, node, &request.query);
         if score == 0 {
             continue;
         }
-        let mut record = record_of(node);
+        let mut record = record_of(text, node);
         record.score = score;
         records.push(record);
     }
@@ -82,42 +93,45 @@ fn find(generation: &Generation, request: &MapRequest) -> Vec<AnswerRecord> {
 }
 
 fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Result<Collected, DctxError> {
-    let Some(root) = require(&generation.nodes, &request.target)? else {
+    let text = &generation.text;
+    let Some(root) = require_index(&generation.nodes, text, &request.target)? else {
         return Ok(missing(&request.target));
     };
-    let mut frontier = vec![root.id.clone()];
+    let mut frontier = vec![root];
     let mut records = Vec::new();
     for _ in 0..depth {
         let mut next = Vec::new();
         for id in &frontier {
             for edge in &generation.edges {
                 let (direction, other) = if edge.src == *id {
-                    ("out", edge.dst.as_str())
+                    ("out", edge.dst)
                 } else if edge.dst == *id {
-                    ("in", edge.src.as_str())
+                    ("in", edge.src)
                 } else {
                     continue;
                 };
                 if !direction_ok(request.direction, direction) {
                     continue;
                 }
-                if !request.edges.is_empty() && !request.edges.iter().any(|kind| kind == &edge.edge) {
+                let edge_name = text.get(edge.edge);
+                if !request.edges.is_empty() && !request.edges.iter().any(|kind| kind.as_str() == edge_name) {
                     continue;
                 }
-                let Some(node) = lookup(&generation.nodes, other) else {
+                let Some(node) = node_at(&generation.nodes, other) else {
                     continue;
                 };
-                if !admit(node, request) {
+                if !admit(text, node, request) {
                     continue;
                 }
-                let mut record = record_of(node);
-                record.id = format!("{}:{direction}:{}", edge.edge, node.id);
-                record.edge = Some(edge.edge.clone());
+                let mut record = record_of(text, node);
+                let node_id = record.id.clone();
+                record.id = format!("{edge_name}:{direction}:{node_id}");
+                record.edge = Some(edge_name.to_string());
                 record.direction = Some(direction.to_string());
-                record.target = Some(node.id.clone());
-                record.confidence = Some(edge.confidence.clone());
+                record.target = Some(node_id);
+                record.confidence = Some(text.get(edge.confidence).to_string());
                 records.push(record);
-                next.push(node.id.clone());
+                next.push(other);
             }
         }
         frontier = next;
@@ -130,10 +144,11 @@ fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Resul
 }
 
 fn explain(generation: &Generation, request: &MapRequest) -> Result<Collected, DctxError> {
-    let Some(node) = require(&generation.nodes, &request.target)? else {
+    let text = &generation.text;
+    let Some(node) = require(&generation.nodes, text, &request.target)? else {
         return Ok(missing(&request.target));
     };
-    let mut record = record_of(node);
+    let mut record = record_of(text, node);
     if !node.signature.is_empty() {
         record.signature = Some(node.signature.clone());
     }
@@ -141,31 +156,45 @@ fn explain(generation: &Generation, request: &MapRequest) -> Result<Collected, D
 }
 
 fn read(generation: &Generation, request: &MapRequest) -> Result<Collected, DctxError> {
-    let Some(node) = require(&generation.nodes, &request.target)? else {
+    let text = &generation.text;
+    let Some(node) = require(&generation.nodes, text, &request.target)? else {
         return Ok(missing(&request.target));
     };
-    let mut record = record_of(node);
+    let mut record = record_of(text, node);
     record.span = Some(node.span);
     Ok(Collected::Read(Box::new(record)))
 }
 
-fn require<'a>(nodes: &'a [IndexedNode], target: &str) -> Result<Option<&'a IndexedNode>, DctxError> {
+fn require<'a>(nodes: &'a [IndexedNode], text: &TextBlob, target: &str) -> Result<Option<&'a IndexedNode>, DctxError> {
     if target.is_empty() {
         return Err(DctxError::invalid("target is required"));
     }
-    Ok(lookup(nodes, target))
+    Ok(lookup(nodes, text, target))
+}
+
+fn require_index(nodes: &[IndexedNode], text: &TextBlob, target: &str) -> Result<Option<u32>, DctxError> {
+    if target.is_empty() {
+        return Err(DctxError::invalid("target is required"));
+    }
+    let Some(index) = lookup_index(nodes, text, target) else {
+        return Ok(None);
+    };
+    Ok(u32::try_from(index).ok())
 }
 
 fn missing(target: &str) -> Collected {
     Collected::Outcome(IdentityOutcome::Gone { id: target.to_string() })
 }
 
-fn admit(node: &IndexedNode, request: &MapRequest) -> bool {
+fn admit(text: &TextBlob, node: &IndexedNode, request: &MapRequest) -> bool {
     if !request.kinds.is_empty() && !request.kinds.iter().any(|kind| kind == &node.kind) {
         return false;
     }
     match &request.within {
-        Some(prefix) => node.path == *prefix || node.path.strip_prefix(prefix).is_some_and(|rest| rest.starts_with('/')),
+        Some(prefix) => {
+            let path = text.get(node.path);
+            path == prefix || path.strip_prefix(prefix.as_str()).is_some_and(|rest| rest.starts_with('/'))
+        }
         None => true,
     }
 }
@@ -178,11 +207,13 @@ fn direction_ok(requested: Direction, actual: &str) -> bool {
     }
 }
 
-fn record_of(node: &IndexedNode) -> AnswerRecord {
+fn record_of(text: &TextBlob, node: &IndexedNode) -> AnswerRecord {
+    let mut id = String::new();
+    write_node_id(&mut id, text, node);
     AnswerRecord {
-        id: node.id.clone(),
+        id,
         kind: node.kind.clone(),
-        path: node.path.clone(),
+        path: text.get(node.path).to_string(),
         lines: node.lines,
         summary: node.summary.clone(),
         summary_source: node.summary_source.clone(),
@@ -197,7 +228,7 @@ fn record_of(node: &IndexedNode) -> AnswerRecord {
     }
 }
 
-fn score_of(node: &IndexedNode, query: &str) -> i64 {
+fn score_of(text: &TextBlob, node: &IndexedNode, query: &str) -> i64 {
     if query.is_empty() {
         return 0;
     }
@@ -210,7 +241,7 @@ fn score_of(node: &IndexedNode, query: &str) -> i64 {
     if node.name.contains(query) {
         return 1000;
     }
-    if node.path.contains(query) {
+    if text.get(node.path).contains(query) {
         return 100;
     }
     if node.summary.contains(query) {
@@ -225,22 +256,25 @@ mod tests {
 
     #[test]
     fn find_score_prefers_an_exact_name() {
+        let mut text = TextBlob::default();
+        let path = text.push("src/lib.rs");
         let node = IndexedNode {
-            id: "s:src/lib.rs#ping".to_string(),
+            letter: b's',
+            ordinal: 0,
             kind: "fn".to_string(),
             name: "ping".to_string(),
-            path: "src/lib.rs".to_string(),
+            path,
             lines: [2, 2],
             span: [13, 29],
             summary: "Respond.".to_string(),
             summary_source: "doc".to_string(),
             signature: "pub fn ping()".to_string(),
         };
-        assert_eq!(score_of(&node, "ping"), 3000);
-        assert_eq!(score_of(&node, "src/lib"), 100);
-        assert_eq!(score_of(&node, "Respond"), 10);
-        assert_eq!(score_of(&node, "missing"), 0);
+        assert_eq!(score_of(&text, &node, "ping"), 3000);
+        assert_eq!(score_of(&text, &node, "src/lib"), 100);
+        assert_eq!(score_of(&text, &node, "Respond"), 10);
+        assert_eq!(score_of(&text, &node, "missing"), 0);
         let qualified = IndexedNode { name: "tests::ping".to_string(), ..node };
-        assert_eq!(score_of(&qualified, "ping"), 2500);
+        assert_eq!(score_of(&text, &qualified, "ping"), 2500);
     }
 }
