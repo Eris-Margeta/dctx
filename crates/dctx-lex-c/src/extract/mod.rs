@@ -12,7 +12,7 @@ use declarations_types::{Draft, DraftRef};
 use crate::domain::{
     body_fingerprint, DiagnosticReason, Dialect, LexError, LexedFile, Limits, Precision,
 };
-use crate::lexer::{slice, Comment, Kind, Lexed, Token, NONE};
+use crate::lexer::{opens_template_args, slice, AngleDepth, Comment, Kind, Lexed, Token, NONE};
 use dctx_map_model::{EdgeKind, Node, NodeKind, StableId, Summary, SummarySource, SymbolKind};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -336,33 +336,22 @@ impl<'a> Walker<'a> {
     }
 
     pub(crate) fn skip_angles(&self, lt: usize, end: usize) -> Option<usize> {
-        if !self.is(lt, "<") {
+        let end = end.min(self.toks.len());
+        if !opens_template_args(|index| self.text(index), end, lt) {
             return None;
         }
-        let mut depth = 0i32;
-        let mut index = lt;
-        while index < end {
-            if self.is(index, "<") {
-                depth += 1;
-                if depth as u32 > self.max_depth {
-                    return None;
-                }
-            } else if self.is(index, ">") {
-                depth -= 1;
-                if depth == 0 {
-                    return Some(index + 1);
-                }
-            } else if self.is(index, ">>") {
-                depth -= 2;
-                if depth <= 0 {
-                    return Some(index + 1);
-                }
-            } else if self.is(index, "(") || self.is(index, "[") || self.is(index, "{") {
-                let next = self.after(index);
-                index = if next > index { next } else { index + 1 };
-                continue;
+        let mut angles = AngleDepth::new();
+        for index in lt..end {
+            let spelling = self.text(index);
+            let opens = spelling == "<" && opens_template_args(|at| self.text(at), end, index);
+            let before = angles.depth();
+            angles.observe(spelling, opens);
+            if before > 0 && angles.at_statement_level() {
+                return Some(index + 1);
             }
-            index += 1;
+            if angles.depth() > self.max_depth {
+                return None;
+            }
         }
         None
     }

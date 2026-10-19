@@ -8,7 +8,7 @@ use std::fmt;
 pub struct Limits {
     /// Largest accepted file, in bytes.
     pub max_bytes: usize,
-    /// Deepest parenthesis, bracket, brace or angle nesting.
+    /// Deepest parenthesis, bracket, brace or template-argument nesting.
     pub max_depth: u32,
     /// Most nodes plus references emitted for one file.
     pub max_facts: usize,
@@ -54,7 +54,7 @@ pub enum LexError {
         /// Limit in force.
         limit: usize,
     },
-    /// Bracket or angle nesting exceeds the depth limit.
+    /// Bracket or template-argument nesting exceeds the depth limit.
     TooDeep {
         /// One-based line where the limit was crossed.
         line: u32,

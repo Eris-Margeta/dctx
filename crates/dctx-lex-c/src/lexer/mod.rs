@@ -2,12 +2,15 @@
 //! Implements PARSERS-v1 lexing: comments, strings, raw strings, characters,
 //! preprocessor lines and bracket nesting bounded by `Limits`.
 //! The structural walker consumes [`Lexed`] and does not expand macros.
+//! Template `<` `>` count toward depth; comparisons and shifts do not.
+mod angles;
 mod preprocessor;
 mod scan;
 
 use crate::domain::{Diagnostic, DiagnosticReason, LexError, Limits};
 use std::collections::BTreeMap;
 
+pub(crate) use angles::{opens_template_args, AngleDepth};
 pub(crate) use preprocessor::{classify, define_attribute, define_brace, hidden_include, Dir};
 
 /// Token category. Keywords stay [`Kind::Ident`] and are compared by text.
@@ -222,14 +225,15 @@ fn pair(
 ) -> Result<Vec<u32>, LexError> {
     let mut partner = vec![NONE; tokens.len()];
     let mut stack: Vec<Open> = Vec::new();
-    // `<` used as a comparison is not nesting. Reset at statement boundaries so a
-    // long function does not trip TooDeep; real template nesting still counts.
-    let mut angle = 0i32;
+    // Only a `<` that a template closer matches counts. Comparisons and `>>`
+    // shifts stay at depth zero so a long function is not `TooDeep`.
+    let mut angles = AngleDepth::new();
     let mut braces: BTreeMap<String, bool> = BTreeMap::new();
     // `#if` / `#else` branches share the outer brace stack. Each branch restores
     // the snapshot so duplicated braces are alternatives, not extras.
-    let mut conds: Vec<(Vec<Open>, i32)> = Vec::new();
-    for (index, token) in tokens.iter().enumerate() {
+    let mut conds: Vec<(Vec<Open>, AngleDepth)> = Vec::new();
+    for index in 0..tokens.len() {
+        let token = tokens[index];
         if token.kind == Kind::Directive {
             let text = slice(source, token.start, token.end);
             match classify(text) {
@@ -243,12 +247,12 @@ fn pair(
                 Dir::Undef(name) => {
                     braces.remove(&name);
                 }
-                Dir::Open => conds.push((stack.clone(), angle)),
+                Dir::Open => conds.push((stack.clone(), angles.clone())),
                 Dir::Branch => {
-                    if let Some((saved, saved_angle)) = conds.last() {
+                    if let Some((saved, saved_angles)) = conds.last() {
                         stack.clear();
                         stack.extend(saved.iter().copied());
-                        angle = *saved_angle;
+                        angles = saved_angles.clone();
                     }
                 }
                 Dir::Close => {
@@ -258,11 +262,20 @@ fn pair(
             }
             continue;
         }
-        let spelling = token_spelling(source, token, &braces);
+        let spelling = token_spelling(source, &token, &braces);
+        let opens = spelling == "<"
+            && opens_template_args(
+                |at| match tokens.get(at) {
+                    Some(next) => token_spelling(source, next, &braces),
+                    None => "",
+                },
+                tokens.len(),
+                index,
+            );
         match spelling {
             "(" | "[" | "{" => {
                 if spelling == "{" {
-                    angle = 0;
+                    angles.boundary();
                 }
                 let kind = match spelling {
                     "(" => "(",
@@ -270,6 +283,7 @@ fn pair(
                     _ => "{",
                 };
                 push_open(map, tokens, index, kind, &mut stack, limits)?;
+                angles.observe(spelling, false);
             }
             ")" | "]" | "}" => {
                 let wanted = match spelling {
@@ -278,22 +292,20 @@ fn pair(
                     _ => "{",
                 };
                 close_bracket(tokens, index, wanted, &mut stack, &mut partner, problems);
-                if spelling == "}" {
-                    angle = 0;
-                }
+                angles.observe(spelling, false);
             }
             "<" => {
-                angle += 1;
-                if angle as u32 > limits.max_depth {
+                let before = angles.depth();
+                angles.observe(spelling, opens);
+                if angles.depth() > before && angles.depth() > limits.max_depth {
                     return Err(LexError::TooDeep {
                         line: map.line(token.start).clamp(1, map.physical_lines),
                         limit: limits.max_depth,
                     });
                 }
             }
-            ">" => angle = angle.saturating_sub(1),
-            ">>" => angle = angle.saturating_sub(2),
-            ";" => angle = 0,
+            ">" | ">>" => angles.observe(spelling, false),
+            ";" => angles.boundary(),
             _ => {}
         }
     }
