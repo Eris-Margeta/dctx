@@ -177,7 +177,7 @@ impl<'a> Lexer<'a> {
             if !raw && self.b[self.pos] == b'\\' {
                 self.pos += 1;
                 if self.pos < self.b.len() && self.b[self.pos] != b'\n' {
-                    self.pos += 1;
+                    self.bump();
                 }
                 continue;
             }
@@ -305,7 +305,7 @@ impl<'a> Lexer<'a> {
                     }
                 }
             } else if self.pos < self.b.len() && self.b[self.pos] != b'\n' {
-                self.pos += 1;
+                self.bump();
             }
         } else if self.pos < self.b.len() && self.b[self.pos] != b'\'' && self.b[self.pos] != b'\n' {
             self.bump();
