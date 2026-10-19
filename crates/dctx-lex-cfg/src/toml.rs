@@ -408,6 +408,14 @@ impl<'a> Parser<'a> {
                         self.cur.skip_spaces();
                         continue;
                     }
+                    Some(b'\r') if triple => {
+                        self.cur.i += 1;
+                        if self.cur.byte() == Some(b'\n') {
+                            self.cur.i += 1;
+                        }
+                        self.cur.skip_spaces();
+                        continue;
+                    }
                     Some(b'u') | Some(b'U') => {
                         let width = if self.cur.byte() == Some(b'u') { 4 } else { 8 };
                         self.cur.i += 1;
@@ -488,5 +496,27 @@ mod tests {
         assert_eq!(again.completion, Completion::Partial);
         let kept: Vec<_> = again.nodes.iter().map(|node| node.fact.name.as_str()).collect();
         assert_eq!(kept, ["p.toml", "a", "b"]);
+    }
+
+    fn signature<'a>(file: &'a LexedFile, name: &str) -> &'a str {
+        file.nodes
+            .iter()
+            .find(|node| node.fact.name == name)
+            .map(|node| node.fact.signature.as_str())
+            .unwrap_or("")
+    }
+
+    #[test]
+    fn multiline_backslash_accepts_crlf() {
+        let limits = Limits::default();
+        let crlf = extract("a.toml", "a = \"\"\"foo\\\r\nbar\"\"\"\n", &limits).unwrap();
+        assert_eq!(crlf.completion, Completion::Complete, "{:?}", crlf.diagnostics);
+        assert_eq!(signature(&crlf, "a"), "foobar");
+        let indented = extract("a.toml", "a = \"\"\"foo\\\r\n  bar\"\"\"\n", &limits).unwrap();
+        assert_eq!(indented.completion, Completion::Complete, "{:?}", indented.diagnostics);
+        assert_eq!(signature(&indented, "a"), "foobar");
+        let lf = extract("a.toml", "a = \"\"\"foo\\\nbar\"\"\"\n", &limits).unwrap();
+        assert_eq!(lf.completion, Completion::Complete, "{:?}", lf.diagnostics);
+        assert_eq!(signature(&lf, "a"), "foobar");
     }
 }

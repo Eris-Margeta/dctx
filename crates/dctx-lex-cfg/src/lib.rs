@@ -111,4 +111,30 @@ mod tests {
         assert!(!obvious_path("version", "1.0.0") && !obvious_path("include", "crates/*"));
         assert!(!obvious_path("name", "demo"));
     }
+
+    #[test]
+    fn damaged_containment_keeps_exact_confidence() {
+        // Not a defect (review finding 11). SPEC-MAP-MODE §5.3 permits only
+        // Confidence::Exact on EdgeKind::Contains. A span past the first
+        // diagnostic is already Precision::Partial; the contains edge stays exact.
+        use dctx_map_model::{Confidence, EdgeKind};
+        let lexer = CfgLexer::default();
+        let damaged = lexer.extract("a.json", br#"{"ready":1,"broken":}"#).unwrap();
+        assert_eq!(damaged.completion, Completion::Partial);
+        assert!(!damaged.diagnostics.is_empty());
+        assert!(damaged.edges.iter().any(|edge| edge.precision == Precision::Partial));
+        assert!(damaged.edges.iter().any(|edge| edge.precision == Precision::Structural));
+        for edge in &damaged.edges {
+            assert_eq!(edge.fact.kind, EdgeKind::Contains);
+            assert_eq!(edge.fact.conf, Confidence::Exact);
+            assert!(edge.fact.kind.permits(edge.fact.conf));
+        }
+        let clean = lexer.extract("a.json", br#"{"ready":1,"broken":2}"#).unwrap();
+        assert_eq!(clean.completion, Completion::Complete, "{:?}", clean.diagnostics);
+        for edge in &clean.edges {
+            assert_eq!(edge.precision, Precision::Structural);
+            assert_eq!(edge.fact.conf, Confidence::Exact);
+            assert!(edge.fact.kind.permits(edge.fact.conf));
+        }
+    }
 }

@@ -611,13 +611,25 @@ impl<'a> Parser<'a> {
         let mut out = String::new();
         loop {
             match self.cur.byte() {
-                None | Some(b'\n') => return self.bad_string(),
+                None => return self.bad_string(),
+                Some(b'\n' | b'\r') => {
+                    // An unclosed quote stops at the break so later keys stay visible.
+                    if !self.quote_closes_later(quote) { return self.bad_string(); }
+                    self.fold_break(&mut out);
+                }
                 Some(byte) if byte == quote => {
                     self.cur.i += 1;
                     if quote == b'\'' && self.cur.eat(b'\'') { out.push('\''); continue; }
                     return Some(out);
                 }
                 Some(b'\\') if quote == b'"' => {
+                    if self.escaped_break() {
+                        if !self.quote_closes_later(quote) { return self.bad_string(); }
+                        self.cur.i += 1;
+                        self.consume_break();
+                        while matches!(self.cur.byte(), Some(b' ' | b'\t')) { self.cur.i += 1; }
+                        continue;
+                    }
                     self.cur.i += 1;
                     let Some(byte) = self.cur.bump() else { return self.bad_string() };
                     out.push(match byte { b'n' => '\n', b't' => '\t', b'"' => '"', b'\\' => '\\', other => char::from(other) });
@@ -629,6 +641,40 @@ impl<'a> Parser<'a> {
                 }
             }
         }
+    }
+    fn escaped_break(&self) -> bool {
+        matches!(self.cur.src.as_bytes().get(self.cur.i + 1), Some(b'\n' | b'\r'))
+    }
+    fn fold_break(&mut self, out: &mut String) {
+        self.consume_break();
+        if !out.is_empty() && !out.ends_with(' ') { out.push(' '); }
+    }
+    fn consume_break(&mut self) {
+        if self.cur.byte() == Some(b'\r') { self.cur.i += 1; }
+        if self.cur.byte() == Some(b'\n') { self.cur.i += 1; }
+    }
+    /// True when a closer for `quote` exists before this document ends.
+    fn quote_closes_later(&self, quote: u8) -> bool {
+        let bytes = self.cur.src.as_bytes();
+        let end = self.cur.end.min(bytes.len());
+        let mut index = self.cur.i;
+        while index < end {
+            let byte = bytes[index];
+            if quote == b'"' && byte == b'\\' {
+                if index + 1 >= end { return false; }
+                index += 2;
+                continue;
+            }
+            if byte == quote {
+                if quote == b'\'' && bytes.get(index + 1) == Some(&b'\'') {
+                    index += 2;
+                    continue;
+                }
+                return true;
+            }
+            index += 1;
+        }
+        false
     }
     fn bad_string(&mut self) -> Option<String> {
         self.broke = true;
@@ -678,29 +724,187 @@ fn visual_columns(bytes: &[u8]) -> usize {
     column
 }
 
+/// Where a line-oriented scan is when the next line begins.
+#[derive(Clone, Copy)]
+enum Carry {
+    Plain,
+    Double,
+    Single,
+    Block(usize),
+    Flow(i32),
+}
+
 fn documents(source: &str) -> Vec<(usize, usize)> {
     let bytes = source.as_bytes();
     let mut ranges = Vec::new();
     let mut start = 0usize;
-    let mut line = 0usize;
-    for (index, byte) in bytes.iter().enumerate() {
-        if *byte != b'\n' { continue; }
-        if separator(&source[line..index]) {
-            push_doc(&mut ranges, source, start, line);
+    let mut line_start = 0usize;
+    let mut carry = Carry::Plain;
+    let mut index = 0usize;
+    while index < bytes.len() {
+        if bytes[index] != b'\n' {
+            index += 1;
+            continue;
+        }
+        let (next, split) = take_line(&source[line_start..index], carry);
+        if split {
+            push_doc(&mut ranges, source, start, line_start);
             start = index + 1;
         }
-        line = index + 1;
+        carry = next;
+        line_start = index + 1;
+        index += 1;
     }
-    let end = if separator(source.get(line..).unwrap_or("")) { line } else { source.len() };
-    push_doc(&mut ranges, source, start, end);
+    if line_start < source.len() {
+        let (_, split) = take_line(&source[line_start..], carry);
+        let end = if split { line_start } else { source.len() };
+        push_doc(&mut ranges, source, start, end);
+    } else {
+        push_doc(&mut ranges, source, start, source.len());
+    }
     if ranges.is_empty() { ranges.push((0, source.len())); }
     ranges
 }
-fn separator(line: &str) -> bool {
-    let text = line.trim();
-    let rest = if let Some(rest) = text.strip_prefix("---") {
+
+fn take_line(line: &str, carry: Carry) -> (Carry, bool) {
+    let line = line.strip_suffix('\r').unwrap_or(line);
+    match carry {
+        Carry::Double => (resume_quote(line, b'"'), false),
+        Carry::Single => (resume_quote(line, b'\''), false),
+        Carry::Block(parent) => {
+            if line_empty(line) || indent_of(line.as_bytes()) > parent {
+                (Carry::Block(parent), false)
+            } else {
+                take_line(line, Carry::Plain)
+            }
+        }
+        Carry::Flow(depth) => {
+            if marker_at_column_0(line) {
+                (Carry::Plain, true)
+            } else {
+                (scan_from(line.as_bytes(), 0, indent_of(line.as_bytes()), depth), false)
+            }
+        }
+        Carry::Plain => {
+            if marker_at_column_0(line) {
+                (Carry::Plain, true)
+            } else {
+                (plain_line(line), false)
+            }
+        }
+    }
+}
+
+fn plain_line(line: &str) -> Carry {
+    let bytes = line.as_bytes();
+    let mut index = 0;
+    while index < bytes.len() && matches!(bytes[index], b' ' | b'\t') { index += 1; }
+    scan_from(bytes, index, indent_of(bytes), 0)
+}
+
+fn resume_quote(line: &str, quote: u8) -> Carry {
+    let bytes = line.as_bytes();
+    let indent = indent_of(bytes);
+    let mut index = 0;
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if quote == b'"' && byte == b'\\' {
+            if index + 1 >= bytes.len() {
+                return Carry::Double;
+            }
+            index += 2;
+            continue;
+        }
+        if byte == quote {
+            if quote == b'\'' && bytes.get(index + 1) == Some(&b'\'') {
+                index += 2;
+                continue;
+            }
+            return scan_from(bytes, index + 1, indent, 0);
+        }
+        index += 1;
+    }
+    if quote == b'"' { Carry::Double } else { Carry::Single }
+}
+
+enum QuoteEnd { Closed(usize), Open }
+
+fn finish_quote(bytes: &[u8], start: usize, quote: u8) -> QuoteEnd {
+    let mut index = start + 1;
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if quote == b'"' && byte == b'\\' {
+            if index + 1 >= bytes.len() { return QuoteEnd::Open; }
+            index += 2;
+            continue;
+        }
+        if byte == quote {
+            if quote == b'\'' && bytes.get(index + 1) == Some(&b'\'') {
+                index += 2;
+                continue;
+            }
+            return QuoteEnd::Closed(index + 1);
+        }
+        index += 1;
+    }
+    QuoteEnd::Open
+}
+
+fn scan_from(bytes: &[u8], mut index: usize, line_indent: usize, mut flow: i32) -> Carry {
+    let mut pending = false;
+    while index < bytes.len() {
+        let byte = bytes[index];
+        if byte == b' ' || byte == b'\t' {
+            index += 1;
+            continue;
+        }
+        if byte == b'#' && flow == 0 { break; }
+        if (byte == b'"' || byte == b'\'') && (flow > 0 || pending) {
+            match finish_quote(bytes, index, byte) {
+                QuoteEnd::Closed(next) => {
+                    pending = false;
+                    index = next;
+                    continue;
+                }
+                QuoteEnd::Open => return if byte == b'"' { Carry::Double } else { Carry::Single },
+            }
+        }
+        if pending && flow == 0 && (byte == b'|' || byte == b'>') {
+            return Carry::Block(line_indent);
+        }
+        if byte == b'{' || byte == b'[' {
+            flow += 1;
+            pending = false;
+            index += 1;
+            continue;
+        }
+        if byte == b'}' || byte == b']' {
+            if flow > 0 { flow -= 1; }
+            pending = false;
+            index += 1;
+            continue;
+        }
+        if byte == b':' && flow == 0 && colon_value_at(bytes, index) {
+            pending = true;
+            index += 1;
+            continue;
+        }
+        if byte == b'-' && flow == 0 && is_dash(bytes, index) {
+            pending = true;
+            index += 1;
+            continue;
+        }
+        pending = false;
+        index += 1;
+    }
+    if flow > 0 { Carry::Flow(flow) } else { Carry::Plain }
+}
+
+fn marker_at_column_0(line: &str) -> bool {
+    if matches!(line.as_bytes().first(), Some(b' ' | b'\t')) { return false; }
+    let rest = if let Some(rest) = line.strip_prefix("---") {
         rest
-    } else if let Some(rest) = text.strip_prefix("...") {
+    } else if let Some(rest) = line.strip_prefix("...") {
         rest
     } else {
         return false;
@@ -708,6 +912,30 @@ fn separator(line: &str) -> bool {
     let rest = rest.trim_start();
     rest.is_empty() || rest.starts_with('#')
 }
+
+fn line_empty(line: &str) -> bool {
+    line.bytes().all(|byte| matches!(byte, b' ' | b'\t'))
+}
+
+fn indent_of(bytes: &[u8]) -> usize {
+    let mut index = 0;
+    while index < bytes.len() && matches!(bytes[index], b' ' | b'\t') { index += 1; }
+    visual_columns(&bytes[..index])
+}
+
+fn is_dash(bytes: &[u8], index: usize) -> bool {
+    bytes.get(index) == Some(&b'-') && matches!(bytes.get(index + 1), None | Some(b' ' | b'\t' | b'#'))
+}
+
+fn colon_value_at(bytes: &[u8], index: usize) -> bool {
+    matches!(
+        bytes.get(index + 1),
+        None | Some(
+            b' ' | b'\t' | b'#' | b'{' | b'[' | b'|' | b'>' | b'&' | b'*' | b'!' | b'"' | b'\''
+        )
+    )
+}
+
 fn push_doc(ranges: &mut Vec<(usize, usize)>, source: &str, start: usize, end: usize) {
     let Some(body) = source.get(start..end) else { return };
     if body.lines().any(|line| {
@@ -715,5 +943,79 @@ fn push_doc(ranges: &mut Vec<(usize, usize)>, source: &str, start: usize, end: u
         !text.is_empty() && !text.starts_with('#') && !text.starts_with("%YAML") && !text.starts_with("%TAG")
     }) {
         ranges.push((start, end));
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::Completion;
+
+    fn names(file: &LexedFile) -> Vec<&str> {
+        file.nodes.iter().map(|node| node.fact.name.as_str()).collect()
+    }
+
+    fn signature<'a>(file: &'a LexedFile, name: &str) -> &'a str {
+        file.nodes
+            .iter()
+            .find(|node| node.fact.name == name)
+            .map(|node| node.fact.signature.as_str())
+            .unwrap_or("")
+    }
+
+    #[test]
+    fn block_markers_stay_inside_the_scalar() {
+        let limits = Limits::default();
+        let literal = extract("a.yaml", "msg: |\n  ---\nb: 1\n", &limits).unwrap();
+        assert_eq!(literal.completion, Completion::Complete, "{:?}", literal.diagnostics);
+        assert_eq!(names(&literal), ["a.yaml", "msg", "b"]);
+        assert_eq!(signature(&literal, "msg"), "---");
+        assert_eq!(signature(&literal, "b"), "1");
+
+        let folded = extract("a.yaml", "msg: >\n  ...\nb: 1\n", &limits).unwrap();
+        assert_eq!(folded.completion, Completion::Complete, "{:?}", folded.diagnostics);
+        assert_eq!(names(&folded), ["a.yaml", "msg", "b"]);
+        assert_eq!(signature(&folded, "msg"), "...");
+
+        let quoted = extract("a.yaml", "a: \"hello\n---\nworld\"\nb: 1\n", &limits).unwrap();
+        assert_eq!(quoted.completion, Completion::Complete, "{:?}", quoted.diagnostics);
+        assert_eq!(names(&quoted), ["a.yaml", "a", "b"]);
+        assert_eq!(signature(&quoted, "a"), "hello --- world");
+
+        let single = extract("a.yaml", "a: 'hello\n  ...\nworld'\nb: 1\n", &limits).unwrap();
+        assert_eq!(single.completion, Completion::Complete, "{:?}", single.diagnostics);
+        assert_eq!(names(&single), ["a.yaml", "a", "b"]);
+        assert!(signature(&single, "a").contains("..."), "{}", signature(&single, "a"));
+
+        let docs = extract("a.yaml", "---\na: 1\n---\nb: 2\n", &limits).unwrap();
+        assert_eq!(docs.completion, Completion::Complete, "{:?}", docs.diagnostics);
+        assert_eq!(names(&docs), ["a.yaml", "0", "0.a", "1", "1.b"]);
+        let end = extract("a.yaml", "a: 1\n...\nb: 2\n", &limits).unwrap();
+        assert_eq!(names(&end), ["a.yaml", "0", "0.a", "1", "1.b"]);
+    }
+
+    #[test]
+    fn quoted_scalars_span_lines() {
+        let limits = Limits::default();
+        let double = extract("a.yaml", "a: \"hello\nworld\"\nb: 1\n", &limits).unwrap();
+        assert_eq!(double.completion, Completion::Complete, "{:?}", double.diagnostics);
+        assert_eq!(names(&double), ["a.yaml", "a", "b"]);
+        assert_eq!(signature(&double, "a"), "hello world");
+        assert_eq!(signature(&double, "b"), "1");
+
+        let single = extract("a.yaml", "a: 'hello\nworld'\nb: 1\n", &limits).unwrap();
+        assert_eq!(single.completion, Completion::Complete, "{:?}", single.diagnostics);
+        assert_eq!(names(&single), ["a.yaml", "a", "b"]);
+        assert_eq!(signature(&single, "a"), "hello world");
+
+        let escaped = extract("a.yaml", "a: \"hello\\\nworld\"\nb: 1\n", &limits).unwrap();
+        assert_eq!(escaped.completion, Completion::Complete, "{:?}", escaped.diagnostics);
+        assert_eq!(signature(&escaped, "a"), "helloworld");
+        assert_eq!(names(&escaped), ["a.yaml", "a", "b"]);
+
+        let line = extract("a.yaml", "a: \"hello\"\nb: 1\n", &limits).unwrap();
+        assert_eq!(line.completion, Completion::Complete, "{:?}", line.diagnostics);
+        assert_eq!(signature(&line, "a"), "hello");
+        assert_eq!(signature(&line, "b"), "1");
     }
 }

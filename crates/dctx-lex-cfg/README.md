@@ -14,8 +14,9 @@ comment is the summary.
 Extracted:
 
 - JSON objects and arrays. `.jsonc` accepts `//` and `/* */` comments.
-  Trailing commas are accepted in JSON and JSONC. A dot inside a key stays in
-  that key (`rust-analyzer.linkedProjects`).
+  Object trailing commas are accepted in JSON and JSONC. Array trailing commas
+  are JSONC-only. A dot inside a key stays in that key
+  (`rust-analyzer.linkedProjects`).
 - TOML tables, arrays of tables, dotted keys and inline tables.
 - YAML block mappings and sequences, flow collections, multi-document files.
   Anchors and aliases are recorded on the signature and are not expanded.
