@@ -96,7 +96,7 @@ jobs:
             mv deb/*.deb dctx-desktop-${{ matrix.platform.arch }}.deb || true
           fi
           if [ -d "appimage" ]; then
-            mv appimage/*.AppImage dctx-desktop-${{ matrix.platform.arch }.AppImage || true
+            mv appimage/*.AppImage dctx-desktop-${{ matrix.platform.arch }}.AppImage || true
           fi
 
       - name: Upload Release Assets
