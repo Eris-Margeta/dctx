@@ -10,6 +10,14 @@ dctx Enterprise.
 
 ## [Unreleased] — 0.26 development line
 
+Planned next CLI/core release: **0.26.0**. No version is bumped here: `VERSION`,
+`project-meta.yaml`, `dctx-cli` and `dctx-core` remain at **0.25.0**. The other
+`crates/*` packages remain at **0.1.0**, the Git plugin at **1.0.0**, and the
+desktop package/configuration at **0.11.0**. These are separate version lines,
+not fields to bulk-replace. Follow [RELEASING.md](RELEASING.md) to synchronize
+CLI/core metadata and the lockfile, date this section and check the release matrix
+before any separately authorized release.
+
 ### Added
 - **dctx Desktop is free, forever** for individuals, teams and companies
   ([announcement](https://dctx.app/news/desktop-free-forever/)).

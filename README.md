@@ -124,9 +124,10 @@ dctx map find "SnapshotConfig"
 # Use a stable ID returned by map/find for neighbors, explain and read.
 dctx map neighbors 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --edge calls --dir in
 dctx map explain 's:crates/dctx-cli/src/lib.rs#SnapshotConfig'
-dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig'
+dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 ```
 
+- **Source bytes**: `map read --json` includes source content; the current text renderer prints metadata only.
 - **Bounded**: output uses an estimated token budget (up to 2,000; explain up to 1,000), not a model tokenizer guarantee, and never splits a record.
 - **Deterministic**: the same tree and question give the same bytes, so prompt caches hit.
 - **Precision and freshness**: use `--json` for the structured metadata. Structural declarations and conservative call edges do not imply exact semantic resolution.

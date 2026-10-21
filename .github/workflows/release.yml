@@ -5,6 +5,9 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -16,21 +19,27 @@ jobs:
       matrix:
         include:
           - target: x86_64-unknown-linux-gnu
-            os: ubuntu-latest
+            os: ubuntu-24.04
             artifact: dctx-linux-x64
+            extension: tar.gz
           - target: x86_64-apple-darwin
-            os: macos-latest
+            os: macos-15-intel
             artifact: dctx-macos-x64
+            extension: tar.gz
           - target: aarch64-apple-darwin
-            os: macos-latest
+            os: macos-15
             artifact: dctx-macos-arm64
+            extension: tar.gz
           - target: x86_64-pc-windows-msvc
-            os: windows-latest
+            os: windows-2022
             artifact: dctx-windows-x64
+            extension: zip
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
@@ -38,7 +47,15 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build release
-        run: cargo build --release -p dctx-cli --target ${{ matrix.target }}
+        run: cargo build --locked --release -p dctx-cli --bin dctx-cli --target ${{ matrix.target }}
+
+      - name: Smoke test CLI (Unix)
+        if: runner.os != 'Windows'
+        run: ./target/${{ matrix.target }}/release/dctx-cli --version
+
+      - name: Smoke test CLI (Windows)
+        if: runner.os == 'Windows'
+        run: .\target\${{ matrix.target }}\release\dctx-cli.exe --version
 
       - name: Prepare artifact (Unix)
         if: runner.os != 'Windows'
@@ -46,32 +63,35 @@ jobs:
           mkdir -p dist
           cp target/${{ matrix.target }}/release/dctx-cli dist/dctx
           chmod +x dist/dctx
-          cd dist && tar -czvf ../${{ matrix.artifact }}.tar.gz dctx
+          cp LICENSE NOTICE dist/
+          COPYFILE_DISABLE=1 tar -czf ${{ matrix.artifact }}.tar.gz -C dist dctx LICENSE NOTICE
 
       - name: Prepare artifact (Windows)
         if: runner.os == 'Windows'
         run: |
-          mkdir dist
-          copy target\${{ matrix.target }}\release\dctx-cli.exe dist\dctx.exe
-          Compress-Archive -Path dist\dctx.exe -DestinationPath ${{ matrix.artifact }}.zip
+          New-Item -ItemType Directory -Path dist -Force
+          Copy-Item target\${{ matrix.target }}\release\dctx-cli.exe dist\dctx.exe
+          Copy-Item LICENSE, NOTICE dist\
+          Compress-Archive -Path dist\* -DestinationPath ${{ matrix.artifact }}.zip
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact }}
-          path: |
-            ${{ matrix.artifact }}.tar.gz
-            ${{ matrix.artifact }}.zip
+          path: ${{ matrix.artifact }}.${{ matrix.extension }}
+          if-no-files-found: error
 
   release:
     name: Create Release
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - name: Download all artifacts
         uses: actions/download-artifact@v4
@@ -82,18 +102,13 @@ jobs:
         run: find artifacts -type f
 
       - name: Extract changelog for this version
-        id: changelog
         run: |
-          VERSION="${GITHUB_REF#refs/tags/v}"
-          CHANGELOG_ENTRY=$(./tools/extract-changelog.sh "$VERSION" || echo "")
-          if [ -n "$CHANGELOG_ENTRY" ]; then
-            echo "Found changelog entry for version $VERSION"
-            # Save to file for use in release
-            printf '%s\n' "$CHANGELOG_ENTRY" > release-notes.md
-          else
-            echo "No changelog entry found, will use auto-generated notes"
-            echo "" > release-notes.md
-          fi
+          set -eu
+          RELEASE_VERSION="${GITHUB_REF#refs/tags/v}"
+          test "$RELEASE_VERSION" = "$(cat VERSION)"
+          ./tools/sync-version.sh --check
+          ./tools/extract-changelog.sh "$RELEASE_VERSION" > release-notes.md
+          test -s release-notes.md
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -102,6 +117,7 @@ jobs:
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
           body_path: release-notes.md
           generate_release_notes: true
+          fail_on_unmatched_files: true
           files: |
             artifacts/**/*.tar.gz
             artifacts/**/*.zip
