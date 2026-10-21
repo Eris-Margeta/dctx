@@ -48,7 +48,7 @@ contract that defines them.
   25. Blast radius
   26. Learnings
 - **Part VII — Assurance**
-  27. Zero dependencies
+  27. Dependencies and enterprise readiness
   28. Conformance suite
   29. Formal models
   30. Versioning and compatibility
@@ -700,54 +700,50 @@ the code, without becoming a memory product.
 
 # Part VII — Assurance
 
-## 27. Zero dependencies
+## 27. Dependencies and enterprise readiness
 
-**dctx is a no-dependency product.** That is not a slogan; it is the enterprise
-promise. A binary with no third-party code has nothing to audit but its own source,
-no supply chain to compromise, no licence closure to review and nothing to break when
-an upstream crate changes.
+**Rule: anything with third-party dependencies is not enterprise-ready.** The open
+repository is ongoing work; enterprise-ready builds are a licensed product (§27.3).
 
-| Line | Third-party crates in core + CLI | Enterprise status |
+| Line | Third-party crates in core + CLI | Status |
 |---|---|---|
-| **0.25 release** (`dctx` CLI and `dctx-core`, May 2026) | **0** | **Enterprise-ready** |
-| **Current development line** (map mode, plugin host, segment index, desktop facade) | 39 in the default CLI closure, all **temporary** | **Not enterprise-ready yet** — gated on returning to zero (phase P6) |
-| **dctx 1.0** | **0** in the default build | Enterprise-ready by construction |
+| 0.25 release (`dctx` CLI and `dctx-core`) | 0 | Enterprise-ready |
+| Current development line (map mode, plugin host, segment index) | Several, temporary | Ongoing work; not enterprise-ready |
 
-The temporary crates bought speed of development, not architecture: every one of them
-sits behind a port or an adapter and has a first-party replacement planned.
+### 27.1 The rules
 
-### 27.1 The rule
+- **Core crates are std-only.** `dctx-hash`, `dctx-core`, `dctx-ports`, `dctx-map-model`
+  (without `wire-json`), `dctx-map-segment`, `dctx-template`, `dctx-pack`,
+  `dctx-map-resolve`, `dctx-map-bind`, `dctx-plugin-protocol`, the hand-written lexers,
+  `dctx-adapter-fs`, `dctx-adapter-store`, `dctx-adapter-cache` and `dctx-map-scan`
+  have zero third-party normal dependencies and forbid `unsafe`; CI checks
+  `cargo tree -e normal` per crate.
+- **Every third-party crate in a default build is listed** in `docs/DEPENDENCIES.md`
+  with version, licence, `unsafe` count, reason and the plan for it. CI fails if the
+  closure grows beyond the list.
+- **Ed25519 stays for security and trust.** `ed25519-dalek` is a vetted, widely audited
+  security crate. It verifies the signatures on plugins and organization policy
+  bundles. Audited cryptography is not replaced by something less proven; the search
+  for the best long-term solution continues, and any successor must clear the same bar
+  (RFC 8032 and Wycheproof vectors, differential fuzzing, independent review).
 
-- **Z0 — every core crate is std-only, now.** `dctx-hash`, `dctx-core`, `dctx-ports`,
-  `dctx-map-model` (without `wire-json`), `dctx-map-segment`, `dctx-template`,
-  `dctx-pack`, `dctx-map-resolve`, `dctx-map-bind`, `dctx-plugin-protocol`, the
-  hand-written lexers, `dctx-adapter-fs`, `dctx-adapter-store`, `dctx-adapter-cache`
-  and `dctx-map-scan` have zero third-party normal dependencies and forbid `unsafe`.
-  CI checks `cargo tree -e normal` per crate and extends the purity test to each.
-- **Z1 — the default binary reaches zero before 1.0.** Until then, `docs/DEPENDENCIES.md`
-  lists every temporary crate with version, licence, `unsafe` count, the reason it is
-  still there and the phase that removes it; CI fails if the closure grows beyond the
-  list. The list only shrinks.
-- **No new third-party crate** may enter a default build. Optional, off-by-default
-  oracles (for example a tree-sitter or SQLite comparison build) are allowed in dev and
-  test profiles only and never ship.
+### 27.2 Planned removals
 
-### 27.2 The path to zero
+| Remove | First-party replacement | Gate |
+|---|---|---|
+| `serde`, `serde_json`, `thiserror`, production `sha2` | The facade's hand-written canonical JSON; std `Error`; `dctx-hash` | Goldens byte-identical |
+| `rusqlite` and bundled SQLite | The immutable segment index (§18) | Segment index beats the SQLite baseline on two of latency, disk and refresh with no quality loss |
+| `syn` stack | First-party Rust structural extractor + binder (§7.1) | Held-out precision ≥ `syn` − 1 point; zero wrong `exact` edges |
+| Linux confinement crates | A minimal first-party syscall boundary in `dctx-plugin-platform` | Confinement property tests; written `unsafe` review |
 
-| Phase | Remove | First-party replacement | Gate |
-|---|---|---|---|
-| D1 | `serde`, `serde_json`, `serde_derive`, `itoa`, `ryu`, `memchr` | The facade's hand-written canonical JSON encoder (`crates/dctx/src/domain/wire.rs`) for every wire, including desktop | Goldens byte-identical |
-| D1 | `thiserror` | std `Display` + `Error` + `From` | Builds and tests green |
-| D1 | `sha2` (production) | `dctx-hash` (NIST vectors + differential fuzzing against a dev-only oracle) | Identity goldens |
-| D2 | `rusqlite`, bundled SQLite, `hashbrown`, `ahash`, `fallible-*`, `smallvec`, `zerocopy` … | The immutable segment index (§18) | Segment index beats the SQLite baseline on two of latency, disk and refresh with no quality loss; then SQLite leaves the workspace |
-| D3 | `syn`, `proc-macro2`, `quote`, `unicode-ident` | First-party Rust structural extractor + binder (§7.1) | Held-out precision ≥ `syn` − 1 point; zero wrong `exact` edges |
-| D3 | `ed25519-dalek`, `curve25519-dalek`, `signature`, `digest`, `subtle`, `zeroize` … | First-party **verify-only** Ed25519 (RFC 8032): field arithmetic over 2²⁵⁵−19 with checked limbs, point decompression, double-scalar multiplication. Verification has no secret inputs, so constant time is not required | RFC 8032 and Wycheproof vectors; differential fuzzing against a dev-only oracle; independent security review |
-| D3 | `rustix`, `landlock`, `seccompiler`, `libc` (Linux plugin confinement) | A minimal first-party syscall boundary in `dctx-plugin-platform` — the single audited `unsafe` module in the product, adapter-only, target-specific | Confinement property tests; written unsafe review |
-| — | Desktop (`tauri` and its tree) | The desktop app is a separate product surface over the facade; it is never part of the CLI or library closure. Its own zero-dependency successor is a separate track | — |
+The desktop app is a separate surface over the facade and is never part of the CLI or
+library closure.
 
-When D1–D3 are done the default `dctx` binary has **zero third-party crates**, and the
-0.25 promise holds again for the full product. The README badge returns to
-"dependencies: 0" only when CI proves it.
+### 27.3 Enterprise
+
+dctx Enterprise is licensed per company, from €45,000 per year: enterprise-ready builds,
+organization and tenant policy control (§14–17), signed policy bundles, and direct
+support. The open-source repository remains Apache-2.0.
 
 ## 28. Conformance suite
 
@@ -790,13 +786,13 @@ declaration selects behaviour — it is never inferred from an unknown field.
 | **P3 Precision** (§7.1) | `dctx-map-bind`, import resolution, receiver typing, the `typed` rung, edge corpus | `exact ∪ typed` precision ≥ 0.95, recall ≥ 0.70, zero wrong `exact` |
 | **P4 Organization control** (§14–17) | `POLICY` / `TENANT`, seven layers, `.dctxpol`, enrollment, explain, receipts | P9; one bundle demonstrably controls every mode; an unverifiable bundle refuses |
 | **P5 Surfaces** (§24–26) | MCP, agent hooks, blast, learnings and `check`, `vcs.changes` | MCP pages byte-identical to CLI; hooks idempotent with receipts; blast ≤100 ms |
-| **P6 Zero dependencies** (§27) | D1, D2, D3 | Default `dctx` binary has zero third-party crates (CI-proven); enterprise-ready again |
+| **P6 Enterprise readiness** (§27) | Planned removals in §27.2 | Default `dctx` binary contains no third-party crate except the Ed25519 verifier (CI-proven) |
 | **P7 Overlays and ecosystem** | LSP and SCIP overlays, network capability, CI comment plugin | Overlays never alter first-party facts; PP1–PP10 still modeled |
 
 P1 and P2 come first because speed and tokens are what a developer feels in the first
 minute; P3 is the comparison people will make; P4 and P6 together are the enterprise
-promise — organization control, and a binary with nothing in it but dctx. D1 is cheap
-and SHOULD land alongside P0.
+promise — organization control, and a binary with nothing third-party in it but the
+vetted signature verifier.
 
 ## 32. Non-goals
 
@@ -831,7 +827,7 @@ Summary of the design difference, independent of the measurements:
 
 | | dctx | Trail-Code |
 |---|---|---|
-| Runtime | One Rust binary; std-only core; zero third-party crates in the 0.25 release and the 1.0 target | Node.js package with an npm dependency tree |
+| Runtime | One Rust binary; std-only core; zero third-party crates in the 0.25 release | Node.js package with an npm dependency tree |
 | Network | None in the core; no telemetry | Telemetry on by default (opt-out) |
 | Agent interface | CLI verbs today; MCP and hooks are surfaces (§24) | MCP server, hooks, statusline |
 | Call precision | Structural + name resolution; `typed` rung planned (§7.1) | Scope-aware resolution with receiver typing for several languages; optional language servers |

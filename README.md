@@ -18,7 +18,7 @@
     <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License">
   </a>
   <img src="https://img.shields.io/badge/rust-100%25-orange" alt="Rust">
-  <img src="https://img.shields.io/badge/core-std--only-brightgreen" alt="std-only core">
+  <img src="https://img.shields.io/badge/enterprise-licenses%20available-8b5cf6" alt="Enterprise licenses available">
   <img src="https://img.shields.io/badge/telemetry-none-brightgreen" alt="No telemetry">
 </p>
 
@@ -166,17 +166,13 @@ dctx has **no telemetry**, makes **no network requests** and **calls no model**.
 
 ---
 
-## Zero dependencies
+## Open source and Enterprise
 
-dctx is built to have **no third-party dependencies** — nothing to audit but its own source, no supply chain, no licence closure.
+Everything in this repository is open source (Apache-2.0) and **ongoing work**. Parts of the current development line use third-party crates; anything with third-party dependencies is not considered enterprise-ready.
 
-| Line | Third-party crates (core + CLI) | Enterprise status |
-|---|---|---|
-| **0.25 release** | **0** | Enterprise-ready |
-| **Current development line** (map mode, plugins, segment index) | Temporary: a Rust parser, an Ed25519 verifier, SQLite, serialization helpers | Not enterprise-ready yet |
-| **1.0** | **0** | The roadmap goal |
+The one third-party component we keep on purpose is the **Ed25519 signature verifier** (`ed25519-dalek`), a vetted, widely audited security crate. It is there for **security and trust**: it verifies the signatures on plugins and policy bundles, and we will not replace audited cryptography with something less proven.
 
-Every temporary crate sits behind a port with a first-party replacement planned; the list only shrinks. The path to zero is in the [specification](docs/SPEC.md#27-zero-dependencies).
+**dctx Enterprise** — enterprise-ready builds, organization and tenant policy control, and direct support — is licensed per company, **from €45,000 per year**.
 
 ---
 
@@ -241,7 +237,7 @@ Start with [docs/SPEC.md](docs/SPEC.md), then [docs/CRATE-MAP.md](docs/CRATE-MAP
 
 ## License
 
-Apache License 2.0. Copyright Eris Margeta. Everything in this repository is Apache-2.0; the desktop app is also sold as signed builds with updates, which funds the project. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache License 2.0. Copyright Eris Margeta. Everything in this repository is Apache-2.0. The desktop app is also sold as signed builds with updates, and dctx Enterprise is licensed per company (from €45,000 per year); both fund the project. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ## Contributing
 
