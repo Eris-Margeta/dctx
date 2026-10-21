@@ -319,3 +319,12 @@ prompt.txt
 
 # [dctx v0.22.0]
 .vercel
+
+# Local agent and harness files (never part of the public repository)
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.claude/
+.agent/
+.cursor/
+.codex/
