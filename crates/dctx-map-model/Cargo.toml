@@ -2,7 +2,8 @@
 name = "dctx-map-model"
 version = "0.1.0"
 edition = "2024"
-license = "Apache-2.0"
+license.workspace = true
+repository.workspace = true
 description = "IO-free map domain: spans, precision, provenance, content identity and bounded answers"
 
 # `wire-json` is the JSON v1 conversion for current dependents and the future wire adapter.

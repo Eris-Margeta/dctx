@@ -2,7 +2,9 @@
 name = "dctx-lex-md"
 version = "0.1.0"
 edition = "2024"
-license = "Apache-2.0"
+license.workspace = true
+repository.workspace = true
+description = "First-party hand-written Markdown structure extractor for dctx map mode"
 
 [dependencies]
 

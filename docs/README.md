@@ -1,92 +1,75 @@
-# dctx Documentation
+# dctx documentation
 
-This directory contains the public-facing documentation for the dctx project.
+Start with the [project README](../README.md) for installation and the
+[runnable quickstart](../examples/README.md) for a small pack and map workflow.
+The Cargo-built executable is `dctx-cli`; guides also use the alias `dctx`.
 
-## Architecture Decision Records (ADRs)
+## Usage and contribution
 
-ADRs document significant architectural decisions made during the development of dctx. Each ADR captures the context, decision, and consequences of important technical choices.
+| Document | Scope |
+| --- | --- |
+| [Map mode](guides/MAP-MODE.md) | Structural outlines, symbol search, source reads and current limitations. |
+| [Plugins](guides/PLUGINS.md) | Installation, consent, trust and platform behavior. |
+| [Contributing](../CONTRIBUTING.md) | Development setup and checks. |
+| [Security policy](../SECURITY.md) | Reporting vulnerabilities privately. |
+| [Developer guide](guides/DEVELOPER-GUIDE.md) | Contributor background; verify older commands against the current CLI. |
+| [Development practices](guides/DEVELOPMENT-PRACTICES.md) | Implementation patterns and historical troubleshooting. |
+| [Rust style guides](guides/RUST-STYLE-GUIDES.md) | Style references. |
+| [Code guidelines](standards/CODE-GUIDELINES.md) and [Rust standards](standards/RUST-STANDARDS.md) | Coding conventions. |
+| [Apache-2.0 license](../LICENSE) | Repository license. |
 
-**Why ADRs?**
-- Preserve the reasoning behind architectural decisions
-- Help new contributors understand the "why" behind the code
-- Provide historical context for future maintainers
-- Enable informed refactoring decisions
+## Specifications and architecture
 
-### Available ADRs
+| Document | Scope |
+| --- | --- |
+| [Specification](SPEC.md) | Product goals, constraints, roadmap and acceptance gates; planned features are identified there. |
+| [Crate map](CRATE-MAP.md) | Package inventory, boundaries and direct dependencies. |
+| [Architecture decisions](design/ARCHITECTURE-DECISIONS.md) | Accepted architecture boundaries. |
+| [Product contracts](design/PRODUCT-CONTRACTS.md) | Engine and surface contracts. |
+| [Map specification](SPEC-MAP-MODE.md) | Map design background; use the map guide and CLI help for current behavior. |
+| [API ports](design/contracts/API-PORTS-v1.md), [parsers](design/contracts/PARSERS-v1.md), [cache](design/contracts/CACHE-v1.md), [segments](design/contracts/SEGMENTS-v1.md) | Versioned boundary contracts. |
+| [Template contract](design/contracts/DTS-v2.md) | ContextPlan and rendering contract. |
+| [Plugin API](design/plugin-api/README.md) and [plugin design](design/PLUGINS.md) | Protocol, authority and distribution design. |
+| [Cache model](formal/dctx-cache/README.md) and [plugin models](formal/dctx-plugins/README.md) | Formal models and their validation procedures. |
 
-| ADR | Title | Status |
-|-----|-------|--------|
-| [ADR-001](./ADR-001-System-Architecture.md) | System Architecture (Centralized State) | IMPLEMENTED |
-| [ADR-002](./ADR-002-Versioning-and-Recovery.md) | Versioning & Recovery | IMPLEMENTED |
-| [ADR-003](./ADR-003-Templating-Engine.md) | Templating Engine | IMPLEMENTED |
-| [ADR-004](./ADR-004-CLI-Implementation.md) | CLI Implementation Strategy | IMPLEMENTED |
-| [ADR-005](./ADR-005-Git-Safety-Strategy.md) | Git Safety Strategy | IMPLEMENTED |
-| [ADR-006](./ADR-006-Versioning-Strategy.md) | Unified Versioning Strategy | IMPLEMENTED |
-| [ADR-007](./ADR-007-Testing-Strategy.md) | Testing Strategy | IMPLEMENTED |
-| [ADR-008](./ADR-008-Content-Omission-Pattern-System.md) | Content Omission Pattern System | IMPLEMENTED |
-| [ADR-009](./ADR-009-Binary-File-Detection-and-Content-Omission.md) | Binary File Detection | IMPLEMENTED |
-| [ADR-010](./ADR-010-State-Management-Enhancements.md) | State Management Enhancements | IMPLEMENTED |
-| [ADR-011](./ADR-011-Advanced-CLI-Filters.md) | Advanced CLI Filters | IMPLEMENTED |
-| [ADR-012](./ADR-012-Zero-Dependency-TUI.md) | Zero-Dependency TUI | IMPLEMENTED |
-| [ADR-013](./ADR-013-Monorepo-Structure.md) | Monorepo Structure | IMPLEMENTED |
-| [ADR-014](./ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md) | Privacy Guarantees & Ignore Semantics | IMPLEMENTED |
-| [ADR-015](./ADR-015-walker-architecture-refactoring.md) | Walker Architecture Refactoring | IMPLEMENTED |
-| [ADR-015b](./ADR-015b-Ignore-Engine-Architecture.md) | Ignore Engine Architecture | IMPLEMENTED |
+## Architecture decision records
 
-## Development Guides
+These records preserve decisions and migration context. Each record carries its
+own status; inclusion here does not certify that its entire design is implemented.
 
-The \`guides/\` directory contains comprehensive guides for developers working on or with dctx.
+| ADR | Topic |
+| --- | --- |
+| [ADR-001](./ADR-001-System-Architecture.md) | System Architecture (Centralized State) |
+| [ADR-002](./ADR-002-Versioning-and-Recovery.md) | Versioning & Recovery |
+| [ADR-003](./ADR-003-Templating-Engine.md) | Templating Engine |
+| [ADR-004](./ADR-004-CLI-Implementation.md) | CLI Implementation Strategy |
+| [ADR-005](./ADR-005-Git-Safety-Strategy.md) | Git Safety Strategy |
+| [ADR-006](./ADR-006-Versioning-Strategy.md) | Unified Versioning Strategy |
+| [ADR-007](./ADR-007-Testing-Strategy.md) | Testing Strategy |
+| [ADR-008](./ADR-008-Content-Omission-Pattern-System.md) | Content Omission Pattern System |
+| [ADR-009](./ADR-009-Binary-File-Detection-and-Content-Omission.md) | Binary File Detection |
+| [ADR-010](./ADR-010-State-Management-Enhancements.md) | State Management Enhancements |
+| [ADR-011](./ADR-011-Advanced-CLI-Filters.md) | Advanced CLI Filters |
+| [ADR-012](./ADR-012-Zero-Dependency-TUI.md) | Zero-Dependency TUI |
+| [ADR-013](./ADR-013-Monorepo-Structure.md) | Monorepo Structure |
+| [ADR-014](./ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md) | Privacy Guarantees & Ignore Semantics |
+| [ADR-015](./ADR-015-walker-architecture-refactoring.md) | Walker Architecture Refactoring |
+| [ADR-015b](./ADR-015b-Ignore-Engine-Architecture.md) | Ignore Engine Architecture |
+| [ADR-016](ADR-016-Legacy-IO-Removal.md) | Legacy IO Removal |
+| [ADR-017](ADR-017-Plugin-System.md) | Plugin System |
+| [ADR-018](ADR-018-Language-Coverage.md) | Language Coverage |
 
-### Available Guides
+## Retained reference material
 
-| Guide | Description |
-|-------|-------------|
-| [Developer Guide](./guides/DEVELOPER-GUIDE.md) | Comprehensive onboarding guide for new contributors. Covers project structure, architecture, and development workflow. |
-| [Rust Style Guide](./guides/RUST-STYLE-GUIDES.md) | Rust coding standards and best practices used in this project. |
-| [Development Practices](./guides/DEVELOPMENT-PRACTICES.md) | Solutions to recurring technical challenges and best practices. |
+- [`legacy-c/`](../legacy-c/) preserves the original C implementation and project history.
+- [Legacy documentation](LEGACY.md) explains the archived `docs/LEGACY/` migration material.
+- [`dossiers/`](dossiers/) retains dependency, platform, binding and plugin evidence;
+  recorded results are tied to their original configurations.
+- [`presentation/`](../presentation/) contains presentation sources and exports.
+- [`research/`](research/) retains experiment scripts, data and reports, including
+  the [map benchmark report](research/trail-code-2026-10/REPORT.md).
+- [`reviews/`](reviews/) contains historical implementation reviews and gap analyses.
 
-## Quick Links
-
-- **Main README**: [../README.md](../README.md)
-- **Contributing**: See [Developer Guide](./guides/DEVELOPER-GUIDE.md)
-- **License**: [MIT License](../LICENSE)
-
-## How to Use This Documentation
-
-### For Users
-- Start with the main [README](../README.md) for installation and usage
-- Refer to ADRs if you're curious about why certain design decisions were made
-
-### For Contributors
-1. Read the [Developer Guide](./guides/DEVELOPER-GUIDE.md) first
-2. Review relevant ADRs for the area you're working on
-3. Follow the [Rust Style Guide](./guides/RUST-STYLE-GUIDES.md) for code standards
-4. Consult [Development Practices](./guides/DEVELOPMENT-PRACTICES.md) for common patterns
-
-### For Maintainers
-- Use ADRs as reference when reviewing architectural changes
-- Update ADRs when making significant architectural decisions
-- Keep guides synchronized with actual codebase state
-
-## Documentation Philosophy
-
-**External Memory Principle**: This documentation serves as the project's long-term memory. Code changes, but the reasoning behind those changes (captured in ADRs) provides valuable context for future work.
-
-**Separation of Concerns**:
-- **ADRs** document the "why" (decisions and rationale)
-- **Code comments** document the "what" (implementation details)
-- **Guides** document the "how" (workflows and patterns)
-
-## Contributing to Documentation
-
-If you find documentation that is outdated or unclear:
-
-1. **Small fixes**: Submit a PR directly
-2. **Structural changes**: Open an issue first to discuss
-3. **New ADRs**: Follow the ADR template format
-
-Documentation improvements are always welcome!
-
----
-
-**Note**: This is the public documentation directory. Internal project management documents are not included in public releases.
+These directories are retained because their contents have historical or evidence
+value. They are not obsolete merely because they are outside the Cargo workspace;
+this metadata and examples pass establishes no safe deletion of their contents.

@@ -2,7 +2,8 @@
 name = "dctx-plugin-platform"
 version = "0.1.0"
 edition = "2024"
-license = "Apache-2.0"
+license.workspace = true
+repository.workspace = true
 description = "Fail-closed native plugin admission and Linux confinement primitives"
 exclude = [".research/**"]
 

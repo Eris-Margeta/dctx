@@ -12,3 +12,7 @@ members = [
 # plugins/index is the JSON index (PL-X), not a crate.
 exclude = ["plugins/index"]
 resolver = "2"
+
+[workspace.package]
+license = "Apache-2.0"
+repository = "https://github.com/Eris-Margeta/dctx"

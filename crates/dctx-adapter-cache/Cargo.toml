@@ -2,7 +2,8 @@
 name = "dctx-adapter-cache"
 version = "0.1.0"
 edition = "2024"
-license = "Apache-2.0"
+license.workspace = true
+repository.workspace = true
 description = "Quotas, leases and lifecycle for managed dctx cache state"
 
 [dependencies]

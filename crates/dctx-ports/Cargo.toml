@@ -3,7 +3,8 @@ name = "dctx-ports"
 version = "0.1.0"
 edition = "2021"
 description = "dctx boundary ports: Source, FactStore, Cache, Clock and Cancellation over core types"
-license = "Apache-2.0"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 dctx-core = { path = "../dctx-core" }

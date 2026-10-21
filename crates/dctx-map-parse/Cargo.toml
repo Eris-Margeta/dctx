@@ -2,7 +2,9 @@
 name = "dctx-map-parse"
 version = "0.1.0"
 edition = "2024"
-license = "Apache-2.0"
+license.workspace = true
+repository.workspace = true
+description = "Per-file syntax facts for dctx map mode, with first-party extractors and an optional tree-sitter oracle"
 
 # Default build is the pure-Rust extractor (decision 077). Tree-sitter is the optional
 # differential oracle: `cargo test -p dctx-map-parse --features syntax-tree-sitter`.

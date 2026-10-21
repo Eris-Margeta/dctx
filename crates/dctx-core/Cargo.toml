@@ -3,7 +3,8 @@ name = "dctx-core"
 version = "0.25.0"
 edition = "2021"
 description = "Pure dctx domain (ids, selection, budgets, errors, pack facts) plus legacy compatibility modules"
-license = "Apache-2.0"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 dctx-hash = { path = "../dctx-hash" }

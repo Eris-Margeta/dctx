@@ -2,7 +2,9 @@
 name = "dctx-cli"
 version = "0.25.0"
 edition = "2021"
-license = "Apache-2.0"
+license.workspace = true
+repository.workspace = true
+description = "Command-line interface for dctx context packs, structural maps, templates and cache management"
 
 [features]
 default = ["git-worker", "dctx/plugin-runtime"]

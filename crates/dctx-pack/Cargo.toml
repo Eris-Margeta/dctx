@@ -3,7 +3,8 @@ name = "dctx-pack"
 version = "0.1.0"
 edition = "2021"
 description = "dctx pack engine: snapshot and diff over injected ports, no concrete IO"
-license = "Apache-2.0"
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 dctx-core = { path = "../dctx-core" }

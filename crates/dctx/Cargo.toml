@@ -2,7 +2,8 @@
 name = "dctx"
 version = "0.1.0"
 edition = "2024"
-license = "Apache-2.0"
+license.workspace = true
+repository.workspace = true
 description = "Stable dctx library facade for pack, map, templates and cache"
 
 # `default` includes the optional plugin runtime; sessions still require an explicit host.
