@@ -292,7 +292,7 @@ mod tests {
             expansion_from_hits(vec![id.clone()])
         );
         assert!(matches!(
-            expand_alias(&[id.clone()], "@zzzzzz"),
+            expand_alias(std::slice::from_ref(&id), "@zzzzzz"),
             AliasExpansion::Unknown
         ));
         assert!(matches!(

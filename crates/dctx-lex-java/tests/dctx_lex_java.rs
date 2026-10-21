@@ -362,7 +362,7 @@ fn truncated_prefixes_and_arbitrary_bytes_do_not_panic() {
     accept("fuzz.java", b"/*");
     accept("fuzz.java", b"class A<T> {}");
     accept("fuzz.java", &vec![b'{'; 300]);
-    accept("fuzz.java", &vec![b'('; 100]);
+    accept("fuzz.java", &[b'('; 100]);
     accept("fuzz.java", &[0xff, 0xfe, b'c', b'l', b'a', b's', b's']);
 }
 

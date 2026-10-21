@@ -174,7 +174,7 @@ fn py3_wide_input_budget_and_error_redaction() {
     let fill = limit - head.len() - tail.len();
     let mut source = String::with_capacity(limit);
     source.push_str(head);
-    source.extend(std::iter::repeat('a').take(fill));
+    source.extend(std::iter::repeat_n('a', fill));
     source.push_str(tail);
     assert_eq!(source.len(), limit);
     let wide = PyLexer::default().extract("w.py", source.as_bytes()).expect("ceiling file");

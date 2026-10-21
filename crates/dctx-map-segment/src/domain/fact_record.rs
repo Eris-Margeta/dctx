@@ -312,7 +312,7 @@ mod tests {
         let limits = DecoderLimits::standard();
         let dictionary = ["name"];
         let fact = sample();
-        let (payload, count) = encode(&[fact.clone()], &limits).unwrap();
+        let (payload, count) = encode(std::slice::from_ref(&fact), &limits).unwrap();
         assert_eq!(decode(&payload, count, &dictionary, &limits).unwrap(), vec![fact.clone()]);
         let mut wide = fact.clone();
         wide.declarations[0].span_end = 9;

@@ -1,6 +1,7 @@
 # The dctx Context Management Specification
 
-Version 1.0 · draft · 21.10.2026 · Apache-2.0
+Version 1.0 · draft 2 · 21.10.2026 · Apache-2.0 · measured against
+`docs/research/trail-code-2026-10` (dctx `17dff0b`, Trail-Code 0.23.1)
 
 This document specifies **dctx**, a context engine for AI-assisted software development.
 It is normative where it uses **MUST**, **MUST NOT**, **SHOULD** and **MAY** (RFC 2119).
@@ -53,7 +54,7 @@ contract that defines them.
   29. Formal models
   30. Versioning and compatibility
 - **Part VIII — Delivery**
-  31. Roadmap and acceptance gates
+  31. Roadmap and acceptance gates (31.0 Measured baseline · 31.1 Phases)
   32. Non-goals
 - Appendices: A. Lineage · B. Comparison with Trail-Code · C. Reserved names · D. Document map
 
@@ -71,7 +72,7 @@ It is one engine for every way software is built today:
 
 | Workflow | dctx instrument | What "efficient" means there |
 |---|---|---|
-| Hand-coding, reading a new codebase | `dctx map` outline, `find`, `read`; desktop app | Fast orientation without opening forty files |
+| Hand-coding, reading a new codebase | `dctx map` outline, `find`, `read`; desktop app (free) | Fast orientation without opening forty files |
 | Copy-paste into a chat assistant | `dctx pack` (full / diff), templates, clipboard | Fewest bytes that still let a human and a model share one view; re-send only what changed |
 | Tab completion and IDE assistants | library facade (`crates/dctx`), bindings | Freshness in ≤50 ms, span reads in milliseconds, for the editor's own context budget |
 | Agents with a shell tool | `dctx map <verb>` | One line per record, copyable ids, bounded pages, always a next step |
@@ -80,6 +81,7 @@ It is one engine for every way software is built today:
 
 dctx is not a code search engine, not a vector store, not an IDE and not a model. It
 never calls a model and never sends a byte off the machine on its own.
+The measured baseline for every claim below is §31.0.
 
 ## 2. The core belief: prompt-processing efficiency
 
@@ -97,8 +99,8 @@ MUST satisfy the five **PPE** constraints:
 | Id | Constraint | Status |
 |---|---|---|
 | **PPE-1 Bounded** | Every answer has a declared byte and estimated-token ceiling, reserved before records are written; records are never split | landed (`dctx_core::budget`, API-PORTS-v1 `BoundedSink`) |
-| **PPE-2 Deterministic** | Same source snapshot, policy, plan, ranking revision and request ⇒ identical bytes, on every OS and thread count | landed (property P6, canonical payload) |
-| **PPE-3 Prefix-stable** | Context injected across turns is layered so that bytes that did not need to change do not change (§12) | target |
+| **PPE-2 Deterministic** | Same source snapshot, policy, plan, ranking revision and request ⇒ identical bytes, on every OS and thread count | landed on Linux (every text verb identical over 5 runs; property P6, canonical payload); cross-OS gate open (§11) |
+| **PPE-3 Prefix-stable** | Context injected across turns is layered so that bytes that did not need to change do not change (§12) | target — **violated today**: the default text header carries the snapshot digest and JSON carries `age_s`, so 0 of 63 answers survived an unrelated edit (§31.0) |
 | **PPE-4 Non-redundant** | Within one session a record already delivered is not re-sent unless its content changed (§12.4) | target |
 | **PPE-5 Honest** | Every answer states its freshness, precision and provenance; the engine never asserts what it does not know | landed (`precision.*`, `freshness.*` in the wire format) |
 
@@ -113,10 +115,13 @@ caching first-class:
 | M4 | Task acceptance rate — the guard: no saving counts if M4 falls |
 | M5 | dctx's own output tokens (counted inside M2, so the tool cannot hide its cost) |
 | M6 | Provider prefix-cache hit ratio: cached input tokens ÷ input tokens |
-| M7 | Prefix stability: common byte prefix of consecutive injected context blocks ÷ block length |
+| M7 | Prefix stability: common byte prefix of consecutive injected context blocks ÷ block length. Measured today as answers identical after an unrelated edit: 0/63 (comparison tool 59/70) |
+| M8 | Task recall: gold facts found ÷ gold facts on the published 70-question set — the offline proxy for M4. Baseline 169/354 = 0.48; comparison tool 312/354 = 0.88 |
 
-**Rule.** A feature without an acceptance gate stated in M1–M7 (or in a latency,
-memory or correctness bound) is not a dctx feature.
+**Rule.** A feature without an acceptance gate stated in M1–M8, or in a latency,
+memory or correctness bound measured by the suites in §28, is not a dctx feature.
+M8 (offline) or M4 (online) MUST accompany any token-saving claim: a tool that
+answers nothing is infinitely efficient.
 
 ## 3. Zero RAG defects
 
@@ -131,10 +136,10 @@ runs (§28). A build that fails any row MUST NOT call itself dctx-conformant.
 | R2 | Non-determinism | Same question, different chunks (approximate search, insertion-order ties) | Integer scores, order (score desc, id asc), frozen ranking revision, canonical payload | landed |
 | R3 | Staleness | Index built from old bytes, served as current | `read` verifies exact bytes against the content digest before emitting; every answer carries freshness mode and a stale flag | landed |
 | R4 | Positional identity | Chunk ids that shift when a file is added | Path + qualified-name ids with ordinals; explicit `moved`, `gone`, `ambiguous` outcomes | landed |
-| R5 | Semantic drift | "Similar" but wrong code | Lexical ranking over split identifiers, exact-name boost, kind filters, then graph edges with explicit confidence | landed; `typed` rung target (§7) |
-| R6 | Authority leak | Secrets, ignored and generated files reach the prompt | Selection precedes content: excluded files are never opened; policy rechecked at emission; plugins never receive excluded bytes | landed |
-| R7 | Unbounded context | Top-k chunks of unknown size crowd out instructions | Hard per-verb caps; byte ceiling derived from tokens; envelope reserved first | landed |
-| R8 | Opaque provenance | The model cannot tell a fact from an inference | Every record carries parser and coverage; every edge carries confidence and source | landed |
+| R5 | Semantic drift | "Similar" but wrong code | Lexical ranking over split identifiers, exact-name boost, kind filters, then graph edges with explicit confidence | contract — lexical ranking landed; graph edges are **not emitted by the shipped CLI** (TC-F01); the resolver is landed in `crates/dctx-map-resolve` but not wired (§7); `typed` rung target |
+| R6 | Authority leak | Secrets, ignored and generated files reach the prompt | Selection precedes content: excluded files are never opened; policy rechecked at emission; plugins never receive excluded bytes | landed for map; **`pack` prints non-ignored secret-shaped files such as `.env`** (TC-F08) until §4 item 3 lands |
+| R7 | Unbounded context | Top-k chunks of unknown size crowd out instructions | Hard per-verb caps; byte ceiling derived from tokens; envelope reserved first | landed for map verbs; the legacy tree (`dctx . -t`) and `pack` are unbounded (974 KB and 8.7 MB measured) and are not conformant surfaces |
+| R8 | Opaque provenance | The model cannot tell a fact from an inference | Every record carries parser and coverage; every edge carries confidence and source | landed for records; vacuous for edges until §7 lands |
 | R9 | Hidden tool cost | The retrieval tool's own output is not counted | M5 inside M2; `dctx bench tokens` (§28) | target |
 | R10 | Summary drift | Model-written summaries describe code as it was | The engine never calls a model; imported summaries are served only while their body fingerprint matches | landed (rule); import target |
 
@@ -152,15 +157,21 @@ public corpus, ranked candidates MAY arrive as a plugin overlay with provenance
 2. **Rules.** Built-in defaults, repository `.gitignore` files (read as plain text),
    `.dctxignore`, `.dctxomitcontent` and policy (`privacy.ignore`) combine. Landed for
    pack and map.
-3. **Secret classes (target).** Policy MAY name built-in secret classes (`aws`, `gcp`,
-   `ssh`, `jwt`, `pem`, `dotenv`). A file matching a class by name is refused at
-   selection with metadata only; dctx never scans the contents of an excluded file to
-   decide.
+3. **Secret-shaped files (target, P0).** The built-in omit layer MUST include `.env`,
+   `.env.*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`, `id_rsa*`,
+   `id_ed25519*`, `id_ecdsa*`, `.netrc`, `.npmrc`, `.pypirc`, `credentials*`,
+   `*.credentials.json` and `.htpasswd`. Such files appear in trees with content
+   omitted and are never read, hashed or indexed; a local rule may negate a pattern
+   explicitly. Policy MAY add named classes (`aws`, `gcp`, `ssh`, `jwt`). dctx never
+   scans contents to decide. **Gate:** the adversarial corpus's planted `.env` value is
+   absent from `pack` output and from the map cache; the path is listed. Today `pack .`
+   prints it (TC-F08); map answers and the map cache did not contain it.
 4. **No VCS in the core.** The core never reads `.git/`, never spawns `git`, never uses
    VCS object ids. Identity is dctx's own digest (§5). VCS-aware behaviour is a plugin.
    Landed (`crates/dctx-map-query/tests/no_git.rs`).
 5. **No network in the core.** No telemetry, no update checks, no model calls. The only
-   legal telemetry value in policy is `"none"`.
+   legal telemetry value in policy is `"none"`. Measured: zero socket system calls in
+   every audited dctx run (§31.0).
 6. **Re-check at emission.** Policy is checked again before bytes leave the engine, even
    for a pinned snapshot. A policy change invalidates cached authorization.
 
@@ -178,7 +189,7 @@ Identity is defined by `docs/design/contracts/IDENTITY-v1.md` and summarized her
 | `FactKey` | `ObjectKey` + language + parser identity and revision + extraction-rule digest |
 | `SourceSnapshot` | Sorted manifest of (path, stamp, `ObjectKey`) for the authorized view |
 | `ViewKey` | Snapshot digest + selection-policy digest + plan digest |
-| `view` digest (target) | SHA-256 over the `ViewKey` framing and the canonical request bytes; printed in every answer header so a caller can name what it already holds |
+| `view` digest (target) | SHA-256 over the `ViewKey` framing and the canonical request bytes; printed in the provenance trailer (`--provenance`, §11) so a caller can name what it already holds |
 | Policy digests | One per layer plus the effective digest (§15); part of `ViewKey` |
 
 Git hashes are never an input and never a fallback.
@@ -205,11 +216,17 @@ empty answer: `moved` (with the new id, from body-fingerprint evidence), `gone`,
 Edge kinds: `contains`, `imports`, `calls`, `implements`, `uses-type`, `tests`,
 `documents`, `reexports`.
 
+**Status.** Kinds and the confidence lattice are landed in `dctx-map-model`;
+reference extraction is landed in the lexers; resolution is landed in
+`crates/dctx-map-resolve`. **The facade index (`crates/dctx/src/index`) emits only
+`contains` edges today**, so `neighbors --edge calls|imports` was empty on 140 of 140
+benchmark targets (§31.0). Wiring the resolver into the index is P0 (§31).
+
 Confidence is a four-rung lattice. Every edge carries exactly one rung and a source:
 
 | Rung | Meaning | Source |
 |---|---|---|
-| `exact` | Bound by syntax and scope, or by an import that resolves to a file in the view, or supplied by a compiler-grade overlay | lexer + resolver; `lsp:<server>@<version>` overlays |
+| `exact` | Bound by syntax and scope, or by an import that resolves to a file in the view, or supplied by a compiler-grade overlay. Measured expectation: a comparison tool reaches precision 0.94–1.00 at recall 0.10–0.96 with syntax-and-scope binding alone; dctx MUST reach precision ≥ 0.95 before its edges may be shown without a `guess` label | lexer + resolver; `lsp:<server>@<version>` overlays |
 | `typed` (target) | Method call resolved through the receiver's inferred type (§7.1) | binder |
 | `name` | Unique declaration with that name in scope or in the view | resolver |
 | `guess` | Bare-name match among several candidates | resolver |
@@ -238,10 +255,17 @@ No unification, no cross-assignment inference, no generics. Anything deeper is t
 of the compiler-grade overlay plugin (§23.2), whose edges carry provenance and never
 replace first-party facts.
 
-**Gate.** On a published held-out edge corpus of ≥50 labeled call sites per language
-(TypeScript, Python, Go, Java first): `exact ∪ typed` precision ≥ 0.95, recall of
-receiver calls ≥ 0.70, zero wrong `exact` edges. The same corpus is run against other
-tools for any published comparison.
+**Gates.** Measured on the published gold (`docs/research/trail-code-2026-10/data/targets/`,
+140 definition targets in five categories, micro-averaged over call sites):
+
+| Phase | Requirement |
+|---|---|
+| P0 (resolver wired) | precision ≥ 0.95; recall ≥ 0.88 on *rare* (comparison 0.93), ≥ 0.81 on *collision* (0.86), ≥ 0.35 on *hub* (0.42), ≥ 0.25 on *receiver* (0.56); zero wrong `exact` |
+| P3 (binder) | receiver recall ≥ 0.56, interface name-level recall ≥ 0.42, hub ≥ 0.42; `exact ∪ typed` precision ≥ 0.95; zero wrong `exact`; callees question ≥ 10/14 (today 2/14) |
+
+The same corpus is run against other tools for any published comparison. A held-out
+edge corpus of ≥50 labeled call sites per language (TypeScript, Python, Go, Java first)
+extends it before the `typed` rung is promoted.
 
 ## 8. Precision labels
 
@@ -249,6 +273,13 @@ Every answer carries `precision.coverage` (`structural` | `syntax` | `opaque`),
 `precision.completion` (`complete` | `partial` | `refused`) and `precision.parser`
 (for example `dctx-structural/1`, `syn/2`). Unsupported files are `opaque`: listed,
 never invented. Landed.
+
+**Omissions (target, P1).** `precision.omitted` counts paths excluded for reasons other
+than policy — `{binary, unnamed, oversize, capped}` — so an agent knows the map is
+incomplete (TC-F13: non-UTF-8 names, names containing a newline and NUL-containing
+sources were skipped silently). Files whose facts exceed
+`extraction.max_facts_per_file` are labeled `partial` (TC-F07: one 6.7 MB JSON fixture
+produced 235,842 symbols and a 158 MB generation, 2.9 times the working tree).
 
 ## 9. Freshness
 
@@ -258,10 +289,13 @@ never invented. Landed.
 | `strict_live` | Every authorized file in scope is digest-verified before answering |
 | `pinned` | The answer is served from a named snapshot digest |
 
-`read` always verifies its own bytes, in every mode. Answers carry
-`freshness.mode` and `freshness.state`. The age in seconds (`age_s`) is **opt-in**
-(`--age`), because a timestamp in the default page would defeat prefix caching
-(PPE-3).
+`read` always verifies its own bytes, in every mode (landed). Answers carry
+`freshness.mode` and `freshness.state`. The age in seconds (`age_s`) and the snapshot
+digest are **opt-in** (`--provenance`, §11), because either in the default page defeats
+prefix caching (PPE-3). **Status:** target; today both are in every default answer.
+Measured: both compared tools saw unstaged, untracked and staged edits and dropped
+reverted symbols; dctx's first query after a one-line edit costs a full re-index (core
+7.48 s against 1.45 s warm; django 2.70 s against 0.82 s) until §19 lands.
 
 ---
 
@@ -270,35 +304,54 @@ never invented. Landed.
 ## 10. The verbs
 
 ```text
-dctx map <map|find|neighbors|explain|read|status> [TARGET] [OPTIONS]
+dctx map <map|find|neighbors|explain|read|grep|status> [TARGET] [OPTIONS]
 ```
 
 | Verb | Use | Budget cap (tokens) |
 |---|---|---|
-| `map [TARGET]` | Outline the project root, a path or a node (`--depth 1..3`) | 2,000 |
+| `map [TARGET]` | Outline a node or file (`--depth 1..3`) — landed; the project root, `p:`, `k:` and directory targets as a paged overview — **target, P1** (today refused or `gone`, TC-F05; the only overview is the unbounded legacy tree) | 2,000 |
 | `find TARGET` | Search names and concepts (`--kind`, `--in`) | 2,000 |
 | `neighbors TARGET` | Relations (`--edge`, `--dir in\|out\|both`, `--depth 1..2`) | 2,000 |
 | `explain TARGET` | One node's details: signature, doc line, edges summary | 1,000 |
 | `read TARGET` | Exact source (`--lines A-B`, `--full` up to 400 lines, `--level`) | 2,000 |
+| `grep PATTERN` (target, P1) | Literal or simple-glob text search over authorized files under the same ignore rules, grouped by enclosing symbol id, budgeted, paged (today: no text search; config-key questions scored 0/14) | 2,000 |
 | `status` (target) | Freshness, generation, policy digest; reads the manifest only; ≤50 ms | 200 |
 
 Paging uses an opaque `next` cursor, never offsets. Every page ends with a next-step
 hint. Planned additions: `dctx map plan` (budget planner, §12.5), `dctx blast` (§25),
 `dctx check` (§26).
 
+**Degradation (target, P1).** A budget below the smallest full record MUST return ids
+only, then `more`/`next`, never exit 1 (today 35 of 84 small-budget requests fail with
+"budget too small", TC-F09).
+
+**Concept queries (target, P1).** `find` tokenizes the query and identifiers on case,
+`_`, `-` and whitespace and ranks by token overlap with names, paths and `summary`;
+today multi-word queries return no records (0 of 7 concept questions, TC-F10).
+
 ## 11. Page formats and byte stability
 
 Two formats: the **text page** (default; one record per line; ids first) and **JSON v2**
 (`--json`; no insignificant whitespace; LF-terminated; field order fixed). Both obey:
 
-- no timestamps, absolute paths, process ids, random values or locale-dependent text
-  in the default output;
+- no timestamps, snapshot digests, absolute paths, process ids, random values or
+  locale-dependent text in the default output; provenance (snapshot digest,
+  generation, age) is a **trailer line** behind `--provenance`, or a JSON field behind
+  `--json --provenance` (target, P0: today the first line of every text answer is
+  `# <place> <verb> v1:sha256:<digest>:<bytes> g=<n>` and JSON carries `age_s`, TC-F03);
+- the text page carries content: `find` and `map` records are
+  `id<TAB>kind<TAB>path:L1-L2<TAB>summary`; `explain` prints signature, summary and edge
+  counts by kind; `read` prints the source span (target, P0: today text `read` and
+  `explain` print only the id line, 152 to 247 bytes, TC-F04);
+- JSON v2 omits `null` fields (target, P0: today thirteen keys per record, many null,
+  so a JSON `find` fit 4 records where the text page fit 10);
 - canonical order (score desc, id asc; adjacency grouped by edge kind);
 - paths are root-relative with `/` separators on every OS;
 - the same request through CLI, library and MCP yields the same canonical page bytes.
 
-**Gate.** The map page for a pinned tree is byte-identical on Linux, macOS and Windows
-and across thread counts.
+**Gates.** (P0) ≥ 95 % of text answers byte-identical after an unrelated edit (0 of 63
+today; comparison tool 59 of 70); JSON identical over 5 runs. (P1) The map page for a
+pinned tree is byte-identical on Linux, macOS and Windows and across thread counts.
 
 ## 12. Tiers, deltas, deduplication and compression levels
 
@@ -314,6 +367,9 @@ most volatile, each terminated by a fixed marker line:
 | T2 | Focus outline, relevant guardrails | The task changes |
 | T3 | Turn-local answers (`find`, `read`, …) | Every turn |
 
+Prerequisite: §11's header rule. Tiers cannot be prefix-stable while the first line of
+every answer names the snapshot.
+
 Invariant: a change confined to tier *k* never alters a byte of tiers < *k*. Policy
 `cache.breakpoints = ["T0","T1","T2"]` makes tier boundaries the cache breakpoints a
 host maps onto its provider's mechanism. **Gate:** rendered twice with a change in tier
@@ -322,8 +378,8 @@ recorded traces.
 
 ### 12.2 View digests
 
-Every answer header names its `view` digest (§5). A caller that keeps it can ask for a
-delta later.
+The provenance trailer (`--provenance`) names the answer's `view` digest (§5). A caller
+that keeps it can ask for a delta later.
 
 ### 12.3 Delta answers (target)
 
@@ -525,6 +581,12 @@ no daemon.
   (landed defaults: 7 days idle overlays, 30 days unpinned roots, 2 GiB hard cap).
 - Readers validate section checksums lazily on first touch; the envelope checksum is
   mandatory at publication.
+- Generations are content-addressed: an unchanged snapshot digest publishes no new
+  bytes (today three byte-identical 158 MB generations of one root were stored).
+  Superseded, unpinned generations of the same root are reclaimable at the next
+  invocation; the unlink grace period applies to orphaned objects, not to superseded
+  generations (today a one-day grace let a root grow from 158 MB to 946 MB while
+  `cache gc --dry-run` reclaimed 0 bytes, TC-F02).
 
 ## 19. Freshness check and incremental rebuild
 
@@ -535,14 +597,18 @@ no daemon.
 3. **Rebuild.** Changed files reparse one fact segment each; their nodes and edges are
    masked by an overlay; references that named symbols they declare (or now declare) are
    re-resolved through the reverse unresolved-name index; the result publishes as an
-   overlay generation. Overlays compact into the base past a threshold.
+   overlay generation. Overlays compact into the base past a threshold. An unchanged
+   snapshot digest reuses the published generation without writing.
 
-| Gate | Target (pinned 5,000-file / 50 MiB corpus) |
-|---|---|
-| `dctx map status` | ≤50 ms p95 |
-| Warm `find` / `neighbors` / `read` | ≤30 ms engine p95, ≤80 ms process |
-| Single-file reindex | ≤50 ms |
-| Correctness | Answers byte-identical to a cold rebuild |
+| Gate | Target | Measured today (§31.0) |
+|---|---|---|
+| `dctx map status` | ≤50 ms p95 | no verb |
+| Warm `find` / `neighbors` / `read`, small and medium corpora | ≤30 ms engine p95, ≤80 ms process | 0.03–0.26 s process (comparison 0.69–1.40 s) |
+| Warm `find` / `neighbors` / `read`, largest corpus (core, 3,190 files) | ≤0.8 s process, ≤150 MiB | 1.45 s, 370 MiB (comparison `callers` 0.83 s) |
+| First query after a one-line edit | ≤2× warm | ≈ cold (core 7.48 s against 1.45 s warm; django 2.70 s against 0.82 s) |
+| Cache per root after 10 edits | ≤1.5× one generation | 6× (158 MB → 946 MB after about five edits) |
+| Single-file reindex | ≤50 ms | n/a |
+| Correctness | Answers byte-identical to a cold rebuild | — |
 
 ## 20. Cold build
 
@@ -552,8 +618,11 @@ and hashes incrementally without materializing a joined payload. Policy caps fac
 file (`extraction.max_facts_per_file`, default 10,000); excess configuration and JSON
 leaves collapse into one `partial` module node.
 
-**Gate:** cold build ≤5 s and peak RSS ≤150 MB on the pinned corpus; persistent bytes
-≤40 MiB. (Measured today on a 3,074-file Rust repository: ≈6.2 s and ≈586 MB.)
+**Gate:** cold build ≤5 s and peak RSS ≤150 MiB on the pinned corpus; persistent bytes
+≤40 MiB. Measured today (§31.0): core (3,190 files) 6.05 s / 567 MiB; django (7,071
+files) 2.48 s / 92 MiB; flask (235 files) 0.09 s / 8 MiB. Cold indexing is 2.8 to 69
+times faster than the comparison tool on all seven corpora with 1.6 to 27 times less
+peak memory, and MUST stay at or below half of its time per corpus.
 
 ## 21. Ranking
 
@@ -584,7 +653,7 @@ Does it change selection, identity, freshness, ranking or budgets?
 | Component | Placement |
 |---|---|
 | Ids, spans, budgets, selection, digest, DTS compiler, segment codec, resolver, binder | Pure core |
-| Lexers for 13 language families; `syn` adapter | Core engine |
+| 13 lexer crates covering 15 language variants (Rust, JS, TS, TSX, Markdown, Python, Go, Java, C/C++, JSON/TOML/YAML, C#, Kotlin, Ruby, PHP, Swift); `syn` adapter | Core engine |
 | Filesystem source, cache, segment store | Adapters |
 | CLI, MCP server, agent-hook generator, statusline | Surfaces |
 | Git (`.gitignore` protection, staging, `vcs.changes`) | First-party plugin (bundled) |
@@ -651,6 +720,11 @@ schemas short:
 Tool results carry the same canonical text page as the CLI, so prefix stability holds
 across surfaces. A network listener is a policy-gated capability, never a default.
 
+**Gate.** Tool definitions ≤ 600 estimated tokens per session (comparison tool: 6
+tools, 3,515 bytes, about 1,005 tokens); results are the canonical text page. Answers
+MUST NOT contain instructions to the agent: no banners, no "report savings" text (the
+comparison tool spends about 310 bytes, roughly 89 tokens, per call on one).
+
 ### 24.4 Agent hooks (target)
 
 `dctx agent install <host> [--project]` renders, from the effective policy, the host's
@@ -663,8 +737,9 @@ daemon, no watcher.
 
 ### 24.5 Desktop
 
-The desktop app is a surface over the same facade: snapshots, settings, recent
-projects, plugin management. It has no engine or cache behaviour of its own.
+The desktop app is **free, forever**. It is a surface over the same facade: snapshots,
+settings, recent projects, plugin management. It has no engine or cache behaviour of
+its own and is never part of the CLI or library dependency closure.
 
 ## 25. Blast radius (target)
 
@@ -705,10 +780,11 @@ the code, without becoming a memory product.
 **Rule: anything with third-party dependencies is not enterprise-ready.** The open
 repository is ongoing work; enterprise-ready builds are a licensed product (§27.3).
 
-| Line | Third-party crates in core + CLI | Status |
+| Line | Third-party crates in the default `dctx` closure (`cargo tree -e normal`) | Status |
 |---|---|---|
-| 0.25 release (`dctx` CLI and `dctx-core`) | 0 | Enterprise-ready |
-| Current development line (map mode, plugin host, segment index) | Several, temporary | Ongoing work; not enterprise-ready |
+| `dctx-core` 0.25.0 as tagged (`dctx-cli` linking only `dctx-core`) | 0 | Enterprise-ready baseline |
+| Development line at `17dff0b` (reports itself `dctx-cli v0.25.0`) | 46: `rusqlite` with bundled SQLite, `serde`/`serde_json`, `thiserror`, `sha2`, the `syn` stack, the `ed25519-dalek` stack, Linux `landlock`/`seccompiler`/`rustix` (§31.0) | Ongoing work; **not enterprise-ready**. The version string MUST become `0.26.0-dev` so the two lines cannot be confused |
+| Enterprise build (target, E2) | 0, plus the one disclosed exception in §27.1 behind feature `trust` | Enterprise-ready when CI proves the closure |
 
 ### 27.1 The rules
 
@@ -721,29 +797,35 @@ repository is ongoing work; enterprise-ready builds are a licensed product (§27
 - **Every third-party crate in a default build is listed** in `docs/DEPENDENCIES.md`
   with version, licence, `unsafe` count, reason and the plan for it. CI fails if the
   closure grows beyond the list.
-- **Ed25519 stays for security and trust.** `ed25519-dalek` is a vetted, widely audited
-  security crate. It verifies the signatures on plugins and organization policy
-  bundles. Audited cryptography is not replaced by something less proven; the search
-  for the best long-term solution continues, and any successor must clear the same bar
-  (RFC 8032 and Wycheproof vectors, differential fuzzing, independent review).
+- **Ed25519 stays for security and trust.** `ed25519-dalek` (exact pin, `std` feature
+  only, verify-only) is a vetted, widely audited security crate and the **single
+  disclosed exception** to the zero-third-party rule, behind feature `trust`. It
+  verifies the signatures on plugins and organization policy bundles. A build without
+  `trust` has no third-party crate and cannot verify signatures; it refuses unsigned
+  bundles rather than trusting them. Audited cryptography is not replaced by something
+  less proven; the search for the best long-term solution continues, and any successor
+  must clear the same bar (RFC 8032 and Wycheproof vectors, differential fuzzing,
+  independent review).
 
 ### 27.2 Planned removals
 
 | Remove | First-party replacement | Gate |
 |---|---|---|
+| `syn` from the `strict` feature | Today `strict` implies `syntax-rust`; the enterprise feature set MUST NOT (structural Rust extractor with `precision.parser = dctx-structural/1`) | Build proves the closure |
 | `serde`, `serde_json`, `thiserror`, production `sha2` | The facade's hand-written canonical JSON; std `Error`; `dctx-hash` | Goldens byte-identical |
 | `rusqlite` and bundled SQLite | The immutable segment index (§18) | Segment index beats the SQLite baseline on two of latency, disk and refresh with no quality loss |
-| `syn` stack | First-party Rust structural extractor + binder (§7.1) | Held-out precision ≥ `syn` − 1 point; zero wrong `exact` edges |
-| Linux confinement crates | A minimal first-party syscall boundary in `dctx-plugin-platform` | Confinement property tests; written `unsafe` review |
+| `syn` stack from the default build | First-party Rust structural extractor + binder (§7.1) | Held-out precision ≥ `syn` − 1 point; zero wrong `exact` edges |
+| Linux confinement crates | Kept as a disclosed, target-specific adapter dependency outside the enterprise closure (plugins unavailable in that build), or a reviewed first-party syscall boundary in `dctx-plugin-platform` | Confinement property tests; written `unsafe` review |
 
 The desktop app is a separate surface over the facade and is never part of the CLI or
 library closure.
 
 ### 27.3 Enterprise
 
-dctx Enterprise is licensed per company, from €45,000 per year: enterprise-ready builds,
-organization and tenant policy control (§14–17), signed policy bundles, and direct
-support. The open-source repository remains Apache-2.0.
+dctx Enterprise is licensed per company, from €45,000 per year: the enterprise-ready
+build (§27 table), organization and tenant policy control (§14–17), signed policy
+bundles, and direct support. The open-source repository remains Apache-2.0 and is where
+the work happens; the desktop app is free.
 
 ## 28. Conformance suite
 
@@ -754,7 +836,7 @@ support. The open-source repository remains Apache-2.0.
 | Defect corpus R1–R10 | Each RAG defect class is absent, with a positive control per class |
 | Edge corpus | Precision and recall per language and confidence rung (§7.1) |
 | `dctx bench tokens` | M1–M7 from recorded traces (plain JSONL from the host); dctx never contacts a provider |
-| Cross-tool benchmark | The isolated, pinned comparison protocol in `docs/research/trail-code-2026-10/` |
+| Cross-tool benchmark | The isolated, pinned protocol in `docs/research/trail-code-2026-10/` (seven corpora and one adversarial, 140 targets, 70 questions, stability, freshness, adversarial, network audit). Rerun at every phase gate; numbers in §31.0 |
 
 Published numbers MUST come from these suites with pinned corpus digests.
 
@@ -778,21 +860,64 @@ declaration selects behaviour — it is never inferred from an unknown field.
 
 ## 31. Roadmap and acceptance gates
 
+### 31.0 Measured baseline
+
+dctx `17dff0b` (`dctx-cli v0.25.0` development line) against Trail-Code 0.23.1 on
+seven pinned corpora (flask, ripgrep, pocketbase, trailcode, dctx, django, core) and
+one generated adversarial corpus; Linux, eight pinned CPUs, isolated network namespace;
+full method, raw data and scripts in `docs/research/trail-code-2026-10/`. Every gate in
+this section names the row it must move.
+
+| Measure | dctx | Trail-Code | Source |
+|---|---|---|---|
+| Call-graph precision / recall (callers, depth 1; 140 definition targets) | — / 0.00 (no call or import edges emitted) | 0.94–1.00 / 0.10–0.96 per corpus | report §7, `data/accuracy.csv` |
+| Recall by category: hub / rare / receiver / collision / interface | 0 / 0 / 0 / 0 / 0 | 0.42 / 0.93 / 0.56 / 0.86 / 0.42 | `data/accuracy_by_category.csv` |
+| Definition ranked first (`find` against `ask`) | 103 of 140 | 79 of 140 | report §7 |
+| 70 agent questions: score / facts / estimated tokens | 69 of 140 · 169 of 354 · 500,005 (480k from the unbounded legacy tree) | 122 of 140 · 312 of 354 · 88,691 | `data/tasks.csv` |
+| Facts per 1,000 tokens, excluding the overview question | 7.15 | 4.98 | report §8 |
+| Question types (score of 14): config key / concept / callees / impact / definition+callers / collision | 0 / 0 / 2 / 7 / 7 / 6 | 14 / 12 / 8 / 13 / 10 / 12 | report §8 |
+| Cold index, seven corpora: wall / peak RSS | 0.09–6.05 s / 8–567 MiB | 2.44–94.89 s / 181–2,111 MiB | `data/indexing.csv` |
+| Warm `find`: small and medium corpora / largest corpus (core) | 0.03–0.26 s / 1.45 s | 0.69–1.40 s / 1.65 s (`callers` 0.83 s) | `data/queries_warm.csv` |
+| First query after a one-line edit: core / django | 7.48 s / 2.70 s | 5.45 s / 11.30 s | `data/freshness.csv` |
+| Cache growth after about five edits (core) | 158 MB → 946 MB; `gc --dry-run` reclaimed 0 bytes | constant 65 MB | report §6 |
+| Text answers identical after an unrelated edit | 0 of 63 | 59 of 70 | `data/stability.csv` |
+| Budget cap honoured | 2,000-token cap never exceeded (worst answer 6,996 bytes); 35 of 84 small budgets fail with exit 1 | no cap; one answer 142,197 bytes | report §13 |
+| Install footprint | one 9,207,072-byte binary | 405,601,700 bytes of `node_modules` plus Node | report §3 |
+| Sockets in audited runs | 0 | 30 in a daily update check that ignores the documented opt-out | report §11 |
+| Repository writes in map mode | none | `.gitignore` modified and `.ignore` added on every build | report §4 |
+| Gitignored secret with no `.git` present | excluded | indexed | report §10 |
+| Non-ignored `.env` in `pack` / `build` | **printed by `pack`** | never read | report §10 |
+| MCP | none | 6 tools; 3,515 bytes (about 1,005 tokens) of schema per session | report §3 |
+
+Where dctx answered, it was the terser tool; where it scored lower, the answers were
+empty or thin (no edges, id-only text pages, no bounded overview, no text search, no
+multi-word search). The roadmap below closes those holes first, with code that already
+exists, before the architectural work.
+
+### 31.1 Phases
+
+All gates are measured by rerunning the benchmark scripts on the same pinned corpora and
+gold; values in parentheses are today's (§31.0). E1 and E2 run in parallel with P0–P4
+because they touch `crates/dctx-template`, manifests and CI, not the index.
+
 | Phase | Scope | Acceptance (all must hold) |
 |---|---|---|
-| **P0 Truth and hygiene** | README and badges honest; `docs/DEPENDENCIES.md` and CI diff; `age_s` opt-in; cross-OS page stability; stale notes retired from guides | Z0/Z1 gates green; identical map pages on macOS and Linux |
-| **P1 Persistent index** (§18–20) | Per-file fact segments, two-level freshness, parallel cold build, streaming seal, `status`; SQLite behind a feature | Gates in §19–20 |
-| **P2 Token economics** (§12) | Tiers, view digests, deltas, session dedup, levels, planner, `dctx bench tokens`, agent seeding | M7 ≥ 0.9; on ≥30 accepted tasks per route: M2 −50 %, M1 −25 %, M3 −50 %, M4 unchanged; M6 reported |
-| **P3 Precision** (§7.1) | `dctx-map-bind`, import resolution, receiver typing, the `typed` rung, edge corpus | `exact ∪ typed` precision ≥ 0.95, recall ≥ 0.70, zero wrong `exact` |
-| **P4 Organization control** (§14–17) | `POLICY` / `TENANT`, seven layers, `.dctxpol`, enrollment, explain, receipts | P9; one bundle demonstrably controls every mode; an unverifiable bundle refuses |
-| **P5 Surfaces** (§24–26) | MCP, agent hooks, blast, learnings and `check`, `vcs.changes` | MCP pages byte-identical to CLI; hooks idempotent with receipts; blast ≤100 ms |
-| **P6 Enterprise readiness** (§27) | Planned removals in §27.2 | Default `dctx` binary contains no third-party crate except the Ed25519 verifier (CI-proven) |
-| **P7 Overlays and ecosystem** | LSP and SCIP overlays, network capability, CI comment plugin | Overlays never alter first-party facts; PP1–PP10 still modeled |
+| **P0 Close the holes** (§4 item 3, §7, §11) | Wire reference resolution into the facade index; text pages carry content; provenance moves to an opt-in trailer; secret-shaped omit defaults | `neighbors --edge calls --dir in` non-empty on ≥ 120 of 140 targets; precision (`exact ∪ name`) ≥ 0.95; recall ≥ 0.88 on *rare* (comparison 0.93), ≥ 0.81 on *collision* (0.86), ≥ 0.35 on *hub* (0.42), ≥ 0.25 on *receiver* (0.56); zero wrong `exact`. Text answers identical after an unrelated edit ≥ 95 % (0 of 63); JSON identical over 5 runs. Task score ≥ 95 of 140 (69). The adversarial `.env` value absent from `pack` output; path listed |
+| **P1 Answer the questions agents ask** (§8, §10) | Bounded overview for `map` without a target, `p:` and directory targets; `grep`; `find` tokenization; small budgets degrade; omission counts in `precision` | Overview question 14 of 14 with ≤ 15,000 tokens over seven corpora (480,000); config-key ≥ 12 of 14 (0); concept ≥ 10 of 14 (0); every budgeted request returns a page (35 of 84 failed); task score ≥ 115 of 140 at ≤ 100,000 tokens (comparison 122 at 88,691); M8 ≥ 0.80 (0.48) |
+| **P2 Persistent incremental index** (§18–20) | Per-file fact segments keyed by `FactKey`; content-addressed generations; superseded same-root generations reclaimed at the next invocation; two-level freshness; lazy per-section loads; parallel cold build; per-file fact cap; `status` | First query after a one-line edit ≤ 2× warm on every corpus (core 7.48 s → ≤ 3.0 s; django 2.70 s → ≤ 1.7 s); cache per root ≤ 1.5× one generation after 10 edits (946 MB → ≤ 240 MB); `gc` reclaims superseded bytes; warm queries on core ≤ 0.8 s and ≤ 150 MiB (1.45 s / 370 MiB; comparison 0.83 s); cold core ≤ 5 s / ≤ 150 MiB (6.05 s / 567 MiB); cold time ≤ 0.5× comparison on every corpus; `status` ≤ 50 ms |
+| **P3 Binder** (§7.1) | `dctx-map-bind`: scope graph, per-language import resolution from lexed manifests, receiver-type rules, `typed` rung, edge corpus | Receiver recall ≥ 0.56, interface name-level ≥ 0.42, hub ≥ 0.42; `exact ∪ typed` precision ≥ 0.95; zero wrong `exact`; callees question ≥ 10 of 14 (2) |
+| **P4 Token economics** (§12) | Tiers T0–T3, view digests, `--since` deltas, session dedup, compression levels, planner, `dctx bench tokens`, agent seeding | M7 ≥ 0.9 across turns; on ≥ 30 accepted tasks per route: M2 −50 %, M1 −25 %, M3 −50 %, M4 unchanged; task tokens ≤ 0.8× comparison at M8 ≥ 0.85; M6 reported |
+| **E1 Organization control** (§14–17; parallel) | `POLICY` / `TENANT`, seven layers, `.dctxpol`, enrollment, explain, receipts | P9; one bundle demonstrably controls every mode; an unverifiable bundle refuses |
+| **E2 Enterprise-ready build** (§27; parallel) | Removals in §27.2; `docs/DEPENDENCIES.md` with CI diff; truthful `--version`; version string `0.26.0-dev` on the development line | `cargo tree -e normal` for the enterprise feature set lists only `dctx-*` crates and the Ed25519 verifier closure behind `trust`; the `strict` feature no longer implies `syn` |
+| **P5 Surfaces** (§24–26) | MCP, agent hooks, `blast`, learnings and `check`, `vcs.changes` | MCP pages byte-identical to CLI; tool definitions ≤ 600 tokens (comparison 1,005); hooks idempotent with receipts; `blast` ≤ 100 ms warm |
+| **P6 Overlays and D3** (§23.2, §27.2) | LSP and SCIP overlays; network capability; CI comment plugin; first-party Rust structural extractor replaces `syn` in the default build | Overlays never alter first-party facts; PP1–PP10 still modeled; `syn` removed only at corpus parity |
 
-P1 and P2 come first because speed and tokens are what a developer feels in the first
-minute; P3 is the comparison people will make; P4 and P6 together are the enterprise
-promise — organization control, and a binary with nothing third-party in it but the
-vetted signature verifier.
+P0 and P1 turn a 69-of-140 tool into a ≥ 115-of-140 tool with changes measured in days,
+using lexers and a resolver that already exist. P2 is the one architectural piece, and
+it is also where dctx loses to the comparison tool on the largest corpus. P3 is the
+comparison people will make next. P4 pays only once answers are complete and stable.
+E1 and E2 together are the enterprise promise — organization control, and a binary
+with nothing third-party in it but the vetted signature verifier.
 
 ## 32. Non-goals
 
@@ -806,8 +931,9 @@ vetted signature verifier.
 | Telemetry, even opt-out | Trust is the product |
 | A hosted index or SaaS | Changes the threat model |
 | Parser injection or selection override by plugins | Would make identity and privacy unverifiable |
-| Chasing language counts | Thirteen honest lexers with precision labels beat more with silent errors; each new language needs a held-out corpus |
+| Chasing language counts | 13 lexers covering 15 language variants, each with precision labels, beat 23 with silent errors (the comparison tool indexed 8 of 13 planted extra-language files; dctx indexed none and said so); each new language needs a held-out corpus |
 | mmap or FST before measurement | Requires a ≥20 % measured gain first |
+| In-band agent instructions in answers | Tool output is data; a banner costs tokens on every call and changes with the covered files |
 
 ---
 
@@ -827,10 +953,11 @@ Summary of the design difference, independent of the measurements:
 
 | | dctx | Trail-Code |
 |---|---|---|
-| Runtime | One Rust binary; std-only core; zero third-party crates in the 0.25 release | Node.js package with an npm dependency tree |
-| Network | None in the core; no telemetry | Telemetry on by default (opt-out) |
+| Runtime | One Rust binary; std-only core; zero third-party crates in the tagged 0.25.0 `dctx-core`/CLI; 46 in the development line (§27) | Node.js package with an npm dependency tree (405.6 MB) |
+| Network | None in the core; no telemetry; 0 sockets in every audited run | Telemetry on by default (opt-out); daily update check not gated by the opt-out; writes `.gitignore`/`.ignore` on every build |
 | Agent interface | CLI verbs today; MCP and hooks are surfaces (§24) | MCP server, hooks, statusline |
-| Call precision | Structural + name resolution; `typed` rung planned (§7.1) | Scope-aware resolution with receiver typing for several languages; optional language servers |
+| Call precision | Lexers and resolver landed; edges not emitted by the shipped CLI (P0); `typed` rung planned (§7.1) | Scope-aware resolution with receiver typing for several languages; optional language servers |
+| Measured | §31.0 | §31.0 |
 | Organization control | Signed seven-layer policy (§15–16) | Not specified |
 | Team memory | Plain-file learnings, policy-governed (§26) | Learnings shared through git |
 | Output contract | Bounded, deterministic, precision-labeled pages | Token-budgeted map; signature views |
@@ -852,4 +979,5 @@ namespace `dctx/`; file names `.dctx/`, `.dctxignore`, `.dctxomitcontent`,
 | Map-mode user guide | `docs/guides/MAP-MODE.md` |
 | Crate inventory | `docs/CRATE-MAP.md` |
 | Formal models | `docs/formal/` |
+| Head-to-head benchmark and raw data | `docs/research/trail-code-2026-10/` |
 | Original map-mode design (historical) | `docs/SPEC-MAP-MODE.md` |

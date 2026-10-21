@@ -207,7 +207,7 @@ fn truncated_prefixes_and_arbitrary_bytes_do_not_panic() {
     accept("fuzz.cs", b"/*");
     accept("fuzz.cs", b"class A<B<C>> {}");
     accept("fuzz.cs", &vec![b'{'; 300]);
-    accept("fuzz.cs", &vec![b'('; 100]);
+    accept("fuzz.cs", &[b'('; 100]);
     accept("fuzz.cs", &[0xff, 0xfe, b'c', b'l', b'a', b's', b's']);
 }
 

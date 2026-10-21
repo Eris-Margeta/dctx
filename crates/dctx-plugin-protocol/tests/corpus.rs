@@ -62,13 +62,12 @@ fn body_outcome(case: &Json, bytes: &[u8]) -> Result<WireMessage, Refusal> {
     let message = WireMessage::decode(bytes, DecodeLimits::WIRE)?;
     let pending = case.get("context").map(|context| text(context, "pending_method")).unwrap_or("");
     let hook = case.get("context").map(|context| text(context, "hook")).unwrap_or("");
-    if let (Some(method), WireMessage::Session(session)) = (Method::parse(pending), &message) {
-        if let SessionBody::Response { outcome: Outcome::Result(result), .. } = &session.body {
+    if let (Some(method), WireMessage::Session(session)) = (Method::parse(pending), &message)
+        && let SessionBody::Response { outcome: Outcome::Result(result), .. } = &session.body {
             let body = result.resolve(method)?;
             check_result(&request_for(method, hook), &body)?;
             assert!(body.encode().same_value(result.as_json()), "typed result re-encodes exactly");
         }
-    }
     Ok(message)
 }
 

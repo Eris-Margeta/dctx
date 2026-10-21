@@ -176,7 +176,7 @@ mod tests {
         #[cfg(unix)]
         {
             use std::os::unix::fs::PermissionsExt;
-            fs::set_permissions(&git, fs::Permissions::from_mode(0)).expect("chmod");
+            fs::set_permissions(&git, fs::Permissions::from_mode(0o0)).expect("chmod");
         }
         let mut config = DesktopConfig::default();
         config.file_count_limit = 1;

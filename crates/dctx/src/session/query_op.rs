@@ -64,11 +64,10 @@ impl Session {
                 };
                 let (mut record, sliced_cap) = self.read_record(&generation, *record, count, start)?;
                 let resume_beyond = resume.as_ref().is_some_and(|item| item.beyond);
-                if resume_beyond && !sliced_cap {
-                    if let Some(source) = record.source_utf8.as_mut() {
+                if resume_beyond && !sliced_cap
+                    && let Some(source) = record.source_utf8.as_mut() {
                         source.push_str(OMITTED_LINE);
                     }
-                }
                 let origin = start.unwrap_or(record.lines[0].max(1));
                 return self.finish_read(sink, request, &generation, record, &resolved, origin, sliced_cap || resume_beyond);
             }

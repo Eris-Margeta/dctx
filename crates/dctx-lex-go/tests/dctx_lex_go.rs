@@ -127,7 +127,7 @@ fn golden_fixture_extracts_declarations_imports_and_references() {
     let types = type_names(&facts);
     for required in ["T", "fmt.Stringer", "byte", "int", "error", "string", "Reader"] {
         assert!(
-            types.iter().any(|name| *name == required),
+            types.contains(&required),
             "{required} missing in {types:?}"
         );
     }

@@ -232,7 +232,7 @@ fn legacy_byte_cap_bounds_file_block_expansion() {
     // Positive control: one copy of 40 bytes fits an exact 71-byte cap and is written whole.
     let header = "[DCTX_LLM_CONTEXT_SNAPSHOT_V1]\n";
     let mut expected = header.as_bytes().to_vec();
-    expected.extend(std::iter::repeat(b'B').take(40));
+    expected.extend(std::iter::repeat_n(b'B', 40));
     assert_eq!(expected.len(), 71);
     let mut session = capped_text_session(&expected[header.len()..], 71);
     let mut sink = VecSink::new();

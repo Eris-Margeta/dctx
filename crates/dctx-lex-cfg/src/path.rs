@@ -137,10 +137,10 @@ impl NameIndex {
     }
 
     fn insert(&mut self, hash: u64, index: usize) {
-        if self.first.contains_key(&hash) {
-            self.more.push((hash, index));
+        if let std::collections::hash_map::Entry::Vacant(e) = self.first.entry(hash) {
+            e.insert(index);
         } else {
-            self.first.insert(hash, index);
+            self.more.push((hash, index));
         }
     }
 }

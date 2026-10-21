@@ -220,7 +220,7 @@ impl<'a> Parser<'a> {
             let seg = format_index(&mut numerals, index);
             index = index.saturating_add(1);
             let start = self.cur.i;
-            self.value(parent, &seg, depth, start, doc)?;
+            self.value(parent, seg, depth, start, doc)?;
             let _ = self.skip();
             if self.cur.eat(b',') {
                 // RFC 8259 refuses `[1,]`. JSONC keeps the comma. Objects stay
@@ -409,7 +409,7 @@ impl<'a> Parser<'a> {
                         b't' => out.push('\t'),
                         b'u' => {
                             self.cur.i += 1;
-                            let Some(code) = self.unicode_unit() else { return None };
+                            let code = self.unicode_unit()?;
                             if let Some(ch) = char::from_u32(code) {
                                 out.push(ch);
                                 continue;
@@ -479,7 +479,7 @@ impl<'a> Parser<'a> {
                         Some(b't') => out.push('\t'),
                         Some(b'u') => {
                             self.cur.i += 1;
-                            let Some(code) = self.unicode_unit() else { return None };
+                            let code = self.unicode_unit()?;
                             if let Some(ch) = char::from_u32(code) {
                                 out.push(ch);
                                 continue;

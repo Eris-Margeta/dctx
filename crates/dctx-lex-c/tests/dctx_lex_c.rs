@@ -65,7 +65,7 @@ fn node_precision(facts: &LexedFile, name: &str) -> Precision {
         .precision
 }
 
-fn refs<'a>(facts: &'a LexedFile, kind: EdgeKind) -> Vec<(&'a str, Precision)> {
+fn refs(facts: &LexedFile, kind: EdgeKind) -> Vec<(&str, Precision)> {
     facts
         .references
         .iter()

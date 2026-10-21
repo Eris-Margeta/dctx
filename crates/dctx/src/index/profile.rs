@@ -64,8 +64,8 @@ impl Profile {
 }
 
 thread_local! {
-    static ENABLED: Cell<bool> = Cell::new(false);
-    static DATA: RefCell<Option<Profile>> = RefCell::new(None);
+    static ENABLED: Cell<bool> = const { Cell::new(false) };
+    static DATA: RefCell<Option<Profile>> = const { RefCell::new(None) };
 }
 
 fn enabled() -> bool {

@@ -145,9 +145,7 @@ fn recent_parse_error_omits_fixture_sentinel_and_valid_project_loads() {
         other => panic!("unexpected {other:?}"),
     }
 
-    let valid = concat!(
-        r#"[{"path":"/work/app","name":"app","last_accessed":"2026-01-01T00:00:00Z","access_count":1}]"#
-    );
+    let valid = "[{\"path\":\"/work/app\",\"name\":\"app\",\"last_accessed\":\"2026-01-01T00:00:00Z\",\"access_count\":1}]";
     fs::write(dir.path().join("recent_projects.json"), valid).expect("write valid");
     let listed = store.get().expect("valid recent");
     assert_eq!(

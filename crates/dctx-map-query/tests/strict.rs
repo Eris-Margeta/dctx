@@ -21,7 +21,7 @@ fn metadata_trusts_a_preserved_stamp_and_strict_mode_sees_the_new_bytes() {
     drop(file);
     let after = metadata.snapshot().unwrap();
     assert_eq!(after.files["lib.rs"].stamp, stamp);
-    assert!(after.files["lib.rs"].hash != "");
+    assert!(!after.files["lib.rs"].hash.is_empty());
     assert_eq!(
         after.files["lib.rs"].hash,
         metadata.snapshot().unwrap().files["lib.rs"].hash

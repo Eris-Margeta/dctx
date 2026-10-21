@@ -73,11 +73,10 @@ pub fn hook(host_version: &str, stage: bool, repository: bool) -> Invocation {
     let mut invocation = invocation("fixtures/valid/invoke-before-pack-output-written.json");
     invocation.host_version = SemVer::new(host_version).expect("semver");
     invocation.config.insert(Name::new("stage").expect("name"), ConfigValue::Scalar(Scalar::Bool(stage)));
-    if let HookPayload::BeforePackOutputWritten { repository: bound, .. } = &mut invocation.payload {
-        if !repository {
+    if let HookPayload::BeforePackOutputWritten { repository: bound, .. } = &mut invocation.payload
+        && !repository {
             *bound = None;
         }
-    }
     invocation
 }
 

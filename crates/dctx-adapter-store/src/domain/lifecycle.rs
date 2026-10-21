@@ -333,6 +333,7 @@ impl World {
             || (self.mutation != Mutation::OmitLeases && self.lease_holds_old())
     }
 
+    #[allow(clippy::wrong_self_convention)]
     fn to_pending(&mut self) -> bool {
         if self.old_kept == Kept::Retired && self.grace == 1 && !self.reachable_old() {
             self.old_kept = Kept::Pending;
@@ -341,6 +342,7 @@ impl World {
         false
     }
 
+    #[allow(clippy::wrong_self_convention)]
     fn to_gone(&mut self) -> bool {
         if self.old_kept == Kept::Pending && !self.reachable_old() {
             self.old_kept = Kept::Gone;

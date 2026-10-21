@@ -100,11 +100,10 @@ fn observe(
         Err(StoreError::Crashed { .. } | StoreError::Busy | StoreError::InvalidRequest { .. }) => {}
         Err(err) => errors.lock().unwrap().push(err.to_string()),
     }
-    if let Err(err) = store.release(pin) {
-        if !matches!(err, StoreError::Crashed { .. } | StoreError::Busy | StoreError::InvalidRequest { .. }) {
+    if let Err(err) = store.release(pin)
+        && !matches!(err, StoreError::Crashed { .. } | StoreError::Busy | StoreError::InvalidRequest { .. }) {
             errors.lock().unwrap().push(err.to_string());
         }
-    }
 }
 
 #[test]

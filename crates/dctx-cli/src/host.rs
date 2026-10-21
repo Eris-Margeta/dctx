@@ -858,7 +858,7 @@ mod tests {
         fs::create_dir(&corpus).expect("corpus");
         fs::write(corpus.join("ready.json"), b"{}\n").expect("ready");
         let mut perms = fs::metadata(&corpus).expect("meta").permissions();
-        perms.set_mode(0);
+        perms.set_mode(0o0);
         fs::set_permissions(&corpus, perms).expect("chmod");
         struct Restore(PathBuf);
         impl Drop for Restore {
