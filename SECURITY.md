@@ -1,41 +1,45 @@
 # Security Policy
 
-## Supported Versions
+## Supported development line
 
-The project team is committed to providing security updates for the following versions. Please ensure you are using a supported version to receive the latest security patches.
+dctx is pre-1.0 software in active development. Security fixes target the current
+`main` development line. There is no published long-term support or backport
+commitment for older releases. There is no maintained 1.x release line. Include the exact commit and build features in a report so that
+maintainers can assess whether the current code is affected.
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+## Reporting a vulnerability
 
-## Reporting a Vulnerability
+**Do not disclose vulnerabilities in public issues or pull requests.** Email
+[eris.margeta@gmail.com](mailto:eris.margeta@gmail.com) with a subject beginning
+`[dctx security]`. This private reporting route does not depend on GitHub private
+vulnerability reporting being enabled.
 
-The project team and community take all security vulnerabilities seriously. We appreciate your efforts to responsibly disclose your findings, and we will make every effort to acknowledge your contributions.
+Include, where possible:
 
-**Please do not report security vulnerabilities through public GitHub issues.**
+- Affected version or commit, OS/architecture and build features.
+- The affected component and potential impact (for example ignored-file content
+  disclosure, untrusted plugin execution, or signature verification bypass).
+- Exact reproduction steps and a minimal synthetic fixture or proof of concept.
+- Expected and actual results, with sanitized diagnostics.
+- Whether the issue has been shared elsewhere, and a preferred contact method.
+- A name or alias for credit, or a request to remain anonymous.
 
-Instead, please report them directly to us via email to eris.margeta@gmail.com
+Never send private keys, tokens, production data or a generated context export
+containing confidential code. Use synthetic examples and redact sensitive values.
+Test only systems and data you own or have explicit permission to assess.
 
-When reporting a vulnerability, please provide a detailed report including:
+## Handling and disclosure
 
-*   A clear description of the vulnerability and its potential impact.
-*   The version of the project affected.
-*   Detailed steps to reproduce the vulnerability. This may include code snippets, specific requests, or screenshots.
-*   Any proof-of-concept code or exploits.
-*   Your name or alias for public acknowledgment (if you wish to be credited).
+Maintainers will review reports, investigate impact and coordinate fixes and
+public disclosure with the reporter. Response and remediation times depend on
+availability and severity; this policy does not promise a fixed service level.
+If you have not received a reply after a week, send a follow-up to the same address.
+Credit is subject to the reporter's consent.
 
-## Our Commitment
+We will not take legal action against individuals who discover and report
+security vulnerabilities in good faith and in accordance with this policy.
 
-Upon receiving a security report, we will:
-
-1.  **Acknowledge** receipt of your report within 48 business hours.
-2.  **Investigate** the report to confirm the vulnerability and determine its severity. We will work to provide an initial assessment within 5 business days.
-3.  **Keep you informed** of our progress. We will provide regular updates as we work on a fix.
-4.  **Publicly credit you** for your discovery once the vulnerability is resolved, unless you prefer to remain anonymous.
-
-We will not take legal action against individuals who discover and report security vulnerabilities in good faith and in accordance with this policy.
-
-We kindly ask that you refrain from sharing information about the vulnerability publicly or with any third party until we have had the opportunity to address it and release a patch. We will coordinate with you on the timing of public disclosure.
-
-Thank you for helping keep our project and its users safe.
+Please coordinate public disclosure so users can receive a fix or mitigation.
+For architectural boundaries and current implementation limits, see the
+[README](README.md#security--privacy) and [plugin guide](docs/guides/PLUGINS.md).
+Those descriptions are not a security certification.

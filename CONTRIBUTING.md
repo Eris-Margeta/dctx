@@ -1,170 +1,72 @@
 # Contributing to dctx
 
-Thank you for your interest in contributing to dctx! This document provides guidelines and information for contributors.
+Read the [specification](docs/SPEC.md), [crate map](docs/CRATE-MAP.md) and
+[Code of Conduct](CODE_OF_CONDUCT.md) before making changes. Project contributions
+are licensed under [Apache-2.0](LICENSE), consistent with [NOTICE](NOTICE).
 
-## Table of Contents
+## Bugs, ideas and questions
 
-- [Code of Conduct](#code-of-conduct)
-- [How Can I Contribute?](#how-can-i-contribute)
-- [Development Setup](#development-setup)
-- [Project Structure](#project-structure)
-- [Development Workflow](#development-workflow)
-- [Pull Request Process](#pull-request-process)
-- [Coding Standards](#coding-standards)
-- [Testing Guidelines](#testing-guidelines)
+Search existing [issues](https://github.com/Eris-Margeta/dctx/issues) before opening
+one. Use the bug or feature template and keep reproductions small. Include the
+commit or version, OS/architecture, build features, exact command, expected result
+and actual result. Redact source code, paths, credentials and generated context
+that you do not have permission to share.
 
----
+Report suspected vulnerabilities privately using [SECURITY.md](SECURITY.md),
+rather than in an issue or pull request. For other questions, open an issue with
+what you tried and the relevant documentation link.
 
-## Code of Conduct
+## CLI development setup
 
-This project adheres to a Code of Conduct that all contributors are expected to follow:
+Use a recent stable Rust toolchain with Cargo; the workspace includes Rust 2024
+crates. Clone the repository and run commands from its root:
 
-- Be respectful and inclusive
-- Focus on constructive feedback
-- Assume good intentions
-- No harassment or discrimination
-
----
-
-## How Can I Contribute?
-
-### Reporting Bugs
-
-Before creating bug reports, please check the issue tracker to avoid duplicates.
-
-**Good bug reports include:**
-- Clear description of the problem
-- Steps to reproduce
-- Expected vs actual behavior
-- System information (OS, Rust version, etc.)
-- Relevant logs or error messages
-
-### Suggesting Enhancements
-
-Enhancement suggestions are tracked as GitHub issues.
-
-### Your First Code Contribution
-
-Look for issues labeled:
-- `good first issue` - Simple issues for newcomers
-- `help wanted` - Issues where maintainers need assistance
-
----
-
-## Development Setup
-
-### Prerequisites
-
-```bash
-# Rust (latest stable)
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-
-# For desktop app
-curl -fsSL https://bun.sh/install | bash
-
-# Task runner (optional)
-cargo install just
-```
-
-### Clone and Build
-
-```bash
+```zsh
 git clone https://github.com/Eris-Margeta/dctx
 cd dctx
-
-# Run all checks
-just ci
-
-# Build CLI
-just build
+cargo build --locked -p dctx-cli
+cargo run --locked -p dctx-cli -- --help
 ```
 
----
+Cargo builds **`dctx-cli`**, while help text calls the tool **`dctx`**. See
+[installation](README.md#installation) for aliases and install choices.
 
-## Project Structure
+Keep changes focused on the relevant crates and preserve unrelated work. The
+[`dctx` facade](crates/dctx/) serves the CLI and the desktop API; pure engine
+crates should not acquire filesystem, network or process effects. The
+[plugin guide](docs/guides/PLUGINS.md) describes effect boundaries and current
+runtime limitations.
 
-```
-dctx/
-├── crates/
-│   ├── dctx-core/       # Core library (MIT)
-│   └── dctx-cli/        # CLI tool (MIT)
-├── apps/
-│   └── dctx-desktop/    # Desktop app (MIT)
-├── docs/                # Documentation + ADRs
-└── tools/               # Build scripts
-```
+## Validation
 
----
+Run focused tests for changed behavior, then the relevant broader checks. Current
+[main CI](.github/workflows/ci.yml) runs these Rust checks, excluding the desktop:
 
-## Development Workflow
-
-1. **Fork** the repository
-2. **Create a branch** from `main`
-3. **Make changes**
-4. **Test**: `just ci`
-5. **Commit** with clear messages
-6. **Open a Pull Request**
-
-### Commit Messages
-
-Follow conventional commits:
-
-```
-type(scope): subject
-
-Examples:
-feat(core): add binary file detection
-fix(cli): handle empty directory
-docs: update installation guide
+```zsh
+cargo clippy --workspace --exclude dctx-desktop --all-targets -- -D warnings -A clippy::field_reassign_with_default -A clippy::assertions_on_constants
+cargo nextest run --workspace --exclude dctx-desktop --no-fail-fast
 ```
 
----
+The test command requires the `cargo-nextest` tool. CI closes inherited descriptors
+before nextest because native confinement tests reject extra descriptors; the
+workflow contains that wrapper. Preserve those tests' confinement checks.
 
-## Pull Request Process
+Use `cargo fmt --all -- --check` to check formatting and document public APIs.
+Desktop changes need their platform prerequisites and separate validation; see
+[the desktop guide](apps/dctx-desktop/README.md). The root `just ci` recipe also
+invokes desktop setup and is broader than the current main CI job.
 
-Before submitting:
+## Pull requests
 
-1. Run `just ci` locally
-2. Update documentation if needed
-3. Add tests for new features
-4. Update CHANGELOG.md for significant changes
+Create a focused branch from `main` and describe the problem, resulting behavior
+and any compatibility or privacy impact. Add regression coverage for behavior
+changes and update affected documentation. Check Markdown links and paths when
+editing guides. Use clear commit messages, for example `fix(cli): reject empty
+output paths`.
 
----
-
-## Coding Standards
-
-- Follow `cargo fmt` for formatting
-- Fix all `cargo clippy` warnings
-- Document public APIs
-- Keep functions focused
-- Use `Result` for errors
-
----
-
-## Testing
-
-```bash
-# Run tests
-just test
-
-# Desktop app
-just desktop-dev
-```
-
-Aim for >80% coverage on core library.
-
----
-
-## Getting Help
-
-- **Questions**: GitHub Discussions
-- **Bugs**: GitHub Issues
-- **Email**: eris.margeta@gmail.com
-
----
-
-## License
-
-By contributing, you agree your contributions will be licensed under MIT License.
-
-Thank you for contributing! 🚀
+In the PR, list the commands you ran, their results, and any checks you could not
+run. Include relevant OS/build features for platform-specific changes. Avoid
+unrelated formatting, generated governance files, local caches, credentials and
+private research artifacts. Maintainers may ask for a smaller change or additional
+validation before merging. Fork PRs do not run on the self-hosted CI runner;
+maintainers must arrange an appropriate review and validation path.
