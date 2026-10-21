@@ -18,6 +18,9 @@
 <meta name="twitter:description" content="The context engine for AI-assisted software development. Fewer tokens, stable prompt prefixes, exact source, one policy for every developer.">
 <meta name="author" content="Eris Margeta Kurdali">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314161c'/%3E%3Cpath d='M11 9H8v14h3M21 9h3v14h-3' fill='none' stroke='%23fff' stroke-width='2.4'/%3E%3Ccircle cx='16' cy='16' r='2.6' fill='%237c5cff'/%3E%3C/svg%3E">
+<script>(function(d){d.classList.add('js');if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('motion');setTimeout(function(){if(!window.__dctxMotion){d.classList.remove('motion');}},2500);}})(document.documentElement);</script>
+<link rel="stylesheet" href="assets/motion.css">
+<script src="assets/site.js" defer></script>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -300,10 +303,7 @@ td.tag { white-space: nowrap; }
 .agent-credit-logo { display: inline-block; width: 68px; flex: none; }
 .agent-credit-logo img { width: 100%; height: auto; }
 
-/* Reveal (content is visible without JS) */
-.js .reveal { opacity: 0; transform: translateY(14px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
-.js .reveal.in { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; transition: none; } }
+
 
 /* Responsive */
 @media (max-width: 1080px) {
@@ -351,6 +351,7 @@ td.tag { white-space: nowrap; }
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
+<div class="progress" aria-hidden="true"></div>
 
 <header class="site-header" id="top">
   <div class="wrap">
@@ -360,6 +361,7 @@ td.tag { white-space: nowrap; }
         dctx
       </a>
       <ul class="nav-links" id="nav-links">
+        <li class="nav-pill" aria-hidden="true"></li>
         <li><a href="#belief">Philosophy</a></li>
         <li><a href="#platform">Platform</a></li>
         <li><a href="#security">Security</a></li>
@@ -382,10 +384,10 @@ td.tag { white-space: nowrap; }
 <section class="hero" aria-labelledby="hero-title">
   <div class="wrap hero-grid">
     <div>
-      <span class="eyebrow">The context engine for AI-assisted development</span>
+      <span class="eyebrow hero-in">The context engine for AI-assisted development</span>
       <h1 id="hero-title" style="margin-top:22px">Context,<br><span class="accent">engineered.</span></h1>
-      <p class="lede">dctx gives every model and every developer in your company the smallest, most relevant set of source code &mdash; exact, verifiable and identical from one turn to the next. Smaller prompts. Higher cache hits. Sharper answers.</p>
-      <div class="hero-actions">
+      <p class="lede hero-in" style="--d:520ms">dctx gives every model and every developer in your company the smallest, most relevant set of source code &mdash; exact, verifiable and identical from one turn to the next. Smaller prompts. Higher cache hits. Sharper answers.</p>
+      <div class="hero-actions hero-in" style="--d:720ms">
         <a class="btn btn-primary" href="mailto:info@tejl.com?subject=dctx%20Enterprise">
           Talk to us about Enterprise
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5"/></svg>
@@ -402,17 +404,7 @@ td.tag { white-space: nowrap; }
     <div class="hero-visual">
       <div class="window" role="img" aria-label="Terminal showing a bounded dctx map search: five ranked records with ids, line ranges and a precision label, in 412 estimated tokens">
         <div class="window-bar"><i></i><i></i><i></i><span>~/acme/payments — dctx</span></div>
-<pre class="term"><span class="p">$</span> <span class="c">dctx map find "settlement batch"</span> <span class="k">--budget 600</span>
-<span class="dim"># snapshot 7c1e… · precision structural/complete</span>
-<span class="id">s:settle/batch.rs#Batch</span>          struct  L12–48
-<span class="id">s:settle/batch.rs#Batch::close</span>   fn      L51–97
-<span class="id">s:settle/run.rs#run_nightly</span>      fn      L8–40
-<span class="id">m:settle/ledger.rs</span>               module  14 symbols
-<span class="id">d:docs/settlement.md#lifecycle</span>   doc     §3
-<span class="dim"># 5 records · 412 of 600 tokens · next: read &lt;id&gt;</span>
-
-<span class="p">$</span> <span class="c">dctx map read</span> <span class="id">s:settle/batch.rs#Batch::close</span>
-<span class="ok">✓ bytes verified</span> <span class="dim">· exact span L51–97 · 47 lines</span></pre>
+<pre class="term" id="term"><span class="ln cmd"><span class="p">$</span> <span class="c">dctx map find "settlement batch"</span> <span class="k">--budget 600</span></span><span class="ln"><span class="dim"># snapshot 7c1e… · precision structural/complete</span></span><span class="ln rec"><span class="id">s:settle/batch.rs#Batch</span>          struct  L12–48</span><span class="ln rec"><span class="id">s:settle/batch.rs#Batch::close</span>   fn      L51–97</span><span class="ln rec"><span class="id">s:settle/run.rs#run_nightly</span>      fn      L8–40</span><span class="ln rec"><span class="id">m:settle/ledger.rs</span>               module  14 symbols</span><span class="ln rec"><span class="id">d:docs/settlement.md#lifecycle</span>   doc     §3</span><span class="ln"><span class="dim"># 5 records · <span data-count="412" data-dur="900">412</span> of 600 tokens · next: read &lt;id&gt;</span></span><span class="ln"> </span><span class="ln cmd"><span class="p">$</span> <span class="c">dctx map read</span> <span class="id">s:settle/batch.rs#Batch::close</span></span><span class="ln"><span class="ok"><span class="ok-mark">✓</span> bytes verified</span> <span class="dim">· exact span L51–97 · 47 lines</span></span></pre>
       </div>
       <div class="chip-float chip-2"><span class="dot"></span>Deterministic output</div>
       <div class="chip-float chip-1">Hard budget <b>≤ 2,000</b> tokens per answer</div>
@@ -420,13 +412,44 @@ td.tag { white-space: nowrap; }
   </div>
 </section>
 
+<!-- The prompt compiler -->
+<section class="compiler" id="compiler" aria-labelledby="compiler-h">
+  <div class="compiler-track">
+    <div class="compiler-stage">
+      <div class="wrap compiler-grid">
+        <div class="compiler-copy">
+          <div class="section-head" style="margin-bottom:0">
+            <span class="eyebrow">The prompt compiler</span>
+            <div class="h-row" style="margin-top:18px"><h2 id="compiler-h">From a whole repository to the bytes that matter.</h2></div>
+          </div>
+          <ol class="phases">
+            <li><i class="bar" aria-hidden="true"></i><b>Select</b><span>Policy decides first. Ignored and secret files are never opened.</span></li>
+            <li><i class="bar" aria-hidden="true"></i><b>Rank</b><span>Syntax-owned spans, scored deterministically. No embeddings.</span></li>
+            <li><i class="bar" aria-hidden="true"></i><b>Bound</b><span>A hard token budget, in a stable order that prompt caches recognise.</span></li>
+          </ol>
+          <p class="illus">Illustration. Real sizes depend on your repository and your budget.</p>
+        </div>
+        <div class="compiler-visual">
+          <canvas id="compiler-canvas" aria-hidden="true"></canvas>
+          <p class="compiler-static">dctx selects what policy allows, ranks exact spans, and sends a bounded answer in a stable order.</p>
+          <span class="tag">Illustration</span>
+          <div class="meter" aria-hidden="true">
+            <div class="meter-block"><small id="meter-in-label">Tokens in the repository</small><strong id="meter-in">1,240,000</strong></div>
+            <div class="meter-block sent"><small>Answer</small><strong id="meter-out">Selecting…</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- Facts -->
 <section aria-label="dctx at a glance" style="padding-bottom: clamp(48px, 7vw, 88px)">
   <div class="wrap">
-    <div class="facts reveal">
+    <div class="facts">
       <div class="fact"><strong>0</strong><span>bytes of telemetry. dctx makes no network requests and never calls a model.</span></div>
-      <div class="fact"><strong>15</strong><span>language families indexed by first-party extractors, from Rust and TypeScript to Swift and config files.</span></div>
-      <div class="fact"><strong>2,000</strong><span>token hard ceiling on any single answer. Records are never cut in half.</span></div>
+      <div class="fact"><strong data-count="15" data-dur="1200">15</strong><span>language families indexed by first-party extractors, from Rust and TypeScript to Swift and config files.</span></div>
+      <div class="fact"><strong data-count="2000" data-dur="1800">2,000</strong><span>token hard ceiling on any single answer. Records are never cut in half.</span></div>
       <div class="fact"><strong>1</strong><span>binary for the CLI, the desktop app, agents and CI &mdash; one engine, one policy.</span></div>
     </div>
   </div>
@@ -441,19 +464,19 @@ td.tag { white-space: nowrap; }
       <p class="quote" style="margin-top:28px">Every token in front of a model is paid for three times &mdash; in <em>prefill</em>, in <em>cache misses</em> and in <em>attention</em>. dctx is engineered to cut all three.</p>
     </div>
     <div class="reveal">
-      <div class="grid-2" style="grid-template-columns:minmax(0,1fr)">
-        <div class="card">
-          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></div>
+      <div class="grid-2" data-stagger style="grid-template-columns:minmax(0,1fr)">
+        <div class="card spot">
+          <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></div>
           <h3>Prefill</h3>
           <p>A model must process every input token before it answers &mdash; you pay for each one and wait for it. dctx answers with exact spans and diffs instead of whole files, inside a hard budget.</p>
         </div>
-        <div class="card">
-          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/></svg></div>
+        <div class="card spot">
+          <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/></svg></div>
           <h3>Cache hits</h3>
           <p>Providers serve repeated prompt prefixes at a fraction of the price and latency, but one changed byte breaks the cache. dctx output is deterministic and canonically ordered &mdash; no timestamps, no random ids.</p>
         </div>
-        <div class="card">
-          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></div>
+        <div class="card spot">
+          <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></div>
           <h3>Attention</h3>
           <p>Answers get worse as irrelevant tokens pile up. dctx ranks and bounds every answer and labels it with its precision and freshness, so a model reasons over facts, not guesses.</p>
         </div>
@@ -470,12 +493,13 @@ td.tag { white-space: nowrap; }
       <div class="h-row"><h2 id="platform-h">One engine for every way your teams build software.</h2></div>
       <p>From an engineer reading unfamiliar code to a fleet of autonomous agents in CI, every workflow draws from the same engine, the same index and the same policy.</p>
     </div>
-    <div class="spectrum reveal">
-      <div class="step"><div class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m8 9-4 3 4 3m8-6 4 3-4 3M14 5l-4 14"/></svg></div><div><h3>Hand-coding</h3><p>Outlines, symbol search and exact reads in an unfamiliar codebase.</p></div></div>
-      <div class="step"><div class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h4m-4 4h7"/><path d="M15 10h2" stroke-dasharray="1 2"/></svg></div><div><h3>Tab completion</h3><p>A library facade for the editor's own context budget.</p></div></div>
-      <div class="step"><div class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="8" y="3" width="12" height="14" rx="2"/><path d="M16 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/></svg></div><div><h3>Copy-paste chat</h3><p>The whole project, or only what changed, in one structured block.</p></div></div>
-      <div class="step"><div class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/></svg></div><div><h3>Agents</h3><p>Bounded, copyable, deterministic answers through five verbs.</p></div></div>
-      <div class="step"><div class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 20V10l5 3V10l5 3V6l8 4v10z"/><path d="M3 20h18"/></svg></div><div><h3>Software factories</h3><p>One signed policy, receipts and byte-identical outputs in CI.</p></div></div>
+    <div class="spectrum">
+      <span class="pulse" aria-hidden="true"></span>
+      <div class="step"><div class="node"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m8 9-4 3 4 3m8-6 4 3-4 3M14 5l-4 14"/></svg></div><div><h3>Hand-coding</h3><p>Outlines, symbol search and exact reads in an unfamiliar codebase.</p></div></div>
+      <div class="step"><div class="node"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h4m-4 4h7"/><path d="M15 10h2" stroke-dasharray="1 2"/></svg></div><div><h3>Tab completion</h3><p>A library facade for the editor's own context budget.</p></div></div>
+      <div class="step"><div class="node"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="8" y="3" width="12" height="14" rx="2"/><path d="M16 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/></svg></div><div><h3>Copy-paste chat</h3><p>The whole project, or only what changed, in one structured block.</p></div></div>
+      <div class="step"><div class="node"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/></svg></div><div><h3>Agents</h3><p>Bounded, copyable, deterministic answers through five verbs.</p></div></div>
+      <div class="step"><div class="node"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 20V10l5 3V10l5 3V6l8 4v10z"/><path d="M3 20h18"/></svg></div><div><h3>Software factories</h3><p>One signed policy, receipts and byte-identical outputs in CI.</p></div></div>
     </div>
   </div>
 </section>
@@ -487,11 +511,11 @@ td.tag { white-space: nowrap; }
       <span class="eyebrow">For leadership</span>
       <div class="h-row"><h2 id="value-h">What it means for your organization.</h2></div>
     </div>
-    <div class="grid-2 reveal">
-      <div class="card"><span class="num">01 · COST</span><h3 style="margin-top:12px">Pay for the tokens that matter.</h3><p>Smaller, bounded prompts and stable prefixes that providers can cache. Spend follows the work, not the size of the repository.</p></div>
-      <div class="card"><span class="num">02 · SECURITY</span><h3 style="margin-top:12px">Source code stays on your machines.</h3><p>Ignored files are never opened. No telemetry, no network, no model calls. Plugin and policy signatures are verified with vetted Ed25519 cryptography.</p></div>
-      <div class="card"><span class="num">03 · CONTROL</span><h3 style="margin-top:12px">One policy for every developer.</h3><p>Set budgets, privacy rules, parsers and plugins once for the whole organization; teams and individuals can only narrow it.</p></div>
-      <div class="card"><span class="num">04 · PREDICTABILITY</span><h3 style="margin-top:12px">Same input, same bytes.</h3><p>Deterministic answers with explicit precision and freshness make agent runs reproducible and auditable.</p></div>
+    <div class="grid-2" data-stagger="alt">
+      <div class="card spot tilt"><span class="num">01 · COST</span><h3 style="margin-top:12px">Pay for the tokens that matter.</h3><p>Smaller, bounded prompts and stable prefixes that providers can cache. Spend follows the work, not the size of the repository.</p></div>
+      <div class="card spot tilt"><span class="num">02 · SECURITY</span><h3 style="margin-top:12px">Source code stays on your machines.</h3><p>Ignored files are never opened. No telemetry, no network, no model calls. Plugin and policy signatures are verified with vetted Ed25519 cryptography.</p></div>
+      <div class="card spot tilt"><span class="num">03 · CONTROL</span><h3 style="margin-top:12px">One policy for every developer.</h3><p>Set budgets, privacy rules, parsers and plugins once for the whole organization; teams and individuals can only narrow it.</p></div>
+      <div class="card spot tilt"><span class="num">04 · PREDICTABILITY</span><h3 style="margin-top:12px">Same input, same bytes.</h3><p>Deterministic answers with explicit precision and freshness make agent runs reproducible and auditable.</p></div>
     </div>
   </div>
 </section>
@@ -504,7 +528,7 @@ td.tag { white-space: nowrap; }
       <div class="h-row"><h2 id="quality-h">Zero RAG defects, by construction.</h2></div>
       <p>Retrieval over embedded chunks fails in predictable ways. dctx does not use embeddings: it answers from a lexical graph of syntax-owned spans and verifies bytes before it emits them.</p>
     </div>
-    <div class="table-wrap reveal">
+    <div class="table-wrap">
       <table>
         <thead><tr><th scope="col">Failure in chunk retrieval</th><th scope="col">What goes wrong</th><th scope="col">How dctx prevents it</th><th scope="col">Status</th></tr></thead>
         <tbody>
@@ -529,19 +553,19 @@ td.tag { white-space: nowrap; }
       <span class="eyebrow">Security &amp; privacy</span>
       <div class="h-row"><h2 id="security-h">Built for codebases you cannot afford to leak.</h2></div>
     </div>
-    <div class="grid-3 reveal">
-      <div class="card">
-        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c5 0 9 4.5 10 7a12 12 0 0 1-3 4.2M6.6 6.6A12 12 0 0 0 2 12c1 2.5 5 7 10 7a10 10 0 0 0 5.4-1.6"/></svg></div>
+    <div class="grid-3" data-anim="depth">
+      <div class="card spot">
+        <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c5 0 9 4.5 10 7a12 12 0 0 1-3 4.2M6.6 6.6A12 12 0 0 0 2 12c1 2.5 5 7 10 7a10 10 0 0 0 5.4-1.6"/></svg></div>
         <h3>Ignored means never read</h3>
         <p>Files excluded by <code>.gitignore</code>, <code>.dctxignore</code> or policy are classified before a single byte is opened, hashed or cached &mdash; enforced by read-spy tests.</p>
       </div>
-      <div class="card">
-        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+      <div class="card spot">
+        <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
         <h3>No network, no VCS in the core</h3>
         <p>The core never opens a socket, never runs git and never reads <code>.git/</code>. Identity comes from dctx's own content digest.</p>
       </div>
-      <div class="card">
-        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
+      <div class="card spot">
+        <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
         <h3>Signed, sandboxed plugins</h3>
         <p>Anything with an outside effect is an opt-in plugin: out of process, consent-gated, receipted and signature-verified with vetted Ed25519 cryptography.</p>
       </div>
@@ -566,23 +590,15 @@ td.tag { white-space: nowrap; }
     <div class="reveal">
       <ol class="layers" aria-label="Policy layers, from widest to narrowest">
         <li><b>Built-in</b><span>Hard limits shipped with dctx</span></li>
-        <li><b>Organization</b><span>Your security &amp; platform team</span></li>
-        <li><b>Tenant</b><span>A product team</span></li>
+        <li data-key="org"><b>Organization</b><span>Your security &amp; platform team</span></li>
+        <li data-key="tenant"><b>Tenant</b><span>A product team</span></li>
         <li><b>Machine</b><span>Device management</span></li>
         <li><b>User</b><span>The developer</span></li>
         <li><b>Project</b><span>The repository</span></li>
         <li><b>Session</b><span>One run</span></li>
       </ol>
       <p class="narrow-note">Every layer can only narrow the one above it.</p>
-<pre class="code" style="margin-top:24px" aria-label="Example organization policy"><span class="s">[POLICY:acme]</span>
-privacy.ignore     += <span class="v">["*.pem", "*.key", "secrets/", ".env*"]</span>
-telemetry           = <span class="v">"none"</span>
-budget.map.max_tokens = <span class="v">1500</span>
-agents.hosts.allow  = <span class="v">["shell", "mcp"]</span>
-
-<span class="s">[TENANT:payments]</span>
-languages           = <span class="v">["rust", "typescript"]</span>
-budget.map.max_tokens = <span class="v">1200</span>   <span class="k">; may only narrow</span></pre>
+<pre class="code" style="margin-top:24px" aria-label="Example organization policy"><span class="ln" data-key="org"><span class="s">[POLICY:acme]</span></span><span class="ln" data-key="org">privacy.ignore     += <span class="v">["*.pem", "*.key", "secrets/", ".env*"]</span></span><span class="ln" data-key="org">telemetry           = <span class="v">"none"</span></span><span class="ln" data-key="org">budget.map.max_tokens = <span class="v">1500</span></span><span class="ln" data-key="org">agents.hosts.allow  = <span class="v">["shell", "mcp"]</span></span><span class="ln"> </span><span class="ln" data-key="tenant"><span class="s">[TENANT:payments]</span></span><span class="ln" data-key="tenant">languages           = <span class="v">["rust", "typescript"]</span></span><span class="ln" data-key="tenant">budget.map.max_tokens = <span class="v">1200</span>   <span class="k">; may only narrow</span></span></pre>
     </div>
   </div>
 </section>
@@ -595,10 +611,10 @@ budget.map.max_tokens = <span class="v">1200</span>   <span class="k">; may only
       <div class="h-row"><h2 id="story-h">Started in C. Engineered for what comes next.</h2></div>
       <p>dctx began as a practical answer to the context problem while we were still moving our own work to AI. The goal has never changed.</p>
     </div>
-    <div class="timeline reveal">
-      <div class="era"><span class="year">2025</span><h3>dircontxt, in pure C</h3><p>One command gave a model the whole project &mdash; structured, versioned, with diffs and a strict ignore system &mdash; instead of pasting forty files. Version 1.0 shipped in November 2025.</p></div>
-      <div class="era"><span class="year">2026</span><h3>dctx, in Rust</h3><p>A privacy-first core, a template system, a plugin host, a desktop app, and map mode: bounded, deterministic answers for agents.</p></div>
-      <div class="era now"><span class="year">NEXT</span><h3>dctx 1.0</h3><p>One engine and one signed policy for every workflow, measured by prompt-processing efficiency. <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification</a>.</p></div>
+    <div class="timeline">
+      <div class="era"><span class="year" data-decode="2025">2025</span><h3>dircontxt, in pure C</h3><p>One command gave a model the whole project &mdash; structured, versioned, with diffs and a strict ignore system &mdash; instead of pasting forty files. Version 1.0 shipped in November 2025.</p></div>
+      <div class="era"><span class="year" data-decode="2026">2026</span><h3>dctx, in Rust</h3><p>A privacy-first core, a template system, a plugin host, a desktop app, and map mode: bounded, deterministic answers for agents.</p></div>
+      <div class="era now"><span class="year" data-decode="NEXT">NEXT</span><h3>dctx 1.0</h3><p>One engine and one signed policy for every workflow, measured by prompt-processing efficiency. <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification</a>.</p></div>
     </div>
   </div>
 </section>
@@ -611,8 +627,8 @@ budget.map.max_tokens = <span class="v">1200</span>   <span class="k">; may only
       <div class="h-row" style="justify-content:center"><h2 id="pricing-h">Open source at heart. Enterprise when it matters.</h2></div>
       <p style="margin-left:auto;margin-right:auto">Everything in the open repository is free and ongoing work. Enterprise licensing brings enterprise-ready builds, organization control and direct support.</p>
     </div>
-    <div class="pricing reveal">
-      <div class="plan">
+    <div class="pricing" data-stagger>
+      <div class="plan spot">
         <h3>Open source</h3>
         <div class="price">Free</div>
         <div class="plan-sub">The CLI and library under Apache-2.0.</div>
@@ -624,7 +640,7 @@ budget.map.max_tokens = <span class="v">1200</span>   <span class="k">; may only
         </ul>
         <a class="btn btn-ghost" href="https://github.com/Eris-Margeta/dctx">View on GitHub</a>
       </div>
-      <div class="plan">
+      <div class="plan spot">
         <h3>Desktop</h3>
         <div class="price">$29<small>one-time</small></div>
         <div class="plan-sub">Signed builds with updates, for people who prefer a window to a terminal.</div>
@@ -636,7 +652,8 @@ budget.map.max_tokens = <span class="v">1200</span>   <span class="k">; may only
         </ul>
         <a class="btn btn-ghost" href="mailto:info@tejl.com?subject=dctx%20Desktop">Get Desktop</a>
       </div>
-      <div class="plan featured">
+      <div class="plan featured spot">
+        <span class="orbit" aria-hidden="true"></span>
         <h3>Enterprise <span class="badge-top">Per company</span></h3>
         <div class="price">&euro;45,000<small>/ year, from</small></div>
         <div class="plan-sub">For organizations that standardize AI-assisted development.</div>
@@ -663,11 +680,11 @@ budget.map.max_tokens = <span class="v">1200</span>   <span class="k">; may only
       <div class="h-row"><h2 id="faq-h">Answers for decision makers.</h2></div>
     </div>
     <div class="faq reveal">
-      <details><summary>Does any of our source code leave our network?</summary><p>No. dctx runs entirely on your machines. It has no telemetry, makes no network requests and never calls a model. What reaches a model is exactly what your developers or agents choose to send, already bounded by your policy.</p></details>
-      <details><summary>How is dctx different from retrieval-augmented generation?</summary><p>dctx does not use embeddings or vector search. It builds a lexical graph of your code from syntax, answers with whole, byte-verified spans in a deterministic order, and labels every answer with its precision and freshness. That removes the typical failure modes of chunk retrieval and keeps prompts cache-friendly.</p></details>
-      <details><summary>Which languages does it understand?</summary><p>Fifteen language families today: Rust, JavaScript, TypeScript and TSX, Python, Go, Java, C and C++, C#, Kotlin, Ruby, PHP, Swift, Markdown, and JSON, TOML and YAML configuration. Unsupported files are listed honestly, never guessed at.</p></details>
-      <details><summary>Does it work with the AI tools our teams already use?</summary><p>Yes. dctx works through the shell that every coding agent already has, through the clipboard for chat assistants, and as a library. A native tool-protocol server and agent hooks are specified on the roadmap.</p></details>
-      <details><summary>What is the difference between open source and Enterprise?</summary><p>The open repository is Apache-2.0 and ongoing work; parts of it still use third-party dependencies, which we do not consider enterprise-ready. Enterprise licensing provides enterprise-ready builds, organization and tenant policy control, signed policy distribution and direct support, from &euro;45,000 per company per year.</p></details>
+      <details><summary>Does any of our source code leave our network?</summary><div class="faq-body"><p>No. dctx runs entirely on your machines. It has no telemetry, makes no network requests and never calls a model. What reaches a model is exactly what your developers or agents choose to send, already bounded by your policy.</p></div></details>
+      <details><summary>How is dctx different from retrieval-augmented generation?</summary><div class="faq-body"><p>dctx does not use embeddings or vector search. It builds a lexical graph of your code from syntax, answers with whole, byte-verified spans in a deterministic order, and labels every answer with its precision and freshness. That removes the typical failure modes of chunk retrieval and keeps prompts cache-friendly.</p></div></details>
+      <details><summary>Which languages does it understand?</summary><div class="faq-body"><p>Fifteen language families today: Rust, JavaScript, TypeScript and TSX, Python, Go, Java, C and C++, C#, Kotlin, Ruby, PHP, Swift, Markdown, and JSON, TOML and YAML configuration. Unsupported files are listed honestly, never guessed at.</p></div></details>
+      <details><summary>Does it work with the AI tools our teams already use?</summary><div class="faq-body"><p>Yes. dctx works through the shell that every coding agent already has, through the clipboard for chat assistants, and as a library. A native tool-protocol server and agent hooks are specified on the roadmap.</p></div></details>
+      <details><summary>What is the difference between open source and Enterprise?</summary><div class="faq-body"><p>The open repository is Apache-2.0 and ongoing work; parts of it still use third-party dependencies, which we do not consider enterprise-ready. Enterprise licensing provides enterprise-ready builds, organization and tenant policy control, signed policy distribution and direct support, from &euro;45,000 per company per year.</p></div></details>
     </div>
   </div>
 </section>
@@ -676,6 +693,7 @@ budget.map.max_tokens = <span class="v">1200</span>   <span class="k">; may only
 <section class="section" aria-labelledby="cta-h">
   <div class="wrap">
     <div class="cta reveal">
+      <span class="glow" aria-hidden="true"></span>
       <div>
         <h2 id="cta-h">Make every token count.</h2>
         <p>Talk to us about rolling dctx out across your engineering organization, or start with the open-source CLI today.</p>
@@ -745,67 +763,6 @@ budget.map.max_tokens = <span class="v">1200</span>   <span class="k">; may only
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<script>
-(function () {
-  document.documentElement.classList.add('js');
-  var CANONICAL = 'https://dctx.app/';
 
-  // Sticky header border
-  var header = document.querySelector('.site-header');
-  var onScroll = function () { header.classList.toggle('scrolled', window.scrollY > 8); };
-  onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
-
-  // Mobile menu
-  var toggle = document.querySelector('.menu-toggle'), nav = document.querySelector('.nav');
-  toggle.addEventListener('click', function () {
-    var open = nav.classList.toggle('open');
-    toggle.setAttribute('aria-expanded', String(open));
-    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
-  });
-  document.querySelectorAll('.nav-links a').forEach(function (a) {
-    a.addEventListener('click', function () { nav.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); });
-  });
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && nav.classList.contains('open')) { nav.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); toggle.focus(); }
-  });
-
-  // Reveal on scroll (content is visible without JS and with reduced motion)
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var items = document.querySelectorAll('.reveal');
-  if (reduce || !('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('in'); }); }
-  else {
-    var io = new IntersectionObserver(function (entries) {
-      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
-    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
-    items.forEach(function (el) { io.observe(el); });
-  }
-
-  // Heading permalinks and copy-link buttons (web standard)
-  var toast = document.getElementById('toast'), toastTimer;
-  function say(html, keep) {
-    toast.innerHTML = html; toast.classList.add('show');
-    clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.remove('show'); }, keep ? 9000 : 2200);
-  }
-  document.querySelectorAll('.h-row > h2[id]').forEach(function (h) {
-    var id = h.id, name = h.textContent.replace(/\s+/g, ' ').trim().replace(/\.$/, '');
-    var url = CANONICAL + '#' + encodeURIComponent(id);
-    var tools = document.createElement('span'); tools.className = 'h-tools';
-    var a = document.createElement('a'); a.className = 'h-tool'; a.href = '#' + id;
-    a.setAttribute('aria-label', 'Link to ' + name); a.dataset.tip = 'Link to section'; a.textContent = '#';
-    var b = document.createElement('button'); b.type = 'button'; b.className = 'h-tool';
-    b.setAttribute('aria-label', 'Copy link to ' + name); b.dataset.tip = 'Copy link';
-    b.innerHTML = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg>';
-    b.addEventListener('click', function () {
-      if (!navigator.clipboard || !navigator.clipboard.writeText) { fallback(); return; }
-      navigator.clipboard.writeText(url).then(function () { say('Copied link to “' + name + '”'); }, fallback);
-      function fallback() {
-        say('Copy was not possible. Select the link:<input readonly value="' + url + '" aria-label="Link to ' + name + '">', true);
-        var i = toast.querySelector('input'); if (i) { i.addEventListener('focus', function () { i.select(); }); }
-      }
-    });
-    tools.appendChild(a); tools.appendChild(b); h.parentNode.appendChild(tools);
-  });
-})();
-</script>
 </body>
 </html>
