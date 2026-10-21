@@ -328,3 +328,10 @@ GEMINI.md
 .agent/
 .cursor/
 .codex/
+
+# DCX-03: local benchmark evidence and environment files
+/docs/research/trail-code-2026-10/data/raw/
+/docs/research/trail-code-2026-10/data/outputs/
+/docs/research/trail-code-2026-10/data/env.txt
+.env*
+!.env.example
