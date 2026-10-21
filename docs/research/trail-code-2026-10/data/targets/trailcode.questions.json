@@ -1,0 +1,413 @@
+[
+ {
+  "id": "Q1",
+  "kind": "def_and_callers",
+  "q": "Where is writeNote defined and who calls it?",
+  "facts": [
+   [
+    "loc",
+    [
+     "src/notes/notes.ts",
+     242
+    ]
+   ],
+   [
+    "caller",
+    [
+     "src/cli.ts",
+     [
+      1367
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "src/notes/cold-start.ts",
+     [
+      591
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "src/notes/pr-reviews.ts",
+     [
+      362
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "test/trail-cloud.test.ts",
+     [
+      73,
+      112,
+      113,
+      115,
+      157
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "test/trail-home.test.ts",
+     [
+      143,
+      160,
+      170,
+      198,
+      199,
+      216
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "test/trail-learning-on-touch.test.ts",
+     [
+      71
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "test/trail-notes.test.ts",
+     [
+      80,
+      81
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "test/trail-nudge.test.ts",
+     [
+      47,
+      78
+     ]
+    ]
+   ]
+  ],
+  "target": "writeNote"
+ },
+ {
+  "id": "Q2",
+  "kind": "impact",
+  "q": "What breaks if I change the signature of defaultTranscriptDir?",
+  "facts": [
+   [
+    "loc",
+    [
+     "scripts/tally-audit.mjs",
+     41
+    ]
+   ],
+   [
+    "caller",
+    [
+     "scripts/tally-audit.mjs",
+     [
+      39
+     ]
+    ]
+   ]
+  ],
+  "target": "defaultTranscriptDir"
+ },
+ {
+  "id": "Q3",
+  "kind": "outline",
+  "q": "Outline the file src/notes/notes.ts.",
+  "file": "src/notes/notes.ts",
+  "facts": [
+   [
+    "word",
+    "NoteCost"
+   ],
+   [
+    "word",
+    "Note"
+   ],
+   [
+    "word",
+    "scalar"
+   ],
+   [
+    "word",
+    "renderNote"
+   ],
+   [
+    "word",
+    "num"
+   ],
+   [
+    "word",
+    "parseNote"
+   ],
+   [
+    "word",
+    "rebaseTouch"
+   ],
+   [
+    "word",
+    "readNotesIn"
+   ],
+   [
+    "word",
+    "noteName"
+   ],
+   [
+    "word",
+    "listNotes"
+   ],
+   [
+    "word",
+    "add"
+   ],
+   [
+    "word",
+    "branchNotes"
+   ],
+   [
+    "word",
+    "sectionLead"
+   ],
+   [
+    "word",
+    "slug"
+   ],
+   [
+    "word",
+    "WriteNoteInput"
+   ],
+   [
+    "word",
+    "writeNote"
+   ],
+   [
+    "word",
+    "standingLearnings"
+   ],
+   [
+    "word",
+    "notePlace"
+   ],
+   [
+    "word",
+    "NoteTarget"
+   ],
+   [
+    "word",
+    "noteTargets"
+   ],
+   [
+    "word",
+    "entryFor"
+   ],
+   [
+    "word",
+    "place"
+   ],
+   [
+    "word",
+    "mentionedFiles"
+   ],
+   [
+    "word",
+    "terms"
+   ],
+   [
+    "word",
+    "touchFile"
+   ]
+  ]
+ },
+ {
+  "id": "Q4",
+  "kind": "config",
+  "q": "Where is the config value agentx_PROJECT_DIR read?",
+  "key": "agentx_PROJECT_DIR",
+  "facts": [
+   [
+    "path",
+    ".agentx/helpers/graft-hooks.cjs"
+   ],
+   [
+    "path",
+    ".agentx/helpers/graft-statusline.cjs"
+   ],
+   [
+    "path",
+    "src/agentx/hooks.ts"
+   ],
+   [
+    "path",
+    "src/agentx/shim-template.ts"
+   ],
+   [
+    "path",
+    "src/agentx/statusline.ts"
+   ]
+  ]
+ },
+ {
+  "id": "Q5",
+  "kind": "exports",
+  "q": "What does module src/graph/native.ts export?",
+  "file": "src/graph/native.ts",
+  "facts": [
+   [
+    "word",
+    "nativeReady"
+   ],
+   [
+    "word",
+    "nativeParser"
+   ],
+   [
+    "word",
+    "missingNativePackages"
+   ],
+   [
+    "word",
+    "NativeFallback"
+   ],
+   [
+    "word",
+    "nativeFallbackNotice"
+   ],
+   [
+    "word",
+    "setNativeRequireForTest"
+   ],
+   [
+    "word",
+    "realNativeRequire"
+   ]
+  ]
+ },
+ {
+  "id": "Q6",
+  "kind": "source",
+  "q": "Show me the implementation of outgoingCalls.",
+  "facts": [
+   [
+    "text",
+    "async outgoingCalls(item: CallHierarchyItem): Promise<CallHierarchyItem[]> {"
+   ],
+   [
+    "text",
+    "if (!this.ready) return [];"
+   ],
+   [
+    "text",
+    "return (r ?? []).map((c) => c.to).filter(Boolean);"
+   ]
+  ],
+  "target": "outgoingCalls"
+ },
+ {
+  "id": "Q7",
+  "kind": "callees",
+  "q": "What does writeNote call?",
+  "facts": [
+   [
+    "word",
+    "ensureRepoHome"
+   ],
+   [
+    "word",
+    "ensureRepoTrail"
+   ],
+   [
+    "word",
+    "learningsDir"
+   ],
+   [
+    "word",
+    "slug"
+   ],
+   [
+    "word",
+    "renderNote"
+   ]
+  ],
+  "target": "writeNote"
+ },
+ {
+  "id": "Q8",
+  "kind": "overview",
+  "q": "Give me an overview of the repository layout.",
+  "facts": [
+   [
+    "word",
+    "src"
+   ],
+   [
+    "word",
+    "test"
+   ],
+   [
+    "word",
+    "scripts"
+   ],
+   [
+    "word",
+    "viewer"
+   ],
+   [
+    "word",
+    ".agentx"
+   ]
+  ]
+ },
+ {
+  "id": "Q9",
+  "kind": "collision",
+  "q": "Where is cachePath defined and who calls that specific one?",
+  "qual": "cachePath",
+  "facts": [
+   [
+    "loc",
+    [
+     "src/blast/name.ts",
+     158
+    ]
+   ],
+   [
+    "caller",
+    [
+     "src/blast/name.ts",
+     [
+      164,
+      174
+     ]
+    ]
+   ]
+  ],
+  "target": "cachePath"
+ },
+ {
+  "id": "Q10",
+  "kind": "concept",
+  "q": "Find the code that handles: baseline order",
+  "words": "baseline order",
+  "facts": [
+   [
+    "loc",
+    [
+     "src/ask/file-rank.ts",
+     98
+    ]
+   ]
+  ],
+  "target": "baselineOrder"
+ }
+]

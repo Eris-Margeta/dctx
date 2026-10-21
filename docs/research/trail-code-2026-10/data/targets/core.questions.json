@@ -1,0 +1,55 @@
+{
+ "redacted": "private corpus: identifiers, paths and source text removed",
+ "data": [
+  {
+   "id": "Q1",
+   "kind": "def_and_callers",
+   "facts_n": 2
+  },
+  {
+   "id": "Q2",
+   "kind": "impact",
+   "facts_n": 2
+  },
+  {
+   "id": "Q3",
+   "kind": "outline",
+   "facts_n": 25
+  },
+  {
+   "id": "Q4",
+   "kind": "config",
+   "facts_n": 2
+  },
+  {
+   "id": "Q5",
+   "kind": "exports",
+   "facts_n": 8
+  },
+  {
+   "id": "Q6",
+   "kind": "source",
+   "facts_n": 3
+  },
+  {
+   "id": "Q7",
+   "kind": "callees",
+   "facts_n": 8
+  },
+  {
+   "id": "Q8",
+   "kind": "overview",
+   "facts_n": 3
+  },
+  {
+   "id": "Q9",
+   "kind": "collision",
+   "facts_n": 2
+  },
+  {
+   "id": "Q10",
+   "kind": "concept",
+   "facts_n": 1
+  }
+ ]
+}

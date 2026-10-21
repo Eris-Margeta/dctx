@@ -1,0 +1,15 @@
+corpus,tool,unstaged edit: new fn found,first query wall s,caller edge to new fn,new untracked file found,after git add found,stale after revert,stale caller after revert,second query wall s
+flask,dctx,True,0.11,False,True,True,False,False,0.04
+flask,trail,True,1.06,True,True,True,False,False,0.72
+ripgrep,dctx,True,0.42,False,True,True,False,False,0.1
+ripgrep,trail,True,1.43,True,True,True,False,False,0.77
+pocketbase,dctx,True,0.76,False,True,True,False,False,0.17
+pocketbase,trail,True,2.95,True,True,True,False,False,1.23
+trailcode,dctx,True,0.32,False,True,True,False,False,0.08
+trailcode,trail,True,1.93,True,True,True,False,False,0.88
+dctx,dctx,True,2.31,False,True,True,False,False,0.26
+dctx,trail,True,4.5,True,True,True,False,False,1.65
+django,dctx,True,2.7,False,True,True,False,False,0.83
+django,trail,True,11.3,True,True,True,False,False,3.77
+core,dctx,True,7.48,False,True,True,False,False,1.49
+core,trail,True,5.45,True,True,True,False,False,1.69

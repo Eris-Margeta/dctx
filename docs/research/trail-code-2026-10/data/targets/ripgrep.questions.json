@@ -1,0 +1,257 @@
+[
+ {
+  "id": "Q1",
+  "kind": "def_and_callers",
+  "q": "Where is sparse defined and who calls it?",
+  "facts": [
+   [
+    "loc",
+    [
+     "crates/regex/src/non_matching.rs",
+     95
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/regex/src/non_matching.rs",
+     [
+      123,
+      130,
+      136,
+      137,
+      142,
+      143,
+      144,
+      145,
+      152,
+      153,
+      154,
+      155,
+      156,
+      157
+     ]
+    ]
+   ]
+  ],
+  "target": "sparse"
+ },
+ {
+  "id": "Q2",
+  "kind": "impact",
+  "q": "What breaks if I change the signature of requires_path?",
+  "facts": [
+   [
+    "loc",
+    [
+     "crates/printer/src/summary.rs",
+     103
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/printer/src/summary.rs",
+     [
+      426,
+      697
+     ]
+    ]
+   ]
+  ],
+  "target": "requires_path"
+ },
+ {
+  "id": "Q3",
+  "kind": "outline",
+  "q": "Outline the file crates/regex/src/non_matching.rs.",
+  "file": "crates/regex/src/non_matching.rs",
+  "facts": [
+   [
+    "word",
+    "non_matching_bytes"
+   ],
+   [
+    "word",
+    "remove_matching_bytes"
+   ],
+   [
+    "word",
+    "extract"
+   ],
+   [
+    "word",
+    "sparse"
+   ],
+   [
+    "word",
+    "sparse_except"
+   ],
+   [
+    "word",
+    "dot"
+   ],
+   [
+    "word",
+    "literal"
+   ],
+   [
+    "word",
+    "anchor"
+   ]
+  ]
+ },
+ {
+  "id": "Q4",
+  "kind": "config",
+  "q": "Where is the config value XDG_CONFIG_HOME read?",
+  "key": "XDG_CONFIG_HOME",
+  "facts": [
+   [
+    "path",
+    "crates/ignore/src/gitignore.rs"
+   ]
+  ]
+ },
+ {
+  "id": "Q5",
+  "kind": "exports",
+  "q": "What does module crates/core/flags/defs.rs export?",
+  "file": "crates/core/flags/defs.rs",
+  "facts": [
+   [
+    "word",
+    "str"
+   ],
+   [
+    "word",
+    "string"
+   ],
+   [
+    "word",
+    "usize"
+   ],
+   [
+    "word",
+    "u64"
+   ],
+   [
+    "word",
+    "human_readable_u64"
+   ],
+   [
+    "word",
+    "human_readable_usize"
+   ]
+  ]
+ },
+ {
+  "id": "Q6",
+  "kind": "source",
+  "q": "Show me the implementation of into_error_option.",
+  "facts": [
+   [
+    "text",
+    "fn into_error_option(mut self) -> Option<Error> {"
+   ],
+   [
+    "text",
+    "if self.0.is_empty() {"
+   ],
+   [
+    "text",
+    "} else if self.0.len() == 1 {"
+   ]
+  ],
+  "target": "into_error_option"
+ },
+ {
+  "id": "Q7",
+  "kind": "callees",
+  "q": "What does is_line_by_line_fast call?",
+  "facts": [
+   [
+    "word",
+    "multi_line_with_matcher"
+   ],
+   [
+    "word",
+    "line_terminator"
+   ],
+   [
+    "word",
+    "as_byte"
+   ],
+   [
+    "word",
+    "non_matching_bytes"
+   ]
+  ],
+  "target": "is_line_by_line_fast"
+ },
+ {
+  "id": "Q8",
+  "kind": "overview",
+  "q": "Give me an overview of the repository layout.",
+  "facts": [
+   [
+    "word",
+    "crates"
+   ],
+   [
+    "word",
+    "tests"
+   ]
+  ]
+ },
+ {
+  "id": "Q9",
+  "kind": "collision",
+  "q": "Where is interpolate defined and who calls that specific one?",
+  "qual": "interpolate",
+  "facts": [
+   [
+    "loc",
+    [
+     "crates/matcher/src/interpolate.rs",
+     14
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/matcher/src/interpolate.rs",
+     [
+      193
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/matcher/src/lib.rs",
+     [
+      450
+     ]
+    ]
+   ]
+  ],
+  "target": "interpolate"
+ },
+ {
+  "id": "Q10",
+  "kind": "concept",
+  "q": "Find the code that handles: expected slice no line number",
+  "words": "expected slice no line number",
+  "facts": [
+   [
+    "loc",
+    [
+     "crates/searcher/src/testutil.rs",
+     342
+    ]
+   ]
+  ],
+  "target": "expected_slice_no_line_number"
+ }
+]

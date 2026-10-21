@@ -1,0 +1,483 @@
+[
+ {
+  "id": "Q1",
+  "kind": "def_and_callers",
+  "q": "Where is add_node defined and who calls it?",
+  "facts": [
+   [
+    "loc",
+    [
+     "django/db/migrations/graph.py",
+     91
+    ]
+   ],
+   [
+    "caller",
+    [
+     "django/db/migrations/loader.py",
+     [
+      295
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "docs/_ext/djangodocs.py",
+     [
+      54
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "tests/migrations/test_autodetector.py",
+     [
+      1159,
+      1160,
+      1161,
+      1249,
+      1250,
+      1251
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "tests/migrations/test_executor.py",
+     [
+      894,
+      895,
+      896,
+      936,
+      937,
+      938,
+      939,
+      940,
+      941,
+      989,
+      990,
+      991,
+      992
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "tests/migrations/test_graph.py",
+     [
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      81,
+      82,
+      83,
+      84,
+      85,
+      86,
+      87,
+      88,
+      151,
+      152,
+      153,
+      154,
+      155,
+      167,
+      168,
+      169,
+      180,
+      185,
+      204,
+      205,
+      206,
+      237,
+      238,
+      239,
+      240,
+      256,
+      266,
+      279,
+      292,
+      293,
+      328,
+      329,
+      346,
+      372,
+      373,
+      385,
+      387,
+      422,
+      423,
+      424,
+      425,
+      445,
+      446,
+      447,
+      448,
+      449
+     ]
+    ]
+   ]
+  ],
+  "target": "add_node"
+ },
+ {
+  "id": "Q2",
+  "kind": "impact",
+  "q": "What breaks if I change the signature of content_disposition_header?",
+  "facts": [
+   [
+    "loc",
+    [
+     "django/utils/http.py",
+     391
+    ]
+   ],
+   [
+    "caller",
+    [
+     "django/http/response.py",
+     [
+      631
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "tests/utils_tests/test_http.py",
+     [
+      663
+     ]
+    ]
+   ]
+  ],
+  "target": "content_disposition_header"
+ },
+ {
+  "id": "Q3",
+  "kind": "outline",
+  "q": "Outline the file django/db/migrations/graph.py.",
+  "file": "django/db/migrations/graph.py",
+  "facts": [
+   [
+    "word",
+    "Node"
+   ],
+   [
+    "word",
+    "__init__"
+   ],
+   [
+    "word",
+    "__eq__"
+   ],
+   [
+    "word",
+    "__lt__"
+   ],
+   [
+    "word",
+    "__hash__"
+   ],
+   [
+    "word",
+    "__getitem__"
+   ],
+   [
+    "word",
+    "__str__"
+   ],
+   [
+    "word",
+    "__repr__"
+   ],
+   [
+    "word",
+    "add_child"
+   ],
+   [
+    "word",
+    "add_parent"
+   ],
+   [
+    "word",
+    "DummyNode"
+   ],
+   [
+    "word",
+    "raise_error"
+   ],
+   [
+    "word",
+    "MigrationGraph"
+   ],
+   [
+    "word",
+    "add_node"
+   ],
+   [
+    "word",
+    "add_dummy_node"
+   ],
+   [
+    "word",
+    "add_dependency"
+   ],
+   [
+    "word",
+    "remove_replaced_nodes"
+   ],
+   [
+    "word",
+    "remove_replacement_node"
+   ],
+   [
+    "word",
+    "validate_consistency"
+   ],
+   [
+    "word",
+    "forwards_plan"
+   ],
+   [
+    "word",
+    "backwards_plan"
+   ],
+   [
+    "word",
+    "iterative_dfs"
+   ],
+   [
+    "word",
+    "root_nodes"
+   ],
+   [
+    "word",
+    "leaf_nodes"
+   ],
+   [
+    "word",
+    "ensure_not_cyclic"
+   ]
+  ]
+ },
+ {
+  "id": "Q4",
+  "kind": "config",
+  "q": "Where is the config value DJANGO_SETTINGS_MODULE read?",
+  "key": "DJANGO_SETTINGS_MODULE",
+  "facts": [
+   [
+    "path",
+    "django/core/management/__init__.py"
+   ],
+   [
+    "path",
+    "django/core/management/base.py"
+   ],
+   [
+    "path",
+    "django/core/management/commands/compilemessages.py"
+   ],
+   [
+    "path",
+    "django/core/management/commands/shell.py"
+   ]
+  ]
+ },
+ {
+  "id": "Q5",
+  "kind": "exports",
+  "q": "What does module django/contrib/postgres/fields/array.py export?",
+  "file": "django/contrib/postgres/fields/array.py",
+  "facts": [
+   [
+    "word",
+    "ArrayField"
+   ],
+   [
+    "word",
+    "ArrayRHSMixin"
+   ],
+   [
+    "word",
+    "ArrayContains"
+   ],
+   [
+    "word",
+    "ArrayContainedBy"
+   ],
+   [
+    "word",
+    "ArrayExact"
+   ],
+   [
+    "word",
+    "ArrayOverlap"
+   ],
+   [
+    "word",
+    "ArrayLenTransform"
+   ],
+   [
+    "word",
+    "ArrayInLookup"
+   ],
+   [
+    "word",
+    "IndexTransform"
+   ],
+   [
+    "word",
+    "IndexTransformFactory"
+   ],
+   [
+    "word",
+    "SliceTransform"
+   ],
+   [
+    "word",
+    "SliceTransformFactory"
+   ]
+  ]
+ },
+ {
+  "id": "Q6",
+  "kind": "source",
+  "q": "Show me the implementation of get_success_url_allowed_hosts.",
+  "facts": [
+   [
+    "text",
+    "def get_success_url_allowed_hosts(self, request=None):"
+   ],
+   [
+    "text",
+    "if request is None:"
+   ],
+   [
+    "text",
+    "return {request.get_host(), *self.success_url_allowed_hosts}"
+   ]
+  ],
+  "target": "get_success_url_allowed_hosts"
+ },
+ {
+  "id": "Q7",
+  "kind": "callees",
+  "q": "What does get_filters call?",
+  "facts": [
+   [
+    "word",
+    "get_filters_params"
+   ],
+   [
+    "word",
+    "lookup_allowed"
+   ],
+   [
+    "word",
+    "DisallowedModelAdminLookup"
+   ],
+   [
+    "word",
+    "callable"
+   ],
+   [
+    "word",
+    "get_fields_from_path"
+   ],
+   [
+    "word",
+    "lookup_spawns_duplicates"
+   ],
+   [
+    "word",
+    "has_output"
+   ],
+   [
+    "word",
+    "IncorrectLookupParameters"
+   ],
+   [
+    "word",
+    "make_aware"
+   ]
+  ],
+  "target": "get_filters"
+ },
+ {
+  "id": "Q8",
+  "kind": "overview",
+  "q": "Give me an overview of the repository layout.",
+  "facts": [
+   [
+    "word",
+    "tests"
+   ],
+   [
+    "word",
+    "django"
+   ],
+   [
+    "word",
+    "js_tests"
+   ],
+   [
+    "word",
+    "scripts"
+   ],
+   [
+    "word",
+    "docs"
+   ]
+  ]
+ },
+ {
+  "id": "Q9",
+  "kind": "collision",
+  "q": "Where is Serializer.start_object defined and who calls that specific one?",
+  "qual": "Serializer.start_object",
+  "facts": [
+   [
+    "loc",
+    [
+     "django/core/serializers/base.py",
+     166
+    ]
+   ],
+   [
+    "caller",
+    [
+     "django/core/serializers/base.py",
+     [
+      110
+     ]
+    ]
+   ]
+  ],
+  "target": "start_object"
+ },
+ {
+  "id": "Q10",
+  "kind": "concept",
+  "q": "Find the code that handles: check to fields composite pk",
+  "words": "check to fields composite pk",
+  "facts": [
+   [
+    "loc",
+    [
+     "django/db/models/fields/related.py",
+     642
+    ]
+   ]
+  ],
+  "target": "_check_to_fields_composite_pk"
+ }
+]

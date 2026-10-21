@@ -1,0 +1,16 @@
+dctx profile
+stage walk 3569148
+stage read 12587045
+stage hash 43753796
+stage parse/lex 0
+stage span conversion 0
+stage graph assembly 0
+stage canonicalize/seal 0
+stage persist/reuse 14351785
+stage query 1066387
+note finalization is canonicalize/seal, persist/reuse and query; file lines exclude it
+file 12918534 1773748 0 assets/trail-code-how-it-works-dark.webp
+file 11660116 1747230 0 assets/trail-code-how-it-works.webp
+file 782385 117802 0 src/graph/extract.ts
+file 760625 115177 0 src/cli.ts
+file 601142 87552 0 assets/trail-code-banner-dark.png

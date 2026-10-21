@@ -1,0 +1,2214 @@
+{
+ "corpus": "pocketbase",
+ "files_scanned": 709,
+ "defs_scanned": 6247,
+ "targets": [
+  {
+   "category": "hub",
+   "def": {
+    "name": "Verified",
+    "file": "core/record_model_auth.go",
+    "line": 26,
+    "kind": "method",
+    "container": "Record",
+    "trait": null,
+    "lang": "go",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "apis/record_auth_email_change_confirm_test.go",
+      "line": 128,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_email_change_confirm_test.go",
+      "line": 147,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_password_reset_confirm.go",
+      "line": 42,
+      "qual": ".",
+      "recv": "authRecord",
+      "text": "if !authRecord.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_password_reset_confirm_test.go",
+      "line": 136,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_password_reset_confirm_test.go",
+      "line": 154,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_password_reset_confirm_test.go",
+      "line": 200,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_password_reset_confirm_test.go",
+      "line": 233,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_password_reset_confirm_test.go",
+      "line": 308,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_verification_confirm.go",
+      "line": 37,
+      "qual": ".",
+      "recv": "record",
+      "text": "wasVerified := record.Verified()"
+     },
+     {
+      "file": "apis/record_auth_verification_confirm_test.go",
+      "line": 122,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_verification_confirm_test.go",
+      "line": 141,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_verification_confirm_test.go",
+      "line": 193,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_verification_confirm_test.go",
+      "line": 216,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_verification_request.go",
+      "line": 42,
+      "qual": ".",
+      "recv": "record",
+      "text": "if !record.Verified() && e.App.Store().Has(resendKey) {"
+     },
+     {
+      "file": "apis/record_auth_verification_request.go",
+      "line": 54,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if e.Record.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2.go",
+      "line": 326,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if e.Record.Email() == e.OAuth2User.Email && !e.Record.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2.go",
+      "line": 343,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if !isLoggedAuthRecord && !e.Record.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2.go",
+      "line": 356,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if !e.Record.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2.go",
+      "line": 374,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if !e.Record.Verified() && (e.Record.Email() == \"\" || e.Record.Email() == e.OAuth2User.Email) {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 144,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 309,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 411,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 549,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 674,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 780,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 908,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_otp.go",
+      "line": 81,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if !e.Record.Verified() && otpSentTo != \"\" && e.Record.Email() == otpSentTo {"
+     },
+     {
+      "file": "apis/record_auth_with_otp_test.go",
+      "line": 327,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_otp_test.go",
+      "line": 435,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.Verified() {"
+     },
+     {
+      "file": "core/external_auth_model.go",
+      "line": 148,
+      "qual": ".",
+      "recv": "Original",
+      "text": "hasUpgradedVerified := !e.Record.Original().IsNew() && !e.Record.Original().Verified() && e.Record.Verified()"
+     },
+     {
+      "file": "core/external_auth_model_test.go",
+      "line": 324,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "core/external_auth_model_test.go",
+      "line": 355,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.Verified() {"
+     },
+     {
+      "file": "core/external_auth_model_test.go",
+      "line": 387,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.Verified() {"
+     },
+     {
+      "file": "core/record_model_auth_test.go",
+      "line": 44,
+      "qual": ".",
+      "recv": "record",
+      "text": "if record.Verified() != false {"
+     },
+     {
+      "file": "core/record_model_auth_test.go",
+      "line": 45,
+      "qual": ".",
+      "recv": "record",
+      "text": "t.Fatalf(\"Expected verified %v, got %v\", false, record.Verified())"
+     },
+     {
+      "file": "core/record_model_auth_test.go",
+      "line": 50,
+      "qual": ".",
+      "recv": "record",
+      "text": "if record.Verified() != true {"
+     },
+     {
+      "file": "core/record_model_auth_test.go",
+      "line": 51,
+      "qual": ".",
+      "recv": "record",
+      "text": "t.Fatalf(\"Expected verified %v, got %v\", true, record.Verified())"
+     },
+     {
+      "file": "forms/record_upsert.go",
+      "line": 142,
+      "qual": ".",
+      "recv": "record",
+      "text": "\"verified\":        form.record.Verified(),"
+     },
+     {
+      "file": "forms/record_upsert.go",
+      "line": 165,
+      "qual": ".",
+      "recv": "original",
+      "text": "validation.By(validators.Equal(original.Verified())),"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "NewTaggedHook",
+    "file": "tools/hook/tagged.go",
+    "line": 21,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "go",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "core/base.go",
+      "line": 903,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelCreate, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 907,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelCreateExecute, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 911,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelAfterCreateSuccess, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 915,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelAfterCreateError, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 919,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelUpdate, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 923,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelUpdateWrite, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 927,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelAfterUpdateSuccess, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 931,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelAfterUpdateError, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 935,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelValidate, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 939,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelDelete, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 943,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelDeleteExecute, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 947,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelAfterDeleteSuccess, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 951,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onModelAfterDeleteError, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 955,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordEnrich, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 959,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordValidate, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 963,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordCreate, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 967,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordCreateExecute, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 971,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordAfterCreateSuccess, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 975,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordAfterCreateError, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 979,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordUpdate, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 983,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordUpdateExecute, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 987,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordAfterUpdateSuccess, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 991,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordAfterUpdateError, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 995,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordDelete, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 999,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordDeleteExecute, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1003,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordAfterDeleteSuccess, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1007,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordAfterDeleteError, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1011,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionValidate, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1015,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionCreate, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1019,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionCreateExecute, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1023,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionAfterCreateSuccess, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1027,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionAfterCreateError, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1031,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionUpdate, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1035,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionUpdateExecute, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1039,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionAfterUpdateSuccess, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1043,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionAfterUpdateError, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1047,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionDelete, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1051,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionDeleteExecute, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1055,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionAfterDeleteSuccess, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1059,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onCollectionAfterDeleteError, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1071,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onMailerRecordPasswordResetSend, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1075,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onMailerRecordVerificationSend, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1079,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onMailerRecordEmailChangeSend, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1083,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onMailerRecordOTPSend, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1087,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onMailerRecordAuthAlertSend, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1139,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onFileDownloadRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1143,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onFileTokenRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1151,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordAuthRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1155,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordAuthWithPasswordRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1159,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordAuthWithOAuth2Request, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1163,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordAuthRefreshRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1167,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordRequestPasswordResetRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1171,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordConfirmPasswordResetRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1175,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordRequestVerificationRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1179,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordConfirmVerificationRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1183,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordRequestEmailChangeRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1187,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordConfirmEmailChangeRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1191,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordRequestOTPRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1195,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordAuthWithOTPRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1203,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordsListRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1207,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordViewRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1211,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordCreateRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1215,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordUpdateRequest, tags...)"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1219,
+      "qual": ".",
+      "recv": "hook",
+      "text": "return hook.NewTaggedHook(app.onRecordDeleteRequest, tags...)"
+     },
+     {
+      "file": "tools/hook/tagged_test.go",
+      "line": 23,
+      "qual": "",
+      "recv": "",
+      "text": "hA := NewTaggedHook(base)"
+     },
+     {
+      "file": "tools/hook/tagged_test.go",
+      "line": 30,
+      "qual": "",
+      "recv": "",
+      "text": "hB := NewTaggedHook(base, \"b1\", \"b2\")"
+     },
+     {
+      "file": "tools/hook/tagged_test.go",
+      "line": 37,
+      "qual": "",
+      "recv": "",
+      "text": "hC := NewTaggedHook(base, \"c1\", \"c2\")"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "Email",
+    "file": "core/record_model_auth.go",
+    "line": 6,
+    "kind": "method",
+    "container": "Record",
+    "trait": null,
+    "lang": "go",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "apis/realtime_test.go",
+      "line": 556,
+      "qual": ".",
+      "recv": "clientAuthRecord",
+      "text": "t.Fatalf(\"Expected authRecord with email %q, got %q\", newName, clientAuthRecord.Email())"
+     },
+     {
+      "file": "apis/realtime_test.go",
+      "line": 708,
+      "qual": ".",
+      "recv": "clientAuthRecord",
+      "text": "t.Fatalf(\"Expected authRecord to be unset, got %q\", clientAuthRecord.Email())"
+     },
+     {
+      "file": "apis/realtime_test.go",
+      "line": 930,
+      "qual": ".",
+      "recv": "authRecord1",
+      "text": "customUser, err := findCustomUserByEmail(testApp, authRecord1.Email())"
+     },
+     {
+      "file": "apis/realtime_test.go",
+      "line": 989,
+      "qual": ".",
+      "recv": "clientAuthRecord",
+      "text": "if clientAuthRecord.Email() != customUser.Email {"
+     },
+     {
+      "file": "apis/realtime_test.go",
+      "line": 990,
+      "qual": ".",
+      "recv": "clientAuthRecord",
+      "text": "t.Fatalf(\"Expected authRecord with email %q, got %q\", customUser.Email, clientAuthRecord.Email())"
+     },
+     {
+      "file": "apis/record_auth_email_change_request.go",
+      "line": 74,
+      "qual": ".",
+      "recv": "record",
+      "text": "validation.NotIn(form.record.Email()),"
+     },
+     {
+      "file": "apis/record_auth_password_reset_confirm.go",
+      "line": 44,
+      "qual": ".",
+      "recv": "authRecord",
+      "text": "if err == nil && authRecord.Email() == cast.ToString(payload[core.TokenClaimEmail]) {"
+     },
+     {
+      "file": "apis/record_auth_verification_confirm.go",
+      "line": 104,
+      "qual": ".",
+      "recv": "record",
+      "text": "if record.Email() != email {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2.go",
+      "line": 326,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if e.Record.Email() == e.OAuth2User.Email && !e.Record.Verified() {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2.go",
+      "line": 367,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if e.Record.Email() == \"\" && e.OAuth2User.Email != \"\" {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2.go",
+      "line": 374,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if !e.Record.Verified() && (e.Record.Email() == \"\" || e.Record.Email() == e.OAuth2User.Email) {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 145,
+      "qual": ".",
+      "recv": "user",
+      "text": "t.Fatalf(\"Expected user %q to be unverified\", user.Email())"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 310,
+      "qual": ".",
+      "recv": "user",
+      "text": "t.Fatalf(\"Expected user %q to be verified\", user.Email())"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 412,
+      "qual": ".",
+      "recv": "user",
+      "text": "t.Fatalf(\"Expected user %q to be unverified\", user.Email())"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 550,
+      "qual": ".",
+      "recv": "user",
+      "text": "t.Fatalf(\"Expected user %q to be verified\", user.Email())"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 675,
+      "qual": ".",
+      "recv": "user",
+      "text": "t.Fatalf(\"Expected user %q to be unverified\", user.Email())"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 781,
+      "qual": ".",
+      "recv": "user",
+      "text": "t.Fatalf(\"Expected user %q to be unverified\", user.Email())"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 909,
+      "qual": ".",
+      "recv": "user",
+      "text": "t.Fatalf(\"Expected user %q to be unverified\", user.Email())"
+     },
+     {
+      "file": "apis/record_auth_with_otp.go",
+      "line": 81,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if !e.Record.Verified() && otpSentTo != \"\" && e.Record.Email() == otpSentTo {"
+     },
+     {
+      "file": "apis/record_auth_with_otp_test.go",
+      "line": 372,
+      "qual": ".",
+      "recv": "user",
+      "text": "otp.SetSentTo(user.Email())"
+     },
+     {
+      "file": "apis/record_helpers.go",
+      "line": 632,
+      "qual": ".",
+      "recv": "authRecord",
+      "text": "if !isFirstLogin && currentOrigin.IsNew() && authRecord.Email() != \"\" {"
+     },
+     {
+      "file": "cmd/superuser.go",
+      "line": 64,
+      "qual": ".",
+      "recv": "superuser",
+      "text": "color.Green(\"Successfully saved superuser %q!\", superuser.Email())"
+     },
+     {
+      "file": "cmd/superuser.go",
+      "line": 100,
+      "qual": ".",
+      "recv": "superuser",
+      "text": "color.Green(\"Successfully created new superuser %q!\", superuser.Email())"
+     },
+     {
+      "file": "cmd/superuser.go",
+      "line": 131,
+      "qual": ".",
+      "recv": "superuser",
+      "text": "return fmt.Errorf(\"failed to change superuser %q password: %w\", superuser.Email(), err)"
+     },
+     {
+      "file": "cmd/superuser.go",
+      "line": 134,
+      "qual": ".",
+      "recv": "superuser",
+      "text": "color.Green(\"Successfully changed superuser %q password!\", superuser.Email())"
+     },
+     {
+      "file": "cmd/superuser.go",
+      "line": 160,
+      "qual": ".",
+      "recv": "superuser",
+      "text": "return fmt.Errorf(\"failed to delete superuser %q: %w\", superuser.Email(), err)"
+     },
+     {
+      "file": "cmd/superuser.go",
+      "line": 163,
+      "qual": ".",
+      "recv": "superuser",
+      "text": "color.Green(\"Successfully deleted superuser %q!\", superuser.Email())"
+     },
+     {
+      "file": "cmd/superuser.go",
+      "line": 203,
+      "qual": ".",
+      "recv": "superuser",
+      "text": "color.New(color.BgGreen, color.FgBlack).Printf(\"Successfully created OTP for superuser %q:\", superuser.Email())"
+     },
+     {
+      "file": "core/record_model.go",
+      "line": 1454,
+      "qual": ".",
+      "recv": "lastSavedRecord",
+      "text": "lastSavedRecord.Email() != e.Record.Email()) {"
+     },
+     {
+      "file": "core/record_model_auth_test.go",
+      "line": 15,
+      "qual": ".",
+      "recv": "record",
+      "text": "if record.Email() != \"\" {"
+     },
+     {
+      "file": "core/record_model_auth_test.go",
+      "line": 16,
+      "qual": ".",
+      "recv": "record",
+      "text": "t.Fatalf(\"Expected email %q, got %q\", \"\", record.Email())"
+     },
+     {
+      "file": "core/record_model_auth_test.go",
+      "line": 22,
+      "qual": ".",
+      "recv": "record",
+      "text": "if record.Email() != email {"
+     },
+     {
+      "file": "core/record_model_auth_test.go",
+      "line": 23,
+      "qual": ".",
+      "recv": "record",
+      "text": "t.Fatalf(\"Expected email %q, got %q\", email, record.Email())"
+     },
+     {
+      "file": "core/record_model_superusers.go",
+      "line": 54,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if e.Type == ModelEventTypeCreate && e.Record.Email() != DefaultInstallerEmail {"
+     },
+     {
+      "file": "core/record_model_superusers.go",
+      "line": 79,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if e.Record.Email() == DefaultInstallerEmail {"
+     },
+     {
+      "file": "core/record_query_test.go",
+      "line": 1028,
+      "qual": ".",
+      "recv": "record",
+      "text": "if !strings.EqualFold(record.Email(), s.email) {"
+     },
+     {
+      "file": "core/record_query_test.go",
+      "line": 1029,
+      "qual": ".",
+      "recv": "record",
+      "text": "t.Fatalf(\"Expected record with email %s, got %s\", s.email, record.Email())"
+     },
+     {
+      "file": "core/record_tokens.go",
+      "line": 91,
+      "qual": ".",
+      "recv": "m",
+      "text": "TokenClaimEmail:        m.Email(),"
+     },
+     {
+      "file": "core/record_tokens.go",
+      "line": 114,
+      "qual": ".",
+      "recv": "m",
+      "text": "TokenClaimEmail:        m.Email(),"
+     },
+     {
+      "file": "core/record_tokens.go",
+      "line": 137,
+      "qual": ".",
+      "recv": "m",
+      "text": "TokenClaimEmail:        m.Email(),"
+     },
+     {
+      "file": "core/system_alert.go",
+      "line": 125,
+      "qual": ".",
+      "recv": "superuser",
+      "text": "To:      []mail.Address{{Address: superuser.Email()}},"
+     },
+     {
+      "file": "forms/record_upsert.go",
+      "line": 141,
+      "qual": ".",
+      "recv": "record",
+      "text": "\"email\":           form.record.Email(),"
+     },
+     {
+      "file": "forms/record_upsert.go",
+      "line": 156,
+      "qual": ".",
+      "recv": "original",
+      "text": "validation.By(validators.Equal(original.Email())),"
+     },
+     {
+      "file": "mails/record.go",
+      "line": 32,
+      "qual": ".",
+      "recv": "authRecord",
+      "text": "To:      []mail.Address{{Address: authRecord.Email()}},"
+     },
+     {
+      "file": "mails/record.go",
+      "line": 70,
+      "qual": ".",
+      "recv": "authRecord",
+      "text": "To:      []mail.Address{{Address: authRecord.Email()}},"
+     },
+     {
+      "file": "mails/record.go",
+      "line": 148,
+      "qual": ".",
+      "recv": "authRecord",
+      "text": "To:      []mail.Address{{Address: authRecord.Email()}},"
+     },
+     {
+      "file": "mails/record.go",
+      "line": 186,
+      "qual": ".",
+      "recv": "authRecord",
+      "text": "To:      []mail.Address{{Address: authRecord.Email()}},"
+     },
+     {
+      "file": "plugins/jsvm/binds_test.go",
+      "line": 306,
+      "qual": ".",
+      "recv": "m2",
+      "text": "if m2.Email() != \"test@example.com\" {"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "ValidatePassword",
+    "file": "core/record_model_auth.go",
+    "line": 78,
+    "kind": "method",
+    "container": "Record",
+    "trait": null,
+    "lang": "go",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "apis/record_auth_email_change_confirm.go",
+      "line": 90,
+      "qual": ".",
+      "recv": "authRecord",
+      "text": "if authRecord == nil || !authRecord.ValidatePassword(v) {"
+     },
+     {
+      "file": "apis/record_auth_password_reset_confirm_test.go",
+      "line": 158,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567!\") {"
+     },
+     {
+      "file": "apis/record_auth_password_reset_confirm_test.go",
+      "line": 237,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567!\") {"
+     },
+     {
+      "file": "apis/record_auth_password_reset_confirm_test.go",
+      "line": 312,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567!\") {"
+     },
+     {
+      "file": "apis/record_auth_verification_confirm_test.go",
+      "line": 197,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_verification_confirm_test.go",
+      "line": 220,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 149,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 266,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 314,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 386,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 416,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 506,
+      "qual": ".",
+      "recv": "user",
+      "text": "if user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 554,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 630,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 679,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 751,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 785,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 879,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 913,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 992,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 1282,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 1371,
+      "qual": ".",
+      "recv": "user",
+      "text": "if !user.ValidatePassword(\"1234567890\") {"
+     },
+     {
+      "file": "apis/record_auth_with_otp.go",
+      "line": 62,
+      "qual": ".",
+      "recv": "OTP",
+      "text": "if !event.OTP.ValidatePassword(form.Password) {"
+     },
+     {
+      "file": "apis/record_auth_with_password.go",
+      "line": 87,
+      "qual": ".",
+      "recv": "Record",
+      "text": "if e.Record == nil || !e.Record.ValidatePassword(e.Password) {"
+     },
+     {
+      "file": "apis/record_auth_with_password.go",
+      "line": 135,
+      "qual": ".",
+      "recv": "record",
+      "text": "_ = record.ValidatePassword(\"\")"
+     },
+     {
+      "file": "apis/record_crud_test.go",
+      "line": 3198,
+      "qual": ".",
+      "recv": "record",
+      "text": "if !record.ValidatePassword(\"12345678\") {"
+     },
+     {
+      "file": "apis/record_crud_test.go",
+      "line": 3246,
+      "qual": ".",
+      "recv": "record",
+      "text": "if !record.ValidatePassword(\"12345678\") {"
+     },
+     {
+      "file": "apis/record_crud_test.go",
+      "line": 3373,
+      "qual": ".",
+      "recv": "record",
+      "text": "if !record.ValidatePassword(\"123456789\") {"
+     },
+     {
+      "file": "cmd/superuser_test.go",
+      "line": 88,
+      "qual": ".",
+      "recv": "superuser",
+      "text": "} else if !superuser.ValidatePassword(s.password) {"
+     },
+     {
+      "file": "cmd/superuser_test.go",
+      "line": 171,
+      "qual": ".",
+      "recv": "superuser",
+      "text": "} else if !superuser.ValidatePassword(s.password) {"
+     },
+     {
+      "file": "cmd/superuser_test.go",
+      "line": 252,
+      "qual": ".",
+      "recv": "superuser",
+      "text": "} else if !superuser.ValidatePassword(s.password) {"
+     },
+     {
+      "file": "core/record_model_auth_test.go",
+      "line": 103,
+      "qual": ".",
+      "recv": "record",
+      "text": "if record.ValidatePassword(s.password) {"
+     },
+     {
+      "file": "core/record_model_auth_test.go",
+      "line": 109,
+      "qual": ".",
+      "recv": "record",
+      "text": "result := record.ValidatePassword(s.password)"
+     },
+     {
+      "file": "core/record_model_auth_test.go",
+      "line": 116,
+      "qual": ".",
+      "recv": "record",
+      "text": "if record.ValidatePassword(security.PseudorandomString(5)) {"
+     },
+     {
+      "file": "core/record_model_auth_test.go",
+      "line": 139,
+      "qual": ".",
+      "recv": "record",
+      "text": "if !record.ValidatePassword(pass) {"
+     },
+     {
+      "file": "forms/record_upsert.go",
+      "line": 204,
+      "qual": ".",
+      "recv": "Original",
+      "text": "if !form.record.Original().ValidatePassword(v) {"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "newRecordFromNullStringMap",
+    "file": "core/record_model.go",
+    "line": 484,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "go",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "core/record_model.go",
+      "line": 529,
+      "qual": "",
+      "recv": "",
+      "text": "result[i], err = newRecordFromNullStringMap(collection, row)"
+     },
+     {
+      "file": "core/record_query.go",
+      "line": 172,
+      "qual": "",
+      "recv": "",
+      "text": "return newRecordFromNullStringMap(collection, data)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "prepareInternalAction",
+    "file": "apis/batch.go",
+    "line": 486,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "go",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "apis/batch.go",
+      "line": 283,
+      "qual": "",
+      "recv": "",
+      "text": "handle, params, ok := prepareInternalAction(activeApp, ir, optNext)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "saveIndex",
+    "file": "ui/src/collections/indexUpsertModal.js",
+    "line": 63,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "ui/src/collections/indexUpsertModal.js",
+      "line": 179,
+      "qual": "",
+      "recv": "",
+      "text": "saveIndex();"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "randomizedThrottle",
+    "file": "apis/record_crud.go",
+    "line": 132,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "go",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "apis/record_crud.go",
+      "line": 121,
+      "qual": "",
+      "recv": "",
+      "text": "randomizedThrottle(500)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "initPasswordField",
+    "file": "core/collection_model.go",
+    "line": 986,
+    "kind": "method",
+    "container": "Collection",
+    "trait": null,
+    "lang": "go",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "core/collection_model.go",
+      "line": 947,
+      "qual": ".",
+      "recv": "c",
+      "text": "c.initPasswordField()"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "QuoteSimpleTableName",
+    "file": "core/db_builder.go",
+    "line": 40,
+    "kind": "method",
+    "container": "dualDBBuilder",
+    "trait": null,
+    "lang": "go",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "core/db_builder.go",
+      "line": 41,
+      "qual": ".",
+      "recv": "concurrentDB",
+      "text": "return b.concurrentDB.QuoteSimpleTableName(table)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "AllowedFields",
+    "file": "core/record_field_resolver.go",
+    "line": 65,
+    "kind": "method",
+    "container": "RecordFieldResolver",
+    "trait": null,
+    "lang": "go",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "core/record_field_resolver_test.go",
+      "line": 30,
+      "qual": ".",
+      "recv": "r",
+      "text": "fields := r.AllowedFields()"
+     },
+     {
+      "file": "core/record_field_resolver_test.go",
+      "line": 43,
+      "qual": ".",
+      "recv": "r",
+      "text": "fields = r.AllowedFields()"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "FindRateLimitRule",
+    "file": "core/settings_model.go",
+    "line": 601,
+    "kind": "method",
+    "container": "RateLimitsConfig",
+    "trait": null,
+    "lang": "go",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "apis/middlewares_rate_limit.go",
+      "line": 37,
+      "qual": ".",
+      "recv": "RateLimits",
+      "text": "rule, ok := e.App.Settings().RateLimits.FindRateLimitRule("
+     },
+     {
+      "file": "apis/middlewares_rate_limit.go",
+      "line": 102,
+      "qual": ".",
+      "recv": "RateLimits",
+      "text": "rule, ok := e.App.Settings().RateLimits.FindRateLimitRule(labels, defaultRateLimitAudience(e)...)"
+     },
+     {
+      "file": "core/settings_model_test.go",
+      "line": 773,
+      "qual": ".",
+      "recv": "limits",
+      "text": "rule, ok := limits.FindRateLimitRule(s.labels, s.audience...)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "downloadJSON",
+    "file": "ui/src/records/recordPreviewModal.js",
+    "line": 35,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [
+     {
+      "file": "ui/src/records/recordPreviewModal.js",
+      "line": 226,
+      "qual": "",
+      "recv": "",
+      "text": "onclick: () => downloadJSON(data.record),"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "ui/src/logs/logPreviewModal.js",
+      "line": 268,
+      "qual": "",
+      "recv": "",
+      "text": "onclick: () => downloadJSON(data.log),",
+      "bound_to": "ui/src/logs/logPreviewModal.js:38:downloadJSON"
+     }
+    ],
+    "ambiguous": [
+     {
+      "file": "ui/dist/assets/index-BWzVsQhl.js",
+      "line": 2,
+      "qual": "",
+      "recv": "",
+      "text": "var e=Object.create,n=Object.defineProperty,r=Object.getOwnPropertyDescriptor,i=Object.getOwnPropertyNames,a=Object.getPrototypeOf,o=Object.prototype.hasOwnProperty,s=(e,n)=>()=>(n||(e((n={exports:{}}"
+     },
+     {
+      "file": "ui/src/logs/logPreviewModal.js",
+      "line": 39,
+      "qual": ".",
+      "recv": "utils",
+      "text": "app.utils.downloadJSON(log, \"log_\" + log.created.replaceAll(/[-:\\. ]/gi, \"\") + \".json\");"
+     },
+     {
+      "file": "ui/src/logs/logsList.js",
+      "line": 186,
+      "qual": ".",
+      "recv": "utils",
+      "text": "return app.utils.downloadJSON("
+     },
+     {
+      "file": "ui/src/logs/logsList.js",
+      "line": 195,
+      "qual": ".",
+      "recv": "utils",
+      "text": "return app.utils.downloadJSON(selected, `${selected.length}_logs_${from}_to_${to}.json`);"
+     },
+     {
+      "file": "ui/src/records/recordPreviewModal.js",
+      "line": 42,
+      "qual": ".",
+      "recv": "utils",
+      "text": "app.utils.downloadJSON(record, record.collectionName + \"_\" + record.id + \".json\");"
+     },
+     {
+      "file": "ui/src/records/recordsList.js",
+      "line": 207,
+      "qual": ".",
+      "recv": "utils",
+      "text": "return app.utils.downloadJSON(selected[0], props.collection.name + \"_\" + selected[0].id + \".json\");"
+     },
+     {
+      "file": "ui/src/records/recordsList.js",
+      "line": 210,
+      "qual": ".",
+      "recv": "utils",
+      "text": "return app.utils.downloadJSON(selected, `${selected.length}_${props.collection.name}_records.json`);"
+     },
+     {
+      "file": "ui/src/settings/sync/pageExportCollections.js",
+      "line": 57,
+      "qual": ".",
+      "recv": "utils",
+      "text": "app.utils.downloadJSON(collectionsArr, \"pb_schema\");"
+     }
+    ]
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "onRecordDeleteExecute",
+    "file": "core/record_model.go",
+    "line": 1490,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "go",
+    "is_iface": false
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [
+     {
+      "file": "core/record_model.go",
+      "line": 444,
+      "qual": "",
+      "recv": "",
+      "text": "return onRecordDeleteExecute(e)"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "plugins/jsvm/internal/types/generated/types.d.ts",
+      "line": 7276,
+      "qual": "",
+      "recv": "",
+      "text": "onRecordDeleteExecute(...tags: string[]): (hook.TaggedHook<RecordEvent | undefined>)",
+      "bound_to": "plugins/jsvm/internal/types/generated/types.d.ts:1333:onRecordDeleteExecute"
+     },
+     {
+      "file": "plugins/jsvm/internal/types/generated/types.d.ts",
+      "line": 8359,
+      "qual": "",
+      "recv": "",
+      "text": "onRecordDeleteExecute(...tags: string[]): (hook.TaggedHook<RecordEvent | undefined>)",
+      "bound_to": "plugins/jsvm/internal/types/generated/types.d.ts:1333:onRecordDeleteExecute"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "selectAll",
+    "file": "ui/src/records/recordsList.js",
+    "line": 182,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [
+     {
+      "file": "ui/src/records/recordsList.js",
+      "line": 232,
+      "qual": "",
+      "recv": "",
+      "text": "selectAll(false);"
+     },
+     {
+      "file": "ui/src/records/recordsList.js",
+      "line": 238,
+      "qual": "",
+      "recv": "",
+      "text": "selectAll(false);"
+     },
+     {
+      "file": "ui/src/records/recordsList.js",
+      "line": 450,
+      "qual": "",
+      "recv": "",
+      "text": "onchange: (e) => selectAll(e.target.checked),"
+     },
+     {
+      "file": "ui/src/records/recordsList.js",
+      "line": 732,
+      "qual": "",
+      "recv": "",
+      "text": "onclick: () => selectAll(false),"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "ui/src/logs/logsList.js",
+      "line": 252,
+      "qual": "",
+      "recv": "",
+      "text": "onchange: (e) => selectAll(e.target.checked),",
+      "bound_to": "ui/src/logs/logsList.js:110:selectAll"
+     },
+     {
+      "file": "ui/src/logs/logsList.js",
+      "line": 501,
+      "qual": "",
+      "recv": "",
+      "text": "onclick: () => selectAll(false),",
+      "bound_to": "ui/src/logs/logsList.js:110:selectAll"
+     },
+     {
+      "file": "ui/src/settings/sync/pageExportCollections.js",
+      "line": 44,
+      "qual": "",
+      "recv": "",
+      "text": "selectAll();",
+      "bound_to": "ui/src/settings/sync/pageExportCollections.js:73:selectAll"
+     },
+     {
+      "file": "ui/src/settings/sync/pageExportCollections.js",
+      "line": 64,
+      "qual": "",
+      "recv": "",
+      "text": "selectAll();",
+      "bound_to": "ui/src/settings/sync/pageExportCollections.js:73:selectAll"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "loadRecords",
+    "file": "ui/src/records/recordFilePickerModal.js",
+    "line": 118,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [
+     {
+      "file": "ui/src/records/recordFilePickerModal.js",
+      "line": 105,
+      "qual": "",
+      "recv": "",
+      "text": "() => loadRecords(true),"
+     },
+     {
+      "file": "ui/src/records/recordFilePickerModal.js",
+      "line": 198,
+      "qual": "",
+      "recv": "",
+      "text": "loadRecords(true);"
+     },
+     {
+      "file": "ui/src/records/recordFilePickerModal.js",
+      "line": 213,
+      "qual": "",
+      "recv": "",
+      "text": "loadRecords(true);"
+     },
+     {
+      "file": "ui/src/records/recordFilePickerModal.js",
+      "line": 348,
+      "qual": "",
+      "recv": "",
+      "text": "onclick: () => loadRecords(),"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "ui/src/records/recordsList.js",
+      "line": 233,
+      "qual": "",
+      "recv": "",
+      "text": "loadRecords(true);",
+      "bound_to": "ui/src/records/recordsList.js:82:loadRecords"
+     },
+     {
+      "file": "ui/src/records/recordsList.js",
+      "line": 290,
+      "qual": "",
+      "recv": "",
+      "text": "return loadRecords(true);",
+      "bound_to": "ui/src/records/recordsList.js:82:loadRecords"
+     },
+     {
+      "file": "ui/src/records/recordsList.js",
+      "line": 330,
+      "qual": "",
+      "recv": "",
+      "text": "loadRecords(true);",
+      "bound_to": "ui/src/records/recordsList.js:82:loadRecords"
+     },
+     {
+      "file": "ui/src/records/recordsList.js",
+      "line": 372,
+      "qual": "",
+      "recv": "",
+      "text": "loadRecords(true);",
+      "bound_to": "ui/src/records/recordsList.js:82:loadRecords"
+     },
+     {
+      "file": "ui/src/records/recordsList.js",
+      "line": 707,
+      "qual": "",
+      "recv": "",
+      "text": "onclick: () => loadRecords(),",
+      "bound_to": "ui/src/records/recordsList.js:82:loadRecords"
+     },
+     {
+      "file": "ui/src/records/recordsPickerModal.js",
+      "line": 86,
+      "qual": "",
+      "recv": "",
+      "text": "loadRecords(true);",
+      "bound_to": "ui/src/records/recordsPickerModal.js:155:loadRecords"
+     },
+     {
+      "file": "ui/src/records/recordsPickerModal.js",
+      "line": 209,
+      "qual": "",
+      "recv": "",
+      "text": "loadRecords();",
+      "bound_to": "ui/src/records/recordsPickerModal.js:155:loadRecords"
+     },
+     {
+      "file": "ui/src/records/recordsPickerModal.js",
+      "line": 248,
+      "qual": "",
+      "recv": "",
+      "text": "loadRecords(true);",
+      "bound_to": "ui/src/records/recordsPickerModal.js:155:loadRecords"
+     },
+     {
+      "file": "ui/src/records/recordsPickerModal.js",
+      "line": 264,
+      "qual": "",
+      "recv": "",
+      "text": "loadRecords(true);",
+      "bound_to": "ui/src/records/recordsPickerModal.js:155:loadRecords"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "OnCollectionAfterDeleteError",
+    "file": "core/app.go",
+    "line": 1220,
+    "kind": "method",
+    "container": "App",
+    "trait": "App",
+    "lang": "go",
+    "is_iface": true
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "core/collection_model.go",
+      "line": 254,
+      "qual": ".",
+      "recv": "App",
+      "text": "err := me.App.OnCollectionAfterDeleteError().Trigger(ce, func(ce *CollectionErrorEvent) error {"
+     },
+     {
+      "file": "core/collection_model.go",
+      "line": 326,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.OnCollectionAfterDeleteError().Bind(&hook.Handler[*CollectionErrorEvent]{"
+     },
+     {
+      "file": "core/collection_model_test.go",
+      "line": 1292,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.OnCollectionAfterDeleteError().Bind(collectionErrorEventHandler)"
+     },
+     {
+      "file": "tests/app.go",
+      "line": 500,
+      "qual": ".",
+      "recv": "t",
+      "text": "t.OnCollectionAfterDeleteError().Bind(&hook.Handler[*core.CollectionErrorEvent]{"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "OnRecordAuthWithOAuth2Request",
+    "file": "core/app.go",
+    "line": 1384,
+    "kind": "method",
+    "container": "App",
+    "trait": "App",
+    "lang": "go",
+    "is_iface": true
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "apis/record_auth_with_oauth2.go",
+      "line": 154,
+      "qual": ".",
+      "recv": "App",
+      "text": "return e.App.OnRecordAuthWithOAuth2Request().Trigger(event, func(e *core.RecordAuthWithOAuth2RequestEvent) error {"
+     },
+     {
+      "file": "apis/record_auth_with_oauth2_test.go",
+      "line": 1940,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.OnRecordAuthWithOAuth2Request().BindFunc(func(e *core.RecordAuthWithOAuth2RequestEvent) error {"
+     },
+     {
+      "file": "tests/app.go",
+      "line": 655,
+      "qual": ".",
+      "recv": "t",
+      "text": "t.OnRecordAuthWithOAuth2Request().Bind(&hook.Handler[*core.RecordAuthWithOAuth2RequestEvent]{"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "OnSettingsReload",
+    "file": "core/app.go",
+    "line": 1327,
+    "kind": "method",
+    "container": "App",
+    "trait": "App",
+    "lang": "go",
+    "is_iface": true
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "apis/middlewares_rate_limit.go",
+      "line": 213,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.OnSettingsReload().Unbind(rateLimitersSettingsHookId)"
+     },
+     {
+      "file": "apis/middlewares_rate_limit.go",
+      "line": 230,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.OnSettingsReload().Bind(&hook.Handler[*core.SettingsReloadEvent]{"
+     },
+     {
+      "file": "core/backup.go",
+      "line": 128,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.OnSettingsReload().BindFunc(func(e *SettingsReloadEvent) error {"
+     },
+     {
+      "file": "core/base.go",
+      "line": 1613,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.OnSettingsReload().Bind(&hook.Handler[*SettingsReloadEvent]{"
+     },
+     {
+      "file": "core/notify_watcher_test.go",
+      "line": 44,
+      "qual": ".",
+      "recv": "app1",
+      "text": "app1.OnSettingsReload().BindFunc(func(e *core.SettingsReloadEvent) error {"
+     },
+     {
+      "file": "core/notify_watcher_test.go",
+      "line": 51,
+      "qual": ".",
+      "recv": "app2",
+      "text": "app2.OnSettingsReload().BindFunc(func(e *core.SettingsReloadEvent) error {"
+     },
+     {
+      "file": "core/settings_query.go",
+      "line": 47,
+      "qual": ".",
+      "recv": "app",
+      "text": "return app.OnSettingsReload().Trigger(event, func(e *SettingsReloadEvent) error {"
+     },
+     {
+      "file": "tests/app.go",
+      "line": 615,
+      "qual": ".",
+      "recv": "t",
+      "text": "t.OnSettingsReload().Bind(&hook.Handler[*core.SettingsReloadEvent]{"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "Reread",
+    "file": "tools/router/rereadable_read_closer.go",
+    "line": 15,
+    "kind": "method",
+    "container": "Rereader",
+    "trait": "Rereader",
+    "lang": "go",
+    "is_iface": true
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "apis/middlewares_body_limit.go",
+      "line": 148,
+      "qual": ".",
+      "recv": "rereader",
+      "text": "rereader.Reread()"
+     },
+     {
+      "file": "tools/router/event.go",
+      "line": 395,
+      "qual": ".",
+      "recv": "body",
+      "text": "body.Reread()"
+     },
+     {
+      "file": "tools/router/rereadable_read_closer.go",
+      "line": 57,
+      "qual": ".",
+      "recv": "r",
+      "text": "r.Reread()"
+     },
+     {
+      "file": "tools/router/rereadable_read_closer_test.go",
+      "line": 31,
+      "qual": ".",
+      "recv": "rereadable",
+      "text": "rereadable.Reread()"
+     }
+    ]
+   }
+  }
+ ],
+ "oracle_note": "gold recomputed by regold.py with the multi-line-aware cleaner"
+}

@@ -1,0 +1,9 @@
+#!/bin/sh
+# benv [--net] CMD...  : run CMD as the bench user, isolated env, pinned to CPUs 24-31, no network unless --net
+W=/path/to/workdir/dctx-vs-trail
+NET=no
+if [ "$1" = "--net" ]; then NET=yes; shift; fi
+set -- env -i HOME=$W/home USER=dctxbench LANG=C.UTF-8 PATH=$W/bin:$W/trail/node_modules/.bin:/usr/local/bin:/usr/bin:/bin \
+  DO_NOT_TRACK=1 DCTX_CACHE_DIR=$W/dctx-cache npm_config_cache=$W/npm-cache XDG_CACHE_HOME=$W/home/.cache \
+  ${BENV_EXTRA:-} taskset -c 24-31 "$@"
+if [ "$NET" = yes ]; then exec sudo -u dctxbench "$@"; else exec sudo -u dctxbench unshare -rn "$@"; fi

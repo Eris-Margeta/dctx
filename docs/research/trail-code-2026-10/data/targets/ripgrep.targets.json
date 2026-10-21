@@ -1,0 +1,1730 @@
+{
+ "corpus": "ripgrep",
+ "files_scanned": 100,
+ "defs_scanned": 2691,
+ "targets": [
+  {
+   "category": "hub",
+   "def": {
+    "name": "expected_with_line_number",
+    "file": "crates/searcher/src/testutil.rs",
+    "line": 331,
+    "kind": "method",
+    "container": "SearcherTester",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 478,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_line)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 501,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_line)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 542,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 553,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_line)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 564,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_line)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 587,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(&exp_line)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 610,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(&exp_line)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 635,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(&exp_line)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 851,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_lines)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 903,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_lines)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 955,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_lines)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 1007,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_lines)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 1071,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_lines)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 1118,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_lines)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 1174,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_lines)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 1235,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_lines)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 1304,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_lines)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 1378,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_lines)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 1454,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_with_line_number(exp_lines)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "unwrap_switch",
+    "file": "crates/core/flags/mod.rs",
+    "line": 277,
+    "kind": "method",
+    "container": "FlagValue",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 291,
+      "qual": ".",
+      "recv": "v",
+      "text": "let mode = if v.unwrap_switch() {"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 482,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.binary = if v.unwrap_switch() {"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 550,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.buffer = if v.unwrap_switch() {"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 612,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.byte_offset = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 670,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"flag has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 975,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.column = Some(v.unwrap_switch());"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 1295,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--count can only be enabled\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 1358,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--count-matches can only be enabled\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 1419,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.crlf = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 1485,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--debug can only be enabled\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 2156,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch());"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 2209,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--files-with-matches can only be enabled\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 2255,
+      "qual": ".",
+      "recv": "v",
+      "text": "v.unwrap_switch(),"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 2315,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.fixed_strings = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 2373,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.follow = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 2620,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.glob_case_insensitive = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 2684,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.heading = Some(v.unwrap_switch());"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 2741,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--help has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 2811,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.hidden = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 3182,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"flag has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 3299,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.ignore_file_case_insensitive = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 3358,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.include_zero = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 3413,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.invert_match = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 3505,
+      "qual": ".",
+      "recv": "v",
+      "text": "if v.unwrap_switch() {"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 3573,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.buffer = if v.unwrap_switch() {"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 3630,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--line-number has no automatic negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 3684,
+      "qual": ".",
+      "recv": "v",
+      "text": "v.unwrap_switch(),"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 3740,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--line-regexp has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 3852,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.max_columns_preview = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4096,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.mmap = if v.unwrap_switch() {"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4188,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.multiline = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4255,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.multiline_dotall = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4303,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--no-config has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4356,
+      "qual": ".",
+      "recv": "v",
+      "text": "let yes = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4422,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.no_ignore_dot = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4468,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.no_ignore_exclude = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4515,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.no_ignore_files = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4562,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.no_ignore_global = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4611,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.no_ignore_messages = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4660,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.no_ignore_parent = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4717,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.no_ignore_vcs = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4764,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.no_messages = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4811,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.no_unicode = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4866,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.no_require_git = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4939,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.no_unicode = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 4993,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--null has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 5048,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--null-data has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 5118,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.one_file_system = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 5165,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--only-matching does not have a negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 5311,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--passthru has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 5378,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.engine = if v.unwrap_switch() {"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 5435,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--pcre2-version has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 5668,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--pretty has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 5727,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--quiet has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 6101,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.search_zip = if v.unwrap_switch() {"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 6180,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--smart-case flag has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 6244,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.sort = if v.unwrap_switch() {"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 6552,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.stats = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 6599,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--stop-on-nonmatch has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 6672,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.binary = if v.unwrap_switch() {"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 6795,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--trace can only be enabled\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 6842,
+      "qual": ".",
+      "recv": "v",
+      "text": "args.trim = v.unwrap_switch();"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 7192,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--type-list has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 7247,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--unrestricted has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 7321,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--version has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 7388,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--vimgrep has no negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 7437,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--with-filename has no defined negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 7490,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--no-filename has no defined negation\");"
+     },
+     {
+      "file": "crates/core/flags/defs.rs",
+      "line": 7550,
+      "qual": ".",
+      "recv": "v",
+      "text": "assert!(v.unwrap_switch(), \"--word-regexp has no negation\");"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "sparse",
+    "file": "crates/regex/src/non_matching.rs",
+    "line": 95,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 123,
+      "qual": "",
+      "recv": "",
+      "text": "sparse(&extract(\".\")),"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 130,
+      "qual": "",
+      "recv": "",
+      "text": "sparse(&extract(\"(?s).\")),"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 136,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(sparse(&extract(\"(?-u).\")), vec![b'\\n']);"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 137,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(sparse(&extract(\"(?s-u).\")), vec![]);"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 142,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(sparse(&extract(\"a\")), sparse_except(&[b'a']));"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 143,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(sparse(&extract(\"\u2603\")), sparse_except(&[0xE2, 0x98, 0x83]));"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 144,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(sparse(&extract(r\"\\xFF\")), sparse_except(&[0xC3, 0xBF]));"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 145,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(sparse(&extract(r\"(?-u)\\xFF\")), sparse_except(&[0xFF]));"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 152,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(sparse(&extract(r\"^\")), sparse_except(&[b'\\n']));"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 153,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(sparse(&extract(r\"$\")), sparse_except(&[b'\\n']));"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 154,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(sparse(&extract(r\"\\A\")), sparse_except(&[b'\\n']));"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 155,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(sparse(&extract(r\"\\z\")), sparse_except(&[b'\\n']));"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 156,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(sparse(&extract(r\"(?m)^\")), sparse_except(&[b'\\n']));"
+     },
+     {
+      "file": "crates/regex/src/non_matching.rs",
+      "line": 157,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(sparse(&extract(r\"(?m)$\")), sparse_except(&[b'\\n']));"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "analysis",
+    "file": "crates/regex/src/ast.rs",
+    "line": 150,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 156,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(\"\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 160,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(\"foo\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 164,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(\"Foo\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 168,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(\"foO\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 172,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(r\"foo\\\\\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 176,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(r\"foo\\w\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 180,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(r\"foo\\S\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 184,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(r\"foo\\p{Ll}\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 188,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(r\"foo[a-z]\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 192,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(r\"foo[A-Z]\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 196,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(r\"foo[\\S\\t]\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 200,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(r\"foo\\\\S\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 204,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(r\"\\p{Ll}\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 208,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(r\"aBc\\w\");"
+     },
+     {
+      "file": "crates/regex/src/ast.rs",
+      "line": 212,
+      "qual": "",
+      "recv": "",
+      "text": "let x = analysis(r\"a\\u0061\");"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "requires_path",
+    "file": "crates/printer/src/summary.rs",
+    "line": 103,
+    "kind": "method",
+    "container": "SummaryKind",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/printer/src/summary.rs",
+      "line": 426,
+      "qual": ".",
+      "recv": "kind",
+      "text": "if !self.config.path && !self.config.kind.requires_path() {"
+     },
+     {
+      "file": "crates/printer/src/summary.rs",
+      "line": 697,
+      "qual": ".",
+      "recv": "kind",
+      "text": "if self.path.is_none() && self.summary.config.kind.requires_path() {"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "expected_slice_no_line_number",
+    "file": "crates/searcher/src/testutil.rs",
+    "line": 342,
+    "kind": "method",
+    "container": "SearcherTester",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 754,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_slice_no_line_number(exp_slice)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 786,
+      "qual": ".",
+      "recv": "",
+      "text": ".expected_slice_no_line_number(exp_slice)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "patterns_from_path",
+    "file": "crates/cli/src/pattern.rs",
+    "line": 82,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/core/flags/hiargs.rs",
+      "line": 1040,
+      "qual": "::",
+      "recv": "cli",
+      "text": "for pat in grep::cli::patterns_from_path(&path)? {"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "environment",
+    "file": "crates/printer/src/hyperlink/mod.rs",
+    "line": 43,
+    "kind": "method",
+    "container": "HyperlinkConfig",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/printer/src/hyperlink/mod.rs",
+      "line": 660,
+      "qual": ".",
+      "recv": "config",
+      "text": "part.interpolate_to(self.config.environment(), values, &mut buf);"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "into_error_option",
+    "file": "crates/ignore/src/lib.rs",
+    "line": 396,
+    "kind": "method",
+    "container": "PartialErrorBuilder",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/ignore/src/dir.rs",
+      "line": 257,
+      "qual": ".",
+      "recv": "errs",
+      "text": "(ig, errs.into_error_option())"
+     },
+     {
+      "file": "crates/ignore/src/dir.rs",
+      "line": 466,
+      "qual": ".",
+      "recv": "errs",
+      "text": "(ig, errs.into_error_option())"
+     },
+     {
+      "file": "crates/ignore/src/dir.rs",
+      "line": 1045,
+      "qual": ".",
+      "recv": "errs",
+      "text": "(gi, errs.into_error_option())"
+     },
+     {
+      "file": "crates/ignore/src/gitignore.rs",
+      "line": 112,
+      "qual": ".",
+      "recv": "errs",
+      "text": "Ok(gi) => (gi, errs.into_error_option()),"
+     },
+     {
+      "file": "crates/ignore/src/gitignore.rs",
+      "line": 115,
+      "qual": ".",
+      "recv": "errs",
+      "text": "(Gitignore::empty(), errs.into_error_option())"
+     },
+     {
+      "file": "crates/ignore/src/gitignore.rs",
+      "line": 385,
+      "qual": ".",
+      "recv": "errs",
+      "text": "Ok(gi) => (gi, errs.into_error_option()),"
+     },
+     {
+      "file": "crates/ignore/src/gitignore.rs",
+      "line": 388,
+      "qual": ".",
+      "recv": "errs",
+      "text": "(Gitignore::empty(), errs.into_error_option())"
+     },
+     {
+      "file": "crates/ignore/src/gitignore.rs",
+      "line": 431,
+      "qual": ".",
+      "recv": "errs",
+      "text": "errs.into_error_option()"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 765,
+      "qual": ".",
+      "recv": "errs",
+      "text": "errs.into_error_option()"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "is_line_by_line_fast",
+    "file": "crates/searcher/src/searcher/core.rs",
+    "line": 673,
+    "kind": "method",
+    "container": "Core",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/searcher/src/searcher/core.rs",
+      "line": 66,
+      "qual": ".",
+      "recv": "core",
+      "text": "if core.is_line_by_line_fast() {"
+     },
+     {
+      "file": "crates/searcher/src/searcher/core.rs",
+      "line": 174,
+      "qual": ".",
+      "recv": "self",
+      "text": "if self.is_line_by_line_fast() {"
+     },
+     {
+      "file": "crates/searcher/src/searcher/core.rs",
+      "line": 481,
+      "qual": ".",
+      "recv": "self",
+      "text": "debug_assert!(self.is_line_by_line_fast());"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "basename_literal",
+    "file": "crates/globset/src/glob.rs",
+    "line": 559,
+    "kind": "method",
+    "container": "Glob",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/globset/src/glob.rs",
+      "line": 52,
+      "qual": ".",
+      "recv": "pat",
+      "text": "if let Some(lit) = pat.basename_literal() {"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "tagged",
+    "file": "crates/ignore/src/lib.rs",
+    "line": 275,
+    "kind": "method",
+    "container": "Error",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/ignore/src/gitignore.rs",
+      "line": 417,
+      "qual": ".",
+      "recv": "",
+      "text": "errs.push(Error::Io(err).tagged(path, lineno));"
+     },
+     {
+      "file": "crates/ignore/src/gitignore.rs",
+      "line": 428,
+      "qual": ".",
+      "recv": "err",
+      "text": "errs.push(err.tagged(path, lineno));"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "interpolate",
+    "file": "crates/matcher/src/interpolate.rs",
+    "line": 14,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/matcher/src/interpolate.rs",
+      "line": 193,
+      "qual": "",
+      "recv": "",
+      "text": "interpolate("
+     },
+     {
+      "file": "crates/matcher/src/lib.rs",
+      "line": 450,
+      "qual": "",
+      "recv": "",
+      "text": "interpolate("
+     }
+    ],
+    "other_def": [
+     {
+      "file": "crates/matcher/tests/test_matcher.rs",
+      "line": 207,
+      "qual": ".",
+      "recv": "caps",
+      "text": "caps.interpolate(",
+      "bound_to": "crates/matcher/src/lib.rs:441:interpolate"
+     },
+     {
+      "file": "crates/matcher/tests/test_matcher.rs",
+      "line": 222,
+      "qual": ".",
+      "recv": "caps",
+      "text": "caps.interpolate(",
+      "bound_to": "crates/matcher/src/lib.rs:441:interpolate"
+     },
+     {
+      "file": "crates/printer/src/util.rs",
+      "line": 95,
+      "qual": ".",
+      "recv": "caps",
+      "text": "caps.interpolate(",
+      "bound_to": "crates/matcher/src/lib.rs:441:interpolate"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "shortest_match",
+    "file": "crates/searcher/src/searcher/core.rs",
+    "line": 141,
+    "kind": "method",
+    "container": "Core",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 4,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/searcher/src/searcher/core.rs",
+      "line": 355,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.shortest_match(slice)?.is_some()"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "crates/matcher/src/lib.rs",
+      "line": 1129,
+      "qual": ".",
+      "recv": "self",
+      "text": "Ok(self.shortest_match(haystack)?.map(LineMatchKind::Confirmed))"
+     },
+     {
+      "file": "crates/matcher/src/lib.rs",
+      "line": 1350,
+      "qual": ".",
+      "recv": "",
+      "text": "(*self).shortest_match(haystack)"
+     },
+     {
+      "file": "crates/matcher/tests/test_matcher.rs",
+      "line": 76,
+      "qual": ".",
+      "recv": "matcher",
+      "text": "assert_eq!(matcher.shortest_match(b\"aaa\").unwrap(), Some(3));"
+     },
+     {
+      "file": "crates/matcher/tests/test_matcher.rs",
+      "line": 78,
+      "qual": ".",
+      "recv": "re",
+      "text": "assert_eq!(matcher.re.shortest_match(b\"aaa\"), Some(1));"
+     },
+     {
+      "file": "crates/regex/src/matcher.rs",
+      "line": 503,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.shortest_match(haystack)?.map(LineMatchKind::Confirmed)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/core.rs",
+      "line": 148,
+      "qual": ".",
+      "recv": "matcher",
+      "text": "match self.matcher.shortest_match(slice) {"
+     },
+     {
+      "file": "crates/searcher/src/testutil.rs",
+      "line": 103,
+      "qual": ".",
+      "recv": "self",
+      "text": "Ok(self.shortest_match(haystack)?.map(LineMatchKind::Confirmed))"
+     }
+    ]
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "hidden",
+    "file": "crates/ignore/src/walk.rs",
+    "line": 828,
+    "kind": "method",
+    "container": "WalkBuilder",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 817,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.hidden(yes)"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "crates/ignore/src/dir.rs",
+      "line": 491,
+      "qual": "::",
+      "recv": "IgnoreMatch",
+      "text": "return Match::Ignore(IgnoreMatch::hidden());",
+      "bound_to": "crates/ignore/src/dir.rs:64:hidden"
+     }
+    ],
+    "ambiguous": [
+     {
+      "file": "crates/core/flags/hiargs.rs",
+      "line": 895,
+      "qual": ".",
+      "recv": "",
+      "text": ".hidden(!self.hidden)"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 829,
+      "qual": ".",
+      "recv": "ig_builder",
+      "text": "self.ig_builder.hidden(yes);"
+     }
+    ]
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "build_many",
+    "file": "crates/regex/src/matcher.rs",
+    "line": 53,
+    "kind": "method",
+    "container": "RegexMatcherBuilder",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/regex/src/matcher.rs",
+      "line": 46,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.build_many(&[pattern])"
+     },
+     {
+      "file": "crates/regex/src/matcher.rs",
+      "line": 96,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.build_many(literals)"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "crates/pcre2/src/matcher.rs",
+      "line": 38,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.build_many(&[pattern])",
+      "bound_to": "crates/pcre2/src/matcher.rs:45:build_many"
+     }
+    ],
+    "ambiguous": [
+     {
+      "file": "crates/core/flags/hiargs.rs",
+      "line": 446,
+      "qual": ".",
+      "recv": "builder",
+      "text": "let m = builder.build_many(&self.patterns.patterns)?;"
+     },
+     {
+      "file": "crates/core/flags/hiargs.rs",
+      "line": 507,
+      "qual": ".",
+      "recv": "builder",
+      "text": "let m = match builder.build_many(&self.patterns.patterns) {"
+     },
+     {
+      "file": "crates/globset/src/lib.rs",
+      "line": 299,
+      "qual": ".",
+      "recv": "",
+      "text": ".build_many(&pats)"
+     },
+     {
+      "file": "crates/regex/src/matcher.rs",
+      "line": 57,
+      "qual": ".",
+      "recv": "config",
+      "text": "let mut chir = self.config.build_many(patterns)?;"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "visit",
+    "file": "crates/ignore/src/walk.rs",
+    "line": 1315,
+    "kind": "method",
+    "container": "ParallelVisitor",
+    "trait": "ParallelVisitor",
+    "lang": "rs",
+    "is_iface": true
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1373,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.visit(&mut FnBuilder { builder: mkf })"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1414,
+      "qual": ".",
+      "recv": "visitor",
+      "text": "if visitor.visit(Err(err)).is_quit() {"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1426,
+      "qual": ".",
+      "recv": "visitor",
+      "text": "if visitor.visit(Err(err)).is_quit() {"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1713,
+      "qual": ".",
+      "recv": "visitor",
+      "text": "self.visitor.visit(Ok(work.dent))"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1719,
+      "qual": ".",
+      "recv": "visitor",
+      "text": "let state = self.visitor.visit(Err(err));"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1730,
+      "qual": ".",
+      "recv": "visitor",
+      "text": "let state = self.visitor.visit(Err(err));"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1755,
+      "qual": ".",
+      "recv": "visitor",
+      "text": "let state = self.visitor.visit(Ok(work.dent));"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1771,
+      "qual": ".",
+      "recv": "visitor",
+      "text": "return self.visitor.visit(Err(err));"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1787,
+      "qual": ".",
+      "recv": "visitor",
+      "text": "let state = self.visitor.visit(Err(err));"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1818,
+      "qual": ".",
+      "recv": "visitor",
+      "text": "return self.visitor.visit(Err(err));"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1827,
+      "qual": ".",
+      "recv": "visitor",
+      "text": "return self.visitor.visit(Err(err));"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1832,
+      "qual": ".",
+      "recv": "visitor",
+      "text": "return self.visitor.visit(Err(err));"
+     },
+     {
+      "file": "crates/ignore/src/walk.rs",
+      "line": 1844,
+      "qual": ".",
+      "recv": "visitor",
+      "text": "Err(err) => return self.visitor.visit(Err(err)),"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "capture_count",
+    "file": "crates/matcher/src/lib.rs",
+    "line": 597,
+    "kind": "method",
+    "container": "Matcher",
+    "trait": "Matcher",
+    "lang": "rs",
+    "is_iface": true
+   },
+   "n_defs_same_name": 5,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "crates/matcher/src/lib.rs",
+      "line": 1168,
+      "qual": ".",
+      "recv": "",
+      "text": "(*self).capture_count()"
+     },
+     {
+      "file": "crates/matcher/tests/test_matcher.rs",
+      "line": 84,
+      "qual": ".",
+      "recv": "matcher",
+      "text": "assert_eq!(matcher.capture_count(), 3);"
+     },
+     {
+      "file": "crates/matcher/tests/test_matcher.rs",
+      "line": 158,
+      "qual": ".",
+      "recv": "matcher",
+      "text": "assert_eq!(matcher.capture_count(), 0);"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "captures",
+    "file": "crates/matcher/src/lib.rs",
+    "line": 740,
+    "kind": "method",
+    "container": "Matcher",
+    "trait": "Matcher",
+    "lang": "rs",
+    "is_iface": true
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "crates/ignore/src/gitignore.rs",
+      "line": 681,
+      "qual": ".",
+      "recv": "re",
+      "text": "re.captures(data, &mut caps);"
+     },
+     {
+      "file": "crates/matcher/src/lib.rs",
+      "line": 1232,
+      "qual": ".",
+      "recv": "",
+      "text": "(*self).captures(haystack, caps)"
+     },
+     {
+      "file": "crates/matcher/tests/test_matcher.rs",
+      "line": 90,
+      "qual": ".",
+      "recv": "matcher",
+      "text": "assert!(matcher.captures(b\" homer simpson \", &mut caps).unwrap());"
+     },
+     {
+      "file": "crates/matcher/tests/test_matcher.rs",
+      "line": 164,
+      "qual": ".",
+      "recv": "matcher",
+      "text": "assert!(!matcher.captures(b\"homer simpson\", &mut caps).unwrap());"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "binary_data",
+    "file": "crates/searcher/src/sink.rs",
+    "line": 188,
+    "kind": "method",
+    "container": "Sink",
+    "trait": "Sink",
+    "lang": "rs",
+    "is_iface": true
+   },
+   "n_defs_same_name": 7,
+   "gold": {
+    "assigned": [],
+    "other_def": [
+     {
+      "file": "crates/searcher/src/searcher/core.rs",
+      "line": 231,
+      "qual": ".",
+      "recv": "self",
+      "text": "if !self.binary_data(offset as u64)? {",
+      "bound_to": "crates/searcher/src/searcher/core.rs:107:binary_data"
+     }
+    ],
+    "ambiguous": [
+     {
+      "file": "crates/searcher/src/searcher/core.rs",
+      "line": 111,
+      "qual": ".",
+      "recv": "sink",
+      "text": "self.sink.binary_data(&self.searcher, binary_byte_offset)"
+     },
+     {
+      "file": "crates/searcher/src/searcher/glue.rs",
+      "line": 71,
+      "qual": ".",
+      "recv": "core",
+      "text": "if !self.core.binary_data(offset)? {"
+     },
+     {
+      "file": "crates/searcher/src/sink.rs",
+      "line": 260,
+      "qual": ".",
+      "recv": "",
+      "text": "(**self).binary_data(searcher, binary_byte_offset)"
+     },
+     {
+      "file": "crates/searcher/src/sink.rs",
+      "line": 313,
+      "qual": ".",
+      "recv": "",
+      "text": "(**self).binary_data(searcher, binary_byte_offset)"
+     }
+    ]
+   }
+  }
+ ],
+ "oracle_note": "gold recomputed by regold.py with the multi-line-aware cleaner"
+}

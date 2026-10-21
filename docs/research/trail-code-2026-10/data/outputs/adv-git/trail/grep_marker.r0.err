@@ -1,0 +1,1 @@
+no hits for "DCTXBENCH" in 21 indexed files. The pattern may be too specific — retry trail grep with a bare symbol name or short substring (drop the receiver, full signature, and regex anchors). Git-ignored code isn't indexed and wasn't searched: app.secret.py, ignored_dir/. Run grep -rn there, and on docs and configs

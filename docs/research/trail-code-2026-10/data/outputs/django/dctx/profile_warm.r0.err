@@ -1,0 +1,16 @@
+dctx profile
+stage walk 127522408
+stage read 168378445
+stage hash 291488334
+stage parse/lex 0
+stage span conversion 0
+stage graph assembly 0
+stage canonicalize/seal 0
+stage persist/reuse 120179163
+stage query 5641559
+note finalization is canonicalize/seal, persist/reuse and query; file lines exclude it
+file 4771262 709050 0 tests/gis_tests/data/rasters/raster.numpy.txt
+file 2808771 406432 0 tests/admin_views/tests.py
+file 2149766 325171 0 django/contrib/admin/static/admin/js/vendor/xregexp/xregexp.js
+file 1982050 302029 0 tests/migrations/test_operations.py
+file 1976042 285314 0 django/contrib/admin/static/admin/js/vendor/jquery/jquery.js

@@ -1,0 +1,16 @@
+dctx profile
+stage walk 17502975
+stage read 25450063
+stage hash 80272150
+stage parse/lex 0
+stage span conversion 0
+stage graph assembly 0
+stage canonicalize/seal 0
+stage persist/reuse 34651381
+stage query 2113582
+note finalization is canonicalize/seal, persist/reuse and query; file lines exclude it
+file 29740534 4171851 0 ui/dprint-typescript-0.95.15.wasm
+file 5481455 802641 0 plugins/jsvm/internal/types/generated/types.d.ts
+file 2808485 433465 0 ui/public/libs/tinymce/tinymce.min.js
+file 2656514 410171 0 ui/public/libs/tinymce/themes/silver/theme.min.js
+file 2243470 344064 0 tests/data/data.db

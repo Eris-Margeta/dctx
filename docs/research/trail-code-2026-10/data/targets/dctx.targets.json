@@ -1,0 +1,3206 @@
+{
+ "corpus": "dctx",
+ "files_scanned": 925,
+ "defs_scanned": 8750,
+ "targets": [
+  {
+   "category": "hub",
+   "def": {
+    "name": "register_root",
+    "file": "crates/dctx-adapter-cache/src/domain/mod.rs",
+    "line": 251,
+    "kind": "method",
+    "container": "Lifecycle",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-adapter-cache/src/adapters/coordinate.rs",
+      "line": 106,
+      "qual": ".",
+      "recv": "left",
+      "text": "left.register_root(id).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/src/adapters/coordinate.rs",
+      "line": 107,
+      "qual": ".",
+      "recv": "right",
+      "text": "right.register_root(id).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/src/adapters/coordinate.rs",
+      "line": 149,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(id).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/src/adapters/mod.rs",
+      "line": 495,
+      "qual": ".",
+      "recv": "second",
+      "text": "second.register_root(crate::RootId::new(1)).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/src/domain/maintain.rs",
+      "line": 197,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/src/domain/maintain.rs",
+      "line": 250,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/src/domain/maintain.rs",
+      "line": 281,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/src/domain/reach.rs",
+      "line": 233,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).unwrap();"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/src/domain/restart.rs",
+      "line": 160,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/src/domain/restart.rs",
+      "line": 165,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(other).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/src/domain/writer.rs",
+      "line": 425,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).unwrap();"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/dctx_adapter_cache.rs",
+      "line": 28,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/dctx_adapter_cache.rs",
+      "line": 33,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(other).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/dctx_adapter_cache.rs",
+      "line": 90,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(id).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/dctx_adapter_cache.rs",
+      "line": 131,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(id).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 27,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 68,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 90,
+      "qual": ".",
+      "recv": "open",
+      "text": "open.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 100,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 134,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 162,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(left).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 163,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(right).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 179,
+      "qual": ".",
+      "recv": "pressured",
+      "text": "pressured.register_root(left).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 180,
+      "qual": ".",
+      "recv": "pressured",
+      "text": "pressured.register_root(right).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 197,
+      "qual": ".",
+      "recv": "touched",
+      "text": "touched.register_root(left).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 198,
+      "qual": ".",
+      "recv": "touched",
+      "text": "touched.register_root(right).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 223,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(RootId::new(1)).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/expiry.rs",
+      "line": 261,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/hostile_ledger.rs",
+      "line": 28,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/lifecycle.rs",
+      "line": 21,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/lifecycle.rs",
+      "line": 41,
+      "qual": ".",
+      "recv": "shared",
+      "text": "shared.register_root(left).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/lifecycle.rs",
+      "line": 42,
+      "qual": ".",
+      "recv": "shared",
+      "text": "shared.register_root(right).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/lifecycle.rs",
+      "line": 63,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/lifecycle.rs",
+      "line": 83,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(left).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/lifecycle.rs",
+      "line": 84,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(right).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/lifecycle.rs",
+      "line": 133,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/lifecycle.rs",
+      "line": 153,
+      "qual": ".",
+      "recv": "kept",
+      "text": "kept.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/lifecycle.rs",
+      "line": 169,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/lifecycle.rs",
+      "line": 185,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/lifecycle.rs",
+      "line": 202,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/lifecycle.rs",
+      "line": 220,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/properties.rs",
+      "line": 16,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(left).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/properties.rs",
+      "line": 17,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(right).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/quota.rs",
+      "line": 22,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root()).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/quota.rs",
+      "line": 31,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(first_root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/quota.rs",
+      "line": 32,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(second_root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/quota.rs",
+      "line": 135,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root()).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/quota.rs",
+      "line": 137,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(other).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/quota.rs",
+      "line": 199,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root()).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-adapter-cache/tests/recovery.rs",
+      "line": 13,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(RootId::new(1)).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-cli/src/cache/mod.rs",
+      "line": 255,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-cli/src/cache/mod.rs",
+      "line": 343,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(id).expect(\"root\");"
+     },
+     {
+      "file": "crates/dctx-map-query/src/adapters/segment.rs",
+      "line": 364,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root)?;"
+     },
+     {
+      "file": "crates/dctx-map-query/tests/properties.rs",
+      "line": 109,
+      "qual": ".",
+      "recv": "tiny",
+      "text": "tiny.register_root(RootId::new(1)).unwrap();"
+     },
+     {
+      "file": "crates/dctx-map-query/tests/properties.rs",
+      "line": 113,
+      "qual": ".",
+      "recv": "room",
+      "text": "room.register_root(RootId::new(1)).unwrap();"
+     },
+     {
+      "file": "crates/dctx/src/session/ledger.rs",
+      "line": 204,
+      "qual": ".",
+      "recv": "life",
+      "text": "self.life.register_root(self.root_id).map_err(map_cache)?;"
+     },
+     {
+      "file": "crates/dctx/src/session/ledger/cache_bind.rs",
+      "line": 262,
+      "qual": ".",
+      "recv": "life",
+      "text": "life.register_root(root).map_err(map_cache)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "immutable",
+    "file": "crates/dctx/src/domain/request.rs",
+    "line": 111,
+    "kind": "method",
+    "container": "SnapshotRequest",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx/src/session/mod.rs",
+      "line": 433,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/src/session/mod.rs",
+      "line": 480,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/cache_share.rs",
+      "line": 25,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = first.snapshot(&SnapshotRequest::immutable()).expect(\"first\");"
+     },
+     {
+      "file": "crates/dctx/tests/cache_share.rs",
+      "line": 33,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let error = tight.snapshot(&SnapshotRequest::immutable()).expect_err(\"over cap\");"
+     },
+     {
+      "file": "crates/dctx/tests/cache_share.rs",
+      "line": 43,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let again = third.snapshot(&SnapshotRequest::immutable()).expect(\"fits\");"
+     },
+     {
+      "file": "crates/dctx/tests/cache_share.rs",
+      "line": 60,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = first.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/cache_share.rs",
+      "line": 93,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let unleased = session.snapshot(&SnapshotRequest::immutable()).expect(\"unleased\");"
+     },
+     {
+      "file": "crates/dctx/tests/cache_share.rs",
+      "line": 99,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let leased = session.snapshot(&SnapshotRequest::immutable()).expect(\"leased\");"
+     },
+     {
+      "file": "crates/dctx/tests/fs_fixture.rs",
+      "line": 68,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/fs_fixture.rs",
+      "line": 112,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = first.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/fs_fixture.rs",
+      "line": 162,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "first.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/golden.rs",
+      "line": 35,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/golden.rs",
+      "line": 100,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/golden.rs",
+      "line": 129,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/golden.rs",
+      "line": 152,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let snap = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/golden.rs",
+      "line": 170,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/golden.rs",
+      "line": 227,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/golden.rs",
+      "line": 257,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = omitted.snapshot(&SnapshotRequest::immutable()).expect(\"omit\");"
+     },
+     {
+      "file": "crates/dctx/tests/isolation.rs",
+      "line": 89,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let a = left.snapshot(&SnapshotRequest::immutable()).expect(\"left\");"
+     },
+     {
+      "file": "crates/dctx/tests/isolation.rs",
+      "line": 90,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let b = right.snapshot(&SnapshotRequest::immutable()).expect(\"right\");"
+     },
+     {
+      "file": "crates/dctx/tests/isolation.rs",
+      "line": 110,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = live.snapshot(&SnapshotRequest::immutable()).expect(\"live\");"
+     },
+     {
+      "file": "crates/dctx/tests/isolation.rs",
+      "line": 128,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = denied.snapshot(&SnapshotRequest::immutable()).expect(\"empty grant\");"
+     },
+     {
+      "file": "crates/dctx/tests/isolation.rs",
+      "line": 136,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = allowed.snapshot(&SnapshotRequest::immutable()).expect(\"permit\");"
+     },
+     {
+      "file": "crates/dctx/tests/isolation.rs",
+      "line": 147,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let open = session.snapshot(&SnapshotRequest::immutable()).expect(\"open\");"
+     },
+     {
+      "file": "crates/dctx/tests/isolation.rs",
+      "line": 161,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let narrowed = session.snapshot(&SnapshotRequest::immutable()).expect(\"roots\");"
+     },
+     {
+      "file": "crates/dctx/tests/isolation.rs",
+      "line": 189,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"syn\");"
+     },
+     {
+      "file": "crates/dctx/tests/isolation.rs",
+      "line": 192,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let error = session.snapshot(&SnapshotRequest::immutable()).expect_err(\"no syn\");"
+     },
+     {
+      "file": "crates/dctx/tests/isolation.rs",
+      "line": 274,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "session.snapshot(&SnapshotRequest::immutable()).map(|_| ())"
+     },
+     {
+      "file": "crates/dctx/tests/isolation.rs",
+      "line": 287,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/lex_facade_equiv.rs",
+      "line": 72,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/map_languages.rs",
+      "line": 123,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/map_languages.rs",
+      "line": 157,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/map_languages.rs",
+      "line": 224,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/map_read_window.rs",
+      "line": 49,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/map_read_window.rs",
+      "line": 95,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/plugins.rs",
+      "line": 145,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/plugins.rs",
+      "line": 162,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/plugins.rs",
+      "line": 185,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/plugins.rs",
+      "line": 205,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/plugins.rs",
+      "line": 255,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let error = session.snapshot(&SnapshotRequest::immutable()).expect_err(\"veto\");"
+     },
+     {
+      "file": "crates/dctx/tests/plugins.rs",
+      "line": 263,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let error = session.snapshot(&SnapshotRequest::immutable()).expect_err(\"published\");"
+     },
+     {
+      "file": "crates/dctx/tests/plugins.rs",
+      "line": 274,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/query_share.rs",
+      "line": 24,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/rust_default.rs",
+      "line": 23,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/session.rs",
+      "line": 31,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let error = session.snapshot(&SnapshotRequest::immutable()).expect_err(\"cancelled\");"
+     },
+     {
+      "file": "crates/dctx/tests/session.rs",
+      "line": 45,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let error = session.snapshot(&SnapshotRequest::immutable()).expect_err(\"mid\");"
+     },
+     {
+      "file": "crates/dctx/tests/session.rs",
+      "line": 51,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"later\");"
+     },
+     {
+      "file": "crates/dctx/tests/session.rs",
+      "line": 101,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/session.rs",
+      "line": 138,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/session.rs",
+      "line": 171,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"second\");"
+     },
+     {
+      "file": "crates/dctx/tests/session.rs",
+      "line": 187,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": ".snapshot(&SnapshotRequest { limits: tight, ..SnapshotRequest::immutable() })"
+     },
+     {
+      "file": "crates/dctx/tests/session.rs",
+      "line": 192,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"room\");"
+     },
+     {
+      "file": "crates/dctx/tests/session.rs",
+      "line": 198,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": ".snapshot(&SnapshotRequest { limits: frozen, ..SnapshotRequest::immutable() })"
+     },
+     {
+      "file": "crates/dctx/tests/session.rs",
+      "line": 209,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let error = session.snapshot(&SnapshotRequest::immutable()).expect_err(\"cache\");"
+     },
+     {
+      "file": "crates/dctx/tests/session.rs",
+      "line": 223,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     },
+     {
+      "file": "crates/dctx/tests/span_index.rs",
+      "line": 55,
+      "qual": "::",
+      "recv": "SnapshotRequest",
+      "text": "let handle = session.snapshot(&SnapshotRequest::immutable()).expect(\"snapshot\");"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "to_bytes",
+    "file": "crates/dctx-template/src/binary/mod.rs",
+    "line": 61,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-cli/src/plugin/ops_tests.rs",
+      "line": 33,
+      "qual": ".",
+      "recv": "verifying_key",
+      "text": "let index_key = key.verifying_key().to_bytes();"
+     },
+     {
+      "file": "crates/dctx-cli/src/plugin/ops_tests.rs",
+      "line": 52,
+      "qual": ".",
+      "recv": "",
+      "text": "self.key.sign(&message).to_bytes().to_vec()"
+     },
+     {
+      "file": "crates/dctx-cli/src/template.rs",
+      "line": 61,
+      "qual": "",
+      "recv": "",
+      "text": "let bytes = to_bytes(&plan).map_err(|error| error.to_string())?;"
+     },
+     {
+      "file": "crates/dctx-ed25519/src/lib.rs",
+      "line": 87,
+      "qual": ".",
+      "recv": "compress",
+      "text": "if key.to_edwards().compress().to_bytes() != *bytes {"
+     },
+     {
+      "file": "crates/dctx-ed25519/tests/differential.rs",
+      "line": 27,
+      "qual": ".",
+      "recv": "verifying_key",
+      "text": "let key = signing_key.verifying_key().to_bytes();"
+     },
+     {
+      "file": "crates/dctx-ed25519/tests/differential.rs",
+      "line": 28,
+      "qual": ".",
+      "recv": "",
+      "text": "let signature = signing_key.sign(&message).to_bytes();"
+     },
+     {
+      "file": "crates/dctx-ed25519/tests/differential.rs",
+      "line": 90,
+      "qual": ".",
+      "recv": "verifying_key",
+      "text": "let key = signing_key.verifying_key().to_bytes();"
+     },
+     {
+      "file": "crates/dctx-ed25519/tests/differential.rs",
+      "line": 92,
+      "qual": ".",
+      "recv": "",
+      "text": "let signature = signing_key.sign(message).to_bytes();"
+     },
+     {
+      "file": "crates/dctx-plugin-distribution/tests/common/mod.rs",
+      "line": 28,
+      "qual": ".",
+      "recv": "verifying_key",
+      "text": "key.verifying_key().to_bytes()"
+     },
+     {
+      "file": "crates/dctx-plugin-distribution/tests/common/mod.rs",
+      "line": 34,
+      "qual": ".",
+      "recv": "",
+      "text": "key.sign(&message).to_bytes().to_vec()"
+     },
+     {
+      "file": "crates/dctx-template/src/binary/mod.rs",
+      "line": 216,
+      "qual": "",
+      "recv": "",
+      "text": "let bytes = to_bytes(&plan).expect(\"encode\");"
+     },
+     {
+      "file": "crates/dctx-template/src/binary/mod.rs",
+      "line": 235,
+      "qual": "",
+      "recv": "",
+      "text": "let bytes = to_bytes(&plan).expect(\"encode\");"
+     },
+     {
+      "file": "crates/dctx-template/src/binary/mod.rs",
+      "line": 245,
+      "qual": "",
+      "recv": "",
+      "text": "let bytes = to_bytes(&sample()).expect(\"encode\");"
+     },
+     {
+      "file": "crates/dctx-template/tests/plan.rs",
+      "line": 56,
+      "qual": "",
+      "recv": "",
+      "text": "let bytes = to_bytes(&plan).expect(\"encode\");"
+     },
+     {
+      "file": "crates/dctx-template/tests/plan.rs",
+      "line": 59,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(to_bytes(&again).expect(\"encode\"), bytes);"
+     },
+     {
+      "file": "crates/dctx-template/tests/plan.rs",
+      "line": 99,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(to_bytes(&left).expect(\"left\"), to_bytes(&right).expect(\"right\"));"
+     },
+     {
+      "file": "crates/dctx-template/tests/plugins.rs",
+      "line": 80,
+      "qual": "",
+      "recv": "",
+      "text": "let bytes = to_bytes(&plan).expect(\"encode\");"
+     },
+     {
+      "file": "crates/dctx-template/tests/plugins.rs",
+      "line": 332,
+      "qual": "",
+      "recv": "",
+      "text": "let bytes = to_bytes(&plan).expect(\"encode\");"
+     },
+     {
+      "file": "crates/dctx/tests/isolation.rs",
+      "line": 156,
+      "qual": "::",
+      "recv": "dctx_template",
+      "text": "let bytes = dctx_template::to_bytes(&plan).expect(\"encode\");"
+     },
+     {
+      "file": "tools/plugin-index/tests/fixture_check.rs",
+      "line": 36,
+      "qual": ".",
+      "recv": "verifying_key",
+      "text": "let key = signing.verifying_key().to_bytes();"
+     },
+     {
+      "file": "tools/plugin-index/tests/fixture_check.rs",
+      "line": 37,
+      "qual": ".",
+      "recv": "",
+      "text": "let signature = signing.sign(&index_message(index)).to_bytes();"
+     },
+     {
+      "file": "tools/plugin-index/tests/fixture_check.rs",
+      "line": 124,
+      "qual": ".",
+      "recv": "verifying_key",
+      "text": "let other = SigningKey::from_bytes(&[7u8; 32]).verifying_key().to_bytes();"
+     },
+     {
+      "file": "tools/plugin-index/tests/fixture_check.rs",
+      "line": 127,
+      "qual": ".",
+      "recv": "",
+      "text": ".to_bytes();"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "should_ignore_item",
+    "file": "crates/dctx-map-scan/src/domain/ignore/matching.rs",
+    "line": 16,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 141,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 149,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 156,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 163,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 175,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 182,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 189,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 197,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 204,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 216,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 223,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 230,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 242,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\"cache\", \"cache\", true, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 243,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item(\"cache\", \"cache\", false, &rules, false)); // File named \"cache\" should NOT be ignored"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 252,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_0.rs",
+      "line": 259,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 16,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 24,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 31,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 38,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 50,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 57,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 64,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 71,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 83,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 92,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 101,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 110,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 124,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\"target\", \"target\", true, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 127,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 136,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 145,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 159,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\".git\", \".git\", true, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 162,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 171,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 185,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 194,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 203,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 212,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 230,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\"build\", \"build\", true, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 231,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\"dist\", \"dist\", true, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 232,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\"out\", \"out\", true, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 235,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 242,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 249,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\"cli/out\", \"out\", true, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 252,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_1.rs",
+      "line": 259,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 17,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 24,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 31,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\"lib.o\", \"lib.o\", false, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 34,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 41,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 48,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 57,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 64,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 82,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 89,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 96,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 105,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 112,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 121,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 139,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\".git\", \".git\", true, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 140,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\".svn\", \".svn\", true, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 141,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\".hg\", \".hg\", true, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 144,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 151,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 158,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 176,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\".idea\", \".idea\", true, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 177,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 180,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\".vs\", \".vs\", true, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 183,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 190,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 197,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 211,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 220,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 229,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 238,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 247,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 271,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 278,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 285,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 292,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 299,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 306,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 315,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 322,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/ignore/parity_2.rs",
+      "line": 329,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 23,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 26,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 42,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 49,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 56,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 63,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 70,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\"go.sum\", \"go.sum\", false, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 80,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 87,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 94,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 113,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 120,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 127,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 134,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 137,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\"go.sum\", \"go.sum\", false, &rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 138,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 145,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_0.rs",
+      "line": 152,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 17,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 24,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 31,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 38,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 45,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 52,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 69,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 76,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 83,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 90,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 107,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 114,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 121,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 138,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 143,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 152,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 161,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 182,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item(\".env\", \".env\", false, &env_rules, false));"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 185,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 194,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_1.rs",
+      "line": 203,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 17,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 24,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 31,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 38,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 47,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 54,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(!should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 71,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 78,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 85,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 92,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 99,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 108,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 117,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 126,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 135,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 142,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 149,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 158,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 167,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 174,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 181,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 190,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 197,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 206,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 215,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 224,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 231,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 240,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 249,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     },
+     {
+      "file": "crates/dctx-map-scan/src/domain/omit_parity_2.rs",
+      "line": 258,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(should_ignore_item("
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "help_outcome",
+    "file": "crates/dctx-cli/src/plugin/mod.rs",
+    "line": 228,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-cli/src/plugin/mod.rs",
+      "line": 140,
+      "qual": "",
+      "recv": "",
+      "text": "return Ok((request.json, help_outcome(&render::help_text(), request.json)));"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "call_position",
+    "file": "crates/dctx-lex-js/src/extract/calls.rs",
+    "line": 12,
+    "kind": "method",
+    "container": "Walker",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-lex-js/src/extract/expressions.rs",
+      "line": 87,
+      "qual": ".",
+      "recv": "self",
+      "text": "if self.call_position(i) {"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "authorize_path",
+    "file": "crates/dctx-template/src/bound.rs",
+    "line": 49,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-template/tests/refusal.rs",
+      "line": 191,
+      "qual": "",
+      "recv": "",
+      "text": "let err = authorize_path(&host, &empty, \"src/main.rs\").expect_err(\"deny\");"
+     },
+     {
+      "file": "crates/dctx-template/tests/refusal.rs",
+      "line": 194,
+      "qual": "",
+      "recv": "",
+      "text": "assert_eq!(authorize_path(&host, &empty, \"src/main.rs\").expect(\"allow\"), FileHandlingDecision::Include);"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "offset_len",
+    "file": "crates/dctx-map-segment/src/domain/dictionary.rs",
+    "line": 43,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-map-segment/src/domain/dictionary.rs",
+      "line": 18,
+      "qual": "",
+      "recv": "",
+      "text": "if offset_len(set.len())? > limits.max_records {"
+     },
+     {
+      "file": "crates/dctx-map-segment/src/domain/dictionary.rs",
+      "line": 95,
+      "qual": "",
+      "recv": "",
+      "text": "let room = bounded_count(count, 4, offset_len(payload.len())?, limits.max_records)?;"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "variance",
+    "file": "crates/dctx-lex-kt/src/extract/references.rs",
+    "line": 336,
+    "kind": "method",
+    "container": "Walker",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-lex-kt/src/extract/references.rs",
+      "line": 300,
+      "qual": ".",
+      "recv": "self",
+      "text": "if self.variance(index) {"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "dash_at",
+    "file": "crates/dctx-lex-cfg/src/yaml.rs",
+    "line": 374,
+    "kind": "method",
+    "container": "Parser",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-lex-cfg/src/yaml.rs",
+      "line": 373,
+      "qual": ".",
+      "recv": "self",
+      "text": "fn at_dash(&self) -> bool { self.dash_at(self.cur.i) }"
+     },
+     {
+      "file": "crates/dctx-lex-cfg/src/yaml.rs",
+      "line": 490,
+      "qual": ".",
+      "recv": "self",
+      "text": "let ahead = if self.dash_at(index) {"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "skip_type",
+    "file": "crates/dctx-lex-go/src/extract/references.rs",
+    "line": 11,
+    "kind": "method",
+    "container": "Walker",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-lex-go/src/extract/declarations.rs",
+      "line": 140,
+      "qual": ".",
+      "recv": "self",
+      "text": "let type_end = self.skip_type(cursor, end, false, 0, \"\");"
+     },
+     {
+      "file": "crates/dctx-lex-go/src/extract/declarations.rs",
+      "line": 178,
+      "qual": ".",
+      "recv": "self",
+      "text": "let _ = self.skip_type(type_index, end, true, owner, &scope_name);"
+     },
+     {
+      "file": "crates/dctx-lex-go/src/extract/declarations_funcs.rs",
+      "line": 109,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.skip_type(index, end, false, 0, \"\")"
+     },
+     {
+      "file": "crates/dctx-lex-go/src/extract/declarations_types.rs",
+      "line": 80,
+      "qual": ".",
+      "recv": "self",
+      "text": "let type_end = self.skip_type(cursor, end, false, 0, \"\");"
+     },
+     {
+      "file": "crates/dctx-lex-go/src/extract/declarations_types.rs",
+      "line": 98,
+      "qual": ".",
+      "recv": "self",
+      "text": "let _ = self.skip_type(cursor, end, true, inner.owner, &inner.name);"
+     },
+     {
+      "file": "crates/dctx-lex-go/src/extract/references.rs",
+      "line": 45,
+      "qual": ".",
+      "recv": "self",
+      "text": "let _ = self.skip_type(index + 1, close, emit, owner, scope);"
+     },
+     {
+      "file": "crates/dctx-lex-go/src/extract/references.rs",
+      "line": 110,
+      "qual": ".",
+      "recv": "self",
+      "text": "let next = self.skip_type(index, end, emit, owner, scope);"
+     },
+     {
+      "file": "crates/dctx-lex-go/src/extract/references.rs",
+      "line": 151,
+      "qual": ".",
+      "recv": "self",
+      "text": "let after_type = self.skip_type(cursor, end, true, owner, scope);"
+     },
+     {
+      "file": "crates/dctx-lex-go/src/extract/references.rs",
+      "line": 233,
+      "qual": ".",
+      "recv": "self",
+      "text": "let _ = self.skip_type(index, end, true, owner, scope);"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "scan_annotation_list",
+    "file": "crates/dctx-lex-java/src/extract/references.rs",
+    "line": 239,
+    "kind": "method",
+    "container": "Walker",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-lex-java/src/extract/declarations_members.rs",
+      "line": 181,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.scan_annotation_list(prefix, &child);"
+     },
+     {
+      "file": "crates/dctx-lex-java/src/extract/declarations_members.rs",
+      "line": 240,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.scan_annotation_list(prefix, &child);"
+     },
+     {
+      "file": "crates/dctx-lex-java/src/extract/declarations_modifiers.rs",
+      "line": 173,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.scan_annotation_list(prefix, &child);"
+     },
+     {
+      "file": "crates/dctx-lex-java/src/extract/declarations_types.rs",
+      "line": 101,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.scan_annotation_list(prefix, &child);"
+     },
+     {
+      "file": "crates/dctx-lex-java/src/extract/declarations_types.rs",
+      "line": 188,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.scan_annotation_list(&prefix, &child);"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "push_u64",
+    "file": "crates/dctx-map-store/src/adapters/bridge/pack.rs",
+    "line": 294,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-map-store/src/adapters/bridge/pack.rs",
+      "line": 74,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut body, snapshot.taken_at().millis());"
+     },
+     {
+      "file": "crates/dctx-map-store/src/adapters/bridge/pack.rs",
+      "line": 76,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut body, u64::try_from(snapshot.digests().len()).map_err(|_| StoreError::InvalidKey(\"pack field\"))?);"
+     },
+     {
+      "file": "crates/dctx-map-store/src/adapters/bridge/pack.rs",
+      "line": 109,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(out, node.last_modified_timestamp);"
+     },
+     {
+      "file": "crates/dctx-map-store/src/adapters/bridge/pack.rs",
+      "line": 110,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(out, node.content_offset_in_data_section);"
+     },
+     {
+      "file": "crates/dctx-map-store/src/adapters/bridge/pack.rs",
+      "line": 111,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(out, node.content_size);"
+     },
+     {
+      "file": "crates/dctx-map-store/src/adapters/bridge/pack.rs",
+      "line": 122,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(out, u64::try_from(node.children.len()).map_err(|_| StoreError::InvalidKey(\"pack field\"))?);"
+     },
+     {
+      "file": "crates/dctx-map-store/src/adapters/bridge/pack.rs",
+      "line": 300,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(out, len);"
+     },
+     {
+      "file": "crates/dctx-map-store/src/adapters/bridge/pack.rs",
+      "line": 309,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(out, digest.byte_length());"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "crates/dctx-map-segment/src/domain/cursor.rs",
+      "line": 170,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, 0x0102);",
+      "bound_to": "crates/dctx-map-segment/src/domain/cursor.rs:128:push_u64"
+     },
+     {
+      "file": "crates/dctx-map-segment/src/domain/fact_record.rs",
+      "line": 48,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(out, declaration.span_start);",
+      "bound_to": "crates/dctx-map-segment/src/domain/cursor.rs:128:push_u64"
+     },
+     {
+      "file": "crates/dctx-map-segment/src/domain/fact_record.rs",
+      "line": 49,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(out, declaration.span_end);",
+      "bound_to": "crates/dctx-map-segment/src/domain/cursor.rs:128:push_u64"
+     },
+     {
+      "file": "crates/dctx-map-segment/src/domain/fact_record.rs",
+      "line": 89,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(out, provenance.generation);",
+      "bound_to": "crates/dctx-map-segment/src/domain/cursor.rs:128:push_u64"
+     },
+     {
+      "file": "crates/dctx-map-segment/src/domain/facts.rs",
+      "line": 105,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(out, byte_length);",
+      "bound_to": "crates/dctx-map-segment/src/domain/cursor.rs:128:push_u64"
+     },
+     {
+      "file": "crates/dctx-map-segment/src/domain/nodes.rs",
+      "line": 151,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(out, key.overlay_generation);",
+      "bound_to": "crates/dctx-map-segment/src/domain/cursor.rs:128:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 264,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, generation.epoch);",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 269,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, generation.taken_at);",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 270,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, generation.id);",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 271,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, limits.entries);",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 272,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, limits.depth);",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 273,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, limits.file_bytes);",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 274,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, limits.source_bytes);",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 283,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, digest.byte_length());",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 287,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, file.size);",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 288,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, file.modified);",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 304,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, node.span[0]);",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 305,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(&mut out, node.span[1]);",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     },
+     {
+      "file": "crates/dctx/src/session/reuse.rs",
+      "line": 502,
+      "qual": "",
+      "recv": "",
+      "text": "push_u64(out, raw);",
+      "bound_to": "crates/dctx/src/session/reuse.rs:490:push_u64"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "texts",
+    "file": "crates/dctx-lex-java/src/lexer/mod.rs",
+    "line": 166,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 5,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-lex-java/src/lexer/mod.rs",
+      "line": 180,
+      "qual": "",
+      "recv": "",
+      "text": "let owned = texts(source);"
+     },
+     {
+      "file": "crates/dctx-lex-java/src/lexer/mod.rs",
+      "line": 186,
+      "qual": "",
+      "recv": "",
+      "text": "let nested = texts(\"class A<B<C>> {}\");"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "crates/dctx-desktop-api/src/snapshot.rs",
+      "line": 83,
+      "qual": ".",
+      "recv": "rules",
+      "text": "let texts = rules.texts();",
+      "bound_to": "crates/dctx-desktop-api/src/snapshot_rules.rs:32:texts"
+     },
+     {
+      "file": "crates/dctx-lex-cs/src/lexer/mod.rs",
+      "line": 321,
+      "qual": "",
+      "recv": "",
+      "text": "let owned = texts(source);",
+      "bound_to": "crates/dctx-lex-cs/src/lexer/mod.rs:307:texts"
+     },
+     {
+      "file": "crates/dctx-lex-cs/src/lexer/mod.rs",
+      "line": 324,
+      "qual": "",
+      "recv": "",
+      "text": "let nested = texts(\"class A<B<C>> {}\");",
+      "bound_to": "crates/dctx-lex-cs/src/lexer/mod.rs:307:texts"
+     },
+     {
+      "file": "crates/dctx-lex-cs/src/lexer/mod.rs",
+      "line": 340,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(texts(\"string s = \\\"unterminated\\nclass Z {}\").iter().any(|text| text == \"Z\"));",
+      "bound_to": "crates/dctx-lex-cs/src/lexer/mod.rs:307:texts"
+     },
+     {
+      "file": "crates/dctx-lex-js/src/lexer/jsx.rs",
+      "line": 155,
+      "qual": "",
+      "recv": "",
+      "text": "let tokens = texts(",
+      "bound_to": "crates/dctx-lex-js/src/lexer/jsx.rs:143:texts"
+     },
+     {
+      "file": "crates/dctx-lex-js/src/lexer/jsx.rs",
+      "line": 182,
+      "qual": "",
+      "recv": "",
+      "text": "let tokens = texts(\"f = <T,>(x: T) => x\", Dialect::Tsx);",
+      "bound_to": "crates/dctx-lex-js/src/lexer/jsx.rs:143:texts"
+     },
+     {
+      "file": "crates/dctx-lex-js/src/lexer/jsx.rs",
+      "line": 184,
+      "qual": "",
+      "recv": "",
+      "text": "let js = texts(\"f = <T,>(x) => x\", Dialect::JavaScript);",
+      "bound_to": "crates/dctx-lex-js/src/lexer/jsx.rs:143:texts"
+     },
+     {
+      "file": "crates/dctx-lex-js/src/lexer/jsx.rs",
+      "line": 186,
+      "qual": "",
+      "recv": "",
+      "text": "let extended = texts(\"f = <T extends U>(x) => x\", Dialect::JavaScript);",
+      "bound_to": "crates/dctx-lex-js/src/lexer/jsx.rs:143:texts"
+     },
+     {
+      "file": "crates/dctx-lex-js/src/lexer/jsx.rs",
+      "line": 188,
+      "qual": "",
+      "recv": "",
+      "text": "let element = texts(\"v = <div>(note)</div>\", Dialect::JavaScript);",
+      "bound_to": "crates/dctx-lex-js/src/lexer/jsx.rs:143:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 213,
+      "qual": "",
+      "recv": "",
+      "text": "let div = texts(\"a = 10 / 2\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 216,
+      "qual": "",
+      "recv": "",
+      "text": "let regex = texts(\"return /cd/\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 251,
+      "qual": "",
+      "recv": "",
+      "text": "assert!(texts(&source).iter().any(|text| text == \"real\"), \"{expression}\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 257,
+      "qual": "",
+      "recv": "",
+      "text": "let assign = texts(\"ratio %= 2\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 260,
+      "qual": "",
+      "recv": "",
+      "text": "let quoted = texts(\"x = %q=secret=\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 263,
+      "qual": "",
+      "recv": "",
+      "text": "let lambda = texts(\"f = ->(x) { x }\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 265,
+      "qual": "",
+      "recv": "",
+      "text": "let chars = texts(\"c = ?x\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 267,
+      "qual": "",
+      "recv": "",
+      "text": "let slash = texts(\"c = ?/\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 270,
+      "qual": "",
+      "recv": "",
+      "text": "let escaped = texts(\"c = ?\\\\n\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 272,
+      "qual": "",
+      "recv": "",
+      "text": "let post = texts(\"g = $'\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 274,
+      "qual": "",
+      "recv": "",
+      "text": "let loaded = texts(\"g = $\\\"\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 276,
+      "qual": "",
+      "recv": "",
+      "text": "let pre = texts(\"g = $`\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 278,
+      "qual": "",
+      "recv": "",
+      "text": "let flag = texts(\"a = $-w\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 280,
+      "qual": "",
+      "recv": "",
+      "text": "let group = texts(\"a = $10\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 282,
+      "qual": "",
+      "recv": "",
+      "text": "let stack = texts(\"a = $@\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/mod.rs",
+      "line": 284,
+      "qual": "",
+      "recv": "",
+      "text": "let tern = texts(\"n > 0 ? 1 : 2\\n\");",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/mod.rs:202:texts"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "quoted",
+    "file": "crates/dctx-lex-cfg/src/yaml.rs",
+    "line": 607,
+    "kind": "method",
+    "container": "Parser",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-lex-cfg/src/yaml.rs",
+      "line": 313,
+      "qual": ".",
+      "recv": "self",
+      "text": "if let Some(text) = self.quoted() { self.cite(node, &text, start)?; }"
+     },
+     {
+      "file": "crates/dctx-lex-cfg/src/yaml.rs",
+      "line": 437,
+      "qual": ".",
+      "recv": "self",
+      "text": "let key = self.quoted()?;"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "crates/dctx-lex-php/src/lexer/scan.rs",
+      "line": 59,
+      "qual": "::",
+      "recv": "strings",
+      "text": "strings::quoted(src, i, limits, out.line(i))?",
+      "bound_to": "crates/dctx-lex-php/src/lexer/strings.rs:13:quoted"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/scan.rs",
+      "line": 57,
+      "qual": ".",
+      "recv": "self",
+      "text": "return self.quoted(byte);",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/scan.rs:142:quoted"
+     },
+     {
+      "file": "crates/dctx-lex-rb/src/lexer/scan.rs",
+      "line": 240,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.quoted(quote)?;",
+      "bound_to": "crates/dctx-lex-rb/src/lexer/scan.rs:142:quoted"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "finish_field",
+    "file": "crates/dctx-lex-cs/src/extract/members.rs",
+    "line": 107,
+    "kind": "method",
+    "container": "Walker",
+    "trait": null,
+    "lang": "rs",
+    "is_iface": false
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [
+     {
+      "file": "crates/dctx-lex-cs/src/extract/members.rs",
+      "line": 101,
+      "qual": ".",
+      "recv": "self",
+      "text": "return self.finish_field(start, type_at, name, end, scope, prefix);"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "crates/dctx-lex-java/src/extract/declarations_members.rs",
+      "line": 88,
+      "qual": ".",
+      "recv": "self",
+      "text": "Shape::Field { name } => self.finish_field(",
+      "bound_to": "crates/dctx-lex-java/src/extract/declarations_members.rs:107:finish_field"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "unlink_object",
+    "file": "crates/dctx-adapter-cache/src/ports/mod.rs",
+    "line": 42,
+    "kind": "method",
+    "container": "ObjectStore",
+    "trait": "ObjectStore",
+    "lang": "rs",
+    "is_iface": true
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "crates/dctx-adapter-cache/src/adapters/coordinate.rs",
+      "line": 44,
+      "qual": ".",
+      "recv": "objects",
+      "text": "if objects.unlink_object(id).is_err() {"
+     },
+     {
+      "file": "crates/dctx/src/session/ledger/cache_bind.rs",
+      "line": 289,
+      "qual": ".",
+      "recv": "objects",
+      "text": "let _ = objects.unlink_object(*id);"
+     },
+     {
+      "file": "crates/dctx/src/session/ledger/cache_bind.rs",
+      "line": 299,
+      "qual": ".",
+      "recv": "objects",
+      "text": "objects.unlink_object(*id)?;"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "write_page",
+    "file": "crates/dctx/src/domain/sink.rs",
+    "line": 11,
+    "kind": "method",
+    "container": "BoundedSink",
+    "trait": "BoundedSink",
+    "lang": "rs",
+    "is_iface": true
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "crates/dctx/src/domain/sink.rs",
+      "line": 52,
+      "qual": ".",
+      "recv": "sink",
+      "text": "sink.write_page(b\"ok\\n\").expect(\"write\");"
+     },
+     {
+      "file": "crates/dctx/src/session/pack_op.rs",
+      "line": 158,
+      "qual": ".",
+      "recv": "sink",
+      "text": "sink.write_page(&encoded)?;"
+     },
+     {
+      "file": "crates/dctx/src/session/query_op.rs",
+      "line": 108,
+      "qual": ".",
+      "recv": "sink",
+      "text": "sink.write_page(&encoded)?;"
+     },
+     {
+      "file": "crates/dctx/src/session/query_op.rs",
+      "line": 233,
+      "qual": ".",
+      "recv": "sink",
+      "text": "sink.write_page(&encoded)?;"
+     },
+     {
+      "file": "crates/dctx/src/session/query_op.rs",
+      "line": 259,
+      "qual": ".",
+      "recv": "sink",
+      "text": "sink.write_page(&best.1)?;"
+     },
+     {
+      "file": "crates/dctx/src/session/query_op.rs",
+      "line": 389,
+      "qual": ".",
+      "recv": "sink",
+      "text": "sink.write_page(&encoded)?;"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "read_content",
+    "file": "crates/dctx-map-scan/src/ports/mod.rs",
+    "line": 16,
+    "kind": "method",
+    "container": "ContentSource",
+    "trait": "ContentSource",
+    "lang": "rs",
+    "is_iface": true
+   },
+   "n_defs_same_name": 6,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "crates/dctx-map-scan/src/adapters/content.rs",
+      "line": 23,
+      "qual": ".",
+      "recv": "source",
+      "text": "source.read_content(path).map(Some)"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/adapters/fs.rs",
+      "line": 58,
+      "qual": ".",
+      "recv": "StdFileSystem",
+      "text": "assert_eq!(StdFileSystem.read_content(&path).unwrap(), b\"abc\");"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/adapters/spy.rs",
+      "line": 50,
+      "qual": ".",
+      "recv": "inner",
+      "text": "self.inner.read_content(path)"
+     },
+     {
+      "file": "crates/dctx-map-scan/src/adapters/walker.rs",
+      "line": 108,
+      "qual": ".",
+      "recv": "fs",
+      "text": "let bytes = at(&disk, fs.read_content(&disk))?;"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "file_stage",
+    "file": "plugins/dctx-plugin-git/src/ports/mod.rs",
+    "line": 59,
+    "kind": "method",
+    "container": "Broker",
+    "trait": "Broker",
+    "lang": "rs",
+    "is_iface": true
+   },
+   "n_defs_same_name": 4,
+   "gold": {
+    "assigned": [],
+    "other_def": [
+     {
+      "file": "crates/dctx-plugin-host/src/service/broker.rs",
+      "line": 110,
+      "qual": ".",
+      "recv": "self",
+      "text": "Request::FileStage(stage) => self.file_stage(stage),",
+      "bound_to": "crates/dctx-plugin-host/src/service/broker.rs:230:file_stage"
+     }
+    ],
+    "ambiguous": [
+     {
+      "file": "plugins/dctx-plugin-git/src/app/transfer.rs",
+      "line": 114,
+      "qual": ".",
+      "recv": "broker",
+      "text": "let staged = broker.file_stage(&stage).map_err(|failure| Failure::from_broker(failure, false, &[]))?;"
+     },
+     {
+      "file": "plugins/dctx-plugin-git/tests/common/host.rs",
+      "line": 177,
+      "qual": ".",
+      "recv": "broker",
+      "text": "Request::FileStage(stage) => broker.file_stage(stage).map(|staged| ResultBody::FileStage {"
+     }
+    ]
+   }
+  }
+ ],
+ "oracle_note": "gold recomputed by regold.py with the multi-line-aware cleaner"
+}

@@ -1,0 +1,35 @@
+{"corpus": "flask", "file_bytes": 22537, "rep": 0, "stdout_bytes": 463}
+{"corpus": "flask", "file_bytes": 22537, "rep": 1, "stdout_bytes": 533}
+{"corpus": "flask", "file_bytes": 22537, "rep": 2, "stdout_bytes": 533}
+{"corpus": "flask", "file_bytes": 22537, "rep": 3, "stdout_bytes": 533}
+{"corpus": "flask", "file_bytes": 22537, "rep": 4, "stdout_bytes": 533}
+{"corpus": "ripgrep", "file_bytes": 21972, "rep": 0, "stdout_bytes": 470}
+{"corpus": "ripgrep", "file_bytes": 21972, "rep": 1, "stdout_bytes": 539}
+{"corpus": "ripgrep", "file_bytes": 21972, "rep": 2, "stdout_bytes": 539}
+{"corpus": "ripgrep", "file_bytes": 21972, "rep": 3, "stdout_bytes": 539}
+{"corpus": "ripgrep", "file_bytes": 21972, "rep": 4, "stdout_bytes": 539}
+{"corpus": "pocketbase", "file_bytes": 80655, "rep": 0, "stdout_bytes": 479}
+{"corpus": "pocketbase", "file_bytes": 80655, "rep": 1, "stdout_bytes": 549}
+{"corpus": "pocketbase", "file_bytes": 80655, "rep": 2, "stdout_bytes": 549}
+{"corpus": "pocketbase", "file_bytes": 80655, "rep": 3, "stdout_bytes": 549}
+{"corpus": "pocketbase", "file_bytes": 80655, "rep": 4, "stdout_bytes": 549}
+{"corpus": "trailcode", "file_bytes": 30347, "rep": 0, "stdout_bytes": 476}
+{"corpus": "trailcode", "file_bytes": 30347, "rep": 1, "stdout_bytes": 546}
+{"corpus": "trailcode", "file_bytes": 30347, "rep": 2, "stdout_bytes": 546}
+{"corpus": "trailcode", "file_bytes": 30347, "rep": 3, "stdout_bytes": 546}
+{"corpus": "trailcode", "file_bytes": 30347, "rep": 4, "stdout_bytes": 546}
+{"corpus": "dctx", "file_bytes": 199371, "rep": 0, "stdout_bytes": 462}
+{"corpus": "dctx", "file_bytes": 199371, "rep": 1, "stdout_bytes": 532}
+{"corpus": "dctx", "file_bytes": 199371, "rep": 2, "stdout_bytes": 532}
+{"corpus": "dctx", "file_bytes": 199371, "rep": 3, "stdout_bytes": 532}
+{"corpus": "dctx", "file_bytes": 199371, "rep": 4, "stdout_bytes": 532}
+{"corpus": "django", "file_bytes": 974082, "rep": 0, "stdout_bytes": 468}
+{"corpus": "django", "file_bytes": 974082, "rep": 1, "stdout_bytes": 535}
+{"corpus": "django", "file_bytes": 974082, "rep": 2, "stdout_bytes": 538}
+{"corpus": "django", "file_bytes": 974082, "rep": 3, "stdout_bytes": 538}
+{"corpus": "django", "file_bytes": 974082, "rep": 4, "stdout_bytes": 538}
+{"corpus": "core", "file_bytes": 350226, "redacted": true, "rep": 0, "stdout_bytes": 462}
+{"corpus": "core", "file_bytes": 350226, "redacted": true, "rep": 1, "stdout_bytes": 532}
+{"corpus": "core", "file_bytes": 350226, "redacted": true, "rep": 2, "stdout_bytes": 532}
+{"corpus": "core", "file_bytes": 350226, "redacted": true, "rep": 3, "stdout_bytes": 532}
+{"corpus": "core", "file_bytes": 350226, "redacted": true, "rep": 4, "stdout_bytes": 532}

@@ -1,0 +1,11 @@
+category,tool,targets,gold sites,precision,recall
+hub,trail,28,1187,1.0,0.41870261162594774
+hub,dctx,28,1187,,0.0
+rare,trail,28,40,1.0,0.925
+rare,dctx,28,40,,0.0
+receiver,trail,28,101,1.0,0.5643564356435643
+receiver,dctx,28,101,,0.0
+collision,trail,28,59,1.0,0.864406779661017
+collision,dctx,28,59,,0.0
+interface,trail,28,43,0.9444444444444444,0.4186046511627907
+interface,dctx,28,43,,0.0

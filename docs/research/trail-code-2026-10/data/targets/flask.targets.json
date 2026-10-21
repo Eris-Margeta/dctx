@@ -1,0 +1,1871 @@
+{
+ "corpus": "flask",
+ "files_scanned": 83,
+ "defs_scanned": 1574,
+ "targets": [
+  {
+   "category": "hub",
+   "def": {
+    "name": "abort",
+    "file": "src/flask/helpers.py",
+    "line": 273,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "examples/tutorial/flaskr/blog.py",
+      "line": 52,
+      "qual": "",
+      "recv": "",
+      "text": "abort(404, f\"Post id {id} doesn't exist.\")"
+     },
+     {
+      "file": "examples/tutorial/flaskr/blog.py",
+      "line": 55,
+      "qual": "",
+      "recv": "",
+      "text": "abort(403)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 905,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(404)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 913,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(403)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 1009,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(403)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 1067,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(400)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 1093,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(404)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 19,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 27,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 31,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 89,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 95,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 808,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 816,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 828,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 1027,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(403)"
+     },
+     {
+      "file": "tests/test_helpers.py",
+      "line": 190,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(401)"
+     },
+     {
+      "file": "tests/test_helpers.py",
+      "line": 193,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(900)"
+     },
+     {
+      "file": "tests/test_helpers.py",
+      "line": 214,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(900)"
+     },
+     {
+      "file": "tests/test_regression.py",
+      "line": 14,
+      "qual": ".",
+      "recv": "flask",
+      "text": "raise flask.abort(flask.redirect(flask.url_for(\"test\")))"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 53,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(500)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 235,
+      "qual": ".",
+      "recv": "flask",
+      "text": "flask.abort(500)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "as_view",
+    "file": "src/flask/views.py",
+    "line": 86,
+    "kind": "method",
+    "container": "View",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "tests/test_async.py",
+      "line": 75,
+      "qual": ".",
+      "recv": "AsyncView",
+      "text": "app.add_url_rule(\"/view\", view_func=AsyncView.as_view(\"view\"))"
+     },
+     {
+      "file": "tests/test_async.py",
+      "line": 76,
+      "qual": ".",
+      "recv": "AsyncMethodView",
+      "text": "app.add_url_rule(\"/methodview\", view_func=AsyncMethodView.as_view(\"methodview\"))"
+     },
+     {
+      "file": "tests/test_helpers.py",
+      "line": 155,
+      "qual": ".",
+      "recv": "MyView",
+      "text": "myview = MyView.as_view(\"myview\")"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 24,
+      "qual": ".",
+      "recv": "Index",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 36,
+      "qual": ".",
+      "recv": "Index",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 56,
+      "qual": ".",
+      "recv": "Index",
+      "text": "view = Index.as_view(\"index\")"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 74,
+      "qual": ".",
+      "recv": "BetterIndex",
+      "text": "app.add_url_rule(\"/\", view_func=BetterIndex.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 95,
+      "qual": ".",
+      "recv": "Index",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 110,
+      "qual": ".",
+      "recv": "Index1",
+      "text": "app.add_url_rule(\"/\", view_func=Index1.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 124,
+      "qual": ".",
+      "recv": "Index2",
+      "text": "app.add_url_rule(\"/\", view_func=Index2.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 135,
+      "qual": ".",
+      "recv": "Index3",
+      "text": "app.add_url_rule(\"/\", view_func=Index3.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 146,
+      "qual": ".",
+      "recv": "Index",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 163,
+      "qual": ".",
+      "recv": "Index",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 180,
+      "qual": ".",
+      "recv": "Index",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 183,
+      "qual": ".",
+      "recv": "Index",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 200,
+      "qual": ".",
+      "recv": "ChildView",
+      "text": "app.add_url_rule(\"/\", view_func=ChildView.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 219,
+      "qual": ".",
+      "recv": "GetDeleteView",
+      "text": "app.add_url_rule(\"/\", view_func=GetDeleteView.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 238,
+      "qual": ".",
+      "recv": "View",
+      "text": "app.add_url_rule(\"/\", view_func=View.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 258,
+      "qual": ".",
+      "recv": "CountInit",
+      "text": "app.add_url_rule(\"/\", view_func=CountInit.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/type_check/typing_route.py",
+      "line": 111,
+      "qual": ".",
+      "recv": "RenderTemplateView",
+      "text": "view_func=RenderTemplateView.as_view(\"about_page\", template_name=\"about.html\"),"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "load_app",
+    "file": "src/flask/cli.py",
+    "line": 333,
+    "kind": "method",
+    "container": "ScriptInfo",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/cli.py",
+      "line": 397,
+      "qual": ".",
+      "recv": "",
+      "text": "app = ctx.ensure_object(ScriptInfo).load_app()"
+     },
+     {
+      "file": "src/flask/cli.py",
+      "line": 631,
+      "qual": ".",
+      "recv": "info",
+      "text": "app = info.load_app()"
+     },
+     {
+      "file": "src/flask/cli.py",
+      "line": 653,
+      "qual": ".",
+      "recv": "info",
+      "text": "rv.update(info.load_app().cli.list_commands(ctx))"
+     },
+     {
+      "file": "src/flask/cli.py",
+      "line": 963,
+      "qual": ".",
+      "recv": "info",
+      "text": "app: WSGIApplication = info.load_app()  # pyright: ignore"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 249,
+      "qual": ".",
+      "recv": "obj",
+      "text": "app = obj.load_app()"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 251,
+      "qual": ".",
+      "recv": "obj",
+      "text": "assert obj.load_app() is app"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 257,
+      "qual": ".",
+      "recv": "obj",
+      "text": "app = obj.load_app()"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 259,
+      "qual": ".",
+      "recv": "obj",
+      "text": "assert obj.load_app() is app"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 261,
+      "qual": ".",
+      "recv": "obj",
+      "text": "app = obj.load_app()"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 263,
+      "qual": ".",
+      "recv": "obj",
+      "text": "assert obj.load_app() is app"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 269,
+      "qual": ".",
+      "recv": "obj",
+      "text": "app = obj.load_app()"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 271,
+      "qual": ".",
+      "recv": "obj",
+      "text": "assert obj.load_app() is app"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 279,
+      "qual": ".",
+      "recv": "obj",
+      "text": "app = obj.load_app()"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 285,
+      "qual": ".",
+      "recv": "obj",
+      "text": "app = obj.load_app()"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 297,
+      "qual": ".",
+      "recv": "obj",
+      "text": "app = click.get_current_context().obj.load_app()"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "errorhandler",
+    "file": "src/flask/sansio/scaffold.py",
+    "line": 598,
+    "kind": "method",
+    "container": "Scaffold",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/sansio/blueprints.py",
+      "line": 605,
+      "qual": ".",
+      "recv": "app",
+      "text": "state.app.errorhandler(code)(f)"
+     },
+     {
+      "file": "tests/test_appctx.py",
+      "line": 103,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(Exception)"
+     },
+     {
+      "file": "tests/test_async.py",
+      "line": 50,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(AppError)"
+     },
+     {
+      "file": "tests/test_async.py",
+      "line": 65,
+      "qual": ".",
+      "recv": "blueprint",
+      "text": "@blueprint.errorhandler(BlueprintError)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 891,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(404)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 895,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(500)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 899,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(Forbidden)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 929,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(500)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 963,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(404)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 976,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(MyException)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 992,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(ForbiddenSubclass)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 997,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(403)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 1030,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(E2)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 1034,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(Exception)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 1118,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(500)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 13,
+      "qual": ".",
+      "recv": "frontend",
+      "text": "@frontend.errorhandler(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 21,
+      "qual": ".",
+      "recv": "backend",
+      "text": "@backend.errorhandler(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 37,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 55,
+      "qual": ".",
+      "recv": "blue",
+      "text": "@blue.errorhandler(MyDecoratorException)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 798,
+      "qual": ".",
+      "recv": "parent",
+      "text": "@parent.errorhandler(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 818,
+      "qual": ".",
+      "recv": "grandchild",
+      "text": "@grandchild.errorhandler(403)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 1029,
+      "qual": ".",
+      "recv": "bp",
+      "text": "@bp.errorhandler(403)"
+     },
+     {
+      "file": "tests/test_regression.py",
+      "line": 8,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(Foo)"
+     },
+     {
+      "file": "tests/test_request.py",
+      "line": 17,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(413)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 14,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(CustomException)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 29,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(500)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 71,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(ParentException)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 76,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(ChildExceptionRegistered)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 107,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(403)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 112,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(ForbiddenSubclassRegistered)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 139,
+      "qual": ".",
+      "recv": "bp",
+      "text": "@bp.errorhandler(500)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 147,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(500)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 166,
+      "qual": ".",
+      "recv": "bp",
+      "text": "@bp.errorhandler(HTTPException)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 172,
+      "qual": ".",
+      "recv": "bp",
+      "text": "@bp.errorhandler(Forbidden)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 187,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(HTTPException)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 193,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(Forbidden)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 259,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(to_handle)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 274,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(HTTPException)"
+     },
+     {
+      "file": "tests/test_user_error_handler.py",
+      "line": 288,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(Exception)"
+     },
+     {
+      "file": "tests/type_check/typing_error_handler.py",
+      "line": 13,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(400)"
+     },
+     {
+      "file": "tests/type_check/typing_error_handler.py",
+      "line": 14,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(HTTPStatus.BAD_REQUEST)"
+     },
+     {
+      "file": "tests/type_check/typing_error_handler.py",
+      "line": 15,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(BadRequest)"
+     },
+     {
+      "file": "tests/type_check/typing_error_handler.py",
+      "line": 20,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(ValueError)"
+     },
+     {
+      "file": "tests/type_check/typing_error_handler.py",
+      "line": 25,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(ValueError)"
+     },
+     {
+      "file": "tests/type_check/typing_error_handler.py",
+      "line": 30,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(BadRequest)"
+     },
+     {
+      "file": "tests/type_check/typing_error_handler.py",
+      "line": 31,
+      "qual": ".",
+      "recv": "app",
+      "text": "@app.errorhandler(404)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "inject_url_defaults",
+    "file": "src/flask/sansio/app.py",
+    "line": 911,
+    "kind": "method",
+    "container": "App",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/app.py",
+      "line": 1107,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.inject_url_defaults(endpoint, values)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 1680,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.inject_url_defaults(\"foo.view\", values)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "wsgi_app",
+    "file": "src/flask/app.py",
+    "line": 1479,
+    "kind": "method",
+    "container": "Flask",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/app.py",
+      "line": 1536,
+      "qual": ".",
+      "recv": "self",
+      "text": "return self.wsgi_app(environ, start_response)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "get_signing_serializer",
+    "file": "src/flask/sessions.py",
+    "line": 303,
+    "kind": "method",
+    "container": "SecureCookieSessionInterface",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/sessions.py",
+      "line": 324,
+      "qual": ".",
+      "recv": "self",
+      "text": "s = self.get_signing_serializer(app)"
+     },
+     {
+      "file": "src/flask/sessions.py",
+      "line": 373,
+      "qual": ".",
+      "recv": "self",
+      "text": "val = self.get_signing_serializer(app).dumps(dict(session))  # type: ignore[union-attr]"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "show_server_banner",
+    "file": "src/flask/cli.py",
+    "line": 774,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/app.py",
+      "line": 657,
+      "qual": ".",
+      "recv": "cli",
+      "text": "cli.show_server_banner(self.debug, self.name)"
+     },
+     {
+      "file": "src/flask/cli.py",
+      "line": 989,
+      "qual": "",
+      "recv": "",
+      "text": "show_server_banner(debug, info.app_import_path)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "get_cookie_partitioned",
+    "file": "src/flask/sessions.py",
+    "line": 215,
+    "kind": "method",
+    "container": "SessionInterface",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/sessions.py",
+      "line": 344,
+      "qual": ".",
+      "recv": "self",
+      "text": "partitioned = self.get_cookie_partitioned(app)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "preprocess_request",
+    "file": "src/flask/app.py",
+    "line": 1271,
+    "kind": "method",
+    "container": "Flask",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/app.py",
+      "line": 915,
+      "qual": ".",
+      "recv": "self",
+      "text": "rv = self.preprocess_request()"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "async_to_sync",
+    "file": "src/flask/app.py",
+    "line": 980,
+    "kind": "method",
+    "container": "Flask",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/app.py",
+      "line": 976,
+      "qual": ".",
+      "recv": "self",
+      "text": "return self.async_to_sync(func)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "add_app_template_filter",
+    "file": "src/flask/sansio/blueprints.py",
+    "line": 461,
+    "kind": "method",
+    "container": "Blueprint",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/sansio/blueprints.py",
+      "line": 455,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.add_app_template_filter(f, name=name)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 381,
+      "qual": ".",
+      "recv": "bp",
+      "text": "bp.add_app_template_filter(my_reverse)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 407,
+      "qual": ".",
+      "recv": "bp",
+      "text": "bp.add_app_template_filter(my_reverse, \"strrev\")"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 453,
+      "qual": ".",
+      "recv": "bp",
+      "text": "bp.add_app_template_filter(super_reverse)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 487,
+      "qual": ".",
+      "recv": "bp",
+      "text": "bp.add_app_template_filter(my_reverse, \"super_reverse\")"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "get_send_file_max_age",
+    "file": "src/flask/app.py",
+    "line": 281,
+    "kind": "method",
+    "container": "Flask",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 4,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/app.py",
+      "line": 325,
+      "qual": ".",
+      "recv": "self",
+      "text": "max_age = self.get_send_file_max_age(filename)"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "src/flask/blueprints.py",
+      "line": 99,
+      "qual": ".",
+      "recv": "self",
+      "text": "max_age = self.get_send_file_max_age(filename)",
+      "bound_to": "src/flask/blueprints.py:55:get_send_file_max_age"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "get_send_file_max_age",
+    "file": "src/flask/blueprints.py",
+    "line": 55,
+    "kind": "method",
+    "container": "Blueprint",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 4,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/blueprints.py",
+      "line": 99,
+      "qual": ".",
+      "recv": "self",
+      "text": "max_age = self.get_send_file_max_age(filename)"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "src/flask/app.py",
+      "line": 325,
+      "qual": ".",
+      "recv": "self",
+      "text": "max_age = self.get_send_file_max_age(filename)",
+      "bound_to": "src/flask/app.py:281:get_send_file_max_age"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "loads",
+    "file": "src/flask/json/provider.py",
+    "line": 59,
+    "kind": "method",
+    "container": "JSONProvider",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 5,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/json/provider.py",
+      "line": 73,
+      "qual": ".",
+      "recv": "self",
+      "text": "return self.loads(fp.read(), **kwargs)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "src/flask/config.py",
+      "line": 162,
+      "qual": "",
+      "recv": "",
+      "text": "value = loads(value)"
+     },
+     {
+      "file": "src/flask/json/__init__.py",
+      "line": 103,
+      "qual": ".",
+      "recv": "json",
+      "text": "return current_app.json.loads(s, **kwargs)"
+     },
+     {
+      "file": "src/flask/json/__init__.py",
+      "line": 105,
+      "qual": ".",
+      "recv": "_json",
+      "text": "return _json.loads(s, **kwargs)"
+     },
+     {
+      "file": "src/flask/json/provider.py",
+      "line": 187,
+      "qual": ".",
+      "recv": "json",
+      "text": "return json.loads(s, **kwargs)"
+     },
+     {
+      "file": "src/flask/json/tag.py",
+      "line": 327,
+      "qual": "",
+      "recv": "",
+      "text": "return self._untag_scan(loads(value))"
+     },
+     {
+      "file": "src/flask/sessions.py",
+      "line": 332,
+      "qual": ".",
+      "recv": "s",
+      "text": "data = s.loads(val, max_age=max_age)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 1350,
+      "qual": ".",
+      "recv": "json",
+      "text": "value = app.json.loads(value)"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 75,
+      "qual": ".",
+      "recv": "json",
+      "text": "assert flask.json.loads(rv.data) == test_value"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 102,
+      "qual": ".",
+      "recv": "json",
+      "text": "assert flask.json.loads(rv.data) == d"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 130,
+      "qual": ".",
+      "recv": "json",
+      "text": "assert flask.json.loads(rv.data) == a_list"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 185,
+      "qual": ".",
+      "recv": "json",
+      "text": "rv_x = flask.json.loads(rv.data)[\"x\"]"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 243,
+      "qual": ".",
+      "recv": "super",
+      "text": "return super().loads(s, **kwargs)"
+     },
+     {
+      "file": "tests/test_json_tag.py",
+      "line": 29,
+      "qual": ".",
+      "recv": "s",
+      "text": "assert s.loads(s.dumps(data)) == data"
+     },
+     {
+      "file": "tests/test_json_tag.py",
+      "line": 63,
+      "qual": ".",
+      "recv": "s",
+      "text": "assert s.loads(s.dumps(Foo(\"bar\"))).data == \"bar\""
+     }
+    ]
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "create_jinja_environment",
+    "file": "src/flask/sansio/app.py",
+    "line": 479,
+    "kind": "method",
+    "container": "App",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/sansio/app.py",
+      "line": 477,
+      "qual": ".",
+      "recv": "self",
+      "text": "return self.create_jinja_environment()"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "dumps",
+    "file": "src/flask/json/provider.py",
+    "line": 41,
+    "kind": "method",
+    "container": "JSONProvider",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 4,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/json/provider.py",
+      "line": 57,
+      "qual": ".",
+      "recv": "self",
+      "text": "fp.write(self.dumps(obj, **kwargs))"
+     },
+     {
+      "file": "src/flask/json/provider.py",
+      "line": 105,
+      "qual": ".",
+      "recv": "self",
+      "text": "return self._app.response_class(self.dumps(obj), mimetype=\"application/json\")"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "src/flask/json/__init__.py",
+      "line": 41,
+      "qual": ".",
+      "recv": "json",
+      "text": "return current_app.json.dumps(obj, **kwargs)"
+     },
+     {
+      "file": "src/flask/json/__init__.py",
+      "line": 44,
+      "qual": ".",
+      "recv": "_json",
+      "text": "return _json.dumps(obj, **kwargs)"
+     },
+     {
+      "file": "src/flask/json/provider.py",
+      "line": 179,
+      "qual": ".",
+      "recv": "json",
+      "text": "return json.dumps(obj, **kwargs)"
+     },
+     {
+      "file": "src/flask/json/tag.py",
+      "line": 323,
+      "qual": "",
+      "recv": "",
+      "text": "return dumps(self.tag(value), separators=(\",\", \":\"))"
+     },
+     {
+      "file": "src/flask/sessions.py",
+      "line": 373,
+      "qual": ".",
+      "recv": "",
+      "text": "val = self.get_signing_serializer(app).dumps(dict(session))  # type: ignore[union-attr]"
+     },
+     {
+      "file": "src/flask/testing.py",
+      "line": 94,
+      "qual": ".",
+      "recv": "json",
+      "text": "return self.app.json.dumps(obj, **kwargs)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 1349,
+      "qual": ".",
+      "recv": "json",
+      "text": "value = app.json.dumps(Data(\"Flask\"))"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 53,
+      "qual": ".",
+      "recv": "json",
+      "text": "rv = app.json.dumps(\"\\N{SNOWMAN}\")"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 173,
+      "qual": ".",
+      "recv": "json",
+      "text": "assert flask.json.dumps(dt) == expected"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 192,
+      "qual": ".",
+      "recv": "json",
+      "text": "rv = flask.json.dumps(decimal.Decimal(\"0.003\"))"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 204,
+      "qual": ".",
+      "recv": "json",
+      "text": "data=flask.json.dumps({\"a\": 1, \"b\": 2}),"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 250,
+      "qual": ".",
+      "recv": "json",
+      "text": "return flask.json.dumps(flask.request.get_json()[\"x\"])"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 254,
+      "qual": ".",
+      "recv": "json",
+      "text": "data=flask.json.dumps({\"x\": {\"_foo\": 42}}),"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 345,
+      "qual": ".",
+      "recv": "json",
+      "text": "result = json.dumps(ObjectWithHTML())"
+     },
+     {
+      "file": "tests/test_json_tag.py",
+      "line": 29,
+      "qual": ".",
+      "recv": "s",
+      "text": "assert s.loads(s.dumps(data)) == data"
+     },
+     {
+      "file": "tests/test_json_tag.py",
+      "line": 63,
+      "qual": ".",
+      "recv": "s",
+      "text": "assert s.loads(s.dumps(Foo(\"bar\"))).data == \"bar\""
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "open_session",
+    "file": "src/flask/sessions.py",
+    "line": 249,
+    "kind": "method",
+    "container": "SessionInterface",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 4,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "src/flask/ctx.py",
+      "line": 396,
+      "qual": ".",
+      "recv": "session_interface",
+      "text": "self._session = session_interface.open_session(self.app, self.request)"
+     },
+     {
+      "file": "src/flask/testing.py",
+      "line": 165,
+      "qual": ".",
+      "recv": "session_interface",
+      "text": "sess = app.session_interface.open_session(app, ctx.request)"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "add_url_rule",
+    "file": "src/flask/sansio/scaffold.py",
+    "line": 368,
+    "kind": "method",
+    "container": "Scaffold",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 4,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/sansio/scaffold.py",
+      "line": 362,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.add_url_rule(rule, endpoint, f, **options)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "examples/tutorial/flaskr/__init__.py",
+      "line": 46,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", endpoint=\"index\")"
+     },
+     {
+      "file": "src/flask/app.py",
+      "line": 274,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.add_url_rule("
+     },
+     {
+      "file": "src/flask/sansio/blueprints.py",
+      "line": 110,
+      "qual": ".",
+      "recv": "app",
+      "text": "self.app.add_url_rule("
+     },
+     {
+      "file": "src/flask/sansio/blueprints.py",
+      "line": 324,
+      "qual": ".",
+      "recv": "state",
+      "text": "state.add_url_rule("
+     },
+     {
+      "file": "src/flask/sansio/blueprints.py",
+      "line": 434,
+      "qual": ".",
+      "recv": "s",
+      "text": "lambda s: s.add_url_rule("
+     },
+     {
+      "file": "tests/test_async.py",
+      "line": 75,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/view\", view_func=AsyncView.as_view(\"view\"))"
+     },
+     {
+      "file": "tests/test_async.py",
+      "line": 76,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/methodview\", view_func=AsyncMethodView.as_view(\"methodview\"))"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 101,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=index, provide_automatic_options=False)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 102,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule("
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 156,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", methods=\"GET POST\", endpoint=\"test\")"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 171,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", \"index\", index)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 172,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/more\", \"more\", more, methods=[\"GET\", \"POST\"])"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 176,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/options\", \"options\", options, methods=[\"options\"])"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 1709,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/foo\", endpoint=\"late\")"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 1860,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", \"index\", self.index)"
+     },
+     {
+      "file": "tests/test_basic.py",
+      "line": 1861,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/<test>/\", \"index\", self.index)"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 334,
+      "qual": ".",
+      "recv": "bp",
+      "text": "bp.add_url_rule(\"/\", endpoint=\"a.b\")"
+     },
+     {
+      "file": "tests/test_blueprints.py",
+      "line": 342,
+      "qual": ".",
+      "recv": "bp",
+      "text": "bp.add_url_rule(\"/\", view_func=view)"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 450,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule("
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 455,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/zzz_post\", methods=[\"POST\"], endpoint=\"aaa_post\")"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 504,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/a\", subdomain=\"a\", endpoint=\"a\")"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 505,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/b\", subdomain=\"b\", endpoint=\"b\")"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 513,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/a\", host=\"a\", endpoint=\"a\")"
+     },
+     {
+      "file": "tests/test_cli.py",
+      "line": 514,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/b\", host=\"b\", endpoint=\"b\")"
+     },
+     {
+      "file": "tests/test_helpers.py",
+      "line": 121,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", endpoint=\"index\")"
+     },
+     {
+      "file": "tests/test_helpers.py",
+      "line": 156,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/myview/\", methods=[\"GET\"], view_func=myview)"
+     },
+     {
+      "file": "tests/test_helpers.py",
+      "line": 157,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/myview/<int:id>\", methods=[\"GET\"], view_func=myview)"
+     },
+     {
+      "file": "tests/test_helpers.py",
+      "line": 158,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/myview/create\", methods=[\"POST\"], view_func=myview)"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 72,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(url, url, lambda x=test_value: flask.jsonify(x))"
+     },
+     {
+      "file": "tests/test_json.py",
+      "line": 181,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(url, url, lambda: flask.jsonify(x=test_uuid))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 24,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 36,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 58,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=view)"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 74,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=BetterIndex.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 95,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 110,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=Index1.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 124,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=Index2.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 135,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=Index3.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 146,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 163,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 180,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 183,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=Index.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 200,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=ChildView.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 219,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=GetDeleteView.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 238,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=View.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/test_views.py",
+      "line": 258,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule(\"/\", view_func=CountInit.as_view(\"index\"))"
+     },
+     {
+      "file": "tests/type_check/typing_route.py",
+      "line": 109,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_url_rule("
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "record",
+    "file": "src/flask/sansio/blueprints.py",
+    "line": 224,
+    "kind": "method",
+    "container": "Blueprint",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 5,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/flask/sansio/blueprints.py",
+      "line": 244,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.record(update_wrapper(wrapper, func))"
+     },
+     {
+      "file": "src/flask/sansio/blueprints.py",
+      "line": 433,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.record("
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  }
+ ],
+ "oracle_note": "gold recomputed by regold.py with the multi-line-aware cleaner"
+}

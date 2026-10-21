@@ -434,7 +434,7 @@
       }
       if (mIn) mIn.textContent = fmt(v);
       if (mInLabel) mInLabel.textContent = p < 0.34 ? 'Tokens in the repository' : (p < 0.62 ? 'Authorized by policy' : (p < 0.92 ? 'Ranked, relevant spans' : 'Sent to the model'));
-      if (mOut) mOut.textContent = p >= 0.92 ? 'Exact · bounded · cache-stable' : (p >= 0.62 ? 'Ordering…' : (p >= 0.34 ? 'Ranking…' : 'Selecting…'));
+      if (mOut) mOut.textContent = p >= 0.92 ? 'Exact · bounded · stable order' : (p >= 0.62 ? 'Ordering…' : (p >= 0.34 ? 'Ranking…' : 'Selecting…'));
     }
     C.draw = draw; C.readout = readout;
     C.final = function () { C.p = 1; readout(1); draw(1, 0); };

@@ -1,0 +1,2856 @@
+{
+ "corpus": "django",
+ "files_scanned": 3030,
+ "defs_scanned": 43908,
+ "targets": [
+  {
+   "category": "hub",
+   "def": {
+    "name": "add_node",
+    "file": "django/db/migrations/graph.py",
+    "line": 91,
+    "kind": "method",
+    "container": "MigrationGraph",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/db/migrations/loader.py",
+      "line": 295,
+      "qual": ".",
+      "recv": "graph",
+      "text": "self.graph.add_node(key, migration)"
+     },
+     {
+      "file": "docs/_ext/djangodocs.py",
+      "line": 54,
+      "qual": ".",
+      "recv": "app",
+      "text": "app.add_node("
+     },
+     {
+      "file": "tests/migrations/test_autodetector.py",
+      "line": 1159,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"testapp\", \"0001_initial\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_autodetector.py",
+      "line": 1160,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"testapp\", \"0002_foobar\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_autodetector.py",
+      "line": 1161,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"otherapp\", \"0001_initial\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_autodetector.py",
+      "line": 1249,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"testapp\", \"0001_initial\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_autodetector.py",
+      "line": 1250,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"testapp\", \"0002_foobar\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_autodetector.py",
+      "line": 1251,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"otherapp\", \"0001_initial\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 894,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(a1, a1_impl)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 895,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(a2, a2_impl)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 896,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(b1, b1_impl)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 936,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(a1, a1_impl)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 937,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(a2, a2_impl)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 938,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(a3, a3_impl)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 939,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(a4, a4_impl)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 940,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(b1, b1_impl)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 941,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(b2, b2_impl)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 989,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(a1, a1_impl)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 990,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(a2, a2_impl)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 991,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(b1, b1_impl)"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 992,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(c1, c1_impl)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 21,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 22,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 23,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0003\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 24,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0004\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 25,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 26,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 81,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 82,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 83,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0003\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 84,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0004\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 85,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 86,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 87,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_c\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 88,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_c\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 151,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 152,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 153,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0003\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 154,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 155,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 167,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"A\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 168,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"C\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 169,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"B\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 180,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(root, None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 185,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node(child, None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 204,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", str(i)), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 205,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", str(i)), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 206,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_c\", str(i)), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 237,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 238,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 239,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0003\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 240,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 256,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 266,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 279,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 292,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 293,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 328,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_c\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 329,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 346,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0001_squashed_0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 372,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 373,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 385,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0001_squashed_0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 387,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 422,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 423,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 424,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 425,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_c\", \"0001_squashed_0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 445,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 446,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0002\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 447,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_a\", \"0003\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 448,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0001\"), None)"
+     },
+     {
+      "file": "tests/migrations/test_graph.py",
+      "line": 449,
+      "qual": ".",
+      "recv": "graph",
+      "text": "graph.add_node((\"app_b\", \"0002\"), None)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "get_filters",
+    "file": "django/contrib/admin/views/main.py",
+    "line": 175,
+    "kind": "method",
+    "container": "ChangeList",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/contrib/admin/views/main.py",
+      "line": 472,
+      "qual": ".",
+      "recv": "self",
+      "text": ") = self.get_filters(request)"
+     },
+     {
+      "file": "tests/admin_changelist/test_date_hierarchy.py",
+      "line": 28,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "_, _, lookup_params, *_ = changelist.get_filters(request)"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 433,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 457,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][4]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 495,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][4]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 530,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][4]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 560,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][4]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 584,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][4]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 602,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][4]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 630,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 641,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 654,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 672,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 689,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 700,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 725,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 743,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 760,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 772,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][2]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 791,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][2]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 804,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][2]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 825,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 838,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 858,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 871,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 885,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 889,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 900,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 918,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][4]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 935,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 953,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 981,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1004,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1022,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][6]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1038,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][5]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1083,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][3]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1098,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][3]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1113,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][3]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1134,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][6]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1145,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][6]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1156,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][6]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1170,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][6]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1226,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1243,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1260,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1277,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1296,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1306,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1351,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1371,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1393,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filters = changelist.get_filters(request)[0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1477,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filters = changelist.get_filters(request)[0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1539,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filters = changelist.get_filters(request)[0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1593,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1623,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][3]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1657,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][5]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1683,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][5]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1705,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1723,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1744,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][-1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1769,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][-1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1793,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][-1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1818,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][-1]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1842,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     },
+     {
+      "file": "tests/admin_filters/tests.py",
+      "line": 1990,
+      "qual": ".",
+      "recv": "changelist",
+      "text": "filterspec = changelist.get_filters(request)[0][0]"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "get_app_configs",
+    "file": "django/apps/registry.py",
+    "line": 145,
+    "kind": "method",
+    "container": "Apps",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/apps/registry.py",
+      "line": 123,
+      "qual": ".",
+      "recv": "self",
+      "text": "for app_config in self.get_app_configs():"
+     },
+     {
+      "file": "django/apps/registry.py",
+      "line": 161,
+      "qual": ".",
+      "recv": "self",
+      "text": "for app_config in self.get_app_configs():"
+     },
+     {
+      "file": "django/apps/registry.py",
+      "line": 319,
+      "qual": ".",
+      "recv": "self",
+      "text": "installed = {app_config.name for app_config in self.get_app_configs()}"
+     },
+     {
+      "file": "django/contrib/admin/sites.py",
+      "line": 83,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_configs = apps.get_app_configs()"
+     },
+     {
+      "file": "django/contrib/staticfiles/finders.py",
+      "line": 171,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_configs = apps.get_app_configs()"
+     },
+     {
+      "file": "django/core/management/__init__.py",
+      "line": 76,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in reversed(apps.get_app_configs()):"
+     },
+     {
+      "file": "django/core/management/__init__.py",
+      "line": 325,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_configs = apps.get_app_configs()"
+     },
+     {
+      "file": "django/core/management/commands/dumpdata.py",
+      "line": 128,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs()"
+     },
+     {
+      "file": "django/core/management/commands/flush.py",
+      "line": 46,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs():"
+     },
+     {
+      "file": "django/core/management/commands/loaddata.py",
+      "line": 368,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs():"
+     },
+     {
+      "file": "django/core/management/commands/makemigrations.py",
+      "line": 144,
+      "qual": ".",
+      "recv": "apps",
+      "text": "consistency_check_labels = {config.label for config in apps.get_app_configs()}"
+     },
+     {
+      "file": "django/core/management/commands/migrate.py",
+      "line": 105,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs():"
+     },
+     {
+      "file": "django/core/management/commands/migrate.py",
+      "line": 444,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs()"
+     },
+     {
+      "file": "django/core/management/sql.py",
+      "line": 24,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs():"
+     },
+     {
+      "file": "django/core/management/sql.py",
+      "line": 44,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs():"
+     },
+     {
+      "file": "django/db/backends/base/creation.py",
+      "line": 86,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app.label: None for app in apps.get_app_configs()"
+     },
+     {
+      "file": "django/db/backends/base/creation.py",
+      "line": 150,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs():"
+     },
+     {
+      "file": "django/db/backends/base/introspection.py",
+      "line": 98,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs()"
+     },
+     {
+      "file": "django/db/migrations/loader.py",
+      "line": 79,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs():"
+     },
+     {
+      "file": "django/template/backends/django.py",
+      "line": 140,
+      "qual": ".",
+      "recv": "apps",
+      "text": "f\"{app_config.name}.templatetags\" for app_config in apps.get_app_configs()"
+     },
+     {
+      "file": "django/template/utils.py",
+      "line": 108,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs()"
+     },
+     {
+      "file": "django/utils/module_loading.py",
+      "line": 51,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs():"
+     },
+     {
+      "file": "django/utils/translation/reloader.py",
+      "line": 17,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for config in apps.get_app_configs()"
+     },
+     {
+      "file": "django/utils/translation/trans_real.py",
+      "line": 218,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_configs = reversed(apps.get_app_configs())"
+     },
+     {
+      "file": "django/utils/translation/trans_real.py",
+      "line": 459,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs():"
+     },
+     {
+      "file": "django/views/i18n.py",
+      "line": 129,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config.name: app_config for app_config in apps.get_app_configs()"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 154,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_configs = apps.get_app_configs()"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 35,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(app_configs=self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 58,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 126,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(app_configs=self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 139,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(app_configs=self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 167,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.assertEqual(checks.run_checks(app_configs=self.apps.get_app_configs()), [])"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 169,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(app_configs=self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 188,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(app_configs=self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 227,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(app_configs=self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 257,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 278,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 293,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 313,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 330,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 355,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 377,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/auth_tests/test_checks.py",
+      "line": 395,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.assertEqual(checks.run_checks(self.apps.get_app_configs()), [])"
+     },
+     {
+      "file": "tests/bash_completion/tests.py",
+      "line": 103,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for app_config in apps.get_app_configs()"
+     },
+     {
+      "file": "tests/check_framework/test_commands.py",
+      "line": 23,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=self.apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 30,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=self.apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 54,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=self.apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 84,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 112,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 138,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.assertEqual(checks.run_checks(app_configs=self.apps.get_app_configs()), [])"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 150,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.assertEqual(checks.run_checks(app_configs=self.apps.get_app_configs()), [])"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 164,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=self.apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 185,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=self.apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 208,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=self.apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 234,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.assertEqual(checks.run_checks(app_configs=self.apps.get_app_configs()), [])"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 252,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 277,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.assertEqual(checks.run_checks(app_configs=apps.get_app_configs()), [])"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 293,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=self.apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 315,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=self.apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 340,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=self.apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 366,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.assertEqual(checks.run_checks(app_configs=self.apps.get_app_configs()), [])"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 384,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/check_framework/test_model_checks.py",
+      "line": 411,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.assertEqual(checks.run_checks(app_configs=apps.get_app_configs()), [])"
+     },
+     {
+      "file": "tests/check_framework/tests.py",
+      "line": 370,
+      "qual": ".",
+      "recv": "apps",
+      "text": "errors = checks.run_checks(app_configs=apps.get_app_configs())"
+     },
+     {
+      "file": "tests/contenttypes_tests/test_checks.py",
+      "line": 155,
+      "qual": ".",
+      "recv": "apps",
+      "text": "checks.run_checks(app_configs=self.apps.get_app_configs())"
+     },
+     {
+      "file": "tests/contenttypes_tests/test_checks.py",
+      "line": 293,
+      "qual": ".",
+      "recv": "apps",
+      "text": "check_model_name_lengths(self.apps.get_app_configs()),"
+     },
+     {
+      "file": "tests/contenttypes_tests/test_checks.py",
+      "line": 305,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.assertEqual(check_model_name_lengths(self.apps.get_app_configs()), [])"
+     },
+     {
+      "file": "tests/runtests.py",
+      "line": 271,
+      "qual": ".",
+      "recv": "apps",
+      "text": "return [app_config.name for app_config in apps.get_app_configs()]"
+     },
+     {
+      "file": "tests/test_utils/tests.py",
+      "line": 2406,
+      "qual": ".",
+      "recv": "class_apps",
+      "text": "[app_config.label for app_config in self.class_apps.get_app_configs()],"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "get_app_config",
+    "file": "django/apps/registry.py",
+    "line": 150,
+    "kind": "method",
+    "container": "Apps",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/apps/registry.py",
+      "line": 208,
+      "qual": ".",
+      "recv": "self",
+      "text": "app_config = self.get_app_config(app_label)"
+     },
+     {
+      "file": "django/contrib/admin/sites.py",
+      "line": 528,
+      "qual": ".",
+      "recv": "apps",
+      "text": "\"name\": apps.get_app_config(app_label).verbose_name,"
+     },
+     {
+      "file": "django/contrib/admin/sites.py",
+      "line": 610,
+      "qual": ".",
+      "recv": "apps",
+      "text": "AdminSiteClass = import_string(apps.get_app_config(\"admin\").default_site)"
+     },
+     {
+      "file": "django/contrib/admindocs/views.py",
+      "line": 238,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(self.kwargs[\"app_label\"])"
+     },
+     {
+      "file": "django/contrib/auth/management/__init__.py",
+      "line": 73,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(app_label)"
+     },
+     {
+      "file": "django/contrib/contenttypes/management/__init__.py",
+      "line": 115,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(app_config.label)"
+     },
+     {
+      "file": "django/contrib/staticfiles/management/commands/collectstatic.py",
+      "line": 105,
+      "qual": ".",
+      "recv": "apps",
+      "text": "ignore_patterns += apps.get_app_config(\"staticfiles\").ignore_patterns"
+     },
+     {
+      "file": "django/core/checks/model_checks.py",
+      "line": 137,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(model_key[0])"
+     },
+     {
+      "file": "django/core/management/base.py",
+      "line": 651,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_configs = [apps.get_app_config(app_label) for app_label in app_labels]"
+     },
+     {
+      "file": "django/core/management/commands/check.py",
+      "line": 61,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_configs = [apps.get_app_config(app_label) for app_label in app_labels]"
+     },
+     {
+      "file": "django/core/management/commands/dumpdata.py",
+      "line": 140,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(app_label)"
+     },
+     {
+      "file": "django/core/management/commands/dumpdata.py",
+      "line": 167,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(app_label)"
+     },
+     {
+      "file": "django/core/management/commands/makemigrations.py",
+      "line": 131,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(app_label)"
+     },
+     {
+      "file": "django/core/management/commands/makemigrations.py",
+      "line": 157,
+      "qual": ".",
+      "recv": "apps",
+      "text": "for model in apps.get_app_config(app_label).get_models()"
+     },
+     {
+      "file": "django/core/management/commands/migrate.py",
+      "line": 141,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(app_label)"
+     },
+     {
+      "file": "django/core/management/commands/optimizemigration.py",
+      "line": 40,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(app_label)"
+     },
+     {
+      "file": "django/core/management/commands/showmigrations.py",
+      "line": 73,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(app_name)"
+     },
+     {
+      "file": "django/core/management/commands/sqlmigrate.py",
+      "line": 52,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(app_label)"
+     },
+     {
+      "file": "django/core/management/commands/squashmigrations.py",
+      "line": 72,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(app_label)"
+     },
+     {
+      "file": "django/core/management/utils.py",
+      "line": 108,
+      "qual": ".",
+      "recv": "installed_apps",
+      "text": "app_config = installed_apps.get_app_config(label)"
+     },
+     {
+      "file": "django/db/migrations/loader.py",
+      "line": 71,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_package_name = apps.get_app_config(app_label).name"
+     },
+     {
+      "file": "django/db/migrations/questioner.py",
+      "line": 37,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(app_label)"
+     },
+     {
+      "file": "django/db/migrations/state.py",
+      "line": 637,
+      "qual": ".",
+      "recv": "global_apps",
+      "text": "app = global_apps.get_app_config(app_label)"
+     },
+     {
+      "file": "django/db/migrations/writer.py",
+      "line": 243,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(self.migration.app_label)"
+     },
+     {
+      "file": "tests/app_loading/tests.py",
+      "line": 18,
+      "qual": ".",
+      "recv": "apps",
+      "text": "models_module = apps.get_app_config(\"app_with_models\").models_module"
+     },
+     {
+      "file": "tests/app_loading/tests.py",
+      "line": 30,
+      "qual": ".",
+      "recv": "apps",
+      "text": "models_module = apps.get_app_config(\"app_no_models\").models_module"
+     },
+     {
+      "file": "tests/app_loading/tests.py",
+      "line": 42,
+      "qual": ".",
+      "recv": "apps",
+      "text": "models_module = apps.get_app_config(\"app_with_models\").models_module"
+     },
+     {
+      "file": "tests/app_loading/tests.py",
+      "line": 54,
+      "qual": ".",
+      "recv": "apps",
+      "text": "models_module = apps.get_app_config(\"app_no_models\").models_module"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 116,
+      "qual": ".",
+      "recv": "apps",
+      "text": "config = apps.get_app_config(\"no_config_app\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 122,
+      "qual": ".",
+      "recv": "apps",
+      "text": "config = apps.get_app_config(\"one_config_app\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 128,
+      "qual": ".",
+      "recv": "apps",
+      "text": "config = apps.get_app_config(\"two_configs_app\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 146,
+      "qual": ".",
+      "recv": "apps",
+      "text": "config = apps.get_app_config(\"two_configs_one_default_app\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 164,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(\"admin\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 167,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(\"staticfiles\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 171,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(\"admindocs\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 175,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(\"django.contrib.auth\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 242,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.assertEqual(apps.get_app_config(\"relabeled\").name, \"apps\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 299,
+      "qual": ".",
+      "recv": "apps",
+      "text": "old_models = list(apps.get_app_config(\"apps\").get_models())"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 312,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.assertEqual(list(apps.get_app_config(\"apps\").get_models()), old_models)"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 512,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps_config = apps.get_app_config(\"apps\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 524,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps_config = apps.get_app_config(\"apps\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 547,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(\"nsapp\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 572,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(\"nsapp\")"
+     },
+     {
+      "file": "tests/apps/tests.py",
+      "line": 643,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(\"query_performing_app\")"
+     },
+     {
+      "file": "tests/auth_tests/test_management.py",
+      "line": 1520,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.app_config = apps.get_app_config(\"auth\")"
+     },
+     {
+      "file": "tests/auth_tests/test_management.py",
+      "line": 1580,
+      "qual": ".",
+      "recv": "apps",
+      "text": "create_permissions(apps.get_app_config(\"auth\"), interactive=False, verbosity=0)"
+     },
+     {
+      "file": "tests/auth_tests/test_management.py",
+      "line": 1953,
+      "qual": ".",
+      "recv": "apps",
+      "text": "create_permissions(apps.get_app_config(\"auth\"), verbosity=0, using=\"other\")"
+     },
+     {
+      "file": "tests/auth_tests/test_signals.py",
+      "line": 99,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(\"auth\").ready()"
+     },
+     {
+      "file": "tests/auth_tests/test_signals.py",
+      "line": 107,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(\"auth\").ready()"
+     },
+     {
+      "file": "tests/auth_tests/test_signals.py",
+      "line": 111,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(\"auth\").ready()"
+     },
+     {
+      "file": "tests/check_framework/tests.py",
+      "line": 219,
+      "qual": ".",
+      "recv": "apps",
+      "text": "auth_config = apps.get_app_config(\"auth\")"
+     },
+     {
+      "file": "tests/check_framework/tests.py",
+      "line": 220,
+      "qual": ".",
+      "recv": "apps",
+      "text": "admin_config = apps.get_app_config(\"admin\")"
+     },
+     {
+      "file": "tests/contenttypes_tests/test_management.py",
+      "line": 38,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.app_config = apps.get_app_config(\"contenttypes_tests\")"
+     },
+     {
+      "file": "tests/contenttypes_tests/test_models.py",
+      "line": 95,
+      "qual": ".",
+      "recv": "apps",
+      "text": "state = ProjectState.from_apps(apps.get_app_config(\"contenttypes\"))"
+     },
+     {
+      "file": "tests/contenttypes_tests/test_models.py",
+      "line": 104,
+      "qual": ".",
+      "recv": "apps",
+      "text": "state = ProjectState.from_apps(apps.get_app_config(\"contenttypes\"))"
+     },
+     {
+      "file": "tests/contenttypes_tests/test_operations.py",
+      "line": 28,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(\"contenttypes_tests\")"
+     },
+     {
+      "file": "tests/migrate_signals/tests.py",
+      "line": 9,
+      "qual": ".",
+      "recv": "apps",
+      "text": "APP_CONFIG = apps.get_app_config(\"migrate_signals\")"
+     },
+     {
+      "file": "tests/migrations/base.py",
+      "line": 210,
+      "qual": ".",
+      "recv": "apps",
+      "text": "module = apps.get_app_config(app_label).name + \".migrations\""
+     },
+     {
+      "file": "tests/migrations/test_commands.py",
+      "line": 1761,
+      "qual": ".",
+      "recv": "apps",
+      "text": "apps.get_app_config(app_name).get_model(call_kwargs[\"model_name\"])"
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 414,
+      "qual": ".",
+      "recv": "global_apps",
+      "text": "global_apps.get_app_config(\"migrations\").models[\"author\"] = ("
+     },
+     {
+      "file": "tests/migrations/test_executor.py",
+      "line": 426,
+      "qual": ".",
+      "recv": "global_apps",
+      "text": "del global_apps.get_app_config(\"migrations\").models[\"author\"]"
+     },
+     {
+      "file": "tests/no_models/tests.py",
+      "line": 8,
+      "qual": ".",
+      "recv": "apps",
+      "text": "app_config = apps.get_app_config(\"no_models\")"
+     },
+     {
+      "file": "tests/sites_tests/tests.py",
+      "line": 277,
+      "qual": ".",
+      "recv": "apps",
+      "text": "self.app_config = apps.get_app_config(\"sites\")"
+     },
+     {
+      "file": "tests/user_commands/tests.py",
+      "line": 140,
+      "qual": ".",
+      "recv": "apps",
+      "text": "os.path.join(apps.get_app_config(\"commandegg\").path, \"management\")"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "content_disposition_header",
+    "file": "django/utils/http.py",
+    "line": 391,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/http/response.py",
+      "line": 631,
+      "qual": "",
+      "recv": "",
+      "text": "if content_disposition := content_disposition_header("
+     },
+     {
+      "file": "tests/utils_tests/test_http.py",
+      "line": 663,
+      "qual": "",
+      "recv": "",
+      "text": "content_disposition_header(is_attachment, filename), expected"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "_check_to_fields_composite_pk",
+    "file": "django/db/models/fields/related.py",
+    "line": 642,
+    "kind": "method",
+    "container": "ForeignObject",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/db/models/fields/related.py",
+      "line": 616,
+      "qual": ".",
+      "recv": "self",
+      "text": "*self._check_to_fields_composite_pk(),"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "process_request_thread",
+    "file": "django/core/servers/basehttp.py",
+    "line": 98,
+    "kind": "method",
+    "container": "ThreadedWSGIServer",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/core/servers/basehttp.py",
+      "line": 104,
+      "qual": ".",
+      "recv": "super",
+      "text": "super().process_request_thread(request, client_address)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "make_state",
+    "file": "django/db/migrations/graph.py",
+    "line": 316,
+    "kind": "method",
+    "container": "MigrationGraph",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/db/migrations/loader.py",
+      "line": 409,
+      "qual": ".",
+      "recv": "graph",
+      "text": "return self.graph.make_state("
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "get_success_url_allowed_hosts",
+    "file": "django/contrib/auth/views.py",
+    "line": 61,
+    "kind": "method",
+    "container": "RedirectURLMixin",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/contrib/auth/views.py",
+      "line": 56,
+      "qual": ".",
+      "recv": "self",
+      "text": "allowed_hosts=self.get_success_url_allowed_hosts(request),"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "from_json",
+    "file": "django/contrib/gis/gdal/geometries.py",
+    "line": 173,
+    "kind": "method",
+    "container": "OGRGeometry",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/contrib/gis/gdal/geometries.py",
+      "line": 161,
+      "qual": ".",
+      "recv": "capi",
+      "text": "return capi.from_json(geom_input)"
+     },
+     {
+      "file": "django/contrib/gis/geos/geometry.py",
+      "line": 785,
+      "qual": ".",
+      "recv": "OGRGeometry",
+      "text": "ogr = gdal.OGRGeometry.from_json(geo_input)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "_set_list_header_if_not_empty",
+    "file": "django/core/mail/message.py",
+    "line": 560,
+    "kind": "method",
+    "container": "EmailMessage",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/core/mail/message.py",
+      "line": 346,
+      "qual": ".",
+      "recv": "self",
+      "text": "self._set_list_header_if_not_empty(msg, \"To\", self.to)"
+     },
+     {
+      "file": "django/core/mail/message.py",
+      "line": 347,
+      "qual": ".",
+      "recv": "self",
+      "text": "self._set_list_header_if_not_empty(msg, \"Cc\", self.cc)"
+     },
+     {
+      "file": "django/core/mail/message.py",
+      "line": 348,
+      "qual": ".",
+      "recv": "self",
+      "text": "self._set_list_header_if_not_empty(msg, \"Reply-To\", self.reply_to)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "_enable_cloning",
+    "file": "django/db/models/query.py",
+    "line": 2225,
+    "kind": "method",
+    "container": "QuerySet",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/contrib/contenttypes/fields.py",
+      "line": 709,
+      "qual": ".",
+      "recv": "queryset",
+      "text": "queryset._enable_cloning()"
+     },
+     {
+      "file": "django/db/models/fields/related_descriptors.py",
+      "line": 212,
+      "qual": ".",
+      "recv": "queryset",
+      "text": "queryset._enable_cloning()"
+     },
+     {
+      "file": "django/db/models/fields/related_descriptors.py",
+      "line": 499,
+      "qual": ".",
+      "recv": "queryset",
+      "text": "queryset._enable_cloning()"
+     },
+     {
+      "file": "django/db/models/fields/related_descriptors.py",
+      "line": 836,
+      "qual": ".",
+      "recv": "queryset",
+      "text": "queryset._enable_cloning()"
+     },
+     {
+      "file": "django/db/models/fields/related_descriptors.py",
+      "line": 1241,
+      "qual": ".",
+      "recv": "queryset",
+      "text": "queryset._enable_cloning()"
+     },
+     {
+      "file": "django/db/models/query.py",
+      "line": 361,
+      "qual": ".",
+      "recv": "queryset",
+      "text": "self.queryset._enable_cloning()"
+     },
+     {
+      "file": "tests/queries/tests.py",
+      "line": 4678,
+      "qual": ".",
+      "recv": "qs3",
+      "text": "qs3._enable_cloning()"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "start_object",
+    "file": "django/core/serializers/base.py",
+    "line": 166,
+    "kind": "method",
+    "container": "Serializer",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 4,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/core/serializers/base.py",
+      "line": 110,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.start_object(obj)"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "django/contrib/gis/serializers/geojson.py",
+      "line": 34,
+      "qual": ".",
+      "recv": "super",
+      "text": "super().start_object(obj)"
+     }
+    ]
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "resolve_related_fields",
+    "file": "django/db/models/fields/related.py",
+    "line": 782,
+    "kind": "method",
+    "container": "ForeignObject",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/db/models/fields/related.py",
+      "line": 808,
+      "qual": ".",
+      "recv": "self",
+      "text": "return self.resolve_related_fields()"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "django/db/models/fields/related.py",
+      "line": 1240,
+      "qual": ".",
+      "recv": "super",
+      "text": "related_fields = super().resolve_related_fields()"
+     }
+    ]
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "geo_quote_name",
+    "file": "django/contrib/gis/db/backends/oracle/schema.py",
+    "line": 35,
+    "kind": "method",
+    "container": "OracleGISSchemaEditor",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 5,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/contrib/gis/db/backends/oracle/schema.py",
+      "line": 54,
+      "qual": ".",
+      "recv": "self",
+      "text": "\"table\": self.geo_quote_name(model._meta.db_table),"
+     },
+     {
+      "file": "django/contrib/gis/db/backends/oracle/schema.py",
+      "line": 55,
+      "qual": ".",
+      "recv": "self",
+      "text": "\"column\": self.geo_quote_name(field.column),"
+     },
+     {
+      "file": "django/contrib/gis/db/backends/oracle/schema.py",
+      "line": 75,
+      "qual": ".",
+      "recv": "self",
+      "text": "\"table\": self.geo_quote_name(model._meta.db_table),"
+     },
+     {
+      "file": "django/contrib/gis/db/backends/oracle/schema.py",
+      "line": 88,
+      "qual": ".",
+      "recv": "self",
+      "text": "\"table\": self.geo_quote_name(model._meta.db_table),"
+     },
+     {
+      "file": "django/contrib/gis/db/backends/oracle/schema.py",
+      "line": 89,
+      "qual": ".",
+      "recv": "self",
+      "text": "\"column\": self.geo_quote_name(field.column),"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "django/contrib/gis/db/backends/spatialite/schema.py",
+      "line": 49,
+      "qual": ".",
+      "recv": "self",
+      "text": "\"table\": self.geo_quote_name(model._meta.db_table),",
+      "bound_to": "django/contrib/gis/db/backends/spatialite/schema.py:36:geo_quote_name"
+     },
+     {
+      "file": "django/contrib/gis/db/backends/spatialite/schema.py",
+      "line": 50,
+      "qual": ".",
+      "recv": "self",
+      "text": "\"column\": self.geo_quote_name(field.column),",
+      "bound_to": "django/contrib/gis/db/backends/spatialite/schema.py:36:geo_quote_name"
+     },
+     {
+      "file": "django/contrib/gis/db/backends/spatialite/schema.py",
+      "line": 52,
+      "qual": ".",
+      "recv": "self",
+      "text": "\"geom_type\": self.geo_quote_name(field.geom_type),",
+      "bound_to": "django/contrib/gis/db/backends/spatialite/schema.py:36:geo_quote_name"
+     },
+     {
+      "file": "django/contrib/gis/db/backends/spatialite/schema.py",
+      "line": 177,
+      "qual": ".",
+      "recv": "self",
+      "text": "\"table\": self.geo_quote_name(new_db_table),",
+      "bound_to": "django/contrib/gis/db/backends/spatialite/schema.py:36:geo_quote_name"
+     },
+     {
+      "file": "django/contrib/gis/db/backends/spatialite/schema.py",
+      "line": 178,
+      "qual": ".",
+      "recv": "self",
+      "text": "\"column\": self.geo_quote_name(field.column),",
+      "bound_to": "django/contrib/gis/db/backends/spatialite/schema.py:36:geo_quote_name"
+     },
+     {
+      "file": "django/contrib/gis/db/backends/spatialite/schema.py",
+      "line": 180,
+      "qual": ".",
+      "recv": "self",
+      "text": "\"geom_type\": self.geo_quote_name(field.geom_type),",
+      "bound_to": "django/contrib/gis/db/backends/spatialite/schema.py:36:geo_quote_name"
+     }
+    ],
+    "ambiguous": [
+     {
+      "file": "django/contrib/gis/db/backends/oracle/operations.py",
+      "line": 146,
+      "qual": ".",
+      "recv": "super",
+      "text": "return super().geo_quote_name(name).upper()"
+     },
+     {
+      "file": "django/contrib/gis/db/backends/oracle/schema.py",
+      "line": 36,
+      "qual": ".",
+      "recv": "ops",
+      "text": "return self.connection.ops.geo_quote_name(name)"
+     },
+     {
+      "file": "django/contrib/gis/db/backends/postgis/schema.py",
+      "line": 19,
+      "qual": ".",
+      "recv": "ops",
+      "text": "return self.connection.ops.geo_quote_name(name)"
+     },
+     {
+      "file": "django/contrib/gis/db/backends/spatialite/schema.py",
+      "line": 37,
+      "qual": ".",
+      "recv": "ops",
+      "text": "return self.connection.ops.geo_quote_name(name)"
+     }
+    ]
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "limit",
+    "file": "django/contrib/gis/geos/prototypes/io.py",
+    "line": 264,
+    "kind": "method",
+    "container": "_WKBReader",
+    "trait": null,
+    "lang": "py",
+    "is_iface": false
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/contrib/gis/geos/prototypes/io.py",
+      "line": 370,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.limit(wkb, max_geom_collections)"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "django/contrib/gis/geos/prototypes/io.py",
+      "line": 255,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.limit(wkt, max_geom_collections)",
+      "bound_to": "django/contrib/gis/geos/prototypes/io.py:214:limit"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "get_result",
+    "file": "django/tasks/backends/base.py",
+    "line": 95,
+    "kind": "method",
+    "container": "BaseTaskBackend",
+    "trait": null,
+    "lang": "py",
+    "is_iface": true
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "django/tasks/base.py",
+      "line": 115,
+      "qual": ".",
+      "recv": "get_backend",
+      "text": "result = self.get_backend().get_result(result_id)"
+     },
+     {
+      "file": "django/tasks/base.py",
+      "line": 252,
+      "qual": ".",
+      "recv": "get_backend",
+      "text": "refreshed_task = self.task.get_backend().get_result(self.id)"
+     },
+     {
+      "file": "tests/tasks/test_dummy_backend.py",
+      "line": 73,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "new_result = default_task_backend.get_result(result.id)"
+     },
+     {
+      "file": "tests/tasks/test_dummy_backend.py",
+      "line": 110,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "default_task_backend.get_result(\"123\")"
+     },
+     {
+      "file": "tests/tasks/test_dummy_backend.py",
+      "line": 145,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "default_task_backend.get_result(result.id)"
+     },
+     {
+      "file": "tests/tasks/test_dummy_backend.py",
+      "line": 150,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "default_task_backend.get_result(result.id)"
+     },
+     {
+      "file": "tests/tasks/test_immediate_backend.py",
+      "line": 171,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "default_task_backend.get_result(\"123\")"
+     },
+     {
+      "file": "tests/tasks/test_tasks.py",
+      "line": 210,
+      "qual": ".",
+      "recv": "noop_task",
+      "text": "new_result = test_tasks.noop_task.get_result(result.id)"
+     },
+     {
+      "file": "tests/tasks/test_tasks.py",
+      "line": 223,
+      "qual": ".",
+      "recv": "noop_task",
+      "text": "test_tasks.noop_task.get_result(\"123\")"
+     },
+     {
+      "file": "tests/tasks/test_tasks.py",
+      "line": 231,
+      "qual": ".",
+      "recv": "noop_task",
+      "text": "test_tasks.noop_task.get_result(result.id)"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "aget_result",
+    "file": "django/tasks/backends/base.py",
+    "line": 105,
+    "kind": "method",
+    "container": "BaseTaskBackend",
+    "trait": null,
+    "lang": "py",
+    "is_iface": true
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "django/tasks/base.py",
+      "line": 124,
+      "qual": ".",
+      "recv": "get_backend",
+      "text": "result = await self.get_backend().aget_result(result_id)"
+     },
+     {
+      "file": "django/tasks/base.py",
+      "line": 261,
+      "qual": ".",
+      "recv": "get_backend",
+      "text": "refreshed_task = await self.task.get_backend().aget_result(self.id)"
+     },
+     {
+      "file": "tests/tasks/test_dummy_backend.py",
+      "line": 80,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "new_result = await default_task_backend.aget_result(result.id)"
+     },
+     {
+      "file": "tests/tasks/test_dummy_backend.py",
+      "line": 113,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "await default_task_backend.aget_result(\"123\")"
+     },
+     {
+      "file": "tests/tasks/test_immediate_backend.py",
+      "line": 177,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "await default_task_backend.aget_result(123)"
+     },
+     {
+      "file": "tests/tasks/test_tasks.py",
+      "line": 217,
+      "qual": ".",
+      "recv": "noop_task",
+      "text": "new_result = await test_tasks.noop_task.aget_result(result.id)"
+     },
+     {
+      "file": "tests/tasks/test_tasks.py",
+      "line": 226,
+      "qual": ".",
+      "recv": "noop_task",
+      "text": "await test_tasks.noop_task.aget_result(\"123\")"
+     },
+     {
+      "file": "tests/tasks/test_tasks.py",
+      "line": 236,
+      "qual": ".",
+      "recv": "noop_task",
+      "text": "await test_tasks.noop_task.aget_result(result.id)"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "validate_task",
+    "file": "django/tasks/backends/base.py",
+    "line": 42,
+    "kind": "method",
+    "container": "BaseTaskBackend",
+    "trait": null,
+    "lang": "py",
+    "is_iface": true
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "django/tasks/backends/dummy.py",
+      "line": 27,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.validate_task(task)"
+     },
+     {
+      "file": "django/tasks/backends/immediate.py",
+      "line": 76,
+      "qual": ".",
+      "recv": "self",
+      "text": "self.validate_task(task)"
+     },
+     {
+      "file": "django/tasks/base.py",
+      "line": 56,
+      "qual": ".",
+      "recv": "get_backend",
+      "text": "self.get_backend().validate_task(self)"
+     },
+     {
+      "file": "tests/tasks/test_custom_backend.py",
+      "line": 65,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "default_task_backend.validate_task(test_tasks.noop_task_async)"
+     },
+     {
+      "file": "tests/tasks/test_dummy_backend.py",
+      "line": 132,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "default_task_backend.validate_task(test_tasks.noop_task_async)"
+     },
+     {
+      "file": "tests/tasks/test_immediate_backend.py",
+      "line": 201,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "default_task_backend.validate_task("
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "aenqueue",
+    "file": "django/tasks/backends/base.py",
+    "line": 89,
+    "kind": "method",
+    "container": "BaseTaskBackend",
+    "trait": null,
+    "lang": "py",
+    "is_iface": true
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "django/tasks/base.py",
+      "line": 106,
+      "qual": ".",
+      "recv": "get_backend",
+      "text": "return await self.get_backend().aenqueue(self, args, kwargs)"
+     },
+     {
+      "file": "tests/tasks/test_dummy_backend.py",
+      "line": 54,
+      "qual": ".",
+      "recv": "",
+      "text": "result = await cast(Task, task).aenqueue()"
+     },
+     {
+      "file": "tests/tasks/test_dummy_backend.py",
+      "line": 78,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "result = await default_task_backend.aenqueue(test_tasks.noop_task, (), {})"
+     },
+     {
+      "file": "tests/tasks/test_dummy_backend.py",
+      "line": 97,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "result = await default_task_backend.aenqueue("
+     },
+     {
+      "file": "tests/tasks/test_dummy_backend.py",
+      "line": 186,
+      "qual": ".",
+      "recv": "task_with_custom_queue_name",
+      "text": "await task_with_custom_queue_name.aenqueue()"
+     },
+     {
+      "file": "tests/tasks/test_immediate_backend.py",
+      "line": 47,
+      "qual": ".",
+      "recv": "task",
+      "text": "result = await task.aenqueue()"
+     },
+     {
+      "file": "tests/tasks/test_immediate_backend.py",
+      "line": 159,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "result = await default_task_backend.aenqueue("
+     },
+     {
+      "file": "tests/tasks/test_immediate_backend.py",
+      "line": 180,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "result = await default_task_backend.aenqueue("
+     },
+     {
+      "file": "tests/tasks/test_immediate_backend.py",
+      "line": 283,
+      "qual": ".",
+      "recv": "task_with_custom_queue_name",
+      "text": "await task_with_custom_queue_name.aenqueue()"
+     },
+     {
+      "file": "tests/tasks/test_tasks.py",
+      "line": 66,
+      "qual": ".",
+      "recv": "noop_task",
+      "text": "result = await test_tasks.noop_task.aenqueue()"
+     },
+     {
+      "file": "tests/tasks/test_tasks.py",
+      "line": 81,
+      "qual": ".",
+      "recv": "noop_task",
+      "text": "await test_tasks.noop_task.aenqueue(datetime.now())"
+     },
+     {
+      "file": "tests/tasks/test_tasks.py",
+      "line": 138,
+      "qual": ".",
+      "recv": "noop_task",
+      "text": "result = await test_tasks.noop_task.aenqueue()"
+     },
+     {
+      "file": "tests/tasks/test_tasks.py",
+      "line": 215,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "result = await default_task_backend.aenqueue(test_tasks.noop_task, (), {})"
+     },
+     {
+      "file": "tests/tasks/test_tasks.py",
+      "line": 234,
+      "qual": ".",
+      "recv": "default_task_backend",
+      "text": "result = await default_task_backend.aenqueue(test_tasks.noop_task_async, (), {})"
+     }
+    ]
+   }
+  }
+ ],
+ "oracle_note": "gold recomputed by regold.py with the multi-line-aware cleaner"
+}

@@ -1,0 +1,29 @@
+{"corpus": "flask", "index_bytes": 4386106, "index_bytes_cache": 2968696, "index_bytes_graph": 1277541, "index_dir": "graft/", "index_files": 88, "tool": "trail"}
+{"corpus": "flask", "index_bytes": 853395, "index_dir": "DCTX_CACHE_DIR", "rep": 0, "tool": "dctx"}
+{"corpus": "flask", "index_bytes": 853395, "index_dir": "DCTX_CACHE_DIR", "rep": 1, "tool": "dctx"}
+{"corpus": "flask", "index_bytes": 853395, "index_dir": "DCTX_CACHE_DIR", "index_files": 5, "tool": "dctx"}
+{"corpus": "ripgrep", "index_bytes": 8358157, "index_bytes_cache": 5856962, "index_bytes_graph": 2225080, "index_dir": "graft/", "index_files": 106, "tool": "trail"}
+{"corpus": "ripgrep", "index_bytes": 1768182, "index_dir": "DCTX_CACHE_DIR", "rep": 0, "tool": "dctx"}
+{"corpus": "ripgrep", "index_bytes": 1768182, "index_dir": "DCTX_CACHE_DIR", "rep": 1, "tool": "dctx"}
+{"corpus": "ripgrep", "index_bytes": 1768182, "index_dir": "DCTX_CACHE_DIR", "index_files": 5, "tool": "dctx"}
+{"corpus": "pocketbase", "index_bytes": 41832068, "index_bytes_cache": 30219180, "index_bytes_graph": 10864233, "index_dir": "graft/", "index_files": 669, "tool": "trail"}
+{"corpus": "pocketbase", "index_bytes": 6685178, "index_dir": "DCTX_CACHE_DIR", "rep": 0, "tool": "dctx"}
+{"corpus": "pocketbase", "index_bytes": 6685178, "index_dir": "DCTX_CACHE_DIR", "rep": 1, "tool": "dctx"}
+{"corpus": "pocketbase", "index_bytes": 6685178, "index_dir": "DCTX_CACHE_DIR", "index_files": 5, "tool": "dctx"}
+{"corpus": "trailcode", "index_bytes": 0, "index_bytes_cache": 0, "index_bytes_graph": 0, "index_dir": "graft/", "index_files": 0, "tool": "trail"}
+{"corpus": "trailcode", "index_bytes": 3559149, "index_dir": "DCTX_CACHE_DIR", "rep": 0, "tool": "dctx"}
+{"corpus": "trailcode", "index_bytes": 3559149, "index_dir": "DCTX_CACHE_DIR", "rep": 1, "tool": "dctx"}
+{"corpus": "trailcode", "index_bytes": 3559149, "index_dir": "DCTX_CACHE_DIR", "index_files": 5, "tool": "dctx"}
+{"corpus": "dctx", "index_bytes": 42675642, "index_bytes_cache": 31537180, "index_bytes_graph": 10009895, "index_dir": "graft/", "index_files": 961, "tool": "trail"}
+{"corpus": "dctx", "index_bytes": 14882722, "index_dir": "DCTX_CACHE_DIR", "rep": 0, "tool": "dctx"}
+{"corpus": "dctx", "index_bytes": 14882722, "index_dir": "DCTX_CACHE_DIR", "rep": 1, "tool": "dctx"}
+{"corpus": "dctx", "index_bytes": 14882722, "index_dir": "DCTX_CACHE_DIR", "index_files": 5, "tool": "dctx"}
+{"corpus": "django", "index_bytes": 167484454, "index_bytes_cache": 117283254, "index_bytes_graph": 46148962, "index_dir": "graft/", "index_files": 2967, "tool": "trail"}
+{"corpus": "django", "index_bytes": 23302331, "index_dir": "DCTX_CACHE_DIR", "rep": 0, "tool": "dctx"}
+{"corpus": "django", "index_bytes": 23302331, "index_dir": "DCTX_CACHE_DIR", "rep": 1, "tool": "dctx"}
+{"corpus": "django", "index_bytes": 23302331, "index_dir": "DCTX_CACHE_DIR", "index_files": 5, "tool": "dctx"}
+{"corpus": "core", "index_bytes": 64713015, "index_bytes_cache": 48268875, "index_bytes_graph": 14767867, "index_dir": "graft/", "index_files": 1468, "redacted": true, "tool": "trail"}
+{"corpus": "core", "index_bytes": 157700185, "index_dir": "DCTX_CACHE_DIR", "redacted": true, "rep": 0, "tool": "dctx"}
+{"corpus": "core", "index_bytes": 157700185, "index_dir": "DCTX_CACHE_DIR", "redacted": true, "rep": 1, "tool": "dctx"}
+{"corpus": "core", "index_bytes": 157700185, "index_dir": "DCTX_CACHE_DIR", "index_files": 5, "redacted": true, "tool": "dctx"}
+{"corpus": "trailcode", "index_bytes": 13703859, "index_bytes_cache": 10692989, "index_bytes_graph": 2756113, "index_dir": ".trail/cache", "index_files": 328, "note": "recomputed: repo has .trail/ so the graph lives in .trail/cache", "tool": "trail"}

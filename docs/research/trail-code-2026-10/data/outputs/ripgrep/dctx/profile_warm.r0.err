@@ -1,0 +1,16 @@
+dctx profile
+stage walk 3217922
+stage read 5915105
+stage hash 19435700
+stage parse/lex 0
+stage span conversion 0
+stage graph assembly 0
+stage canonicalize/seal 0
+stage persist/reuse 10829187
+stage query 474844
+note finalization is canonicalize/seal, persist/reuse and query; file lines exclude it
+file 1558188 235436 0 crates/core/flags/defs.rs
+file 1553389 226710 0 benchsuite/runs/2016-09-20-ubuntu1604-ec2/raw.csv
+file 911724 136288 0 crates/printer/src/standard.rs
+file 768690 114939 0 benchsuite/runs/2018-01-08-archlinux-cheetah/raw.csv
+file 640227 89888 0 CHANGELOG.md

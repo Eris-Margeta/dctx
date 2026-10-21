@@ -1,0 +1,82 @@
+{"corpus": "flask", "event": "start", "load1": "3.37", "phase": "index"}
+{"corpus": "flask", "event": "end", "load1": "3.89", "phase": "index"}
+{"corpus": "ripgrep", "event": "start", "load1": "4.54", "phase": "index"}
+{"corpus": "ripgrep", "event": "end", "load1": "7.42", "phase": "index"}
+{"corpus": "pocketbase", "event": "start", "load1": "7.42", "phase": "index"}
+{"corpus": "pocketbase", "event": "end", "load1": "4.04", "phase": "index"}
+{"corpus": "trailcode", "event": "start", "load1": "4.04", "phase": "index"}
+{"corpus": "trailcode", "event": "end", "load1": "4.25", "phase": "index"}
+{"corpus": "dctx", "event": "start", "load1": "4.25", "phase": "index"}
+{"corpus": "dctx", "event": "end", "load1": "4.31", "phase": "index"}
+{"corpus": "django", "event": "start", "load1": "4.31", "phase": "index"}
+{"corpus": "django", "event": "end", "load1": "2.00", "phase": "index"}
+{"corpus": "core", "event": "start", "load1": "2.00", "phase": "index", "redacted": true}
+{"corpus": "core", "event": "end", "load1": "2.20", "phase": "index", "redacted": true}
+{"corpus": "flask", "event": "start", "load1": "1.79", "phase": "query"}
+{"corpus": "flask", "event": "end", "load1": "2.50", "phase": "query"}
+{"corpus": "flask", "event": "start", "load1": "2.16", "phase": "accuracy"}
+{"corpus": "flask", "event": "end", "load1": "2.35", "phase": "accuracy"}
+{"corpus": "flask", "event": "start", "load1": "1.89", "phase": "tasks"}
+{"corpus": "flask", "event": "end", "load1": "1.98", "phase": "tasks"}
+{"corpus": "flask", "event": "start", "load1": "1.70", "phase": "tasks"}
+{"corpus": "flask", "event": "end", "load1": "1.82", "phase": "tasks"}
+{"corpus": "flask", "event": "start", "load1": "1.59", "phase": "fresh"}
+{"corpus": "flask", "event": "end", "load1": "1.81", "phase": "fresh"}
+{"corpus": "ripgrep", "event": "start", "load1": "4.02", "phase": "query"}
+{"corpus": "ripgrep", "event": "end", "load1": "10.03", "phase": "query"}
+{"corpus": "pocketbase", "event": "start", "load1": "10.03", "phase": "query"}
+{"corpus": "pocketbase", "event": "end", "load1": "8.33", "phase": "query"}
+{"corpus": "trailcode", "event": "start", "load1": "8.33", "phase": "query"}
+{"corpus": "trailcode", "event": "end", "load1": "4.48", "phase": "query"}
+{"corpus": "dctx", "event": "start", "load1": "4.48", "phase": "query"}
+{"corpus": "dctx", "event": "end", "load1": "2.44", "phase": "query"}
+{"corpus": "django", "event": "start", "load1": "2.44", "phase": "query"}
+{"corpus": "django", "event": "end", "load1": "2.29", "phase": "query"}
+{"corpus": "core", "event": "start", "load1": "2.29", "phase": "query", "redacted": true}
+{"corpus": "core", "event": "end", "load1": "2.33", "phase": "query", "redacted": true}
+{"corpus": "flask", "event": "start", "load1": "2.38", "phase": "accuracy"}
+{"corpus": "flask", "event": "end", "load1": "2.38", "phase": "accuracy"}
+{"corpus": "ripgrep", "event": "start", "load1": "2.38", "phase": "accuracy"}
+{"corpus": "ripgrep", "event": "end", "load1": "2.62", "phase": "accuracy"}
+{"corpus": "pocketbase", "event": "start", "load1": "2.62", "phase": "accuracy"}
+{"corpus": "pocketbase", "event": "end", "load1": "2.32", "phase": "accuracy"}
+{"corpus": "trailcode", "event": "start", "load1": "2.32", "phase": "accuracy"}
+{"corpus": "trailcode", "event": "end", "load1": "2.34", "phase": "accuracy"}
+{"corpus": "dctx", "event": "start", "load1": "2.34", "phase": "accuracy"}
+{"corpus": "dctx", "event": "end", "load1": "2.43", "phase": "accuracy"}
+{"corpus": "django", "event": "start", "load1": "2.43", "phase": "accuracy"}
+{"corpus": "django", "event": "end", "load1": "2.21", "phase": "accuracy"}
+{"corpus": "core", "event": "start", "load1": "2.21", "phase": "accuracy", "redacted": true}
+{"corpus": "core", "event": "end", "load1": "2.29", "phase": "accuracy", "redacted": true}
+{"corpus": "flask", "event": "start", "load1": "2.29", "phase": "tasks"}
+{"corpus": "flask", "event": "end", "load1": "2.25", "phase": "tasks"}
+{"corpus": "ripgrep", "event": "start", "load1": "2.25", "phase": "tasks"}
+{"corpus": "ripgrep", "event": "end", "load1": "2.23", "phase": "tasks"}
+{"corpus": "pocketbase", "event": "start", "load1": "2.23", "phase": "tasks"}
+{"corpus": "pocketbase", "event": "end", "load1": "2.33", "phase": "tasks"}
+{"corpus": "trailcode", "event": "start", "load1": "2.33", "phase": "tasks"}
+{"corpus": "trailcode", "event": "end", "load1": "2.32", "phase": "tasks"}
+{"corpus": "dctx", "event": "start", "load1": "2.32", "phase": "tasks"}
+{"corpus": "dctx", "event": "end", "load1": "2.40", "phase": "tasks"}
+{"corpus": "django", "event": "start", "load1": "2.40", "phase": "tasks"}
+{"corpus": "django", "event": "end", "load1": "2.33", "phase": "tasks"}
+{"corpus": "core", "event": "start", "load1": "2.33", "phase": "tasks", "redacted": true}
+{"corpus": "core", "event": "end", "load1": "2.23", "phase": "tasks", "redacted": true}
+{"corpus": "ripgrep", "event": "start", "load1": "2.23", "phase": "fresh"}
+{"corpus": "ripgrep", "event": "end", "load1": "2.28", "phase": "fresh"}
+{"corpus": "pocketbase", "event": "start", "load1": "2.28", "phase": "fresh"}
+{"corpus": "pocketbase", "event": "end", "load1": "2.28", "phase": "fresh"}
+{"corpus": "trailcode", "event": "start", "load1": "2.28", "phase": "fresh"}
+{"corpus": "trailcode", "event": "end", "load1": "2.37", "phase": "fresh"}
+{"corpus": "dctx", "event": "start", "load1": "2.37", "phase": "fresh"}
+{"corpus": "dctx", "event": "end", "load1": "2.55", "phase": "fresh"}
+{"corpus": "django", "event": "start", "load1": "2.55", "phase": "fresh"}
+{"corpus": "django", "event": "end", "load1": "2.26", "phase": "fresh"}
+{"corpus": "core", "event": "start", "load1": "2.26", "phase": "fresh", "redacted": true}
+{"corpus": "core", "event": "end", "load1": "2.29", "phase": "fresh", "redacted": true}
+{"event": "start", "load1": "2.05", "phase": "adversarial"}
+{"event": "end", "load1": "2.24", "phase": "adversarial"}
+{"corpus": "ripgrep", "event": "start", "load1": "1.04", "phase": "accuracy"}
+{"corpus": "ripgrep", "event": "end", "load1": "1.76", "phase": "accuracy"}
+{"corpus": "ripgrep", "event": "start", "load1": "1.76", "phase": "tasks"}
+{"corpus": "ripgrep", "event": "end", "load1": "2.11", "phase": "tasks"}

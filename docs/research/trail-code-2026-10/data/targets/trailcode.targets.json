@@ -1,0 +1,1492 @@
+{
+ "corpus": "trailcode",
+ "files_scanned": 325,
+ "defs_scanned": 2453,
+ "targets": [
+  {
+   "category": "hub",
+   "def": {
+    "name": "writeNote",
+    "file": "src/notes/notes.ts",
+    "line": 242,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/cli.ts",
+      "line": 1367,
+      "qual": "",
+      "recv": "",
+      "text": "saved.push(writeNote(t.dir, { title: opts.title, body, author, date, branch: currentBranch(t.dir), cost, touches: t.touches }, scope));"
+     },
+     {
+      "file": "src/notes/cold-start.ts",
+      "line": 591,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote("
+     },
+     {
+      "file": "src/notes/pr-reviews.ts",
+      "line": 362,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote("
+     },
+     {
+      "file": "test/trail-cloud.test.ts",
+      "line": 73,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(kumar, { title: \"Jitter client helper\", body: BODY, author: \"Kumar\", date: \"2026-10-09\", touches: [\"client.go\"] });"
+     },
+     {
+      "file": "test/trail-cloud.test.ts",
+      "line": 112,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(anirudh, { title: \"Keep the default retry count at 4\", body: BODY, author: \"Anirudh\", date: \"2026-10-09\", touches: [\"client.go\"] });"
+     },
+     {
+      "file": "test/trail-cloud.test.ts",
+      "line": 113,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(anirudh, { title: \"My shell aliases\", body: \"## Watch out\\nzsh needs interactivecomments.\", author: \"Anirudh\", date: \"2026-10-09\" }, \"personal\");"
+     },
+     {
+      "file": "test/trail-cloud.test.ts",
+      "line": 115,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(kumar, { title: \"Backoff caps\", body: BODY, author: \"Kumar\", date: \"2026-10-09\", touches: [\"backoff.go\"] });"
+     },
+     {
+      "file": "test/trail-cloud.test.ts",
+      "line": 157,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(anirudh, { title: \"x\", body: BODY, author: \"Anirudh\", date: \"2026-10-09\" });"
+     },
+     {
+      "file": "test/trail-home.test.ts",
+      "line": 143,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(d, { title: \"Bbox rotation\", body: BODY, author: \"Priya\", date: \"2026-10-07\" }, \"personal\");"
+     },
+     {
+      "file": "test/trail-home.test.ts",
+      "line": 160,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(d, { title: \"First note\", body: BODY, author: \"Priya\", date: \"2026-10-07\" }, \"personal\");"
+     },
+     {
+      "file": "test/trail-home.test.ts",
+      "line": 170,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(a, { title: \"A's note\", body: BODY, author: \"Priya\", date: \"2026-10-07\" }, \"personal\");"
+     },
+     {
+      "file": "test/trail-home.test.ts",
+      "line": 198,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(join(ws, \"api\"), { title: \"Retry budget\", body: BODY, author: \"Priya\", date: \"2026-10-06\", touches: [\"internal/retry.go\"] });"
+     },
+     {
+      "file": "test/trail-home.test.ts",
+      "line": 199,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(join(ws, \"web\"), { title: \"Bbox overlay\", body: BODY, author: \"Sam\", date: \"2026-10-07\", touches: [\"src/Overlay.tsx#Overlay\"] });"
+     },
+     {
+      "file": "test/trail-home.test.ts",
+      "line": 216,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(d, { title: \"Bbox\", body: BODY, author: \"Priya\", date: \"2026-10-07\", touches: [\"backend/ocr/bbox.go#NormalizeBox\", \"web/a.ts\"] });"
+     },
+     {
+      "file": "test/trail-learning-on-touch.test.ts",
+      "line": 71,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(d, { title: 'Take workspace from server-held data', body: BODY, author: 'Priya', date: '2026-10-07', touches: ['tool/workspace.py'] }, 'repo');"
+     },
+     {
+      "file": "test/trail-notes.test.ts",
+      "line": 80,
+      "qual": "",
+      "recv": "",
+      "text": "const a = writeNote(repo, { title: \"Bbox coordinates are off on rotated PDFs\", body: BODY, author: \"Priya\", date: \"2026-10-07\" });"
+     },
+     {
+      "file": "test/trail-notes.test.ts",
+      "line": 81,
+      "qual": "",
+      "recv": "",
+      "text": "const b = writeNote(repo, { title: \"Bbox coordinates are off on rotated PDFs\", body: \"again\", author: \"Priya\", date: \"2026-10-07\" });"
+     },
+     {
+      "file": "test/trail-nudge.test.ts",
+      "line": 47,
+      "qual": "",
+      "recv": "",
+      "text": "if (learnings) writeNote(dir, { title: \"Retries trip the rate limit\", body: \"## Decided\\nThree retries.\", author: \"Priya\", date: \"2026-10-07\", touches: [] });"
+     },
+     {
+      "file": "test/trail-nudge.test.ts",
+      "line": 78,
+      "qual": "",
+      "recv": "",
+      "text": "writeNote(d, { title: \"x\", body: \"## Decided\\ny\", author: \"Priya\", date: \"2026-10-07\" });"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "federateAsk",
+    "file": "src/graph/workspace.ts",
+    "line": 241,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/graph/workspace-cli.ts",
+      "line": 108,
+      "qual": "",
+      "recv": "",
+      "text": "const r = federateAsk(root, override, query, { limit: opts.limit, source: opts.source, full: opts.full, in: opts.in });"
+     },
+     {
+      "file": "src/mcp/tools.ts",
+      "line": 167,
+      "qual": "",
+      "recv": "",
+      "text": "const r = federateAsk(root, dirOverride, query, { limit, source: true, full: args.full === true, in: inArg });"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 101,
+      "qual": "",
+      "recv": "",
+      "text": "const r = federateAsk(p, undefined, \"handler\", { limit: 8 });"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 130,
+      "qual": "",
+      "recv": "",
+      "text": "const r = federateAsk(p, undefined, \"quartz\", {"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 169,
+      "qual": "",
+      "recv": "",
+      "text": "const baseline = federateAsk(p, undefined, \"quartz\", {"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 174,
+      "qual": "",
+      "recv": "",
+      "text": "const a5 = federateAsk(p, undefined, \"quartz\", {"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 179,
+      "qual": "",
+      "recv": "",
+      "text": "const explicitA5 = federateAsk(p, undefined, \"quartz\", {"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 257,
+      "qual": "",
+      "recv": "",
+      "text": "const baseline = federateAsk(p, undefined, \"alpha beta gamma\", {"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 265,
+      "qual": "",
+      "recv": "",
+      "text": "const a5 = federateAsk(p, undefined, \"alpha beta gamma\", {"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 399,
+      "qual": "",
+      "recv": "",
+      "text": "const r = federateAsk(p, undefined, \"invoice total tax breakdown\", { limit: 8 });"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 405,
+      "qual": "",
+      "recv": "",
+      "text": "const a5 = federateAsk(p, undefined, \"invoice total tax breakdown\", {"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 422,
+      "qual": "",
+      "recv": "",
+      "text": "const r = federateAsk(p, undefined, \"handler\", { limit: 8 });"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 431,
+      "qual": "",
+      "recv": "",
+      "text": "const scoped = federateAsk(p, undefined, \"handler\", { limit: 8, in: \"repoA\" });"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 435,
+      "qual": "",
+      "recv": "",
+      "text": "assert.ok(federateAsk(p, undefined, \"handler\", { in: \"repoA/\" }).hits.every((h) => h.scope!.startsWith(\"repoA\")));"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 437,
+      "qual": "",
+      "recv": "",
+      "text": "() => federateAsk(p, undefined, \"handler\", { in: \"nope\" }),"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 454,
+      "qual": "",
+      "recv": "",
+      "text": "const unscoped = federateAsk(p, undefined, \"scrollbar overlay position\", { limit: 8 });"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 457,
+      "qual": "",
+      "recv": "",
+      "text": "const scoped = federateAsk(p, undefined, \"scrollbar overlay position\", { limit: 8, in: \"repoJunk\" });"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 471,
+      "qual": "",
+      "recv": "",
+      "text": "const r = federateAsk(p, undefined, \"scrollbar overlay position\", { limit: 8 });"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 488,
+      "qual": "",
+      "recv": "",
+      "text": "const r = federateAsk(p, undefined, \"payment gateway refund\", { limit: 8 });"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 504,
+      "qual": "",
+      "recv": "",
+      "text": "const r = federateAsk(p, undefined, \"config loader\", { limit: 8 });"
+     },
+     {
+      "file": "test/workspace.test.ts",
+      "line": 519,
+      "qual": "",
+      "recv": "",
+      "text": "const r = federateAsk(p, undefined, \"payment gateway refund\", { limit: 8 });"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "ensureFreshGraph",
+    "file": "src/graph/refresh.ts",
+    "line": 151,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/cli.ts",
+      "line": 231,
+      "qual": "",
+      "recv": "",
+      "text": ": await ensureFreshGraph(root, { contextDir: globalDir, disabled });"
+     },
+     {
+      "file": "src/graph/refresh.ts",
+      "line": 252,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(resolve(root, child), { disabled: opts.disabled });"
+     },
+     {
+      "file": "src/mcp/tools.ts",
+      "line": 237,
+      "qual": "",
+      "recv": "",
+      "text": ": await ensureFreshGraph(root, { contextDir: dirOverride });"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 79,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 90,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 101,
+      "qual": "",
+      "recv": "",
+      "text": "const first = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 105,
+      "qual": "",
+      "recv": "",
+      "text": "const second = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 111,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 121,
+      "qual": "",
+      "recv": "",
+      "text": "const off = await withRefreshDisabled(() => ensureFreshGraph(d));"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 123,
+      "qual": "",
+      "recv": "",
+      "text": "const flagged = await ensureFreshGraph(d, { disabled: true });"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 127,
+      "qual": "",
+      "recv": "",
+      "text": "const on = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 138,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 162,
+      "qual": "",
+      "recv": "",
+      "text": "await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 167,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 195,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 242,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 271,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 309,
+      "qual": "",
+      "recv": "",
+      "text": "assert.deepEqual((await ensureFreshGraph(d)).refreshed, false, \"so a query stops rebuilding\");"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 332,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 356,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-refresh.test.ts",
+      "line": 374,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(d);"
+     },
+     {
+      "file": "test/graph-seed.test.ts",
+      "line": 179,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(wt);"
+     },
+     {
+      "file": "test/graph-seed.test.ts",
+      "line": 230,
+      "qual": "",
+      "recv": "",
+      "text": "await ensureFreshGraph(nested);"
+     },
+     {
+      "file": "test/graph-seed.test.ts",
+      "line": 265,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(wt);"
+     },
+     {
+      "file": "test/graph-seed.test.ts",
+      "line": 320,
+      "qual": "",
+      "recv": "",
+      "text": "const r = await ensureFreshGraph(solo);"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "hub",
+   "def": {
+    "name": "grepGraph",
+    "file": "src/search/grep.ts",
+    "line": 140,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/graph/workspace.ts",
+      "line": 579,
+      "qual": "",
+      "recv": "",
+      "text": "const r = grepGraph(graph, join(root, child), pattern, {"
+     },
+     {
+      "file": "src/mcp/tools.ts",
+      "line": 313,
+      "qual": "",
+      "recv": "",
+      "text": "const result = grepGraph(w, root, pattern, {"
+     },
+     {
+      "file": "src/search/grep-cli.ts",
+      "line": 106,
+      "qual": "",
+      "recv": "",
+      "text": "result = grepGraph(graph, root, pattern, { ignoreCase: opts.ignoreCase, fixed: opts.fixed, in: opts.in });"
+     },
+     {
+      "file": "test/regression-single-repo.test.ts",
+      "line": 116,
+      "qual": "",
+      "recv": "",
+      "text": "const grep = grepGraph(graph, dir, \"return\");"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 105,
+      "qual": "",
+      "recv": "",
+      "text": "const r = grepGraph(graph, repo, 'NEEDLE');"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 130,
+      "qual": "",
+      "recv": "",
+      "text": "const r = grepGraph(graph, repo, 'NEEDLE');"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 143,
+      "qual": "",
+      "recv": "",
+      "text": "const r = grepGraph(graph, repo, 'NEEDLE');"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 155,
+      "qual": "",
+      "recv": "",
+      "text": "const r = grepGraph(graph, repo, 'NEEDLE');"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 182,
+      "qual": "",
+      "recv": "",
+      "text": "const r = grepGraph(graph, d, 'NEEDLE');"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 191,
+      "qual": "",
+      "recv": "",
+      "text": "const r = grepGraph(graph, repo, 'NEEDLE', { in: 'src/a.ts' });"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 203,
+      "qual": "",
+      "recv": "",
+      "text": "assert.throws(() => grepGraph(graph, repo, 'NEEDLE', { in: 'a.ts' }), /nothing indexed under \"a\\.ts\\//);"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 206,
+      "qual": "",
+      "recv": "",
+      "text": "assert.equal(grepGraph(graph, repo, 'NEEDLE', { in: 'src' }).filesSearched, 2);"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 207,
+      "qual": "",
+      "recv": "",
+      "text": "assert.equal(grepGraph(graph, repo, 'NEEDLE', { in: 'src/' }).filesSearched, 2);"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 209,
+      "qual": "",
+      "recv": "",
+      "text": "assert.equal(grepGraph(graph, repo, 'NEEDLE', { in: join('src', 'a.ts') }).filesSearched, 1);"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 217,
+      "qual": "",
+      "recv": "",
+      "text": "const asRegex = grepGraph(graph, d, 'a.b');"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 220,
+      "qual": "",
+      "recv": "",
+      "text": "const fixed = grepGraph(graph, d, 'a.b', { fixed: true });"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 231,
+      "qual": "",
+      "recv": "",
+      "text": "const r = grepGraph(graph, d, 'NEEDLE', { maxHits: 5 });"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 245,
+      "qual": "",
+      "recv": "",
+      "text": "const r = grepGraph(graph, d, 'NOPE_NOT_PRESENT');"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 259,
+      "qual": "",
+      "recv": "",
+      "text": "const r = grepGraph(graph, d, 'NEEDLE');"
+     },
+     {
+      "file": "test/search-grep.test.ts",
+      "line": 272,
+      "qual": "",
+      "recv": "",
+      "text": "const r = grepGraph(graph, d, 'NOPE_NOT_PRESENT');"
+     },
+     {
+      "file": "test/utf16-source.test.ts",
+      "line": 168,
+      "qual": "",
+      "recv": "",
+      "text": "const r = grepGraph(graph, dir, \"NEEDLE\");"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "defaultTranscriptDir",
+    "file": "scripts/tally-audit.mjs",
+    "line": 41,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "scripts/tally-audit.mjs",
+      "line": 39,
+      "qual": "",
+      "recv": "",
+      "text": "const dir = args[0] ?? defaultTranscriptDir();"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "baselineOrder",
+    "file": "src/ask/file-rank.ts",
+    "line": 98,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/ask/file-rank.ts",
+      "line": 242,
+      "qual": "",
+      "recv": "",
+      "text": "baselineOrder(a.representative, b.representative) ||"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "sortedLanguages",
+    "file": "src/graph/map.ts",
+    "line": 132,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/graph/map.ts",
+      "line": 213,
+      "qual": "",
+      "recv": "",
+      "text": "languages: sortedLanguages(g.files.map((f) => f.path)),"
+     },
+     {
+      "file": "src/graph/map.ts",
+      "line": 277,
+      "qual": "",
+      "recv": "",
+      "text": "languages: sortedLanguages(fileNodes.map((f) => f.path)),"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "rare",
+   "def": {
+    "name": "ownerBadges",
+    "file": "viewer/graph.ts",
+    "line": 62,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "viewer/graph.ts",
+      "line": 200,
+      "qual": "",
+      "recv": "",
+      "text": "const badges = ownerBadges(node);"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "outgoingCalls",
+    "file": "src/graph/lsp/client.ts",
+    "line": 162,
+    "kind": "method",
+    "container": "LspClient",
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/graph/lsp/enrich.ts",
+      "line": 121,
+      "qual": ".",
+      "recv": "client",
+      "text": "const callees = await client.outgoingCalls(items[0]);"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "succeeded",
+    "file": "src/ai/failure.ts",
+    "line": 83,
+    "kind": "method",
+    "container": "LlmFailureGate",
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/context/build.ts",
+      "line": 218,
+      "qual": ".",
+      "recv": "gate",
+      "text": "gate.succeeded();"
+     },
+     {
+      "file": "src/graph/enrich.ts",
+      "line": 204,
+      "qual": ".",
+      "recv": "gate",
+      "text": "gate.succeeded();"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "bindPanZoom",
+    "file": "viewer/graph.ts",
+    "line": 356,
+    "kind": "method",
+    "container": "GraphView",
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "viewer/graph.ts",
+      "line": 110,
+      "qual": ".",
+      "recv": "this",
+      "text": "this.bindPanZoom();"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "receiver",
+   "def": {
+    "name": "content",
+    "file": "src/hosts/registry.ts",
+    "line": 29,
+    "kind": "method",
+    "container": "HostTarget",
+    "trait": null,
+    "lang": "ts",
+    "is_iface": true
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/hosts/init.ts",
+      "line": 90,
+      "qual": ".",
+      "recv": "host",
+      "text": "? writeOwned(path, host.content(name))"
+     },
+     {
+      "file": "src/hosts/init.ts",
+      "line": 91,
+      "qual": ".",
+      "recv": "host",
+      "text": ": upsertSection(path, host.content(name), markersFor(name), name === 'trail' ? [GRAFT_MARKERS] : []).action;"
+     },
+     {
+      "file": "test/hosts-registry.test.ts",
+      "line": 21,
+      "qual": ".",
+      "recv": "h",
+      "text": "assert.ok(h.content().length > 0);"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "cachePath",
+    "file": "src/blast/name.ts",
+    "line": 158,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 4,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/blast/name.ts",
+      "line": 164,
+      "qual": "",
+      "recv": "",
+      "text": "const raw = JSON.parse(readFileSync(cachePath(contextDir), \"utf8\")) as unknown;"
+     },
+     {
+      "file": "src/blast/name.ts",
+      "line": 174,
+      "qual": "",
+      "recv": "",
+      "text": "const path = cachePath(contextDir);"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "src/context/build.ts",
+      "line": 423,
+      "qual": "",
+      "recv": "",
+      "text": "const path = cachePath(outDir);",
+      "bound_to": "src/context/build.ts:418:cachePath"
+     },
+     {
+      "file": "src/context/build.ts",
+      "line": 436,
+      "qual": "",
+      "recv": "",
+      "text": "const path = cachePath(outDir);",
+      "bound_to": "src/context/build.ts:418:cachePath"
+     },
+     {
+      "file": "src/notes/branches.ts",
+      "line": 80,
+      "qual": "",
+      "recv": "",
+      "text": "return readJson<BranchCache>(cachePath(repo));",
+      "bound_to": "src/notes/branches.ts:75:cachePath"
+     },
+     {
+      "file": "src/notes/branches.ts",
+      "line": 215,
+      "qual": "",
+      "recv": "",
+      "text": "writeJsonAtomic(cachePath(repo), cache, true);",
+      "bound_to": "src/notes/branches.ts:75:cachePath"
+     },
+     {
+      "file": "src/notes/branches.ts",
+      "line": 278,
+      "qual": "",
+      "recv": "",
+      "text": "writeJsonAtomic(cachePath(repo), { ...(cache ?? { fetchedAt: 0, base: null, branches: [] }), runningSince: now }, true);",
+      "bound_to": "src/notes/branches.ts:75:cachePath"
+     },
+     {
+      "file": "test/context-checkpoint.test.ts",
+      "line": 29,
+      "qual": "",
+      "recv": "",
+      "text": "const p = cachePath(dir);",
+      "bound_to": "test/context-checkpoint.test.ts:18:cachePath"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "globalRoot",
+    "file": ".agentx/helpers/graft-statusline.cjs",
+    "line": 67,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 4,
+   "gold": {
+    "assigned": [
+     {
+      "file": ".agentx/helpers/graft-statusline.cjs",
+      "line": 110,
+      "qual": "",
+      "recv": "",
+      "text": "const gr = globalRoot();"
+     }
+    ],
+    "other_def": [
+     {
+      "file": ".agentx/helpers/graft-hooks.cjs",
+      "line": 110,
+      "qual": "",
+      "recv": "",
+      "text": "const gr = globalRoot();",
+      "bound_to": ".agentx/helpers/graft-hooks.cjs:67:globalRoot"
+     },
+     {
+      "file": "src/agentx/shim-template.ts",
+      "line": 154,
+      "qual": "",
+      "recv": "",
+      "text": "const gr = globalRoot();",
+      "bound_to": "src/agentx/shim-template.ts:111:globalRoot"
+     },
+     {
+      "file": "src/cli-meta.ts",
+      "line": 114,
+      "qual": "",
+      "recv": "",
+      "text": "const root = globalRoot();",
+      "bound_to": "src/cli-meta.ts:97:globalRoot"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "userContent",
+    "file": "src/ai/summarize.ts",
+    "line": 28,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/ai/summarize.ts",
+      "line": 46,
+      "qual": "",
+      "recv": "",
+      "text": "{ role: \"user\", content: userContent(code, opts.path) },"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "src/ai/crux.ts",
+      "line": 196,
+      "qual": "",
+      "recv": "",
+      "text": "{ role: \"user\", content: userContent(input) },",
+      "bound_to": "src/ai/crux.ts:125:userContent"
+     },
+     {
+      "file": "src/ai/synthesize.ts",
+      "line": 147,
+      "qual": "",
+      "recv": "",
+      "text": "{ role: \"user\", content: userContent(files) },",
+      "bound_to": "src/ai/synthesize.ts:94:userContent"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "collision",
+   "def": {
+    "name": "blocks",
+    "file": "src/notes/session-cost.ts",
+    "line": 96,
+    "kind": "function",
+    "container": null,
+    "trait": null,
+    "lang": "ts",
+    "is_iface": false
+   },
+   "n_defs_same_name": 2,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/notes/session-cost.ts",
+      "line": 165,
+      "qual": "",
+      "recv": "",
+      "text": "for (const b of blocks(e)) {"
+     },
+     {
+      "file": "src/notes/session-cost.ts",
+      "line": 199,
+      "qual": "",
+      "recv": "",
+      "text": "for (const b of blocks(e)) {"
+     },
+     {
+      "file": "src/notes/session-cost.ts",
+      "line": 246,
+      "qual": "",
+      "recv": "",
+      "text": "for (const b of blocks(e)) {"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "src/graph/container.ts",
+      "line": 167,
+      "qual": "",
+      "recv": "",
+      "text": "for (const body of blocks(root, lang)) {",
+      "bound_to": "src/graph/container.ts:127:blocks"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "synthesize",
+    "file": "src/ai/synthesize.ts",
+    "line": 37,
+    "kind": "method",
+    "container": "Synthesizer",
+    "trait": null,
+    "lang": "ts",
+    "is_iface": true
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [],
+    "other_def": [],
+    "ambiguous": [
+     {
+      "file": "src/context/build.ts",
+      "line": 256,
+      "qual": ".",
+      "recv": "synthesizer",
+      "text": "nodes = await opts.synthesizer.synthesize(batches[b]);"
+     },
+     {
+      "file": "test/context-only-dir.test.ts",
+      "line": 56,
+      "qual": "",
+      "recv": "",
+      "text": "async synthesize(files: FileSummary[]) {"
+     },
+     {
+      "file": "test/context-only-dir.test.ts",
+      "line": 58,
+      "qual": ".",
+      "recv": "synthesizer",
+      "text": "return inner.synthesizer.synthesize(files);"
+     },
+     {
+      "file": "test/context.test.ts",
+      "line": 619,
+      "qual": "",
+      "recv": "",
+      "text": "async synthesize() {"
+     },
+     {
+      "file": "test/context.test.ts",
+      "line": 640,
+      "qual": "",
+      "recv": "",
+      "text": "async synthesize(files) {"
+     },
+     {
+      "file": "test/llm-ops.test.ts",
+      "line": 50,
+      "qual": ".",
+      "recv": "",
+      "text": "const nodes = await new ChatSynthesizer(m).synthesize([{ path: \"a.ts\", summary: \"x\" }]);"
+     },
+     {
+      "file": "test/llm-ops.test.ts",
+      "line": 74,
+      "qual": ".",
+      "recv": "",
+      "text": "assert.deepEqual(await new ChatSynthesizer(empty).synthesize([{ path: \"a.ts\", summary: \"x\" }]), []);"
+     },
+     {
+      "file": "test/llm-ops.test.ts",
+      "line": 97,
+      "qual": ".",
+      "recv": "",
+      "text": "new ChatSynthesizer(m).synthesize([{ path: \"a.ts\", summary: \"x\" }]),"
+     },
+     {
+      "file": "test/llm-ops.test.ts",
+      "line": 109,
+      "qual": ".",
+      "recv": "",
+      "text": "assert.equal((await new ChatSynthesizer(objectWrap).synthesize([{ path: \"a.ts\", summary: \"x\" }]))[0]?.name, \"Auth\");"
+     },
+     {
+      "file": "test/llm-ops.test.ts",
+      "line": 115,
+      "qual": ".",
+      "recv": "",
+      "text": "assert.equal((await new ChatSynthesizer(fenced).synthesize([{ path: \"a.ts\", summary: \"x\" }]))[0]?.name, \"Auth\");"
+     },
+     {
+      "file": "test/llm-ops.test.ts",
+      "line": 121,
+      "qual": ".",
+      "recv": "",
+      "text": "new ChatSynthesizer(m).synthesize([{ path: \"a.ts\", summary: \"x\" }]),"
+     },
+     {
+      "file": "test/llm-ops.test.ts",
+      "line": 132,
+      "qual": ".",
+      "recv": "",
+      "text": "const nodes = await new ChatSynthesizer(m).synthesize([{ path: \"a.ts\", summary: \"x\" }]);"
+     }
+    ]
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "conceptOf",
+    "file": "src/blast/modules.ts",
+    "line": 21,
+    "kind": "method",
+    "container": "ModuleIndex",
+    "trait": null,
+    "lang": "ts",
+    "is_iface": true
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/blast/blast.ts",
+      "line": 424,
+      "qual": ".",
+      "recv": "index",
+      "text": "const concepts = new Set(paths.map((p) => index.conceptOf(p)));"
+     },
+     {
+      "file": "src/blast/blast.ts",
+      "line": 468,
+      "qual": ".",
+      "recv": "modules",
+      "text": "const key = modules.conceptOf(hit.path) ?? dirLabel(hit.path);"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "dirExists",
+    "file": "src/hosts/registry.ts",
+    "line": 19,
+    "kind": "method",
+    "container": "DetectProbe",
+    "trait": null,
+    "lang": "ts",
+    "is_iface": true
+   },
+   "n_defs_same_name": 3,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 41,
+      "qual": ".",
+      "recv": "p",
+      "text": "p.dirExists(join(p.home, '.agentx')) ||"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 42,
+      "qual": ".",
+      "recv": "p",
+      "text": "p.dirExists(join(p.home, '.config', 'opencode')) ||"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 43,
+      "qual": ".",
+      "recv": "p",
+      "text": "p.dirExists(join(p.home, '.config', 'agents')),"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 51,
+      "qual": ".",
+      "recv": "p",
+      "text": "detect: (p) => p.dirExists(join(p.home, '.adal')) || p.dirExists(join(p.repo, '.adal')),"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 59,
+      "qual": ".",
+      "recv": "p",
+      "text": "detect: (p) => p.dirExists(join(p.home, '.cursor')) || p.dirExists(join(p.repo, '.cursor')),"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 67,
+      "qual": ".",
+      "recv": "p",
+      "text": "detect: (p) => p.dirExists(join(p.home, '.agentx')),"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 75,
+      "qual": ".",
+      "recv": "p",
+      "text": "detect: (p) => p.dirExists(join(p.home, '.agentx')) || p.dirExists(join(p.repo, '.agentx')),"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 86,
+      "qual": ".",
+      "recv": "p",
+      "text": "p.dirExists(join(p.home, '.agentx')) ||"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 87,
+      "qual": ".",
+      "recv": "p",
+      "text": "p.dirExists(join(p.home, 'AppData', 'Local', 'agentx')) ||"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 88,
+      "qual": ".",
+      "recv": "p",
+      "text": "p.dirExists(join(p.repo, '.agentx')),"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 100,
+      "qual": ".",
+      "recv": "p",
+      "text": "p.dirExists(join(p.home, '.agentx', 'config')) ||"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 101,
+      "qual": ".",
+      "recv": "p",
+      "text": "p.dirExists(join(p.home, '.agentx', 'agentx-cli')) ||"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 102,
+      "qual": ".",
+      "recv": "p",
+      "text": "p.dirExists(join(p.repo, '.agents')),"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 110,
+      "qual": ".",
+      "recv": "p",
+      "text": "detect: (p) => p.dirExists(join(p.repo, '.github')),"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 118,
+      "qual": ".",
+      "recv": "p",
+      "text": "detect: (p) => p.dirExists(join(p.home, '.agentx')) || p.dirExists(join(p.repo, '.agentx')),"
+     },
+     {
+      "file": "src/hosts/registry.ts",
+      "line": 126,
+      "qual": ".",
+      "recv": "p",
+      "text": "detect: (p) => p.dirExists(join(p.home, '.codeium', 'agentx')) || p.dirExists(join(p.repo, '.agentx')),"
+     }
+    ],
+    "other_def": [
+     {
+      "file": "src/hosts/agentx-hooks.ts",
+      "line": 24,
+      "qual": "",
+      "recv": "",
+      "text": "if (!dirExists(base)) return [];",
+      "bound_to": "src/hosts/agentx-hooks.ts:12:dirExists"
+     },
+     {
+      "file": "src/hosts/mcp-config.ts",
+      "line": 235,
+      "qual": "",
+      "recv": "",
+      "text": "if (dirExists(join(home, '.agentx'))) {",
+      "bound_to": "src/hosts/mcp-config.ts:83:dirExists"
+     },
+     {
+      "file": "src/hosts/mcp-config.ts",
+      "line": 241,
+      "qual": "",
+      "recv": "",
+      "text": "if (dirExists(join(home, '.config', 'opencode'))) {",
+      "bound_to": "src/hosts/mcp-config.ts:83:dirExists"
+     }
+    ],
+    "ambiguous": []
+   }
+  },
+  {
+   "category": "interface",
+   "def": {
+    "name": "namedChild",
+    "file": "src/graph/generic.ts",
+    "line": 540,
+    "kind": "method",
+    "container": "TsNode",
+    "trait": null,
+    "lang": "ts",
+    "is_iface": true
+   },
+   "n_defs_same_name": 1,
+   "gold": {
+    "assigned": [
+     {
+      "file": "src/graph/generic.ts",
+      "line": 557,
+      "qual": ".",
+      "recv": "p",
+      "text": "const c = p.namedChild(i);"
+     },
+     {
+      "file": "src/graph/generic.ts",
+      "line": 558,
+      "qual": ".",
+      "recv": "p",
+      "text": "if (c && c.startIndex === n.startIndex && c.endIndex === n.endIndex) return p.namedChild(i + 1);"
+     }
+    ],
+    "other_def": [],
+    "ambiguous": []
+   }
+  }
+ ],
+ "oracle_note": "gold recomputed by regold.py with the multi-line-aware cleaner"
+}

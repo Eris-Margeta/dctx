@@ -1,0 +1,6 @@
+✓ graph built · 1,657 nodes, 2,466 edges from 83 files
+✓ agentx    .agentx/, .trail/ · + 3 in ~/.agentx/
+✓ agentx   .github/agentx-instructions.md
+✓ learnings  .trail/learnings/ · sessions that take real digging leave one there, for your whole team
+· restart your agents so a new session picks up trail
+· commit .agentx/settings.json and .trail/ and .github/ once — after that, teammates' agentx reads your learnings even before they install trail

@@ -1,0 +1,211 @@
+{
+ "redacted": "private corpus: identifiers, paths and source text removed",
+ "data": {
+  "corpus": "core",
+  "files_scanned": 1463,
+  "defs_scanned": 13503,
+  "targets": [
+   {
+    "category": "hub",
+    "kind": "method",
+    "n_defs_same_name": 1,
+    "gold_counts": {
+     "assigned": 28,
+     "other_def": 0,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "hub",
+    "kind": "function",
+    "n_defs_same_name": 1,
+    "gold_counts": {
+     "assigned": 31,
+     "other_def": 0,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "hub",
+    "kind": "method",
+    "n_defs_same_name": 1,
+    "gold_counts": {
+     "assigned": 28,
+     "other_def": 0,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "hub",
+    "kind": "function",
+    "n_defs_same_name": 1,
+    "gold_counts": {
+     "assigned": 41,
+     "other_def": 0,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "rare",
+    "kind": "function",
+    "n_defs_same_name": 1,
+    "gold_counts": {
+     "assigned": 2,
+     "other_def": 0,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "rare",
+    "kind": "method",
+    "n_defs_same_name": 1,
+    "gold_counts": {
+     "assigned": 1,
+     "other_def": 0,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "rare",
+    "kind": "function",
+    "n_defs_same_name": 1,
+    "gold_counts": {
+     "assigned": 1,
+     "other_def": 0,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "rare",
+    "kind": "method",
+    "n_defs_same_name": 1,
+    "gold_counts": {
+     "assigned": 2,
+     "other_def": 0,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "receiver",
+    "kind": "method",
+    "n_defs_same_name": 1,
+    "gold_counts": {
+     "assigned": 4,
+     "other_def": 0,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "receiver",
+    "kind": "method",
+    "n_defs_same_name": 1,
+    "gold_counts": {
+     "assigned": 11,
+     "other_def": 0,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "receiver",
+    "kind": "method",
+    "n_defs_same_name": 1,
+    "gold_counts": {
+     "assigned": 18,
+     "other_def": 0,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "receiver",
+    "kind": "method",
+    "n_defs_same_name": 1,
+    "gold_counts": {
+     "assigned": 1,
+     "other_def": 0,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "collision",
+    "kind": "function",
+    "n_defs_same_name": 3,
+    "gold_counts": {
+     "assigned": 2,
+     "other_def": 15,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "collision",
+    "kind": "function",
+    "n_defs_same_name": 2,
+    "gold_counts": {
+     "assigned": 1,
+     "other_def": 1,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "collision",
+    "kind": "function",
+    "n_defs_same_name": 2,
+    "gold_counts": {
+     "assigned": 2,
+     "other_def": 1,
+     "ambiguous": 0
+    }
+   },
+   {
+    "category": "collision",
+    "kind": "method",
+    "n_defs_same_name": 4,
+    "gold_counts": {
+     "assigned": 6,
+     "other_def": 0,
+     "ambiguous": 3
+    }
+   },
+   {
+    "category": "interface",
+    "kind": "method",
+    "n_defs_same_name": 3,
+    "gold_counts": {
+     "assigned": 0,
+     "other_def": 0,
+     "ambiguous": 6
+    }
+   },
+   {
+    "category": "interface",
+    "kind": "method",
+    "n_defs_same_name": 9,
+    "gold_counts": {
+     "assigned": 0,
+     "other_def": 2,
+     "ambiguous": 6
+    }
+   },
+   {
+    "category": "interface",
+    "kind": "method",
+    "n_defs_same_name": 2,
+    "gold_counts": {
+     "assigned": 0,
+     "other_def": 1,
+     "ambiguous": 26
+    }
+   },
+   {
+    "category": "interface",
+    "kind": "method",
+    "n_defs_same_name": 6,
+    "gold_counts": {
+     "assigned": 0,
+     "other_def": 0,
+     "ambiguous": 6
+    }
+   }
+  ],
+  "oracle_note": "gold recomputed by regold.py with the multi-line-aware cleaner"
+ }
+}

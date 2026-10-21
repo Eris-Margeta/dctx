@@ -1,0 +1,348 @@
+[
+ {
+  "id": "Q1",
+  "kind": "def_and_callers",
+  "q": "Where is abort defined and who calls it?",
+  "facts": [
+   [
+    "loc",
+    [
+     "src/flask/helpers.py",
+     273
+    ]
+   ],
+   [
+    "caller",
+    [
+     "examples/tutorial/flaskr/blog.py",
+     [
+      52,
+      55
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "tests/test_basic.py",
+     [
+      905,
+      913,
+      1009,
+      1067,
+      1093
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "tests/test_blueprints.py",
+     [
+      19,
+      27,
+      31,
+      89,
+      95,
+      808,
+      816,
+      828,
+      1027
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "tests/test_helpers.py",
+     [
+      190,
+      193,
+      214
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "tests/test_regression.py",
+     [
+      14
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "tests/test_user_error_handler.py",
+     [
+      53,
+      235
+     ]
+    ]
+   ]
+  ],
+  "target": "abort"
+ },
+ {
+  "id": "Q2",
+  "kind": "impact",
+  "q": "What breaks if I change the signature of inject_url_defaults?",
+  "facts": [
+   [
+    "loc",
+    [
+     "src/flask/sansio/app.py",
+     911
+    ]
+   ],
+   [
+    "caller",
+    [
+     "src/flask/app.py",
+     [
+      1107
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "tests/test_basic.py",
+     [
+      1680
+     ]
+    ]
+   ]
+  ],
+  "target": "inject_url_defaults"
+ },
+ {
+  "id": "Q3",
+  "kind": "outline",
+  "q": "Outline the file src/flask/helpers.py.",
+  "file": "src/flask/helpers.py",
+  "facts": [
+   [
+    "word",
+    "get_debug_flag"
+   ],
+   [
+    "word",
+    "get_load_dotenv"
+   ],
+   [
+    "word",
+    "stream_with_context"
+   ],
+   [
+    "word",
+    "make_response"
+   ],
+   [
+    "word",
+    "url_for"
+   ],
+   [
+    "word",
+    "redirect"
+   ],
+   [
+    "word",
+    "abort"
+   ],
+   [
+    "word",
+    "get_template_attribute"
+   ],
+   [
+    "word",
+    "flash"
+   ],
+   [
+    "word",
+    "get_flashed_messages"
+   ],
+   [
+    "word",
+    "_prepare_send_file_kwargs"
+   ],
+   [
+    "word",
+    "send_file"
+   ],
+   [
+    "word",
+    "send_from_directory"
+   ],
+   [
+    "word",
+    "get_root_path"
+   ],
+   [
+    "word",
+    "_split_blueprint_path"
+   ]
+  ]
+ },
+ {
+  "id": "Q4",
+  "kind": "config",
+  "q": "Where is the config value APPLICATION_ROOT read?",
+  "key": "APPLICATION_ROOT",
+  "facts": [
+   [
+    "path",
+    "src/flask/app.py"
+   ],
+   [
+    "path",
+    "src/flask/sessions.py"
+   ],
+   [
+    "path",
+    "src/flask/testing.py"
+   ]
+  ]
+ },
+ {
+  "id": "Q5",
+  "kind": "exports",
+  "q": "What does module src/flask/debughelpers.py export?",
+  "file": "src/flask/debughelpers.py",
+  "facts": [
+   [
+    "word",
+    "UnexpectedUnicodeError"
+   ],
+   [
+    "word",
+    "DebugFilesKeyError"
+   ],
+   [
+    "word",
+    "FormDataRoutingRedirect"
+   ],
+   [
+    "word",
+    "attach_enctype_error_multidict"
+   ],
+   [
+    "word",
+    "newcls"
+   ],
+   [
+    "word",
+    "explain_template_loading_attempts"
+   ]
+  ]
+ },
+ {
+  "id": "Q6",
+  "kind": "source",
+  "q": "Show me the implementation of get_cookie_partitioned.",
+  "facts": [
+   [
+    "text",
+    "def get_cookie_partitioned(self, app: Flask) -> bool:"
+   ],
+   [
+    "text",
+    "\"\"\"Returns True if the cookie should be partitioned. By default, uses"
+   ],
+   [
+    "text",
+    ".. versionadded:: 3.1"
+   ]
+  ],
+  "target": "get_cookie_partitioned"
+ },
+ {
+  "id": "Q7",
+  "kind": "callees",
+  "q": "What does load_app call?",
+  "facts": [
+   [
+    "word",
+    "create_app"
+   ],
+   [
+    "word",
+    "prepare_import"
+   ],
+   [
+    "word",
+    "locate_app"
+   ],
+   [
+    "word",
+    "NoAppException"
+   ],
+   [
+    "word",
+    "get_debug_flag"
+   ]
+  ],
+  "target": "load_app"
+ },
+ {
+  "id": "Q8",
+  "kind": "overview",
+  "q": "Give me an overview of the repository layout.",
+  "facts": [
+   [
+    "word",
+    "tests"
+   ],
+   [
+    "word",
+    "src"
+   ],
+   [
+    "word",
+    "examples"
+   ]
+  ]
+ },
+ {
+  "id": "Q9",
+  "kind": "collision",
+  "q": "Where is Flask.get_send_file_max_age defined and who calls that specific one?",
+  "qual": "Flask.get_send_file_max_age",
+  "facts": [
+   [
+    "loc",
+    [
+     "src/flask/app.py",
+     281
+    ]
+   ],
+   [
+    "caller",
+    [
+     "src/flask/app.py",
+     [
+      325
+     ]
+    ]
+   ]
+  ],
+  "target": "get_send_file_max_age"
+ },
+ {
+  "id": "Q10",
+  "kind": "concept",
+  "q": "Find the code that handles: wsgi app",
+  "words": "wsgi app",
+  "facts": [
+   [
+    "loc",
+    [
+     "src/flask/app.py",
+     1479
+    ]
+   ]
+  ],
+  "target": "wsgi_app"
+ }
+]

@@ -2,7 +2,7 @@
 
 > **Cross-platform GUI for dctx - Directory Context Generator**
 
-**License**: MIT - Free and Open Source
+**License**: Apache-2.0 · free, forever
 **Status**: v0.1.0 - Working prototype
 **Platform**: macOS, Windows, Linux
 
@@ -292,20 +292,9 @@ bun run tauri:build
 
 ## Licensing
 
-**This application is PROPRIETARY software.**
+dctx Desktop is **free, forever** — for individuals, teams and companies — and licensed under Apache-2.0 like the rest of this repository. See the root [LICENSE](../../LICENSE) and the announcement on [dctx.app](https://dctx.app/news/desktop-free-forever/).
 
-- Source code available for transparency and security audit
-- You may NOT redistribute or modify this software
-- Valid license key required after 14-day trial (future)
-- Commercial use requires paid license ($29 one-time)
-
-**See**: [LICENSE](LICENSE) for full terms
-
-### Open Source Alternative
-
-Don't want to pay? Use the **free CLI** or **MIT-licensed library**:
-- CLI: `cargo install dctx-cli` (free forever)
-- Library: `dctx-core` crate (MIT, use in your own apps)
+Organizations that need enterprise-ready builds, organization and tenant policy control and direct support can license **dctx Enterprise** (per company, from €45,000 per year).
 
 ---
 

@@ -1,0 +1,329 @@
+[
+ {
+  "id": "Q1",
+  "kind": "def_and_callers",
+  "q": "Where is NewTaggedHook defined and who calls it?",
+  "facts": [
+   [
+    "loc",
+    [
+     "tools/hook/tagged.go",
+     21
+    ]
+   ],
+   [
+    "caller",
+    [
+     "core/base.go",
+     [
+      903,
+      907,
+      911,
+      915,
+      919,
+      923,
+      927,
+      931,
+      935,
+      939,
+      943,
+      947,
+      951,
+      955,
+      959,
+      963,
+      967,
+      971,
+      975,
+      979,
+      983,
+      987,
+      991,
+      995,
+      999,
+      1003,
+      1007,
+      1011,
+      1015,
+      1019,
+      1023,
+      1027,
+      1031,
+      1035,
+      1039,
+      1043,
+      1047,
+      1051,
+      1055,
+      1059,
+      1071,
+      1075,
+      1079,
+      1083,
+      1087,
+      1139,
+      1143,
+      1151,
+      1155,
+      1159,
+      1163,
+      1167,
+      1171,
+      1175,
+      1179,
+      1183,
+      1187,
+      1191,
+      1195,
+      1203,
+      1207,
+      1211,
+      1215,
+      1219
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "tools/hook/tagged_test.go",
+     [
+      23,
+      30,
+      37
+     ]
+    ]
+   ]
+  ],
+  "target": "NewTaggedHook"
+ },
+ {
+  "id": "Q2",
+  "kind": "impact",
+  "q": "What breaks if I change the signature of newRecordFromNullStringMap?",
+  "facts": [
+   [
+    "loc",
+    [
+     "core/record_model.go",
+     484
+    ]
+   ],
+   [
+    "caller",
+    [
+     "core/record_model.go",
+     [
+      529
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "core/record_query.go",
+     [
+      172
+     ]
+    ]
+   ]
+  ],
+  "target": "newRecordFromNullStringMap"
+ },
+ {
+  "id": "Q3",
+  "kind": "outline",
+  "q": "Outline the file tools/hook/tagged.go.",
+  "file": "tools/hook/tagged.go",
+  "facts": [
+   [
+    "word",
+    "Tagger"
+   ],
+   [
+    "word",
+    "Tags"
+   ],
+   [
+    "word",
+    "NewTaggedHook"
+   ],
+   [
+    "word",
+    "CanTriggerOn"
+   ],
+   [
+    "word",
+    "Bind"
+   ],
+   [
+    "word",
+    "BindFunc"
+   ]
+  ]
+ },
+ {
+  "id": "Q4",
+  "kind": "config",
+  "q": "Where is the config value GOCACHE read?",
+  "key": "GOCACHE",
+  "facts": [
+   [
+    "path",
+    "tools/osutils/run.go"
+   ]
+  ]
+ },
+ {
+  "id": "Q5",
+  "kind": "exports",
+  "q": "What does module tools/filesystem/file.go export?",
+  "file": "tools/filesystem/file.go",
+  "facts": [
+   [
+    "word",
+    "FileReader"
+   ],
+   [
+    "word",
+    "NewFileFromPath"
+   ],
+   [
+    "word",
+    "NewFileFromBytes"
+   ],
+   [
+    "word",
+    "NewFileFromMultipart"
+   ],
+   [
+    "word",
+    "NewFileFromURL"
+   ]
+  ]
+ },
+ {
+  "id": "Q6",
+  "kind": "source",
+  "q": "Show me the implementation of initPasswordField.",
+  "facts": [
+   [
+    "text",
+    "func (c *Collection) initPasswordField() {"
+   ],
+   [
+    "text",
+    "field, _ := c.Fields.GetByName(FieldNamePassword).(*PasswordField)"
+   ],
+   [
+    "text",
+    "// load default field"
+   ]
+  ],
+  "target": "initPasswordField"
+ },
+ {
+  "id": "Q7",
+  "kind": "callees",
+  "q": "What does ValidatePassword call?",
+  "facts": [
+   [
+    "word",
+    "GetRaw"
+   ],
+   [
+    "word",
+    "Validate"
+   ]
+  ],
+  "target": "ValidatePassword"
+ },
+ {
+  "id": "Q8",
+  "kind": "overview",
+  "q": "Give me an overview of the repository layout.",
+  "facts": [
+   [
+    "word",
+    "ui"
+   ],
+   [
+    "word",
+    "tools"
+   ],
+   [
+    "word",
+    "core"
+   ],
+   [
+    "word",
+    "apis"
+   ],
+   [
+    "word",
+    "plugins"
+   ],
+   [
+    "word",
+    "forms"
+   ],
+   [
+    "word",
+    "migrations"
+   ],
+   [
+    "word",
+    "tests"
+   ],
+   [
+    "word",
+    "mails"
+   ],
+   [
+    "word",
+    "cmd"
+   ]
+  ]
+ },
+ {
+  "id": "Q9",
+  "kind": "collision",
+  "q": "Where is downloadJSON defined and who calls that specific one?",
+  "qual": "downloadJSON",
+  "facts": [
+   [
+    "loc",
+    [
+     "ui/src/records/recordPreviewModal.js",
+     35
+    ]
+   ],
+   [
+    "caller",
+    [
+     "ui/src/records/recordPreviewModal.js",
+     [
+      226
+     ]
+    ]
+   ]
+  ],
+  "target": "downloadJSON"
+ },
+ {
+  "id": "Q10",
+  "kind": "concept",
+  "q": "Find the code that handles: prepare internal action",
+  "words": "prepare internal action",
+  "facts": [
+   [
+    "loc",
+    [
+     "apis/batch.go",
+     486
+    ]
+   ]
+  ],
+  "target": "prepareInternalAction"
+ }
+]

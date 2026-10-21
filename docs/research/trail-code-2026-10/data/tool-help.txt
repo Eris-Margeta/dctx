@@ -1,0 +1,280 @@
+### dctx --version --verbose
+dctx-cli v0.25.0
+Feature and precision limits:
+facade_version: 0.1.0
+profile: enhanced
+wire_version: 2
+segment_version: 1
+storage: buffered-segments
+features: pack,map,templates,fs,segments,cache,syntax-rust
+parsers: dctx-structural/1,dctx-lex-js:1,dctx-lex-md:1,dctx-lex-rust/syn-3.0.9
+languages: rust,javascript,typescript,markdown
+unsafe_boundary: syn-dependency
+native_code: false
+git: false
+subprocess: none
+precision: the structural extractor reports declarations, imports, headings and conservative calls.
+It does not promise exact semantic calls, name or type resolution, or macro expansion.
+A syntax-rust build adds syn for supported Rust syntax only, still without type checking.
+token estimate: ceil(2 * UTF-8 bytes / 7) is an estimate, not a tokenizer guarantee.
+cache cap: 2 GiB hard, 1.5 GiB soft watermark, 1.2 GiB eviction target.
+cache ttl: idle overlays and previews 7 days, unpinned roots 30 days, staging 1 day.
+auto-clean interval: 1 day.
+### dctx map --help
+Usage: dctx map <map|find|neighbors|explain|read> <TARGET> [OPTIONS]
+  TARGET                  Required. map accepts a stable id or a place-relative file.
+                          A file path is read as m:<path>. Omitting TARGET does not scan.
+  --json                  Facade JSON v2, including the precision label
+  --place PATH            Place or worktree root (default: current directory)
+  --profile               Stderr stage timings and the five slowest files. DCTX_PROFILE=1 is the same switch.
+  --budget TOKENS         Output tokens, 1..2000 (explain max: 1000).
+                          Read with no --budget uses the 2,000-token hard cap.
+  --depth N               Map: 1..3; neighbors: 1..2. Explain and read take no depth.
+  --limit N               Map, find and neighbors page size. Explain and read accept only 1.
+  --offset N              Refused. Pass the previous page's next value to --cursor.
+  --cursor TOKEN          Opaque continuation. A stale token is rejected.
+  --kind fn,type,doc      Find kinds
+  --in PATH               Find within a relative path
+  --edge calls,imports    Neighbor edge filter
+  --dir in|out|both       Neighbor direction
+  --lines A-B --full      Read those absolute source lines inside the node; full permits 400
+  --rev SHA               Refused: this build does not link git
+Precision: structural declarations, imports, headings and conservative calls.
+Not exact semantic calls, type resolution or macro expansion.
+Token estimate ceil(2 * UTF-8 bytes / 7) is not a tokenizer guarantee.
+Examples:
+  dctx map find 'ignore rules' --json
+  dctx map map crates/dctx-cli/src/lib.rs --depth 2
+  dctx map map m:crates/dctx-cli/src/lib.rs --cursor '<next from the previous page>'
+### trail --version
+0.23.1
+### trail --help
+Usage: trail [options] [command]
+
+Memory for your coding agents: a code map, and the learnings each session
+leaves in your repo's .trail/, so your whole team's agentx starts from them.
+
+Options:
+  -v, --version                     output the version number
+  --dir <path>                      context graph directory (default:
+                                    <repo>/graft)
+  --provider <name>                 LLM wire format: agentx | agentx |
+                                    litellm | agentx (env GRAFT_PROVIDER)
+  --model <id>                      model id for the LLM pass (env GRAFT_MODEL)
+  --api-key <key>                   provider API key (env GRAFT_API_KEY)
+  --base-url <url>                  agentx-compatible endpoint URL (env
+                                    GRAFT_BASE_URL)
+  -h, --help                        display help for command
+
+Find code · your agent runs these:
+  ask [options] <query> [dir]       ranked answer, with the code inlined at each
+                                    file:line
+  grep [options] <pattern> [dir]    every occurrence, grouped by enclosing
+                                    symbol
+  skeleton [options] <file> [dir]   a file's whole API in ~200 tokens
+  callers [options] <symbol> [dir]  who calls it, or what it calls with
+                                    --direction out
+  map [options] [dir]               directory clusters, hubs and hotspots
+
+Team memory:
+  note [options] [dir]              save what this session worked out, as a
+                                    learning in .trail/
+  check [options] [dir]             check your diff against everything the team
+                                    has learned
+  team [options] [dir]              what the team learned this week, and where
+                                    work overlaps
+
+Setup:
+  init [options] [dir]              wire trail into your agents
+  build [options] [dir]             rebuild the code map · --check fails if it's
+                                    stale
+  status [options] [dir]            code map, learnings and tokens saved
+  upgrade                           install the latest trail
+  uninstall [options] [dir]         remove everything trail or graft wrote to
+                                    this repo
+  telemetry [action]                show or turn off the anonymous usage stats
+
+CI:
+  blast [options] [dir]             what depends on the lines this diff touched
+
+Commands:
+  help [command]                    display help for command
+
+trail <command> --help for flags · every graft command still works
+### trail ask --help
+Usage: trail ask [options] <query> [dir]
+
+Query the graft/ graph — returns ranked nodes + exact file:line, routed to prose
+or wiring ($0, no key)
+
+Arguments:
+  query            what you want to understand, in plain words
+  dir              repository root (default: nearest ancestor with a graft/
+                   index)
+
+Options:
+  -n, --limit <n>  max results (default: "8")
+  --source         inline the source at each file:line hit (retriever mode — the
+                   pack IS the answer, no need to re-open files)
+  --full           with --source: inline whole definition spans instead of the
+                   default ≤8-line crux excerpts
+  --in <path>      narrow to nodes under this path prefix, filtered before
+                   scoring (segment-aware, like scopeOf)
+  --json           output the result as JSON
+  --no-graph-rank  rank by lexical relevance only, without the
+                   graph-connectivity re-rank (ablation/eval)
+  --no-refresh     skip the freshness check — answer from the graph as-is
+  -h, --help       display help for command
+### trail grep --help
+Usage: trail grep [options] <pattern> [dir]
+
+Regex search over indexed files, hits grouped by enclosing symbol and ranked by
+coupling ($0, no LLM)
+
+Arguments:
+  pattern            regex pattern (or literal string with --fixed)
+  dir                repository root (default: nearest ancestor with a graft/
+                     index)
+
+Options:
+  -i, --ignore-case  case-insensitive match
+  --fixed            treat pattern as a literal string, not a regex
+  --in <path>        narrow to files at or under this path prefix
+  --json             output as JSON
+  --no-refresh       skip the freshness check — answer from the graph as-is
+  -h, --help         display help for command
+### trail skeleton --help
+Usage: trail skeleton [options] <file> [dir]
+
+Signatures-only view of one file from the wiring graph — the cheapest way to see
+a file's API surface
+
+Arguments:
+  file          repo-relative path (or unique basename) of the file
+  dir           repository root (default: nearest ancestor with a graft/ index)
+
+Options:
+  --json        output the result as JSON
+  --no-refresh  skip the freshness check — answer from the graph as-is
+  -h, --help    display help for command
+### trail callers --help
+Usage: trail callers [options] <symbol> [dir]
+
+Who calls/references a symbol ($0, no LLM). --direction out gives callees (what
+it calls); --depth N (or all) walks transitively for full blast radius
+
+Arguments:
+  symbol                bare name, qualified (Class.method), or
+                        package-qualified (pkg.Fn)
+  dir                   repository root (default: nearest ancestor with a graft/
+                        index)
+
+Options:
+  --direction <in|out>  edge direction: "in" = callers (default), "out" =
+                        callees
+  -d, --depth <n>       walk transitively up to N hops for blast radius, or
+                        "all" for the full connected closure (default 1)
+  --in <path>           narrow matches to nodes at or under this path prefix
+  --json                output as JSON
+  --no-refresh          skip the freshness check — answer from the graph as-is
+  -h, --help            display help for command
+### trail map --help
+Usage: trail map [options] [dir]
+
+Token-budgeted repo orientation — directory clusters, per-directory hubs, and
+global hotspots from the wiring graph ($0, no LLM)
+
+Arguments:
+  dir             repository root (default: nearest ancestor with a graft/
+                  index)
+
+Options:
+  --max-dirs <n>  max directory entries shown, rest counted into dropped
+                  (default 16)
+  --json          output as JSON
+  --no-refresh    skip the freshness check — answer from the graph as-is
+  -h, --help      display help for command
+### trail build --help
+Usage: trail build [options] [dir]
+
+Rebuild the code map in .trail/cache/ ($0, no key). --check fails if it's stale;
+--deep adds LLM summaries.
+
+Arguments:
+  dir                         repository root (default: ".")
+
+Options:
+  --check                     build nothing: fail if graft/ is stale relative to
+                              the code (for CI)
+  --json                      with --check: output the drift as JSON
+  --deep                      run the LLM pass: concept nodes (graft/*.md) +
+                              per-symbol summary/crux
+  -e, --extensions <exts...>  code extensions to include (e.g. ".ts" ".py"); an
+                              extension with no parser is ignored with a warning
+                              that lists the supported set
+  -j, --concurrency <n>       files summarized in parallel during --deep
+                              (default 5)
+  --no-reuse                  re-parse every file instead of replaying unchanged
+                              ones from the extraction cache
+  --lsp                       add compiler-grade call edges via a language
+                              server if one is installed (opt-in, slower; e.g.
+                              rust-analyzer, clangd)
+  --allow-partial             with --deep: exit 0 even when some files'
+                              summaries failed (default: a degraded meaning tier
+                              exits 1)
+  --follow-submodules         include initialized Git submodules recursively;
+                              persisted for later builds and automatic refreshes
+  --no-follow-submodules      exclude Git submodules; persisted for later builds
+                              and automatic refreshes (default)
+  --follow-nested-repos       include nested Git clones the index does not track
+                              (a multi-repo manifest checkout, or any repo
+                              cloned into the tree) as ONE graph, so imports
+                              across them resolve; persisted for later builds
+                              and automatic refreshes
+  --no-follow-nested-repos    exclude untracked nested Git clones; persisted for
+                              later builds and automatic refreshes (default)
+  --include-dir <name>        override SKIP_DIRS for this repo's walks —
+                              repeatable (e.g. --include-dir build --include-dir
+                              tools); persisted, so a later build (and the
+                              hooks/refresh path) include it without the flag;
+                              dot-dirs are never overridable (default: [])
+  --only-dir <path>           only index files under this repo-relative path —
+                              repeatable; the wiring walk and the --deep concept
+                              pass both honor it. Recorded in the graph
+                              fingerprint so a later build (and the
+                              hooks/refresh path) walks the same set; everything
+                              outside the list is skipped (default: [])
+  --no-gitignore              skip writing graft/ into .gitignore (same as
+                              GRAFT_NO_GITIGNORE=1)
+  --no-ignore                 skip writing .ignore for ripgrep re-admit (same as
+                              GRAFT_NO_IGNORE=1)
+  -h, --help                  display help for command
+### trail init --help
+Usage: trail init [options] [dir]
+
+Wire trail into your agents: instruction files and MCP for each, plus hooks and
+a statusline for agentx Code
+
+Arguments:
+  dir                target repo directory (default: ".")
+
+Options:
+  --no-build         skip building the graph (wire files only)
+  --agents <ids...>  only these agents (<agent ids>)
+  --all-agents       write instruction files for every known agent, detected or
+                     not
+  --no-agents        agentx Code wiring only; skip other agents
+  --list-agents      list known agent ids and exit
+  --no-mcp           skip MCP server registration for other agents
+  --no-hooks         skip hook installation for other agents
+  --no-statusline    skip writing agentx Code statusLine (keep a user-defined
+                     one)
+  --dry-run          print every file init would touch, then exit without
+                     writing
+  -y, --yes          skip the picker and wire every detected agent (the pre-0.8
+                     default)
+  --no-global        skip writes outside this repo (the ~/.agentx/ config +
+                     hooks)
+  --verbose          print every file written, the graph build's own output and
+                     the closing banner
+  -h, --help         display help for command

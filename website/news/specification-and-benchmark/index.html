@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Our specification, and a benchmark that does not flatter us — dctx</title>
+<meta name="description" content="The dctx Context Management Specification and an isolated, reproducible comparison with Trail-Code: where dctx led, where it did not, and what comes next.">
+<link rel="canonical" href="https://dctx.app/news/specification-and-benchmark/">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#fbfbf9">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="dctx">
+<meta property="og:locale" content="en_US">
+<meta property="og:url" content="https://dctx.app/news/specification-and-benchmark/">
+<meta property="og:title" content="Our specification, and a benchmark that does not flatter us — dctx">
+<meta property="og:description" content="The dctx Context Management Specification and an isolated, reproducible comparison with Trail-Code: where dctx led, where it did not, and what comes next.">
+<meta name="twitter:title" content="Our specification, and a benchmark that does not flatter us — dctx">
+<meta name="twitter:description" content="The dctx Context Management Specification and an isolated, reproducible comparison with Trail-Code: where dctx led, where it did not, and what comes next.">
+<meta name="author" content="Eris Margeta Kurdali">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314161c'/%3E%3Cpath d='M11 9H8v14h3M21 9h3v14h-3' fill='none' stroke='%23fff' stroke-width='2.4'/%3E%3Ccircle cx='16' cy='16' r='2.6' fill='%237c5cff'/%3E%3C/svg%3E">
+<script>(function(d){d.classList.add('js');var off=false;try{off=localStorage.getItem('dctx-motion')==='off';}catch(e){}if(!off){d.classList.add('motion');}})(document.documentElement);</script>
+<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="/assets/page.css">
+<script src="/assets/page.js" defer></script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"Organization","@id":"https://tejl.hr/#organization","name":"TEJL Studio","url":"https://tejl.hr/","sameAs":["https://tejl.com/"]},
+ {"@type":"Person","@id":"https://tejl.hr/#eris-margeta-kurdali","name":"Eris Margeta Kurdali"},
+ {"@type":"BlogPosting","@id":"https://dctx.app/news/specification-and-benchmark/#post","headline":"Our specification, and a benchmark that does not flatter us","description":"The dctx specification and an isolated, reproducible benchmark against Trail-Code.","datePublished":"2026-10-21","dateModified":"2026-10-21","inLanguage":"en","mainEntityOfPage":"https://dctx.app/news/specification-and-benchmark/","author":{"@id":"https://tejl.hr/#eris-margeta-kurdali"},"publisher":{"@id":"https://tejl.hr/#organization"}}
+]}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="site-header" id="top">
+  <div class="wrap">
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="/" aria-label="dctx home"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#121419"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#7c5cff"/></svg>dctx</a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="/#belief">Philosophy</a></li>
+        <li><a href="/#platform">Platform</a></li>
+        <li><a href="/#security">Security</a></li>
+        <li><a href="/#pricing">Pricing</a></li>
+        <li><a href="/news/" aria-current="page">News</a></li>
+        <li><a href="/changelog/">Changelog</a></li>
+      </ul>
+      <div class="nav-cta">
+        <a class="btn btn-ghost" href="https://github.com/Eris-Margeta/dctx">GitHub</a>
+        <a class="btn btn-primary" href="mailto:info@tejl.com?subject=dctx%20Enterprise">Talk to us</a>
+      </div>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu"><span></span><span></span><span></span></button>
+    </nav>
+  </div>
+</header>
+<main id="main">
+<section class="page-hero">
+  <div class="wrap">
+    <ol class="crumbs" aria-label="Breadcrumb"><li><a href="/">Home</a></li><li><a href="/news/">News</a></li><li aria-current="page">Specification and benchmark</li></ol>
+    <span class="eyebrow" style="margin-top:28px">Engineering</span>
+    <h1>Our specification, and a benchmark that does not flatter us.</h1>
+    <p>We published the dctx Context Management Specification and an isolated, reproducible comparison with Trail-Code — wins, losses and all.</p><div class="meta"><span><b>21 October 2026</b></span><span>The dctx team</span><span>4 min read</span></div>
+  </div>
+</section>
+<section class="article">
+  <div class="wrap">
+    <div class="prose">
+      <p class="lead">An engineering organization should be able to check every claim a tool makes. So we wrote down exactly what dctx is meant to be, and then measured where it stands today.</p>
+
+      <h2 id="specification">The specification</h2>
+      <p>The <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">dctx Context Management Specification</a> turns our core belief — prompt-processing efficiency — into five testable constraints: every answer is <strong>bounded</strong>, <strong>deterministic</strong>, <strong>prefix-stable</strong>, <strong>non-redundant</strong> and <strong>honest</strong> about its precision and freshness. It names ten ways chunk retrieval fails and the mechanism that rules out each one, defines a seven-layer organization policy in which every layer can only narrow the one above it, and lays out the roadmap with an acceptance gate for every step. Each item is marked as available, under contract or a target.</p>
+
+      <h2 id="benchmark">The benchmark</h2>
+      <p>We ran dctx and Trail-Code side by side on a dedicated machine: seven pinned code bases in Rust, Go, Python and TypeScript, no network during the runs, every command pinned to the same CPUs, and an adversarial corpus with planted secrets. The <a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/research/trail-code-2026-10">full report, raw data and scripts</a> are public so anyone can rerun it.</p>
+      <h3>Where dctx led</h3>
+      <ul>
+        <li><strong>Cold indexing</strong> on every code base: 0.09–6.05 s against 2.4–95 s, with 1.6–27× less memory.</li>
+        <li><strong>Footprint</strong>: one 9.2 MB binary against 405.6 MB of Node.js packages.</li>
+        <li><strong>Bounds</strong>: map answers never exceeded their token budget.</li>
+        <li><strong>Network</strong>: dctx opened no sockets and wrote nothing into the repositories.</li>
+      </ul>
+      <h3>Where Trail-Code led</h3>
+      <ul>
+        <li><strong>Call graphs</strong>: dctx's map command does not yet expose call or import edges.</li>
+        <li><strong>Answers to agent questions</strong>: 122 of 140 points against 69 of 140, with fewer tokens.</li>
+        <li><strong>Stability under edits</strong>: Trail-Code kept most answers byte-identical after an unrelated change; dctx did not, which costs prompt-cache hits.</li>
+        <li><strong>Incremental refresh</strong> after an edit.</li>
+      </ul>
+
+      <h2 id="what-next">What happens next</h2>
+      <p>The findings are now the first items on our roadmap: call and import edges with honest confidence labels, a persistent incremental index, answer headers that stay stable across unrelated edits, a bounded repository overview, a search verb, and safer defaults for secrets when packing a whole project. Each one ships only when it passes the gate the specification sets for it — and we will publish the next measurement the same way.</p>
+
+      <div class="article-cta">
+        <a class="btn btn-primary" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification</a>
+        <a class="btn btn-ghost" href="https://github.com/Eris-Margeta/dctx/tree/main/docs/research/trail-code-2026-10">Read the benchmark report</a>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="/" aria-label="dctx home"><svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#121419"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#7c5cff"/></svg>dctx</a>
+        <p>The context engine for AI-assisted software development. Context, engineered.</p>
+      </div>
+      <nav class="foot-col" aria-label="Product">
+        <h3>Product</h3>
+        <ul>
+          <li><a href="/#belief">Philosophy</a></li>
+          <li><a href="/#platform">Platform</a></li>
+          <li><a href="/#security">Security</a></li>
+          <li><a href="/#pricing">Pricing</a></li>
+        </ul>
+      </nav>
+      <nav class="foot-col" aria-label="Resources">
+        <h3>Resources</h3>
+        <ul>
+          <li><a href="/news/">News</a></li>
+          <li><a href="/changelog/">Changelog</a></li>
+          <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Specification</a></li>
+          <li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li>
+        </ul>
+      </nav>
+      <nav class="foot-col" aria-label="Company">
+        <h3>Company</h3>
+        <ul>
+          <li><a href="mailto:info@tejl.com?subject=dctx%20Enterprise">Enterprise sales</a></li>
+          <li><a href="mailto:info@tejl.com">Contact</a></li>
+          <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="foot-bottom">
+      <div class="foot-tools">
+        <small>&copy; 2026 dctx. Apache-2.0.</small>
+        <button class="motion-toggle" id="motion-toggle" type="button" aria-pressed="false"><span class="sw" aria-hidden="true"></span>Reduce motion</button>
+      </div>
+      <div class="tejl-credit">
+        <div class="tejl-credit-text">
+          <span>Design &amp; development: TEJL Studio</span>
+          <span>Web studio contact: <a href="tel:+385998361079">+385 99 836 1079</a></span>
+          <span><a href="https://tejl.hr/" target="_blank" rel="noopener">tejl.hr</a> &middot; <a href="https://tejl.com/" target="_blank" rel="noopener">tejl.com</a></span>
+        </div>
+        <a class="tejl-credit-logo" href="https://tejl.hr/" target="_blank" rel="noopener" aria-label="TEJL Studio — tejl.hr">
+          <img src="/assets/tejl-logo-off-black.svg" width="818" height="422" alt="" aria-hidden="true">
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

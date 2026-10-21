@@ -1,0 +1,367 @@
+[
+ {
+  "id": "Q1",
+  "kind": "def_and_callers",
+  "q": "Where is to_bytes defined and who calls it?",
+  "facts": [
+   [
+    "loc",
+    [
+     "crates/dctx-template/src/binary/mod.rs",
+     61
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/dctx-cli/src/plugin/ops_tests.rs",
+     [
+      33,
+      52
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/dctx-cli/src/template.rs",
+     [
+      61
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/dctx-ed25519/src/lib.rs",
+     [
+      87
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/dctx-ed25519/tests/differential.rs",
+     [
+      27,
+      28,
+      90,
+      92
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/dctx-plugin-distribution/tests/common/mod.rs",
+     [
+      28,
+      34
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/dctx-template/src/binary/mod.rs",
+     [
+      216,
+      235,
+      245
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/dctx-template/tests/plan.rs",
+     [
+      56,
+      59,
+      99
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/dctx-template/tests/plugins.rs",
+     [
+      80,
+      332
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/dctx/tests/isolation.rs",
+     [
+      156
+     ]
+    ]
+   ],
+   [
+    "caller",
+    [
+     "tools/plugin-index/tests/fixture_check.rs",
+     [
+      36,
+      37,
+      124,
+      127
+     ]
+    ]
+   ]
+  ],
+  "target": "to_bytes"
+ },
+ {
+  "id": "Q2",
+  "kind": "impact",
+  "q": "What breaks if I change the signature of help_outcome?",
+  "facts": [
+   [
+    "loc",
+    [
+     "crates/dctx-cli/src/plugin/mod.rs",
+     228
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/dctx-cli/src/plugin/mod.rs",
+     [
+      140
+     ]
+    ]
+   ]
+  ],
+  "target": "help_outcome"
+ },
+ {
+  "id": "Q3",
+  "kind": "outline",
+  "q": "Outline the file crates/dctx-template/src/binary/mod.rs.",
+  "file": "crates/dctx-template/src/binary/mod.rs",
+  "facts": [
+   [
+    "word",
+    "seal"
+   ],
+   [
+    "word",
+    "encode"
+   ],
+   [
+    "word",
+    "to_bytes"
+   ],
+   [
+    "word",
+    "from_bytes"
+   ],
+   [
+    "word",
+    "assemble"
+   ],
+   [
+    "word",
+    "sample"
+   ],
+   [
+    "word",
+    "magic_major_and_roundtrip_keep_bytes"
+   ],
+   [
+    "word",
+    "domain_kind_changes_the_digest"
+   ],
+   [
+    "word",
+    "unknown_opcode_is_refused_and_a_clean_plan_loads"
+   ],
+   [
+    "word",
+    "flipped_hash_and_future_major_are_refused"
+   ],
+   [
+    "word",
+    "unknown_capability_bits_are_refused"
+   ]
+  ]
+ },
+ {
+  "id": "Q4",
+  "kind": "config",
+  "q": "Where is the config value HOME read?",
+  "key": "HOME",
+  "facts": [
+   [
+    "path",
+    "crates/dctx-cli/src/compat.rs"
+   ],
+   [
+    "path",
+    "crates/dctx-cli/src/host.rs"
+   ],
+   [
+    "path",
+    "crates/dctx-cli/src/plugin/disk.rs"
+   ],
+   [
+    "path",
+    "crates/dctx-map-scan/src/adapters/rules.rs"
+   ]
+  ]
+ },
+ {
+  "id": "Q5",
+  "kind": "exports",
+  "q": "What does module tools/plugin-conformance/isolation.py export?",
+  "file": "tools/plugin-conformance/isolation.py",
+  "facts": [
+   [
+    "word",
+    "InvalidTree"
+   ],
+   [
+    "word",
+    "parse_cargo_tree"
+   ],
+   [
+    "word",
+    "check_closure"
+   ],
+   [
+    "word",
+    "CargoLivenessExpired"
+   ],
+   [
+    "word",
+    "run_gate"
+   ],
+   [
+    "word",
+    "main"
+   ]
+  ]
+ },
+ {
+  "id": "Q6",
+  "kind": "source",
+  "q": "Show me the implementation of variance.",
+  "facts": [
+   [
+    "text",
+    "fn variance(&self, index: usize) -> bool {"
+   ],
+   [
+    "text",
+    "self.ident(index) && matches!(self.text(index), \"in\" | \"out\" | \"reified\" | \"suspend\")"
+   ]
+  ],
+  "target": "variance"
+ },
+ {
+  "id": "Q7",
+  "kind": "callees",
+  "q": "What does skip_type call?",
+  "facts": [
+   [
+    "word",
+    "after"
+   ],
+   [
+    "word",
+    "close_of"
+   ],
+   [
+    "word",
+    "ident"
+   ],
+   [
+    "word",
+    "keyword"
+   ],
+   [
+    "word",
+    "named_type"
+   ]
+  ],
+  "target": "skip_type"
+ },
+ {
+  "id": "Q8",
+  "kind": "overview",
+  "q": "Give me an overview of the repository layout.",
+  "facts": [
+   [
+    "word",
+    "crates"
+   ],
+   [
+    "word",
+    "plugins"
+   ],
+   [
+    "word",
+    "tools"
+   ],
+   [
+    "word",
+    "apps"
+   ]
+  ]
+ },
+ {
+  "id": "Q9",
+  "kind": "collision",
+  "q": "Where is push_u64 defined and who calls that specific one?",
+  "qual": "push_u64",
+  "facts": [
+   [
+    "loc",
+    [
+     "crates/dctx-map-store/src/adapters/bridge/pack.rs",
+     294
+    ]
+   ],
+   [
+    "caller",
+    [
+     "crates/dctx-map-store/src/adapters/bridge/pack.rs",
+     [
+      74,
+      76,
+      109,
+      110,
+      111,
+      122,
+      300,
+      309
+     ]
+    ]
+   ]
+  ],
+  "target": "push_u64"
+ },
+ {
+  "id": "Q10",
+  "kind": "concept",
+  "q": "Find the code that handles: call position",
+  "words": "call position",
+  "facts": [
+   [
+    "loc",
+    [
+     "crates/dctx-lex-js/src/extract/calls.rs",
+     12
+    ]
+   ]
+  ],
+  "target": "call_position"
+ }
+]

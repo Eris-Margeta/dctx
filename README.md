@@ -166,6 +166,12 @@ dctx has **no telemetry**, makes **no network requests** and **calls no model**.
 
 ---
 
+## Measured, in the open
+
+We benchmarked dctx against Trail-Code on a dedicated machine with pinned versions, no network during runs and an adversarial corpus. dctx led on cold indexing (0.09–6.05 s vs 2.4–95 s, 1.6–27× less memory), footprint (one 9.2 MB binary vs 405.6 MB of Node.js packages), answer bounds and network privacy. Trail-Code led on call graphs, answers to agent questions and stability under edits. The report, raw data and scripts are in [docs/research/trail-code-2026-10](docs/research/trail-code-2026-10/REPORT.md); the fixes are on the [roadmap](docs/SPEC.md#31-roadmap-and-acceptance-gates). See also the [changelog](CHANGELOG.md).
+
+---
+
 ## Open source and Enterprise
 
 Everything in this repository is open source (Apache-2.0) and **ongoing work**. Parts of the current development line use third-party crates; anything with third-party dependencies is not considered enterprise-ready.
@@ -237,7 +243,7 @@ Start with [docs/SPEC.md](docs/SPEC.md), then [docs/CRATE-MAP.md](docs/CRATE-MAP
 
 ## License
 
-Apache License 2.0. Copyright Eris Margeta. Everything in this repository is Apache-2.0. The desktop app is also sold as signed builds with updates, and dctx Enterprise is licensed per company (from €45,000 per year); both fund the project. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache License 2.0. Copyright Eris Margeta. Everything in this repository is Apache-2.0. The desktop app is free, forever. dctx Enterprise is licensed per company (from €45,000 per year) and funds the project. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ## Contributing
 

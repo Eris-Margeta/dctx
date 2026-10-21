@@ -1,0 +1,125 @@
+3549364 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_EXITED, si_pid=3549373, si_uid=0, si_status=0, si_utime=0, si_stime=1 /* 0.01 s */} ---
+3549381 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE) = 20
+3549381 bind(20, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 0
+3549381 sendto(20, [{nlmsg_len=20, nlmsg_type=RTM_GETLINK, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1792598596, nlmsg_pid=0}, {ifi_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+3549381 sendto(20, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1792598597, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+3549391 socket(AF_NETLINK, SOCK_RAW|SOCK_CLOEXEC, NETLINK_ROUTE) = 22
+3549391 bind(22, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 0
+3549391 sendto(22, [{nlmsg_len=20, nlmsg_type=RTM_GETADDR, nlmsg_flags=NLM_F_REQUEST|NLM_F_DUMP, nlmsg_seq=1792598597, nlmsg_pid=0}, {ifa_family=AF_UNSPEC, ...}], 20, 0, {sa_family=AF_NETLINK, nl_pid=0, nl_groups=00000000}, 12) = 20
+3549391 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 22
+3549391 connect(22, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory)
+3549391 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 22
+3549391 connect(22, {sa_family=AF_UNIX, sun_path="/var/run/nscd/socket"}, 110) = -1 ENOENT (No such file or directory)
+3549391 socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0) = 22
+3549391 connect(22, {sa_family=AF_UNIX, sun_path="/run/systemd/resolve/io.systemd.Resolve"}, 42) = 0
+3549391 sendto(22, "{\"method\":\"io.systemd.Resolve.Re"..., 101, MSG_DONTWAIT|MSG_NOSIGNAL, NULL, 0) = 101
+3549391 socket(AF_INET6, SOCK_DGRAM|SOCK_CLOEXEC, IPPROTO_IP) = 22
+3549391 connect(22, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:22", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:622", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:a22", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:522", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:322", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:b22", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:222", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:822", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:722", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:922", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:122", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET6, sin6_port=htons(0), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:422", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.16.5.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.16.11.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.16.2.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.16.9.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.16.1.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.16.0.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.16.10.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.16.8.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.16.3.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.16.6.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.16.7.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549391 connect(22, {sa_family=AF_UNSPEC, sa_data="\0\0\0\0\0\0\0\0\0\0\0\0\0\0"}, 16) = 0
+3549391 connect(22, {sa_family=AF_INET, sin_port=htons(0), sin_addr=inet_addr("104.16.4.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:22", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549381 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.16.5.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:622", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549381 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.16.11.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:a22", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549381 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.16.2.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:522", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549381 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.16.9.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:322", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549381 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.16.1.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:b22", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549381 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.16.0.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:222", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549381 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.16.10.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:822", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549381 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.16.8.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:722", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549381 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.16.3.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:922", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549381 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.16.6.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:122", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549381 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.16.7.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 socket(AF_INET6, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::6810:422", &sin6_addr), sin6_scope_id=0}, 28) = -1 EADDRNOTAVAIL (Cannot assign requested address)
+3549381 socket(AF_INET, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, IPPROTO_IP) = 22
+3549381 connect(22, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("104.16.4.34")}, 16) = -1 ENETUNREACH (Network is unreachable)
+3549381 --- SIGTERM {si_signo=SIGTERM, si_code=SI_USER, si_pid=3549372, si_uid=0} ---
+3549381 --- SIGTERM {si_signo=SIGTERM, si_code=SI_TKILL, si_pid=3549381, si_uid=0} ---
+3549391 +++ killed by SIGTERM +++
+3549390 +++ killed by SIGTERM +++
+3549389 +++ killed by SIGTERM +++
+3549388 +++ killed by SIGTERM +++
+3549387 +++ killed by SIGTERM +++
+3549386 +++ killed by SIGTERM +++
+3549385 +++ killed by SIGTERM +++
+3549384 +++ killed by SIGTERM +++
+3549383 +++ killed by SIGTERM +++
+3549382 +++ killed by SIGTERM +++
+3549381 +++ killed by SIGTERM +++
+3549372 --- SIGCHLD {si_signo=SIGCHLD, si_code=CLD_KILLED, si_pid=3549381, si_uid=0, si_status=SIGTERM, si_utime=50 /* 0.50 s */, si_stime=23 /* 0.23 s */} ---
