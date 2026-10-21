@@ -77,15 +77,20 @@ pub fn open_dir(path: &Path) -> Result<Session, String> {
 /// or a cache that will not open, falls back to an ephemeral session. Nothing is written
 /// inside the scanned project.
 pub fn open_mapped(path: &Path) -> Result<(Session, String), String> {
+    open_mapped_at(path, cache_root_dir().ok().as_deref())
+}
+
+/// Same map session with an explicit cache root, including isolated test caches.
+pub fn open_mapped_at(path: &Path, root: Option<&Path>) -> Result<(Session, String), String> {
     let (source, place, key) = open_source(path)?;
     let rules = project_rules(path)?;
-    let Ok(root) = cache_root_dir() else {
+    let Some(root) = root else {
         return Ok((build(source, &place, "default", rules)?, key));
     };
-    if ensure_cache_dir(&root).is_err() {
+    if ensure_cache_dir(root).is_err() {
         return Ok((build(source, &place, "default", rules)?, key));
     }
-    match build_cached(source, &place, &root, rules.clone()) {
+    match build_cached(source, &place, root, rules.clone()) {
         Ok(session) => Ok((session, key)),
         Err(_) => {
             let (source, place, key) = open_source(path)?;

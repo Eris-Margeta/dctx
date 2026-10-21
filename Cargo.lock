@@ -879,6 +879,7 @@ dependencies = [
  "dctx-template",
  "ed25519-dalek",
  "proptest",
+ "tempfile",
 ]
 
 [[package]]

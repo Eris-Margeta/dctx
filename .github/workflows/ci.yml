@@ -43,4 +43,15 @@ jobs:
           -A clippy::assertions_on_constants
 
       - name: Tests
-        run: cargo nextest run --workspace --exclude dctx-desktop --no-fail-fast
+        # Native confinement rejects every descriptor beyond its three protocol pipes.
+        # Close runner/shell descriptors before nextest, preserving the bootstrap checks.
+        run: |
+          python3 - <<'PY'
+          import subprocess
+          import sys
+
+          sys.exit(subprocess.call(
+              ["cargo", "nextest", "run", "--workspace", "--exclude", "dctx-desktop", "--no-fail-fast"],
+              close_fds=True,
+          ))
+          PY

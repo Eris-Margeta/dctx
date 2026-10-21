@@ -29,3 +29,4 @@ dctx-plugin-git = { path = "../../plugins/dctx-plugin-git", optional = true }
 [dev-dependencies]
 ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std"] }
 proptest = "1"
+tempfile = "=3.24.0"

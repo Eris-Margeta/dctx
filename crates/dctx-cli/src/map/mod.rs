@@ -20,6 +20,13 @@ pub(crate) fn run(arguments: &[String]) -> Result<(), String> {
 
 /// Same as [`run`], returning the page instead of printing it.
 pub(crate) fn execute(arguments: &[String]) -> Result<String, String> {
+    execute_with(arguments, host::open_mapped)
+}
+
+fn execute_with(
+    arguments: &[String],
+    open: impl FnOnce(&std::path::Path) -> Result<(dctx::Session, String), String>,
+) -> Result<String, String> {
     if arguments.is_empty() || arguments == ["--help"] || arguments == ["-h"] {
         return Ok(args::HELP.to_string());
     }
@@ -41,7 +48,7 @@ pub(crate) fn execute(arguments: &[String]) -> Result<String, String> {
     }
     options.request.target = prepare_target(options.request.verb, &options.request.target, &options.place)?;
     let profiling = profile_requested(options.profile);
-    let (mut session, key) = host::open_mapped(&options.place)?;
+    let (mut session, key) = open(&options.place)?;
     if profiling {
         session.enable_profile();
     }
@@ -255,8 +262,12 @@ mod tests {
 
     #[test]
     fn an_existing_file_path_maps_like_its_module_id() {
-        let path = std::env::temp_dir().join(format!("dctx-cli-map-path-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&path);
+        let fixture = tempfile::tempdir().expect("fixture");
+        let path = fixture.path().join("place");
+        let cache = fixture.path().join("cache");
+        let execute = |arguments: &[String]| {
+            execute_with(arguments, |place| host::open_mapped_at(place, Some(&cache)))
+        };
         std::fs::create_dir_all(path.join("nested")).expect("temp");
         std::fs::write(path.join("kept.rs"), b"fn kept() {}\n").expect("source");
         let place = path.display().to_string();
@@ -280,22 +291,27 @@ mod tests {
         assert!(!by_path.contains("gone"), "{by_path}");
         let directory = execute(&["map".into(), "nested".into(), "--place".into(), path.display().to_string()]).expect_err("dir");
         assert!(directory.contains("directory"), "{directory}");
-        let _ = std::fs::remove_dir_all(&path);
     }
 
     #[test]
     fn find_uses_the_facade_and_writes_no_project_text() {
-        let path = std::env::temp_dir().join(format!("dctx-cli-map-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&path);
+        let fixture = tempfile::tempdir().expect("fixture");
+        let path = fixture.path().join("place");
+        let cache = fixture.path().join("cache");
         std::fs::create_dir_all(&path).expect("temp");
         std::fs::write(path.join("kept.rs"), b"fn kept() {}\n").expect("source");
-        let page = execute(&[
-            "find".into(),
-            "kept".into(),
-            "--json".into(),
-            "--place".into(),
-            path.display().to_string(),
-        ])
+        // A temp place still uses the user-wide ledger unless the cache is injected.
+        // Parallel nextest processes must not contend on that ambient ledger lock.
+        let page = execute_with(
+            &[
+                "find".into(),
+                "kept".into(),
+                "--json".into(),
+                "--place".into(),
+                path.display().to_string(),
+            ],
+            |place| host::open_mapped_at(place, Some(&cache)),
+        )
         .expect("find");
         assert!(page.contains("\"id\":\"s:kept.rs#kept\""), "{page}");
         assert!(
@@ -307,6 +323,6 @@ mod tests {
         assert!(!path.join(".dctx").exists());
         let listed: Vec<_> = std::fs::read_dir(&path).expect("list").flatten().collect();
         assert_eq!(listed.len(), 1);
-        let _ = std::fs::remove_dir_all(&path);
+        assert!(cache.join("ledger.v1").is_file(), "the facade must use the isolated persistent cache");
     }
 }

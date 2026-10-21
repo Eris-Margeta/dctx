@@ -38,7 +38,7 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build release
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release -p dctx-cli --target ${{ matrix.target }}
 
       - name: Prepare artifact (Unix)
         if: runner.os != 'Windows'
@@ -89,9 +89,7 @@ jobs:
           if [ -n "$CHANGELOG_ENTRY" ]; then
             echo "Found changelog entry for version $VERSION"
             # Save to file for use in release
-            cat > release-notes.md << 'EOF'
-          $CHANGELOG_ENTRY
-          EOF
+            printf '%s\n' "$CHANGELOG_ENTRY" > release-notes.md
           else
             echo "No changelog entry found, will use auto-generated notes"
             echo "" > release-notes.md
