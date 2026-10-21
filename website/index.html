@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dctx - Directory Context for AI</title>
-    <meta name="description" content="Transform your codebase into AI-ready context. Open source CLI and Desktop App for developers.">
+    <title>dctx — Context, engineered.</title>
+    <meta name="description" content="dctx is the context engine for AI-assisted development: fewer tokens, stable prompt prefixes, exact source, one policy for every workflow. Open source, no telemetry.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -1161,6 +1161,16 @@
         .delay-1 { animation-delay: 0.1s; }
         .delay-2 { animation-delay: 0.2s; }
         .delay-3 { animation-delay: 0.3s; }
+
+        .philosophy { padding: 100px 0 60px; }
+        .spectrum { margin-top: 48px; text-align: center; }
+        .spectrum-label { color: var(--text-secondary); font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 16px; }
+        .spectrum-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
+        .spectrum-row span { padding: 10px 16px; border: 1px solid rgba(139,92,246,0.45); border-radius: 999px; background: rgba(139,92,246,0.08); font-weight: 600; }
+        .spectrum-row i { width: 28px; height: 2px; background: linear-gradient(90deg, rgba(139,92,246,0.2), #8b5cf6); }
+        .lineage { margin: 40px auto 0; max-width: 760px; text-align: center; color: var(--text-secondary); line-height: 1.7; }
+        .lineage a { color: #8b5cf6; }
+        @media (max-width: 640px) { .spectrum-row i { display: none; } }
     </style>
 </head>
 <body>
@@ -1169,10 +1179,12 @@
         <div class="container">
             <div class="logo">dctx</div>
             <ul class="nav-links">
+                <li><a href="#philosophy">Philosophy</a></li>
                 <li><a href="#example">Examples</a></li>
                 <li><a href="#features">Features</a></li>
                 <li><a href="#ecosystem">Ecosystem</a></li>
                 <li><a href="#pricing">Pricing</a></li>
+                <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Spec</a></li>
             </ul>
             <div class="nav-cta">
                 <a href="https://github.com/Eris-Margeta/dctx" class="btn btn-ghost">
@@ -1189,9 +1201,9 @@
         <div class="hero-grid"></div>
         <div class="container">
             <div class="hero-content">
-                <div class="hero-badge">Open Source & Free CLI</div>
-                <h1>Directory Context<br>for <span>AI Assistants</span></h1>
-                <p>Transform your entire codebase into structured context that AI understands. One command. Perfect context. Every time.</p>
+                <div class="hero-badge">Open source · Apache-2.0 · No telemetry</div>
+                <h1>Context,<br><span>engineered.</span></h1>
+                <p>The context engine for AI-assisted software development. dctx sends a model the fewest, most relevant bytes &mdash; exact source, in an order that stays the same between turns &mdash; so prompts get smaller, prompt caches hit and answers get sharper.</p>
                 <div class="hero-buttons">
                     <a href="#pricing" class="btn btn-primary">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
@@ -1215,6 +1227,40 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </section>
+
+    <!-- Philosophy Section -->
+    <section class="philosophy" id="philosophy">
+        <div class="container">
+            <div class="section-header">
+                <h2>The core belief: prompt-processing efficiency</h2>
+                <p>Every token in front of a model is paid for three times. dctx is built to cut all three.</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">&#9201;</div>
+                    <h3>Prefill</h3>
+                    <p>The model processes every input token before it answers. dctx answers with exact spans and diffs instead of whole files, inside a hard token budget.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#9851;</div>
+                    <h3>Cache hits</h3>
+                    <p>Providers serve repeated prompt prefixes for a fraction of the cost. dctx output is byte-for-byte deterministic and canonically ordered, with no timestamps or random ids, so repeated prefixes stay identical and caches hit.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#127919;</div>
+                    <h3>Attention</h3>
+                    <p>Irrelevant tokens make answers worse. dctx ranks, bounds and labels every answer with its precision and freshness. No embeddings, no fragmented chunks, zero RAG defects.</p>
+                </div>
+            </div>
+            <div class="spectrum">
+                <div class="spectrum-label">One engine for every way software is built</div>
+                <div class="spectrum-row">
+                    <span>Hand-coding</span><i></i><span>Tab completion</span><i></i><span>Copy-paste chat</span><i></i><span>Agents</span><i></i><span>Software factories</span>
+                </div>
+            </div>
+            <p class="lineage">Started in 2025 as <code>dircontxt</code>, written in pure C, to solve the context problem while we were still moving to an AI workflow. Rewritten in Rust in 2026. Same goal: <strong>context, engineered.</strong> <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification &rarr;</a></p>
         </div>
     </section>
 
@@ -1443,13 +1489,13 @@ export async function main(): Promise&lt;void&gt; {
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">&#9889;</div>
-                    <h3>Blazing Fast</h3>
-                    <p>Multi-threaded Rust core scans entire filesystems in milliseconds. 10-100x faster than bash equivalents on large directories. Safe for your whole home folder.</p>
+                    <h3>Fast by design</h3>
+                    <p>A Rust core that skips ignored trees without entering them, reuses a verified index between runs and answers map queries in a fraction of a second.</p>
                 </div>
                 <div class="feature-card">
                     <div class="feature-icon">&#128274;</div>
                     <h3>Privacy First</h3>
-                    <p>Everything runs locally. Binary state cached in <code>~/.cache/dctx/</code>. Zero telemetry, zero cloud, zero dependencies. Your code never leaves your machine.</p>
+                    <p>Everything runs locally. Binary state cached in <code>~/.cache/dctx/</code>. No telemetry, no network requests, no model calls. Your code never leaves your machine.</p>
                 </div>
             </div>
         </div>
@@ -1596,7 +1642,7 @@ export async function main(): Promise&lt;void&gt; {
             <div class="open-source-content">
                 <div class="open-source-text">
                     <h2>Open Source at Heart</h2>
-                    <p>dctx is MIT licensed and built in public. The core engine powers both the CLI and Desktop app. Contributions welcome.</p>
+                    <p>dctx is Apache-2.0 licensed and built in public. The core engine powers both the CLI and Desktop app. Contributions welcome.</p>
                     <div class="open-source-stats">
                         <div class="stat">
                             <div class="stat-value">100%</div>
@@ -1604,11 +1650,11 @@ export async function main(): Promise&lt;void&gt; {
                         </div>
                         <div class="stat">
                             <div class="stat-value">0</div>
-                            <div class="stat-label">Dependencies</div>
+                            <div class="stat-label">Telemetry</div>
                         </div>
                         <div class="stat">
-                            <div class="stat-value">&lt;1MB</div>
-                            <div class="stat-label">Binary Size</div>
+                            <div class="stat-value">15</div>
+                            <div class="stat-label">Language families</div>
                         </div>
                     </div>
                     <a href="https://github.com/Eris-Margeta/dctx" class="btn btn-secondary">
@@ -1623,7 +1669,7 @@ export async function main(): Promise&lt;void&gt; {
                         </div>
                         <div>
                             <h4>dctx</h4>
-                            <p>Directory context for AI assistants</p>
+                            <p>Context, engineered.</p>
                         </div>
                     </div>
                     <pre># Clone the repository
@@ -1652,7 +1698,7 @@ curl -fsSL https://dctx.app/install.sh | sh</pre>
                 </ul>
             </div>
             <div class="footer-copy">
-                &copy; 2026 dctx. MIT License. Made with care for developers.
+                &copy; 2026 dctx. Apache-2.0. Context, engineered.
             </div>
         </div>
     </footer>

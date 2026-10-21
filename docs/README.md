@@ -89,4 +89,4 @@ Documentation improvements are always welcome!
 
 ---
 
-**Note**: This is the public documentation directory. Internal project management documents are maintained separately in docs/ and not included in public releases.
+**Note**: This is the public documentation directory. Internal project management documents are not included in public releases.

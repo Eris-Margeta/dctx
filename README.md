@@ -1,11 +1,12 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/dctx-Directory%20Context-8b5cf6?style=for-the-badge" alt="dctx">
+  <img src="https://img.shields.io/badge/dctx-Context%2C%20engineered-8b5cf6?style=for-the-badge" alt="dctx">
 </p>
 
 <h1 align="center">dctx</h1>
 
 <p align="center">
-  <strong>Transform your codebase into AI-ready context. One command.</strong>
+  <strong>The context engine for AI-assisted software development.</strong><br>
+  Fewer tokens. Stable prefixes. Exact source. One policy for every workflow.
 </p>
 
 <p align="center">
@@ -13,63 +14,71 @@
   <a href="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml">
     <img src="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml/badge.svg" alt="CI">
   </a>
-  <a href="https://github.com/Eris-Margeta/dctx/releases">
-    <img src="https://img.shields.io/github/v/release/Eris-Margeta/dctx?color=8b5cf6" alt="Release">
-  </a>
   <a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License">
   </a>
   <img src="https://img.shields.io/badge/rust-100%25-orange" alt="Rust">
-  <img src="https://img.shields.io/badge/dependencies-0-brightgreen" alt="Zero Dependencies">
+  <img src="https://img.shields.io/badge/core-std--only-brightgreen" alt="std-only core">
+  <img src="https://img.shields.io/badge/telemetry-none-brightgreen" alt="No telemetry">
 </p>
 
 <p align="center">
+  <a href="#the-core-belief-prompt-processing-efficiency">Philosophy</a> •
   <a href="#installation">Installation</a> •
   <a href="#quick-start">Quick Start</a> •
-  <a href="#features">Features</a> •
+  <a href="#map-mode-context-for-agents">Map mode</a> •
   <a href="#security--privacy">Security & Privacy</a> •
-  <a href="#cli-reference">CLI Reference</a> •
+  <a href="docs/SPEC.md">Specification</a> •
   <a href="https://dctx.app">Website</a>
 </p>
 
 ---
 
-## Why dctx?
+## The core belief: prompt-processing efficiency
 
-**Stop fighting with bash commands.** Sharing code context with AI shouldn't require complex shell scripting.
+Every token you put in front of a model is paid for three times:
 
-```bash
-# The old way (don't do this)
-find . -type f \( -name "*.ts" -o -name "*.tsx" \) \
-  -not -path "./node_modules/*" -not -path "./dist/*" | \
-  head -50 | xargs -I {} sh -c 'echo "=== {} ===" && cat {}' | pbcopy
+- **Prefill** — the model must process every input token before it answers. You pay per token, and you wait for it.
+- **Cache misses** — providers serve repeated prompt prefixes from a cache for a fraction of the price and latency. One changed byte early in a prompt throws the rest of the cache away.
+- **Attention** — answers get worse as irrelevant tokens pile up.
 
-# The dctx way
-dctx . -c
-```
+dctx exists to send **the fewest, most relevant bytes, in an order that stays the same between turns**, so prompts are smaller, caches hit, and the model reasons over exact source instead of guesses. That is the whole philosophy, and every feature has to earn its place against it. The [specification](docs/SPEC.md#2-the-core-belief-prompt-processing-efficiency) turns it into five testable constraints — bounded, deterministic, prefix-stable, non-redundant, honest — and seven metrics.
 
-`dctx` is a blazing-fast, **zero-dependency** CLI that transforms your codebase into structured, version-aware context snapshots optimized for Large Language Models.
+### One engine for every way software is built
 
-Unlike RAG systems that fragment code into disconnected chunks, dctx provides a **complete, hierarchical view** of your project—letting AI understand architecture, imports, and file relationships instantly.
+| You work by… | dctx gives you |
+|---|---|
+| **Hand-coding** in an unfamiliar codebase | `dctx map` outlines, symbol search and exact source reads |
+| **Copy-paste** into a chat assistant | `dctx pack` — the whole project or only what changed, in one structured block |
+| **Tab completion** and IDE assistants | A library facade with millisecond reads for the editor's own context budget |
+| **Agents** in a terminal | Bounded, copyable, deterministic answers: five verbs, one record per line |
+| **Fully automated software factories** | One signed organization policy, receipts, no network, byte-identical outputs |
+
+### Zero RAG defects
+
+Chunk retrieval over embeddings fails in predictable ways: it cuts functions in half, returns different chunks for the same question, serves stale code, leaks ignored files, and hides how much it cost. dctx does not use embeddings. It answers from a lexical graph of syntax-owned spans with explicit confidence, verifies bytes before it emits them, and labels every answer with its precision and freshness. The [spec](docs/SPEC.md#3-zero-rag-defects) names ten defect classes and the mechanism and test that rule out each one.
+
+---
+
+## Where it comes from
+
+dctx started in **2025 as `dircontxt`, written in pure C** ([`legacy-c/`](legacy-c/)), to solve the context problem while we were still moving to an AI workflow: one command that gave a model the whole project — structured, versioned, with diffs and a strict ignore system — instead of pasting forty files. It was rewritten in Rust in 2026 and grew a privacy-first core, a template system, a plugin host, a desktop app and map mode for agents. The goal has not changed: **context, engineered.**
 
 ---
 
 ## Installation
 
-### From Source (Recommended)
+### From source
+
 ```bash
 git clone https://github.com/Eris-Margeta/dctx
 cd dctx
-cargo build --release
+cargo build --release -p dctx-cli
 ./target/release/dctx-cli --version
 ```
 
-### Quick Install Script
-```bash
-curl -fsSL https://dctx.app/install.sh | sh
-```
-
 ### Using Cargo
+
 ```bash
 cargo install --path crates/dctx-cli
 ```
@@ -78,172 +87,96 @@ cargo install --path crates/dctx-cli
 
 ## Quick Start
 
-### Create a Snapshot
 ```bash
-dctx .
+dctx pack .            # whole project as one structured context block on stdout
+dctx pack . --clipboard  # … straight to the clipboard
+dctx . -d -c           # only what changed since the last snapshot
+dctx . -t -c           # tree only, no file contents
+dctx                   # interactive menu
 ```
-Creates `.dctx/dctx.llmcontext.txt` with full project structure and content.
 
-### Copy to Clipboard
-```bash
-dctx . -c
-```
-Paste directly into ChatGPT, Claude, or any AI assistant.
-
-### Tree-Only Mode
-```bash
-dctx . -t -c
-```
-Output directory structure without file contents—perfect for architecture discussions.
-
-### Diff Mode
-```bash
-dctx . -d -c
-```
-After making changes, copy only what changed (saves tokens!).
-
-### Interactive Mode
-```bash
-dctx
-```
-Run without arguments to launch the interactive menu system—discover all features through an intuitive TUI.
+`dctx pack` writes to stdout, the clipboard or `--output`. It never leaves a text file in your project.
 
 ---
 
-## Map mode and plugins
+## Map mode: context for agents
 
-Use `dctx map` for bounded project outlines, symbol searches and source reads.
-See the [Map mode guide](docs/guides/MAP-MODE.md) for commands, languages,
-precision and cache behavior, and the [Plugins guide](docs/guides/PLUGINS.md)
-for the bundled Git plugin, consent, strict builds and current execution limits.
-The [crate map](docs/CRATE-MAP.md) describes the library and adapter boundaries.
+```bash
+dctx map map                       # outline the project
+dctx map find "SnapshotConfig"     # search names and concepts
+dctx map neighbors s:src/lib.rs#Session --edge calls --dir in
+dctx map explain s:src/lib.rs#Session
+dctx map read s:src/lib.rs#Session # exact, byte-verified source
+```
 
-## Features
+- **Bounded**: every answer has a token budget (up to 2,000) and never splits a record.
+- **Deterministic**: the same tree and question give the same bytes, so prompt caches hit.
+- **Honest**: every answer carries precision (`structural`, `syntax`, `opaque`) and freshness.
+- **15 language families**: Rust, JavaScript, TypeScript/TSX, Python, Go, Java, C/C++, C#, Kotlin, Ruby, PHP, Swift, Markdown, and JSON/TOML/YAML configuration.
+- **No Git, no network**: identity comes from dctx's own content digest; the core never reads `.git/`.
 
-| Feature | Description |
-|---------|-------------|
-| **Privacy-First Architecture** | Ignored files never read into memory. [Security & Privacy](#security--privacy) |
-| **Interactive TUI** | Zero-dependency menu system for users who prefer not to memorize CLI flags. |
-| **Blazing Fast** | Multi-threaded Rust core. Processes thousands of files in milliseconds. |
-| **Zero Dependencies** | Single static binary. No Python, Node, or runtime required. |
-| **Smart Filtering** | Respects `.gitignore` + `.dctxignore`. Never sends `node_modules` to AI. |
-| **Advanced Filters** | Filter by extension, size, content, or visibility. Combine filters for precision. |
-| **Version Tracking** | Automatic versioning with diffs. Save 90% of tokens on subsequent runs. |
-| **Semantic Structure** | XML-tagged output with file IDs, paths, sizes, and timestamps. |
-| **Custom Templates** | AOT-compiled template system for custom output formats. |
-| **Binary Detection** | Automatically detects and excludes binary files (42 file types). |
-| **Cross-Platform** | Linux, macOS, Windows. Native clipboard integration. |
+Details: [Map mode guide](docs/guides/MAP-MODE.md). Planned next — an MCP server, agent hooks, blast radius for a diff, delta answers and prefix-stable context tiers — is specified in [docs/SPEC.md](docs/SPEC.md#31-roadmap-and-acceptance-gates).
 
 ---
 
-## AI Development Workflow
+## Organization control
 
+dctx is configured by one language, the dctx Template System (DTS). The same file format that defines output templates also controls selection, budgets, parsers, cache limits, plugins and privacy for every mode. The specification extends it to a **seven-layer, signed policy lattice** — built-in → organization → tenant → machine → user → project → session — where each layer can only narrow the one above it, and `dctx policy explain` shows which layer set each value. See [Part IV of the spec](docs/SPEC.md#part-iv--policy).
 
+---
 
+## Plugins
 
-
-Editable source: [docs/diagrams/ai-workflow.mmd](docs/diagrams/ai-workflow.mmd)
-
-### Diagramming Standard
-
-Project diagrams are maintained as editable Mermaid source plus rendered SVG assets:
-
-- Edit Mermaid source files in `docs/diagrams/*.mmd`.
-- Render embeddable SVG files into `docs/assets/*.svg`.
-- Embed SVG assets in Markdown so GitHub READMEs stay crisp and readable.
-- Keep the matching Mermaid source linked near each embedded diagram.
-
-Regenerate SVG assets after editing Mermaid source:
+Anything with an outside effect is a plugin: out of process, consent-gated, receipted and signed. The bundled Git plugin protects `.gitignore` and can stage files when you allow it. See the [Plugins guide](docs/guides/PLUGINS.md).
 
 ```bash
-just diagrams
+dctx plugin list
+dctx git status
 ```
-
-The full diagram editing and rendering procedure is documented in [docs/GUIDES/DEVELOPER-GUIDE.md](docs/GUIDES/DEVELOPER-GUIDE.md).
 
 ---
 
 ## Security & Privacy
 
-### Privacy Guarantee
+**dctx never reads ignored files — not into memory, not in debug mode.**
 
-**dctx NEVER reads ignored files into memory, even in debug mode.**
+| Rule file | Behaviour |
+|---|---|
+| `.gitignore`, `.dctxignore`, global ignore | The path does not exist for dctx: never opened, never listed, never recursed |
+| `.dctxomitcontent` | Listed in the tree; content replaced with `[Content omitted]` and never read |
 
-When you add files to `.dctxignore` (like `.env`, `.git/`, or `credentials/`), they are:
-- ❌ Never read from disk
-- ❌ Never loaded into memory
-- ❌ Never included in output
-- ✅ Completely skipped during scanning
-
-This guarantee is enforced through a multi-layer defense system and verified by comprehensive test coverage.
-
-### Rule Types
-
-**IGNORE Rules** (`.dctxignore`)
-- Files/folders that "don't exist" for our purposes
-- Examples: `.env`, `.git/`, `node_modules/`, credentials
-- Behavior: Hidden from tree, never read, folder not recursed
-- Use for: Secrets, sensitive data, large dependency folders
-
-**OMIT Rules** (`.dctxomitcontent`)
-- Files that exist but we don't care about their contents
-- Examples: `package-lock.json`, `Cargo.lock`, `*.svg`
-- Behavior: Shown in tree, content replaced with `[Content omitted]`
-- Use for: Lockfiles, generated code, large config files
-
-### Debug Mode (`--debug-ignored`)
-
-Verify your ignore rules are working without compromising privacy:
+Selection happens before any byte is read, hashed, parsed or cached, and is checked again before output leaves the engine. Read-spy tests enforce it (`crates/dctx-adapter-fs/tests/privacy.rs`, `crates/dctx-map-query/tests/source_privacy.rs`).
 
 ```bash
-dctx . --debug-ignored
+dctx . --debug-ignored     # see ignored paths in the tree without reading them
 ```
 
-**What happens:**
-- ✅ Ignored files/folders appear in directory tree with `[IGNORED]` marker
-- ✅ You can verify your `.dctxignore` patterns are matching correctly
-- ❌ File contents are NEVER read, even when shown in tree
-- ❌ No sensitive data enters memory
-
-**Use case:** Troubleshooting ignore rules, verifying security configuration
-
-### Performance Benefits
-
-Ignore rules provide massive performance improvements:
-
-| Scenario | Time | Speedup |
-|----------|------|---------|
-| Large `node_modules/` (50k files) | ~80ms | 100x faster |
-| Project with `.git/` (5k objects) | ~50ms | 24x faster |
-| Monorepo with multiple `target/` | ~120ms | 125x faster |
-
-**How:** Ignored folders are skipped entirely without recursion, saving disk I/O and processing time.
-
-### Trusted Use Cases
-
-**Enterprise & Regulated Environments:**
-- Financial services codebases (SOC2, PCI-DSS compliance)
-- Healthcare applications (HIPAA compliance)
-- Government projects (classified/sensitive data)
-
-**Security-Conscious Development:**
-- API keys and credentials in `.env` files
-- Private SSH keys in `.ssh/`
-- Cloud provider credentials
-- Database connection strings
-
-**Example Configuration:**
-```bash
+```gitignore
 # .dctxignore
 .env
 .env.*
 *.key
 *.pem
-.git/
 .ssh/
 secrets/
 credentials/
 ```
+
+dctx has **no telemetry**, makes **no network requests** and **calls no model**.
+
+---
+
+## Zero dependencies
+
+dctx is built to have **no third-party dependencies** — nothing to audit but its own source, no supply chain, no licence closure.
+
+| Line | Third-party crates (core + CLI) | Enterprise status |
+|---|---|---|
+| **0.25 release** | **0** | Enterprise-ready |
+| **Current development line** (map mode, plugins, segment index) | Temporary: a Rust parser, an Ed25519 verifier, SQLite, serialization helpers | Not enterprise-ready yet |
+| **1.0** | **0** | The roadmap goal |
+
+Every temporary crate sits behind a port with a first-party replacement planned; the list only shrinks. The path to zero is in the [specification](docs/SPEC.md#27-zero-dependencies).
 
 ---
 
@@ -251,282 +184,71 @@ credentials/
 
 ```
 Usage: dctx [PATH] [OPTIONS]
-       dctx template <COMMAND>
+       dctx pack [PATH] [--output PATH] [--clipboard] [--json]
+       dctx map <map|find|neighbors|explain|read> [--json]
+       dctx cache status|gc|purge|config|auto
+       dctx template build <PATH> | template list
+       dctx plugin search|install|list|info|enable|disable|remove|update|verify
+       dctx git <status|protect>
 
-Snapshot Options:
+Snapshot options:
   -c, --clipboard       Copy to clipboard
-  -d, --diff            Output diff only (if available)
-  -t, --tree            Tree-only mode (skips file content)
+  -d, --diff            Output the diff only (if available)
+  -t, --tree            Tree only (skips file content)
   -r, --reset           Force V1 reset
-  -h, --help            Show help
-  -v, --version         Show version
 
-Filter Options:
-  --ext <extensions>    Only include files with these extensions
-                        Example: --ext rs,toml
+Filter options:
+  --ext <list>          Only these extensions, e.g. rs,toml
   --binary              Include binary files (excluded by default)
-  --empty               Show only empty files (0 bytes)
-  --non-empty           Show only non-empty files
-  --large <MB>          Show only files larger than X megabytes
-                        Example: --large 1
-  --small <MB>          Show only files smaller than X megabytes
-                        Example: --small 0.5
-  --hidden              Show ONLY hidden files and folders (starting with .)
-  --debug-ignored       List ignored folders for debugging
-
-Template Commands:
-  template build <PATH>  Compile a .dctx_template file
-  template list          List compiled templates
+  --empty | --non-empty Only empty / non-empty files
+  --large <MB> | --small <MB>
+  --hidden              Only hidden files and folders
+  --debug-ignored       Show ignored paths without reading them
 ```
 
-### Filter Examples
-
-```bash
-# Only Rust files
-dctx . --ext rs -c
-
-# Rust and TOML files under 500KB
-dctx . --ext rs,toml --small 0.5
-
-# JavaScript/TypeScript files
-dctx . --ext js,ts,tsx
-
-# Hidden configuration files
-dctx . --hidden --ext conf,yaml,toml
-
-# See what folders are being ignored
-dctx . --debug-ignored
-
-# Include binary files (excluded by default)
-dctx . --binary
-
-# Only empty files
-dctx . --empty
-
-# Files between 10KB and 100KB
-dctx . --large 0.01 --small 0.1
-```
+Run `dctx --help` for the complete reference and `dctx --version --verbose` for feature and precision limits.
 
 ---
 
-## Output Format
+## Use as a library
 
-dctx generates semantically structured output that AI can parse efficiently:
-
-```xml
-[DCTX_LLM_CONTEXT_SNAPSHOT_V1]
-[DIRECTORY:my-project]
-
-<INSTRUCTIONS>
-1. Manifest: The <DIRECTORY_TREE> section lists all files.
-   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID, MOD:TIMESTAMP)
-2. Content Access: Find UNIQUE_ID, search for <FILE_CONTENT_START ID="...">
-</INSTRUCTIONS>
-
-<DIRECTORY_TREE>
-[D]  (ID:ROOT, MOD:1234567890)
-  [F] src/main.rs (ID:F001, MOD:1234567890, SIZE:1024)
-  [F] Cargo.toml (ID:F002, MOD:1234567890, SIZE:256)
-</DIRECTORY_TREE>
-
-<FILE_CONTENT_START ID="F001" PATH="src/main.rs" LINES="42">
-fn main() {
-    println!("Hello, world!");
-}
-</FILE_CONTENT_END ID="F001">
-```
-
----
-
-## Configuration
-
-### Project-Level: `.dctxignore`
-
-Place in your project root. Same syntax as `.gitignore`:
-
-```gitignore
-# Ignore build artifacts
-target/
-dist/
-build/
-
-# Ignore dependencies
-node_modules/
-vendor/
-
-# Keep specific files
-!dist/config.json
-```
-
-### Global Config: `~/.config/dctx/`
-
-| File | Purpose |
-|------|---------|
-| `config.toml` | Global settings |
-| `ignore` | Global ignore patterns |
-| `templates/` | Custom template files |
-
----
-
-## Performance
-
-Tested on a 4,500-file Rust project:
-
-| Metric | Bash + find/cat | dctx | Improvement |
-|--------|-----------------|------|-------------|
-| Time | 0.653s | 0.050s | **13.1x faster** |
-| Files filtered | Manual | Automatic | **97% noise removed** |
-
----
-
-## Use as Library
-
-`dctx` is architected as a pure Rust library (`dctx-core`) with a thin CLI wrapper. You can use it programmatically in your Rust projects.
-
-### Rust Library Usage
-
-Add to your `Cargo.toml`:
 ```toml
 [dependencies]
-dctx-core = { git = "https://github.com/Eris-Margeta/dctx" }
+dctx = { path = "crates/dctx" }
 ```
 
-Use in your code:
-```rust
-use dctx_core::{walker, config, ignore, llm_formatter, FilterConfig};
-use std::path::Path;
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Set up ignore engine
-    let ignore_engine = ignore::IgnoreEngine::new(Path::new("."));
-    let omit_engine = ignore::OmitContentEngine::new(Path::new("."));
-
-    // Walk directory structure
-    let tree = walker::walk_directory_structure(
-        Path::new("."),
-        &ignore_engine,
-        &omit_engine,
-    )?;
-
-    // Apply filters (optional)
-    let filter_config = FilterConfig::default()
-        .with_extensions(vec!["rs".to_string(), "toml".to_string()])
-        .with_max_size_mb(1.0);
-
-    let filtered_tree = if filter_config.has_active_filters() {
-        walker::filter_tree(&tree, &filter_config).unwrap()
-    } else {
-        tree
-    };
-
-    // Format for LLM consumption
-    let output = llm_formatter::format_snapshot(&filtered_tree, "my-project");
-
-    println!("{}", output);
-    Ok(())
-}
-```
-
-### Language Bindings (Planned)
-
-**Python Bindings** (Phase 12 - After v1.0):
-```python
-# Future Python API
-import dctx
-
-snapshot = dctx.snapshot(
-    path=".",
-    filters={"ext": ["py", "md"], "max_size_mb": 1.0}
-)
-context = snapshot.to_llm_format()
-```
-
-**Node.js Bindings** (Phase 13 - If demand exists):
-```javascript
-// Future Node.js API
-const dctx = require('dctx');
-
-const snapshot = await dctx.snapshot({
-    path: '.',
-    filters: { ext: ['ts', 'js'] }
-});
-const context = snapshot.toLlmFormat();
-```
-
-**Use Cases:**
-- Jupyter notebooks analyzing codebases
-- VS Code extensions with right-click → "Send to AI"
-- Build tools and CI/CD pipelines
-- AI/ML automation workflows
-- Programmatic context generation
-
----
-
-## Development
-
-```bash
-# Format code
-just fmt
-
-# Run tests
-just test
-
-# Run all CI checks locally
-just ci
-
-# Test on Linux via Docker
-just test-linux
-
-# Build release
-just build
-```
-
-See [justfile](justfile) for all available commands.
+`crates/dctx` is the stable facade used by the CLI and the desktop app. Python, Node and C bindings are planned on the same facade.
 
 ---
 
 ## Architecture
 
-dctx is structured as a **monorepo**. Everything is Apache-2.0. The desktop app is sold as signed builds with updates (a way to support the project).
-
 ```
 dctx/
-├── crates/              # Rust workspace (Apache-2.0)
-│   ├── dctx-core/       # Pure Rust library (zero external deps)
-│   └── dctx-cli/        # Command-line interface
-├── apps/                # Applications
-│   └── dctx-desktop/    # Cross-platform GUI (Apache-2.0; sold as signed builds with updates)
-├── bindings/            # Language bindings (Apache-2.0 - Planned)
-│   ├── dctx-py/         # Python bindings (Phase 12)
-│   └── dctx-node/       # Node.js bindings (Phase 13)
-├── tools/               # Build, test, and install scripts
-├── docs/                # Documentation
-├── website/             # Landing page (dctx.app)
-└── .github/             # CI workflows
+├── crates/        # Rust workspace: pure core, mode engines, adapters, lexers, plugin host, facade, CLI
+├── plugins/       # First-party plugins (dctx-plugin-git)
+├── apps/          # dctx-desktop
+├── legacy-c/      # The original C implementation (dircontxt)
+├── docs/          # Specification, design records, contracts, formal models, guides
+├── presentation/  # Slides and the dctx film
+├── tools/         # Benchmarks, plugin tooling, test scripts
+└── website/       # dctx.app
 ```
 
-### Licensing Model
-
-**Everything is Apache-2.0**:
-- `dctx-core` - Core Rust library
-- `dctx-cli` - Command-line tool with ALL features
-- `bindings/*` - Future Python, Node.js bindings
-- `apps/dctx-desktop/` - Desktop GUI, sold as signed builds with updates (a way to support the project)
+Start with [docs/SPEC.md](docs/SPEC.md), then [docs/CRATE-MAP.md](docs/CRATE-MAP.md).
 
 ---
 
 ## License
 
-Apache License 2.0. Copyright holder: Eris Margeta. Everything is Apache-2.0. The desktop app is sold as signed builds with updates (a way to support the project). See [LICENSE](LICENSE) and [NOTICE](NOTICE).
-
----
+Apache License 2.0. Copyright Eris Margeta. Everything in this repository is Apache-2.0; the desktop app is also sold as signed builds with updates, which funds the project. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ## Contributing
 
-Contributions welcome! Please read the codebase documentation in `docs/` before submitting PRs.
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) and the [specification](docs/SPEC.md) first.
 
 ---
 
 <p align="center">
-  <sub>Built with Rust. Zero dependencies. Maximum speed.</sub>
+  <sub>Context, engineered. Built in Rust.</sub>
 </p>
