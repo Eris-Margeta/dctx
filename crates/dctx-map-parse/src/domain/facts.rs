@@ -100,9 +100,10 @@ const RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
 impl Language {
     /// Selects a grammar from the final path segment.
     ///
-    /// [`RUBY_BASENAMES`] match case-insensitively and win over the extension.
+    /// Ruby basenames `Rakefile` and `Gemfile` match case-insensitively and win
+    /// over the extension.
     /// Otherwise the text after the last `.` is folded and looked up in
-    /// [`EXTENSIONS`]. A segment with no `.` is [`Language::Unknown`].
+    /// the supported extension table. A segment with no `.` is [`Language::Unknown`].
     pub fn for_path(path: &str) -> Self {
         let base = path.rsplit(['/', '\\']).next().unwrap_or(path);
         if RUBY_BASENAMES.iter().any(|name| base.eq_ignore_ascii_case(name)) {

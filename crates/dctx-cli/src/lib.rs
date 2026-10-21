@@ -4,6 +4,7 @@
 //! The alias retains its separate registry, state and project exports; it never auto-cleans.
 
 #![forbid(unsafe_code)]
+#![deny(missing_docs)]
 #![allow(dead_code)]
 
 pub mod cache;

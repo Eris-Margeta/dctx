@@ -13,7 +13,9 @@ pub use after_diff::version_after_diff;
 /// Predstavlja verzioniranje projekta (V{Major}.{Minor}).
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Version {
+    /// Major snapshot revision, displayed after the `V` prefix.
     pub major: u32,
+    /// Minor snapshot revision; zero is omitted from the displayed form.
     pub minor: u32,
 }
 

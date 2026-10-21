@@ -222,7 +222,8 @@ impl DctxError {
         Self::InvalidRequest { reason, detail: Box::from("") }
     }
 
-    /// An invalid request whose extra text is cut to [`MAX_DETAIL_BYTES`].
+    /// An invalid request whose extra text is cut to at most 160 bytes
+    /// at a UTF-8 character boundary.
     pub fn invalid_detail(reason: &'static str, detail: &str) -> Self {
         Self::InvalidRequest { reason, detail: bounded_detail(detail) }
     }

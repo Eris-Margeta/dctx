@@ -4,6 +4,7 @@
 //! No filesystem, environment, process or global output APIs (see `tests/purity.rs`).
 
 #![forbid(unsafe_code)]
+#![deny(missing_docs)]
 // Deny unwrap() in production code - use expect() with clear messages or proper error handling
 // Tests are allowed to use unwrap() for convenience
 #![cfg_attr(not(test), deny(clippy::unwrap_used))]

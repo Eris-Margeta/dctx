@@ -1,7 +1,7 @@
 //! Filesystem ledger and the in-memory `Cache` port.
 //! Implements CACHE-v1 publication: a unique temp file, sync, then rename, under a revision check.
 //! Depends on [`crate::Lifecycle`] and std filesystem calls. Load reports orphans and does not delete them.
-//! Object bytes live in [`cache`]. A symlink is never a reason to touch a path outside the cache root.
+//! Object bytes live in [`FsObjectStore`]. A symlink is never a reason to touch a path outside the cache root.
 
 mod cache;
 mod coordinate;

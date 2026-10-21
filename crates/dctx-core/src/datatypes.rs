@@ -9,29 +9,41 @@ use crate::domain::FileHandlingDecision;
 /// Ekvivalent za NodeType iz C-a
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NodeType {
+    /// A file whose content may be included in a snapshot.
     File,
+    /// A directory containing child nodes.
     Directory,
 }
 
 /// Ekvivalent za PatternType iz C-a
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PatternType {
+    /// No valid pattern has been assigned.
     Invalid,
+    /// Matches only the file or directory basename.
     Basename, // Matches only the file/dir name (e.g., "node_modules")
+    /// Matches the full path relative to the root.
     Path,     // Matches the full relative path (e.g., "src/main.c")
+    /// Matches a suffix wildcard such as `*.log`.
     Suffix,   // Matches a suffix wildcard (e.g., "*.log")
+    /// Matches a prefix wildcard such as `build/*`.
     Prefix,   // Matches a prefix wildcard (e.g., "build/*")
 
     // NOVO: Za složene uzorke
+    /// Matches a compound glob such as `foo/**/bar`.
     Glob, // Matches complex patterns ("foo/**/bar", "config-*-prod.json")
 }
 
 /// Ekvivalent za IgnoreRule iz C-a
 #[derive(Debug, Clone)]
 pub struct IgnoreRule {
+    /// Pattern text after ignore-rule prefixes have been removed.
     pub pattern: String,
+    /// Matching strategy selected for this pattern.
     pub pattern_type: PatternType,
+    /// Restricts the rule to directories.
     pub is_dir_only: bool,
+    /// Re-includes matching items when the rule starts with `!`.
     pub is_negation: bool, // Set to true if the pattern starts with '!'
 }
 
@@ -56,6 +68,7 @@ impl IgnoreRule {
 /// Ekvivalent za DirContextTreeNode iz C-a
 #[derive(Debug, Clone)]
 pub struct DirContextTreeNode {
+    /// Whether this node represents a file or a directory.
     pub node_type: NodeType,
 
     /// Relativna putanja unutar arhive (npr. "src/main.rs")
@@ -83,6 +96,7 @@ pub struct DirContextTreeNode {
     pub generated_id_for_llm: String,
 
     // --- Cache za sadržaj ---
+    /// Optional file bytes retained for rendering or binary serialization.
     pub file_content: Option<Vec<u8>>,
 
     // --- Binary file handling ---
@@ -105,6 +119,8 @@ pub struct DirContextTreeNode {
 }
 
 impl DirContextTreeNode {
+    /// Creates an empty node with an include decision and no file content.
+    /// All sizes, timestamps and offsets start at zero; `disk_path` is stored without IO.
     pub fn new(node_type: NodeType, relative_path: &str, disk_path: PathBuf) -> Self {
         Self {
             node_type,
@@ -123,6 +139,7 @@ impl DirContextTreeNode {
         }
     }
 
+    /// Returns whether this node is a directory.
     pub fn is_dir(&self) -> bool {
         self.node_type == NodeType::Directory
     }

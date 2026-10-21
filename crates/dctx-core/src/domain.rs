@@ -28,7 +28,7 @@ pub enum FileHandlingDecision {
     /// This is the most aggressive form of filtering - as if the file doesn't exist.
     Exclude,
 
-    /// Show the item in tree with [IGNORED] marker, but never read content.
+    /// Show the item in tree with `[IGNORED]` marker, but never read content.
     ///
     /// This state is used in debug mode (--debug-ignored flag). It allows
     /// users to see that files were ignored and verify their ignore rules

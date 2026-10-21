@@ -124,7 +124,7 @@ pub struct ViewPlan {
 /// One render instruction.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Inst {
-    /// [`OP_TEXT`], [`OP_DATA`] or [`OP_PARTIAL`].
+    /// Opcode `1` copies text, `2` inserts runtime data, and `3` includes a partial.
     pub opcode: u16,
     /// String index, field id or partial index.
     pub arg: u16,
@@ -142,7 +142,7 @@ pub struct NamedCode {
 /// RENDER program: resolved variables, partials and layouts.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RenderProgram {
-    /// String table addressed by [`OP_TEXT`].
+    /// String table addressed by text-copy instructions (opcode `1`).
     pub strings: Vec<String>,
     /// Resolved variables in key order, used after data insertion.
     pub variables: Vec<(String, String)>,
@@ -244,11 +244,11 @@ pub struct HostCeiling {
     pub limits: ResourceLimits,
     /// Plugin liveness policy. The template cannot set it.
     pub liveness: Liveness,
-    /// Plan size cap. Values above [`MAX_PLAN_BYTES`] are treated as that spec cap.
+    /// Plan size cap in bytes, narrowed to the specification maximum of 1 MiB.
     pub max_plan_bytes: u32,
-    /// Section cap. Values above [`MAX_SECTIONS`] are treated as that spec cap.
+    /// Section cap, narrowed to the specification maximum of 64.
     pub max_sections: u32,
-    /// Instruction cap. Values above [`MAX_INSTRUCTIONS`] are treated as that spec cap.
+    /// Instruction cap, narrowed to the specification maximum of 10,000.
     pub max_instructions: u32,
     /// Widest network policy.
     pub network: NetworkPolicy,

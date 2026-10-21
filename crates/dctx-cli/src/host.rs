@@ -202,7 +202,8 @@ pub fn load_ledger(root: &Path) -> Result<Lifecycle, String> {
 
 /// Atomically replaces an absent facade ledger.
 /// A fresh store has not observed a committed revision, so an existing `ledger.v1` is `stale ledger`.
-/// A load-modify-store cycle uses [`with_ledger`] on the store that observed the revision.
+/// A load-modify-store cycle must reuse the store that observed the revision,
+/// so stale writes can be refused.
 pub fn store_ledger(root: &Path, life: &Lifecycle) -> Result<(), String> {
     debug_assert_eq!(LEDGER_FILE, dctx_adapter_cache::adapters::LEDGER_FILE);
     FsLedgerStore::open(root).and_then(|store| store.store(life)).map_err(|error| error.to_string())

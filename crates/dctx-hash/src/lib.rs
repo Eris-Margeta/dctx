@@ -1,5 +1,5 @@
 //! First-party SHA-256 content digests for dctx.
-//! Implements the strict-profile content identity in ARCHITECTURE-PROPOSAL (ObjectKey) and decision 078.
+//! Implements the strict-profile content identity in ARCHITECTURE-PROPOSAL (`ObjectKey`) and decision 078.
 //! Depends on no production crates. Callers use [`Sha256`] and [`ContentDigest`].
 //! Streaming ([`Sha256::new`], [`Sha256::update`], [`Sha256::finalize`]) and [`Sha256::digest`] share one constant-size state.
 

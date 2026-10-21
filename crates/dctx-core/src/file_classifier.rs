@@ -15,7 +15,10 @@ pub enum FileContentHandling {
     /// Include full content (text files)
     IncludeContent,
     /// Binary file - omit content with message
-    OmitBinary { file_type: String },
+    OmitBinary {
+        /// Human-readable type label shown in place of the binary content.
+        file_type: String,
+    },
     /// SVG file - configurable omission
     OmitSvgContent,
 }

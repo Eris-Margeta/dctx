@@ -1,5 +1,5 @@
 //! Versioned, algorithm-tagged content identity.
-//! Implements ObjectKey's identity layer in ARCHITECTURE-PROPOSAL (algorithm, digest, byte length).
+//! Implements `ObjectKey`'s identity layer in ARCHITECTURE-PROPOSAL (algorithm, digest, byte length).
 //! Depends on no other module. [`crate::Sha256`] produces [`ContentDigest`] values.
 //! A later algorithm is a new variant, so two digests cannot be compared without their tags.
 
@@ -21,6 +21,7 @@ impl IdentityAlgorithm {
     pub const SHA256: u16 = 1;
 
     /// Numeric tag stored beside the digest.
+    #[must_use]
     pub const fn code(self) -> u16 {
         match self {
             Self::Sha256 => Self::SHA256,
@@ -28,6 +29,7 @@ impl IdentityAlgorithm {
     }
 
     /// Restores a tag. Any code other than [`IdentityAlgorithm::SHA256`] is refused.
+    #[must_use]
     pub const fn from_code(code: u16) -> Option<Self> {
         match code {
             Self::SHA256 => Some(Self::Sha256),
@@ -36,6 +38,7 @@ impl IdentityAlgorithm {
     }
 
     /// Short name used in the textual form `v1:sha256:<hex>:<byte_length>`.
+    #[must_use]
     pub const fn name(self) -> &'static str {
         match self {
             Self::Sha256 => "sha256",
@@ -62,11 +65,13 @@ impl ContentDigest {
     /// Tags `bytes` as a SHA-256 v1 digest of `byte_length` message bytes.
     ///
     /// This does not hash anything. It rebuilds an identity that was already computed.
+    #[must_use]
     pub const fn sha256(bytes: [u8; 32], byte_length: u64) -> Self {
         Self::Sha256V1 { bytes, byte_length }
     }
 
     /// Layout version. SHA-256 v1 returns [`IDENTITY_VERSION`].
+    #[must_use]
     pub const fn version(self) -> u8 {
         match self {
             Self::Sha256V1 { .. } => IDENTITY_VERSION,
@@ -74,6 +79,7 @@ impl ContentDigest {
     }
 
     /// Algorithm tag.
+    #[must_use]
     pub const fn algorithm(self) -> IdentityAlgorithm {
         match self {
             Self::Sha256V1 { .. } => IdentityAlgorithm::Sha256,
@@ -81,11 +87,13 @@ impl ContentDigest {
     }
 
     /// Numeric algorithm code. SHA-256 v1 returns [`IdentityAlgorithm::SHA256`].
+    #[must_use]
     pub const fn algorithm_code(self) -> u16 {
         self.algorithm().code()
     }
 
     /// Message length covered by this digest, in bytes.
+    #[must_use]
     pub const fn byte_length(self) -> u64 {
         match self {
             Self::Sha256V1 { byte_length, .. } => byte_length,
@@ -93,6 +101,7 @@ impl ContentDigest {
     }
 
     /// Raw digest bytes. The algorithm tag is not included; use [`Self::algorithm`] for that.
+    #[must_use]
     pub const fn as_bytes(&self) -> &[u8; 32] {
         match self {
             Self::Sha256V1 { bytes, .. } => bytes,

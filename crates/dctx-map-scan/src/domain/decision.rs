@@ -11,7 +11,7 @@ pub enum FileHandlingDecision {
     /// Exclude the item from the tree entirely.
     Exclude,
 
-    /// Show the item in tree with [IGNORED] marker, but never read content.
+    /// Show the item in tree with `[IGNORED]` marker, but never read content.
     DebugVisible,
 
     /// Include the item in tree, but omit its content.

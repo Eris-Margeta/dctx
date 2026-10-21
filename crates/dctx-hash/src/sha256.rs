@@ -24,11 +24,12 @@ impl Default for Sha256 {
 
 impl Sha256 {
     /// Starts a new SHA-256 computation (FIPS 180-4 §5.3.3).
+    #[must_use]
     pub const fn new() -> Self {
         Self {
             state: [
-                0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab,
-                0x5be0cd19,
+                0x6a09_e667, 0xbb67_ae85, 0x3c6e_f372, 0xa54f_f53a, 0x510e_527f, 0x9b05_688c, 0x1f83_d9ab,
+                0x5be0_cd19,
             ],
             buf: [0; 64],
             buf_len: 0,
@@ -37,6 +38,10 @@ impl Sha256 {
     }
 
     /// Absorbs `data`. On [`HashError::MessageTooLong`] the hasher is unchanged.
+    ///
+    /// # Errors
+    /// Returns [`HashError::MessageTooLong`] if the total message would exceed
+    /// the SHA-256 limit of `u64::MAX / 8` bytes.
     pub fn update(&mut self, mut data: &[u8]) -> Result<(), HashError> {
         let additional = u64::try_from(data.len()).map_err(|_| HashError::MessageTooLong)?;
         let total = checked_message_len(self.bytes, additional)?;
@@ -64,6 +69,7 @@ impl Sha256 {
     }
 
     /// Pads the message and returns the algorithm-tagged digest (FIPS 180-4 §5.1.1 and §5.2.1).
+    #[must_use]
     pub fn finalize(mut self) -> ContentDigest {
         let bit_len = bit_length(self.bytes);
         let content_bytes = self.bytes;
@@ -82,6 +88,10 @@ impl Sha256 {
     }
 
     /// Hashes `data` in one call. Same digest as `new`, `update`, `finalize`.
+    ///
+    /// # Errors
+    /// Returns [`HashError::MessageTooLong`] if `data` exceeds the SHA-256
+    /// limit of `u64::MAX / 8` bytes.
     pub fn digest(data: &[u8]) -> Result<ContentDigest, HashError> {
         let mut hasher = Self::new();
         hasher.update(data)?;

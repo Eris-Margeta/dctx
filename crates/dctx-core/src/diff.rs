@@ -10,24 +10,36 @@ mod walk;
 
 pub use compare::compare_trees;
 
+/// Kind of change between two snapshot trees.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ChangeType {
+    /// The item was added, including a replacement whose node kind changed.
     Added,
+    /// The item was removed, including a replacement whose node kind changed.
     Removed,
+    /// A file changed content size or modification time.
     Modified,
 }
 
+/// One changed file or directory in a snapshot comparison.
 #[derive(Debug, Clone)]
 pub struct DiffEntry {
+    /// How the item differs between snapshots.
     pub change_type: ChangeType,
+    /// Node kind, taken from the corresponding added, removed or modified item.
     pub node_type: NodeType,
+    /// Path of the item relative to the snapshot root.
     pub relative_path: String,
 }
 
+/// File counts collected while comparing snapshot trees.
 #[derive(Debug, Default, Clone)]
 pub struct DiffStats {
+    /// Number of files added to the new tree.
     pub files_added: usize,
+    /// Number of files removed from the old tree.
     pub files_removed: usize,
+    /// Number of files with changed size or modification time.
     pub files_modified: usize,
     /// Ključno za verzioniranje: koliko je fajlova ostalo identično.
     pub files_unchanged: usize,
@@ -35,10 +47,14 @@ pub struct DiffStats {
     pub total_files_in_new_state: usize,
 }
 
+/// Changes and file statistics produced by comparing two snapshot trees.
 #[derive(Debug, Default)]
 pub struct DiffReport {
+    /// Changed entries collected during the tree walk.
     pub entries: Vec<DiffEntry>,
+    /// File counts used for reporting and version advancement.
     pub stats: DiffStats,
+    /// Whether the comparison found any changed entries.
     pub has_changes: bool,
 }
 

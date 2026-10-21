@@ -25,11 +25,15 @@ mod term {
 
 /// One selectable menu row.
 pub struct MenuItem {
+    /// Input character that selects this row.
     pub key: char,
+    /// Primary text displayed beside the selection key.
     pub label: String,
+    /// Optional explanatory text; an empty string hides the description.
     pub description: String,
 }
 impl MenuItem {
+    /// Creates a menu row by copying its label and description.
     pub fn new(key: char, label: &str, description: &str) -> Self {
         Self { key, label: label.to_string(), description: description.to_string() }
     }
@@ -37,22 +41,33 @@ impl MenuItem {
 
 /// Menu presentation, independent of application actions.
 pub struct Menu {
+    /// Heading displayed above the menu rows.
     pub title: String,
+    /// Selectable rows in display order.
     pub items: Vec<MenuItem>,
+    /// Optional text displayed below all rows.
     pub footer: Option<String>,
 }
 impl Menu {
+    /// Creates an empty menu with the supplied title.
     pub fn new(title: &str) -> Self {
         Self { title: title.to_string(), items: Vec::new(), footer: None }
     }
+    /// Appends a selectable row and returns this menu for chaining.
     pub fn add_item(&mut self, key: char, label: &str, description: &str) -> &mut Self {
         self.items.push(MenuItem::new(key, label, description));
         self
     }
+    /// Replaces the footer text and returns this menu for chaining.
     pub fn set_footer(&mut self, footer: &str) -> &mut Self {
         self.footer = Some(footer.to_string());
         self
     }
+    /// Displays the menu and reads the first trimmed input character.
+    /// Returns the null character for an empty input line or end of input.
+    ///
+    /// # Errors
+    /// Returns an IO error if flushing stdout or reading stdin fails.
     pub fn show(&self) -> io::Result<char> {
         print!("{}", term::CLEAR_SCREEN);
         println!(
@@ -97,17 +112,22 @@ impl Menu {
 
 /// Directory and last legacy snapshot revision displayed in the main menu.
 pub struct MenuContext {
+    /// Directory label shown to the user.
     pub current_dir: String,
+    /// Last snapshot revision, or `None` for a fresh start.
     pub last_version: Option<String>,
 }
 impl MenuContext {
+    /// Creates context for a directory with no previous revision.
     pub fn new(current_dir: String) -> Self {
         Self { current_dir, last_version: None }
     }
+    /// Sets the displayed snapshot revision.
     pub fn with_version(mut self, version: String) -> Self {
         self.last_version = Some(version);
         self
     }
+    /// Formats the directory and revision labels for display.
     pub fn format(&self) -> String {
         format!(
             "Directory: {} | Last Snapshot: {}",
@@ -117,6 +137,10 @@ impl MenuContext {
     }
 }
 
+/// Displays a prompt and reads a trimmed line from stdin.
+///
+/// # Errors
+/// Returns an IO error if flushing stdout or reading stdin fails.
 pub fn get_input(prompt: &str) -> io::Result<String> {
     print!("\n{}{}{} ", term::BOLD, prompt, term::RESET);
     io::stdout().flush()?;
@@ -125,9 +149,17 @@ pub fn get_input(prompt: &str) -> io::Result<String> {
     Ok(input.trim().to_string())
 }
 
+/// Displays a success message and waits for an input line.
+///
+/// # Errors
+/// Returns an IO error if flushing stdout or reading stdin fails.
 pub fn show_message(message: &str) -> io::Result<()> {
     notice(message, term::GREEN)
 }
+/// Displays an error message and waits for an input line.
+///
+/// # Errors
+/// Returns an IO error if flushing stdout or reading stdin fails.
 pub fn show_error(message: &str) -> io::Result<()> {
     notice(message, term::YELLOW)
 }
