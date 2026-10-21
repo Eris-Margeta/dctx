@@ -18,7 +18,7 @@
 <meta name="twitter:description" content="The context engine for AI-assisted software development. Fewer tokens, stable prompt prefixes, exact source, one policy for every developer.">
 <meta name="author" content="Eris Margeta Kurdali">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314161c'/%3E%3Cpath d='M11 9H8v14h3M21 9h3v14h-3' fill='none' stroke='%23fff' stroke-width='2.4'/%3E%3Ccircle cx='16' cy='16' r='2.6' fill='%237c5cff'/%3E%3C/svg%3E">
-<script>(function(d){d.classList.add('js');if(!window.matchMedia('(prefers-reduced-motion: reduce)').matches){d.classList.add('motion');setTimeout(function(){if(!window.__dctxMotion){d.classList.remove('motion');}},2500);}})(document.documentElement);</script>
+<script>(function(d){d.classList.add('js');var off=false;try{off=localStorage.getItem('dctx-motion')==='off';}catch(e){}if(!off){d.classList.add('motion');setTimeout(function(){if(!window.__dctxMotion){d.classList.remove('motion');}},2500);}})(document.documentElement);</script>
 <link rel="stylesheet" href="assets/motion.css">
 <script src="assets/site.js" defer></script>
 <script type="application/ld+json">
@@ -115,6 +115,7 @@ h2 { font-size: clamp(1.9rem, 3.6vw, 2.75rem); line-height: 1.1; font-weight: 70
 h3 { font-size: 1.15rem; line-height: 1.3; font-weight: 650; letter-spacing: -.01em; }
 .lede { font-size: clamp(1.1rem, 1.6vw, 1.3rem); line-height: 1.55; color: var(--muted); max-width: 40ch; }
 .section { padding: clamp(72px, 10vw, 128px) 0; }
+main > section { overflow-x: clip; }
 .section.alt { background: var(--bg-alt); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .section-head { max-width: 760px; margin-bottom: clamp(36px, 5vw, 56px); }
 .section-head p { color: var(--muted); font-size: 1.1rem; margin: 18px 0 0; max-width: 62ch; }
@@ -139,6 +140,8 @@ h3 { font-size: 1.15rem; line-height: 1.3; font-weight: 650; letter-spacing: -.0
 .hero { position: relative; padding: clamp(56px, 8vw, 104px) 0 clamp(64px, 9vw, 112px); overflow: hidden; }
 .hero::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 56px 56px; -webkit-mask-image: radial-gradient(ellipse 70% 60% at 70% 30%, #000 10%, transparent 72%); mask-image: radial-gradient(ellipse 70% 60% at 70% 30%, #000 10%, transparent 72%); opacity: .55; pointer-events: none; }
 .hero::after { content: ""; position: absolute; width: 820px; height: 820px; right: -240px; top: -320px; background: radial-gradient(closest-side, rgba(106,68,240,.13), rgba(106,68,240,0)); pointer-events: none; }
+.js .hero::before { opacity: .3; }
+.hero-field { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
 .hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(36px, 5vw, 72px); align-items: center; }
 .hero h1 .accent { color: var(--brand); }
 .hero .lede { margin: 26px 0 0; max-width: 40ch; }
@@ -302,8 +305,51 @@ td.tag { white-space: nowrap; }
 .agent-credit-text a:hover { color: var(--ink); }
 .agent-credit-logo { display: inline-block; width: 68px; flex: none; }
 .agent-credit-logo img { width: 100%; height: auto; }
+.foot-tools { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.motion-toggle { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 14px 0 12px; border-radius: 999px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink-2); font: 500 .85rem/1 var(--font); cursor: pointer; transition: border-color .2s var(--ease), color .2s var(--ease), background .2s var(--ease); }
+.motion-toggle:hover { border-color: var(--ink); color: var(--ink); }
+.motion-toggle .sw { display: inline-block; width: 30px; height: 18px; border-radius: 999px; background: var(--line-strong); position: relative; }
+.motion-toggle .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); }
+.motion-toggle[aria-pressed="true"] .sw { background: var(--brand); }
+.motion-toggle[aria-pressed="true"] .sw::after { transform: translateX(12px); }
+html:not(.js) .motion-toggle { display: none; }
 
-
+/* Dark sections: deep ink and violet, with every token remapped so the same components keep AA contrast */
+.section.dark {
+  --ink: #f4f2ff; --ink-2: #e4dffc; --muted: #b9b3d9; --faint: #8e87b5;
+  --line: rgba(255,255,255,.1); --line-strong: rgba(255,255,255,.2);
+  --surface: rgba(255,255,255,.035); --bg-alt: rgba(255,255,255,.06);
+  --brand: #a78bfa; --brand-ink: #c4b5fd; --brand-wash: rgba(167,139,250,.14); --brand-line: rgba(167,139,250,.38);
+  --positive: #9fe3c0; --positive-wash: rgba(74,222,128,.13); --amber: #f3cf7a; --amber-wash: rgba(243,207,122,.13);
+  --shadow-sm: none; --shadow: 0 14px 34px -14px rgba(0,0,0,.6); --shadow-lg: 0 30px 70px -24px rgba(0,0,0,.7);
+  position: relative; isolation: isolate; overflow: hidden; overflow: clip; color: var(--ink); border: 0;
+  background: linear-gradient(180deg, #110d2b 0%, #0e0b1f 42%, #140f3a 100%);
+}
+.section.dark::before { content: ""; position: absolute; inset: 0; z-index: -2; background: radial-gradient(60% 50% at 50% 0%, rgba(106,68,240,.28), transparent 70%), radial-gradient(45% 40% at 100% 100%, rgba(56,189,248,.07), transparent 70%); pointer-events: none; }
+.section.dark::after { content: ""; position: absolute; inset: 0; z-index: -2; background-image: linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px); background-size: 56px 56px; -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 20%, transparent 75%); mask-image: radial-gradient(ellipse 70% 70% at 50% 40%, #000 20%, transparent 75%); pointer-events: none; }
+.dark .card { backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.dark .card p, .dark .section-head p { color: var(--muted); }
+.dark .icon { color: #d9d0ff; }
+.dark .eyebrow { color: #c4b5fd; }
+.dark .quote { color: #e4dffc; }
+.dark .quote em { color: #c4b5fd; }
+.dark code { color: #e9e4ff; background: rgba(255,255,255,.08); padding: 1px 5px; border-radius: 5px; font-size: .92em; }
+.dark .h-tool { color: #a9a2cf; }
+.dark .h-tool:hover, .dark .h-tool:focus-visible { color: #fff; background: rgba(167,139,250,.2); }
+.dark .h-tool[data-tip]:hover::after, .dark .h-tool[data-tip]:focus-visible::after { background: #fff; color: var(--night); }
+.dark :focus-visible { outline-color: #c4b5fd; }
+.dark .bloom, .dark .light, .dark .orb, .dark .seam { display: block; }
+.seam-b { background: linear-gradient(180deg, var(--bg) 55%, #f3f0ff 100%); }
+.alt.seam-b { background: linear-gradient(180deg, var(--bg-alt) 55%, #f1edff 100%); border-bottom: 0; }
+.seam-a { background: linear-gradient(180deg, #f3f0ff 0%, var(--bg) 22%); }
+.alt.seam-a { background: linear-gradient(180deg, #f1edff 0%, var(--bg-alt) 22%); border-top: 0; }
+.belief-cards { position: relative; }
+@media (min-width: 1081px) { .belief-cards { padding-left: 44px; } }
+.belief .card { position: relative; }
+.era .wm-clip { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.era .wm { position: absolute; }
+.era > :not(.wm-clip) { position: relative; }
+.tdot { position: absolute; }
 
 /* Responsive */
 @media (max-width: 1080px) {
@@ -344,8 +390,11 @@ td.tag { white-space: nowrap; }
   .chip-float { display: none; }
   .foot-grid { grid-template-columns: minmax(0, 1fr); }
   .foot-bottom { flex-direction: column; align-items: flex-end; }
-  .foot-bottom small { align-self: stretch; }
+  .foot-tools { width: 100%; justify-content: space-between; }
   .hero-actions .btn { width: 100%; }
+  .h-row { flex-wrap: wrap; }
+  .h-tools { width: 100%; margin: 2px 0 0 -12px; }
+  .h-row[style*="center"] .h-tools { justify-content: center; margin-left: 0; }
 }
 </style>
 </head>
@@ -382,6 +431,7 @@ td.tag { white-space: nowrap; }
 
 <!-- Hero -->
 <section class="hero" aria-labelledby="hero-title">
+  <canvas class="hero-field" id="hero-field" aria-hidden="true"></canvas>
   <div class="wrap hero-grid">
     <div>
       <span class="eyebrow hero-in">The context engine for AI-assisted development</span>
@@ -444,9 +494,9 @@ td.tag { white-space: nowrap; }
 </section>
 
 <!-- Facts -->
-<section aria-label="dctx at a glance" style="padding-bottom: clamp(48px, 7vw, 88px)">
+<section class="seam-b" aria-label="dctx at a glance" style="padding-bottom: clamp(48px, 7vw, 88px)">
   <div class="wrap">
-    <div class="facts">
+    <div class="facts" data-parallax="-0.035">
       <div class="fact"><strong>0</strong><span>bytes of telemetry. dctx makes no network requests and never calls a model.</span></div>
       <div class="fact"><strong data-count="15" data-dur="1200">15</strong><span>language families indexed by first-party extractors, from Rust and TypeScript to Swift and config files.</span></div>
       <div class="fact"><strong data-count="2000" data-dur="1800">2,000</strong><span>token hard ceiling on any single answer. Records are never cut in half.</span></div>
@@ -456,26 +506,36 @@ td.tag { white-space: nowrap; }
 </section>
 
 <!-- Belief -->
-<section class="section alt" id="belief" aria-labelledby="belief-h">
+<section class="section dark" id="belief" aria-labelledby="belief-h">
+  <span class="seam" aria-hidden="true"></span>
+  <span class="seam seam-end" aria-hidden="true"></span>
+  <span class="bloom" aria-hidden="true"></span>
+  <span class="light" aria-hidden="true"></span>
+  <span class="orb orb-a" data-parallax="-0.12" aria-hidden="true"></span>
+  <span class="orb orb-b" data-parallax="0.08" aria-hidden="true"></span>
   <div class="wrap belief">
     <div class="reveal">
       <span class="eyebrow">Our core belief</span>
       <div class="h-row" style="margin-top:18px"><h2 id="belief-h">Prompt&#8209;processing efficiency is the&nbsp;product.</h2></div>
       <p class="quote" style="margin-top:28px">Every token in front of a model is paid for three times &mdash; in <em>prefill</em>, in <em>cache misses</em> and in <em>attention</em>. dctx is engineered to cut all three.</p>
     </div>
-    <div class="reveal">
+    <div class="reveal belief-cards">
+      <span class="rail" aria-hidden="true"></span>
       <div class="grid-2" data-stagger style="grid-template-columns:minmax(0,1fr)">
         <div class="card spot">
+          <i class="tick" aria-hidden="true"></i>
           <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></div>
           <h3>Prefill</h3>
           <p>A model must process every input token before it answers &mdash; you pay for each one and wait for it. dctx answers with exact spans and diffs instead of whole files, inside a hard budget.</p>
         </div>
         <div class="card spot">
+          <i class="tick" aria-hidden="true"></i>
           <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/></svg></div>
           <h3>Cache hits</h3>
           <p>Providers serve repeated prompt prefixes at a fraction of the price and latency, but one changed byte breaks the cache. dctx output is deterministic and canonically ordered &mdash; no timestamps, no random ids.</p>
         </div>
         <div class="card spot">
+          <i class="tick" aria-hidden="true"></i>
           <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></div>
           <h3>Attention</h3>
           <p>Answers get worse as irrelevant tokens pile up. dctx ranks and bounds every answer and labels it with its precision and freshness, so a model reasons over facts, not guesses.</p>
@@ -486,7 +546,7 @@ td.tag { white-space: nowrap; }
 </section>
 
 <!-- Platform: spectrum -->
-<section class="section" id="platform" aria-labelledby="platform-h">
+<section class="section seam-a" id="platform" aria-labelledby="platform-h">
   <div class="wrap">
     <div class="section-head reveal">
       <span class="eyebrow">One platform</span>
@@ -512,16 +572,16 @@ td.tag { white-space: nowrap; }
       <div class="h-row"><h2 id="value-h">What it means for your organization.</h2></div>
     </div>
     <div class="grid-2" data-stagger="alt">
-      <div class="card spot tilt"><span class="num">01 · COST</span><h3 style="margin-top:12px">Pay for the tokens that matter.</h3><p>Smaller, bounded prompts and stable prefixes that providers can cache. Spend follows the work, not the size of the repository.</p></div>
-      <div class="card spot tilt"><span class="num">02 · SECURITY</span><h3 style="margin-top:12px">Source code stays on your machines.</h3><p>Ignored files are never opened. No telemetry, no network, no model calls. Plugin and policy signatures are verified with vetted Ed25519 cryptography.</p></div>
-      <div class="card spot tilt"><span class="num">03 · CONTROL</span><h3 style="margin-top:12px">One policy for every developer.</h3><p>Set budgets, privacy rules, parsers and plugins once for the whole organization; teams and individuals can only narrow it.</p></div>
-      <div class="card spot tilt"><span class="num">04 · PREDICTABILITY</span><h3 style="margin-top:12px">Same input, same bytes.</h3><p>Deterministic answers with explicit precision and freshness make agent runs reproducible and auditable.</p></div>
+      <div class="card spot tilt"><span class="num" data-decode="01 · COST">01 · COST</span><h3 style="margin-top:12px">Pay for the tokens that matter.</h3><p>Smaller, bounded prompts and stable prefixes that providers can cache. Spend follows the work, not the size of the repository.</p></div>
+      <div class="card spot tilt"><span class="num" data-decode="02 · SECURITY">02 · SECURITY</span><h3 style="margin-top:12px">Source code stays on your machines.</h3><p>Ignored files are never opened. No telemetry, no network, no model calls. Plugin and policy signatures are verified with vetted Ed25519 cryptography.</p></div>
+      <div class="card spot tilt"><span class="num" data-decode="03 · CONTROL">03 · CONTROL</span><h3 style="margin-top:12px">One policy for every developer.</h3><p>Set budgets, privacy rules, parsers and plugins once for the whole organization; teams and individuals can only narrow it.</p></div>
+      <div class="card spot tilt"><span class="num" data-decode="04 · PREDICTABILITY">04 · PREDICTABILITY</span><h3 style="margin-top:12px">Same input, same bytes.</h3><p>Deterministic answers with explicit precision and freshness make agent runs reproducible and auditable.</p></div>
     </div>
   </div>
 </section>
 
 <!-- Zero RAG defects -->
-<section class="section" id="quality" aria-labelledby="quality-h">
+<section class="section seam-b" id="quality" aria-labelledby="quality-h">
   <div class="wrap">
     <div class="section-head reveal">
       <span class="eyebrow">Accuracy</span>
@@ -547,7 +607,13 @@ td.tag { white-space: nowrap; }
 </section>
 
 <!-- Security -->
-<section class="section alt" id="security" aria-labelledby="security-h">
+<section class="section dark" id="security" aria-labelledby="security-h">
+  <span class="seam" aria-hidden="true"></span>
+  <span class="seam seam-end" aria-hidden="true"></span>
+  <span class="bloom" aria-hidden="true"></span>
+  <span class="light" aria-hidden="true"></span>
+  <span class="orb orb-a" data-parallax="-0.1" aria-hidden="true"></span>
+  <span class="orb orb-b" data-parallax="0.07" aria-hidden="true"></span>
   <div class="wrap">
     <div class="section-head reveal">
       <span class="eyebrow">Security &amp; privacy</span>
@@ -574,7 +640,7 @@ td.tag { white-space: nowrap; }
 </section>
 
 <!-- Organization control -->
-<section class="section" id="control" aria-labelledby="control-h">
+<section class="section seam-a" id="control" aria-labelledby="control-h">
   <div class="wrap policy">
     <div class="reveal">
       <span class="eyebrow">Organization control</span>
@@ -612,9 +678,10 @@ td.tag { white-space: nowrap; }
       <p>dctx began as a practical answer to the context problem while we were still moving our own work to AI. The goal has never changed.</p>
     </div>
     <div class="timeline">
-      <div class="era"><span class="year" data-decode="2025">2025</span><h3>dircontxt, in pure C</h3><p>One command gave a model the whole project &mdash; structured, versioned, with diffs and a strict ignore system &mdash; instead of pasting forty files. Version 1.0 shipped in November 2025.</p></div>
-      <div class="era"><span class="year" data-decode="2026">2026</span><h3>dctx, in Rust</h3><p>A privacy-first core, a template system, a plugin host, a desktop app, and map mode: bounded, deterministic answers for agents.</p></div>
-      <div class="era now"><span class="year" data-decode="NEXT">NEXT</span><h3>dctx 1.0</h3><p>One engine and one signed policy for every workflow, measured by prompt-processing efficiency. <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification</a>.</p></div>
+      <span class="tdot" aria-hidden="true"></span>
+      <div class="era"><span class="wm-clip" aria-hidden="true"><span class="wm" data-parallax="0.06">25</span></span><span class="year" data-decode="2025">2025</span><h3>dircontxt, in pure C</h3><p>One command gave a model the whole project &mdash; structured, versioned, with diffs and a strict ignore system &mdash; instead of pasting forty files. Version 1.0 shipped in November 2025.</p></div>
+      <div class="era"><span class="wm-clip" aria-hidden="true"><span class="wm" data-parallax="0.06">26</span></span><span class="year" data-decode="2026">2026</span><h3>dctx, in Rust</h3><p>A privacy-first core, a template system, a plugin host, a desktop app, and map mode: bounded, deterministic answers for agents.</p></div>
+      <div class="era now"><span class="wm-clip" aria-hidden="true"><span class="wm" data-parallax="0.06">1.0</span></span><span class="year" data-decode="NEXT">NEXT</span><h3>dctx 1.0</h3><p>One engine and one signed policy for every workflow, measured by prompt-processing efficiency. <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification</a>.</p></div>
     </div>
   </div>
 </section>
@@ -642,7 +709,7 @@ td.tag { white-space: nowrap; }
       </div>
       <div class="plan spot">
         <h3>Desktop</h3>
-        <div class="price">$29<small>one-time</small></div>
+        <div class="price">$<span data-count="29" data-dur="1100">29</span><small>one-time</small></div>
         <div class="plan-sub">Signed builds with updates, for people who prefer a window to a terminal.</div>
         <ul>
           <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Everything in open source</li>
@@ -655,7 +722,7 @@ td.tag { white-space: nowrap; }
       <div class="plan featured spot">
         <span class="orbit" aria-hidden="true"></span>
         <h3>Enterprise <span class="badge-top">Per company</span></h3>
-        <div class="price">&euro;45,000<small>/ year, from</small></div>
+        <div class="price">&euro;<span data-count="45000" data-dur="1500">45,000</span><small>/ year, from</small></div>
         <div class="plan-sub">For organizations that standardize AI-assisted development.</div>
         <ul>
           <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Enterprise license for every developer</li>
@@ -746,7 +813,10 @@ td.tag { white-space: nowrap; }
       </nav>
     </div>
     <div class="foot-bottom">
-      <small>&copy; 2026 dctx. Apache-2.0.</small>
+      <div class="foot-tools">
+        <small>&copy; 2026 dctx. Apache-2.0.</small>
+        <button class="motion-toggle" id="motion-toggle" type="button" aria-pressed="false"><span class="sw" aria-hidden="true"></span>Reduce motion</button>
+      </div>
       <div class="tejl-credit">
         <div class="tejl-credit-text">
           <span>Design &amp; development: TEJL Studio</span>
