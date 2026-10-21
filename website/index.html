@@ -1,1774 +1,811 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>dctx — Context, engineered.</title>
-    <meta name="description" content="dctx is the context engine for AI-assisted development: fewer tokens, stable prompt prefixes, exact source, one policy for every workflow. Open source, no telemetry.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-primary: #0a0a0f;
-            --bg-secondary: #12121a;
-            --bg-card: #16161f;
-            --bg-code: #0d0d12;
-            --border-color: #2a2a3a;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0b0;
-            --text-muted: #6a6a7a;
-            --accent-primary: #8b5cf6;
-            --accent-secondary: #6366f1;
-            --accent-tertiary: #3b82f6;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --gradient-primary: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);
-            --gradient-glow: radial-gradient(ellipse at center, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        html {
-            scroll-behavior: smooth;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 24px;
-        }
-
-        /* Navigation */
-        nav {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            z-index: 100;
-            padding: 20px 0;
-            background: rgba(10, 10, 15, 0.8);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid transparent;
-            transition: border-color 0.3s;
-        }
-
-        nav.scrolled {
-            border-bottom-color: var(--border-color);
-        }
-
-        nav .container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            letter-spacing: -0.5px;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 32px;
-            list-style: none;
-        }
-
-        .nav-links a {
-            color: var(--text-secondary);
-            text-decoration: none;
-            font-size: 0.95rem;
-            font-weight: 500;
-            transition: color 0.2s;
-        }
-
-        .nav-links a:hover {
-            color: var(--text-primary);
-        }
-
-        .nav-cta {
-            display: flex;
-            gap: 12px;
-        }
-
-        /* Buttons */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-            cursor: pointer;
-            border: none;
-        }
-
-        .btn-primary {
-            background: var(--gradient-primary);
-            color: white;
-            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(139, 92, 246, 0.4);
-        }
-
-        .btn-secondary {
-            background: var(--bg-card);
-            color: var(--text-primary);
-            border: 1px solid var(--border-color);
-        }
-
-        .btn-secondary:hover {
-            background: var(--bg-secondary);
-            border-color: var(--accent-primary);
-        }
-
-        .btn-ghost {
-            background: transparent;
-            color: var(--text-secondary);
-            padding: 12px 16px;
-        }
-
-        .btn-ghost:hover {
-            color: var(--text-primary);
-        }
-
-        .btn-small {
-            padding: 8px 16px;
-            font-size: 0.85rem;
-        }
-
-        /* Hero Section */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            position: relative;
-            padding-top: 80px;
-            overflow: hidden;
-        }
-
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 150%;
-            height: 150%;
-            background: var(--gradient-glow);
-            pointer-events: none;
-        }
-
-        .hero-grid {
-            position: absolute;
-            inset: 0;
-            background-image:
-                linear-gradient(rgba(139, 92, 246, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(139, 92, 246, 0.03) 1px, transparent 1px);
-            background-size: 60px 60px;
-            mask-image: radial-gradient(ellipse at center, black 0%, transparent 70%);
-        }
-
-        .hero-content {
-            position: relative;
-            text-align: center;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            background: rgba(139, 92, 246, 0.1);
-            border: 1px solid rgba(139, 92, 246, 0.2);
-            border-radius: 50px;
-            font-size: 0.85rem;
-            color: var(--accent-primary);
-            margin-bottom: 24px;
-        }
-
-        .hero-badge::before {
-            content: '';
-            width: 8px;
-            height: 8px;
-            background: var(--success);
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .hero h1 {
-            font-size: clamp(3rem, 8vw, 5rem);
-            font-weight: 800;
-            line-height: 1.1;
-            letter-spacing: -2px;
-            margin-bottom: 24px;
-        }
-
-        .hero h1 span {
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .hero p {
-            font-size: 1.25rem;
-            color: var(--text-secondary);
-            max-width: 600px;
-            margin: 0 auto 40px;
-        }
-
-        .hero-buttons {
-            display: flex;
-            gap: 16px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .hero-code {
-            margin-top: 60px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 24px;
-            text-align: left;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .hero-code pre {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-            overflow-x: auto;
-        }
-
-        .hero-code .prompt {
-            color: var(--accent-primary);
-        }
-
-        .hero-code .command {
-            color: var(--text-primary);
-        }
-
-        .hero-code .comment {
-            color: var(--text-muted);
-        }
-
-        .hero-install {
-            margin-top: 60px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .install-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-
-        .install-tab {
-            padding: 8px 16px;
-            background: transparent;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-        }
-
-        .install-tab:hover {
-            border-color: var(--accent-primary);
-            color: var(--text-secondary);
-        }
-
-        .install-tab.active {
-            background: rgba(139, 92, 246, 0.1);
-            border-color: var(--accent-primary);
-            color: var(--accent-primary);
-        }
-
-        /* Section Styles */
-        .section-header {
-            text-align: center;
-            max-width: 700px;
-            margin: 0 auto 60px;
-        }
-
-        .section-header h2 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 16px;
-            letter-spacing: -1px;
-        }
-
-        .section-header p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-        }
-
-        /* Problem Section */
-        .problem {
-            padding: 120px 0;
-            background: var(--bg-secondary);
-        }
-
-        .problem-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 60px;
-            align-items: center;
-        }
-
-        .problem-text h2 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 20px;
-            letter-spacing: -1px;
-        }
-
-        .problem-text p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            margin-bottom: 24px;
-        }
-
-        .problem-list {
-            list-style: none;
-            margin-bottom: 32px;
-        }
-
-        .problem-list li {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            padding: 12px 0;
-            color: var(--text-secondary);
-        }
-
-        .problem-list li::before {
-            content: '✕';
-            color: #ef4444;
-            font-weight: 600;
-            flex-shrink: 0;
-        }
-
-        .bash-nightmare {
-            background: var(--bg-code);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            padding: 20px;
-            overflow-x: auto;
-        }
-
-        .bash-nightmare pre {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: #ef4444;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
-
-        .bash-nightmare .label {
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            display: block;
-            margin-bottom: 8px;
-        }
-
-        /* Solution Row */
-        .solution-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 60px;
-            align-items: center;
-            margin-top: 80px;
-            padding-top: 80px;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .solution-text h2 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 20px;
-            letter-spacing: -1px;
-        }
-
-        .solution-text h2 span {
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .solution-text p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-        }
-
-        .solution-code-wrapper {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .solution-code {
-            margin: 0;
-        }
-
-        .solution-tagline {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            margin-top: 16px;
-            font-weight: 500;
-        }
-
-        /* Benefits Section */
-        .benefits {
-            padding: 120px 0;
-            background: var(--bg-secondary);
-        }
-
-        .benefits-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 32px;
-        }
-
-        .benefit-item {
-            display: flex;
-            gap: 24px;
-            padding: 32px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            transition: all 0.3s;
-        }
-
-        .benefit-item:hover {
-            border-color: var(--accent-primary);
-        }
-
-        .benefit-item.benefit-wide {
-            grid-column: span 2;
-        }
-
-        .benefit-number {
-            font-size: 2rem;
-            font-weight: 800;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            flex-shrink: 0;
-            line-height: 1;
-        }
-
-        .benefit-content h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        .benefit-content p {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            line-height: 1.7;
-        }
-
-        .benefit-content code {
-            background: var(--bg-primary);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: var(--accent-primary);
-        }
-
-        /* Example Output Section */
-        .example-output {
-            padding: 120px 0;
-        }
-
-        .example-tabs {
-            display: flex;
-            gap: 12px;
-            margin-bottom: 24px;
-            flex-wrap: wrap;
-        }
-
-        .example-tab {
-            padding: 10px 20px;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            color: var(--text-secondary);
-            cursor: pointer;
-            transition: all 0.2s;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-        }
-
-        .example-tab:hover, .example-tab.active {
-            border-color: var(--accent-primary);
-            color: var(--text-primary);
-            background: rgba(139, 92, 246, 0.1);
-        }
-
-        .example-box {
-            background: var(--bg-code);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            overflow: hidden;
-        }
-
-        .example-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px 24px;
-            background: var(--bg-card);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .example-header-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .example-dots {
-            display: flex;
-            gap: 6px;
-        }
-
-        .example-dots span {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-        }
-
-        .example-dots span:nth-child(1) { background: #ef4444; }
-        .example-dots span:nth-child(2) { background: #f59e0b; }
-        .example-dots span:nth-child(3) { background: #10b981; }
-
-        .example-title {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        .example-content {
-            padding: 24px;
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
-        .example-content pre {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            line-height: 1.6;
-            color: var(--text-secondary);
-        }
-
-        .example-content .tag {
-            color: var(--accent-primary);
-        }
-
-        .example-content .attr {
-            color: var(--accent-tertiary);
-        }
-
-        .example-content .value {
-            color: var(--success);
-        }
-
-        .example-content .bracket {
-            color: var(--warning);
-        }
-
-        .example-content .header {
-            color: var(--accent-primary);
-            font-weight: 600;
-        }
-
-        .example-description {
-            margin-top: 24px;
-            padding: 20px 24px;
-            background: rgba(139, 92, 246, 0.05);
-            border: 1px solid rgba(139, 92, 246, 0.1);
-            border-radius: 12px;
-        }
-
-        .example-description p {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .example-description code {
-            background: var(--bg-card);
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: var(--accent-primary);
-        }
-
-        /* Features Section */
-        .features {
-            padding: 120px 0;
-            background: var(--bg-secondary);
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 24px;
-        }
-
-        .feature-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 32px;
-            transition: all 0.3s;
-        }
-
-        .feature-card:hover {
-            border-color: var(--accent-primary);
-            transform: translateY(-4px);
-        }
-
-        .feature-icon {
-            width: 48px;
-            height: 48px;
-            background: var(--gradient-primary);
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 20px;
-            font-size: 1.5rem;
-        }
-
-        .feature-card h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        .feature-card p {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-        }
-
-        .feature-card code {
-            display: block;
-            margin-top: 12px;
-            padding: 8px 12px;
-            background: var(--bg-primary);
-            border-radius: 6px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.8rem;
-            color: var(--accent-primary);
-        }
-
-        /* Ecosystem Section */
-        .ecosystem {
-            padding: 120px 0;
-        }
-
-        .ecosystem-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 32px;
-        }
-
-        .ecosystem-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 40px;
-            transition: all 0.3s;
-        }
-
-        .ecosystem-card:hover {
-            border-color: var(--accent-primary);
-        }
-
-        .ecosystem-card.upcoming {
-            opacity: 0.7;
-            position: relative;
-        }
-
-        .ecosystem-card.upcoming::after {
-            content: 'Coming Soon';
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            padding: 4px 12px;
-            background: var(--warning);
-            color: #000;
-            border-radius: 50px;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-
-        .ecosystem-icon {
-            width: 56px;
-            height: 56px;
-            background: var(--gradient-primary);
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 24px;
-            font-size: 1.75rem;
-        }
-
-        .ecosystem-card h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-
-        .ecosystem-card p {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            margin-bottom: 20px;
-        }
-
-        .ecosystem-card ul {
-            list-style: none;
-        }
-
-        .ecosystem-card li {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 0;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .ecosystem-card li::before {
-            content: '→';
-            color: var(--accent-primary);
-        }
-
-        /* CLI Flags Section */
-        .cli-flags {
-            padding: 80px 0;
-            background: var(--bg-secondary);
-        }
-
-        .flags-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .flag-item {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 10px;
-            padding: 16px 20px;
-            transition: all 0.2s;
-        }
-
-        .flag-item:hover {
-            border-color: var(--accent-primary);
-        }
-
-        .flag-item code {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
-            color: var(--accent-primary);
-            display: block;
-            margin-bottom: 4px;
-        }
-
-        .flag-item span {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-        }
-
-        /* Pricing Section */
-        .pricing {
-            padding: 120px 0;
-        }
-
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 32px;
-            max-width: 1180px;
-            margin: 0 auto;
-        }
-
-        .pricing-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 40px;
-            position: relative;
-            transition: all 0.3s;
-        }
-
-        .pricing-card.featured {
-            border-color: var(--accent-primary);
-            background: linear-gradient(180deg, rgba(139, 92, 246, 0.1) 0%, var(--bg-card) 100%);
-        }
-
-        .pricing-card.featured::before {
-            content: 'Most Popular';
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 6px 16px;
-            background: var(--gradient-primary);
-            border-radius: 50px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .pricing-card:hover {
-            transform: translateY(-4px);
-        }
-
-        .pricing-header {
-            text-align: center;
-            margin-bottom: 32px;
-            padding-bottom: 32px;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .pricing-header h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            margin-bottom: 8px;
-        }
-
-        .pricing-header .price {
-            font-size: 3rem;
-            font-weight: 800;
-            letter-spacing: -2px;
-        }
-
-        .pricing-header .price span {
-            font-size: 1rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-        }
-
-        .pricing-header .subtitle {
-            color: var(--text-secondary);
-            font-size: 0.95rem;
-            margin-top: 8px;
-        }
-
-        .pricing-features {
-            list-style: none;
-            margin-bottom: 32px;
-        }
-
-        .pricing-features li {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 0;
-            color: var(--text-secondary);
-        }
-
-        .pricing-features li::before {
-            content: '✓';
-            width: 24px;
-            height: 24px;
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .pricing-card .btn {
-            width: 100%;
-            justify-content: center;
-        }
-
-        /* Open Source Section */
-        .open-source {
-            padding: 120px 0;
-            background: var(--bg-secondary);
-        }
-
-        .open-source-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 60px;
-            align-items: center;
-        }
-
-        .open-source-text h2 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 20px;
-            letter-spacing: -1px;
-        }
-
-        .open-source-text p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-            margin-bottom: 32px;
-        }
-
-        .open-source-stats {
-            display: flex;
-            gap: 40px;
-            margin-bottom: 32px;
-        }
-
-        .stat {
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .stat-label {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        .github-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 32px;
-        }
-
-        .github-card-header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 20px;
-        }
-
-        .github-icon {
-            width: 48px;
-            height: 48px;
-            background: #24292e;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .github-card-header h4 {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-
-        .github-card-header p {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-        }
-
-        .github-card pre {
-            background: var(--bg-primary);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            overflow-x: auto;
-        }
-
-        /* Footer */
-        footer {
-            padding: 60px 0 40px;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .footer-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 24px;
-        }
-
-        .footer-logo {
-            font-size: 1.25rem;
-            font-weight: 700;
-            background: var(--gradient-primary);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .footer-links {
-            display: flex;
-            gap: 32px;
-            list-style: none;
-        }
-
-        .footer-links a {
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: color 0.2s;
-        }
-
-        .footer-links a:hover {
-            color: var(--text-primary);
-        }
-
-        .footer-copy {
-            width: 100%;
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 0.85rem;
-            margin-top: 40px;
-            padding-top: 40px;
-            border-top: 1px solid var(--border-color);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .nav-links {
-                display: none;
-            }
-
-            .hero h1 {
-                font-size: 2.5rem;
-            }
-
-            .problem-content,
-            .solution-content,
-            .open-source-content {
-                grid-template-columns: 1fr;
-            }
-
-            .solution-content {
-                margin-top: 48px;
-                padding-top: 48px;
-            }
-
-            .benefits-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .benefit-item.benefit-wide {
-                grid-column: span 1;
-            }
-
-            .benefit-item {
-                flex-direction: column;
-                gap: 16px;
-            }
-
-            .ecosystem-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .open-source-stats {
-                justify-content: center;
-            }
-
-            .pricing-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .footer-content {
-                flex-direction: column;
-                text-align: center;
-            }
-
-            .example-content {
-                max-height: 400px;
-            }
-
-            .example-content pre {
-                font-size: 0.7rem;
-            }
-        }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .animate-in {
-            animation: fadeInUp 0.6s ease-out forwards;
-        }
-
-        .delay-1 { animation-delay: 0.1s; }
-        .delay-2 { animation-delay: 0.2s; }
-        .delay-3 { animation-delay: 0.3s; }
-
-        .philosophy { padding: 100px 0 60px; }
-        .spectrum { margin-top: 48px; text-align: center; }
-        .spectrum-label { color: var(--text-secondary); font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 16px; }
-        .spectrum-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
-        .spectrum-row span { padding: 10px 16px; border: 1px solid rgba(139,92,246,0.45); border-radius: 999px; background: rgba(139,92,246,0.08); font-weight: 600; }
-        .spectrum-row i { width: 28px; height: 2px; background: linear-gradient(90deg, rgba(139,92,246,0.2), #8b5cf6); }
-        .lineage { margin: 40px auto 0; max-width: 760px; text-align: center; color: var(--text-secondary); line-height: 1.7; }
-        .lineage a { color: #8b5cf6; }
-        @media (max-width: 640px) { .spectrum-row i { display: none; } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dctx — Context, engineered. The context engine for AI-assisted development</title>
+<meta name="description" content="dctx is the context engine for AI-assisted software development: fewer tokens, stable prompt prefixes, exact source and one signed policy for every developer. Open source. No telemetry. Enterprise licenses available.">
+<link rel="canonical" href="https://dctx.app/">
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#fbfbf9">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="dctx">
+<meta property="og:locale" content="en_US">
+<meta property="og:url" content="https://dctx.app/">
+<meta property="og:title" content="dctx — Context, engineered.">
+<meta property="og:description" content="The context engine for AI-assisted software development. Fewer tokens, stable prompt prefixes, exact source, one policy for every developer.">
+<meta name="twitter:title" content="dctx — Context, engineered.">
+<meta name="twitter:description" content="The context engine for AI-assisted software development. Fewer tokens, stable prompt prefixes, exact source, one policy for every developer.">
+<meta name="author" content="Eris Margeta Kurdali">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314161c'/%3E%3Cpath d='M11 9H8v14h3M21 9h3v14h-3' fill='none' stroke='%23fff' stroke-width='2.4'/%3E%3Ccircle cx='16' cy='16' r='2.6' fill='%237c5cff'/%3E%3C/svg%3E">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    { "@type": "Person", "@id": "https://tejl.hr/#eris-margeta-kurdali", "name": "Eris Margeta Kurdali" },
+    { "@type": "Organization", "@id": "https://tejl.hr/#organization", "name": "TEJL Studio", "url": "https://tejl.hr/", "sameAs": ["https://tejl.com/"] },
+    { "@type": "WebSite", "@id": "https://dctx.app/#website", "url": "https://dctx.app/", "name": "dctx", "inLanguage": "en",
+      "description": "The context engine for AI-assisted software development.",
+      "author": { "@id": "https://tejl.hr/#eris-margeta-kurdali" },
+      "creator": { "@id": "https://tejl.hr/#organization" },
+      "maintainer": { "@id": "https://tejl.hr/#organization" } },
+    { "@type": "SoftwareApplication", "@id": "https://dctx.app/#software", "name": "dctx",
+      "applicationCategory": "DeveloperApplication", "operatingSystem": "Linux, macOS, Windows",
+      "license": "https://www.apache.org/licenses/LICENSE-2.0",
+      "codeRepository": "https://github.com/Eris-Margeta/dctx",
+      "author": { "@id": "https://tejl.hr/#eris-margeta-kurdali" },
+      "creator": { "@id": "https://tejl.hr/#organization" } }
+  ]
+}
+</script>
+<style>
+:root {
+  --bg: #fbfbf9;
+  --bg-alt: #f4f4f0;
+  --surface: #ffffff;
+  --ink: #111318;
+  --ink-2: #2b2f38;
+  --muted: #5d6270;
+  --faint: #8a8f9c;
+  --line: #e7e6e0;
+  --line-strong: #d6d5ce;
+  --brand: #6a44f0;
+  --brand-ink: #4e2fc9;
+  --brand-wash: #f1edff;
+  --brand-line: #d9d0ff;
+  --positive: #2f6b4f;
+  --positive-wash: #eaf4ee;
+  --amber: #8a5a00;
+  --amber-wash: #fbf3e2;
+  --night: #121419;
+  --font: "Inter", "InterVariable", -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "SFMono-Regular", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
+  --radius: 14px;
+  --radius-sm: 9px;
+  --shadow-sm: 0 1px 2px rgba(17,19,24,.04), 0 1px 1px rgba(17,19,24,.03);
+  --shadow: 0 1px 2px rgba(17,19,24,.04), 0 8px 24px -8px rgba(17,19,24,.10);
+  --shadow-lg: 0 2px 4px rgba(17,19,24,.04), 0 24px 60px -18px rgba(25,18,70,.22);
+  --gutter: clamp(1.25rem, 4vw, 3rem);
+  --max: 1200px;
+  --ease: cubic-bezier(.2,.7,.2,1);
+}
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 88px; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility; font-feature-settings: "cv11", "ss01"; }
+img, svg { display: block; max-width: 100%; }
+a { color: var(--brand-ink); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+a:hover { color: var(--brand); }
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 3px; border-radius: 4px; }
+code, pre, kbd { font-family: var(--mono); }
+.wrap { width: 100%; max-width: var(--max); margin: 0 auto; padding: 0 var(--gutter); }
+.skip { position: absolute; left: 12px; top: -48px; z-index: 100; background: var(--ink); color: #fff; padding: 10px 16px; border-radius: 8px; text-decoration: none; }
+.skip:focus { top: 12px; color: #fff; }
+
+/* Header */
+.site-header { position: sticky; top: 0; z-index: 50; background: rgba(251,251,249,.86); backdrop-filter: saturate(1.4) blur(14px); -webkit-backdrop-filter: saturate(1.4) blur(14px); border-bottom: 1px solid transparent; transition: border-color .2s var(--ease); }
+.site-header.scrolled { border-bottom-color: var(--line); }
+.nav { display: flex; align-items: center; gap: 28px; height: 68px; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; font-weight: 700; font-size: 1.15rem; letter-spacing: -.02em; }
+.brand-mark { width: 30px; height: 30px; }
+.nav-links { display: flex; gap: 4px; list-style: none; margin: 0; padding: 0; margin-left: 8px; }
+.nav-links a { display: inline-block; padding: 8px 12px; border-radius: 8px; color: var(--ink-2); text-decoration: none; font-size: .94rem; font-weight: 500; }
+.nav-links a:hover { background: var(--bg-alt); color: var(--ink); }
+.nav-cta { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 20px; border-radius: 10px; font: 600 .95rem/1 var(--font); text-decoration: none; border: 1px solid transparent; cursor: pointer; transition: background .15s var(--ease), border-color .15s var(--ease), box-shadow .15s var(--ease), transform .15s var(--ease); white-space: nowrap; }
+.btn-primary { background: var(--ink); color: #fff; box-shadow: 0 1px 0 rgba(255,255,255,.08) inset, var(--shadow-sm); }
+.btn-primary:hover { background: #262a33; color: #fff; }
+.btn-brand { background: var(--brand); color: #fff; }
+.btn-brand:hover { background: var(--brand-ink); color: #fff; }
+.btn-ghost { background: var(--surface); color: var(--ink); border-color: var(--line-strong); }
+.btn-ghost:hover { border-color: var(--ink); color: var(--ink); }
+.btn svg { width: 18px; height: 18px; }
+.menu-toggle { display: none; margin-left: auto; min-width: 44px; min-height: 44px; border: 1px solid var(--line-strong); background: var(--surface); border-radius: 10px; cursor: pointer; }
+.menu-toggle span { display: block; width: 18px; height: 2px; background: var(--ink); margin: 4px auto; border-radius: 2px; }
+
+/* Typography */
+.eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: .8rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--brand-ink); }
+.eyebrow::before { content: ""; width: 18px; height: 1px; background: currentColor; }
+h1, h2, h3 { color: var(--ink); letter-spacing: -.025em; margin: 0; }
+h1 { font-size: clamp(2.6rem, 6.2vw, 4.75rem); line-height: 1.02; font-weight: 700; letter-spacing: -.04em; }
+h2 { font-size: clamp(1.9rem, 3.6vw, 2.75rem); line-height: 1.1; font-weight: 700; }
+h3 { font-size: 1.15rem; line-height: 1.3; font-weight: 650; letter-spacing: -.01em; }
+.lede { font-size: clamp(1.1rem, 1.6vw, 1.3rem); line-height: 1.55; color: var(--muted); max-width: 40ch; }
+.section { padding: clamp(72px, 10vw, 128px) 0; }
+.section.alt { background: var(--bg-alt); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.section-head { max-width: 760px; margin-bottom: clamp(36px, 5vw, 56px); }
+.section-head p { color: var(--muted); font-size: 1.1rem; margin: 18px 0 0; max-width: 62ch; }
+.section-head .eyebrow { margin-bottom: 18px; }
+
+/* Heading permalinks */
+.h-row { display: flex; align-items: flex-start; gap: 6px; flex-wrap: nowrap; }
+.h-row > h2 { flex: 0 1 auto; min-width: 0; overflow-wrap: anywhere; }
+.h-tools { display: inline-flex; gap: 2px; flex: none; margin-top: .15em; opacity: 0; transition: opacity .15s var(--ease); }
+.h-row:hover .h-tools, .h-row:focus-within .h-tools { opacity: 1; }
+@media (hover: none), (pointer: coarse) { .h-tools { opacity: 1; } }
+.h-tool { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 10px; border: 0; background: transparent; color: var(--faint); cursor: pointer; text-decoration: none; font: 600 1.1rem/1 var(--font); position: relative; }
+.h-tool:hover, .h-tool:focus-visible { color: var(--brand-ink); background: var(--brand-wash); }
+.h-tool svg { width: 18px; height: 18px; }
+.h-tool[data-tip]:hover::after, .h-tool[data-tip]:focus-visible::after { content: attr(data-tip); position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; font: 500 .75rem/1 var(--font); padding: 7px 9px; border-radius: 6px; white-space: nowrap; pointer-events: none; }
+.copy-status { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); opacity: 0; background: var(--ink); color: #fff; padding: 12px 16px; border-radius: 10px; font-size: .9rem; box-shadow: var(--shadow-lg); transition: opacity .2s var(--ease), transform .2s var(--ease); z-index: 90; max-width: calc(100vw - 32px); }
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+.toast input { margin-top: 8px; width: 100%; font: .85rem var(--mono); padding: 8px; border-radius: 6px; border: 0; }
+
+/* Hero */
+.hero { position: relative; padding: clamp(56px, 8vw, 104px) 0 clamp(64px, 9vw, 112px); overflow: hidden; }
+.hero::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 56px 56px; -webkit-mask-image: radial-gradient(ellipse 70% 60% at 70% 30%, #000 10%, transparent 72%); mask-image: radial-gradient(ellipse 70% 60% at 70% 30%, #000 10%, transparent 72%); opacity: .55; pointer-events: none; }
+.hero::after { content: ""; position: absolute; width: 820px; height: 820px; right: -240px; top: -320px; background: radial-gradient(closest-side, rgba(106,68,240,.13), rgba(106,68,240,0)); pointer-events: none; }
+.hero-grid { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: clamp(36px, 5vw, 72px); align-items: center; }
+.hero h1 .accent { color: var(--brand); }
+.hero .lede { margin: 26px 0 0; max-width: 40ch; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 36px; }
+.trust { display: flex; flex-wrap: wrap; gap: 10px 22px; margin: 40px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: .9rem; }
+.trust li { display: inline-flex; align-items: center; gap: 8px; }
+.trust svg { width: 16px; height: 16px; color: var(--positive); flex: none; }
+
+/* Product window */
+.window { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow-lg); overflow: hidden; }
+.window-bar { display: flex; align-items: center; gap: 8px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: linear-gradient(#fdfdfc, #f7f7f4); }
+.window-bar i { width: 11px; height: 11px; border-radius: 50%; background: #e3e2dc; }
+.window-bar span { margin-left: 10px; font: 500 .8rem var(--mono); color: var(--faint); }
+.term { margin: 0; padding: 22px 24px 30px; font-size: .82rem; line-height: 1.75; color: var(--ink-2); overflow-x: auto; white-space: pre; }
+.term .p { color: var(--brand); user-select: none; }
+.term .c { color: var(--ink); font-weight: 600; }
+.term .k { color: var(--faint); }
+.term .id { color: var(--brand-ink); }
+.term .ok { color: var(--positive); }
+.term .dim { color: #a2a6b0; }
+.hero-visual { position: relative; }
+.chip-float { position: absolute; display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-size: .8rem; font-weight: 600; color: var(--ink-2); box-shadow: var(--shadow); }
+.chip-float b { color: var(--brand-ink); font-weight: 700; }
+.chip-1 { right: 28px; bottom: -20px; }
+.chip-2 { right: -14px; top: -18px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--positive); box-shadow: 0 0 0 3px var(--positive-wash); }
+
+/* Facts */
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); box-shadow: var(--shadow-sm); }
+.fact { padding: 28px 28px 26px; border-left: 1px solid var(--line); }
+.fact:first-child { border-left: 0; }
+.fact strong { display: block; font-size: clamp(1.8rem, 3vw, 2.4rem); line-height: 1; letter-spacing: -.035em; font-weight: 700; color: var(--ink); }
+.fact span { display: block; margin-top: 10px; color: var(--muted); font-size: .92rem; line-height: 1.45; }
+
+/* Cards */
+.grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 30px; box-shadow: var(--shadow-sm); }
+.card p { color: var(--muted); margin: 12px 0 0; font-size: 1rem; }
+.icon { width: 44px; height: 44px; border-radius: 11px; display: grid; place-items: center; background: var(--brand-wash); color: var(--brand-ink); border: 1px solid var(--brand-line); margin-bottom: 22px; }
+.icon svg { width: 22px; height: 22px; }
+.card .num { font: 600 .78rem var(--mono); color: var(--faint); letter-spacing: .04em; }
+
+/* Belief */
+.belief > div:first-child { position: sticky; top: 120px; }
+.belief { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: clamp(32px, 6vw, 88px); align-items: start; }
+.quote { font-size: clamp(1.2rem, 1.9vw, 1.5rem); line-height: 1.45; letter-spacing: -.015em; color: var(--ink-2); font-weight: 500; margin: 0; max-width: 30ch; }
+.quote em { font-style: normal; color: var(--brand); }
+.ppe { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.ppe li { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 20px; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.ppe b { font-weight: 650; color: var(--ink); }
+.ppe span { color: var(--muted); }
+
+/* Spectrum */
+.spectrum { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; position: relative; margin-top: 8px; }
+.spectrum::before { content: ""; position: absolute; left: 10%; right: 10%; top: 27px; height: 2px; background: linear-gradient(90deg, var(--brand-line), var(--brand)); }
+.step { position: relative; text-align: center; padding: 0 10px; }
+.step .node { position: relative; width: 56px; height: 56px; margin: 0 auto 18px; border-radius: 50%; background: var(--surface); border: 1px solid var(--brand-line); display: grid; place-items: center; color: var(--brand-ink); box-shadow: var(--shadow-sm); }
+.step .node svg { width: 24px; height: 24px; }
+.step h3 { font-size: 1rem; }
+.step p { margin: 6px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+
+/* Table */
+.table-wrap { border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); overflow-x: auto; box-shadow: var(--shadow-sm); }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; min-width: 640px; }
+th, td { text-align: left; padding: 15px 20px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .78rem; text-transform: uppercase; letter-spacing: .07em; color: var(--faint); font-weight: 600; background: #fcfcfa; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { font-weight: 600; color: var(--ink); white-space: nowrap; }
+td:nth-child(2) { color: var(--muted); }
+td.tag { white-space: nowrap; }
+.pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: .75rem; font-weight: 600; letter-spacing: .01em; }
+.pill.live { background: var(--positive-wash); color: var(--positive); }
+.pill.road { background: var(--amber-wash); color: var(--amber); }
+
+/* Policy */
+.policy { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(28px, 5vw, 64px); align-items: center; }
+.layers { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.layers li { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 11px; padding: 13px 18px; box-shadow: var(--shadow-sm); }
+.layers li b { font-weight: 650; }
+.layers li span { color: var(--muted); font-size: .88rem; text-align: right; }
+.layers li:nth-child(1) { margin: 0 0; border-color: var(--ink); background: var(--ink); color: #fff; }
+.layers li:nth-child(1) span { color: #b9bdc7; }
+.layers li:nth-child(2) { margin: 0 3%; border-color: var(--brand-line); background: var(--brand-wash); }
+.layers li:nth-child(3) { margin: 0 6%; }
+.layers li:nth-child(4) { margin: 0 9%; }
+.layers li:nth-child(5) { margin: 0 12%; }
+.layers li:nth-child(6) { margin: 0 15%; }
+.layers li:nth-child(7) { margin: 0 18%; }
+.narrow-note { margin: 14px 0 0; font-size: .88rem; color: var(--faint); text-align: center; }
+.code { background: var(--night); color: #d9dce3; border-radius: var(--radius); padding: 22px 24px; font-size: .82rem; line-height: 1.75; overflow-x: auto; box-shadow: var(--shadow-lg); margin: 0; white-space: pre; }
+.code .s { color: #b6a6ff; }
+.code .v { color: #9fe3c0; }
+.code .k { color: #7d8394; }
+.policy-points { list-style: none; padding: 0; margin: 26px 0 0; display: grid; gap: 14px; }
+.policy-points li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 12px; color: var(--muted); }
+.policy-points svg { width: 20px; height: 20px; color: var(--brand); margin-top: 3px; }
+.policy-points b { color: var(--ink); font-weight: 650; }
+
+/* Timeline */
+.timeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.era { position: relative; padding: 30px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-sm); }
+.era .year { font: 600 .82rem var(--mono); color: var(--brand-ink); letter-spacing: .04em; }
+.era h3 { margin-top: 12px; font-size: 1.3rem; }
+.era p { color: var(--muted); margin: 10px 0 0; font-size: .98rem; }
+.era.now { border-color: var(--brand-line); box-shadow: 0 0 0 4px var(--brand-wash), var(--shadow-sm); }
+
+/* Pricing */
+.pricing { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; align-items: stretch; }
+.plan { display: flex; flex-direction: column; background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 34px 30px 30px; box-shadow: var(--shadow-sm); }
+.plan.featured { background: var(--night); border-color: var(--night); color: #e8e9ee; box-shadow: var(--shadow-lg); }
+.plan.featured h3, .plan.featured .price { color: #fff; }
+.plan.featured .plan-sub, .plan.featured li { color: #b9bdc7; }
+.plan.featured li svg { color: #b6a6ff; }
+.plan h3 { font-size: 1.05rem; }
+.plan .price { margin-top: 18px; font-size: 2.5rem; font-weight: 700; letter-spacing: -.04em; line-height: 1; color: var(--ink); }
+.plan .price small { font-size: .95rem; font-weight: 500; letter-spacing: 0; color: var(--faint); margin-left: 4px; }
+.plan .plan-sub { margin-top: 10px; color: var(--muted); font-size: .92rem; min-height: 2.8em; }
+.plan ul { list-style: none; margin: 24px 0 30px; padding: 22px 0 0; border-top: 1px solid var(--line); display: grid; gap: 12px; }
+.plan.featured ul { border-top-color: rgba(255,255,255,.12); }
+.plan li { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: 10px; font-size: .95rem; color: var(--ink-2); }
+.plan li svg { width: 18px; height: 18px; color: var(--positive); margin-top: 3px; }
+.plan .btn { margin-top: auto; width: 100%; }
+.plan.featured .btn-ghost { background: #fff; border-color: #fff; }
+.badge-top { display: inline-block; margin-left: 8px; padding: 3px 9px; border-radius: 999px; font-size: .7rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; background: rgba(182,166,255,.16); color: #cfc4ff; vertical-align: 2px; }
+.price-note { margin: 22px 0 0; text-align: center; color: var(--faint); font-size: .9rem; }
+
+/* FAQ */
+.faq { max-width: 860px; border-top: 1px solid var(--line); }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 24px; min-height: 64px; padding: 18px 0; font-weight: 600; font-size: 1.05rem; color: var(--ink); }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: ""; flex: none; width: 12px; height: 12px; border-right: 2px solid var(--faint); border-bottom: 2px solid var(--faint); transform: rotate(45deg) translate(-3px, -3px); transition: transform .2s var(--ease); }
+.faq details[open] summary::after { transform: rotate(-135deg) translate(-3px, -3px); }
+.faq details p { margin: 0 0 22px; color: var(--muted); max-width: 70ch; }
+
+/* CTA */
+.cta { position: relative; overflow: hidden; background: var(--night); color: #e8e9ee; border-radius: 24px; padding: clamp(40px, 6vw, 72px); display: grid; grid-template-columns: minmax(0, 1.4fr) auto; gap: 32px; align-items: center; }
+.cta::after { content: ""; position: absolute; right: -160px; top: -200px; width: 560px; height: 560px; background: radial-gradient(closest-side, rgba(106,68,240,.45), transparent); pointer-events: none; }
+.cta h2 { color: #fff; position: relative; z-index: 1; }
+.cta p { color: #b9bdc7; margin: 14px 0 0; position: relative; z-index: 1; max-width: 52ch; }
+.cta .actions { display: flex; gap: 12px; flex-wrap: wrap; position: relative; z-index: 1; }
+.cta .btn-ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.3); }
+.cta .btn-ghost:hover { border-color: #fff; color: #fff; }
+.cta .btn-white { background: #fff; color: var(--ink); }
+.cta .btn-white:hover { background: #ecebff; color: var(--ink); }
+
+/* Footer */
+.site-footer { padding: 64px 0 40px; border-top: 1px solid var(--line); background: var(--bg); }
+.foot-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)); gap: 32px; }
+.foot-grid p { color: var(--muted); font-size: .92rem; margin: 14px 0 0; max-width: 34ch; }
+.foot-col h3 { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: var(--faint); font-weight: 600; margin-bottom: 14px; }
+.foot-col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.foot-col a { color: var(--ink-2); text-decoration: none; font-size: .94rem; display: inline-block; padding: 5px 0; }
+.foot-col a:hover { color: var(--brand-ink); text-decoration: underline; }
+.foot-bottom { margin-top: 48px; padding-top: 28px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; gap: 24px; flex-wrap: wrap; }
+.foot-bottom small { color: var(--faint); font-size: .85rem; }
+.agent-credit { display: flex; align-items: center; gap: 14px; margin-left: auto; text-align: right; }
+.agent-credit-text { display: flex; flex-direction: column; gap: 1px; font-size: .8rem; line-height: 1.5; color: var(--muted); }
+.agent-credit-text a { color: var(--muted); text-underline-offset: 2px; }
+.agent-credit-text a:hover { color: var(--ink); }
+.agent-credit-logo { display: inline-block; width: 68px; flex: none; }
+.agent-credit-logo img { width: 100%; height: auto; }
+
+/* Reveal (content is visible without JS) */
+.js .reveal { opacity: 0; transform: translateY(14px); transition: opacity .7s var(--ease), transform .7s var(--ease); }
+.js .reveal.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .js .reveal { opacity: 1; transform: none; transition: none; } }
+
+/* Responsive */
+@media (max-width: 1080px) {
+  .nav-links a { padding: 8px 9px; }
+  .hero-grid, .belief, .policy { grid-template-columns: minmax(0, 1fr); }
+  .belief > div:first-child { position: static; }
+  .hero .lede { max-width: 46ch; }
+  .chip-2 { right: 12px; }
+}
+@media (max-width: 920px) {
+  .nav-links, .nav-cta .btn-ghost { display: none; }
+  .menu-toggle { display: inline-block; }
+  .nav-cta { margin-left: 0; }
+  .nav.open { flex-wrap: wrap; height: auto; padding: 12px 0 16px; }
+  .nav.open .nav-links { display: flex; flex-direction: column; width: 100%; order: 3; margin: 8px 0 0; }
+  .nav.open .nav-links a { padding: 12px; }
+  .grid-3, .timeline, .pricing { grid-template-columns: minmax(0, 1fr); }
+  .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fact:nth-child(3) { border-left: 0; }
+  .fact:nth-child(n+3) { border-top: 1px solid var(--line); }
+  .spectrum { grid-template-columns: minmax(0, 1fr); gap: 18px; }
+  .spectrum::before { left: 27px; right: auto; top: 28px; bottom: 28px; width: 2px; height: auto; background: linear-gradient(var(--brand-line), var(--brand)); }
+  .step { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 18px; text-align: left; padding: 0; align-items: center; }
+  .step .node { margin: 0; }
+  .foot-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cta { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 640px) {
+  body { font-size: 16px; }
+  .nav-cta .btn-primary { display: none; }
+  .grid-2 { grid-template-columns: minmax(0, 1fr); }
+  .facts { grid-template-columns: minmax(0, 1fr); }
+  .fact { border-left: 0; border-top: 1px solid var(--line); }
+  .fact:first-child { border-top: 0; }
+  .ppe li { grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .layers li { margin: 0 !important; flex-direction: column; align-items: flex-start; gap: 2px; }
+  .layers li span { text-align: left; }
+  .chip-float { display: none; }
+  .foot-grid { grid-template-columns: minmax(0, 1fr); }
+  .foot-bottom { flex-direction: column; align-items: flex-end; }
+  .foot-bottom small { align-self: stretch; }
+  .hero-actions .btn { width: 100%; }
+}
+</style>
 </head>
 <body>
-    <!-- Navigation -->
-    <nav id="nav">
-        <div class="container">
-            <div class="logo">dctx</div>
-            <ul class="nav-links">
-                <li><a href="#philosophy">Philosophy</a></li>
-                <li><a href="#example">Examples</a></li>
-                <li><a href="#features">Features</a></li>
-                <li><a href="#ecosystem">Ecosystem</a></li>
-                <li><a href="#pricing">Pricing</a></li>
-                <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Spec</a></li>
-            </ul>
-            <div class="nav-cta">
-                <a href="https://github.com/Eris-Margeta/dctx" class="btn btn-ghost">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                    GitHub
-                </a>
-                <a href="#pricing" class="btn btn-primary">Get Desktop App</a>
-            </div>
-        </div>
+<a class="skip" href="#main">Skip to content</a>
+
+<header class="site-header" id="top">
+  <div class="wrap">
+    <nav class="nav" aria-label="Primary">
+      <a class="brand" href="#top" aria-label="dctx home">
+        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#121419"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#7c5cff"/></svg>
+        dctx
+      </a>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#belief">Philosophy</a></li>
+        <li><a href="#platform">Platform</a></li>
+        <li><a href="#security">Security</a></li>
+        <li><a href="#control">Control</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Specification</a></li>
+      </ul>
+      <div class="nav-cta">
+        <a class="btn btn-ghost" href="https://github.com/Eris-Margeta/dctx">GitHub</a>
+        <a class="btn btn-primary" href="mailto:info@tejl.com?subject=dctx%20Enterprise">Talk to us</a>
+      </div>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu"><span></span><span></span><span></span></button>
     </nav>
+  </div>
+</header>
 
-    <!-- Hero Section -->
-    <section class="hero">
-        <div class="hero-grid"></div>
-        <div class="container">
-            <div class="hero-content">
-                <div class="hero-badge">Open source · Apache-2.0 · No telemetry</div>
-                <h1>Context,<br><span>engineered.</span></h1>
-                <p>The context engine for AI-assisted software development. dctx sends a model the fewest, most relevant bytes &mdash; exact source, in an order that stays the same between turns &mdash; so prompts get smaller, prompt caches hit and answers get sharper.</p>
-                <div class="hero-buttons">
-                    <a href="#pricing" class="btn btn-primary">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-                        Download Desktop App
-                    </a>
-                    <a href="#open-source" class="btn btn-secondary">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                        View on GitHub
-                    </a>
-                </div>
-                <div class="hero-install">
-                    <div class="install-tabs">
-                        <button class="install-tab active" onclick="showInstall('curl')">curl</button>
-                        <button class="install-tab" onclick="showInstall('cargo')">cargo</button>
-                        <button class="install-tab" onclick="showInstall('source')">source</button>
-                    </div>
-                    <div class="hero-code">
-                        <pre id="install-curl"><span class="prompt">$</span> <span class="command">curl -fsSL https://dctx.app/install.sh | sh</span></pre>
-                        <pre id="install-cargo" style="display:none"><span class="prompt">$</span> <span class="command">cargo install --path crates/dctx-cli</span></pre>
-                        <pre id="install-source" style="display:none"><span class="prompt">$</span> <span class="command">git clone https://github.com/Eris-Margeta/dctx && cd dctx && cargo build --release</span></pre>
-                    </div>
-                </div>
-            </div>
+<main id="main">
+
+<!-- Hero -->
+<section class="hero" aria-labelledby="hero-title">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">The context engine for AI-assisted development</span>
+      <h1 id="hero-title" style="margin-top:22px">Context,<br><span class="accent">engineered.</span></h1>
+      <p class="lede">dctx gives every model and every developer in your company the smallest, most relevant set of source code &mdash; exact, verifiable and identical from one turn to the next. Smaller prompts. Higher cache hits. Sharper answers.</p>
+      <div class="hero-actions">
+        <a class="btn btn-primary" href="mailto:info@tejl.com?subject=dctx%20Enterprise">
+          Talk to us about Enterprise
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5"/></svg>
+        </a>
+        <a class="btn btn-ghost" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification</a>
+      </div>
+      <ul class="trust" aria-label="Guarantees">
+        <li><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3 3 7-7"/></svg>Runs on your machines</li>
+        <li><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3 3 7-7"/></svg>No telemetry</li>
+        <li><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3 3 7-7"/></svg>Never calls a model</li>
+        <li><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3 3 7-7"/></svg>Open source, Apache-2.0</li>
+      </ul>
+    </div>
+    <div class="hero-visual">
+      <div class="window" role="img" aria-label="Terminal showing a bounded dctx map search: five ranked records with ids, line ranges and a precision label, in 412 estimated tokens">
+        <div class="window-bar"><i></i><i></i><i></i><span>~/acme/payments — dctx</span></div>
+<pre class="term"><span class="p">$</span> <span class="c">dctx map find "settlement batch"</span> <span class="k">--budget 600</span>
+<span class="dim"># snapshot 7c1e… · precision structural/complete</span>
+<span class="id">s:settle/batch.rs#Batch</span>          struct  L12–48
+<span class="id">s:settle/batch.rs#Batch::close</span>   fn      L51–97
+<span class="id">s:settle/run.rs#run_nightly</span>      fn      L8–40
+<span class="id">m:settle/ledger.rs</span>               module  14 symbols
+<span class="id">d:docs/settlement.md#lifecycle</span>   doc     §3
+<span class="dim"># 5 records · 412 of 600 tokens · next: read &lt;id&gt;</span>
+
+<span class="p">$</span> <span class="c">dctx map read</span> <span class="id">s:settle/batch.rs#Batch::close</span>
+<span class="ok">✓ bytes verified</span> <span class="dim">· exact span L51–97 · 47 lines</span></pre>
+      </div>
+      <div class="chip-float chip-2"><span class="dot"></span>Deterministic output</div>
+      <div class="chip-float chip-1">Hard budget <b>≤ 2,000</b> tokens per answer</div>
+    </div>
+  </div>
+</section>
+
+<!-- Facts -->
+<section aria-label="dctx at a glance" style="padding-bottom: clamp(48px, 7vw, 88px)">
+  <div class="wrap">
+    <div class="facts reveal">
+      <div class="fact"><strong>0</strong><span>bytes of telemetry. dctx makes no network requests and never calls a model.</span></div>
+      <div class="fact"><strong>15</strong><span>language families indexed by first-party extractors, from Rust and TypeScript to Swift and config files.</span></div>
+      <div class="fact"><strong>2,000</strong><span>token hard ceiling on any single answer. Records are never cut in half.</span></div>
+      <div class="fact"><strong>1</strong><span>binary for the CLI, the desktop app, agents and CI &mdash; one engine, one policy.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- Belief -->
+<section class="section alt" id="belief" aria-labelledby="belief-h">
+  <div class="wrap belief">
+    <div class="reveal">
+      <span class="eyebrow">Our core belief</span>
+      <div class="h-row" style="margin-top:18px"><h2 id="belief-h">Prompt&#8209;processing efficiency is the&nbsp;product.</h2></div>
+      <p class="quote" style="margin-top:28px">Every token in front of a model is paid for three times &mdash; in <em>prefill</em>, in <em>cache misses</em> and in <em>attention</em>. dctx is engineered to cut all three.</p>
+    </div>
+    <div class="reveal">
+      <div class="grid-2" style="grid-template-columns:minmax(0,1fr)">
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></div>
+          <h3>Prefill</h3>
+          <p>A model must process every input token before it answers &mdash; you pay for each one and wait for it. dctx answers with exact spans and diffs instead of whole files, inside a hard budget.</p>
         </div>
-    </section>
-
-    <!-- Philosophy Section -->
-    <section class="philosophy" id="philosophy">
-        <div class="container">
-            <div class="section-header">
-                <h2>The core belief: prompt-processing efficiency</h2>
-                <p>Every token in front of a model is paid for three times. dctx is built to cut all three.</p>
-            </div>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">&#9201;</div>
-                    <h3>Prefill</h3>
-                    <p>The model processes every input token before it answers. dctx answers with exact spans and diffs instead of whole files, inside a hard token budget.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">&#9851;</div>
-                    <h3>Cache hits</h3>
-                    <p>Providers serve repeated prompt prefixes for a fraction of the cost. dctx output is byte-for-byte deterministic and canonically ordered, with no timestamps or random ids, so repeated prefixes stay identical and caches hit.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">&#127919;</div>
-                    <h3>Attention</h3>
-                    <p>Irrelevant tokens make answers worse. dctx ranks, bounds and labels every answer with its precision and freshness. No embeddings, no fragmented chunks, zero RAG defects.</p>
-                </div>
-            </div>
-            <div class="spectrum">
-                <div class="spectrum-label">One engine for every way software is built</div>
-                <div class="spectrum-row">
-                    <span>Hand-coding</span><i></i><span>Tab completion</span><i></i><span>Copy-paste chat</span><i></i><span>Agents</span><i></i><span>Software factories</span>
-                </div>
-            </div>
-            <p class="lineage">Started in 2025 as <code>dircontxt</code>, written in pure C, to solve the context problem while we were still moving to an AI workflow. Rewritten in Rust in 2026. Same goal: <strong>context, engineered.</strong> <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification &rarr;</a></p>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/></svg></div>
+          <h3>Cache hits</h3>
+          <p>Providers serve repeated prompt prefixes at a fraction of the price and latency, but one changed byte breaks the cache. dctx output is deterministic and canonically ordered &mdash; no timestamps, no random ids.</p>
         </div>
-    </section>
-
-    <!-- Problem Section -->
-    <section class="problem">
-        <div class="container">
-            <!-- The Problem -->
-            <div class="problem-content">
-                <div class="problem-text">
-                    <h2>Stop fighting with bash commands</h2>
-                    <p>Sharing code context with AI shouldn't require a PhD in shell scripting. Dirty, long bash commands that pick up unwanted files and litter your context are a thing of the past.</p>
-                    <ul class="problem-list">
-                        <li>Manual file concatenation misses critical files</li>
-                        <li>Bash one-liners include node_modules and build artifacts</li>
-                        <li>No way to track what changed since your last paste</li>
-                        <li>Token limits wasted on irrelevant boilerplate</li>
-                    </ul>
-                </div>
-                <div class="bash-nightmare">
-                    <span class="label">The old way (don't do this):</span>
-                    <pre>find . -type f \( -name "*.ts" -o -name "*.tsx" \) \
-  -not -path "./node_modules/*" \
-  -not -path "./dist/*" \
-  -not -path "./.git/*" \
-  -not -name "*.test.ts" \
-  -not -name "*.spec.ts" | \
-  head -50 | \
-  xargs -I {} sh -c \
-  'echo "=== {} ===" && cat {}' | \
-  pbcopy</pre>
-                </div>
-            </div>
-            <!-- The Solution -->
-            <div class="solution-content">
-                <div class="solution-text">
-                    <h2>With dctx, simply <span>WORK</span>.</h2>
-                    <p>Share your context with AI and let it intelligently manage what AI needs to see and what it doesn't.</p>
-                </div>
-                <div class="solution-code-wrapper">
-                    <div class="hero-code solution-code">
-                        <pre><span class="comment"># Copy your project context to clipboard</span>
-<span class="prompt">$</span> <span class="command">dctx . -c</span>
-
-<span class="comment"># Context ready! Paste into any AI chat.</span>
-<span class="comment"># 42 files, 15.2KB - intelligently filtered</span></pre>
-                    </div>
-                    <p class="solution-tagline">That's it.</p>
-                </div>
-            </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></div>
+          <h3>Attention</h3>
+          <p>Answers get worse as irrelevant tokens pile up. dctx ranks and bounds every answer and labels it with its precision and freshness, so a model reasons over facts, not guesses.</p>
         </div>
-    </section>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <!-- Example Output Section -->
-    <section class="example-output" id="example">
-        <div class="container">
-            <div class="section-header">
-                <h2>See it in action</h2>
-                <p>Real output from a real project. Structured, semantic, AI-ready.</p>
-            </div>
+<!-- Platform: spectrum -->
+<section class="section" id="platform" aria-labelledby="platform-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">One platform</span>
+      <div class="h-row"><h2 id="platform-h">One engine for every way your teams build software.</h2></div>
+      <p>From an engineer reading unfamiliar code to a fleet of autonomous agents in CI, every workflow draws from the same engine, the same index and the same policy.</p>
+    </div>
+    <div class="spectrum reveal">
+      <div class="step"><div class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m8 9-4 3 4 3m8-6 4 3-4 3M14 5l-4 14"/></svg></div><div><h3>Hand-coding</h3><p>Outlines, symbol search and exact reads in an unfamiliar codebase.</p></div></div>
+      <div class="step"><div class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h4m-4 4h7"/><path d="M15 10h2" stroke-dasharray="1 2"/></svg></div><div><h3>Tab completion</h3><p>A library facade for the editor's own context budget.</p></div></div>
+      <div class="step"><div class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="8" y="3" width="12" height="14" rx="2"/><path d="M16 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/></svg></div><div><h3>Copy-paste chat</h3><p>The whole project, or only what changed, in one structured block.</p></div></div>
+      <div class="step"><div class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/></svg></div><div><h3>Agents</h3><p>Bounded, copyable, deterministic answers through five verbs.</p></div></div>
+      <div class="step"><div class="node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 20V10l5 3V10l5 3V6l8 4v10z"/><path d="M3 20h18"/></svg></div><div><h3>Software factories</h3><p>One signed policy, receipts and byte-identical outputs in CI.</p></div></div>
+    </div>
+  </div>
+</section>
 
-            <div class="example-tabs">
-                <button class="example-tab active" onclick="showExample('full')">dctx . -c</button>
-                <button class="example-tab" onclick="showExample('tree')">dctx . -t -c</button>
-            </div>
+<!-- Director value -->
+<section class="section alt" aria-labelledby="value-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">For leadership</span>
+      <div class="h-row"><h2 id="value-h">What it means for your organization.</h2></div>
+    </div>
+    <div class="grid-2 reveal">
+      <div class="card"><span class="num">01 · COST</span><h3 style="margin-top:12px">Pay for the tokens that matter.</h3><p>Smaller, bounded prompts and stable prefixes that providers can cache. Spend follows the work, not the size of the repository.</p></div>
+      <div class="card"><span class="num">02 · SECURITY</span><h3 style="margin-top:12px">Source code stays on your machines.</h3><p>Ignored files are never opened. No telemetry, no network, no model calls. Plugin and policy signatures are verified with vetted Ed25519 cryptography.</p></div>
+      <div class="card"><span class="num">03 · CONTROL</span><h3 style="margin-top:12px">One policy for every developer.</h3><p>Set budgets, privacy rules, parsers and plugins once for the whole organization; teams and individuals can only narrow it.</p></div>
+      <div class="card"><span class="num">04 · PREDICTABILITY</span><h3 style="margin-top:12px">Same input, same bytes.</h3><p>Deterministic answers with explicit precision and freshness make agent runs reproducible and auditable.</p></div>
+    </div>
+  </div>
+</section>
 
-            <div class="example-box">
-                <div class="example-header">
-                    <div class="example-header-left">
-                        <div class="example-dots">
-                            <span></span><span></span><span></span>
-                        </div>
-                        <span class="example-title">clipboard contents</span>
-                    </div>
-                </div>
-                <div class="example-content" id="example-full">
-                    <pre><span class="header">[DCTX_LLM_CONTEXT_SNAPSHOT_V1]</span>
-<span class="bracket">[DIRECTORY:my-project]</span>
-<span class="tag">&lt;INSTRUCTIONS&gt;</span>
-1. Manifest: The &lt;DIRECTORY_TREE&gt; section lists all files.
-   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID, MOD:TIMESTAMP)
-   - TYPE is [D] for directory, [F] for file.
-2. Content Access: To read a specific file:
-   - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: &lt;FILE_CONTENT_START ID="UNIQUE_ID"&gt;
-   - The content is between this marker and &lt;/FILE_CONTENT_END ID="UNIQUE_ID"&gt;
-<span class="tag">&lt;/INSTRUCTIONS&gt;</span>
-<span class="tag">&lt;DIRECTORY_TREE&gt;</span>
-<span class="bracket">[D]</span>  (ID:ROOT, MOD:1768567394241)
-  <span class="bracket">[F]</span> package.json (<span class="attr">ID</span>:<span class="value">F001</span>, <span class="attr">MOD</span>:1768559794769, <span class="attr">SIZE</span>:1420)
-  <span class="bracket">[F]</span> tsconfig.json (<span class="attr">ID</span>:<span class="value">F002</span>, <span class="attr">MOD</span>:1768561368702, <span class="attr">SIZE</span>:892)
-  <span class="bracket">[D]</span> src (<span class="attr">ID</span>:<span class="value">D003</span>, <span class="attr">MOD</span>:1768567394245)
-    <span class="bracket">[F]</span> src/index.ts (<span class="attr">ID</span>:<span class="value">F004</span>, <span class="attr">MOD</span>:1768567400577, <span class="attr">SIZE</span>:2048)
-    <span class="bracket">[F]</span> src/config.ts (<span class="attr">ID</span>:<span class="value">F005</span>, <span class="attr">MOD</span>:1768567394473, <span class="attr">SIZE</span>:1536)
-    <span class="bracket">[D]</span> src/utils (<span class="attr">ID</span>:<span class="value">D006</span>, <span class="attr">MOD</span>:1768567394241)
-      <span class="bracket">[F]</span> src/utils/helpers.ts (<span class="attr">ID</span>:<span class="value">F007</span>, <span class="attr">MOD</span>:1768567396528, <span class="attr">SIZE</span>:3072)
-<span class="tag">&lt;/DIRECTORY_TREE&gt;</span>
-<span class="tag">&lt;FILE_CONTENT_START</span> <span class="attr">ID</span>=<span class="value">"F004"</span> <span class="attr">PATH</span>=<span class="value">"src/index.ts"</span> <span class="attr">LINES</span>=<span class="value">"48"</span><span class="tag">&gt;</span>
-import { Config } from './config';
-import { formatOutput, validateInput } from './utils/helpers';
+<!-- Zero RAG defects -->
+<section class="section" id="quality" aria-labelledby="quality-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Accuracy</span>
+      <div class="h-row"><h2 id="quality-h">Zero RAG defects, by construction.</h2></div>
+      <p>Retrieval over embedded chunks fails in predictable ways. dctx does not use embeddings: it answers from a lexical graph of syntax-owned spans and verifies bytes before it emits them.</p>
+    </div>
+    <div class="table-wrap reveal">
+      <table>
+        <thead><tr><th scope="col">Failure in chunk retrieval</th><th scope="col">What goes wrong</th><th scope="col">How dctx prevents it</th><th scope="col">Status</th></tr></thead>
+        <tbody>
+          <tr><td>Fragmentation</td><td>Functions cut in half; signature without body</td><td>Records are whole syntax spans; long reads continue with a cursor</td><td class="tag"><span class="pill live">Available</span></td></tr>
+          <tr><td>Non-determinism</td><td>Same question, different chunks</td><td>Integer scores, canonical order, frozen ranking revision</td><td class="tag"><span class="pill live">Available</span></td></tr>
+          <tr><td>Staleness</td><td>Old code served as current</td><td>Bytes verified against the content digest before every read</td><td class="tag"><span class="pill live">Available</span></td></tr>
+          <tr><td>Shifting references</td><td>Ids change when a file is added</td><td>Stable path + name ids; explicit moved, gone and ambiguous outcomes</td><td class="tag"><span class="pill live">Available</span></td></tr>
+          <tr><td>Authority leaks</td><td>Secrets and ignored files reach the prompt</td><td>Selection before content; ignored files are never opened</td><td class="tag"><span class="pill live">Available</span></td></tr>
+          <tr><td>Unbounded context</td><td>Top-k chunks crowd out instructions</td><td>Hard per-answer token ceilings, reserved before writing</td><td class="tag"><span class="pill live">Available</span></td></tr>
+          <tr><td>Opaque provenance</td><td>Inference presented as fact</td><td>Precision, parser and confidence on every answer and edge</td><td class="tag"><span class="pill live">Available</span></td></tr>
+          <tr><td>Hidden tool cost</td><td>The tool's own output goes uncounted</td><td>Token benchmark that counts dctx's own bytes</td><td class="tag"><span class="pill road">Roadmap</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
-export async function main(): Promise&lt;void&gt; {
-  const config = await Config.load();
-  // ... your actual code here
-}
-<span class="tag">&lt;/FILE_CONTENT_END</span> <span class="attr">ID</span>=<span class="value">"F004"</span><span class="tag">&gt;</span>
-<span class="comment">// ... more files ...</span></pre>
-                </div>
-                <div class="example-content" id="example-tree" style="display: none;">
-                    <pre><span class="header">[DCTX_LLM_CONTEXT_SNAPSHOT_V1]</span>
-<span class="bracket">[DIRECTORY:my-project]</span>
-<span class="tag">&lt;INSTRUCTIONS&gt;</span>
-1. Manifest: The &lt;DIRECTORY_TREE&gt; section lists all files.
-   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID, MOD:TIMESTAMP)
-   - TYPE is [D] for directory, [F] for file.
-2. Content Access: To read a specific file:
-   - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: &lt;FILE_CONTENT_START ID="UNIQUE_ID"&gt;
-   - The content is between this marker and &lt;/FILE_CONTENT_END ID="UNIQUE_ID"&gt;
-<span class="tag">&lt;/INSTRUCTIONS&gt;</span>
-<span class="tag">&lt;DIRECTORY_TREE&gt;</span>
-<span class="bracket">[D]</span>  (ID:ROOT, MOD:1768567394241)
-  <span class="bracket">[F]</span> package.json (<span class="attr">ID</span>:<span class="value">F001</span>, <span class="attr">MOD</span>:1768559794769, <span class="attr">SIZE</span>:1420)
-  <span class="bracket">[F]</span> tsconfig.json (<span class="attr">ID</span>:<span class="value">F002</span>, <span class="attr">MOD</span>:1768561368702, <span class="attr">SIZE</span>:892)
-  <span class="bracket">[F]</span> README.md (<span class="attr">ID</span>:<span class="value">F003</span>, <span class="attr">MOD</span>:1768561368702, <span class="attr">SIZE</span>:4096)
-  <span class="bracket">[D]</span> src (<span class="attr">ID</span>:<span class="value">D004</span>, <span class="attr">MOD</span>:1768567394245)
-    <span class="bracket">[F]</span> src/index.ts (<span class="attr">ID</span>:<span class="value">F005</span>, <span class="attr">MOD</span>:1768567400577, <span class="attr">SIZE</span>:2048)
-    <span class="bracket">[F]</span> src/config.ts (<span class="attr">ID</span>:<span class="value">F006</span>, <span class="attr">MOD</span>:1768567394473, <span class="attr">SIZE</span>:1536)
-    <span class="bracket">[F]</span> src/main.ts (<span class="attr">ID</span>:<span class="value">F007</span>, <span class="attr">MOD</span>:1768567394473, <span class="attr">SIZE</span>:892)
-    <span class="bracket">[D]</span> src/utils (<span class="attr">ID</span>:<span class="value">D008</span>, <span class="attr">MOD</span>:1768567394241)
-      <span class="bracket">[F]</span> src/utils/helpers.ts (<span class="attr">ID</span>:<span class="value">F009</span>, <span class="attr">MOD</span>:1768567396528, <span class="attr">SIZE</span>:3072)
-      <span class="bracket">[F]</span> src/utils/logger.ts (<span class="attr">ID</span>:<span class="value">F010</span>, <span class="attr">MOD</span>:1768567396528, <span class="attr">SIZE</span>:1024)
-    <span class="bracket">[D]</span> src/components (<span class="attr">ID</span>:<span class="value">D011</span>, <span class="attr">MOD</span>:1768567394241)
-      <span class="bracket">[F]</span> src/components/Button.tsx (<span class="attr">ID</span>:<span class="value">F012</span>, <span class="attr">MOD</span>:1768567396528, <span class="attr">SIZE</span>:2560)
-      <span class="bracket">[F]</span> src/components/Modal.tsx (<span class="attr">ID</span>:<span class="value">F013</span>, <span class="attr">MOD</span>:1768567396528, <span class="attr">SIZE</span>:4096)
-  <span class="bracket">[D]</span> tests (<span class="attr">ID</span>:<span class="value">D014</span>, <span class="attr">MOD</span>:1768567394245)
-    <span class="bracket">[F]</span> tests/index.test.ts (<span class="attr">ID</span>:<span class="value">F015</span>, <span class="attr">MOD</span>:1768567400577, <span class="attr">SIZE</span>:1536)
-<span class="tag">&lt;/DIRECTORY_TREE&gt;</span>
+<!-- Security -->
+<section class="section alt" id="security" aria-labelledby="security-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Security &amp; privacy</span>
+      <div class="h-row"><h2 id="security-h">Built for codebases you cannot afford to leak.</h2></div>
+    </div>
+    <div class="grid-3 reveal">
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c5 0 9 4.5 10 7a12 12 0 0 1-3 4.2M6.6 6.6A12 12 0 0 0 2 12c1 2.5 5 7 10 7a10 10 0 0 0 5.4-1.6"/></svg></div>
+        <h3>Ignored means never read</h3>
+        <p>Files excluded by <code>.gitignore</code>, <code>.dctxignore</code> or policy are classified before a single byte is opened, hashed or cached &mdash; enforced by read-spy tests.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+        <h3>No network, no VCS in the core</h3>
+        <p>The core never opens a socket, never runs git and never reads <code>.git/</code>. Identity comes from dctx's own content digest.</p>
+      </div>
+      <div class="card">
+        <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
+        <h3>Signed, sandboxed plugins</h3>
+        <p>Anything with an outside effect is an opt-in plugin: out of process, consent-gated, receipted and signature-verified with vetted Ed25519 cryptography.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-<span class="comment">// No file contents - tree only mode</span>
-<span class="comment">// Perfect for asking "where should I add X?"</span></pre>
-                </div>
-            </div>
+<!-- Organization control -->
+<section class="section" id="control" aria-labelledby="control-h">
+  <div class="wrap policy">
+    <div class="reveal">
+      <span class="eyebrow">Organization control</span>
+      <div class="h-row" style="margin-top:18px"><h2 id="control-h">One signed policy, from the board to the terminal.</h2></div>
+      <p style="color:var(--muted);font-size:1.1rem;margin:18px 0 0">The same language that defines dctx output templates controls selection, budgets, parsers, cache limits, plugins and privacy for every mode. Seven layers; each can only narrow the one above it.</p>
+      <ul class="policy-points">
+        <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg><span><b>Narrowing only.</b> A team or developer that tries to widen a company rule gets a precise error, never a silent override.</span></li>
+        <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg><span><b>Signed bundles.</b> Distribute one verified policy file through your device management to every machine.</span></li>
+        <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg><span><b>Explainable.</b> <code>dctx policy explain</code> shows every effective value and the layer that set it.</span></li>
+      </ul>
+      <p style="margin:22px 0 0"><span class="pill road">Roadmap</span> <span style="color:var(--faint);font-size:.9rem;margin-left:6px">Template-based policy is available today; the seven-layer signed lattice is specified and in development.</span></p>
+    </div>
+    <div class="reveal">
+      <ol class="layers" aria-label="Policy layers, from widest to narrowest">
+        <li><b>Built-in</b><span>Hard limits shipped with dctx</span></li>
+        <li><b>Organization</b><span>Your security &amp; platform team</span></li>
+        <li><b>Tenant</b><span>A product team</span></li>
+        <li><b>Machine</b><span>Device management</span></li>
+        <li><b>User</b><span>The developer</span></li>
+        <li><b>Project</b><span>The repository</span></li>
+        <li><b>Session</b><span>One run</span></li>
+      </ol>
+      <p class="narrow-note">Every layer can only narrow the one above it.</p>
+<pre class="code" style="margin-top:24px" aria-label="Example organization policy"><span class="s">[POLICY:acme]</span>
+privacy.ignore     += <span class="v">["*.pem", "*.key", "secrets/", ".env*"]</span>
+telemetry           = <span class="v">"none"</span>
+budget.map.max_tokens = <span class="v">1500</span>
+agents.hosts.allow  = <span class="v">["shell", "mcp"]</span>
 
-            <div class="example-description">
-                <p><strong>Full context</strong> with <code>dctx . -c</code> gives AI everything it needs: file tree with metadata plus full file contents. <strong>Tree-only mode</strong> with <code>dctx . -t -c</code> shows just the structure - perfect for architecture questions or when you only need AI to understand your project layout.</p>
-            </div>
+<span class="s">[TENANT:payments]</span>
+languages           = <span class="v">["rust", "typescript"]</span>
+budget.map.max_tokens = <span class="v">1200</span>   <span class="k">; may only narrow</span></pre>
+    </div>
+  </div>
+</section>
+
+<!-- Lineage -->
+<section class="section alt" id="story" aria-labelledby="story-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Our story</span>
+      <div class="h-row"><h2 id="story-h">Started in C. Engineered for what comes next.</h2></div>
+      <p>dctx began as a practical answer to the context problem while we were still moving our own work to AI. The goal has never changed.</p>
+    </div>
+    <div class="timeline reveal">
+      <div class="era"><span class="year">2025</span><h3>dircontxt, in pure C</h3><p>One command gave a model the whole project &mdash; structured, versioned, with diffs and a strict ignore system &mdash; instead of pasting forty files. Version 1.0 shipped in November 2025.</p></div>
+      <div class="era"><span class="year">2026</span><h3>dctx, in Rust</h3><p>A privacy-first core, a template system, a plugin host, a desktop app, and map mode: bounded, deterministic answers for agents.</p></div>
+      <div class="era now"><span class="year">NEXT</span><h3>dctx 1.0</h3><p>One engine and one signed policy for every workflow, measured by prompt-processing efficiency. <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification</a>.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="section" id="pricing" aria-labelledby="pricing-h">
+  <div class="wrap">
+    <div class="section-head reveal" style="margin-left:auto;margin-right:auto;text-align:center">
+      <span class="eyebrow">Pricing</span>
+      <div class="h-row" style="justify-content:center"><h2 id="pricing-h">Open source at heart. Enterprise when it matters.</h2></div>
+      <p style="margin-left:auto;margin-right:auto">Everything in the open repository is free and ongoing work. Enterprise licensing brings enterprise-ready builds, organization control and direct support.</p>
+    </div>
+    <div class="pricing reveal">
+      <div class="plan">
+        <h3>Open source</h3>
+        <div class="price">Free</div>
+        <div class="plan-sub">The CLI and library under Apache-2.0.</div>
+        <ul>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Pack and diff snapshots</li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Map mode for agents</li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Templates and ignore rules</li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Community support</li>
+        </ul>
+        <a class="btn btn-ghost" href="https://github.com/Eris-Margeta/dctx">View on GitHub</a>
+      </div>
+      <div class="plan">
+        <h3>Desktop</h3>
+        <div class="price">$29<small>one-time</small></div>
+        <div class="plan-sub">Signed builds with updates, for people who prefer a window to a terminal.</div>
+        <ul>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Everything in open source</li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Native app, visual file browser</li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>One-click context copy</li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Automatic updates</li>
+        </ul>
+        <a class="btn btn-ghost" href="mailto:info@tejl.com?subject=dctx%20Desktop">Get Desktop</a>
+      </div>
+      <div class="plan featured">
+        <h3>Enterprise <span class="badge-top">Per company</span></h3>
+        <div class="price">&euro;45,000<small>/ year, from</small></div>
+        <div class="plan-sub">For organizations that standardize AI-assisted development.</div>
+        <ul>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Enterprise license for every developer</li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Enterprise-ready builds</li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Organization and tenant policy control</li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Signed policy bundles for every machine</li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>On-premises, no telemetry</li>
+          <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg>Direct support from the dctx team</li>
+        </ul>
+        <a class="btn btn-ghost" href="mailto:info@tejl.com?subject=dctx%20Enterprise">Contact sales</a>
+      </div>
+    </div>
+    <p class="price-note">Anything with third-party dependencies is not considered enterprise-ready; Enterprise builds are.</p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section alt" id="faq" aria-labelledby="faq-h">
+  <div class="wrap">
+    <div class="section-head reveal">
+      <span class="eyebrow">Questions</span>
+      <div class="h-row"><h2 id="faq-h">Answers for decision makers.</h2></div>
+    </div>
+    <div class="faq reveal">
+      <details><summary>Does any of our source code leave our network?</summary><p>No. dctx runs entirely on your machines. It has no telemetry, makes no network requests and never calls a model. What reaches a model is exactly what your developers or agents choose to send, already bounded by your policy.</p></details>
+      <details><summary>How is dctx different from retrieval-augmented generation?</summary><p>dctx does not use embeddings or vector search. It builds a lexical graph of your code from syntax, answers with whole, byte-verified spans in a deterministic order, and labels every answer with its precision and freshness. That removes the typical failure modes of chunk retrieval and keeps prompts cache-friendly.</p></details>
+      <details><summary>Which languages does it understand?</summary><p>Fifteen language families today: Rust, JavaScript, TypeScript and TSX, Python, Go, Java, C and C++, C#, Kotlin, Ruby, PHP, Swift, Markdown, and JSON, TOML and YAML configuration. Unsupported files are listed honestly, never guessed at.</p></details>
+      <details><summary>Does it work with the AI tools our teams already use?</summary><p>Yes. dctx works through the shell that every coding agent already has, through the clipboard for chat assistants, and as a library. A native tool-protocol server and agent hooks are specified on the roadmap.</p></details>
+      <details><summary>What is the difference between open source and Enterprise?</summary><p>The open repository is Apache-2.0 and ongoing work; parts of it still use third-party dependencies, which we do not consider enterprise-ready. Enterprise licensing provides enterprise-ready builds, organization and tenant policy control, signed policy distribution and direct support, from &euro;45,000 per company per year.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section" aria-labelledby="cta-h">
+  <div class="wrap">
+    <div class="cta reveal">
+      <div>
+        <h2 id="cta-h">Make every token count.</h2>
+        <p>Talk to us about rolling dctx out across your engineering organization, or start with the open-source CLI today.</p>
+      </div>
+      <div class="actions">
+        <a class="btn btn-white" href="mailto:info@tejl.com?subject=dctx%20Enterprise">Talk to us</a>
+        <a class="btn btn-ghost" href="https://github.com/Eris-Margeta/dctx">Get the CLI</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="brand" href="#top" aria-label="dctx, back to top">
+          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#121419"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#7c5cff"/></svg>
+          dctx
+        </a>
+        <p>The context engine for AI-assisted software development. Context, engineered.</p>
+      </div>
+      <nav class="foot-col" aria-label="Product">
+        <h3>Product</h3>
+        <ul>
+          <li><a href="#belief">Philosophy</a></li>
+          <li><a href="#platform">Platform</a></li>
+          <li><a href="#security">Security</a></li>
+          <li><a href="#pricing">Pricing</a></li>
+        </ul>
+      </nav>
+      <nav class="foot-col" aria-label="Resources">
+        <h3>Resources</h3>
+        <ul>
+          <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Specification</a></li>
+          <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MAP-MODE.md">Map mode guide</a></li>
+          <li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li>
+          <li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li>
+        </ul>
+      </nav>
+      <nav class="foot-col" aria-label="Company">
+        <h3>Company</h3>
+        <ul>
+          <li><a href="mailto:info@tejl.com?subject=dctx%20Enterprise">Enterprise sales</a></li>
+          <li><a href="mailto:info@tejl.com">Contact</a></li>
+          <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="foot-bottom">
+      <small>&copy; 2026 dctx. Apache-2.0.</small>
+      <div class="tejl-credit">
+        <div class="tejl-credit-text">
+          <span>Design &amp; development: TEJL Studio</span>
+          <span>Web studio contact: <a href="tel:+385998361079">+385 99 836 1079</a></span>
+          <span><a href="https://tejl.hr/" target="_blank" rel="noopener">tejl.hr</a> &middot; <a href="https://tejl.com/" target="_blank" rel="noopener">tejl.com</a></span>
         </div>
-    </section>
+        <a class="tejl-credit-logo" href="https://tejl.hr/" target="_blank" rel="noopener" aria-label="TEJL Studio — tejl.hr">
+          <img src="assets/tejl-logo-off-black.svg" width="818" height="422" alt="" aria-hidden="true">
+        </a>
+      </div>
+    </div>
+  </div>
+</footer>
 
-    <!-- Core Benefits Section -->
-    <section class="benefits">
-        <div class="container">
-            <div class="section-header">
-                <h2>Why dctx changes everything</h2>
-                <p>Not just another file concatenation tool. A fundamentally better approach to AI context.</p>
-            </div>
-            <div class="benefits-grid">
-                <div class="benefit-item">
-                    <div class="benefit-number">01</div>
-                    <div class="benefit-content">
-                        <h3>Lightning-Fast Workflow</h3>
-                        <p>Intelligent context gathering from any directory in milliseconds. Stop wasting time crafting commands - just point and go.</p>
-                    </div>
-                </div>
-                <div class="benefit-item">
-                    <div class="benefit-number">02</div>
-                    <div class="benefit-content">
-                        <h3>Massive Token Savings</h3>
-                        <p>Smart ignore rules filter out node_modules, build artifacts, and irrelevant files automatically. Only what matters reaches the AI.</p>
-                    </div>
-                </div>
-                <div class="benefit-item">
-                    <div class="benefit-number">03</div>
-                    <div class="benefit-content">
-                        <h3>Compounding Efficiency</h3>
-                        <p>Intelligent diffing means savings multiply over time. After the initial snapshot, subsequent updates only send what changed - not the entire codebase again.</p>
-                    </div>
-                </div>
-                <div class="benefit-item">
-                    <div class="benefit-number">04</div>
-                    <div class="benefit-content">
-                        <h3>No Vectorization Artifacts</h3>
-                        <p>Unlike RAG systems that chunk data into fragments, dctx provides <strong>complete files, every time</strong>. No truncated functions, no missing context, no malformed code snippets. AI gets the full picture.</p>
-                    </div>
-                </div>
-                <div class="benefit-item benefit-wide">
-                    <div class="benefit-number">05</div>
-                    <div class="benefit-content">
-                        <h3>Smart Navigation, Full Context</h3>
-                        <p>Even with entire directories sent at once, AI navigates effortlessly. Every file has a unique <code>ID</code>, with <code>MOD</code> (timestamp), <code>SIZE</code>, and <code>LINES</code> metadata. Clear <code>&lt;FILE_CONTENT_START&gt;</code> and <code>&lt;FILE_CONTENT_END&gt;</code> brackets let AI "skip to" exactly what it needs. No parsing errors. No lost boundaries. AI always knows precisely where each file starts and ends.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-    <!-- Features Section -->
-    <section class="features" id="features">
-        <div class="container">
-            <div class="section-header">
-                <h2>Built for the AI-assisted workflow</h2>
-                <p>Every feature designed to save tokens and maximize AI comprehension.</p>
-            </div>
-            <div class="features-grid">
-                <div class="feature-card">
-                    <div class="feature-icon">&#128203;</div>
-                    <h3>Intelligent Ignore Rules</h3>
-                    <p>Global config at <code>~/.config/dctx/ignore</code> plus per-project <code>.dctxignore</code> files. Automatically excludes node_modules, build outputs, and secrets.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">&#128202;</div>
-                    <h3>Smart Diff Tracking</h3>
-                    <p>Automatic versioned diffs saved to <code>.dctx/</code> folder. Only send what changed since V1. Major version detection when structure shifts dramatically.</p>
-                    <code>.dctx/context-V1.1-diff.txt</code>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">&#128196;</div>
-                    <h3>Text Output</h3>
-                    <p>Full snapshots written to <code>.dctx/.llmcontext.txt</code>. Keep a history, compare versions, or pipe to other tools. Your context, your way.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">&#9881;</div>
-                    <h3>Flexible Templating</h3>
-                    <p>Compile custom output templates with <code>dctx template build</code>. Change markers, structure, or format to match your AI's preferences.</p>
-                    <code>dctx template build my-format.dctx_template</code>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">&#9889;</div>
-                    <h3>Fast by design</h3>
-                    <p>A Rust core that skips ignored trees without entering them, reuses a verified index between runs and answers map queries in a fraction of a second.</p>
-                </div>
-                <div class="feature-card">
-                    <div class="feature-icon">&#128274;</div>
-                    <h3>Privacy First</h3>
-                    <p>Everything runs locally. Binary state cached in <code>~/.cache/dctx/</code>. No telemetry, no network requests, no model calls. Your code never leaves your machine.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+<script>
+(function () {
+  document.documentElement.classList.add('js');
+  var CANONICAL = 'https://dctx.app/';
 
-    <!-- CLI Flags Section -->
-    <section class="cli-flags">
-        <div class="container">
-            <div class="section-header">
-                <h2>Power user flags</h2>
-                <p>For when you want to move FAST.</p>
-            </div>
-            <div class="flags-grid">
-                <div class="flag-item">
-                    <code>-c, --clipboard</code>
-                    <span>Copy output to clipboard</span>
-                </div>
-                <div class="flag-item">
-                    <code>-t, --tree</code>
-                    <span>Tree only, no file content</span>
-                </div>
-                <div class="flag-item">
-                    <code>-d, --diff</code>
-                    <span>Generate diff from last run</span>
-                </div>
-                <div class="flag-item">
-                    <code>-r, --reset</code>
-                    <span>Reset version to V1</span>
-                </div>
-                <div class="flag-item">
-                    <code>-h, --help</code>
-                    <span>Show help message</span>
-                </div>
-                <div class="flag-item">
-                    <code>-v, --version</code>
-                    <span>Show version info</span>
-                </div>
-            </div>
-        </div>
-    </section>
+  // Sticky header border
+  var header = document.querySelector('.site-header');
+  var onScroll = function () { header.classList.toggle('scrolled', window.scrollY > 8); };
+  onScroll(); window.addEventListener('scroll', onScroll, { passive: true });
 
-    <!-- Ecosystem Section -->
-    <section class="ecosystem" id="ecosystem">
-        <div class="container">
-            <div class="section-header">
-                <h2>A complete ecosystem</h2>
-                <p>From quick terminal use to full programmatic control.</p>
-            </div>
-            <div class="ecosystem-grid">
-                <div class="ecosystem-card">
-                    <div class="ecosystem-icon">&#128187;</div>
-                    <h3>Interactive CLI</h3>
-                    <p>Just type <code>dctx</code>. A simple terminal menu guides you through options. No flags to memorize, no docs to read. Ready to go in seconds.</p>
-                    <ul>
-                        <li>Snapshot current directory</li>
-                        <li>Copy to clipboard with one key</li>
-                        <li>Perfect for beginners</li>
-                    </ul>
-                </div>
-                <div class="ecosystem-card">
-                    <div class="ecosystem-icon">&#9000;</div>
-                    <h3>Advanced CLI</h3>
-                    <p>Chain flags for powerful workflows. Script it, alias it, integrate it into your dev environment.</p>
-                    <ul>
-                        <li><code>dctx ./src -c -t</code> - tree only to clipboard</li>
-                        <li><code>dctx . -d</code> - diff mode</li>
-                        <li><code>dctx template build</code> - custom formats</li>
-                    </ul>
-                </div>
-                <div class="ecosystem-card upcoming">
-                    <div class="ecosystem-icon">&#128230;</div>
-                    <h3>Language Libraries</h3>
-                    <p>Expose dctx's powerful context-gathering APIs directly in your software. Build AI tools with native context awareness.</p>
-                    <ul>
-                        <li>Rust crate (dctx-core)</li>
-                        <li>Go module</li>
-                        <li>Node.js package (npm)</li>
-                        <li>Python package (pip)</li>
-                    </ul>
-                </div>
-                <div class="ecosystem-card upcoming">
-                    <div class="ecosystem-icon">&#128421;</div>
-                    <h3>Desktop App</h3>
-                    <p>For non-developers who want the POWER of dctx. Click, gather context, paste. Continue working with LLMs in copy-paste manner, saving millions of tokens with intelligent diffing.</p>
-                    <ul>
-                        <li>Visual file browser</li>
-                        <li>One-click context generation</li>
-                        <li>macOS, Windows, Linux</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </section>
+  // Mobile menu
+  var toggle = document.querySelector('.menu-toggle'), nav = document.querySelector('.nav');
+  toggle.addEventListener('click', function () {
+    var open = nav.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', String(open));
+    toggle.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+  });
+  document.querySelectorAll('.nav-links a').forEach(function (a) {
+    a.addEventListener('click', function () { nav.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && nav.classList.contains('open')) { nav.classList.remove('open'); toggle.setAttribute('aria-expanded', 'false'); toggle.focus(); }
+  });
 
-    <!-- Pricing Section -->
-    <section class="pricing" id="pricing">
-        <div class="container">
-            <div class="section-header">
-                <h2>Simple pricing</h2>
-                <p>Start free with the open-source CLI. Upgrade to Desktop for the full experience. License Enterprise for your whole company.</p>
-            </div>
-            <div class="pricing-grid">
-                <div class="pricing-card">
-                    <div class="pricing-header">
-                        <h3>CLI</h3>
-                        <div class="price">Free</div>
-                        <div class="subtitle">Open source, forever free</div>
-                    </div>
-                    <ul class="pricing-features">
-                        <li>Full context generation</li>
-                        <li>Intelligent diff tracking</li>
-                        <li>Global + local ignore rules</li>
-                        <li>Custom template compilation</li>
-                        <li>Text output & versioning</li>
-                        <li>Clipboard integration</li>
-                        <li>Community support</li>
-                    </ul>
-                    <a href="#open-source" class="btn btn-secondary">Get Started Free</a>
-                </div>
-                <div class="pricing-card featured">
-                    <div class="pricing-header">
-                        <h3>Desktop App</h3>
-                        <div class="price">$29 <span>one-time</span></div>
-                        <div class="subtitle">Pay once, own forever</div>
-                    </div>
-                    <ul class="pricing-features">
-                        <li>Everything in CLI</li>
-                        <li>Beautiful native UI</li>
-                        <li>Visual file browser</li>
-                        <li>One-click context copy</li>
-                        <li>Project favorites</li>
-                        <li>Automatic updates</li>
-                        <li>Priority support</li>
-                    </ul>
-                    <a href="#" class="btn btn-primary">Buy Desktop App</a>
-                </div>
-                <div class="pricing-card">
-                    <div class="pricing-header">
-                        <h3>Enterprise</h3>
-                        <div class="price">&euro;45,000 <span>/ year</span></div>
-                        <div class="subtitle">Per company, from</div>
-                    </div>
-                    <ul class="pricing-features">
-                        <li>Enterprise license for every developer</li>
-                        <li>Enterprise-ready builds</li>
-                        <li>Organization and tenant policy control</li>
-                        <li>Signed policy bundles for every machine</li>
-                        <li>No telemetry, no network, on-premises</li>
-                        <li>Direct support from the dctx team</li>
-                    </ul>
-                    <a href="#" class="btn btn-secondary">Contact sales</a>
-                </div>
-            </div>
-        </div>
-    </section>
+  // Reveal on scroll (content is visible without JS and with reduced motion)
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var items = document.querySelectorAll('.reveal');
+  if (reduce || !('IntersectionObserver' in window)) { items.forEach(function (el) { el.classList.add('in'); }); }
+  else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.08 });
+    items.forEach(function (el) { io.observe(el); });
+  }
 
-    <!-- Open Source Section -->
-    <section class="open-source" id="open-source">
-        <div class="container">
-            <div class="open-source-content">
-                <div class="open-source-text">
-                    <h2>Open Source at Heart</h2>
-                    <p>dctx is Apache-2.0 licensed and built in public. Everything in the open repository is ongoing work. Enterprise-ready builds and licenses are available for companies. The core engine powers both the CLI and Desktop app. Contributions welcome.</p>
-                    <div class="open-source-stats">
-                        <div class="stat">
-                            <div class="stat-value">100%</div>
-                            <div class="stat-label">Rust</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-value">0</div>
-                            <div class="stat-label">Telemetry</div>
-                        </div>
-                        <div class="stat">
-                            <div class="stat-value">15</div>
-                            <div class="stat-label">Language families</div>
-                        </div>
-                    </div>
-                    <a href="https://github.com/Eris-Margeta/dctx" class="btn btn-secondary">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                        Star on GitHub
-                    </a>
-                </div>
-                <div class="github-card">
-                    <div class="github-card-header">
-                        <div class="github-icon">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-                        </div>
-                        <div>
-                            <h4>dctx</h4>
-                            <p>Context, engineered.</p>
-                        </div>
-                    </div>
-                    <pre># Clone the repository
-git clone https://github.com/Eris-Margeta/dctx.git
-
-# Build from source
-cd dctx && cargo build --release
-
-# Or install via script
-curl -fsSL https://dctx.app/install.sh | sh</pre>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-logo">dctx</div>
-                <ul class="footer-links">
-                    <li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li>
-                    <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/README.md">Documentation</a></li>
-                    <li><a href="https://github.com/Eris-Margeta/dctx/issues">Support</a></li>
-                    <li><a href="mailto:hello@dctx.app">Contact</a></li>
-                </ul>
-            </div>
-            <div class="footer-copy">
-                &copy; 2026 dctx. Apache-2.0. Context, engineered.
-            </div>
-        </div>
-    </footer>
-
-    <script>
-        // Navbar scroll effect
-        const nav = document.getElementById('nav');
-        window.addEventListener('scroll', () => {
-            if (window.scrollY > 50) {
-                nav.classList.add('scrolled');
-            } else {
-                nav.classList.remove('scrolled');
-            }
-        });
-
-        // Smooth scroll for anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function (e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-
-        // Example tabs
-        function showExample(type) {
-            document.querySelectorAll('.example-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.example-content').forEach(content => {
-                content.style.display = 'none';
-            });
-
-            event.target.classList.add('active');
-            document.getElementById('example-' + type).style.display = 'block';
-        }
-
-        // Install tabs
-        function showInstall(type) {
-            document.querySelectorAll('.install-tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            document.querySelectorAll('.hero-install pre').forEach(pre => {
-                pre.style.display = 'none';
-            });
-
-            event.target.classList.add('active');
-            document.getElementById('install-' + type).style.display = 'block';
-        }
-    </script>
+  // Heading permalinks and copy-link buttons (web standard)
+  var toast = document.getElementById('toast'), toastTimer;
+  function say(html, keep) {
+    toast.innerHTML = html; toast.classList.add('show');
+    clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.remove('show'); }, keep ? 9000 : 2200);
+  }
+  document.querySelectorAll('.h-row > h2[id]').forEach(function (h) {
+    var id = h.id, name = h.textContent.replace(/\s+/g, ' ').trim().replace(/\.$/, '');
+    var url = CANONICAL + '#' + encodeURIComponent(id);
+    var tools = document.createElement('span'); tools.className = 'h-tools';
+    var a = document.createElement('a'); a.className = 'h-tool'; a.href = '#' + id;
+    a.setAttribute('aria-label', 'Link to ' + name); a.dataset.tip = 'Link to section'; a.textContent = '#';
+    var b = document.createElement('button'); b.type = 'button'; b.className = 'h-tool';
+    b.setAttribute('aria-label', 'Copy link to ' + name); b.dataset.tip = 'Copy link';
+    b.innerHTML = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="7" y="7" width="10" height="10" rx="2"/><path d="M13 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/></svg>';
+    b.addEventListener('click', function () {
+      if (!navigator.clipboard || !navigator.clipboard.writeText) { fallback(); return; }
+      navigator.clipboard.writeText(url).then(function () { say('Copied link to “' + name + '”'); }, fallback);
+      function fallback() {
+        say('Copy was not possible. Select the link:<input readonly value="' + url + '" aria-label="Link to ' + name + '">', true);
+        var i = toast.querySelector('input'); if (i) { i.addEventListener('focus', function () { i.select(); }); }
+      }
+    });
+    tools.appendChild(a); tools.appendChild(b); h.parentNode.appendChild(tools);
+  });
+})();
+</script>
 </body>
 </html>
