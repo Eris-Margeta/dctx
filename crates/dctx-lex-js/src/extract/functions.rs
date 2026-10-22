@@ -20,16 +20,16 @@ pub(crate) struct FnShape {
 }
 
 impl FnShape {
-    pub fn last(&self, w: &Walker<'_>, end: usize) -> usize {
+    pub fn last(&self, end: usize) -> usize {
         if self.block {
-            w.last(self.close, end)
+            Walker::last(self.close, end)
         } else {
             self.end.saturating_sub(1).max(self.body)
         }
     }
 
     pub fn body_bytes(&self, w: &Walker<'_>, end: usize) -> (u32, u32) {
-        (w.start_byte(self.body), w.end_byte(self.last(w, end)))
+        (w.start_byte(self.body), w.end_byte(self.last(end)))
     }
 }
 
@@ -73,7 +73,7 @@ impl Walker<'_> {
         }
         let close = if block { self.close(j, end) } else { j };
         let last = if block {
-            self.last(close, end)
+            Self::last(close, end)
         } else if self.is(j, ";") {
             j
         } else {

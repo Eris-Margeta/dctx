@@ -82,12 +82,9 @@ impl Lexer<'_> {
             match c {
                 '{' => return self.container(),
                 '<' if next == Some(b'/') => {
-                    match self.src[self.pos..].find('>') {
-                        Some(n) => self.pos += n + 1,
-                        None => {
-                            self.unterminated();
-                            return Ok(());
-                        }
+                    if let Some(n) = self.src[self.pos..].find('>') { self.pos += n + 1 } else {
+                        self.unterminated();
+                        return Ok(());
                     }
                     self.close_element();
                     return Ok(());
@@ -190,6 +187,6 @@ mod tests {
         let mut lexer = Lexer::new("v = <div>{a}", Dialect::JavaScript, 32);
         lexer.run().unwrap();
         assert_eq!(lexer.problems[0].1, DiagnosticReason::UnterminatedJsx);
-        assert!(lexer.stack.is_empty());
+        assert_eq!(lexer.stack, []);
     }
 }

@@ -1,4 +1,4 @@
-//! Call sites: callee spelling, node:test/vitest blocks and CommonJS `require` imports.
+//! Call sites: callee spelling, node:test/vitest blocks and `CommonJS` `require` imports.
 //! Implements SPEC-MAP-MODE 5.3 calls/tests with name confidence only; dynamic or
 //! computed callees are abstained rather than guessed (PARSERS-v1 JavaScript row).
 //! Uses expressions for arguments; called from `Walker::paren`.
@@ -43,7 +43,7 @@ impl Walker<'_> {
     }
 
     pub fn call(&mut self, i: usize, close: usize, end: usize, scope: &Scope) -> usize {
-        let last = self.last(close, end);
+        let last = Self::last(close, end);
         if let Some((start, callee_last, member)) = self.callee(i) {
             let raw = &self.src[self.start_byte(start) as usize..self.end_byte(callee_last) as usize];
             let literal = self.kind(i + 1) == Some(Kind::Str)
@@ -122,8 +122,7 @@ impl Walker<'_> {
         let mut applied = false;
         loop {
             let start = match self.kind(q)? {
-                Kind::Ident | Kind::Private | Kind::Number | Kind::Str | Kind::Regex => q,
-                Kind::Template => q,
+                Kind::Ident | Kind::Private | Kind::Number | Kind::Str | Kind::Regex | Kind::Template => q,
                 Kind::Punct => match self.text(q) {
                     ")" | "]" => {
                         let open = self.partner[q];

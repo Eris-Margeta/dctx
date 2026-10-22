@@ -144,12 +144,14 @@ impl<'a> Walker<'a> {
         (self.close(i, end) + 1).min(end)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub fn start_byte(&self, i: usize) -> u32 {
         self.toks
             .get(i)
             .map_or(self.src.len() as u32, |t| t.start)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub fn end_byte(&self, i: usize) -> u32 {
         self.toks.get(i).map_or(self.src.len() as u32, |t| t.end)
     }
@@ -180,7 +182,7 @@ impl<'a> Walker<'a> {
         self.depth -= 1;
     }
 
-    /// JSDoc summary of the comment directly before token `anchor`.
+    /// `JSDoc` summary of the comment directly before token `anchor`.
     pub fn doc(&self, anchor: usize) -> Option<String> {
         let index = self.toks.get(anchor)?.doc.checked_sub(1)?;
         let (start, end) = *self.lexed.comments.get(index as usize)?;

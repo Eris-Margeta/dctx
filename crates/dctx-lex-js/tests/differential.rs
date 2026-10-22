@@ -116,10 +116,12 @@ fn score(emitted: &[String], expected: &[String]) -> (usize, usize, usize) {
     (matched, emitted.len(), expected.len())
 }
 
+#[allow(clippy::cast_precision_loss, reason = "Precision and recall use only the fixed differential fixture corpus, whose counts are far below the exact f64 integer range.")]
 fn ratio(numerator: usize, denominator: usize) -> Option<f64> {
     (denominator > 0).then(|| numerator as f64 / denominator as f64)
 }
 
+#[allow(clippy::case_sensitive_file_extension_comparisons, reason = "These are checked-in, case-sensitive oracle fixture paths; matching their literal .ts and .tsx suffixes is intentional.")]
 fn language(path: &str) -> &'static str {
     if path.ends_with(".ts") || path.ends_with(".tsx") {
         "typescript"
@@ -129,6 +131,7 @@ fn language(path: &str) -> &'static str {
 }
 
 #[test]
+#[allow(clippy::many_single_char_names, reason = "Keep m/n/d aligned with the table's matched/emitted/expected counts; e/x name the emitted/expected fact sets.")]
 fn precision_and_recall_meet_the_declaration_gate_per_language() {
     let mut totals: BTreeMap<(&str, &str), (usize, usize, usize)> = BTreeMap::new();
     for (path, source) in CASES {
@@ -155,7 +158,7 @@ fn precision_and_recall_meet_the_declaration_gate_per_language() {
     }
     println!("language    family        precision  recall  (matched/emitted/expected)");
     for ((lang, family), (m, n, d)) in &totals {
-        let show = |v: Option<f64>| v.map_or("n/a".to_owned(), |v| format!("{:.3}", v));
+        let show = |v: Option<f64>| v.map_or("n/a".to_owned(), |v| format!("{v:.3}"));
         println!(
             "{lang:<11} {family:<13} {:>9}  {:>6}  ({m}/{n}/{d})",
             show(ratio(*m, *n)),

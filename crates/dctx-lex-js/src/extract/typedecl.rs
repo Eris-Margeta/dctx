@@ -26,7 +26,7 @@ impl Walker<'_> {
             return None;
         }
         let close = self.close(j, end);
-        let last = self.last(close, end);
+        let last = Self::last(close, end);
         let item = Item {
             kind: NodeKind::Symbol,
             symbol: SymbolKind::Interface,
@@ -93,7 +93,7 @@ impl Walker<'_> {
             return None;
         }
         let close = self.close(body, end);
-        let last = self.last(close, end);
+        let last = Self::last(close, end);
         let item = Item {
             kind: NodeKind::Symbol,
             symbol: SymbolKind::Enum,

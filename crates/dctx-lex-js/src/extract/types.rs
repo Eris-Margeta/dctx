@@ -35,6 +35,7 @@ impl Walker<'_> {
         k.min(end)
     }
 
+    #[allow(clippy::too_many_lines, reason = "Keep the ordered TypeScript type-operand grammar dispatch and its shared cursor updates together.")]
     fn type_operand(
         &mut self,
         k: usize,
@@ -49,12 +50,11 @@ impl Walker<'_> {
                     return Some(k + 2);
                 }
                 match text {
-                    "keyof" | "readonly" | "unique" | "infer" | "new" | "abstract" => Some(k + 1),
                     "asserts" if self.ident(k + 1) && !self.is(k + 2, "is") => {
                         *operand = false;
                         Some(k + 2)
                     }
-                    "asserts" => Some(k + 1),
+                    "keyof" | "readonly" | "unique" | "infer" | "new" | "abstract" | "asserts" => Some(k + 1),
                     "typeof" => {
                         *operand = false;
                         let mut j = k + 2;

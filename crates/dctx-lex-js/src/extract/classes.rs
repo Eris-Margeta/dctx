@@ -46,7 +46,7 @@ impl Walker<'_> {
             (None, false) => return None,
         };
         let close = self.close(body, end);
-        let last = self.last(close, end);
+        let last = Self::last(close, end);
         let first = decl.first.unwrap_or(k);
         let item = Item {
             kind: NodeKind::Symbol,
@@ -192,7 +192,7 @@ impl Walker<'_> {
         let block = self.is(j, "{");
         let body_close = if block { self.close(j, end) } else { j };
         let last = if block {
-            self.last(body_close, end)
+            Self::last(body_close, end)
         } else {
             j.saturating_sub(1).max(k)
         };

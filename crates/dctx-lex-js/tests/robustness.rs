@@ -8,7 +8,7 @@ use proptest::prelude::*;
 const PATHS: [&str; 3] = ["f.js", "f.ts", "f.tsx"];
 
 fn check_invariants(source: &str, facts: &LexedFile) {
-    let lines = source.lines().count().max(1) as u32;
+    let lines = u32::try_from(source.lines().count().max(1)).expect("bounded test coordinate");
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
     for node in &facts.nodes {
         let [start, end] = node.fact.lines;

@@ -94,6 +94,8 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(clippy::naive_bytecount, reason = "Count newline bytes with std iterators; this bounded error path does not justify adding a bytecount dependency.")]
     pub(super) fn push(&mut self, frame: Frame) -> Result<(), LexError> {
         if self.stack.len() >= self.max_depth as usize {
             let line = self.b[..self.pos].iter().filter(|&&b| b == b'\n').count() as u32 + 1;
@@ -106,6 +108,7 @@ impl<'a> Lexer<'a> {
         Ok(())
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(super) fn emit(&mut self, kind: Kind, start: usize, end: usize) {
         self.tokens.push(Token {
             kind,
@@ -116,6 +119,7 @@ impl<'a> Lexer<'a> {
         });
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(super) fn problem(&mut self, at: usize, reason: DiagnosticReason) {
         self.problems.push((at as u32, reason));
     }
@@ -240,12 +244,9 @@ impl<'a> Lexer<'a> {
                     .map_or(self.b.len(), |n| self.pos + n);
                 self.comment(self.pos, end);
             } else if c == '/' && next == Some(b'*') {
-                let end = match self.src[self.pos + 2..].find("*/") {
-                    Some(n) => self.pos + 2 + n + 2,
-                    None => {
-                        self.problem(self.pos, DiagnosticReason::UnterminatedComment);
-                        self.b.len()
-                    }
+                let end = if let Some(n) = self.src[self.pos + 2..].find("*/") { self.pos + 2 + n + 2 } else {
+                    self.problem(self.pos, DiagnosticReason::UnterminatedComment);
+                    self.b.len()
                 };
                 if self.src[self.pos..end].contains(['\n', '\r', '\u{2028}', '\u{2029}']) {
                     self.nl = true;
@@ -262,6 +263,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn comment(&mut self, start: usize, end: usize) {
         self.comments.push((start as u32, end as u32));
         self.doc = self.comments.len() as u32;
@@ -314,25 +316,22 @@ impl<'a> Lexer<'a> {
     /// Whether an expression may start here (regex, JSX, object literal).
     pub(super) fn regex_allowed(&self) -> bool {
         match self.last_text() {
-            None => true,
             Some((Kind::Ident, word)) => REGEX_AFTER.contains(&word),
-            Some((Kind::TemplateHead | Kind::TemplateMiddle | Kind::JsxOpen, _)) => true,
             Some((Kind::Punct, ")" | "]" | "}")) => self.close_allows_regex,
             Some((Kind::Punct, "++" | "--")) => false,
-            Some((Kind::Punct, _)) => true,
+            None | Some((Kind::TemplateHead | Kind::TemplateMiddle | Kind::JsxOpen | Kind::Punct, _)) => true,
             Some(_) => false,
         }
     }
 
     fn expression_brace(&self) -> bool {
         match self.last_text() {
-            None => false,
             Some((Kind::Punct, p)) => !matches!(p, ";" | "{" | "}" | ")" | "=>"),
             Some((Kind::Ident, word)) => {
                 REGEX_AFTER.contains(&word) && !matches!(word, "do" | "else")
             }
             Some((Kind::TemplateHead | Kind::TemplateMiddle | Kind::JsxOpen, _)) => true,
-            Some(_) => false,
+            None | Some(_) => false,
         }
     }
 }

@@ -44,7 +44,6 @@ impl Walker<'_> {
     fn boundary(&self, i: usize, head: usize) -> bool {
         let previous = i - 1;
         let explicit = match (self.kind(previous), self.text(previous)) {
-            (Some(Kind::Punct), ";" | "}") => true,
             (Some(Kind::Punct), ":") => {
                 self.is(head, "case")
                     || self.is(head, "default")
@@ -60,7 +59,7 @@ impl Walker<'_> {
                         "if" | "for" | "while" | "with" | "catch" | "switch"
                     )
             }
-            (Some(Kind::Ident), "else" | "do" | "try" | "catch" | "finally") => true,
+            (Some(Kind::Punct), ";" | "}") | (Some(Kind::Ident), "else" | "do" | "try" | "catch" | "finally") => true,
             _ => false,
         };
         explicit || self.asi(i)
@@ -131,7 +130,7 @@ impl Walker<'_> {
                     symbol: SymbolKind::Function,
                     local: "default".into(),
                     first: shape.start,
-                    last: shape.last(self, end),
+                    last: shape.last(end),
                     sig_end: self.start_byte(shape.body),
                     body: shape.body_bytes(self, end),
                     public: true,
@@ -277,7 +276,7 @@ impl Walker<'_> {
     }
 
     /// Last token of a group closed at `close`, or of the range when unclosed.
-    pub fn last(&self, close: usize, end: usize) -> usize {
+    pub fn last(close: usize, end: usize) -> usize {
         if close < end {
             close
         } else {
