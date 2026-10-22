@@ -157,6 +157,8 @@ impl Walker<'_> {
         Ok(())
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling.")]
+    #[allow(clippy::cast_possible_wrap, reason = "Angle-bracket runs and accumulated depth cannot exceed the 8 MiB file ceiling, well within i32.")]
     fn specialization(&self, first: usize, end: usize) -> usize {
         if self.text(first) != "<" {
             return first;

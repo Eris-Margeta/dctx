@@ -31,11 +31,13 @@ pub(crate) struct Lexed {
 }
 
 impl Lexed {
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling.")]
     pub fn line(&self, byte: u32) -> u32 {
         self.line_starts.partition_point(|&start| start <= byte) as u32
     }
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling.")]
 pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     let mut scanner = scan::Scanner::new(source, limits);
     scanner.region(false, 0)?;

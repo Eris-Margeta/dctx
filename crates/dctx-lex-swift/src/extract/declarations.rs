@@ -7,6 +7,7 @@ use crate::lexer::Kind;
 use dctx_map_model::{EdgeKind, SymbolKind};
 
 impl Walker<'_> {
+    #[allow(clippy::too_many_lines, reason = "Keep the ordered Swift declaration dispatch together so scope, token advancement and recovery remain auditable in one walk.")]
     pub(super) fn walk(
         &mut self,
         mut i: usize,

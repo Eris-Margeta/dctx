@@ -25,6 +25,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling.")]
     pub fn depth(&self, depth: u32) -> Result<(), LexError> {
         if depth > self.limits.max_depth {
             return Err(LexError::TooDeep {
@@ -35,6 +36,7 @@ impl<'a> Scanner<'a> {
         Ok(())
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling.")]
     pub fn emit(&mut self, start: usize, kind: Kind) {
         self.tokens.push(Token {
             start: start as u32,
@@ -43,12 +45,14 @@ impl<'a> Scanner<'a> {
         });
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling.")]
     pub fn problem(&mut self, start: usize, reason: DiagnosticReason) {
         if self.problems.len() < crate::LexedFile::MAX_DIAGNOSTICS {
             self.problems.push((start as u32, reason));
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling.")]
     pub fn region(&mut self, interpolation: bool, depth: u32) -> Result<bool, LexError> {
         self.depth(depth)?;
         let mut parens = 0u32;
@@ -155,6 +159,7 @@ impl<'a> Scanner<'a> {
             .map_or(0, char::len_utf8);
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and angle-bracket runs fit the target integer because SwiftLexer::extract enforces the 8 MiB input ceiling.")]
     fn comment(&mut self, outer: u32) -> Result<(), LexError> {
         let start = self.pos;
         let mut nesting = 1;

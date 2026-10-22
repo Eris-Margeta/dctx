@@ -18,6 +18,7 @@ fn extract(source: &str) -> LexedFile {
         .unwrap()
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "The invariant helper receives fixed fixtures, their prefixes and fuzz snippets of at most 511 bytes.")]
 fn invariants(facts: &LexedFile, source: &str) {
     let lines = source.bytes().filter(|&b| b == b'\n').count() as u32 + 1;
     let root = &facts.nodes[0].fact;
@@ -339,14 +340,14 @@ fn every_fixture_prefix_and_arbitrary_bytes_are_panic_free() {
             }
         }
     }
-    let mut state = 0x31415926u32;
+    let mut state = 0x3141_5926_u32;
     for size in 0..512 {
         let bytes: Vec<_> = (0..size)
             .map(|_| {
                 state ^= state << 13;
                 state ^= state >> 17;
                 state ^= state << 5;
-                state as u8
+                state.to_le_bytes()[0]
             })
             .collect();
         if let Ok(facts) = lexer.extract("Sources/App.swift", &bytes) {
