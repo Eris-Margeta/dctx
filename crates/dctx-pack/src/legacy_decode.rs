@@ -1,6 +1,6 @@
 //! Bounded DIRCTXTV decoding over immutable bytes (D3-LEGACY-REMOVAL §5 D3-02).
 //! Ports the old reader's metadata layout and validates the whole data section.
-//! Depends on legacy_codec and core fact nodes; used by explicit facade imports.
+//! Depends on `legacy_codec` and core fact nodes; used by explicit facade imports.
 
 #![forbid(unsafe_code)]
 
@@ -14,6 +14,9 @@ use dctx_core::version::Version;
 /// Decode a complete legacy file without touching its input or consulting a host.
 /// Both body modes validate all offsets and sizes. Extra trailing bytes are refused.
 /// Snapshot revisions are not format versions: any positive major is supported.
+///
+/// # Errors
+/// Refuses malformed or truncated documents, invalid versions, names, offsets or bodies, arithmetic overflow and exceeded decode limits.
 pub fn decode_legacy(bytes: &[u8], bodies: LegacyBodies, limits: LegacyLimits) -> Result<LegacyDocument, LegacyError> {
     bounded(bytes.len(), limits.max_total_bytes, "total bytes")?;
     let mut reader = Reader { bytes, position: 0, nodes: 0, limits };
@@ -63,7 +66,7 @@ impl<'a> Reader<'a> {
         let name_len = usize::from(u16::from_le_bytes(self.array()?));
         bounded(name_len, self.limits.max_name_bytes, "name bytes")?;
         let name = std::str::from_utf8(self.take(name_len)?).map_err(|_| LegacyError::InvalidUtf8)?;
-        let mut node = LegacyNode::new(kind, name, Default::default());
+        let mut node = LegacyNode::new(kind, name, std::path::PathBuf::new());
         node.last_modified_timestamp = u64::from_le_bytes(self.array()?);
         match kind {
             NodeType::File => {

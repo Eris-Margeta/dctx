@@ -148,7 +148,7 @@ fn arbitrary_bytes_never_panic() {
     for len in 0..512 {
         let mut bytes = Vec::new();
         for _ in 0..len {
-            seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
+            seed = seed.wrapping_mul(1_664_525).wrapping_add(1_013_904_223);
             bytes.push((seed >> 24) as u8);
         }
         if len >= 16 {

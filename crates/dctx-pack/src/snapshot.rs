@@ -42,6 +42,9 @@ pub struct ScanOptions<'a> {
 }
 
 /// Walks `source` from its root. The root is always `Include`.
+///
+/// # Errors
+/// Propagates source and cancellation errors and refuses invalid tree entries or exceeded scan limits.
 pub fn scan(
     source: &dyn Source,
     cancel: &dyn Cancellation,
@@ -262,7 +265,7 @@ mod tests {
         let source = self::source();
         let small = PackLimits { max_file_bytes: 4, ..PackLimits::unbounded() };
         let out = run(&source, false, small).unwrap();
-        assert!(source.reads().is_empty());
+        assert_eq!(source.reads(), [] as [std::string::String; 0] as [std::string::String; 0]);
         assert!(out.digests.is_empty());
         assert!(matches!(out.diagnostics[0], Diagnostic::ContentWithheld { size: 13, .. }));
     }
@@ -273,8 +276,8 @@ mod tests {
         let policy = policy();
         let options = ScanOptions { policy: &policy, debug_ignored: false, limits: PackLimits::unbounded() };
         assert_eq!(scan(&source, &CancelAfter::new(0), options).unwrap_err(), DctxError::Cancelled);
-        assert!(source.calls().is_empty());
+        assert_eq!(source.calls(), []);
         assert_eq!(scan(&source, &CancelAfter::new(3), options).unwrap_err(), DctxError::Cancelled);
-        assert!(source.reads().is_empty());
+        assert_eq!(source.reads(), [] as [std::string::String; 0] as [std::string::String; 0]);
     }
 }

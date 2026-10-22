@@ -1,6 +1,6 @@
 //! Exact legacy writer layout over fact trees and caller sinks (D3-LEGACY-REMOVAL §5 D3-02).
 //! Writes little-endian metadata in tree order, then bodies or legacy zero padding.
-//! Depends on legacy_codec and std::io::Write; never opens a file or changes the tree.
+//! Depends on `legacy_codec` and `std::io::Write`; never opens a file or changes the tree.
 
 #![forbid(unsafe_code)]
 
@@ -13,8 +13,11 @@ use dctx_core::version::Version;
 use std::io::Write;
 
 /// Encode snapshot facts to the exact layout of the legacy writer.
-/// Loaded bytes override content_size; absent bytes produce content_size zeros.
+/// Loaded bytes override `content_size`; absent bytes produce `content_size` zeros.
 /// Offsets are recalculated in child order without mutating the input tree.
+///
+/// # Errors
+/// Refuses invalid versions or tree shapes, unrepresentable sizes and exceeded encoding limits.
 pub fn encode_legacy(root: &LegacyNode, version: &Version, limits: LegacyLimits) -> Result<Vec<u8>, LegacyError> {
     let total = validate(root, version, limits)?;
     let mut bytes = Vec::with_capacity(total);
@@ -24,6 +27,9 @@ pub fn encode_legacy(root: &LegacyNode, version: &Version, limits: LegacyLimits)
 
 /// Validate the whole tree before writing, then encode into the caller's sink.
 /// A sink error may leave a partial document; flushing/commit belongs to the caller.
+///
+/// # Errors
+/// Refuses invalid versions, tree shapes, sizes and limits before writing; propagates sink failures after writing begins.
 pub fn encode_legacy_to<W: Write + ?Sized>(
     root: &LegacyNode,
     version: &Version,
@@ -92,7 +98,7 @@ fn write_document<W: Write + ?Sized>(root: &LegacyNode, version: &Version, sink:
 }
 
 fn write_node<W: Write + ?Sized>(node: &LegacyNode, sink: &mut W, offset: &mut u64) -> Result<(), LegacyError> {
-    let kind = if node.node_type == NodeType::File { 0 } else { 1 };
+    let kind = u8::from(node.node_type != NodeType::File);
     write(sink, &[kind])?;
     let name_len = u16::try_from(node.relative_path.len()).map_err(|_| LegacyError::Overflow)?;
     write(sink, &name_len.to_le_bytes())?;

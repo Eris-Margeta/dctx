@@ -61,6 +61,10 @@ pub struct PackReport {
 }
 
 /// Runs one pack: the only way this crate touches the outside world is through `ports`.
+///
+/// # Errors
+/// Propagates source, cancellation, snapshot-validation, store and cache errors. Failed publication aborts its cache reservation.
+#[allow(clippy::needless_pass_by_value, reason = "Keep the existing public pack signature; the port bundle is passed as the capability set for one operation.")]
 pub fn pack(ports: PackPorts<'_>, request: &PackRequest<'_>) -> Result<PackReport, DctxError> {
     let options = ScanOptions {
         policy: request.policy,

@@ -53,7 +53,7 @@ pub struct LegacyLimits {
     pub max_total_bytes: usize,
     /// Maximum nesting, with root at depth zero; capped by [`LEGACY_MAX_DEPTH`].
     pub max_depth: usize,
-    /// Maximum UTF-8 bytes in one stored relative path (wire maximum is u16::MAX).
+    /// Maximum UTF-8 bytes in one stored relative path (wire maximum is `u16::MAX`).
     pub max_name_bytes: usize,
     /// Maximum nodes including the root.
     pub max_nodes: usize,
@@ -133,6 +133,9 @@ pub(crate) fn check_version(version: &Version) -> Result<(), LegacyError> {
 
 /// Decoding still accepts every positive major, including `u32::MAX`.
 /// Publication as the base of another pack requires room for one major reset.
+///
+/// # Errors
+/// Refuses a zero major revision or a major revision that cannot advance without overflow.
 pub fn revision_can_advance(version: &Version) -> Result<(), LegacyError> {
     check_version(version)?;
     if version.major.checked_add(1).is_none() {

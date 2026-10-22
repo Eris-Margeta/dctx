@@ -1,7 +1,7 @@
-//! Pinned facts for the legacy_parity corpus (DX-D3-01, D3-LEGACY-REMOVAL.md §3 and §5).
+//! Pinned facts for the `legacy_parity` corpus (DX-D3-01, D3-LEGACY-REMOVAL.md §3 and §5).
 //! `fixtures/` records the tree the legacy walker and content reader store when every
 //! timestamp is the injected value below. This test never calls a legacy module.
-//! Depends on dctx-pack, dctx-core's selection policy and dctx-ports' MemorySource.
+//! Depends on dctx-pack, dctx-core's selection policy and dctx-ports' `MemorySource`.
 //! Run by `cargo test -p dctx-pack --test compatibility`.
 
 #![forbid(unsafe_code)]
@@ -265,9 +265,9 @@ fn pinned_png_bytes_survive_the_legacy_wire_format() {
         \x01\0\0\x01\0\0\0\0\0\0\0\x01\0\0\0\
         \0\x08\0logo.png\x02\0\0\0\0\0\0\0\
         \0\0\0\0\0\0\0\0\x07\0\0\0\0\0\0\0\x89PNG\0\0\x01";
-    let mut tree = DirContextTreeNode::new(NodeType::Directory, "", Default::default());
+    let mut tree = DirContextTreeNode::new(NodeType::Directory, "", std::path::PathBuf::new());
     tree.last_modified_timestamp = 1;
-    let mut file = DirContextTreeNode::new(NodeType::File, "logo.png", Default::default());
+    let mut file = DirContextTreeNode::new(NodeType::File, "logo.png", std::path::PathBuf::new());
     file.last_modified_timestamp = 2;
     file.file_content = Some(decode_hex(PNG_HEX));
     tree.children.push(file);

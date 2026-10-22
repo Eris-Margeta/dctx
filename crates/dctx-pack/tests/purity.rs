@@ -55,7 +55,7 @@ fn engine_sources_import_no_io() {
 #[test]
 fn the_check_catches_io_in_a_positive_control() {
     assert_eq!(violations("use std::fs::File;\nlet x = 1; // fs:: in a comment\n", "sample").len(), 2);
-    assert!(violations("let walker = 1;\n", "sample").is_empty());
+    assert_eq!(violations("let walker = 1;\n", "sample"), [] as [std::string::String; 0]);
 }
 
 #[test]

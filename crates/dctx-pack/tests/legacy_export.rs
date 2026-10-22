@@ -18,7 +18,7 @@ const GOLDEN: &[u8] = b"DIRCTXTV\x09\0\0\0\x02\0\0\0\
     \0\x01\0z\x05\0\0\0\0\0\0\0\x03\0\0\0\0\0\0\0\x02\0\0\0\0\0\0\0abc\0\0";
 
 fn node(kind: NodeType, path: &str, time: u64) -> LegacyNode {
-    let mut node = LegacyNode::new(kind, path, Default::default());
+    let mut node = LegacyNode::new(kind, path, std::path::PathBuf::new());
     node.last_modified_timestamp = time;
     node
 }
@@ -95,17 +95,17 @@ fn bounds_and_invalid_facts_leave_the_sink_untouched() {
     bad.children[2].content_size = u64::MAX;
     let mut sink = Vec::new();
     assert!(encode_legacy_to(&bad, &version, LegacyLimits::default(), &mut sink).is_err());
-    assert!(sink.is_empty());
+    assert_eq!(sink, []);
     bad = tree.clone();
     bad.children[0].children.push(node(NodeType::Directory, "bad", 0));
     assert!(matches!(encode_legacy_to(&bad, &version, exact, &mut sink), Err(LegacyError::InvalidTree)));
-    assert!(sink.is_empty());
+    assert_eq!(sink, []);
     let zero = Version { major: 0, minor: 0 };
     assert!(matches!(encode_legacy_to(&tree, &zero, exact, &mut sink), Err(LegacyError::UnknownVersion { .. })));
     bad = tree.clone();
     bad.file_content = Some(Vec::new());
     assert!(matches!(encode_legacy_to(&bad, &version, exact, &mut sink), Err(LegacyError::InvalidTree)));
-    assert!(sink.is_empty());
+    assert_eq!(sink, []);
 }
 
 #[test]
@@ -163,7 +163,7 @@ fn absent_body_chunks_are_bounded_and_sink_errors_propagate() {
 fn varied_body_lengths_roundtrip() {
     for len in 0..257 {
         let mut root = tree();
-        root.children[0].file_content = Some((0..len).map(|n| (n % 256) as u8).collect());
+        root.children[0].file_content = Some((0..len).map(|n| u8::try_from(n % 256).expect("nonnegative byte remainder")).collect());
         let bytes = encode_legacy(&root, &Version::new_v1(), LegacyLimits::default()).unwrap();
         let decoded = decode_legacy(&bytes, LegacyBodies::Include, LegacyLimits::default()).unwrap();
         assert_eq!(encode_legacy(&decoded.root, &decoded.header.version, LegacyLimits::default()).unwrap(), bytes);
