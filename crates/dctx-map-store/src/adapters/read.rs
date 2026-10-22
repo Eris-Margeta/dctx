@@ -1,7 +1,7 @@
 //! Reconstructs typed model facts from deterministic SQLite rows.
 //! Implements the file read boundary for map spec section 8.
 //! Used by SQLite callers and replacement-invariant tests.
-use crate::domain::*;
+use crate::domain::{File, Result, FileFacts, Unresolved, StoredSummary};
 use rusqlite::Connection;
 
 pub(super) fn facts(connection: &Connection, file: File) -> Result<FileFacts> {

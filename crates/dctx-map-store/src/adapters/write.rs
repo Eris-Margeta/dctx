@@ -1,7 +1,7 @@
 //! Atomic file-owned replacement of graph facts and lexical rows.
 //! Implements map spec section 7 without deleting foreign-owned edges.
 //! Uses SQLite transactions; called by the persistence adapter.
-use crate::domain::*;
+use crate::domain::{FileFacts, Result, StoreError};
 use rusqlite::{Transaction, params};
 use std::collections::BTreeSet;
 

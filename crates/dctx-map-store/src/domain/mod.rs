@@ -1,5 +1,5 @@
 //! File-owned facts, content-addressed keys and cache accounting.
-//! Implements map spec sections 7 and 8, IDENTITY-v1 FactKey and CACHE-v1 stage-0 limits.
+//! Implements map spec sections 7 and 8, IDENTITY-v1 `FactKey` and CACHE-v1 stage-0 limits.
 //! Uses model graph types and dctx-hash. Consumed by the SQLite comparison bridge.
 use dctx_map_model::{Edge, EdgeKind, Node, StableId};
 
@@ -109,7 +109,7 @@ pub enum StoreError {
     /// A fact identity or root label is not acceptable.
     #[error("invalid identity: {0}")]
     InvalidKey(&'static str),
-    /// The same FactKey was stored with a different payload.
+    /// The same `FactKey` was stored with a different payload.
     #[error("retained fact payload conflict")]
     FactConflict,
 }

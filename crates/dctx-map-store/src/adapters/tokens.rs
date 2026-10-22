@@ -1,5 +1,5 @@
 //! Lexical normalization of identifiers and file paths.
-//! Implements spec section 6.4 camelCase and snake_case splitting.
+//! Implements spec section 6.4 camelCase and `snake_case` splitting.
 //! Pure helper used when SQLite FTS rows are rebuilt.
 pub(super) fn tokens(value: &str) -> String {
     let chars: Vec<char> = value.chars().collect();

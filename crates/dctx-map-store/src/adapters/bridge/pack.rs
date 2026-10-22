@@ -1,5 +1,5 @@
-//! Pack snapshot codec and the FactStore load/publish path.
-//! Implements the frozen FactStore port: one commit point per view, previous snapshot on failure.
+//! Pack snapshot codec and the `FactStore` load/publish path.
+//! Implements the frozen `FactStore` port: one commit point per view, previous snapshot on failure.
 //! Depends on dctx-hash for the payload checksum and on the bridge ledger for the byte cap.
 //! Used by [`super::super::SqliteStore`]. Tree bytes are not a git object id.
 
@@ -48,7 +48,7 @@ pub(crate) fn publish(
         )
         .optional()?;
     ledger::reclaim(&transaction, now, Some(view.as_str()))?;
-    let replacing = previous.map(|(_, old)| old).unwrap_or(0);
+    let replacing = previous.map_or(0, |(_, old)| old);
     ledger::admit(&transaction, bytes, replacing)?;
     let generation = match previous {
         Some((current, _)) => current.checked_add(1).ok_or(StoreError::Corrupt("pack generation"))?,

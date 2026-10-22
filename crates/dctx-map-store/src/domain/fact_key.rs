@@ -1,5 +1,5 @@
 //! Content-addressed fact identity for the SQLite comparison bridge.
-//! Implements IDENTITY-v1 FactKey and decision 078: own dctx-hash digest, no git object id.
+//! Implements IDENTITY-v1 `FactKey` and decision 078: own dctx-hash digest, no git object id.
 //! Depends on [`dctx_map_model::ContentId`]. The blob table and retain tests key payloads with it.
 //! A plugin label is not a field and cannot change the key.
 
@@ -23,6 +23,9 @@ pub struct ExtractionContract {
 
 impl ExtractionContract {
     /// Builds a contract. Language and schema must be non-zero. Git-shaped tokens are refused.
+    ///
+    /// # Errors
+    /// Refuses zero language/schema values and empty, oversized, non-token or git-shaped identity fields.
     pub fn new(
         language: u16,
         dialect: impl Into<String>,
@@ -76,6 +79,9 @@ pub struct FactKey {
 
 impl FactKey {
     /// Hashes `bytes` with dctx-hash SHA-256 and binds `contract`.
+    ///
+    /// # Errors
+    /// Refuses an invalid extraction contract, oversized hash input or inconsistent digest metadata.
     pub fn from_bytes(bytes: &[u8], contract: ExtractionContract) -> Result<Self, StoreError> {
         contract.check()?;
         let digest = dctx_hash::Sha256::digest(bytes)
@@ -96,6 +102,9 @@ impl FactKey {
     }
 
     /// Checks the tagged digest and the extraction contract.
+    ///
+    /// # Errors
+    /// Refuses unsupported digest tags or an invalid extraction contract.
     pub fn check(&self) -> Result<(), StoreError> {
         if self.content.version() != 1 || self.content.algorithm() != ContentAlgorithm::Sha256 {
             return Err(StoreError::InvalidKey("invalid content digest"));
@@ -104,6 +113,7 @@ impl FactKey {
     }
 
     /// Algorithm-tagged content digest. This is not a git object id.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn content(&self) -> ContentId {
         self.content
     }

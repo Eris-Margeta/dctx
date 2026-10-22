@@ -1,4 +1,4 @@
-//! Namespace-scoped blob facts keyed by the dctx-hash FactKey.
+//! Namespace-scoped blob facts keyed by the dctx-hash `FactKey`.
 //! Implements option B: identical retained keys in several roots are stored once.
 //! Depends on the bridge ledger. [`super::super::SqliteStore::retain_fact`] is the caller.
 //! A conflicting payload is refused and does not increment the parse count.

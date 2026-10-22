@@ -2,6 +2,7 @@
 //! Tests map spec sections 6.4, 7 and 8 through the public port.
 //! Uses generated file facts and deterministic raw-row snapshots.
 use super::*;
+use crate::domain::*;
 use dctx_map_model::{
     Confidence, Edge, EdgeKind, Node, NodeKind, StableId, Summary, SummarySource,
 };
@@ -102,8 +103,7 @@ proptest! {
         let new = facts("a.rs", &new, salt);
         let mut other = facts("b.rs", &other, 2);
         for edge in &mut other.edges {
-            edge.dst = old.nodes.first().map(|node| node.id.clone())
-                .unwrap_or_else(|| "m:a.rs".parse().unwrap());
+            edge.dst = old.nodes.first().map_or_else(|| "m:a.rs".parse().unwrap(), |node| node.id.clone());
         }
         store.reindex(&old).unwrap();
         store.reindex(&other).unwrap();
@@ -146,8 +146,8 @@ fn bundled_fts5_queries_all_lexical_fields() {
     ] {
         assert_eq!(store.search(query, 10).unwrap().len(), 1, "{query}");
     }
-    assert!(store.search("absent", 10).unwrap().is_empty());
-    assert!(store.search("http", 0).unwrap().is_empty());
+    assert_eq!(store.search("absent", 10).unwrap(), [] as [crate::domain::SearchHit; 0]);
+    assert_eq!(store.search("http", 0).unwrap(), [] as [crate::domain::SearchHit; 0]);
     assert!(store.search("\"", 10).is_err());
     let many = facts(
         "many.rs",
@@ -171,7 +171,7 @@ fn constraint_failure_rolls_back_the_complete_replacement() {
     bad.edges.pop();
     store.reindex(&bad).unwrap();
     assert_ne!(snapshot(&store, "a.rs"), before);
-    assert!(store.search("original", 10).unwrap().is_empty());
+    assert_eq!(store.search("original", 10).unwrap(), [] as [crate::domain::SearchHit; 0]);
     assert_eq!(store.search("replacement", 10).unwrap().len(), 1);
 }
 

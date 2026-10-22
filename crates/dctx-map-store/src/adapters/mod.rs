@@ -1,5 +1,5 @@
 //! SQLite map store and the DX-C2 comparison bridge.
-//! Implements spec sections 6.4, 7 and 8, plus FactStore and content-addressed facts.
+//! Implements spec sections 6.4, 7 and 8, plus `FactStore` and content-addressed facts.
 //! Uses model facts, dctx-hash and the bridge tables. Consumed by query and pack rollback.
 mod bridge;
 mod read;
@@ -7,7 +7,7 @@ mod schema;
 mod tokens;
 mod write;
 
-use crate::{MapStore, domain::*};
+use crate::{MapStore, domain::{Result, FactKey, Retain, MaintainReport, FileFacts, SearchHit, File}};
 use dctx_core::error::DctxError;
 use dctx_core::facts::PackSnapshot;
 use dctx_core::ids::ViewKey;
@@ -26,11 +26,17 @@ pub struct SqliteStore {
 
 impl SqliteStore {
     /// Opens a caller-selected database, creating its schema if absent.
+    ///
+    /// # Errors
+    /// Returns database-open, schema initialization or comparison-bridge migration errors.
     pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         Self::from_connection(Connection::open(path)?)
     }
 
     /// Creates an isolated in-memory map database.
+    ///
+    /// # Errors
+    /// Returns database initialization or schema migration errors.
     pub fn in_memory() -> Result<Self> {
         Self::from_connection(Connection::open_in_memory()?)
     }
@@ -46,22 +52,34 @@ impl SqliteStore {
         self.now_ms = now_ms;
     }
 
-    /// How many retained FactKeys required a parse in this database.
+    /// How many retained `FactKeys` required a parse in this database.
+    ///
+    /// # Errors
+    /// Returns a database or stored-counter decoding error.
     pub fn parse_count(&self) -> Result<u64> {
         bridge::parse_count(&self.connection)
     }
 
     /// Accounted bytes of pack snapshots and blob facts, shared facts counted once.
+    ///
+    /// # Errors
+    /// Returns a database, stored-size decoding or accounting-overflow error.
     pub fn cached_bytes(&self) -> Result<u64> {
         bridge::cached_bytes(&self.connection)
     }
 
     /// Hard cap in force. A fresh store uses the stage-0 2 GiB cap.
+    ///
+    /// # Errors
+    /// Returns a database or stored-cap decoding error.
     pub fn cache_cap(&self) -> Result<u64> {
         bridge::cache_cap(&self.connection)
     }
 
     /// Lowers or raises the hard cap, then runs the cleaner at the stored clock.
+    ///
+    /// # Errors
+    /// Returns a database, accounting or cache-cleaning error.
     pub fn set_cache_cap(&mut self, cap: u64) -> Result<()> {
         bridge::set_cap(&mut self.connection, cap)
     }
@@ -69,6 +87,9 @@ impl SqliteStore {
     /// Stores path-independent bytes for `key` in one trust namespace.
     ///
     /// The first root parses. Later roots with the same retained key reuse that payload.
+    ///
+    /// # Errors
+    /// Refuses invalid identities, conflicting payloads or cap overflow; propagates database and cleaning errors.
     pub fn retain_fact(
         &mut self,
         namespace: &str,
@@ -80,16 +101,25 @@ impl SqliteStore {
     }
 
     /// Returns the retained payload for `key` after applying expiry and pressure.
+    ///
+    /// # Errors
+    /// Refuses invalid keys or namespaces; propagates database, decoding and cleaning errors.
     pub fn retained_fact(&mut self, namespace: &str, key: &FactKey) -> Result<Option<Vec<u8>>> {
         bridge::retained(&mut self.connection, self.now_ms, namespace, key)
     }
 
     /// Drops one root's references and retires facts no root still uses.
+    ///
+    /// # Errors
+    /// Refuses invalid namespace/root labels; propagates database and cleaning errors.
     pub fn release_root(&mut self, namespace: &str, root: &str) -> Result<()> {
         bridge::release_root(&mut self.connection, self.now_ms, namespace, root)
     }
 
     /// Applies time expiry and the size cap at the injected clock.
+    ///
+    /// # Errors
+    /// Returns database, decoding, accounting or cache-cleaning errors.
     pub fn maintain(&mut self) -> Result<MaintainReport> {
         bridge::maintain(&mut self.connection, self.now_ms)
     }
@@ -138,6 +168,7 @@ impl MapStore for SqliteStore {
         Ok(removed)
     }
 
+    #[allow(clippy::cast_possible_wrap, reason = "The SQL result limit is clamped to 40 before converting it to i64.")]
     fn search(&self, expression: &str, limit: usize) -> Result<Vec<SearchHit>> {
         let mut statement = self.connection.prepare_cached(
             "SELECT id,bm25(fts) FROM fts WHERE fts MATCH ?1 ORDER BY bm25(fts),id LIMIT ?2",
