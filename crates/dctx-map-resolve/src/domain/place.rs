@@ -8,6 +8,9 @@ use dctx_map_model::{Node, NodeKind, StableId, Summary, SummarySource};
 use std::collections::{BTreeMap, BTreeSet};
 
 /// Builds resolver facts for one layout. The same payload can be placed twice.
+///
+/// # Errors
+/// Refuses invalid or duplicate placements, missing retained facts or symbols, invalid materialized identities and duplicate-symbol ordinals above `u32::MAX`.
 pub fn materialize(
     retained: &BTreeMap<FactKey, SharedFact>,
     placements: &[Placement],
@@ -32,7 +35,7 @@ pub fn materialize(
 }
 
 fn place(shared: &SharedFact, placement: &Placement) -> Result<Facts, ResolveError> {
-    let ordinals = ordinals(&shared.symbols);
+    let ordinals = ordinals(&shared.symbols)?;
     let mut ids = BTreeMap::new();
     let mut definitions = Vec::with_capacity(shared.symbols.len());
     for (index, symbol) in shared.symbols.iter().enumerate() {
@@ -85,7 +88,7 @@ fn place(shared: &SharedFact, placement: &Placement) -> Result<Facts, ResolveErr
     })
 }
 
-fn ordinals(symbols: &[super::SharedSymbol]) -> Vec<Option<u32>> {
+fn ordinals(symbols: &[super::SharedSymbol]) -> Result<Vec<Option<u32>>, ResolveError> {
     let mut groups: BTreeMap<(NodeKind, &str), Vec<usize>> = BTreeMap::new();
     for (index, symbol) in symbols.iter().enumerate() {
         if symbol.kind != NodeKind::Module {
@@ -105,11 +108,16 @@ fn ordinals(symbols: &[super::SharedSymbol]) -> Vec<Option<u32>> {
         });
         if indexes.len() > 1 {
             for (number, index) in indexes.iter().enumerate() {
-                assigned[*index] = Some(number as u32 + 1);
+                assigned[*index] = Some(ordinal(number)?);
             }
         }
     }
-    assigned
+    Ok(assigned)
+}
+
+fn ordinal(number: usize) -> Result<u32, ResolveError> {
+    u32::try_from(number).ok().and_then(|n| n.checked_add(1))
+        .ok_or_else(|| ResolveError::InvalidScope("duplicate symbol ordinal overflow".into()))
 }
 
 fn symbol_id(
@@ -162,6 +170,17 @@ mod tests {
     }
 
     #[test]
+    fn duplicate_symbol_ordinals_refuse_overflow() {
+        assert_eq!(ordinal(0).unwrap(), 1);
+        let last = usize::try_from(u32::MAX).unwrap();
+        assert_eq!(ordinal(last - 1).unwrap(), u32::MAX);
+        assert!(matches!(ordinal(last), Err(ResolveError::InvalidScope(_))));
+        if let Some(beyond) = last.checked_add(1) {
+            assert!(matches!(ordinal(beyond), Err(ResolveError::InvalidScope(_))));
+        }
+    }
+
+    #[test]
     fn the_same_payload_resolves_differently_in_two_layouts() {
         let helper = SharedFact::new(key(b"fn work() {}"), vec![symbol("work")], vec![]).unwrap();
         let lib = SharedFact::new(
@@ -206,8 +225,8 @@ mod tests {
         let hit = resolve(&nested).unwrap();
         let miss = resolve(&moved).unwrap();
         assert_eq!(hit.edges.len(), 1);
-        assert!(hit.unresolved.is_empty());
-        assert!(miss.edges.is_empty());
+        assert_eq!(hit.unresolved, [] as [crate::domain::facts::Unresolved; 0]);
+        assert_eq!(miss.edges, [] as [dctx_map_model::Edge; 0]);
         assert_eq!(miss.unresolved.len(), 1);
     }
 }

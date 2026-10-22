@@ -55,6 +55,9 @@ pub struct SharedFact {
 
 impl SharedFact {
     /// Sorts and checks a payload. Order of the inputs is not significant.
+    ///
+    /// # Errors
+    /// Refuses invalid keys, duplicate or malformed symbols, missing reference sources, invalid scopes/bindings and layout-dependent identity targets.
     pub fn new(
         key: FactKey,
         symbols: Vec<SharedSymbol>,
@@ -70,6 +73,9 @@ impl SharedFact {
     }
 
     /// Canonicalizes order and rejects layout-dependent or ill-formed payloads.
+    ///
+    /// # Errors
+    /// Refuses invalid keys, duplicate or malformed symbols, missing reference sources, invalid scopes/bindings and layout-dependent identity targets.
     pub fn check(&mut self) -> Result<(), ResolveError> {
         self.key.check()?;
         self.symbols.sort();

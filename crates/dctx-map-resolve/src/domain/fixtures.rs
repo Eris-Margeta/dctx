@@ -52,6 +52,7 @@ pub(crate) struct Fixture {
     pub expected: Vec<Edge>,
 }
 
+#[allow(clippy::too_many_lines, reason = "Keep this shared three-module fixture and its cross-references together so the resolver expectations are inspectable in one place.")]
 pub(crate) fn three_modules() -> Fixture {
     let root = definition("src/lib.rs", "fixture", "", NodeKind::Module);
     let api = definition("src/api.rs", "api", "api", NodeKind::Module);

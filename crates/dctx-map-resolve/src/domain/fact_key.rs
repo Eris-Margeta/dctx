@@ -1,5 +1,5 @@
 //! Content-addressed fact identity for contextual resolution.
-//! Implements IDENTITY-v1 FactKey and decision 078: own digest, no git object id.
+//! Implements IDENTITY-v1 `FactKey` and decision 078: own digest, no git object id.
 //! Depends on the model content id. Views and the fact store key payloads with it.
 use super::ResolveError;
 use dctx_map_model::{ContentAlgorithm, ContentId};
@@ -26,6 +26,9 @@ pub struct ExtractionContract {
 
 impl ExtractionContract {
     /// Rejects an empty contract, schema zero, and git-shaped tokens.
+    ///
+    /// # Errors
+    /// Refuses unsupported digest metadata or zero, empty, non-token or git-shaped extraction fields.
     pub fn check(&self) -> Result<(), ResolveError> {
         if self.language == 0 || self.fact_schema == 0 {
             return Err(ResolveError::InvalidScope("extraction".into()));
@@ -54,6 +57,9 @@ pub struct FactKey {
 
 impl FactKey {
     /// Builds a key from an own content digest and a checked contract.
+    ///
+    /// # Errors
+    /// Refuses unsupported content-digest metadata or an invalid extraction contract.
     pub fn new(content: ContentId, contract: ExtractionContract) -> Result<Self, ResolveError> {
         let key = Self { content, contract };
         key.check()?;
@@ -61,6 +67,9 @@ impl FactKey {
     }
 
     /// Checks the tagged digest and the extraction contract.
+    ///
+    /// # Errors
+    /// Refuses unsupported digest metadata or zero, empty, non-token or git-shaped extraction fields.
     pub fn check(&self) -> Result<(), ResolveError> {
         if self.content.version() != 1 || self.content.algorithm() != ContentAlgorithm::Sha256 {
             return Err(ResolveError::InvalidRoot(self.content.to_string()));
@@ -69,11 +78,13 @@ impl FactKey {
     }
 
     /// Algorithm-tagged content digest. This is not a git object id.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn content(&self) -> ContentId {
         self.content
     }
 
     /// Extraction contract that distinguishes otherwise equal bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn contract(&self) -> &ExtractionContract {
         &self.contract
     }

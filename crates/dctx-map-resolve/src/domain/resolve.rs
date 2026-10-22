@@ -7,6 +7,9 @@ use std::collections::{BTreeMap, BTreeSet};
 
 /// Resolves a complete snapshot; neither input order nor duplicate references
 /// affect the result. Missing and ambiguous references remain lossless retry facts.
+///
+/// # Errors
+/// Refuses duplicate files or nodes, invalid ownership/names/bindings, unknown or foreign sources and unproven containment.
 pub fn resolve(files: &[Facts]) -> Result<Resolution, ResolveError> {
     let table = SymbolTable::new(files)?;
     let mut edges = BTreeMap::new();
@@ -160,15 +163,15 @@ mod tests {
             .push(reference(&source, "", EdgeKind::Calls, "work"));
         let mut files = vec![root];
         let missing = resolve(&files).unwrap();
-        assert!(missing.edges.is_empty());
+        assert_eq!(missing.edges, [] as [dctx_map_model::Edge; 0]);
         assert_eq!(missing.unresolved[0].reason, UnresolvedReason::Missing);
         files.push(file("a.rs", vec![a.clone()]));
         let unique = resolve(&files).unwrap();
-        assert!(unique.unresolved.is_empty());
+        assert_eq!(unique.unresolved, [] as [crate::domain::facts::Unresolved; 0]);
         assert_eq!(unique.edges[0].conf, Confidence::Guess);
         files.push(file("b.rs", vec![b.clone()]));
         let ambiguous = resolve(&files).unwrap();
-        assert!(ambiguous.edges.is_empty());
+        assert_eq!(ambiguous.edges, [] as [dctx_map_model::Edge; 0]);
         assert_eq!(
             ambiguous.unresolved[0].reference,
             missing.unresolved[0].reference
@@ -214,7 +217,7 @@ mod tests {
         missing.target = Target::Id("s:a.rs#missing".parse().unwrap());
         root.references.push(missing);
         let result = resolve(&[root]).unwrap();
-        assert!(result.edges.is_empty());
+        assert_eq!(result.edges, [] as [dctx_map_model::Edge; 0]);
         assert_eq!(result.unresolved.len(), 2);
         assert!(
             result

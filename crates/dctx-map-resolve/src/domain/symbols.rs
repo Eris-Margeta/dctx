@@ -25,6 +25,9 @@ pub struct SymbolTable<'a> {
 impl<'a> SymbolTable<'a> {
     /// Validates ownership and builds indexes without accessing source files.
     /// Duplicate canonical names remain candidates, never an arbitrary winner.
+    ///
+    /// # Errors
+    /// Refuses duplicate files or nodes, invalid ownership/names/bindings, unknown or foreign sources and unproven containment.
     pub fn new(files: &'a [Facts]) -> Result<Self, ResolveError> {
         let mut table = Self {
             nodes: BTreeMap::new(),
@@ -64,16 +67,19 @@ impl<'a> SymbolTable<'a> {
     }
 
     /// Node associated with an exact stable identity.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn node(&self, id: &StableId) -> Option<&'a Node> {
         self.nodes.get(id).map(|entry| &entry.definition.node)
     }
 
     /// Number of distinct graph nodes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn len(&self) -> usize {
         self.nodes.len()
     }
 
     /// Whether the snapshot contains no graph nodes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_empty(&self) -> bool {
         self.nodes.is_empty()
     }

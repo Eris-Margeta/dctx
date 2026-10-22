@@ -16,6 +16,7 @@ pub struct ReverseIndex {
 
 /// Indexes resolved edges and unresolved spellings for one snapshot.
 /// The changed file is recorded too; invalidation drops that path later.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn reverse_index(files: &[Facts], resolution: &Resolution) -> ReverseIndex {
     let mut definitions = BTreeMap::new();
     for file in files {
@@ -59,6 +60,9 @@ pub fn reverse_index(files: &[Facts], resolution: &Resolution) -> ReverseIndex {
 /// Files other than the edited one that must be resolved again.
 /// A body-only edit with the same exports and imports invalidates nobody.
 /// An import edit invalidates users of every name that file contributes.
+///
+/// # Errors
+/// Refuses snapshots whose path or package differs; they do not describe one edited file.
 pub fn invalidated_dependents(
     index: &ReverseIndex,
     previous: &Facts,
@@ -69,10 +73,10 @@ pub fn invalidated_dependents(
     }
     let before = contributed_names(previous);
     let after = contributed_names(current);
-    let names: BTreeSet<String> = if import_set(previous) != import_set(current) {
-        before.union(&after).cloned().collect()
-    } else {
+    let names: BTreeSet<String> = if import_set(previous) == import_set(current) {
         before.symmetric_difference(&after).cloned().collect()
+    } else {
+        before.union(&after).cloned().collect()
     };
     let mut invalidated = BTreeSet::new();
     for name in names {

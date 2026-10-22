@@ -8,6 +8,7 @@ use super::{
     resolve, reverse_index,
 };
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::Write as _;
 
 /// One root's package layout. Paths outside an authorization are dropped.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -28,6 +29,9 @@ pub struct View {
 
 impl View {
     /// Rejects git-shaped identities and empty revisions.
+    ///
+    /// # Errors
+    /// Refuses empty, non-token, path-shaped or git-shaped root, namespace or revision identities.
     pub fn validate(&self) -> Result<(), ResolveError> {
         for value in [
             &self.root,
@@ -44,6 +48,7 @@ impl View {
 
     /// Keeps placements whose path is authorized. Omitted paths are not served.
     /// An empty set authorizes nothing.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn authorize(&self, included: &BTreeSet<String>) -> Self {
         let mut view = self.clone();
         view.placements
@@ -77,49 +82,46 @@ pub struct ViewResolution {
 
 impl ViewResolution {
     /// Canonical UTF-8 result. Equal inputs produce equal bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn canonical_bytes(&self) -> String {
         let mut out = String::new();
-        out.push_str(&format!(
-            "root\t{}\nns\t{}\nresolver\t{}\nranking\t{}\nclock\t{}\n",
+        writeln!(out, "root\t{}\nns\t{}\nresolver\t{}\nranking\t{}\nclock\t{}",
             self.root,
             self.trust_namespace,
             self.resolver_revision,
             self.ranking_revision,
             self.frozen_clock
-        ));
+        ).expect("writing to a String cannot fail");
         for collision in &self.alias_collisions {
-            out.push_str(&format!(
-                "alias\t{}\t{}\t{}\t{}\n",
+            writeln!(out, "alias\t{}\t{}\t{}\t{}",
                 collision.package,
                 collision.scope,
                 collision.binding,
                 collision.targets.join(",")
-            ));
+            ).expect("writing to a String cannot fail");
         }
         for collision in &self.name_collisions {
             let ids = collision
                 .candidates
                 .iter()
-                .map(|id| id.as_str())
+                .map(dctx_map_model::StableId::as_str)
                 .collect::<Vec<_>>()
                 .join(",");
-            out.push_str(&format!(
-                "name\t{}\t{}\t{ids}\n",
+            writeln!(out, "name\t{}\t{}\t{ids}",
                 collision.package, collision.name
-            ));
+            ).expect("writing to a String cannot fail");
         }
         for edge in &self.resolution.edges {
-            out.push_str(&format!(
-                "edge\t{}\t{}\t{}\t{}\t{}\n",
+            writeln!(out, "edge\t{}\t{}\t{}\t{}\t{}",
                 edge.owner_path,
                 edge.src,
                 edge.kind.as_str(),
                 edge.dst,
                 edge.conf.as_str()
-            ));
+            ).expect("writing to a String cannot fail");
         }
         for item in &self.resolution.unresolved {
-            out.push_str(&format!("open\t{}\t", item.owner_path));
+            write!(out,"open\t{}\t", item.owner_path).expect("writing to a String cannot fail");
             match &item.reason {
                 super::UnresolvedReason::Missing => out.push_str("missing"),
                 super::UnresolvedReason::Ambiguous(ids) => {
@@ -134,12 +136,12 @@ impl ViewResolution {
         }
         for ((package, name), paths) in &self.reverse.dependents {
             for path in paths {
-                out.push_str(&format!("dep\t{package}\t{name}\t{path}\n"));
+                writeln!(out, "dep\t{package}\t{name}\t{path}").expect("writing to a String cannot fail");
             }
         }
         for ((package, name), paths) in &self.reverse.users {
             for path in paths {
-                out.push_str(&format!("use\t{package}\t{name}\t{path}\n"));
+                writeln!(out, "use\t{package}\t{name}\t{path}").expect("writing to a String cannot fail");
             }
         }
         out
@@ -170,6 +172,7 @@ impl Default for FactStore {
 
 impl FactStore {
     /// Empty store. Nothing has been parsed.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new() -> Self {
         Self {
             retained: BTreeMap::new(),
@@ -178,21 +181,27 @@ impl FactStore {
     }
 
     /// Number of payloads inserted. Reuse and conflicts do not increment it.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn parses(&self) -> u64 {
         self.parses
     }
 
     /// Number of keys currently retained.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn retained_count(&self) -> usize {
         self.retained.len()
     }
 
     /// Whether this key still has a payload.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn contains(&self, key: &FactKey) -> bool {
         self.retained.contains_key(key)
     }
 
     /// Retains a payload, or reuses it when the key and payload already match.
+    ///
+    /// # Errors
+    /// Refuses invalid shared facts or a key that already retains different symbols or references.
     pub fn admit(&mut self, mut fact: SharedFact) -> Result<Admission, ResolveError> {
         fact.check()?;
         if let Some(existing) = self.retained.get(&fact.key) {
@@ -212,12 +221,18 @@ impl FactStore {
     }
 
     /// Materializes placement facts without resolving them.
+    ///
+    /// # Errors
+    /// Refuses invalid view identities or placements, missing retained facts/symbols and invalid materialized identities.
     pub fn placed_facts(&self, view: &View) -> Result<Vec<super::Facts>, ResolveError> {
         view.validate()?;
         materialize(&self.retained, &view.placements)
     }
 
     /// Resolves one authorized layout from retained facts.
+    ///
+    /// # Errors
+    /// Propagates view validation, materialization and resolver input-contract errors.
     pub fn resolve_view(&self, view: &View) -> Result<ViewResolution, ResolveError> {
         view.validate()?;
         let files = materialize(&self.retained, &view.placements)?;
@@ -237,6 +252,9 @@ impl FactStore {
 }
 
 /// Contract helper used by tests and callers that share one extractor revision.
+///
+/// # Errors
+/// Refuses empty, non-token or git-shaped revision and plan labels.
 pub fn contract(revision: &str, plan: &str) -> Result<ExtractionContract, ResolveError> {
     let contract = ExtractionContract {
         language: 1,

@@ -17,6 +17,7 @@ pub struct Move {
 
 impl Move {
     /// Model answer notice; the query layer serves `new` after this notice.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn identity(&self) -> IdentityStatus {
         IdentityStatus::Moved {
             old: self.old.clone(),
@@ -31,6 +32,7 @@ type Fingerprints<'a> = BTreeMap<(NodeKind, Option<SymbolKind>, &'a str), BTreeS
 /// Only disappeared and newly introduced nodes participate. Empty hashes,
 /// changed kinds and ambiguous many-to-one or one-to-many matches are refused.
 /// Fingerprints must already be SHA-256 of whitespace-normalized bodies (§5.2).
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn detect_moves(previous: &[Node], current: &[Node], revision: &str) -> Vec<Move> {
     let old_ids: BTreeSet<_> = previous.iter().map(|node| &node.id).collect();
     let new_ids: BTreeSet<_> = current.iter().map(|node| &node.id).collect();
@@ -117,30 +119,29 @@ mod tests {
     #[test]
     fn copies_edits_empty_hashes_and_different_kinds_are_not_moves() {
         let (old, new) = renamed();
-        assert!(
-            detect_moves(std::slice::from_ref(&old), &[old.clone(), new.clone()], "r").is_empty()
+        assert_eq!(
+            detect_moves(std::slice::from_ref(&old), &[old.clone(), new.clone()], "r"), [] as [crate::domain::moves::Move; 0]
         );
-        assert!(
-            detect_moves(&[old.clone(), new.clone()], std::slice::from_ref(&new), "r").is_empty()
+        assert_eq!(
+            detect_moves(&[old.clone(), new.clone()], std::slice::from_ref(&new), "r"), [] as [crate::domain::moves::Move; 0]
         );
         let mut changed = new.clone();
         changed.fingerprint.push('0');
-        assert!(detect_moves(std::slice::from_ref(&old), &[changed], "r").is_empty());
+        assert_eq!(detect_moves(std::slice::from_ref(&old), &[changed], "r"), [] as [crate::domain::moves::Move; 0]);
         let mut changed = new;
         changed.symbol_kind = Some(SymbolKind::Method);
-        assert!(
+        assert_eq!(
             detect_moves(
                 std::slice::from_ref(&old),
                 std::slice::from_ref(&changed),
                 "r"
-            )
-            .is_empty()
+            ), [] as [crate::domain::moves::Move; 0]
         );
         let mut old = old;
         old.fingerprint.clear();
         changed.fingerprint.clear();
         changed.symbol_kind = old.symbol_kind;
-        assert!(detect_moves(&[old], &[changed], "r").is_empty());
+        assert_eq!(detect_moves(&[old], &[changed], "r"), [] as [crate::domain::moves::Move; 0]);
     }
 
     #[test]
@@ -148,15 +149,14 @@ mod tests {
         let (old, new) = renamed();
         let mut another = new.clone();
         another.id = "s:src/another.rs#compute".parse().unwrap();
-        assert!(
+        assert_eq!(
             detect_moves(
                 std::slice::from_ref(&old),
                 &[new.clone(), another.clone()],
                 "r"
-            )
-            .is_empty()
+            ), [] as [crate::domain::moves::Move; 0]
         );
-        assert!(detect_moves(&[old, another], &[new], "r").is_empty());
+        assert_eq!(detect_moves(&[old, another], &[new], "r"), [] as [crate::domain::moves::Move; 0]);
     }
 
     proptest! {

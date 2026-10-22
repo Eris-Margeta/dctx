@@ -279,7 +279,7 @@ fn p7_non_vcs_reuse() {
     assert_eq!(store.parses(), 2, "three roots share the retained keys");
     assert_eq!(hit.resolution.edges.len(), 1);
     assert!(hit.resolution.edges[0].dst.as_str().contains("src/helper.rs#work"));
-    assert!(miss.resolution.edges.is_empty());
+    assert_eq!(miss.resolution.edges, [] as [dctx_map_model::Edge; 0]);
     assert!(matches!(miss.resolution.unresolved[0].reason, UnresolvedReason::Missing));
     assert_eq!(moved.resolution.edges.len(), 1);
     assert!(moved.resolution.edges[0].dst.as_str().contains("other/src/helper.rs#work"));
@@ -292,7 +292,7 @@ fn p7_non_vcs_reuse() {
     assert_eq!(store.resolve_view(&root1.authorize(&allowed)).unwrap().resolution, hit.resolution);
     allowed.remove("src/helper.rs");
     let denied = store.resolve_view(&root1.authorize(&allowed)).unwrap();
-    assert!(denied.resolution.edges.is_empty());
+    assert_eq!(denied.resolution.edges, [] as [dctx_map_model::Edge; 0]);
     assert!(matches!(denied.resolution.unresolved[0].reason, UnresolvedReason::Missing));
     assert!(denied.resolution.edges.iter().all(|edge| !edge.dst.as_str().contains("helper.rs")));
 
