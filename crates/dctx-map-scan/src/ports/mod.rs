@@ -7,12 +7,18 @@ use std::{io, path::Path};
 /// Supplies optional UTF-8 rules; only absence returns `None`.
 pub trait RuleSource {
     /// Reads rules, preserving permission and encoding errors.
+    ///
+    /// # Errors
+    /// Returns read or decoding errors; an absent rule file is represented by None.
     fn read_rules(&self, path: &Path) -> io::Result<Option<String>>;
 }
 
 /// Supplies content after the privacy decision authorizes access.
 pub trait ContentSource {
     /// Opens and reads the authorized path.
+    ///
+    /// # Errors
+    /// Returns the underlying content-read failure.
     fn read_content(&self, path: &Path) -> io::Result<Vec<u8>>;
 }
 

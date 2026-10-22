@@ -83,12 +83,18 @@ fn global_config() -> Option<PathBuf> {
 
 impl IgnoreEngine {
     /// Loads built-in, global and project rules, preserving every read failure.
+    ///
+    /// # Errors
+    /// Returns the rule source read or decoding error from any configured global or project rule layer.
     pub fn build(base_dir: &Path, _debug_verbose: bool) -> Result<Self, IgnoreError> {
         Self::build_with_source(base_dir, global_config().as_deref(), &FileRuleSource)
     }
 
     /// Loads explicit layers with injected IO; `None` disables global config.
     /// Project precedence is `.gitignore`, `.dctxignore`, then `.legacyignore`.
+    ///
+    /// # Errors
+    /// Returns the rule source read or decoding error from any supplied global or project rule layer.
     pub fn build_with_source(
         base_dir: &Path,
         global_dir: Option<&Path>,

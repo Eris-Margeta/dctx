@@ -8,7 +8,7 @@ mod tests {
     use crate::domain::ignore::{IgnoreRule, parse_ignore_pattern_line, should_ignore_item};
     #[test]
     fn test_hardcoded_omit_rules_not_empty() {
-        assert!(!HARDCODED_OMIT_CONTENT_RULES.is_empty());
+        assert_ne!(HARDCODED_OMIT_CONTENT_RULES, &[] as &[&str]);
         assert!(HARDCODED_OMIT_CONTENT_RULES.contains(&"*.svg"));
         assert!(HARDCODED_OMIT_CONTENT_RULES.contains(&"package-lock.json"));
     }

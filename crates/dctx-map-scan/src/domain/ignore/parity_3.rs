@@ -124,7 +124,7 @@ mod tests {
 
         // Debug: Check if .turbo pattern exists
         let has_turbo = engine.ignore_rules.iter().any(|r| r.pattern == ".turbo");
-        eprintln!("DEBUG: .turbo pattern in ignore_rules: {}", has_turbo);
+        eprintln!("DEBUG: .turbo pattern in ignore_rules: {has_turbo}");
         if has_turbo {
             let turbo_rule = engine
                 .ignore_rules
@@ -182,7 +182,7 @@ mod tests {
             path: PathBuf::from("/nonexistent"),
             source: std::io::Error::new(std::io::ErrorKind::NotFound, "test"),
         };
-        assert!(format!("{}", error).contains("Failed to read"));
+        assert!(format!("{error}").contains("Failed to read"));
     }
 
     #[test]

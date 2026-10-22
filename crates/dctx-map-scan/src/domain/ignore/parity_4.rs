@@ -185,8 +185,8 @@ mod tests {
 
         // Simulate 1000 files
         for i in 0..1000 {
-            let path = format!("src/file{}.rs", i);
-            let name = format!("file{}.rs", i);
+            let path = format!("src/file{i}.rs");
+            let name = format!("file{i}.rs");
             should_ignore_item_cached(
                 &path,
                 &name,

@@ -2,6 +2,7 @@
 //! Implements ADR-014/015b and SPEC-MAP-MODE section 6.1.
 //! Consumes compiled rules supplied by adapters; no model dependency.
 
+use std::fmt::Write as _;
 use super::diagnostics::matches_rule;
 use super::{IgnoreRule, MatchCache, should_ignore_item_cached};
 use crate::domain::{FileHandlingDecision, ItemContext};
@@ -34,6 +35,7 @@ pub struct IgnoreEngine {
 }
 impl IgnoreEngine {
     /// Constructs a pure engine from ordered ignore and omit rules.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn from_rules(ignore_rules: Vec<IgnoreRule>, omit_rules: Vec<IgnoreRule>) -> Self {
         let stats = EngineStats {
             local_ignore_count: ignore_rules.len(),
@@ -106,8 +108,8 @@ impl IgnoreEngine {
         let decision = self.decide(context);
         let mut output = String::new();
 
-        output.push_str(&format!("Item: {}\n", context.relative_path));
-        output.push_str(&format!("Decision: {:?}\n", decision));
+        writeln!(output, "Item: {}", context.relative_path).expect("writing to a String cannot fail");
+        writeln!(output, "Decision: {decision:?}").expect("writing to a String cannot fail");
         output.push_str("Matching Rules:\n");
 
         for (i, rule) in self.ignore_rules.iter().enumerate() {
@@ -119,10 +121,10 @@ impl IgnoreEngine {
                 } else {
                     "local"
                 };
-                output.push_str(&format!(
-                    "  [IGNORE/{}] {} ({:?})\n",
+                writeln!(output,
+                    "  [IGNORE/{}] {} ({:?})",
                     source, rule.pattern, rule.pattern_type
-                ));
+                ).expect("writing to a String cannot fail");
             }
         }
 
@@ -135,10 +137,10 @@ impl IgnoreEngine {
                 } else {
                     "local"
                 };
-                output.push_str(&format!(
-                    "  [OMIT/{}] {} ({:?})\n",
+                writeln!(output,
+                    "  [OMIT/{}] {} ({:?})",
                     source, rule.pattern, rule.pattern_type
-                ));
+                ).expect("writing to a String cannot fail");
             }
         }
 

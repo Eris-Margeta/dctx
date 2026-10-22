@@ -20,6 +20,7 @@ pub enum FileHandlingDecision {
 
 impl FileHandlingDecision {
     /// Returns true if the walker should recurse into this directory.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn should_recurse(self) -> bool {
         match self {
             Self::Include | Self::OmitContent | Self::DebugVisible => true,
@@ -28,6 +29,7 @@ impl FileHandlingDecision {
     }
 
     /// Returns true if the content reader should read this file's content.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn should_read_content(self) -> bool {
         match self {
             Self::Include => true,
@@ -36,6 +38,7 @@ impl FileHandlingDecision {
     }
 
     /// Returns true if this item should appear in the directory tree.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn show_in_tree(self) -> bool {
         match self {
             Self::Exclude => false,
@@ -44,11 +47,11 @@ impl FileHandlingDecision {
     }
 
     /// Returns true if metadata (size, mtime) should be read from filesystem.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn needs_metadata(self) -> bool {
         match self {
-            Self::Include => true,      // Full info needed
-            Self::OmitContent => true,  // Show in tree with size/date
-            Self::DebugVisible => true, // Show in tree for diagnostics
+            // Full records, omitted-content tree entries and debug entries all need metadata.
+            Self::Include | Self::OmitContent | Self::DebugVisible => true,
             Self::Exclude => false,     // Never shown, skip metadata
         }
     }
@@ -117,7 +120,7 @@ mod tests {
     #[test]
     fn test_decision_debug_format() {
         let decision = FileHandlingDecision::Include;
-        let debug_str = format!("{:?}", decision);
+        let debug_str = format!("{decision:?}");
         assert!(debug_str.contains("Include"));
     }
 

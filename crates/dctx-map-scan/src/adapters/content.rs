@@ -14,6 +14,9 @@ impl ContentSource for FileContentSource {
 }
 
 /// Reads only when the decision permits content; otherwise never touches IO.
+///
+/// # Errors
+/// Propagates the content source read error when the decision permits a read.
 pub fn read_content_if_allowed(
     source: &impl ContentSource,
     path: &Path,

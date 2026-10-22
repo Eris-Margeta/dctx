@@ -39,6 +39,9 @@ fn at<T>(path: &Path, result: io::Result<T>) -> Result<T, ScanError> {
 /// Scans regular files in relative-path order, skipping links and special files.
 /// Omitted and debug-visible files have metadata but no hash: they are never opened.
 /// SVG content is governed by omit rules, allowing explicit rule negation.
+///
+/// # Errors
+/// Returns path-specific IO failures or an invalid-path error for unusable child components or non-UTF-8 paths.
 pub fn scan(
     root: &Path,
     engine: &IgnoreEngine,
