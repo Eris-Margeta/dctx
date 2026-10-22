@@ -152,14 +152,17 @@ impl<'a> Walker<'a> {
         self.word(index) && (predefined(self.text(index)) || !keyword(self.text(index)))
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(crate) fn start_byte(&self, index: usize) -> u32 {
         self.toks.get(index).map_or(self.src.len() as u32, |token| token.start)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(crate) fn end_byte(&self, index: usize) -> u32 {
         self.toks.get(index).map_or(self.src.len() as u32, |token| token.end)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(crate) fn line(&self, byte: u32) -> u32 {
         self.line_starts.partition_point(|&start| start <= byte).max(1) as u32
     }
@@ -205,7 +208,7 @@ impl<'a> Walker<'a> {
 
     pub(crate) fn doc_before(&self, token: usize) -> Option<String> {
         let start = self.toks.get(token)?.start;
-        let prev_end = token.checked_sub(1).map(|index| self.toks[index].end).unwrap_or(0);
+        let prev_end = token.checked_sub(1).map_or(0, |index| self.toks[index].end);
         let mut limit = start;
         let mut group = Vec::new();
         for comment in self.comments.iter().rev() {

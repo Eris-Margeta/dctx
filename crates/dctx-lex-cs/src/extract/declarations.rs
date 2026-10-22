@@ -318,8 +318,7 @@ impl Walker<'_> {
         let brace = self.is(cursor, "{").then(|| self.close_of(cursor, end));
         let last = brace.unwrap_or(at);
         let body = brace
-            .map(|close| (self.start_byte(cursor), self.end_byte(close)))
-            .unwrap_or((self.start_byte(at), self.end_byte(at)));
+            .map_or((self.start_byte(at), self.end_byte(at)), |close| (self.start_byte(cursor), self.end_byte(close)));
         let child = self.emit(
             &Emit {
                 symbol: Some(SymbolKind::Const),

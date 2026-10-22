@@ -66,6 +66,7 @@ impl Lexed {
     }
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 pub(crate) fn line_of(line_starts: &[u32], byte: u32) -> u32 {
     line_starts.partition_point(|&start| start <= byte) as u32
 }
@@ -209,6 +210,7 @@ pub(crate) fn modifier(word: &str) -> bool {
 }
 
 /// Lexes `source` and pairs `()`, `[]` and `{}`.
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     let mut line_starts = vec![0];
     for (index, byte) in source.bytes().enumerate() {
@@ -243,6 +245,7 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     })
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 fn pair(
     source: &str,
     tokens: &[Token],
@@ -329,7 +332,7 @@ mod tests {
     fn preprocessor_lines_are_tokens_and_depth_is_typed() {
         let lexed = lex("#if DEBUG\nclass A { }\n#endregion\n", &Limits::default()).expect("lex");
         assert!(lexed.tokens.iter().any(|token| token.kind == Kind::Preproc));
-        assert!(lexed.diagnostics.is_empty());
+        assert_eq!(lexed.diagnostics, []);
         let open = lex("void M() {", &Limits::default()).expect("lex");
         assert!(open.diagnostics.iter().any(|d| d.reason == DiagnosticReason::UnbalancedBracket));
         let limits = Limits { max_depth: 2, ..Limits::default() };

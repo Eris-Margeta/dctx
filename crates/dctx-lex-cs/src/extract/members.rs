@@ -48,7 +48,7 @@ impl Walker<'_> {
         }
         if self.can_name(at) && self.text(at) == scope.simple && self.is(at + 1, "(") {
             return self.finish_method(
-                MethodAt { start: index, type_from: at, name: at, ctor: true },
+                &MethodAt { start: index, type_from: at, name: at, ctor: true },
                 end,
                 scope,
                 &prefix,
@@ -88,7 +88,7 @@ impl Walker<'_> {
         }
         if self.is(after, "(") {
             return self.finish_method(
-                MethodAt { start, type_from: type_at, name, ctor: false },
+                &MethodAt { start, type_from: type_at, name, ctor: false },
                 end,
                 scope,
                 prefix,
@@ -182,8 +182,7 @@ impl Walker<'_> {
                 cursor += 1;
             }
             let body = init
-                .map(|(eq, stop)| (self.end_byte(eq), self.start_byte(stop)))
-                .unwrap_or((self.start_byte(after), self.end_byte(close)));
+                .map_or((self.start_byte(after), self.end_byte(close)), |(eq, stop)| (self.end_byte(eq), self.start_byte(stop)));
             (close, body, cursor, Some((after + 1, close)))
         } else {
             let expr = after + 1;
@@ -219,7 +218,7 @@ impl Walker<'_> {
 
     fn finish_method(
         &mut self,
-        at: MethodAt,
+        at: &MethodAt,
         end: usize,
         scope: &Scope,
         prefix: &Prefix,

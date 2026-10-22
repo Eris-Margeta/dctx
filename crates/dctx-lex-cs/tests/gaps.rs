@@ -6,6 +6,7 @@
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write as _;
     use dctx_lex_cs::{Completion, CsLexer, DiagnosticReason, LexError, LexedFile, Limits};
 
     /// CS1: `$` count × quote count × brace run, with a closed control beside each truncated closer.
@@ -72,7 +73,7 @@ mod tests {
         );
         if closed {
             assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
-            assert!(facts.diagnostics.is_empty());
+            assert_eq!(facts.diagnostics, []);
         } else {
             assert_eq!(facts.completion, Completion::Partial);
             assert!(facts.diagnostics.iter().any(|diagnostic| diagnostic.reason == DiagnosticReason::UnterminatedString));
@@ -195,7 +196,7 @@ mod tests {
         let flat = CsLexer::new(Limits { max_depth: 0, ..Limits::default() });
         let flat_ok = flat.extract("z.cs", b"int x;").expect("no brackets");
         assert_eq!(flat_ok.completion, Completion::Complete);
-        assert!(!flat_ok.nodes.is_empty());
+        assert_ne!(flat_ok.nodes, []);
         assert!(matches!(
             flat.extract("z.cs", b"\nclass A {}"),
             Err(LexError::TooDeep { line: 2, limit: 0 })
@@ -234,20 +235,20 @@ mod tests {
         assert_eq!(LexedFile::MAX_DIAGNOSTICS, 64);
         for (index, diagnostic) in damaged.diagnostics.iter().enumerate() {
             assert_eq!(diagnostic.reason, DiagnosticReason::UnterminatedString);
-            assert_eq!(diagnostic.byte, (index * 2) as u32);
-            assert_eq!(diagnostic.line, (index + 1) as u32);
+            assert_eq!(diagnostic.byte, u32::try_from(index * 2).expect("bounded test coordinate"));
+            assert_eq!(diagnostic.line, u32::try_from(index + 1).expect("bounded test coordinate"));
         }
         assert!(damaged.diagnostics.iter().all(|diagnostic| diagnostic.byte < 128));
         let sound = CsLexer::default().extract("ok.cs", b"class A { void M() { ok(); } }").expect("control");
         assert_eq!(sound.completion, Completion::Complete);
-        assert!(sound.diagnostics.is_empty());
+        assert_eq!(sound.diagnostics, []);
         assert!(sound.references.iter().any(|reference| reference.fact.name == "ok"));
 
         let full = dense_program(ceiling.max_bytes);
         assert_eq!(full.len(), ceiling.max_bytes);
         let wide = CsLexer::default().extract("wide.cs", &full).expect("ceiling");
         assert_eq!(wide.completion, Completion::Complete);
-        assert!(wide.diagnostics.is_empty());
+        assert_eq!(wide.diagnostics, []);
         assert!(wide.nodes.iter().any(|node| node.fact.name == "C"));
         assert!(wide.nodes.len() + wide.references.len() < ceiling.max_facts);
         let mut over = full;
@@ -261,7 +262,7 @@ mod tests {
     fn fact_program(methods: usize) -> String {
         let mut source = String::from("class A {");
         for index in 0..methods {
-            source.push_str(&format!("void F{index}(){{c{index}();}}"));
+            write!(source, "void F{index}(){{c{index}();}}").expect("writing to a String cannot fail");
         }
         source.push('}');
         source

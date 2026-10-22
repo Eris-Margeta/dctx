@@ -17,6 +17,7 @@ use dctx_map_model::{
 use std::collections::BTreeMap;
 
 /// Extracts facts from an already-lexed C# file.
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 pub(crate) fn extract(
     path: &str,
     source: &str,
@@ -247,7 +248,7 @@ impl Draft {
             reason,
         }));
         diagnostics.sort_by_key(|diagnostic| (diagnostic.byte, diagnostic.reason as u8));
-        let first = diagnostics.first().map(|diagnostic| diagnostic.byte).unwrap_or(u32::MAX);
+        let first = diagnostics.first().map_or(u32::MAX, |diagnostic| diagnostic.byte);
         let completion = if diagnostics.is_empty() {
             Completion::Complete
         } else {
@@ -338,7 +339,7 @@ fn partial_precision(end: u32, base: Precision, first: u32) -> Precision {
     }
 }
 
-impl<'a> Walker<'a> {
+impl Walker<'_> {
     /// Emits a declaration and returns the scope its contents belong to.
     pub(crate) fn emit(&mut self, item: &Emit<'_>, parent: &Scope) -> Option<Scope> {
         if self.draft.full() {

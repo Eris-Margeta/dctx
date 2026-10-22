@@ -52,7 +52,7 @@ struct Scanner<'a> {
     too_deep_at: Option<u32>,
 }
 
-impl<'a> Scanner<'a> {
+impl Scanner<'_> {
     /// `stop` is the number of closing braces that end an interpolation hole. Zero scans to EOF.
     fn drive(&mut self, stop: usize) {
         let mut braces = 0i32;
@@ -118,6 +118,7 @@ impl<'a> Scanner<'a> {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn line_comment(&mut self) {
         let start = self.pos;
         let doc = self.starts("///") && !self.starts("////");
@@ -131,6 +132,7 @@ impl<'a> Scanner<'a> {
         });
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn block_comment(&mut self) {
         let start = self.pos;
         self.pos += 2;
@@ -193,6 +195,7 @@ impl<'a> Scanner<'a> {
         true
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn raw_body(&mut self, start: usize, quotes: usize, dollars: usize) {
         while self.pos < self.src.len() && self.too_deep_at.is_none() {
             if dollars > 0 && self.try_hole(dollars) {
@@ -221,6 +224,7 @@ impl<'a> Scanner<'a> {
         true
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn quoted_body(&mut self, start: usize, verbatim: bool, dollars: usize) {
         while self.pos < self.src.len() && self.too_deep_at.is_none() {
             if dollars > 0 && self.try_hole(dollars) {
@@ -300,6 +304,7 @@ impl<'a> Scanner<'a> {
         true
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn try_char(&mut self) -> bool {
         if self.byte() != b'\'' {
             return false;
@@ -392,7 +397,7 @@ impl<'a> Scanner<'a> {
     }
 
     fn punct(&mut self) {
-        let len = MULTI.iter().find(|op| self.starts(op)).map(|op| op.len()).unwrap_or(1);
+        let len = MULTI.iter().find(|op| self.starts(op)).map_or(1, |op| op.len());
         if len == 1 && !self.byte().is_ascii() {
             let start = self.pos;
             self.bump();
@@ -402,6 +407,7 @@ impl<'a> Scanner<'a> {
         self.push_len(Kind::Punct, len);
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn enter(&mut self) -> bool {
         if self.depth >= self.max_depth {
             self.too_deep_at = Some(self.pos as u32);
@@ -446,6 +452,7 @@ impl<'a> Scanner<'a> {
         Some(ch)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn push(&mut self, kind: Kind, start: usize) {
         if self.pos < start {
             return;
