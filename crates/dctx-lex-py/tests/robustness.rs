@@ -48,8 +48,8 @@ fn parser_identity_and_refusal_strings() {
     let empty = extract("m.py", "");
     assert_eq!(empty.nodes.len(), 1);
     assert_eq!(empty.nodes[0].fact.lines, [1, 1]);
-    assert!(empty.edges.is_empty());
-    assert!(empty.references.is_empty());
+    assert_eq!(empty.edges, []);
+    assert_eq!(empty.references, []);
     assert_eq!(empty.completion, Completion::Complete);
 }
 
@@ -134,9 +134,8 @@ fn every_fixture_prefix_is_deterministic_and_bounded() {
                 _ => panic!("non-deterministic prefix of length {end}"),
             }
             match first {
-                Ok(_) => {}
                 Err(LexError::InvalidUtf8(_)) => assert!(std::str::from_utf8(bytes).is_err()),
-                Err(LexError::TooDeep { .. } | LexError::TooManyFacts { .. } | LexError::TooLarge { .. }) => {}
+                Ok(_) | Err(LexError::TooDeep { .. } | LexError::TooManyFacts { .. } | LexError::TooLarge { .. }) => {}
                 Err(error) => panic!("unexpected {error}"),
             }
         }

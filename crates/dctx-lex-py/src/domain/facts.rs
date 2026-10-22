@@ -14,6 +14,7 @@ pub enum Dialect {
 
 impl Dialect {
     /// Selects a dialect case-insensitively; other extensions are unsupported.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn for_path(path: &str) -> Option<Self> {
         let file = path.rsplit(['/', '\\']).next().unwrap_or(path);
         let ext = file.rsplit_once('.')?.1.to_ascii_lowercase();

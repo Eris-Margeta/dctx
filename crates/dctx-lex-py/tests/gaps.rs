@@ -36,6 +36,7 @@ fn assert_calls(facts: &LexedFile, rows: &[(&str, &str)]) {
     assert!(found.iter().all(|row| row.1 != "ghost"));
 }
 
+#[allow(clippy::fn_params_excessive_bools, reason = "The fixture generator deliberately enumerates independent raw, triple, escaped, format-spec and nested f-string dimensions.")]
 fn fstring_source(raw: bool, triple: bool, escaped: bool, spec: bool, nested: bool) -> (String, Vec<(&'static str, &'static str)>) {
     let prefix = if raw { "rf" } else { "f" };
     let quote = if triple { "\"\"\"" } else { "\"" };
@@ -126,6 +127,7 @@ fn indent_rows() -> Vec<(&'static str, &'static str)> {
 /// PY2. Space and tab layouts match; a bad dedent is Partial at that line.
 /// Not a defect: logical indents already compose continuations, blanks, comments and CRLF.
 #[test]
+#[allow(clippy::similar_names, reason = "These regression tests distinguish related source spellings and their corresponding facts; the names describe the tested relationship.")]
 fn py2_indentation_composition() {
     let spaces = suite("        ", "                ", "");
     let tabs = suite("\t", "\t\t", "\t");
@@ -144,8 +146,8 @@ fn py2_indentation_composition() {
     let facts = extract("nest.py", bad);
     check_invariants(bad, &facts);
     assert_eq!(facts.completion, Completion::Partial);
-    let byte = bad.find("          bad()").expect("bad indent") as u32;
-    let line = bad[..byte as usize].bytes().filter(|item| *item == b'\n').count() as u32 + 1;
+    let byte = u32::try_from(bad.find("          bad()").expect("bad indent")).expect("bounded test coordinate");
+    let line = u32::try_from(bad[..byte as usize].bytes().filter(|item| *item == b'\n').count()).expect("bounded test coordinate") + 1;
     assert_eq!(facts.diagnostics.len(), 1);
     assert_eq!(facts.diagnostics[0].reason, DiagnosticReason::InconsistentIndent);
     assert_eq!(facts.diagnostics[0].byte, byte);

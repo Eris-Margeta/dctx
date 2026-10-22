@@ -62,7 +62,7 @@ fn docstrings_are_first_sentences_and_comments_skip_the_shebang() {
     let facts = extract("d.py", DOC_SRC);
     check_invariants(DOC_SRC, &facts);
     assert_eq!(facts.completion, Completion::Complete);
-    assert!(facts.references.is_empty());
+    assert_eq!(facts.references, []);
     let expect = [
         ("raw", SummarySource::Doc, "Raw doc."),
         ("binary", SummarySource::Signature, "def binary():"),

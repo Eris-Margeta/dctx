@@ -81,7 +81,7 @@ impl Lx<'_> {
         self.string_closed = false;
         loop {
             let before = self.i;
-            if self.fstring_finished(quote, triple)? {
+            if self.fstring_finished(quote, triple) {
                 return Ok(());
             }
             match self.fstring_brace(quote, triple)? {
@@ -89,7 +89,7 @@ impl Lx<'_> {
                 Step::Cont => continue,
                 Step::Pending => {}
             }
-            match self.fstring_escape(raw, triple)? {
+            match self.fstring_escape(raw, triple) {
                 Step::Done => return Ok(()),
                 Step::Cont => continue,
                 Step::Pending => {}
@@ -105,27 +105,27 @@ impl Lx<'_> {
         }
     }
 
-    fn fstring_finished(&mut self, quote: char, triple: bool) -> Result<bool, LexError> {
+    fn fstring_finished(&mut self, quote: char, triple: bool) -> bool {
         if self.string_closed {
             self.string_closed = false;
             if self.closes_string(quote, triple) {
                 self.consume_close(quote, triple);
             }
-            return Ok(true);
+            return true;
         }
         if self.i >= self.src.len() {
             self.problem(self.pos(), DiagnosticReason::UnterminatedString);
-            return Ok(true);
+            return true;
         }
         if self.closes_string(quote, triple) {
             self.consume_close(quote, triple);
-            return Ok(true);
+            return true;
         }
         if !triple && self.at_newline() {
             self.problem(self.pos(), DiagnosticReason::UnterminatedString);
-            return Ok(true);
+            return true;
         }
-        Ok(false)
+        false
     }
 
     fn fstring_brace(&mut self, quote: char, triple: bool) -> Result<Step, LexError> {
@@ -152,21 +152,21 @@ impl Lx<'_> {
         Ok(Step::Pending)
     }
 
-    fn fstring_escape(&mut self, raw: bool, triple: bool) -> Result<Step, LexError> {
+    fn fstring_escape(&mut self, raw: bool, triple: bool) -> Step {
         if !self.at_char('\\') {
-            return Ok(Step::Pending);
+            return Step::Pending;
         }
         self.bump();
         if self.at_newline() {
             if raw && !triple {
                 self.problem(self.pos(), DiagnosticReason::UnterminatedString);
-                return Ok(Step::Done);
+                return Step::Done;
             }
             self.consume_nl();
         } else {
             self.bump();
         }
-        Ok(Step::Cont)
+        Step::Cont
     }
 
     fn fexpr(&mut self, quote: char, triple: bool) -> Result<(), LexError> {
@@ -179,7 +179,7 @@ impl Lx<'_> {
             if self.lex_fexpr_string()? {
                 continue;
             }
-            if self.fexpr_closed(quote, triple)? {
+            if self.fexpr_closed(quote, triple) {
                 return Ok(());
             }
             match self.fexpr_delim(quote, triple, paren, bracket, brace, &mut lambdas)? {
@@ -191,21 +191,21 @@ impl Lx<'_> {
         }
     }
 
-    fn fexpr_closed(&mut self, quote: char, triple: bool) -> Result<bool, LexError> {
+    fn fexpr_closed(&mut self, quote: char, triple: bool) -> bool {
         if self.string_closed {
-            return Ok(true);
+            return true;
         }
         self.skip_f_ws();
         if self.i >= self.src.len() {
             self.problem(self.pos(), DiagnosticReason::UnterminatedString);
-            return Ok(true);
+            return true;
         }
         if self.closes_string(quote, triple) {
             self.problem(self.pos(), DiagnosticReason::UnterminatedString);
             self.string_closed = true;
-            return Ok(true);
+            return true;
         }
-        Ok(false)
+        false
     }
 
     fn fexpr_delim(
@@ -287,7 +287,7 @@ impl Lx<'_> {
     fn fformat(&mut self, quote: char, triple: bool) -> Result<(), LexError> {
         self.bump();
         loop {
-            if self.fformat_end(quote, triple)? {
+            if self.fformat_end(quote, triple) {
                 return Ok(());
             }
             match self.fformat_brace(quote, triple)? {
@@ -307,21 +307,21 @@ impl Lx<'_> {
         }
     }
 
-    fn fformat_end(&mut self, quote: char, triple: bool) -> Result<bool, LexError> {
+    fn fformat_end(&mut self, quote: char, triple: bool) -> bool {
         if self.i >= self.src.len() {
             self.problem(self.pos(), DiagnosticReason::UnterminatedString);
-            return Ok(true);
+            return true;
         }
         if self.closes_string(quote, triple) {
             self.problem(self.pos(), DiagnosticReason::UnterminatedString);
             self.string_closed = true;
-            return Ok(true);
+            return true;
         }
         if !triple && self.at_newline() {
             self.problem(self.pos(), DiagnosticReason::UnterminatedString);
-            return Ok(true);
+            return true;
         }
-        Ok(false)
+        false
     }
 
     fn fformat_brace(&mut self, quote: char, triple: bool) -> Result<Step, LexError> {

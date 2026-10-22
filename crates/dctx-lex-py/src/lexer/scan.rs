@@ -182,6 +182,7 @@ impl Lx<'_> {
         Ok(emitted)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn push_paren(&mut self, kind: u8) -> Result<(), LexError> {
         if self.parens.len() as u32 >= self.max_depth {
             return Err(LexError::TooDeep {

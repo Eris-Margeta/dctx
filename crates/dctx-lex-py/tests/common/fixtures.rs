@@ -1,6 +1,6 @@
 //! Inline Python fixture corpus for the integration tests.
 //! Covers the Python structural extractor contract (decision 077/decision 078).
-//! Shared by focused examples and deterministic prefix checks via common::fixtures.
+//! Shared by focused examples and deterministic prefix checks via `common::fixtures`.
 #![forbid(unsafe_code)]
 
 pub const SAMPLE: &str = concat!(

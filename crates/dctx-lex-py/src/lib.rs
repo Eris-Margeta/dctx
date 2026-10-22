@@ -28,6 +28,7 @@ pub struct PyLexer {
 
 impl PyLexer {
     /// Builds an extractor; limits above the ceilings are narrowed to them.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(limits: Limits) -> Self {
         Self {
             limits: limits.narrowed(),
@@ -35,6 +36,10 @@ impl PyLexer {
     }
 
     /// Extracts facts from one place-relative path and its authorized bytes.
+    ///
+    /// # Errors
+    /// Refuses unsupported paths, invalid UTF-8 or model identities, and
+    /// input exceeding the byte, nesting or fact ceilings.
     pub fn extract(&self, path: &str, bytes: &[u8]) -> Result<LexedFile, LexError> {
         let dialect = Dialect::for_path(path).ok_or(LexError::UnsupportedDialect)?;
         if bytes.len() > self.limits.max_bytes {
@@ -138,6 +143,6 @@ mod tests {
         let names: Vec<_> = facts.nodes.iter().skip(1).map(|node| node.fact.name.as_str()).collect();
         assert_eq!(names, ["real"]);
         assert_eq!(facts.completion, Completion::Complete);
-        assert!(facts.references.is_empty());
+        assert_eq!(facts.references, []);
     }
 }

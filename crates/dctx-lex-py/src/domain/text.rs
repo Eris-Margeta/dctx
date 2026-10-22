@@ -6,6 +6,7 @@ use dctx_hash::Sha256;
 const HEX: &[u8; 16] = b"0123456789abcdef";
 
 /// SHA-256 hex of the body with whitespace runs collapsed and edges trimmed.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn body_fingerprint(body: &str) -> String {
     let normalized = collapse(body);
     let mut hex = String::with_capacity(64);
@@ -100,7 +101,7 @@ fn unescape(value: &str) -> String {
             Some('n') => out.push('\n'),
             Some('t') => out.push('\t'),
             Some('r') => out.push('\r'),
-            Some('\\') => out.push('\\'),
+            Some('\\') | None => out.push('\\'),
             Some('\'') => out.push('\''),
             Some('"') => out.push('"'),
             Some('a') => out.push('\u{7}'),
@@ -111,8 +112,7 @@ fn unescape(value: &str) -> String {
                 out.push('\\');
                 out.push(other);
             }
-            None => out.push('\\'),
-        }
+            }
     }
     out
 }

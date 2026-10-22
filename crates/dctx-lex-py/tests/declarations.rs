@@ -11,6 +11,7 @@ use dctx_lex_py::{body_fingerprint, Completion, DiagnosticReason, Dialect, Preci
 use dctx_map_model::{Confidence, EdgeKind, NodeKind, SummarySource, SymbolKind};
 
 #[test]
+#[allow(clippy::too_many_lines, reason = "Keep each fact-assembly pass or golden-fixture verification together so related identities and expected records can be reviewed in order.")]
 fn sample_module_matches_the_golden_facts() {
     let facts = extract("pkg/sample.py", SAMPLE);
     let again = extract("pkg/sample.py", SAMPLE);
@@ -18,7 +19,7 @@ fn sample_module_matches_the_golden_facts() {
     check_invariants(SAMPLE, &facts);
     assert_eq!(facts.dialect, Dialect::Python);
     assert_eq!(facts.path, "pkg/sample.py");
-    assert!(facts.diagnostics.is_empty());
+    assert_eq!(facts.diagnostics, []);
     assert_eq!(
         names(&facts),
         [
@@ -78,7 +79,7 @@ fn sample_module_matches_the_golden_facts() {
         assert_eq!(item.fact.id.as_str(), id);
     }
     let spans = [
-        ("pkg/sample.py", 1, SAMPLE.lines().count() as u32),
+        ("pkg/sample.py", 1, u32::try_from(SAMPLE.lines().count()).expect("bounded test coordinate")),
         ("MAX", line_of(SAMPLE, "MAX = 3"), line_of(SAMPLE, "MAX = 3")),
         ("NAME", line_of(SAMPLE, "NAME: str"), line_of(SAMPLE, "NAME: str")),
         ("run", line_of(SAMPLE, "@decorator"), line_of(SAMPLE, "return os.getcwd()")),

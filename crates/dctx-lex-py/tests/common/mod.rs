@@ -21,14 +21,14 @@ pub fn line_of(source: &str, needle: &str) -> u32 {
     let byte = source
         .find(needle)
         .unwrap_or_else(|| panic!("missing {needle}"));
-    source[..byte].bytes().filter(|byte| *byte == b'\n').count() as u32 + 1
+    u32::try_from(source[..byte].bytes().filter(|byte| *byte == b'\n').count()).expect("bounded test coordinate") + 1
 }
 
 pub fn last_line_of(source: &str, needle: &str) -> u32 {
     let byte = source
         .rfind(needle)
         .unwrap_or_else(|| panic!("missing {needle}"));
-    source[..byte].bytes().filter(|byte| *byte == b'\n').count() as u32 + 1
+    u32::try_from(source[..byte].bytes().filter(|byte| *byte == b'\n').count()).expect("bounded test coordinate") + 1
 }
 
 pub fn node<'a>(facts: &'a LexedFile, name: &str) -> &'a Labeled<Node> {
@@ -56,12 +56,12 @@ pub fn line_limit(source: &str) -> u32 {
     if source.contains('\r') {
         u32::MAX
     } else {
-        source.split_inclusive('\n').count().max(1) as u32
+        u32::try_from(source.split_inclusive('\n').count().max(1)).expect("bounded test coordinate")
     }
 }
 
 pub fn check_invariants(source: &str, facts: &LexedFile) {
-    assert!(!facts.nodes.is_empty());
+    assert_ne!(facts.nodes, []);
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
     let module = &facts.nodes[0];
     assert_eq!(module.fact.kind, NodeKind::Module);

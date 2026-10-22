@@ -6,6 +6,7 @@ use crate::domain::{DiagnosticReason, LexError};
 use std::cmp::Ordering;
 
 impl Lx<'_> {
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(super) fn logical_indent(&mut self) -> Result<(), LexError> {
         loop {
             if self.i >= self.src.len() {
@@ -58,6 +59,7 @@ impl Lx<'_> {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn apply_indent(&mut self, col: usize, at: u32) -> Result<(), LexError> {
         let top = self.indent_top();
         if col == top {

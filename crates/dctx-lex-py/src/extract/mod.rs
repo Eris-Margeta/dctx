@@ -121,6 +121,7 @@ pub(crate) fn extract(
 }
 
 impl<'a> Walker<'a> {
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn new(
         path: &str,
         source: &'a str,
@@ -179,6 +180,7 @@ impl<'a> Walker<'a> {
 }
 
 impl Walker<'_> {
+    #[allow(clippy::too_many_lines, reason = "Keep each fact-assembly pass or golden-fixture verification together so related identities and expected records can be reviewed in order.")]
     fn finish(mut self, dialect: Dialect, lexed: &Lexed) -> Result<LexedFile, LexError> {
         if let Some(error) = self.refused.take() {
             return Err(error);
@@ -224,9 +226,7 @@ impl Walker<'_> {
             .map(|child| Labeled {
                 fact: Edge {
                     src: nodes
-                        .get(child.parent)
-                        .map(|parent| parent.node.id.clone())
-                        .unwrap_or_else(|| child.node.id.clone()),
+                        .get(child.parent).map_or_else(|| child.node.id.clone(), |parent| parent.node.id.clone()),
                     dst: child.node.id.clone(),
                     kind: EdgeKind::Contains,
                     conf: Confidence::Exact,
@@ -337,6 +337,7 @@ impl Walker<'_> {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn line_of(&self, byte: u32) -> u32 {
         self.lines.partition_point(|&start| start <= byte).max(1) as u32
     }
@@ -353,8 +354,7 @@ impl Walker<'_> {
     fn text(&self) -> &str {
         self.toks
             .get(self.i)
-            .map(|token| self.token_text(token))
-            .unwrap_or("")
+            .map_or("", |token| self.token_text(token))
     }
 
     fn token_text(&self, token: &Token) -> &str {
@@ -366,8 +366,7 @@ impl Walker<'_> {
     fn text_at(&self, index: usize) -> &str {
         self.toks
             .get(index)
-            .map(|token| self.token_text(token))
-            .unwrap_or("")
+            .map_or("", |token| self.token_text(token))
     }
 
     fn kind_at(&self, index: usize) -> Option<Kind> {
@@ -440,12 +439,14 @@ impl Walker<'_> {
         self.i >= self.toks.len()
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn tok_start(&self, index: usize) -> u32 {
         self.toks
             .get(index)
             .map_or(self.src.len() as u32, |token| token.start)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn tok_end(&self, index: usize) -> u32 {
         self.toks
             .get(index)
