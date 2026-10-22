@@ -143,6 +143,6 @@ mod tests {
             decode(&unsorted, 2, &limits).unwrap_err(),
             SegmentError::Dictionary("order")
         );
-        assert!(decode(&[], 0, &limits).unwrap().is_empty());
+        assert_eq!(decode(&[], 0, &limits).unwrap(), [] as [&str; 0]);
     }
 }

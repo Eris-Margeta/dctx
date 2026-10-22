@@ -40,6 +40,7 @@ pub struct Postings {
 
 impl Postings {
     /// Finds the row for `field` and `term_id`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn row(&self, field: Field, term_id: u32) -> Option<&TermRow> {
         self.rows
             .binary_search_by(|row| (row.field.code(), row.term_id).cmp(&(field.code(), term_id)))

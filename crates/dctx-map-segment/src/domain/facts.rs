@@ -1,5 +1,5 @@
 //! Fact keys and file-local records. Spans are checked against the object byte length.
-//! Implements SEGMENTS-v1 kind 3 and IDENTITY-v1 FactKey field order. Schema inside the key is 1.
+//! Implements SEGMENTS-v1 kind 3 and IDENTITY-v1 `FactKey` field order. Schema inside the key is 1.
 //! Depends on [`super::kinds`] and [`super::dictionary`]. The record codec writes these values.
 //! A fact key stores no root, absolute path, or resolved target.
 
@@ -230,7 +230,7 @@ mod tests {
         assert_eq!(&encoded[..6], &[1, 0, 1, 0, 32, 0]);
         let mut cursor = Cursor::new(&encoded, 0);
         assert_eq!(parse_key(&mut cursor).unwrap(), key);
-        assert!(cursor.rest().is_empty());
+        assert_eq!(cursor.rest(), []);
         let fact = Fact {
             key,
             declarations: vec![Declaration {

@@ -16,10 +16,16 @@ pub trait SegmentRead {
     }
 
     /// Copies `buf.len()` bytes starting at `offset` into `buf`.
+    ///
+    /// # Errors
+    /// Returns a read, offset or truncation error when the requested range cannot fill the entire buffer.
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> Result<(), SegmentError>;
 }
 
 /// Reads a whole segment when `reader.len()` is within `limits`.
+///
+/// # Errors
+/// Refuses lengths above the effective segment ceiling or native address space; propagates the source read failure.
 pub fn load_bounded<R: SegmentRead + ?Sized>(
     reader: &R,
     limits: &DecoderLimits,

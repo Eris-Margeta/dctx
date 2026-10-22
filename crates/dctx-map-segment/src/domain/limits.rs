@@ -1,5 +1,5 @@
 //! Decoder ceilings from SEGMENTS-v1. A caller may tighten them, never raise them.
-//! Implements the default caps: 64 MiB, 64 sections, 1 MiB strings and records, 1_000_000 records.
+//! Implements the default caps: 64 MiB, 64 sections, 1 MiB strings and records, `1_000_000` records.
 //! Depends on [`super::error::SegmentError`]. Every section parser calls [`bounded_count`] before it reserves.
 //! The segment builder uses the same effective limits so it cannot emit a file the decoder must refuse.
 
@@ -33,6 +33,7 @@ pub struct DecoderLimits {
 
 impl DecoderLimits {
     /// The SEGMENTS-v1 default ceilings.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn standard() -> Self {
         Self {
             max_segment_bytes: MAX_SEGMENT_BYTES,
@@ -44,6 +45,7 @@ impl DecoderLimits {
     }
 
     /// Returns these limits capped by [`Self::standard`]. The stricter value wins.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn effective(self) -> Self {
         Self {
             max_segment_bytes: min_u64(self.max_segment_bytes, MAX_SEGMENT_BYTES),

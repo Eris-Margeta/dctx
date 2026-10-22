@@ -20,6 +20,7 @@ pub(crate) fn push_varint(out: &mut Vec<u8>, mut value: u64) {
 }
 
 /// Reads one canonical varint. The `usize` is the number of bytes consumed.
+#[allow(clippy::verbose_bit_mask, reason = "The 0x7f mask names the seven payload bits of a varint byte and matches the encoder.")]
 pub(crate) fn read_varint(data: &[u8]) -> Result<(u64, usize), SegmentError> {
     let mut result = 0u64;
     let mut shift = 0;

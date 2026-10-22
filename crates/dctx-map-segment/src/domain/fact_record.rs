@@ -65,15 +65,12 @@ fn write_refs(out: &mut Vec<u8>, fact: &Fact, limits: &DecoderLimits) -> Result<
         push_u16(out, reference.kind.code());
         push_u32(out, reference.spelling);
         push_u32(out, reference.scope);
-        match reference.alias {
-            Some(alias) => {
-                push_bool(out, true);
-                push_u32(out, alias);
-            }
-            None => {
-                push_bool(out, false);
-                push_u32(out, 0);
-            }
+        if let Some(alias) = reference.alias {
+            push_bool(out, true);
+            push_u32(out, alias);
+        } else {
+            push_bool(out, false);
+            push_u32(out, 0);
         }
         push_u32(out, reference.line_start);
         push_u32(out, reference.line_end);
@@ -87,25 +84,19 @@ fn write_provenance(out: &mut Vec<u8>, provenance: &Provenance) -> Result<(), Se
     push_u32(out, provenance.completion_reason);
     push_u32(out, provenance.extractor);
     push_u64(out, provenance.generation);
-    match provenance.model {
-        Some(model) => {
-            push_bool(out, true);
-            push_u32(out, model);
-        }
-        None => {
-            push_bool(out, false);
-            push_u32(out, 0);
-        }
+    if let Some(model) = provenance.model {
+        push_bool(out, true);
+        push_u32(out, model);
+    } else {
+        push_bool(out, false);
+        push_u32(out, 0);
     }
-    match provenance.body_fingerprint {
-        Some(digest) => {
-            push_bool(out, true);
-            push_bytes(out, &digest);
-        }
-        None => {
-            push_bool(out, false);
-            push_bytes(out, &[0u8; 32]);
-        }
+    if let Some(digest) = provenance.body_fingerprint {
+        push_bool(out, true);
+        push_bytes(out, &digest);
+    } else {
+        push_bool(out, false);
+        push_bytes(out, &[0u8; 32]);
     }
     Ok(())
 }

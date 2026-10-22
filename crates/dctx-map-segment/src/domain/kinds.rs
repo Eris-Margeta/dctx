@@ -139,6 +139,7 @@ impl SectionKind {
 
 impl Field {
     /// Ranking revision 1 weight for this field.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn weight(self) -> u32 {
         match self {
             Self::Identifier => 8,
@@ -150,6 +151,7 @@ impl Field {
 
 impl EdgeKind {
     /// Whether SPEC-MAP-MODE section 5.3 permits this confidence on the relation.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn permits(self, confidence: Confidence) -> bool {
         match self {
             Self::Contains => matches!(confidence, Confidence::Exact),
@@ -175,6 +177,7 @@ pub enum SegmentRole {
 
 impl SegmentRole {
     /// Sections that must be present and flagged required.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn requires(self, kind: SectionKind) -> bool {
         matches!(
             (self, kind),
@@ -190,6 +193,7 @@ impl SegmentRole {
     }
 
     /// Sections that must be absent.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn forbids(self, kind: SectionKind) -> bool {
         matches!(
             (self, kind),
@@ -199,6 +203,7 @@ impl SegmentRole {
     }
 
     /// Prefix and postings may appear, without the required flag.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn optional(self, kind: SectionKind) -> bool {
         matches!(kind, SectionKind::Prefix | SectionKind::Postings) && !self.forbids(kind)
     }

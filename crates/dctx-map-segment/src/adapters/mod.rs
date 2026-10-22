@@ -16,16 +16,21 @@ pub struct MemorySegment {
 
 impl MemorySegment {
     /// Copies `bytes` into an `Arc`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(bytes: Vec<u8>) -> Self {
         Self { bytes: Arc::from(bytes) }
     }
 
     /// Decodes the stored bytes for `role`.
+    ///
+    /// # Errors
+    /// Refuses malformed, corrupt, oversized or wrong-role bytes according to [`crate::decode`].
     pub fn validate(&self, role: SegmentRole) -> Result<ValidatedSegment<'_>, SegmentError> {
         decode(self.bytes(), role)
     }
 
     /// Borrows the stored bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
@@ -64,7 +69,7 @@ mod tests {
         assert_eq!(segment.bytes(), bytes.as_slice());
         assert_eq!(segment.len(), u64::try_from(bytes.len()).unwrap_or(u64::MAX));
         let decoded = segment.validate(SegmentRole::Fact).unwrap();
-        assert!(decoded.dictionary().is_empty());
+        assert_eq!(decoded.dictionary(), [] as [&str; 0]);
         let mut buf = [0u8; 4];
         segment.read_at(0, &mut buf).unwrap();
         assert_eq!(&buf, &bytes[..4]);

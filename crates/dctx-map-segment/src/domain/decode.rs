@@ -18,11 +18,17 @@ use super::prefix;
 use super::validated::ValidatedSegment;
 
 /// Decodes `bytes` for `role` with the standard ceilings.
+///
+/// # Errors
+/// Refuses malformed headers, sections, checksums or records, role violations, inconsistent adjacency and exceeded standard ceilings.
 pub fn decode(bytes: &[u8], role: SegmentRole) -> Result<ValidatedSegment<'_>, SegmentError> {
     decode_with_limits(bytes, role, DecoderLimits::standard())
 }
 
 /// Decodes `bytes` for `role`. `limits` cannot raise the standard ceilings.
+///
+/// # Errors
+/// Refuses malformed headers, sections, checksums or records, role violations, inconsistent adjacency and exceeded effective ceilings.
 pub fn decode_with_limits(
     bytes: &[u8],
     role: SegmentRole,

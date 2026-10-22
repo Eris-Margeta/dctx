@@ -26,6 +26,7 @@ pub struct FieldHit {
 
 /// Inputs for [`rank_score`]. Token counts are the postings lengths.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools, reason = "Exact-name, public, tier-zero and focus are independent ranking boosts; all combinations are meaningful in the existing public input.")]
 pub struct RankInput<'a> {
     /// Documents in the corpus. Zero is refused.
     pub document_count: u32,
@@ -48,6 +49,7 @@ pub struct RankInput<'a> {
 }
 
 /// Floor of the mean token count. An empty slice scores as zero.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn average_document_tokens(lengths: &[u32]) -> u32 {
     if lengths.is_empty() {
         return 0;
@@ -58,6 +60,9 @@ pub fn average_document_tokens(lengths: &[u32]) -> u32 {
 }
 
 /// Lexical score plus boosts. Higher is better.
+///
+/// # Errors
+/// Refuses an empty corpus, zero term frequency, document frequency above the corpus size or overflowing intermediate arithmetic.
 pub fn rank_score(input: &RankInput<'_>) -> Result<i64, SegmentError> {
     if input.document_count == 0 {
         return Err(SegmentError::Ranking("empty corpus"));
@@ -71,6 +76,7 @@ pub fn rank_score(input: &RankInput<'_>) -> Result<i64, SegmentError> {
 }
 
 /// Orders a higher score first, then the public id ascending.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn cmp_ranked(a_score: i64, a_id: &str, b_score: i64, b_id: &str) -> Ordering {
     b_score.cmp(&a_score).then_with(|| a_id.cmp(b_id))
 }

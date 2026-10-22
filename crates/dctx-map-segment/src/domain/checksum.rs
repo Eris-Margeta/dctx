@@ -1,4 +1,4 @@
-//! SHA-256 envelopes and the identity-v1 SegmentObject digest.
+//! SHA-256 envelopes and the identity-v1 `SegmentObject` digest.
 //! Implements SEGMENTS-v1 checksums and IDENTITY-v1 structured kind 9.
 //! Depends on `dctx-hash` and [`super::error::SegmentError`]. The directory stores payload digests.
 //! The envelope hash covers the file with bytes 48..80 forced to zero. It is not authentication.
@@ -19,6 +19,9 @@ fn absorb(hasher: &mut dctx_hash::Sha256, data: &[u8]) -> Result<(), SegmentErro
 }
 
 /// Envelope checksum: SHA-256 of `bytes` with the stored checksum field treated as zeros.
+///
+/// # Errors
+/// Refuses an envelope shorter than 80 bytes or an input beyond the SHA-256 length limit.
 pub fn envelope_checksum(bytes: &[u8]) -> Result<[u8; 32], SegmentError> {
     if bytes.len() < 80 {
         return Err(SegmentError::Truncated {
@@ -36,6 +39,9 @@ pub fn envelope_checksum(bytes: &[u8]) -> Result<[u8; 32], SegmentError> {
 }
 
 /// Identity v1 kind 9 over the final envelope bytes. Distinct from [`envelope_checksum`].
+///
+/// # Errors
+/// Refuses an unrepresentable input length or a structured input beyond the SHA-256 length limit.
 pub fn segment_object_digest(envelope: &[u8]) -> Result<[u8; 32], SegmentError> {
     let mut hasher = dctx_hash::Sha256::new();
     absorb(&mut hasher, b"DCTX\0")?;

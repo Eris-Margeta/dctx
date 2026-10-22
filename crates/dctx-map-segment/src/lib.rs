@@ -23,9 +23,9 @@ mod tests {
         assert_eq!(bytes, builder.build().unwrap());
         let segment = decode(&bytes, SegmentRole::Fact).unwrap();
         assert_eq!(segment.role(), SegmentRole::Fact);
-        assert!(segment.dictionary().is_empty());
-        assert!(segment.facts().is_empty());
-        assert!(segment.prefixes().is_empty());
+        assert_eq!(segment.dictionary(), [] as [&str; 0]);
+        assert_eq!(segment.facts(), []);
+        assert_eq!(segment.prefixes(), []);
         assert_eq!(
             decode(&bytes, SegmentRole::View).unwrap_err(),
             SegmentError::Role("forbidden")

@@ -455,7 +455,7 @@ mod tests {
             decode_reverse(&rev_payload, rev_count, 2, &dictionary, &limits).unwrap(),
             (resolved, unresolved)
         );
-        assert!(encode_reverse(&[], &[], &limits).unwrap().0.is_empty());
+        assert_eq!(encode_reverse(&[], &[], &limits).unwrap().0, [] as [u8; 0]);
         let illegal = ForwardEdge {
             source: 0,
             kind: EdgeKind::Contains,

@@ -37,10 +37,10 @@ fn fact_segment_round_trips_postings_prefixes_and_ranking() {
     assert_eq!(segment.role(), SegmentRole::Fact);
     assert_eq!(segment.minor(), 0);
     assert_eq!(segment.bytes(), bytes.as_slice());
-    assert!(segment.nodes().is_empty());
+    assert_eq!(segment.nodes(), []);
     assert!(segment.view_key().is_none());
-    assert!(segment.rows_for(Field::Path).is_empty());
-    assert!(!segment.prefixes().is_empty());
+    assert_eq!(segment.rows_for(Field::Path), []);
+    assert_ne!(segment.prefixes(), []);
     assert_prefixes(&segment);
     assert_eq!(segment.facts().len(), 2);
     assert_eq!(segment.facts()[0].key.digest, [1; 32]);
@@ -99,7 +99,7 @@ fn view_segment_round_trips_adjacency_and_path_postings() {
     assert_eq!(bytes, view_bytes(true));
     let segment = decode(&bytes, SegmentRole::View).unwrap();
     assert_eq!(segment.role(), SegmentRole::View);
-    assert!(segment.facts().is_empty());
+    assert_eq!(segment.facts(), []);
     assert_eq!(segment.nodes().len(), 2);
     assert_eq!(segment.string(segment.nodes()[0].public_id).unwrap(), "a");
     assert_eq!(segment.string(segment.nodes()[1].public_id).unwrap(), "b");
@@ -226,7 +226,7 @@ fn builder_refusals_keep_a_positive_control() {
 
 fn assert_prefixes(segment: &ValidatedSegment<'_>) {
     let dictionary = segment.dictionary();
-    assert!(!segment.prefixes().is_empty());
+    assert_ne!(segment.prefixes(), []);
     for entry in segment.prefixes() {
         let start = usize::try_from(entry.first).unwrap();
         let last = usize::try_from(entry.last).unwrap();
