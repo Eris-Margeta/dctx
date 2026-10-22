@@ -1,6 +1,6 @@
 //! Public-API properties for indivisible, bounded map answers.
 //! Verifies SPEC-MAP-MODE section 3 with arbitrary Unicode and JSON escapes.
-//! Uses proptest and serde_json; never accesses a filesystem or clock.
+//! Uses proptest and `serde_json`; never accesses a filesystem or clock.
 use dctx_map_model::{adapters::*, *};
 use proptest::prelude::*;
 
@@ -70,7 +70,7 @@ mod tests {
                         for (actual, expected) in records.iter().zip(&sorted) {
                             prop_assert_eq!(actual, &serde_json::to_value(expected).unwrap());
                         }
-                        prop_assert_eq!(value["more"].as_u64().unwrap() as usize, more + a.records.len() - records.len());
+                        prop_assert_eq!(usize::try_from(value["more"].as_u64().unwrap()).unwrap(), more + a.records.len() - records.len());
                         records.len()
                     }
                     Format::Text => {

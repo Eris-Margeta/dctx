@@ -3,6 +3,7 @@
 //! JSON oracles live in `fixtures/wire-json/` for the future wire adapter.
 //! Uses pure fixture records; executed as the render module's unit tests.
 use super::*;
+use crate::{SummarySource, Relation, EdgeKind, Confidence};
 
 fn fixture(name: &str) -> &'static str {
     match name {
@@ -70,10 +71,10 @@ fn golden_cut_counts_all_omissions_and_reserves_footer() {
     a.records.push(record("zebra"));
     a.more = 8;
     let text = "# map demo rev=c23fd83+dirty 1 age=2\ns:src/lib.rs#append  fn  L41-L88  Appends one event.  [doc]\n+9 more · next: dctx map find \"event\" --page 2\n";
-    let budget = AnswerBudget::new(text.len().div_ceil(7) as u16 * 2).unwrap();
+    let budget = AnswerBudget::new(u16::try_from(text.len().div_ceil(7)).unwrap() * 2).unwrap();
     assert_eq!(render_text(&a, budget).unwrap(), text);
     let json = fixture("find-cut").trim_end_matches('\n');
-    let budget = AnswerBudget::new((json.len() * 2).div_ceil(7) as u16).unwrap();
+    let budget = AnswerBudget::new(u16::try_from((json.len() * 2).div_ceil(7)).unwrap()).unwrap();
     assert_eq!(render_json(&a, budget).unwrap(), json);
 }
 

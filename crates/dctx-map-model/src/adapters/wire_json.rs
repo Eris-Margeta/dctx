@@ -1,10 +1,10 @@
 //! JSON v1 conversion retained for the future wire adapter.
 //! Implements SPEC-MAP-MODE sections 4.1 and 4.2. This is not domain storage.
-//! Depends on serde and serde_json through the `wire-json` feature. The text renderer calls it.
+//! Depends on serde and `serde_json` through the `wire-json` feature. The text renderer calls it.
 //! Golden files in `fixtures/wire-json/` are the byte oracle for this projection.
 
 use super::RenderError;
-use crate::domain::*;
+use crate::domain::{Record, Answer, Verb, IdentityStatus};
 use serde::Serialize;
 
 pub(super) fn canonical(record: &Record) -> Result<String, RenderError> {

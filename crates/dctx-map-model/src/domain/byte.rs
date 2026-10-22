@@ -9,11 +9,13 @@ pub struct ByteOffset(u64);
 
 impl ByteOffset {
     /// Offset in bytes from the start of the authorized input.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn new(value: u64) -> Self {
         Self(value)
     }
 
     /// Raw byte index.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn get(self) -> u64 {
         self.0
     }
@@ -25,11 +27,13 @@ pub struct ByteLength(u64);
 
 impl ByteLength {
     /// A length that was already checked by the caller.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn new(value: u64) -> Self {
         Self(value)
     }
 
     /// Raw byte count.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn get(self) -> u64 {
         self.0
     }
@@ -70,6 +74,9 @@ pub struct ByteSpan {
 
 impl ByteSpan {
     /// Builds `[start, end)`. The end is exclusive.
+    ///
+    /// # Errors
+    /// Returns [`InvalidByteSpan::Inverted`] when `end` precedes `start`.
     pub const fn new(start: ByteOffset, end: ByteOffset) -> Result<Self, InvalidByteSpan> {
         if end.get() < start.get() {
             Err(InvalidByteSpan::Inverted)
@@ -79,6 +86,9 @@ impl ByteSpan {
     }
 
     /// Span of `text` whose ends are UTF-8 boundaries.
+    ///
+    /// # Errors
+    /// Refuses inverted or out-of-range spans, endpoints inside UTF-8 scalars and line numbers that exceed `u32`.
     pub fn on_utf8(text: &str, start: ByteOffset, end: ByteOffset) -> Result<Self, InvalidByteSpan> {
         let span = Self::new(start, end)?;
         span.lines_in(text)?;
@@ -86,26 +96,33 @@ impl ByteSpan {
     }
 
     /// Inclusive start.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn start(self) -> ByteOffset {
         self.start
     }
 
     /// Exclusive end.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn end(self) -> ByteOffset {
         self.end
     }
 
     /// Number of bytes covered.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn len(self) -> ByteLength {
         ByteLength(self.end.0 - self.start.0)
     }
 
     /// True when the span covers no bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn is_empty(self) -> bool {
         self.start.0 == self.end.0
     }
 
     /// One-based inclusive line projection. Lines split on `\n`.
+    ///
+    /// # Errors
+    /// Refuses out-of-range endpoints, endpoints inside UTF-8 scalars and projected line numbers that exceed `u32`.
     pub fn lines_in(self, text: &str) -> Result<[u32; 2], InvalidByteSpan> {
         let start = usize::try_from(self.start.0).map_err(|_| InvalidByteSpan::OutOfRange)?;
         let end = usize::try_from(self.end.0).map_err(|_| InvalidByteSpan::OutOfRange)?;

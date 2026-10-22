@@ -27,6 +27,7 @@ vocabulary!(NodeKind, "Graph node category and its stable-id prefix.", {
 });
 impl NodeKind {
     /// Prefix used by stable ids.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn letter(self) -> char {
         match self {
             Self::Place => 'p',
@@ -53,6 +54,7 @@ vocabulary!(Confidence, "Resolution confidence carried by every edge.", {
 });
 impl EdgeKind {
     /// Whether section 5.3 permits this confidence for the relation.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn permits(self, confidence: Confidence) -> bool {
         match self {
             Self::Contains => matches!(confidence, Confidence::Exact),
@@ -107,6 +109,7 @@ pub struct GeneratedSummary {
 }
 impl GeneratedSummary {
     /// Serves valid current summaries, otherwise returns the tier-zero fallback.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn select(&self, fingerprint: &str, fallback: &Summary) -> Summary {
         if self.fingerprint == fingerprint
             && self.text.chars().count() <= 100

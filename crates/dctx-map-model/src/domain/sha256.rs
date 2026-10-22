@@ -10,6 +10,7 @@ pub(crate) fn alias_digest(input: &[u8]) -> Result<[u8; 32], dctx_hash::HashErro
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write as _;
     use super::*;
 
     #[test]
@@ -31,8 +32,7 @@ mod tests {
             let actual: String = alias_digest(input.as_bytes())
                 .unwrap()
                 .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect();
+                .fold(String::new(), |mut text, byte| { write!(text, "{byte:02x}").unwrap(); text });
             assert_eq!(actual, expected);
         }
     }

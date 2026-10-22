@@ -11,11 +11,13 @@ pub struct Generation(u64);
 
 impl Generation {
     /// Caller-supplied generation. Zero is a valid first generation.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn new(value: u64) -> Self {
         Self(value)
     }
 
     /// Raw generation number.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn get(self) -> u64 {
         self.0
     }
@@ -44,6 +46,7 @@ pub struct Provenance {
 
 impl Provenance {
     /// Binds file bytes, parser precision, the extractor and the extraction-plan digest.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(
         content: ContentId,
         precision: Precision,
@@ -63,53 +66,63 @@ impl Provenance {
     }
 
     /// Records the model that produced a tier-one summary.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn with_model(mut self, model: EvidenceLabel) -> Self {
         self.model = Some(model);
         self
     }
 
     /// Records the body fingerprint a tier-one summary is bound to.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn with_body_fingerprint(mut self, body: ContentId) -> Self {
         self.body_fingerprint = Some(body);
         self
     }
 
     /// Authorized file identity.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn content(&self) -> ContentId {
         self.content
     }
 
     /// Parser precision for this fact.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn precision(&self) -> &Precision {
         &self.precision
     }
 
     /// Extractor name and revision.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn extractor(&self) -> &EvidenceLabel {
         &self.extractor
     }
 
     /// Digest of the extraction plan.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn extraction_plan(&self) -> ContentId {
         self.extraction_plan
     }
 
     /// Index generation that published the fact.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn generation(&self) -> Generation {
         self.generation
     }
 
     /// Model label when a caller imported generated text.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn model(&self) -> Option<&EvidenceLabel> {
         self.model.as_ref()
     }
 
     /// Body fingerprint when a caller imported generated text.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn body_fingerprint(&self) -> Option<ContentId> {
         self.body_fingerprint
     }
 
     /// Tier one only when both the model label and the body fingerprint are present.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn summary_tier(&self) -> SummaryTier {
         if self.model.is_some() && self.body_fingerprint.is_some() {
             SummaryTier::TierOne

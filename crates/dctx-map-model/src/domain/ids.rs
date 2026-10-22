@@ -22,6 +22,9 @@ impl std::error::Error for InvalidId {}
 pub struct StableId(String);
 impl StableId {
     /// Builds a validated id. Ordinals are positive and only used for duplicates.
+    ///
+    /// # Errors
+    /// Returns [`InvalidId`] for invalid paths or names, zero ordinals, or an ordinal without a name.
     pub fn new(
         kind: NodeKind,
         path: &str,
@@ -44,12 +47,14 @@ impl StableId {
     }
 
     /// Canonical readable spelling.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_str(&self) -> &str {
         &self.0
     }
 
     /// Six SHA-256 hex digits, available only for ids longer than 120 bytes.
     /// Alias collisions must be refused by the query layer, never guessed.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn alias(&self) -> Option<String> {
         if self.0.len() <= 120 {
             return None;

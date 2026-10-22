@@ -24,6 +24,9 @@ pub struct EvidenceLabel(String);
 
 impl EvidenceLabel {
     /// Accepts one line of at most [`MAX_LABEL_BYTES`] bytes.
+    ///
+    /// # Errors
+    /// Returns [`InvalidLabel`] for empty or whitespace-only text, control characters or more than [`MAX_LABEL_BYTES`] bytes.
     pub fn new(text: impl Into<String>) -> Result<Self, InvalidLabel> {
         let text = text.into();
         if text.is_empty()
@@ -38,6 +41,7 @@ impl EvidenceLabel {
     }
 
     /// Borrowed label text.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -56,6 +60,7 @@ pub enum Coverage {
 
 impl Coverage {
     /// Wire spelling.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Syntax => "syntax",
@@ -78,6 +83,7 @@ pub enum Completion {
 
 impl Completion {
     /// Wire spelling of the state, without the reason.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(&self) -> &'static str {
         match self {
             Self::Complete => "complete",
@@ -87,6 +93,7 @@ impl Completion {
     }
 
     /// Bounded reason for a partial or refused completion.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn reason(&self) -> Option<&EvidenceLabel> {
         match self {
             Self::Complete => None,
@@ -105,6 +112,7 @@ pub struct Precision {
 
 impl Precision {
     /// Records an explicit parser label. Edge confidence is a different type.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(coverage: Coverage, completion: Completion, parser: EvidenceLabel) -> Self {
         Self {
             coverage,
@@ -114,16 +122,19 @@ impl Precision {
     }
 
     /// Extraction coverage.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn coverage(&self) -> Coverage {
         self.coverage
     }
 
     /// Completion of this scope.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn completion(&self) -> &Completion {
         &self.completion
     }
 
     /// Parser name and revision, for example `syn:reviewed`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn parser(&self) -> &EvidenceLabel {
         &self.parser
     }

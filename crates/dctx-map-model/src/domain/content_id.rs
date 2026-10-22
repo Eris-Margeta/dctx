@@ -1,5 +1,5 @@
 //! Algorithm-tagged content identity.
-//! Implements IDENTITY-v1 ObjectKey text and decision 078: own hashing, no git object ids.
+//! Implements IDENTITY-v1 `ObjectKey` text and decision 078: own hashing, no git object ids.
 //! Wraps [`dctx_hash::ContentDigest`]. Callers are facts, provenance and the future wire adapter.
 //! Untagged hex is refused, including 40- and 64-character git object ids.
 
@@ -14,6 +14,7 @@ pub enum ContentAlgorithm {
 
 impl ContentAlgorithm {
     /// Stable code stored with the digest.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn code(self) -> u16 {
         match self {
             Self::Sha256 => dctx_hash::IdentityAlgorithm::SHA256,
@@ -21,6 +22,7 @@ impl ContentAlgorithm {
     }
 
     /// Short name used in the textual identity.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn name(self) -> &'static str {
         match self {
             Self::Sha256 => "sha256",
@@ -56,6 +58,9 @@ pub struct ContentId(dctx_hash::ContentDigest);
 
 impl ContentId {
     /// Hashes authorized file bytes with `dctx-hash` SHA-256.
+    ///
+    /// # Errors
+    /// Returns [`InvalidContentId::MessageTooLong`] when the input exceeds the SHA-256 length field.
     pub fn of_bytes(bytes: &[u8]) -> Result<Self, InvalidContentId> {
         dctx_hash::Sha256::digest(bytes)
             .map(Self)
@@ -63,11 +68,13 @@ impl ContentId {
     }
 
     /// Identity layout version. SHA-256 v1 returns 1.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn version(self) -> u8 {
         self.0.version()
     }
 
     /// Algorithm tag.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn algorithm(self) -> ContentAlgorithm {
         match self.0.algorithm() {
             dctx_hash::IdentityAlgorithm::Sha256 => ContentAlgorithm::Sha256,
@@ -75,16 +82,21 @@ impl ContentId {
     }
 
     /// Number of content bytes that were hashed.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn byte_length(self) -> u64 {
         self.0.byte_length()
     }
 
     /// Raw digest bytes. The algorithm tag is [`Self::algorithm`].
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn digest_bytes(&self) -> &[u8; 32] {
         self.0.as_bytes()
     }
 
     /// Restores a previously emitted identity. This does not hash the text.
+    ///
+    /// # Errors
+    /// Returns [`InvalidContentId::UnsupportedIdentity`] for unsupported tags, malformed digest text or a noncanonical byte length.
     pub fn parse(text: &str) -> Result<Self, InvalidContentId> {
         let rest = text
             .strip_prefix("dctx:object:v")
@@ -153,6 +165,7 @@ impl FromStr for ContentId {
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write as _;
     use super::*;
 
     #[test]
@@ -171,8 +184,7 @@ mod tests {
         assert_eq!(
             abc.digest_bytes()
                 .iter()
-                .map(|byte| format!("{byte:02x}"))
-                .collect::<String>(),
+                .fold(String::new(), |mut text, byte| { write!(text, "{byte:02x}").unwrap(); text }),
             "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         );
         assert!(abc.to_string().ends_with(":3"));

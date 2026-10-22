@@ -1,8 +1,8 @@
 //! Deterministic whole-record text answers, with JSON delegated to `wire-json`.
 //! Implements SPEC-MAP-MODE sections 3, 4.1 and 4.2.
 //! Depends on domain records. Callers transport the returned string. No IO.
-use crate::domain::*;
-use std::fmt;
+use crate::domain::{Answer, AnswerBudget, Verb, IdentityStatus, Record, StableId, Edge};
+use std::fmt::{self, Write as _};
 
 /// Output wire format.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -68,6 +68,9 @@ impl From<serde_json::Error> for RenderError {
 
 /// Renders an answer within the complete serialized byte budget.
 /// A cut retains a ranked prefix of whole records and counts every omitted record.
+///
+/// # Errors
+/// Refuses invalid metadata or records, missing continuation commands, count overflow and a budget too small for metadata; JSON output can also fail or be disabled.
 pub fn render(
     answer: &Answer,
     budget: AnswerBudget,
@@ -109,10 +112,16 @@ pub fn render(
 }
 
 /// Convenience text renderer.
+///
+/// # Errors
+/// Returns the validation, continuation, count-overflow or byte-budget refusal from [`render`].
 pub fn render_text(answer: &Answer, budget: AnswerBudget) -> Result<String, RenderError> {
     render(answer, budget, Format::Text)
 }
 /// Convenience JSON renderer.
+///
+/// # Errors
+/// Returns the validation, continuation, count-overflow or byte-budget refusal from [`render`], or a JSON serialization/feature error.
 pub fn render_json(answer: &Answer, budget: AnswerBudget) -> Result<String, RenderError> {
     render(answer, budget, Format::Json)
 }
@@ -255,10 +264,10 @@ fn text(answer: &Answer, records: &[&Record], more: usize, needs_next: bool) -> 
         answer.age_seconds
     );
     if let Some(identity) = &answer.identity {
-        output.push_str(&match identity {
-            IdentityStatus::Moved { old, new } => format!("moved: {old} -> {new}\n"),
-            IdentityStatus::Gone { old } => format!("gone: {old}\n"),
-        });
+        match identity {
+            IdentityStatus::Moved { old, new } => writeln!(output, "moved: {old} -> {new}"),
+            IdentityStatus::Gone { old } => writeln!(output, "gone: {old}"),
+        }.expect("writing to a String cannot fail");
     }
     for r in records {
         match answer.verb {
@@ -276,7 +285,7 @@ fn text(answer: &Answer, records: &[&Record], more: usize, needs_next: bool) -> 
         }
     }
     if more > 0 {
-        output.push_str(&format!("+{more} more · next: {}\n", answer.next));
+        writeln!(output, "+{more} more · next: {}", answer.next).expect("writing to a String cannot fail");
     } else if needs_next {
         let reason = answer
             .reason
@@ -286,7 +295,7 @@ fn text(answer: &Answer, records: &[&Record], more: usize, needs_next: bool) -> 
             } else {
                 "no match"
             });
-        output.push_str(&format!("{} · try: {}\n", line(reason), answer.next));
+        writeln!(output, "{} · try: {}", line(reason), answer.next).expect("writing to a String cannot fail");
     }
     output
 }
