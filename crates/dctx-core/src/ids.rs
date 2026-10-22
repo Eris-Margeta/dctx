@@ -123,7 +123,7 @@ pub struct ViewKey(String);
 impl ViewKey {
     /// Validates a non-empty key of printable characters, at most [`MAX_PATH_BYTES`].
     /// # Errors
-    /// Returns a path-validation error for an invalid segment, or a resource-limit error above the path byte limit.
+    /// Returns an invalid-request error for empty/control-containing text, or a resource-limit error above the key byte limit.
     pub fn parse(text: &str) -> Result<Self, DctxError> {
         if text.is_empty() || text.chars().any(char::is_control) {
             return Err(DctxError::InvalidRequest { reason: "view key must be printable and non-empty" });

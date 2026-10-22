@@ -62,7 +62,7 @@ pub struct PackSnapshot {
 impl PackSnapshot {
     /// Assembles a snapshot and computes its identity from `tree` and `digests`.
     /// # Errors
-    /// Propagates snapshot encoding errors when a path or link target cannot fit the canonical length field.
+    /// Returns a resource-limit error if canonical snapshot bytes exceed the SHA-256 message length limit.
     pub fn new(
         tree: DirContextTreeNode,
         version: Version,
@@ -113,7 +113,7 @@ impl PackSnapshot {
 /// Canonical digest of a tree and its content digests. Equal facts give equal digests,
 /// independent of the clock. Children are encoded in their stored (sorted) order.
 /// # Errors
-/// Returns a resource-limit error if a path or link target cannot fit its canonical length field.
+/// Returns a resource-limit error if canonical snapshot bytes exceed the SHA-256 message length limit.
 pub fn snapshot_digest(
     tree: &DirContextTreeNode,
     digests: &ContentDigests,
