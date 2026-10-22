@@ -21,6 +21,10 @@ const WORKER_STACK_BYTES: usize = 128 << 20;
 /// Oversized and non-UTF-8 input is refused with no facts. Lexing, nesting and
 /// syntax refusals return `Completion::Partial` with line-scan facts labelled
 /// `Precision::LineScan`. Never panics on malformed input.
+///
+/// # Errors
+/// Returns [`Refusal::TooLarge`] for input beyond the byte limit or
+/// [`Refusal::InvalidUtf8`] for invalid UTF-8. Other refusals accompany partial facts.
 pub fn extract(bytes: &[u8], limits: &Limits) -> Result<Extraction, Refusal> {
     if bytes.len() > limits.max_bytes() {
         return Err(Refusal::TooLarge {

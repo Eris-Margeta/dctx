@@ -22,6 +22,8 @@ Resolve each diagnostic with a genuine improvement or a narrowly scoped attribut
 Documented exceptions:
 
 - `many_single_char_names` on SHA compression functions: the a-h working variables follow FIPS 180-4 and make comparison with the specification straightforward.
-- `must_use_candidate` on existing public digest and memory-adapter constructors and operations: preserve the API's existing caller lint behavior while keeping signatures and runtime behavior stable. Existing `#[must_use]` contracts remain in force.
+- `must_use_candidate` and `return_self_not_must_use` on existing public constructors, accessors and value operations: preserve the API's existing caller lint behavior while keeping signatures and runtime behavior stable. Existing `#[must_use]` contracts remain in force.
+- `struct_field_names` on the Rust extractor's limits: `max` distinguishes ceilings from observed byte, nesting and record counts.
+- `cast_precision_loss` on the Rust differential test's scoring helper: counts from the fixed snippet corpus are far below the exact integer range of `f64`.
 
 The workspace-wide pedantic cleanup is being landed in crate-sized batches. The command above is the house style gate; the current CI workflow still runs its existing `-D warnings` clippy command and tests. The full workspace includes the Tauri desktop app and needs its platform development libraries. A run with `--exclude dctx-desktop` is useful for the other crates but does not establish full-workspace acceptance.

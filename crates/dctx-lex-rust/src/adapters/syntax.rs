@@ -1,7 +1,7 @@
 //! syn visitor that records declarations in pre-order with their lexical scopes.
 //! Implements the PARSERS-v1 Rust row: items, modules, functions/methods, impls with trait
-//! and type, consts/statics, type aliases, macro_rules, tests and doc first lines.
-//! Uses proc-macro2/syn, the span helpers and syntax_refs; run on the parse worker.
+//! and type, consts/statics, type aliases, `macro_rules`, tests and doc first lines.
+//! Uses proc-macro2/syn, the span helpers and `syntax_refs`; run on the parse worker.
 use super::spans::{between, first, node_span, source_span, text};
 use super::nesting;
 use super::syntax_parts::{doc, fields_end, ident, is_test, public};
@@ -56,7 +56,7 @@ impl Extractor<'_> {
     fn declare(
         &mut self,
         kind: Kind,
-        local: String,
+        local: &str,
         attrs: &[Attribute],
         public: bool,
         span: Span,
@@ -70,7 +70,7 @@ impl Extractor<'_> {
         };
         let public = public || (methods && self.scope.public_items);
         let test = matches!(kind, Kind::Function | Kind::Method) && is_test(attrs);
-        let name = qualify(&self.scope.name, &local);
+        let name = qualify(&self.scope.name, local);
         let child = match &implementation {
             Some(i) => qualify(&self.scope.name, impl_scope(&i.self_type)),
             None => name.clone(),
@@ -105,7 +105,7 @@ impl Extractor<'_> {
 /// Declares a node and visits its children inside the new scope.
 macro_rules! scoped {
     ($self:ident, $node:ident, $walk:expr, $kind:expr, $name:expr, $public:expr, $span:expr) => {{
-        let frame = $self.declare($kind, $name, &$node.attrs, $public, $span, None);
+        let frame = $self.declare($kind, &$name, &$node.attrs, $public, $span, None);
         $self.within(frame, |this| $walk(this, $node));
     }};
 }
@@ -251,7 +251,7 @@ impl<'ast> Visit<'ast> for Extractor<'_> {
             self_type,
             trait_path,
         };
-        let frame = self.declare(Kind::Impl, local, &node.attrs, false, span, Some(implementation));
+        let frame = self.declare(Kind::Impl, &local, &node.attrs, false, span, Some(implementation));
         self.within(frame, |this| visit::visit_item_impl(this, node));
     }
 
@@ -267,7 +267,7 @@ impl<'ast> Visit<'ast> for Extractor<'_> {
         };
         let end = node.semi_token.as_ref().map_or(end, |semi| semi.spans[0]);
         let span = first(&[&node.mac.path]).map_or(end, |start| start.join(end).unwrap_or(end));
-        self.declare(Kind::Macro, ident(name), &node.attrs, false, span, None);
+        self.declare(Kind::Macro, &ident(name), &node.attrs, false, span, None);
     }
 
     fn visit_item_use(&mut self, node: &'ast syn::ItemUse) {

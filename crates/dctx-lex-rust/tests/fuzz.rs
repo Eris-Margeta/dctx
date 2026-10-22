@@ -42,7 +42,7 @@ fn check(source: &str, facts: &Extraction) {
     assert!(facts.imports.iter().all(|i| i.precision == expected));
     if facts.coverage == Coverage::Opaque {
         assert!(matches!(facts.completion, Completion::Partial(_)));
-        assert!(facts.references.is_empty());
+        assert_eq!(facts.references, []);
     }
     for (index, decl) in facts.declarations.iter().enumerate() {
         assert!(decl.parent.is_none_or(|p| p < index));

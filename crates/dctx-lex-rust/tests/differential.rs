@@ -73,6 +73,7 @@ fn refs(file: &ParsedFile, kind: EdgeKind) -> BTreeSet<(String, Option<String>)>
 }
 
 /// (precision, recall) of `emitted` against `expected`; empty denominators count as 1.
+#[allow(clippy::cast_precision_loss, reason = "Counts come from the fixed snippet corpus and are far below f64's exact integer limit of 2^53.")]
 fn score<T: Ord>(emitted: &BTreeSet<T>, expected: &BTreeSet<T>) -> (f64, f64) {
     let correct = emitted.intersection(expected).count() as f64;
     let ratio = |n: usize| if n == 0 { 1.0 } else { correct / n as f64 };
