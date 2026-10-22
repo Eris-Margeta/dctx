@@ -77,6 +77,7 @@ pub struct GrantLayers {
 
 impl GrantLayers {
     /// `G(t)`: the intersection of all layers under `selection`, minus explicit denies.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn effective(&self, selection: &Selection) -> Vec<Capability> {
         let mut grant = self.manifest.clone();
         for layer in [&self.consent, &self.organization, &self.host, &self.adapter] {
@@ -88,6 +89,7 @@ impl GrantLayers {
 }
 
 /// Pairwise intersection of two capability sets, without duplicates.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn intersect_sets(left: &[Capability], right: &[Capability]) -> Vec<Capability> {
     let mut out: Vec<Capability> = Vec::new();
     for a in left {
@@ -103,6 +105,7 @@ pub fn intersect_sets(left: &[Capability], right: &[Capability]) -> Vec<Capabili
 }
 
 /// Semantic intersection of two capabilities; `None` when they share no operation.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn intersect(a: &Capability, b: &Capability) -> Option<Capability> {
     use Capability as C;
     match (a, b) {
@@ -148,6 +151,7 @@ pub fn intersect(a: &Capability, b: &Capability) -> Option<Capability> {
 }
 
 /// Whether `cap` contains `need` (same kind, scope and arguments; quotas within the minimum).
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn covers(cap: &Capability, need: &Need) -> bool {
     use Capability as C;
     match (cap, need) {
@@ -172,10 +176,10 @@ fn selected(cap: &Capability, selection: &Selection) -> bool {
 
 fn denies(rule: &DenyRule, cap: &Capability) -> bool {
     match (rule, cap) {
-        (DenyRule::FileRead(p), Capability::FileRead { path, .. }) => p == path,
-        (DenyRule::FileWrite(p), Capability::FileWrite { path, .. }) => p == path,
-        (DenyRule::Programs, Capability::GitAddIgnore { .. }) => true,
-        (DenyRule::Outputs, Capability::OutputsRead { .. }) => true,
+        (DenyRule::FileRead(p), Capability::FileRead { path, .. })
+        | (DenyRule::FileWrite(p), Capability::FileWrite { path, .. }) => p == path,
+        (DenyRule::Programs, Capability::GitAddIgnore { .. })
+        | (DenyRule::Outputs, Capability::OutputsRead { .. }) => true,
         _ => false,
     }
 }

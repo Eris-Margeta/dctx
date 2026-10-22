@@ -124,7 +124,7 @@ fn uncertain_port_outcome_is_unknown_not_success() {
     let unknown = replace_with(&mut broker, b"abc\nx", "a:1").expect_err("uncertain");
     assert_eq!(unknown.effect_state, EffectState::Unknown);
     assert!(broker.ledger().trace().contains(ModelAction::ReceiptsCrashOrUncertain));
-    assert!(broker.ledger().committed(&token("op:1")).is_empty());
+    assert_eq!(broker.ledger().committed(&token("op:1")), [] as [dctx_plugin_protocol::records::scalars::Token; 0]);
 }
 
 #[test]
@@ -153,7 +153,7 @@ fn failed_recipe_reports_failure_and_commits_nothing() {
     broker.recipes_mut().recipe = RecipeOutcome::Failed;
     let refused = broker.handle(&git_req(&handle, &pre, &repo, "g:1")).expect_err("failed");
     assert_eq!((refused.code, refused.effect_state), (ErrorCode::ExternalProgramFailed, EffectState::None));
-    assert!(broker.ledger().committed(&token("op:1")).is_empty());
+    assert_eq!(broker.ledger().committed(&token("op:1")), [] as [dctx_plugin_protocol::records::scalars::Token; 0]);
     broker.recipes_mut().recipe = RecipeOutcome::Succeeded;
     assert!(broker.handle(&git_req(&handle, &pre, &repo, "g:1")).is_ok());
 }

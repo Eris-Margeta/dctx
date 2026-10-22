@@ -87,6 +87,7 @@ pub struct LivenessFeed {
 
 impl LivenessFeed {
     /// A feed for an invocation admitted at `now` under the caller's `policy`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(policy: Liveness, now: u64) -> Self {
         Self {
             policy,
@@ -105,6 +106,8 @@ impl LivenessFeed {
     }
 
     /// Accepts a validated progress sample; returns whether it was useful progress.
+    /// # Errors
+    /// Refuses unknown waits, invalid progress sequences, regressing counts, or inconsistent phase totals/units.
     pub fn progress(&mut self, sample: &Progress, now: u64) -> Result<bool, HostRefusal> {
         if let Some(wait) = &sample.wait
             && !self.wait_known(wait)
@@ -123,6 +126,8 @@ impl LivenessFeed {
     }
 
     /// A plugin broker request is outstanding.
+    /// # Errors
+    /// Refuses when the tracked-request limit is reached.
     pub fn broker_started(&mut self, id: RequestId) -> Result<(), HostRefusal> {
         if self.broker.len() >= MAX_TRACKED {
             return Err(HostRefusal::limit("too-many-tracked-requests"));
@@ -139,6 +144,8 @@ impl LivenessFeed {
     }
 
     /// Registers a host-known live dependency.
+    /// # Errors
+    /// Refuses when the tracked-dependency limit is reached.
     pub fn register_dependency(&mut self, dependency: Token) -> Result<(), HostRefusal> {
         if self.dependencies.len() >= MAX_TRACKED {
             return Err(HostRefusal::limit("too-many-dependencies"));
@@ -217,6 +224,7 @@ impl LivenessFeed {
     }
 
     /// Current observation.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn observation(&self) -> &Observation {
         &self.state
     }
@@ -227,6 +235,7 @@ impl LivenessFeed {
     }
 
     /// Model actions taken.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn trace(&self) -> &Trace {
         &self.trace
     }

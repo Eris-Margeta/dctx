@@ -65,6 +65,8 @@ pub struct HookRun {
 
 impl HookRun {
     /// `Plan`: refuse unknown references and cycles; order topologically with the canonical tie-break.
+    /// # Errors
+    /// Refuses duplicate entries, unknown dependency references, or a hook dependency cycle.
     pub fn plan(entries: &[HookEntry], edges: &[(PluginId, PluginId)]) -> Result<Self, HostRefusal> {
         let invalid = |reason| HostRefusal::new(ErrorCode::InvalidConfig, Phase::Resolve, reason);
         let ids: BTreeSet<PluginId> = entries.iter().map(|e| e.plugin.clone()).collect();
@@ -105,17 +107,21 @@ impl HookRun {
     }
 
     /// The canonical execution order.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn order(&self) -> &[PluginId] {
         &self.order
     }
 
     /// Next plugin to run and whether it may run (false: a required predecessor failed or was skipped).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn next(&self) -> Option<(&PluginId, bool)> {
         let plugin = self.order.get(self.next)?;
         Some((plugin, !self.blocked(plugin)))
     }
 
     /// `RunHook`: record the outcome and the host-ledger receipts of the plugin just run.
+    /// # Errors
+    /// Refuses when there is no pending hook left to record.
     pub fn record(&mut self, succeeded: bool, ledger_receipts: Vec<Token>, claims: Vec<Token>) -> Result<HookStatus, HostRefusal> {
         let Some(plugin) = self.order.get(self.next).cloned() else {
             return Err(HostRefusal::new(ErrorCode::InvalidMessage, Phase::Invoke, "no-hook-pending"));
@@ -140,6 +146,7 @@ impl HookRun {
     }
 
     /// Whether a pre-commit boundary may publish: every hook ran and no required hook failed.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn may_publish_before(&self) -> bool {
         self.next == self.order.len() && !self.status.values().any(|s| *s == HookStatus::RequiredFailure)
     }
@@ -162,6 +169,7 @@ impl HookRun {
     }
 
     /// Model actions taken.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn trace(&self) -> &Trace {
         &self.trace
     }
@@ -228,7 +236,7 @@ mod tests {
         assert!(run.may_publish_before());
         run.published();
         let report = run.report();
-        assert!(report.receipts.is_empty());
+        assert_eq!(report.receipts, [] as [dctx_plugin_protocol::records::scalars::Token; 0]);
         assert_eq!(report.rejected_claims, vec![forged]);
         assert!(report.published);
     }

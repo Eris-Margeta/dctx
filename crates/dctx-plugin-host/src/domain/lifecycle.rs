@@ -35,6 +35,7 @@ pub struct LaunchFacts {
 
 impl LaunchFacts {
     /// decision 080 admitted disposition: proven confinement, or the authenticated bundled-git exception.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn disposition_admitted(&self) -> bool {
         self.confined || self.origin == Origin::BundledGit
     }
@@ -93,11 +94,14 @@ pub struct Worker {
 
 impl Worker {
     /// An installed worker with host-established `facts`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(facts: LaunchFacts) -> Self {
         Self { facts, phase: WorkerPhase::Installed, reap_pending: false, trace: Trace::default() }
     }
 
     /// `EnableOrRefuse`: verified, compatible and an admitted confinement disposition.
+    /// # Errors
+    /// Refuses the wrong lifecycle phase, unverified/incompatible artifacts, or an inadmissible confinement disposition.
     pub fn enable(&mut self) -> Result<(), HostRefusal> {
         self.expect(WorkerPhase::Installed)?;
         self.trace.push(ModelAction::LifecycleEnableOrRefuse);
@@ -110,34 +114,39 @@ impl Worker {
         } else {
             None
         };
-        match refusal {
-            Some(refusal) => {
-                self.phase = WorkerPhase::Refused;
-                Err(refusal)
-            }
-            None => {
-                self.phase = WorkerPhase::Enabled;
-                Ok(())
-            }
+        if let Some(refusal) = refusal {
+            self.phase = WorkerPhase::Refused;
+            Err(refusal)
+        } else {
+            self.phase = WorkerPhase::Enabled;
+            Ok(())
         }
     }
 
     /// `Start`: the process was spawned (confinement established pre-exec by the adapter).
+    /// # Errors
+    /// Refuses unless the worker is enabled.
     pub fn started(&mut self) -> Result<(), HostRefusal> {
         self.step(WorkerPhase::Enabled, WorkerPhase::Spawned, ModelAction::LifecycleStart)
     }
 
     /// `Negotiate`: hello/answer selected a version.
+    /// # Errors
+    /// Refuses unless the worker has spawned.
     pub fn negotiated(&mut self) -> Result<(), HostRefusal> {
         self.step(WorkerPhase::Spawned, WorkerPhase::Negotiated, ModelAction::LifecycleNegotiate)
     }
 
     /// `Initialize`: `initialize` returned ready.
+    /// # Errors
+    /// Refuses unless protocol negotiation has completed.
     pub fn initialized(&mut self) -> Result<(), HostRefusal> {
         self.step(WorkerPhase::Negotiated, WorkerPhase::Ready, ModelAction::LifecycleInitialize)
     }
 
     /// `Invoke`: one invocation becomes active (one in flight per worker in v1).
+    /// # Errors
+    /// Refuses an active invocation or any phase other than ready.
     pub fn invoke(&mut self) -> Result<(), HostRefusal> {
         if matches!(self.phase, WorkerPhase::Running) {
             return Err(HostRefusal::new(ErrorCode::Busy, WirePhase::Invoke, "invocation-active"));
@@ -146,11 +155,15 @@ impl Worker {
     }
 
     /// `Finish`: the invocation's terminal response arrived; the session returns to ready.
+    /// # Errors
+    /// Refuses unless an invocation is running.
     pub fn finish(&mut self) -> Result<(), HostRefusal> {
         self.step(WorkerPhase::Running, WorkerPhase::Ready, ModelAction::LifecycleFinish)
     }
 
     /// `CancelStalled`/`Halt`: close admission and request cancellation; idempotent once cancelling.
+    /// # Errors
+    /// Refuses lifecycle phases in which cancellation is not admitted.
     pub fn cancel(&mut self, reason: StopReason) -> Result<(), HostRefusal> {
         match self.phase {
             WorkerPhase::Enabled
@@ -171,6 +184,8 @@ impl Worker {
     }
 
     /// `AcknowledgeOrForce`: the worker acknowledged, exited or was forced after grace.
+    /// # Errors
+    /// Refuses unless the worker is cancelling or its exit is otherwise admissible.
     pub fn exited(&mut self) -> Result<(), HostRefusal> {
         let reason = match self.phase {
             WorkerPhase::Cancelling(reason) => reason,
@@ -183,6 +198,8 @@ impl Worker {
     }
 
     /// `Reap` when the OS reaped the tree, else `ObserveReapPending`: visible, never fabricated.
+    /// # Errors
+    /// Refuses unless an exit has been recorded.
     pub fn reap(&mut self, reaped: bool) -> Result<(), HostRefusal> {
         let WorkerPhase::Exited(reason) = self.phase else { return Err(self.wrong_phase()) };
         if reaped {
@@ -197,21 +214,25 @@ impl Worker {
     }
 
     /// Whether broker admission is open (PP8: never after cancel, halt or exit).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn admits(&self) -> bool {
         self.phase == WorkerPhase::Running
     }
 
     /// Current phase.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn phase(&self) -> WorkerPhase {
         self.phase
     }
 
     /// Whether the OS has not yet reaped an exited tree.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn reap_pending(&self) -> bool {
         self.reap_pending
     }
 
     /// Model actions taken.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn trace(&self) -> &Trace {
         &self.trace
     }
@@ -227,6 +248,7 @@ impl Worker {
         Ok(())
     }
 
+    #[allow(clippy::unused_self, reason = "Keep lifecycle refusal construction on the worker alongside its phase-check helpers.")]
     fn wrong_phase(&self) -> HostRefusal {
         HostRefusal::new(ErrorCode::InvalidMessage, WirePhase::Invoke, "wrong-lifecycle-phase")
     }

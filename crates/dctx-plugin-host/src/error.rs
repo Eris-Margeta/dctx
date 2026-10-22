@@ -26,31 +26,37 @@ pub struct HostRefusal {
 
 impl HostRefusal {
     /// A refusal with no effect.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn new(code: ErrorCode, phase: Phase, reason: &'static str) -> Self {
         Self { code, phase, effect_state: EffectState::None, receipt: None, reason }
     }
 
     /// Broker-phase `Denied`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn denied(reason: &'static str) -> Self {
         Self::new(ErrorCode::Denied, Phase::Broker, reason)
     }
 
     /// Broker-phase `ResourceLimit`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn limit(reason: &'static str) -> Self {
         Self::new(ErrorCode::ResourceLimit, Phase::Broker, reason)
     }
 
     /// Broker-phase `Conflict`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn conflict(reason: &'static str) -> Self {
         Self::new(ErrorCode::Conflict, Phase::Broker, reason)
     }
 
     /// Broker-phase `AuditUnavailable` with no effect.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn audit(reason: &'static str) -> Self {
         Self::new(ErrorCode::AuditUnavailable, Phase::Broker, reason)
     }
 
     /// `EffectUnknown` linked to the pending receipt; never retryable.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn unknown(receipt: Token, reason: &'static str) -> Self {
         Self {
             code: ErrorCode::EffectUnknown,
@@ -62,11 +68,14 @@ impl HostRefusal {
     }
 
     /// Whether a caller may retry: only when nothing happened and the code is transient.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn retryable(&self) -> bool {
         self.effect_state == EffectState::None && matches!(self.code, ErrorCode::Busy | ErrorCode::AuditUnavailable)
     }
 
     /// Builds the protocol error object; refuses a reason that is not a valid wire `name`.
+    /// # Errors
+    /// Refuses a reason that is not a valid protocol `Name`.
     pub fn to_wire(&self) -> Result<WireError, Refusal> {
         Ok(WireError {
             code: self.code,

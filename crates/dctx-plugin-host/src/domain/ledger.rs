@@ -63,12 +63,15 @@ pub struct Ledger {
 
 impl Ledger {
     /// An empty ledger retaining at most `capacity` keys.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(capacity: usize) -> Self {
         Self { entries: BTreeMap::new(), capacity, next: 1, trace: Trace::default(), recovered: false }
     }
 
     /// Atomically restores ordered durable transitions. Unfinished intents become unknown.
     /// Archives retain keys; malformed, incomplete or over-capacity evidence refuses admission.
+    /// # Errors
+    /// Refuses malformed, duplicate, over-limit, unbound, or inconsistent recovery records, or restoration into a nonempty ledger.
     pub fn restore(&mut self, records: &[RecoveryRecord]) -> Result<(), HostRefusal> {
         let invalid = || HostRefusal::audit("invalid-recovery-evidence");
         if records.len() > MAX_RECOVERY_RECORDS || (!records.is_empty() && !self.entries.is_empty()) {
@@ -121,6 +124,8 @@ impl Ledger {
     }
 
     /// `Receipts.Repeat` guard: existing receipt, conflict, or uncertain refusal; never a re-execution.
+    /// # Errors
+    /// Refuses conflicting arguments for an existing key, in-flight actions, or uncertain effects that require reconciliation.
     pub fn lookup(&mut self, key: &ActionKey, args: &ArgDigest) -> Result<Lookup, HostRefusal> {
         let Some(entry) = self.entries.get(key) else { return Ok(Lookup::Absent) };
         self.trace.push(ModelAction::ReceiptsRepeat);
@@ -137,6 +142,8 @@ impl Ledger {
     }
 
     /// Allocates the next receipt ID for an intent the caller is about to log durably.
+    /// # Errors
+    /// Refuses a full ledger or exhausted/invalid receipt numbering.
     pub fn reserve(&mut self) -> Result<Token, HostRefusal> {
         if self.entries.len() >= self.capacity {
             return Err(HostRefusal::limit("ledger-full"));
@@ -147,6 +154,8 @@ impl Ledger {
     }
 
     /// `Receipts.Request`: record the durable intent under `receipt`.
+    /// # Errors
+    /// Refuses an action key that already has an intent.
     pub fn intent(&mut self, key: ActionKey, args: ArgDigest, receipt: Token) -> Result<(), HostRefusal> {
         if self.entries.contains_key(&key) {
             return Err(HostRefusal::conflict("intent-exists"));
@@ -157,6 +166,8 @@ impl Ledger {
     }
 
     /// `Receipts.Execute`: the external effect ran exactly once.
+    /// # Errors
+    /// Refuses unknown actions or actions that are not pending.
     pub fn executed(&mut self, key: &ActionKey) -> Result<(), HostRefusal> {
         let entry = self.entry(key, EntryStatus::Pending)?;
         entry.status = EntryStatus::Executed;
@@ -166,6 +177,8 @@ impl Ledger {
     }
 
     /// `Receipts.Complete`: completion is durable.
+    /// # Errors
+    /// Refuses unknown actions or actions that have not been executed.
     pub fn complete(&mut self, key: &ActionKey) -> Result<Token, HostRefusal> {
         let entry = self.entry(key, EntryStatus::Executed)?;
         entry.status = EntryStatus::Committed;
@@ -175,6 +188,8 @@ impl Ledger {
     }
 
     /// Resolves a pending intent whose effect provably never ran (precondition refusal logged).
+    /// # Errors
+    /// Refuses unknown actions or actions that are no longer pending.
     pub fn abandon(&mut self, key: &ActionKey) -> Result<(), HostRefusal> {
         self.entry(key, EntryStatus::Pending)?;
         self.entries.remove(key);
@@ -182,6 +197,8 @@ impl Ledger {
     }
 
     /// `Receipts.CrashOrUncertain`: the outcome is unknown or partial; the intent stays pinned.
+    /// # Errors
+    /// Refuses unknown actions or actions that are not in flight.
     pub fn uncertain(&mut self, key: &ActionKey, partial: bool) -> Result<Token, HostRefusal> {
         let entry = self.entries.get_mut(key).ok_or(HostRefusal::conflict("unknown-action"))?;
         if !matches!(entry.status, EntryStatus::Pending | EntryStatus::Executed) {
@@ -194,6 +211,8 @@ impl Ledger {
     }
 
     /// `Receipts.Reconcile`: trusted evidence shows the single execution committed.
+    /// # Errors
+    /// Refuses unknown actions or actions without an uncertain effect to reconcile.
     pub fn reconcile(&mut self, key: &ActionKey) -> Result<Token, HostRefusal> {
         let entry = self.entries.get_mut(key).ok_or(HostRefusal::conflict("unknown-action"))?;
         if !matches!(entry.status, EntryStatus::Unknown | EntryStatus::Partial) {
@@ -207,6 +226,8 @@ impl Ledger {
     }
 
     /// `Receipts.Rotate`: archive committed evidence; unresolved intents are pinned and refuse.
+    /// # Errors
+    /// Refuses unknown actions or unresolved intents whose evidence must remain pinned.
     pub fn rotate(&mut self, key: &ActionKey) -> Result<(), HostRefusal> {
         let entry = self.entries.get_mut(key).ok_or(HostRefusal::conflict("unknown-action"))?;
         if entry.status != EntryStatus::Committed {
@@ -223,11 +244,13 @@ impl Ledger {
     }
 
     /// Entry for `key`, if retained.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn get(&self, key: &ActionKey) -> Option<&Entry> {
         self.entries.get(key)
     }
 
     /// Committed receipts for `invocation` (the source of truth for reports).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn committed(&self, invocation: &Token) -> Vec<Token> {
         self.entries
             .iter()
@@ -237,6 +260,7 @@ impl Ledger {
     }
 
     /// Model actions taken.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn trace(&self) -> &Trace {
         &self.trace
     }

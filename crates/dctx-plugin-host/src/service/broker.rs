@@ -84,17 +84,23 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     }
 
     /// Registers a handle bound to the session's current context.
+    /// # Errors
+    /// Refuses an exhausted handle table or an invalid generated handle token.
     pub fn register(&mut self, kind: HandleKind) -> Result<Token, HostRefusal> {
         let binding = self.authority.binding().clone();
         self.handles.register(binding, kind)
     }
 
     /// Registers a handle bound to another context (a stale or foreign handle in tests and recovery).
+    /// # Errors
+    /// Refuses an exhausted handle table or an invalid generated handle token.
     pub fn register_bound(&mut self, binding: crate::domain::binding::Binding, kind: HandleKind) -> Result<Token, HostRefusal> {
         self.handles.register(binding, kind)
     }
 
     /// Host-side precondition for a selected file handle (supplied with initialize resources).
+    /// # Errors
+    /// Refuses an unknown/non-file handle, excluded source content, a file identity fault, or exhausted precondition storage.
     pub fn issue_precondition(&mut self, handle: &Token) -> Result<Token, HostRefusal> {
         let path = self.file_path(handle)?;
         self.authority.check_content(&path)?;
@@ -103,6 +109,8 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     }
 
     /// Serves one worker request; refusals are audited best-effort and returned.
+    /// # Errors
+    /// Refuses unsupported methods, invalid bindings/grants, quota violations, file races, unavailable audit, or uncertain broker effects.
     pub fn handle(&mut self, request: &Request) -> Result<Reply, HostRefusal> {
         let result = match request {
             Request::FileRead(read) => self.file_read(read),
@@ -182,12 +190,9 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
         self.authority.check_content(path)?;
         let admission = self.authority.admit(&record.binding, Need::FileRead { path: path.clone(), bytes: total })?;
         self.check_frame(read.length)?;
-        let (identity, precondition) = match &read.precondition {
-            Some(token) => (self.handles.check_precondition(&read.handle, token)?, None),
-            None => {
-                let identity = self.files.identity(path).map_err(fault)?;
-                (identity, Some(self.handles.precondition(&read.handle, identity)?))
-            }
+        let (identity, precondition) = if let Some(token) = &read.precondition { (self.handles.check_precondition(&read.handle, token)?, None) } else {
+            let identity = self.files.identity(path).map_err(fault)?;
+            (identity, Some(self.handles.precondition(&read.handle, identity)?))
         };
         self.budget.charge(&[(Dimension::Content, read.length)])?;
         if let Err(refusal) = self.authority.commit(&admission) {

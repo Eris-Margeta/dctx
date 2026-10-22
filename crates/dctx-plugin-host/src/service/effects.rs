@@ -1,7 +1,7 @@
 //! Brokered effects: `file.replace` and `program.run git.add-ignore`, plus reconcile and rotation.
 //! Implements PLUGINS.md §3.3 replay rules and §4.4 audit ordering, refining Receipts.tla: Repeat guard →
 //! Authority Admit → Resources Receive → durable intent (Request) → Authority Commit → Execute → completion
-//! (Complete) or CrashOrUncertain. Depends on broker, domain and ports. Used through `Broker::handle`.
+//! (Complete) or `CrashOrUncertain`. Depends on broker, domain and ports. Used through `Broker::handle`.
 
 use dctx_plugin_protocol::records::broker::{FileReplace, GitAddIgnore};
 use dctx_plugin_protocol::records::requests::Request;
@@ -31,6 +31,8 @@ enum Ran {
 
 impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     /// Loads durable evidence before effect admission, reconciliation or rotation.
+    /// # Errors
+    /// Refuses unavailable recovery evidence or records rejected by ledger restoration.
     pub fn recover(&mut self) -> Result<(), HostRefusal> {
         if !self.ledger.recovered {
             let records = self.audit.recover(MAX_RECOVERY_RECORDS).map_err(|_| HostRefusal::audit("recovery-unavailable"))?;
@@ -111,6 +113,8 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     }
 
     /// `Receipts.Reconcile`: the host verified that the single uncertain execution committed.
+    /// # Errors
+    /// Refuses recovery failure, unverified commitment, an invalid ledger transition, or unavailable reconciliation audit.
     pub fn reconcile(&mut self, key: &ActionKey, verified_committed: bool) -> Result<Token, HostRefusal> {
         self.recover()?;
         if !verified_committed {
@@ -125,6 +129,8 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     }
 
     /// `Receipts.Rotate`: archive a completed entry; unresolved intents stay pinned.
+    /// # Errors
+    /// Refuses recovery failure, an unresolved/unknown action, or unavailable archival audit.
     pub fn rotate(&mut self, key: &ActionKey) -> Result<(), HostRefusal> {
         self.recover()?;
         let mut archived = self.ledger.clone();
@@ -135,6 +141,8 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     }
 
     /// Replay key bound to the session context (the plugin supplies only `action_id`).
+    /// # Errors
+    /// Refuses a request without an action ID or an argument input above the digest length limit.
     pub fn replay_key(&self, request: &Request) -> Result<(ActionKey, ArgDigest), HostRefusal> {
         ArgDigest::of_request(self.authority.binding(), request)?.ok_or(HostRefusal::new(
             ErrorCode::InvalidMessage,
@@ -144,6 +152,7 @@ impl<A: AuditPort, F: FilePort, R: RecipePort> Broker<A, F, R> {
     }
 
     /// Intent → commit check → execute → completion; uncertain outcomes stay pinned and unknown.
+    #[allow(clippy::needless_pass_by_value, reason = "The effect transaction owns its action key across intent creation, execution and completion; retain that ownership boundary.")]
     fn effect(
         &mut self,
         key: ActionKey,

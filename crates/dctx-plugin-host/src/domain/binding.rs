@@ -43,6 +43,7 @@ pub struct ActionKey {
 
 impl ActionKey {
     /// Binds `action_id` to the host context; the plugin chooses only the last field.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn bind(context: &Binding, action_id: &Token) -> Self {
         Self {
             artifact: context.artifact.clone(),
@@ -59,6 +60,8 @@ pub struct ArgDigest([u8; 32]);
 
 impl ArgDigest {
     /// Reconstructs a validated hexadecimal SHA-256 digest without rehashing its text.
+    /// # Errors
+    /// Refuses a digest that is not exactly 64 ASCII hexadecimal characters.
     pub fn from_hex(value: &str) -> Result<Self, HostRefusal> {
         if value.len() != 64 || !value.bytes().all(|b| b.is_ascii_hexdigit()) {
             return Err(HostRefusal::audit("invalid-argument-digest"));
@@ -71,11 +74,15 @@ impl ArgDigest {
     }
 
     /// Digests canonical argument bytes.
+    /// # Errors
+    /// Refuses input above the SHA-256 message length limit.
     pub fn of(bytes: &[u8]) -> Result<Self, HostRefusal> {
         Sha256::digest(bytes).map(|digest| Self(*digest.as_bytes())).map_err(|_| HostRefusal::limit("argument-digest-too-long"))
     }
 
     /// Replay key and argument digest of an effect request; `None` for requests without `action_id`.
+    /// # Errors
+    /// Propagates the argument-digest length refusal when an action input is present.
     pub fn of_request(context: &Binding, request: &Request) -> Result<Option<(ActionKey, Self)>, HostRefusal> {
         match request.action_input() {
             Some((action_id, bytes)) => Ok(Some((ActionKey::bind(context, action_id), Self::of(&bytes)?))),
@@ -84,6 +91,7 @@ impl ArgDigest {
     }
 
     /// Raw digest bytes (private local metadata; never source content).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_bytes(&self) -> &[u8; 32] {
         &self.0
     }

@@ -75,6 +75,7 @@ pub enum RecoveryState {
 
 impl RecoveryState {
     /// Stable, source-free storage tag.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Pending => "pending",
@@ -88,6 +89,8 @@ impl RecoveryState {
     }
 
     /// Validates a durable transition tag; unknown tags fail closed.
+    /// # Errors
+    /// Returns `AuditUnavailable` for an unknown recovery-state tag.
     pub fn parse(value: &str) -> Result<Self, AuditUnavailable> {
         match value {
             "pending" => Ok(Self::Pending),
@@ -118,16 +121,22 @@ pub struct RecoveryRecord {
 /// Durable, owner-only local audit log.
 pub trait AuditPort {
     /// Appends `record` durably, or reports that logging is unavailable or full.
+    /// # Errors
+    /// Returns `AuditUnavailable` when the record cannot be durably appended, including a full log.
     fn append(&mut self, record: &AuditRecord) -> Result<(), AuditUnavailable>;
 
     /// Atomically syncs an audit event and its recovery metadata.
     /// The default is for volatile adapters only; persistent adapters must override it.
+    /// # Errors
+    /// Returns `AuditUnavailable` when the event and recovery transition cannot be durably recorded.
     fn append_effect(&mut self, record: &AuditRecord, _recovery: &RecoveryRecord) -> Result<(), AuditUnavailable> {
         self.append(record)
     }
 
     /// Reads all retained transitions in order, including archives; never silently truncates.
     /// Refuses damaged, legacy unbound or over-limit evidence. Volatile adapters return empty.
+    /// # Errors
+    /// Returns `AuditUnavailable` for unreadable, damaged, legacy unbound, or over-limit recovery evidence.
     fn recover(&mut self, _limit: usize) -> Result<Vec<RecoveryRecord>, AuditUnavailable> {
         Ok(Vec::new())
     }
@@ -158,10 +167,16 @@ pub enum FileFault {
 /// Race-safe access to named project files through host-opened root handles.
 pub trait FilePort {
     /// Current identity of `path`.
+    /// # Errors
+    /// Returns `FileFault` if the file is missing or its identity cannot be safely established.
     fn identity(&mut self, path: &ProjectPath) -> Result<FileIdentity, FileFault>;
     /// Reads `length` bytes at `offset` if the file still has `expected` identity.
+    /// # Errors
+    /// Returns `FileFault` if the file is missing or changed, or the identity-checked read cannot complete.
     fn read(&mut self, path: &ProjectPath, expected: FileIdentity, offset: u64, length: u64) -> Result<Vec<u8>, FileFault>;
     /// Atomically replaces `path` if it still has `expected` identity; returns the new identity.
+    /// # Errors
+    /// Returns `FileFault` if the file is missing/changed or replacement has an uncertain outcome.
     fn replace(&mut self, path: &ProjectPath, expected: FileIdentity, bytes: &[u8]) -> Result<FileIdentity, FileFault>;
 }
 
@@ -206,6 +221,8 @@ pub enum SpawnFault {
 /// Process tree supervision and registered recipe execution.
 pub trait ProcessPort {
     /// Spawns the confined worker; confinement is established by the adapter before exec.
+    /// # Errors
+    /// Returns `SpawnFault` when confinement is unavailable or executable revalidation/spawning fails.
     fn spawn(&mut self) -> Result<ProcessId, SpawnFault>;
     /// Current OS evidence about the worker; unknown when the OS cannot tell.
     fn evidence(&mut self, process: ProcessId) -> crate::domain::liveness::ProcessEvidence;

@@ -40,9 +40,7 @@ impl AuditPort for Audit {
         Ok(())
     }
     fn append_effect(&mut self, record: &AuditRecord, recovery: &RecoveryRecord) -> Result<(), AuditUnavailable> {
-        if record.kind == AuditKind::Intent && self.cut == Some(Cut::BeforeIntent) {
-            panic!("crash before intent");
-        }
+        assert!(!(record.kind == AuditKind::Intent && self.cut == Some(Cut::BeforeIntent)), "crash before intent");
         self.records.borrow_mut().push(recovery.clone());
         if (record.kind == AuditKind::Intent && self.cut == Some(Cut::AfterIntent))
             || (record.kind == AuditKind::Completion && self.cut == Some(Cut::AfterCompletion))

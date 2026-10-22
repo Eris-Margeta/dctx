@@ -86,5 +86,5 @@ fn skipped_hooks_contribute_no_receipts_and_block_transitively() {
     let stray = Token::new("receipt:9").expect("stray");
     assert_eq!(run.record(true, vec![stray], vec![]), Ok(HookStatus::Skipped));
     assert_eq!(run.record(true, vec![], vec![]), Ok(HookStatus::Skipped));
-    assert!(run.report().receipts.is_empty());
+    assert_eq!(run.report().receipts, [] as [dctx_plugin_protocol::records::scalars::Token; 0]);
 }

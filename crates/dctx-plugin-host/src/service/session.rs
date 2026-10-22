@@ -31,6 +31,8 @@ impl<A: AuditPort, F: FilePort, R: RecipePort, P: ProcessPort> HostSession<A, F,
     }
 
     /// Accepts a worker request into the bounded queue; overflow cancels the sender.
+    /// # Errors
+    /// Refuses closed admission or exhausted queue/tracked-request capacity; resource exhaustion cancels the session.
     pub fn receive(&mut self, id: RequestId, request: Request, now: u64) -> Result<(), HostRefusal> {
         if !self.supervisor.admits() {
             return Err(HostRefusal::new(ErrorCode::Cancelled, Phase::Broker, "admission-closed"));

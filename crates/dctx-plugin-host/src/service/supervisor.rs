@@ -33,6 +33,8 @@ impl<P: ProcessPort> Supervisor<P> {
     }
 
     /// `EnableOrRefuse` then `Start`: no exec unless verified, compatible and admitted by disposition.
+    /// # Errors
+    /// Refuses inadmissible launch facts, unavailable confinement, spawn failure, or an invalid lifecycle transition.
     pub fn launch(&mut self) -> Result<(), HostRefusal> {
         self.worker.enable()?;
         match self.process.spawn() {
@@ -48,16 +50,22 @@ impl<P: ProcessPort> Supervisor<P> {
     }
 
     /// `Negotiate`.
+    /// # Errors
+    /// Refuses unless the worker has spawned.
     pub fn negotiated(&mut self) -> Result<(), HostRefusal> {
         self.worker.negotiated()
     }
 
     /// `Initialize`.
+    /// # Errors
+    /// Refuses unless protocol negotiation has completed.
     pub fn initialized(&mut self) -> Result<(), HostRefusal> {
         self.worker.initialized()
     }
 
     /// `Invoke` at monotonic `now`; starts a fresh liveness feed.
+    /// # Errors
+    /// Refuses an active invocation or any phase other than ready.
     pub fn invoke(&mut self, now: u64) -> Result<(), HostRefusal> {
         self.worker.invoke()?;
         self.feed = Some(LivenessFeed::new(self.policy, now));
@@ -65,6 +73,8 @@ impl<P: ProcessPort> Supervisor<P> {
     }
 
     /// `Finish`: terminal response received.
+    /// # Errors
+    /// Refuses unless an invocation is running.
     pub fn finish(&mut self) -> Result<(), HostRefusal> {
         self.worker.finish()?;
         self.feed = None;
@@ -72,11 +82,15 @@ impl<P: ProcessPort> Supervisor<P> {
     }
 
     /// A progress event for the active invocation.
+    /// # Errors
+    /// Refuses a missing active liveness feed or invalid progress/wait information.
     pub fn progress(&mut self, sample: &Progress, now: u64) -> Result<bool, HostRefusal> {
         self.feed_mut()?.progress(sample, now)
     }
 
     /// A broker request became outstanding.
+    /// # Errors
+    /// Refuses a missing active liveness feed or exhausted tracked-request capacity.
     pub fn broker_started(&mut self, id: RequestId) -> Result<(), HostRefusal> {
         self.feed_mut()?.broker_started(id)
     }
@@ -89,6 +103,8 @@ impl<P: ProcessPort> Supervisor<P> {
     }
 
     /// Registers a host-known dependency.
+    /// # Errors
+    /// Refuses a missing active liveness feed or exhausted tracked-dependency capacity.
     pub fn register_dependency(&mut self, dependency: Token) -> Result<(), HostRefusal> {
         self.feed_mut()?.register_dependency(dependency)
     }
@@ -137,6 +153,8 @@ impl<P: ProcessPort> Supervisor<P> {
     }
 
     /// `Halt`/`CancelStalled`: close admission now and start the cancellation grace.
+    /// # Errors
+    /// Refuses lifecycle phases in which cancellation is not admitted.
     pub fn cancel(&mut self, reason: StopReason, now: u64) -> Result<(), HostRefusal> {
         self.worker.cancel(reason)?;
         self.cancel_at.get_or_insert(now);
@@ -144,6 +162,8 @@ impl<P: ProcessPort> Supervisor<P> {
     }
 
     /// The worker acknowledged cancellation (`cancelled` event) and exited.
+    /// # Errors
+    /// Refuses an inadmissible worker-exit transition.
     pub fn acknowledged(&mut self) -> Result<(), HostRefusal> {
         self.worker.exited()?;
         self.reap();

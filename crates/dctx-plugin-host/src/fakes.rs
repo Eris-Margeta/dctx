@@ -35,6 +35,7 @@ impl Default for FakeAudit {
 
 impl FakeAudit {
     /// Number of records of `kind`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn count(&self, kind: AuditKind) -> usize {
         self.records.iter().filter(|r| r.kind == kind).count()
     }
@@ -73,18 +74,16 @@ impl FakeFiles {
     /// Creates or overwrites `path` with `bytes`, as an outside writer would.
     pub fn put(&mut self, path: &ProjectPath, bytes: &[u8]) {
         let version = self.files.get(path).map_or(1, |(id, _)| id.version + 1);
-        let object = match self.files.get(path) {
-            Some((id, _)) => id.object,
-            None => {
-                self.next_object += 1;
-                self.next_object
-            }
+        let object = if let Some((id, _)) = self.files.get(path) { id.object } else {
+            self.next_object += 1;
+            self.next_object
         };
         let identity = FileIdentity { object, version, size: bytes.len() as u64 };
         self.files.insert(path.clone(), (identity, bytes.to_vec()));
     }
 
     /// Current content of `path`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn content(&self, path: &ProjectPath) -> Option<&[u8]> {
         self.files.get(path).map(|(_, bytes)| bytes.as_slice())
     }

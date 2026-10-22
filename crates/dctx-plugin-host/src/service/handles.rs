@@ -80,12 +80,16 @@ pub struct Handles {
 
 impl Handles {
     /// Issues a fresh opaque token with `prefix`.
+    /// # Errors
+    /// Refuses if the generated token does not fit the protocol token format.
     pub fn mint(&mut self, prefix: &str) -> Result<Token, HostRefusal> {
         self.next = self.next.saturating_add(1);
         Token::new(&format!("{prefix}:{}", self.next)).map_err(|_| HostRefusal::limit("token-space"))
     }
 
     /// Registers a handle bound to `binding`.
+    /// # Errors
+    /// Refuses when the handle table is full or a handle token cannot be minted.
     pub fn register(&mut self, binding: Binding, kind: HandleKind) -> Result<Token, HostRefusal> {
         if self.records.len() >= MAX_HANDLES {
             return Err(HostRefusal::limit("too-many-handles"));
@@ -96,6 +100,8 @@ impl Handles {
     }
 
     /// Looks a handle up; unknown handles are denied.
+    /// # Errors
+    /// Refuses an unknown handle.
     pub fn get(&self, token: &Token) -> Result<&HandleRecord, HostRefusal> {
         self.records.get(token).ok_or(HostRefusal::denied("unknown-handle"))
     }
@@ -108,6 +114,8 @@ impl Handles {
     }
 
     /// Issues a precondition token for `handle` at `identity`.
+    /// # Errors
+    /// Refuses when the precondition table is full or a token cannot be minted.
     pub fn precondition(&mut self, handle: &Token, identity: FileIdentity) -> Result<Token, HostRefusal> {
         if self.preconditions.len() >= MAX_HANDLES {
             return Err(HostRefusal::limit("too-many-preconditions"));
@@ -118,6 +126,8 @@ impl Handles {
     }
 
     /// The identity a precondition was issued at, if it is bound to `handle`.
+    /// # Errors
+    /// Refuses an unknown precondition or one bound to another handle.
     pub fn check_precondition(&self, handle: &Token, token: &Token) -> Result<FileIdentity, HostRefusal> {
         match self.preconditions.get(token) {
             Some((bound, record)) if bound == handle => Ok(record.identity),
@@ -132,6 +142,8 @@ impl Handles {
     }
 
     /// Starts an upload.
+    /// # Errors
+    /// Refuses when the upload table is full or a token cannot be minted.
     pub fn start_upload(&mut self, upload: Upload) -> Result<Token, HostRefusal> {
         if self.uploads.len() >= MAX_HANDLES {
             return Err(HostRefusal::limit("too-many-uploads"));
@@ -142,6 +154,8 @@ impl Handles {
     }
 
     /// Mutable access to an upload.
+    /// # Errors
+    /// Refuses an unknown upload token.
     pub fn upload_mut(&mut self, token: &Token) -> Result<&mut Upload, HostRefusal> {
         self.uploads.get_mut(token).ok_or(HostRefusal::conflict("unknown-upload"))
     }

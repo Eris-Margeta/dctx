@@ -48,12 +48,15 @@ pub struct Authority {
 
 impl Authority {
     /// Builds a not-yet-ready authority under `binding` at policy `epoch`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(layers: GrantLayers, selection: Selection, binding: Binding, epoch: u64) -> Self {
         let effective = layers.effective(&selection);
         Self { layers, selection, binding, epoch, ready: false, halted: false, effective, trace: Trace::default() }
     }
 
     /// `Authority.Initialize`: the session reached `ready`.
+    /// # Errors
+    /// Refuses initialization after the authority has halted.
     pub fn initialize(&mut self) -> Result<(), HostRefusal> {
         if self.halted {
             return Err(HostRefusal::new(ErrorCode::Cancelled, Phase::Initialize, "halted"));
@@ -98,6 +101,8 @@ impl Authority {
     }
 
     /// `Authority.Admit`: binding, readiness, halt and grant containment under the current epoch.
+    /// # Errors
+    /// Refuses before initialization/after halt, on a binding mismatch, or when no effective capability covers the need.
     pub fn admit(&mut self, handle: &Binding, need: Need) -> Result<Admission, HostRefusal> {
         if !self.ready {
             return Err(HostRefusal::new(ErrorCode::InvalidMessage, Phase::Initialize, "not-ready"));
@@ -116,6 +121,8 @@ impl Authority {
     }
 
     /// `Authority.Commit`: refuse when halted, the epoch moved or the need left the grant.
+    /// # Errors
+    /// Refuses after halt, for a stale policy epoch, or if the grant has been revoked.
     pub fn commit(&mut self, admission: &Admission) -> Result<(), HostRefusal> {
         if self.halted {
             return Err(HostRefusal::new(ErrorCode::Cancelled, Phase::Broker, "halted"));
@@ -131,11 +138,15 @@ impl Authority {
     }
 
     /// Content precondition for `Authority.Read`: the path is currently `Include`.
+    /// # Errors
+    /// Refuses content outside the included source selection.
     pub fn check_content(&self, path: &ProjectPath) -> Result<(), HostRefusal> {
         if self.selection.authorizes(path) { Ok(()) } else { Err(HostRefusal::denied("source-not-included")) }
     }
 
     /// Provenance precondition for derived/cached delivery: every constituent is currently `Include`.
+    /// # Errors
+    /// Refuses if any provenance path is outside the included source selection.
     pub fn check_provenance(&self, provenance: &[ProjectPath]) -> Result<(), HostRefusal> {
         if self.selection.authorizes_all(provenance) {
             Ok(())
@@ -150,26 +161,31 @@ impl Authority {
     }
 
     /// Current policy epoch.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn epoch(&self) -> u64 {
         self.epoch
     }
 
     /// Whether admission is closed.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn halted(&self) -> bool {
         self.halted
     }
 
     /// The bound context.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn binding(&self) -> &Binding {
         &self.binding
     }
 
     /// Current effective grant `G(now)`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn effective(&self) -> &[Capability] {
         &self.effective
     }
 
     /// Model actions taken.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn trace(&self) -> &Trace {
         &self.trace
     }

@@ -33,11 +33,14 @@ pub struct Quota {
 
 impl Quota {
     /// The minimum of `ceilings`; an empty list grants nothing.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(ceilings: &[u64]) -> Self {
         Self { limit: ceilings.iter().copied().min().unwrap_or(0), used: 0 }
     }
 
     /// Checks `used + n <= limit` without wrapping, before anything is allocated.
+    /// # Errors
+    /// Refuses quota overflow or a total above the configured limit.
     pub fn check(&self, n: u64) -> Result<u64, HostRefusal> {
         match self.used.checked_add(n) {
             Some(total) if total <= self.limit => Ok(total),
@@ -46,6 +49,8 @@ impl Quota {
     }
 
     /// Charges `n` after a successful check.
+    /// # Errors
+    /// Refuses if any charged quota would overflow or exceed its limit; charges are validated before mutation.
     pub fn charge(&mut self, n: u64) -> Result<(), HostRefusal> {
         self.used = self.check(n)?;
         Ok(())
@@ -57,11 +62,13 @@ impl Quota {
     }
 
     /// Effective limit.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn limit(&self) -> u64 {
         self.limit
     }
 
     /// Used amount.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn used(&self) -> u64 {
         self.used
     }
@@ -76,6 +83,7 @@ pub struct Budget {
 
 impl Budget {
     /// Builds a budget from per-dimension ceilings (each the list of layer ceilings).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(content: &[u64], actions: &[u64], upload: &[u64], diagnostics: &[u64], queue: &[u64]) -> Self {
         Self {
             quotas: [
@@ -90,6 +98,8 @@ impl Budget {
     }
 
     /// `Resources.Receive`: check every listed dimension first, then charge all or none.
+    /// # Errors
+    /// Refuses if any charged quota would overflow or exceed its limit; charges are validated before mutation.
     pub fn charge(&mut self, charges: &[(Dimension, u64)]) -> Result<(), HostRefusal> {
         self.trace.push(ModelAction::ResourcesReceive);
         for (dimension, n) in charges {
@@ -108,11 +118,13 @@ impl Budget {
     }
 
     /// Quota of `dimension`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn quota(&self, dimension: Dimension) -> Quota {
         self.quotas.iter().find(|(d, _)| *d == dimension).map_or(Quota::new(&[]), |(_, q)| *q)
     }
 
     /// Model actions taken.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn trace(&self) -> &Trace {
         &self.trace
     }
@@ -124,11 +136,13 @@ impl Budget {
 }
 
 /// Encoded size of `raw` bytes in canonical padded base64, without wrapping.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn base64_len(raw: u64) -> Option<u64> {
     raw.checked_add(2).map(|n| n / 3).and_then(|groups| groups.checked_mul(4))
 }
 
 /// Whether a `raw`-byte chunk fits `frame_cap` after base64 and `envelope` bytes of JSON overhead.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn chunk_fits_frame(raw: u64, envelope: u64, frame_cap: u64) -> bool {
     base64_len(raw).and_then(|n| n.checked_add(envelope)).is_some_and(|total| total <= frame_cap)
 }
@@ -149,11 +163,14 @@ pub struct BoundedQueue<T> {
 
 impl<T> BoundedQueue<T> {
     /// An empty queue holding at most `capacity` items.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(capacity: usize) -> Self {
         Self { items: VecDeque::new(), capacity }
     }
 
     /// Enqueues `item`, or reports the overflow without storing it.
+    /// # Errors
+    /// Returns `Overflow::CancelSender` when the outstanding-request capacity is reached.
     pub fn push(&mut self, item: T) -> Result<(), Overflow> {
         if self.items.len() >= self.capacity {
             return Err(Overflow::CancelSender(HostRefusal::limit("outstanding-requests")));
@@ -168,11 +185,13 @@ impl<T> BoundedQueue<T> {
     }
 
     /// Queued count.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn len(&self) -> usize {
         self.items.len()
     }
 
     /// Whether nothing is queued.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
     }
