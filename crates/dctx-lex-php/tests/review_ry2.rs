@@ -27,19 +27,19 @@ fn heredoc_closer_is_the_whole_label() {
     // Not a defect. A closer is the whole label, an optional semicolon, then
     // newline or EOF. A label prefix stays body text. Indented closers (PHP 7.3)
     // still end the literal; that indented nowdoc is the positive control.
-    let review = r#"<?php
+    let review = r"<?php
 $s = <<<END
 END of the text
 function ghost() {}
 END;
 function real() {}
-"#;
+";
     let review = parse("review.php", review);
     assert_eq!(review.completion, Completion::Complete, "{:?}", review.diagnostics);
     assert_eq!(names(&review), ["real"]);
     assert_eq!(calls(&review), Vec::<&str>::new());
 
-    let prefix = r#"<?php
+    let prefix = r"<?php
 $s = <<<'NOW'
 NO;
 function ghost_short() {}
@@ -50,7 +50,7 @@ NOW; function ghost_same() {}
 function ghost_line() {}
     NOW;
 function kept() { kept_call(); }
-"#;
+";
     let prefix = parse("prefix.php", prefix);
     assert_eq!(prefix.completion, Completion::Complete, "{:?}", prefix.diagnostics);
     assert_eq!(names(&prefix), ["kept"]);

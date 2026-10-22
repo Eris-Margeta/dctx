@@ -1,5 +1,5 @@
 //! IO-free extraction vocabulary: facts, precision labels, limits and refusals.
-//! Implements PARSERS-v1 (ParseResult, completion, limits) for PHP source.
+//! Implements PARSERS-v1 (`ParseResult`, completion, limits) for PHP source.
 //! Used by the lexer, the structural walker and callers of the public API.
 mod facts;
 mod limits;
@@ -12,6 +12,7 @@ pub use limits::{LexError, Limits};
 use dctx_hash::Sha256;
 
 /// SHA-256 hex of the body with whitespace runs collapsed and edges trimmed.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn body_fingerprint(body: &str) -> String {
     let normalized = body.split_whitespace().collect::<Vec<_>>().join(" ");
     let mut hex = String::with_capacity(64);

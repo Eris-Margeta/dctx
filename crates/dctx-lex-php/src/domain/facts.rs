@@ -12,6 +12,7 @@ pub enum Dialect {
 
 impl Dialect {
     /// Selects PHP from its final supported extension.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn for_path(path: &str) -> Option<Self> {
         let extension = path.rsplit_once('.')?.1;
         matches!(

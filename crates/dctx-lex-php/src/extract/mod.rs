@@ -40,6 +40,7 @@ struct Walker<'a> {
     ordinals: BTreeMap<String, u32>,
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets and line counts fit u32 because PhpLexer::extract enforces the 8 MiB input ceiling.")]
 pub(crate) fn extract(
     path: &str,
     src: &str,
@@ -158,6 +159,7 @@ impl Walker<'_> {
             .min(self.out.nodes[0].fact.lines[1])
             .max(1)
     }
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets and line counts fit u32 because PhpLexer::extract enforces the 8 MiB input ceiling.")]
     fn problem(&mut self, i: usize, reason: DiagnosticReason) {
         self.out.completion = Completion::Partial;
         if self.out.diagnostics.len() < LexedFile::MAX_DIAGNOSTICS {
@@ -187,17 +189,14 @@ impl Walker<'_> {
         };
         let count = self.ordinals.entry(name.clone()).or_default();
         *count += 1;
-        let id = match StableId::new(
+        let Ok(id) = StableId::new(
             NodeKind::Symbol,
             &self.out.path,
             Some(&name),
             (*count > 1).then_some(*count),
-        ) {
-            Ok(id) => id,
-            Err(_) => {
-                self.problem(item.first, DiagnosticReason::UnsupportedName);
-                return Ok(scope.clone());
-            }
+        ) else {
+            self.problem(item.first, DiagnosticReason::UnsupportedName);
+            return Ok(scope.clone());
         };
         let signature = normalize(&self.src[self.start(item.first)..item.sig_end]);
         let summary = self.doc_before(item.first).map_or_else(

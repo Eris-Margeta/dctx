@@ -36,7 +36,7 @@ fn php1_template_region_properties() {
         "<div>function decoy() { decoy_call(); }</div>\n",
     );
     assert_eq!(html.nodes.len(), 1);
-    assert!(html.references.is_empty());
+    assert_eq!(html.references, []);
 
     let source = r#"<?php
 $single = '?> function decoy_single() { single_call(); }';
@@ -159,7 +159,7 @@ function real(): void { real_call(); }
 fn php3_grouped_alias_scope_properties() {
     // Grouped aliases and trait adaptations already stay inside their namespace.
     // Not a defect; this pins the exact scoped records the blocks fixture omitted.
-    let source = r#"<?php
+    let source = r"<?php
 namespace One {
     use Foo\{
         Type as Shared,
@@ -187,7 +187,7 @@ namespace Two {
     };
     function live(): void { run(); outside(); }
 }
-"#;
+";
     let file = parse("aliases.php", source);
     assert_eq!(file.completion, Completion::Complete, "{:?}", file.diagnostics);
     assert_eq!(

@@ -33,10 +33,12 @@ pub(crate) struct Lexed {
 }
 
 impl Lexed {
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets and line counts fit u32 because PhpLexer::extract enforces the 8 MiB input ceiling.")]
     pub fn line(&self, byte: usize) -> u32 {
         self.lines.partition_point(|&start| start <= byte) as u32
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets and line counts fit u32 because PhpLexer::extract enforces the 8 MiB input ceiling.")]
     pub fn problem(&mut self, byte: usize, reason: DiagnosticReason) {
         if self.diagnostics.len() < 64 {
             self.diagnostics.push(Diagnostic {

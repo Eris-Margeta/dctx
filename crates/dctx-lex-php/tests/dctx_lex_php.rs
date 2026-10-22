@@ -16,6 +16,7 @@ fn parse(path: &str, bytes: &[u8]) -> LexedFile {
     PhpLexer::default().extract(path, bytes).unwrap()
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "This invariant helper only receives the fixed fixtures, their prefixes and fuzz inputs of at most 517 bytes.")]
 fn invariant(path: &str, bytes: &[u8], file: &LexedFile) {
     let source = std::str::from_utf8(bytes).unwrap();
     let lines = source.lines().count().max(1) as u32;
@@ -306,7 +307,7 @@ fn deterministic_fuzz_covers_arbitrary_bytes_and_php_token_noise() {
             state ^= state << 13;
             state ^= state >> 7;
             state ^= state << 17;
-            bytes.push(state as u8);
+            bytes.push(state.to_le_bytes()[0]);
         }
         match PhpLexer::default().extract("fuzz.inc", &bytes) {
             Ok(file) => invariant("fuzz.inc", &bytes, &file),

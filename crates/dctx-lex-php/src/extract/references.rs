@@ -91,13 +91,13 @@ impl Walker<'_> {
             }
             let alias = if self.is(i, "as") {
                 i += 1;
-                if self.kind(i) != Some(Kind::Ident) {
-                    self.problem(i, DiagnosticReason::Unrecognized);
-                    None
-                } else {
+                if self.kind(i) == Some(Kind::Ident) {
                     let value = self.text(i).to_string();
                     i += 1;
                     Some(value)
+                } else {
+                    self.problem(i, DiagnosticReason::Unrecognized);
+                    None
                 }
             } else {
                 None
