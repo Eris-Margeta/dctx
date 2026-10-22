@@ -49,12 +49,14 @@ impl<'a> PluginOps<'a> {
     }
 
     /// Supplies the platform adapter's confinement result for third-party enablement.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn with_confinement(mut self, confinement: Confinement) -> Self {
         self.confinement = confinement;
         self
     }
 
     /// Supplies last operation failures for the UI. Later entries take precedence.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn with_failures(mut self, failures: &'a [PluginFailure]) -> Self {
         self.failures = failures;
         self
@@ -62,6 +64,9 @@ impl<'a> PluginOps<'a> {
 
     /// Lists cached metadata and a synthetic bundled row without persisting it.
     /// A copied binary has the enabled preference and a needs-consent badge.
+    ///
+    /// # Errors
+    /// Propagates registry reads, bundled metadata decoding and plugin-view construction failures.
     pub fn list(&self) -> Result<Vec<PluginRow>, DesktopError> {
         let mut registry = self.distribution.registry()?;
         let catalog = dctx::bundled_git_plugin();
@@ -73,6 +78,7 @@ impl<'a> PluginOps<'a> {
     }
 
     /// Describes consent and update behavior without reading any port.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn help(&self) -> &'static str {
         "Bundled git is enabled by default; its disclosed grants require explicit consent. \
          Enable never grants consent. Disable persists through updates. \
@@ -81,6 +87,9 @@ impl<'a> PluginOps<'a> {
     }
 
     /// Enables using existing consent. Missing consent returns a needs-consent row without writes.
+    ///
+    /// # Errors
+    /// Refuses invalid or absent plugin identities and failed distribution enablement; propagates registry and view failures.
     pub fn enable(&self, raw_id: &str) -> Result<PluginRow, DesktopError> {
         let id = PluginId::parse(raw_id)?;
         let mut current = self.find(&id)?;
@@ -94,6 +103,9 @@ impl<'a> PluginOps<'a> {
 
     /// Persists a sticky user disable. Returns leased worker count for adapter cancellation.
     /// The adapter must stop those workers; this pure seam never starts or stops processes.
+    ///
+    /// # Errors
+    /// Refuses invalid or absent plugin identities and failed distribution persistence.
     pub fn disable(&self, raw_id: &str) -> Result<u32, DesktopError> {
         let id = PluginId::parse(raw_id)?;
         self.prepare_bundled(&id)?;
@@ -102,6 +114,9 @@ impl<'a> PluginOps<'a> {
 
     /// Explicitly approves the reviewed digest/grants/scope and enables it, as CLI --approve does.
     /// Approval is caller-supplied; this method never invents a grant or chooses a scope.
+    ///
+    /// # Errors
+    /// Refuses invalid/absent plugins, missing confinement or insufficient reviewed consent; propagates activation, enablement and registry failures.
     pub fn consent(&self, raw_id: &str, approval: &ConsentApproval) -> Result<PluginRow, DesktopError> {
         let id = PluginId::parse(raw_id)?;
         self.prepare_bundled(&id)?;
@@ -125,6 +140,9 @@ impl<'a> PluginOps<'a> {
 
     /// Checks the supplied verified index; never fetches, installs, activates or grants consent.
     /// Bundled entries report the containing-release path, matching CLI update --check.
+    ///
+    /// # Errors
+    /// Refuses invalid plugin identities or missing/untrusted/unselectable index entries and propagates registry reads.
     pub fn check_update(
         &self,
         raw_id: &str,

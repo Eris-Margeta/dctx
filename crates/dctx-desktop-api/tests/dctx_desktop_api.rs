@@ -22,7 +22,7 @@ struct TempDir {
 impl TempDir {
     fn new(label: &str) -> Self {
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_nanos());
         let path = std::env::temp_dir().join(format!("dctx-desktop-api-{label}-{n}-{nanos}"));
         fs::create_dir_all(&path).expect("temp");
         Self { path }
@@ -40,6 +40,7 @@ impl Drop for TempDir {
 }
 
 #[test]
+#[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
 fn oversized_directory_is_refused_and_a_smaller_limit_succeeds() {
     let root = TempDir::new("oversize");
     fs::write(root.path().join("one.txt"), b"one").expect("one");
@@ -51,7 +52,7 @@ fn oversized_directory_is_refused_and_a_smaller_limit_succeeds() {
     let refused = generate_snapshot(root.path(), &tight);
     assert!(!refused.success);
     assert!(!refused.is_formatted);
-    assert!(refused.output.is_empty());
+    assert_eq!(refused.output, "");
     assert_eq!(
         refused.error.as_deref(),
         Some("Directory too large: 3 files (limit: 2)\n\nPlease use filters or select a smaller directory.")
@@ -93,7 +94,7 @@ auto_copy_to_clipboard = maybe
 fn recent_projects_dedup_and_cap() {
     let root = TempDir::new("recent");
     let store = RecentStore::new(root.path().join("state"));
-    assert!(store.get().expect("empty").is_empty());
+    assert_eq!(store.get().expect("empty"), [] as [dctx_desktop_api::RecentProject; 0]);
 
     let first = root.path().join("proj");
     fs::create_dir(&first).expect("proj");
@@ -135,6 +136,7 @@ fn recent_projects_dedup_and_cap() {
 }
 
 #[test]
+#[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
 fn settings_save_load_round_trip() {
     let dir = TempDir::new("round");
     let cache = TempDir::new("cache");

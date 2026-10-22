@@ -44,32 +44,33 @@ pub struct SnapshotResponse {
 ///
 /// Rule files load first. Filters and the `.git` boundary sit on the source, so a
 /// content read happens only for a file the desktop selection still includes.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn generate_snapshot(root: &Path, config: &DesktopConfig) -> SnapshotResponse {
     if !root.exists() {
-        return refuse(DesktopError::PathMissing);
+        return refuse(&DesktopError::PathMissing);
     }
     let rules = match load_project_rules(root) {
         Ok(rules) => rules,
-        Err(error) => return refuse(error),
+        Err(error) => return refuse(&error),
     };
     let surveyed = match survey(root, config) {
         Ok(surveyed) => surveyed,
-        Err(error) => return refuse(error),
+        Err(error) => return refuse(&error),
     };
     let limit = u64::try_from(config.file_count_limit).unwrap_or(u64::MAX);
     if surveyed.files > limit {
-        return refuse(DesktopError::DirectoryTooLarge { files: surveyed.files, limit });
+        return refuse(&DesktopError::DirectoryTooLarge { files: surveyed.files, limit });
     }
     if config.has_active_filters() && surveyed.files > 0 && surveyed.included == 0 {
-        return refuse(DesktopError::AllFiltered);
+        return refuse(&DesktopError::AllFiltered);
     }
     match render(root, config, &rules) {
         Ok(output) => SnapshotResponse { success: true, output, error: None, is_formatted: true },
-        Err(error) => refuse(error),
+        Err(error) => refuse(&error),
     }
 }
 
-fn refuse(error: DesktopError) -> SnapshotResponse {
+fn refuse(error: &DesktopError) -> SnapshotResponse {
     SnapshotResponse { success: false, output: String::new(), error: Some(error.command_string()), is_formatted: false }
 }
 
@@ -124,7 +125,7 @@ mod tests {
         use std::sync::atomic::{AtomicU64, Ordering};
         static NEXT: AtomicU64 = AtomicU64::new(1);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+        let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
         let path = std::env::temp_dir().join(format!("dctx-desktop-api-snap-{label}-{n}-{nanos}"));
         fs::create_dir_all(&path).expect("temp");
         path
@@ -136,10 +137,11 @@ mod tests {
         assert!(!response.success);
         assert_eq!(response.error.as_deref(), Some("Path does not exist"));
         assert!(!response.is_formatted);
-        assert!(response.output.is_empty());
+        assert_eq!(response.output, "");
     }
 
     #[test]
+    #[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
     fn oversized_directory_is_refused_and_a_small_one_packs() {
         let root = scratch("size");
         fs::write(root.join("a.txt"), b"a").expect("a");
@@ -166,6 +168,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
     fn git_directory_is_not_opened_or_counted() {
         let root = scratch("git");
         fs::write(root.join("keep.txt"), b"keep").expect("keep");
@@ -192,6 +195,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
     fn extension_filter_refusal_has_a_matching_success() {
         let root = scratch("filter");
         fs::write(root.join("note.txt"), b"n").expect("note");
@@ -206,6 +210,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
     fn tree_only_uses_a_metadata_snapshot() {
         let root = scratch("tree");
         fs::write(root.join("keep.txt"), b"keep").expect("keep");

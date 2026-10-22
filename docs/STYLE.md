@@ -35,6 +35,17 @@ Documented exceptions:
 - `similar_names` for established scanner/output roles and related regression fixtures, `many_single_char_names` for the JavaScript score table's emitted/expected sets and matched/emitted/expected counts, and `fn_params_excessive_bools` for the Python fixture generator's independent f-string dimensions.
 - `case_sensitive_file_extension_comparisons` on checked-in JavaScript oracle fixture paths preserves their literal suffix selection. `naive_bytecount` on a bounded JavaScript error path uses standard iterators without adding a dependency.
 
+Additional scoped exceptions in the map, storage, template and desktop API crates:
+
+- `trivially_copy_pass_by_ref` for Serde field predicates and eight-byte envelope magic: the callback requires a reference, and codec inputs consistently borrow byte views.
+- `struct_excessive_bools` for independent ranking boosts and serialized desktop preferences: all combinations are meaningful, and the public input/configuration format stays stable.
+- `verbose_bit_mask` on canonical varint decoding: `0x7f` explicitly names the seven payload bits and matches the encoder.
+- Numeric casts retain explicit local bounds: 120/400-line source pages, a 40-row SQL limit, a 999-point degree boost, 8 MiB parser inputs and line counts clamped to `u32::MAX`. Floating ranking scores are rounded and clamped; desktop size thresholds reject non-finite/non-positive values, saturate at the upper boundary and intentionally truncate fractional bytes. Resolver duplicate ordinals use checked conversion and addition instead of narrowing silently.
+- `case_sensitive_file_extension_comparisons` preserves literal language-dispatch and privacy suffix policies; folding case would change which paths are parsed or denied.
+- `unnecessary_debug_formatting` preserves quoted, escaped corpus paths in test reports. `naive_bytecount` keeps renderer newline conventions and fixture checks on standard iterators without another dependency.
+- `field_reassign_with_default` keeps configuration regressions anchored to the public defaults and makes successive validation transitions explicit. `similar_names` retains codec/fixture role names. `too_many_lines` keeps graph transactions, source-ordered dispatches and their acceptance fixtures together.
+- Public value-taking publication/lease operations keep their ownership contracts. `implicit_hasher` preserves the v1 template replacement API and its documented default-hasher iteration contract.
+
 The workspace-wide pedantic cleanup is being landed in crate-sized batches. The command above is the house style gate; the current CI workflow still runs its existing `-D warnings` clippy command and tests. The full workspace includes the Tauri desktop app and needs its platform development libraries. A run with `--exclude dctx-desktop` is useful for the other crates but does not establish full-workspace acceptance.
 
 The current Linux cleanup excludes `dctx-desktop`, as CI does. Use `--workspace --exclude dctx-desktop` for both commands on that host; desktop validation needs its GLib/GObject/GIO development libraries. Keep the exclusion explicit in validation receipts and completion reports.

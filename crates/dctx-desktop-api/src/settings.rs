@@ -34,6 +34,7 @@ const EXTENSION_MAX_COUNT: usize = 64;
 /// The core `dctx` config stays with the caller. This struct is the desktop file only,
 /// which is the JSON shape `settings-manager.ts` reads.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[allow(clippy::struct_excessive_bools, reason = "These serialized public settings are independent user preferences and filters; replacing them with state enums would change the configuration format and API.")]
 pub struct DesktopConfig {
     /// Last directory the user opened.
     pub last_directory: Option<String>,
@@ -88,6 +89,7 @@ impl Default for DesktopConfig {
 
 impl DesktopConfig {
     /// True when the snapshot should apply the desktop filter predicates.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn has_active_filters(&self) -> bool {
         self.filter_extensions.as_ref().is_some_and(|ext| !ext.is_empty())
             || self.include_binary
@@ -100,11 +102,14 @@ impl DesktopConfig {
 
     /// Refuses a theme, window edge, file count, size or extension the desktop will not keep.
     ///
-    /// Theme is `system`, `light` or `dark`. Window edges are 1..=100_000. File count is
-    /// 100..=1_000_000. Sizes are finite, greater than 0 and at most 1_048_576, with min <= max.
+    /// Theme is `system`, `light` or `dark`. Window edges are `1..=100_000`. File count is
+    /// `100..=1_000_000`. Sizes are finite, greater than 0 and at most `1_048_576`, with min <= max.
     /// An extension is 1..=32 of `A-Za-z0-9_+-` and contains a letter or digit; at most 64.
     /// `only_empty` and `only_non_empty` together are refused. The error names the field and
     /// `enum`, `range` or `extension`, never the rejected value. This does not read the disk.
+    ///
+    /// # Errors
+    /// Refuses unknown themes, out-of-range dimensions/counts/sizes, malformed extensions or conflicting empty/non-empty filters.
     pub fn validate(&self) -> Result<(), DesktopError> {
         if !THEMES.contains(&self.theme.as_str()) {
             return Err(invalid_setting("theme", "enum"));
@@ -171,6 +176,9 @@ fn extension_ok(ext: &str) -> bool {
 }
 
 /// Creates the injected config and cache directories.
+///
+/// # Errors
+/// Returns the named config-directory or cache-directory creation failure.
 pub fn ensure_config_dirs(config_dir: &Path, cache_dir: &Path) -> Result<(), DesktopError> {
     fs::create_dir_all(config_dir)
         .map_err(|error| DesktopError::CreateDesktopConfigDir { detail: error.to_string() })?;
@@ -184,6 +192,7 @@ pub fn ensure_config_dirs(config_dir: &Path, cache_dir: &Path) -> Result<(), Des
 /// Blank lines, comments, unknown keys and values that do not parse are ignored.
 /// A file carrying the `dctx-desktop-settings-v2` mark unescapes quotes, newlines and backslashes.
 /// Older files keep the original unescaped parse.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn load_desktop_config(config_dir: &Path) -> DesktopConfig {
     let mut config = DesktopConfig::default();
     let path = config_dir.join(DESKTOP_CONFIG_FILENAME);
@@ -201,6 +210,9 @@ pub fn load_desktop_config(config_dir: &Path) -> DesktopConfig {
 ///
 /// Quoted strings escape quotes, newlines and backslashes, so a value cannot become another
 /// setting. This does not call [`DesktopConfig::validate`]; the native command does that.
+///
+/// # Errors
+/// Returns config-directory creation or configuration-file write failures.
 pub fn save_desktop_config(config_dir: &Path, config: &DesktopConfig) -> Result<(), DesktopError> {
     fs::create_dir_all(config_dir)
         .map_err(|error| DesktopError::CreateConfigDir { detail: error.to_string() })?;
@@ -210,6 +222,9 @@ pub fn save_desktop_config(config_dir: &Path, config: &DesktopConfig) -> Result<
 }
 
 /// Saves [`DesktopConfig::default`] into `config_dir`.
+///
+/// # Errors
+/// Propagates config-directory creation or configuration-file write failures from saving the defaults.
 pub fn reset_desktop_config(config_dir: &Path) -> Result<(), DesktopError> {
     save_desktop_config(config_dir, &DesktopConfig::default())
 }
@@ -316,7 +331,7 @@ fn unescape_setting(input: &str) -> String {
 
 fn push_unescaped(out: &mut String, next: Option<char>) {
     match next {
-        Some('\\') => out.push('\\'),
+        Some('\\') | None => out.push('\\'),
         Some('"') => out.push('"'),
         Some('n') => out.push('\n'),
         Some('r') => out.push('\r'),
@@ -325,7 +340,6 @@ fn push_unescaped(out: &mut String, next: Option<char>) {
             out.push('\\');
             out.push(other);
         }
-        None => out.push('\\'),
     }
 }
 
@@ -424,7 +438,7 @@ mod tests {
         use std::sync::atomic::{AtomicU64, Ordering};
         static NEXT: AtomicU64 = AtomicU64::new(1);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+        let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
         let path = std::env::temp_dir().join(format!("dctx-desktop-api-settings-{label}-{n}-{nanos}"));
         fs::create_dir_all(&path).expect("temp");
         path
@@ -454,6 +468,7 @@ file_count_limit = 42
     }
 
     #[test]
+    #[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
     fn save_load_and_reset_round_trip() {
         let dir = scratch("round");
         let mut config = DesktopConfig::default();

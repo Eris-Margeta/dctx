@@ -1,6 +1,6 @@
 //! Serializable plugin rows for the desktop (PLUGINS.md §7.3 PL-APP).
 //! Projects public distribution records and the facade's bundled catalog into display data.
-//! Depends on serde and distribution types; used by plugins_ops and later Tauri commands.
+//! Depends on serde and distribution types; used by `plugins_ops` and later Tauri commands.
 
 use dctx_plugin_distribution::{CapabilitySet, DistributionError, Document, Enablement, Origin, PluginId, PluginStatus, Registry};
 use serde::{Deserialize, Serialize};
@@ -58,6 +58,9 @@ pub struct PluginRow {
 impl PluginRow {
     /// Attaches lossless requested grants for explicit user-wide approval.
     /// Refuses a stale row rather than combining identity/version from different snapshots.
+    ///
+    /// # Errors
+    /// Refuses malformed consent JSON or plugin/capability identities and propagates registry consent-view failures.
     pub fn with_consent(mut self, registry: &Registry) -> Result<Self, crate::DesktopError> {
         self.consent = None;
         let id = PluginId::parse(&self.id)?;
@@ -151,7 +154,7 @@ pub(crate) fn capability_lines(capabilities: &CapabilitySet) -> Result<Vec<Strin
                 .iter()
                 .filter(|(key, _)| key.as_str() != "kind")
                 .map(|(key, value)| {
-                    let value = value.as_str().map(str::to_owned).unwrap_or_else(|| value.to_string());
+                    let value = value.as_str().map_or_else(|| value.to_string(), str::to_owned);
                     format!("{}: {value}", key.replace('_', " "))
                 })
                 .collect::<Vec<_>>()

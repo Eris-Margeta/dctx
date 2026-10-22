@@ -23,7 +23,7 @@ struct TempDir {
 impl TempDir {
     fn new(label: &str) -> Self {
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+        let nanos = SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_nanos());
         let path = std::env::temp_dir().join(format!("dctx-desktop-api-robust-{label}-{n}-{nanos}"));
         fs::create_dir_all(&path).expect("temp");
         Self { path }
@@ -44,6 +44,7 @@ impl Drop for TempDir {
 const INJECTED_EXTENSION: &str = "rs\"\nauto_copy_to_clipboard = true\n#";
 
 #[test]
+#[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
 fn injected_extension_cannot_flip_clipboard_and_plain_rs_round_trips() {
     let hostile_dir = TempDir::new("inject");
     let mut hostile = DesktopConfig::default();
@@ -70,6 +71,7 @@ fn injected_extension_cannot_flip_clipboard_and_plain_rs_round_trips() {
 }
 
 #[test]
+#[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
 fn path_quote_newline_and_backslash_round_trips_and_plain_path_does_too() {
     // Backslash + n, a quote, CR and LF. The line break must not become `min_size_mb`.
     let path = "C:\\new\\a\"\r\nmin_size_mb = 9\n#";

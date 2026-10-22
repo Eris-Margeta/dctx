@@ -1,7 +1,7 @@
 //! Public desktop plugin seam and catalog-to-distribution conversion.
 //! Implements PLUGINS.md §4, §5 and §7.3 PL-APP using public crate APIs only.
 //! Depends on the facade catalog, its typed records and the distribution state codec.
-//! Used by plugins_ops and the future Tauri adapter; no worker is executed.
+//! Used by `plugins_ops` and the future Tauri adapter; no worker is executed.
 
 use dctx_plugin_distribution::{
     domain::registry_codec, DistributionError, Document, InstalledVersion, PluginId, Sha256Hex,
@@ -36,6 +36,9 @@ impl From<DistributionError> for DesktopError {
 
 /// The bundled catalog represented as a distribution version, with exact requested grants.
 /// This is metadata only and grants no consent. It uses the same signer identity as the CLI.
+///
+/// # Errors
+/// Propagates invalid bundled metadata, capability-set or digest decoding errors.
 pub fn bundled_plugin_version() -> Result<InstalledVersion, DesktopError> {
     let catalog = dctx::bundled_git_plugin();
     let missing = DistributionError::IntegrityFailure;

@@ -113,6 +113,7 @@ pub enum DesktopError {
 
 impl DesktopError {
     /// The only string the Tauri command layer returns for this error.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn command_string(&self) -> String {
         match self {
             Self::PluginNeedsConsent => "Plugin needs-consent: explicit approval required".to_string(),

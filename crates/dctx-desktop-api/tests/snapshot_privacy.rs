@@ -12,7 +12,7 @@ use dctx_desktop_api::{generate_snapshot, DesktopConfig, SourceSpy, MAX_RULE_FIL
 fn scratch(label: &str) -> PathBuf {
     static NEXT: AtomicU64 = AtomicU64::new(1);
     let n = NEXT.fetch_add(1, Ordering::Relaxed);
-    let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+    let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
     let path = std::env::temp_dir().join(format!("dctx-desktop-privacy-{label}-{n}-{nanos}"));
     fs::create_dir_all(&path).expect("temp");
     path
@@ -41,6 +41,7 @@ fn finish(root: &PathBuf) {
 
 /// F01: extension, hidden, empty and size filters must exclude content reads.
 #[test]
+#[allow(clippy::field_reassign_with_default, reason = "Start each configuration regression from the public defaults and override only the settings relevant to its scenario; separate mutation steps also exercise validation transitions.")]
 fn desktop_filters_block_content_reads_and_keep_a_match() {
     let extensions = scratch("ext");
     fs::write(extensions.join("main.rs"), b"fn main() {}").expect("rs");

@@ -130,7 +130,7 @@ fn read_rule(root: &Path, name: &str) -> Result<Option<String>, DesktopError> {
     if !meta.is_file() {
         return Err(rule_error(name, "is not a regular file"));
     }
-    let file = open_nofollow(&path).map_err(|error| open_error(name, error))?;
+    let file = open_nofollow(&path).map_err(|error| open_error(name, &error))?;
     let opened = file.metadata().map_err(|error| io_error(name, &error))?;
     if !opened.is_file() {
         return Err(rule_error(name, "is not a regular file"));
@@ -212,12 +212,12 @@ fn io_error(name: &str, error: &std::io::Error) -> DesktopError {
     rule_error(name, &error.to_string())
 }
 
-fn open_error(name: &str, error: std::io::Error) -> DesktopError {
+fn open_error(name: &str, error: &std::io::Error) -> DesktopError {
     // Linux ELOOP is 40. macOS and the BSDs use 62.
     if matches!(error.raw_os_error(), Some(40 | 62)) {
         rule_error(name, "is a symlink")
     } else {
-        io_error(name, &error)
+        io_error(name, error)
     }
 }
 

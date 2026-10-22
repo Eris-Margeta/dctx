@@ -6,7 +6,7 @@ use dctx_desktop_api::{bundled_plugin_version, DesktopError, PluginFailure, Plug
 use dctx_plugin_distribution::{
     domain::registry_codec,
     fakes::{FakeNetwork, Fault, FixedClock, MemoryStore},
-    Confinement, ConsentApproval, ConsentScope, Distribution, DistributionError, Enablement, HttpsUrl, IndexEntry,
+    CapabilitySet, Confinement, ConsentApproval, ConsentScope, Distribution, DistributionError, Enablement, HttpsUrl, IndexEntry,
     IndexRelease, InstallPolicy, Origin, PluginId, Registry, Sha256Hex, Store, Target, TrustStore, VerifiedIndex,
     Version,
 };
@@ -159,7 +159,7 @@ fn third_party_install_is_inactive_until_explicit_consent_and_confinement() {
     assert_eq!(row.source, PluginSource::Installed);
     assert_eq!(row.state, PluginState::Disabled);
     assert!(!row.enabled && row.needs_consent);
-    assert!(!row.capabilities.is_empty());
+    assert_ne!(row.capabilities, [] as [std::string::String; 0]);
     let before = f.store.load_registry().unwrap();
     assert_eq!(f.ops().enable(id.as_str()).unwrap().state, PluginState::NeedsConsent);
     assert_eq!(
@@ -188,7 +188,7 @@ fn wrong_digest_or_insufficient_grants_never_approve_a_plugin() {
     bad.digest = Sha256Hex::from_bytes([9; 32]);
     assert_eq!(ops.consent(id.as_str(), &bad), Err(DesktopError::PluginNeedsConsent));
     bad = approval();
-    bad.capabilities = Default::default();
+    bad.capabilities = CapabilitySet::default();
     assert_eq!(ops.consent(id.as_str(), &bad), Err(DesktopError::PluginNeedsConsent));
     assert_eq!(before, f.store.load_registry().unwrap());
     assert_eq!(
@@ -230,7 +230,7 @@ fn list_help_and_update_checks_never_lock_write_or_fetch() {
     assert!(update.containing_release);
     assert_eq!(update.version, None);
     assert_eq!(before, f.store.load_registry().unwrap());
-    assert!(f.network.requests().is_empty());
+    assert_eq!(f.network.requests(), [] as [std::string::String; 0]);
     f.store.unlock(token);
     f.store.inject(Fault::SaveRegistry);
     f.ops().list().unwrap();
@@ -272,7 +272,7 @@ fn independent_update_check_uses_only_the_supplied_verified_index() {
         .check_update(id.as_str(), Some(&index), Some(&Version::parse("9.0.0").unwrap()))
         .is_err());
     assert_eq!(before, f.store.load_registry().unwrap());
-    assert!(f.network.requests().is_empty());
+    assert_eq!(f.network.requests(), [] as [std::string::String; 0]);
 }
 
 #[test]
@@ -330,7 +330,7 @@ fn review_payload_serializes_exact_identity_bounds_and_roundtrips_to_approval() 
         scope: ConsentScope::User,
     };
     assert_eq!(f.store.load_registry().unwrap(), None);
-    assert!(f.network.requests().is_empty());
+    assert_eq!(f.network.requests(), [] as [std::string::String; 0]);
     assert_eq!(f.ops().consent("dctx/git", &approval).unwrap().state, PluginState::Enabled);
 }
 

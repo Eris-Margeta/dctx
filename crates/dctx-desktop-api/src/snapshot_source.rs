@@ -57,21 +57,25 @@ impl SourceSpy {
     }
 
     /// Content-read paths, in order.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn reads(&self) -> Vec<String> {
         self.collect(|touch| touch.kind == TouchKind::Read)
     }
 
     /// True when any recorded call named `path` exactly.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn touched(&self, path: &str) -> bool {
         self.snapshot().iter().any(|touch| touch.path == path)
     }
 
     /// True when a recorded path has a `.git` component.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn git_touched(&self) -> bool {
         self.snapshot().iter().any(|touch| git_component(&touch.path))
     }
 
     /// Every recorded call, for assertion messages.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn paths(&self) -> Vec<String> {
         self.snapshot().iter().map(|touch| format!("{:?} {}", touch.kind, touch.path)).collect()
     }
@@ -81,7 +85,7 @@ impl SourceSpy {
     }
 
     fn snapshot(&self) -> Vec<Touch> {
-        self.touches.lock().unwrap_or_else(|error| error.into_inner()).clone()
+        self.touches.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 }
 
@@ -101,7 +105,7 @@ fn note(kind: TouchKind, path: &str) {
     let Some(spy) = spy else {
         return;
     };
-    spy.lock().unwrap_or_else(|error| error.into_inner()).push(Touch { kind, path: path.to_string() });
+    spy.lock().unwrap_or_else(std::sync::PoisonError::into_inner).push(Touch { kind, path: path.to_string() });
 }
 
 fn git_component(path: &str) -> bool {
@@ -215,7 +219,7 @@ impl<S: Source> SelectedSource<S> {
         let Ok(path) = dir.child(name) else {
             return false;
         };
-        let len = self.inner.metadata(&path).map(|meta| meta.size).unwrap_or(0);
+        let len = self.inner.metadata(&path).map_or(0, |meta| meta.size);
         size_visible(len, &self.config)
     }
 }
@@ -310,7 +314,7 @@ fn survey_dir(dir: &Path, depth: u32, admit: bool, config: &DesktopConfig, surve
         if name.is_empty() || name == "." || name == ".." || name == ".git" {
             continue;
         }
-        let is_dir = entry.file_type().map(|kind| kind.is_dir()).unwrap_or(false);
+        let is_dir = entry.file_type().is_ok_and(|kind| kind.is_dir());
         if excluded_by_builtin(name, is_dir) {
             continue;
         }
@@ -319,7 +323,7 @@ fn survey_dir(dir: &Path, depth: u32, admit: bool, config: &DesktopConfig, surve
             survey_dir(&entry.path(), depth.saturating_add(1), child_admit, config, survey)?;
         } else {
             survey.files = survey.files.saturating_add(1);
-            let len = entry.metadata().map(|meta| meta.len()).unwrap_or(0);
+            let len = entry.metadata().map_or(0, |meta| meta.len());
             if admit && file_visible(name, len, config) {
                 survey.included = survey.included.saturating_add(1);
             }
@@ -396,6 +400,7 @@ fn extension_of(file_name: &str) -> Option<&str> {
     None
 }
 
+#[allow(clippy::cast_precision_loss, clippy::cast_possible_truncation, clippy::cast_sign_loss, reason = "Non-finite and non-positive values return zero; values at the rounded u64 boundary saturate. Interior positive fractional byte thresholds intentionally truncate toward zero.")]
 fn mb_to_bytes(mb: f64) -> u64 {
     let bytes = mb * 1_048_576.0;
     if !bytes.is_finite() || bytes <= 0.0 {

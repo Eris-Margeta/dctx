@@ -1,6 +1,6 @@
 //! Recent projects: add, remove and get with dedup, newest-first order and a cap of 20.
 //! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4a and review F18, matching `recent_projects.rs`.
-//! Depends on [`crate::error::DesktopError`] and serde_json. The caller injects the storage directory and the timestamp.
+//! Depends on [`crate::error::DesktopError`] and `serde_json`. The caller injects the storage directory and the timestamp.
 //! Parse errors are `recent_parse` plus a bounded category. This module does not read a clock or a home directory.
 
 use std::fs;
@@ -47,6 +47,9 @@ impl RecentStore {
     }
 
     /// Loads the list. A missing file is an empty list.
+    ///
+    /// # Errors
+    /// Propagates storage-directory creation, recent-file read and JSON decoding errors; a missing file is an empty list.
     pub fn get(&self) -> Result<Vec<RecentProject>, DesktopError> {
         let path = self.file_path()?;
         if !path.exists() {
@@ -61,6 +64,9 @@ impl RecentStore {
     ///
     /// `accessed_at` is stored as given. An existing path keeps its name, updates the timestamp
     /// and increments `access_count`.
+    ///
+    /// # Errors
+    /// Refuses nonexistent paths and propagates recent-list loading, encoding and persistence failures.
     pub fn add(&self, path: &str, accessed_at: &str) -> Result<(), DesktopError> {
         if !Path::new(path).exists() {
             return Err(DesktopError::RecentPathMissing { path: path.to_string() });
@@ -85,6 +91,9 @@ impl RecentStore {
     }
 
     /// Drops the project whose path equals `path`.
+    ///
+    /// # Errors
+    /// Refuses absent recent entries and propagates recent-list loading and persistence failures.
     pub fn remove(&self, path: &str) -> Result<(), DesktopError> {
         let mut projects = self.get()?;
         let original = projects.len();
@@ -148,7 +157,7 @@ mod tests {
         use std::sync::atomic::{AtomicU64, Ordering};
         static NEXT: AtomicU64 = AtomicU64::new(1);
         let n = NEXT.fetch_add(1, Ordering::Relaxed);
-        let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0);
+        let nanos = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |d| d.as_nanos());
         let path = std::env::temp_dir().join(format!("dctx-desktop-api-recent-{label}-{n}-{nanos}"));
         fs::create_dir_all(&path).expect("temp");
         path
@@ -174,7 +183,7 @@ mod tests {
         fs::create_dir(&project).expect("project");
         let path = project.to_str().expect("utf8");
         let store = RecentStore::new(root.join("state"));
-        assert!(store.get().expect("empty").is_empty());
+        assert_eq!(store.get().expect("empty"), [] as [RecentProject; 0]);
         store.add(path, "2026-01-01T00:00:00Z").expect("first");
         store.add(path, "2026-01-02T00:00:00Z").expect("second");
         let listed = store.get().expect("listed");
@@ -183,7 +192,7 @@ mod tests {
         assert_eq!(listed[0].access_count, 2);
         assert_eq!(listed[0].last_accessed, "2026-01-02T00:00:00Z");
         store.remove(path).expect("remove");
-        assert!(store.get().expect("gone").is_empty());
+        assert_eq!(store.get().expect("gone"), [] as [RecentProject; 0]);
         let missing = store.remove(path).expect_err("missing");
         assert_eq!(missing.command_string(), format!("Project not found in recent list: {path}"));
         let _ = fs::remove_dir_all(&root);
