@@ -18,13 +18,12 @@ use super::javascript_references::references;
 pub(super) fn parse_pure(path: &str, bytes: &[u8]) -> Result<ParsedFile, ParseError> {
     let lexed = JsLexer::default()
         .extract(path, bytes)
-        .map_err(|error| map_error(path, error))?;
+        .map_err(|error| map_error(path, &error))?;
     if lexed.completion != Completion::Complete {
         let line = lexed
             .diagnostics
             .first()
-            .map(|diagnostic| diagnostic.line.max(1))
-            .unwrap_or(1);
+            .map_or(1, |diagnostic| diagnostic.line.max(1));
         return Err(ParseError::Syntax {
             path: path.into(),
             line,
@@ -53,14 +52,14 @@ pub(super) fn parse_pure(path: &str, bytes: &[u8]) -> Result<ParsedFile, ParseEr
     })
 }
 
-fn map_error(path: &str, error: LexError) -> ParseError {
+fn map_error(path: &str, error: &LexError) -> ParseError {
     match error {
-        LexError::InvalidId(error) => ParseError::InvalidId(error),
-        LexError::InvalidUtf8(error) => ParseError::InvalidUtf8(error),
+        LexError::InvalidId(error) => ParseError::InvalidId(*error),
+        LexError::InvalidUtf8(error) => ParseError::InvalidUtf8(*error),
         LexError::TooLarge { .. } | LexError::TooManyFacts { .. } => ParseError::TooLarge,
         LexError::TooDeep { line, .. } => ParseError::Syntax {
             path: path.into(),
-            line: line.max(1),
+            line: (*line).max(1),
         },
         LexError::UnsupportedDialect => ParseError::Syntax {
             path: path.into(),

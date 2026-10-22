@@ -163,7 +163,7 @@ mod tests {
         assert_eq!(parsed.nodes[0].kind, NodeKind::Module);
         assert_eq!(parsed.nodes[0].summary.text, "Script notes.");
         assert_eq!(parsed.precision.coverage(), Coverage::Opaque);
-        assert!(parsed.references.is_empty());
+        assert_eq!(parsed.references, [] as [crate::RawReference; 0]);
         assert!(PureParser.parse("empty.xyz", b"").is_ok());
     }
 

@@ -1,7 +1,7 @@
-//! C# facts from dctx-lex-cs for PureParser and the tree-sitter fallback.
+//! C# facts from dctx-lex-cs for `PureParser` and the tree-sitter fallback.
 //! Implements SPEC-MAP-MODE sections 5 and 6.2 and the PARSERS-v1 C# row.
 //! The lexer emits model nodes; this adapter copies nodes, edges and references.
-//! A partial or diagnostic result is ParseError::Syntax. LexError maps to ParseError.
+//! A partial or diagnostic result is `ParseError::Syntax`. `LexError` maps to `ParseError`.
 use super::facts::file_precision;
 use crate::{Language, ParseError, ParsedFile};
 use dctx_lex_cs::{Completion, CsLexer, LexError};
@@ -11,13 +11,12 @@ use dctx_map_model::{Completion as FileCompletion, Coverage};
 pub(super) fn parse_pure(path: &str, bytes: &[u8]) -> Result<ParsedFile, ParseError> {
     let lexed = CsLexer::default()
         .extract(path, bytes)
-        .map_err(|error| map_error(path, error))?;
+        .map_err(|error| map_error(path, &error))?;
     if lexed.completion != Completion::Complete || !lexed.diagnostics.is_empty() {
         let line = lexed
             .diagnostics
             .first()
-            .map(|diagnostic| diagnostic.line.max(1))
-            .unwrap_or(1);
+            .map_or(1, |diagnostic| diagnostic.line.max(1));
         return Err(ParseError::Syntax {
             path: path.into(),
             line,
@@ -58,14 +57,14 @@ pub(super) fn parse_pure(path: &str, bytes: &[u8]) -> Result<ParsedFile, ParseEr
     })
 }
 
-fn map_error(path: &str, error: LexError) -> ParseError {
+fn map_error(path: &str, error: &LexError) -> ParseError {
     match error {
-        LexError::InvalidId(error) => ParseError::InvalidId(error),
-        LexError::InvalidUtf8(error) => ParseError::InvalidUtf8(error),
+        LexError::InvalidId(error) => ParseError::InvalidId(*error),
+        LexError::InvalidUtf8(error) => ParseError::InvalidUtf8(*error),
         LexError::TooLarge { .. } | LexError::TooManyFacts { .. } => ParseError::TooLarge,
         LexError::TooDeep { line, .. } => ParseError::Syntax {
             path: path.into(),
-            line: line.max(1),
+            line: (*line).max(1),
         },
         LexError::UnsupportedDialect => ParseError::Syntax {
             path: path.into(),

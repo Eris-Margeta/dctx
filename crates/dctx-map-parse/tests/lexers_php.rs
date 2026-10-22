@@ -1,6 +1,6 @@
 //! PHP fixture facts through the Parser port, without executing source.
 //! Verifies SPEC-MAP-MODE sections 5 and 6.2: detection, precision and refusal.
-//! Every ParsedFile is checked for store ownership, unique ids and valid spans.
+//! Every `ParsedFile` is checked for store ownership, unique ids and valid spans.
 #![forbid(unsafe_code)]
 
 use dctx_map_model::{EdgeKind, NodeKind, SymbolKind};
@@ -10,8 +10,9 @@ use std::collections::BTreeSet;
 const PHP: &[u8] = include_bytes!("fixtures/sample.php");
 
 /// Mirrors store validation, including the indexer's structural-node insertion.
+#[allow(clippy::naive_bytecount, reason = "Standard iterator newline counts keep fixture and bounded 8 MiB corpus checks dependency-free; this is test validation rather than a parser hot path.")]
 fn assert_store_accepts(facts: &ParsedFile, source: &[u8]) {
-    let file_end = source.iter().filter(|byte| **byte == b'\n').count() as u32 + 1;
+    let file_end = u32::try_from(source.iter().filter(|byte| **byte == b'\n').count()).unwrap() + 1;
     let mut nodes = facts.nodes.clone();
     let again = facts
         .nodes
@@ -133,7 +134,7 @@ fn fixture_counts_precision_and_determinism() {
         assert_eq!(facts.references[0].alias, None);
         assert_eq!(facts.references[1].scope, "Box::run");
         assert_eq!(facts.references[1].src, facts.nodes[2].id);
-        assert!(facts.nodes[0].summary.text.is_empty());
+        assert_eq!(facts.nodes[0].summary.text, "");
         assert_eq!(facts.nodes[1].summary.text, "Runs a job.");
         assert_eq!(facts.nodes[1].symbol_kind, Some(SymbolKind::Class));
         assert_eq!(facts.nodes[2].symbol_kind, Some(SymbolKind::Method));
@@ -176,7 +177,7 @@ fn empty_templates_and_duplicate_declarations_remain_store_valid() {
     );
     assert_eq!(template.nodes.len(), 2);
     assert_eq!(template.nodes[1].name, "main");
-    assert!(template.references.is_empty());
+    assert_eq!(template.references, [] as [dctx_map_parse::RawReference; 0]);
     let duplicate = checked_parse("dup.inc", b"<?php function run() {}\nfunction run() {}\n");
     assert_eq!(duplicate.nodes[1].id.as_str(), "s:dup.inc#run");
     assert_eq!(duplicate.nodes[2].id.as_str(), "s:dup.inc#run~2");

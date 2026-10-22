@@ -207,6 +207,7 @@ struct Site {
     lines: [u32; 2],
 }
 
+#[allow(clippy::too_many_lines, reason = "Keep the source-ordered reference dispatch together with its shared scope and declaration state.")]
 fn references_of(extracted: &Extraction, source: &str, placed: &[Placed]) -> Vec<Site> {
     let mut sites = Vec::new();
     let mut seq = 0_u32;

@@ -37,8 +37,9 @@ fn assert_structural(facts: &ParsedFile, parser: &str) {
 /// Same checks as `dctx_map_store` `validate`, plus spans inside the file.
 /// Place and Package nodes are inserted again by the query indexer, so a file
 /// that already contains one fails the unique-id rule.
+#[allow(clippy::naive_bytecount, reason = "Standard iterator newline counts keep fixture and bounded 8 MiB corpus checks dependency-free; this is test validation rather than a parser hot path.")]
 fn assert_store_accepts(facts: &ParsedFile, source: &[u8]) {
-    let file_end = source.iter().filter(|byte| **byte == b'\n').count() as u32 + 1;
+    let file_end = u32::try_from(source.iter().filter(|byte| **byte == b'\n').count()).unwrap() + 1;
     let mut nodes = facts.nodes.clone();
     let again = facts
         .nodes

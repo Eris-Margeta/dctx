@@ -58,7 +58,7 @@ fn rust_fixture_has_the_exact_node_set() {
             ("s:src/support.rs#helper", Symbol, Some(Function)),
         ]
     );
-    assert!(support.references.is_empty());
+    assert_eq!(support.references, [] as [dctx_map_parse::RawReference; 0]);
 }
 
 #[test]

@@ -15,6 +15,7 @@ pub(super) struct Facts {
 }
 
 impl Facts {
+    #[allow(clippy::cast_possible_truncation, reason = "Both parser entry points cap source at 8 MiB before fact assembly, so its line count fits u32.")]
     pub fn new(
         path: &str,
         source: &str,

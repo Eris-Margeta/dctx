@@ -145,7 +145,7 @@ fn real_facts(path: &str) -> ParsedFile {
     assert_eq!(facts.edges.len(), 1);
     assert_eq!(facts.edges[0].kind, EdgeKind::Contains);
     assert_eq!(facts.edges[0].src, facts.nodes[0].id);
-    assert!(facts.references.is_empty());
+    assert_eq!(facts.references, [] as [dctx_map_parse::RawReference; 0]);
     facts
 }
 

@@ -104,6 +104,7 @@ impl Language {
     /// over the extension.
     /// Otherwise the text after the last `.` is folded and looked up in
     /// the supported extension table. A segment with no `.` is [`Language::Unknown`].
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn for_path(path: &str) -> Self {
         let base = path.rsplit(['/', '\\']).next().unwrap_or(path);
         if RUBY_BASENAMES.iter().any(|name| base.eq_ignore_ascii_case(name)) {
@@ -115,8 +116,7 @@ impl Language {
         EXTENSIONS
             .iter()
             .find(|(name, _)| *name == extension)
-            .map(|(_, language)| *language)
-            .unwrap_or(Self::Unknown)
+            .map_or(Self::Unknown, |(_, language)| *language)
     }
 }
 

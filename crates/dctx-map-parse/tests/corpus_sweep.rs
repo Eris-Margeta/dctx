@@ -1,8 +1,8 @@
 //! Opt-in, read-only robustness sweep over real source trees.
-//! Checks SPEC-MAP-MODE sections 5 and 6.2 through all PureParser adapters.
-//! Uses public parser records, std threads, and common_sweep's store checks.
-//! Run with DCTX_SWEEP_ROOTS and --ignored --nocapture; ordinary tests skip it.
-//! DCTX_SWEEP_LANGS limits parsing to report language names. DCTX_SWEEP_REFUSAL_BUDGET
+//! Checks SPEC-MAP-MODE sections 5 and 6.2 through all `PureParser` adapters.
+//! Uses public parser records, std threads, and `common_sweep`'s store checks.
+//! Run with `DCTX_SWEEP_ROOTS` and --ignored --nocapture; ordinary tests skip it.
+//! `DCTX_SWEEP_LANGS` limits parsing to report language names. `DCTX_SWEEP_REFUSAL_BUDGET`
 //! fails the run when a listed language refuses more files than its budget.
 #![forbid(unsafe_code)]
 
@@ -167,6 +167,7 @@ fn inspect_file(path: &str, source: &[u8], repeat: bool) -> FileReport {
     report
 }
 
+#[allow(clippy::unnecessary_debug_formatting, reason = "Debug formatting quotes and escapes arbitrary corpus paths so diagnostic records remain unambiguous, including paths with control characters.")]
 fn run_file(file: &CorpusFile, source: Vec<u8>, repeat: bool) -> Option<(FileReport, Duration)> {
     let parser_path = file.parser_path.clone();
     let (finished, completion) = mpsc::channel();
@@ -300,14 +301,13 @@ fn budget_failures(
         .collect()
 }
 
+#[allow(clippy::unnecessary_debug_formatting, reason = "Debug formatting quotes and escapes arbitrary corpus paths so diagnostic records remain unambiguous, including paths with control characters.")]
 fn print_table(reports: &BTreeMap<String, LanguageReport>, budgets: &BTreeMap<String, usize>) {
     println!("language | files | ok | refused | slowest file (wall seconds)");
     for (language, report) in reports {
         let slowest = report
             .slowest
-            .as_ref()
-            .map(|(elapsed, path)| format!("{path:?} ({:.3})", elapsed.as_secs_f64()))
-            .unwrap_or_else(|| "-".into());
+            .as_ref().map_or_else(|| "-".into(), |(elapsed, path)| format!("{path:?} ({:.3})", elapsed.as_secs_f64()));
         println!(
             "{language} | {} | {} | {} | {slowest}",
             report.files, report.ok, report.refused
@@ -327,6 +327,7 @@ fn print_table(reports: &BTreeMap<String, LanguageReport>, budgets: &BTreeMap<St
 
 #[test]
 #[ignore = "needs DCTX_SWEEP_ROOTS"]
+#[allow(clippy::too_many_lines, reason = "Keep the corpus traversal, refusal budgets and final report in one test so the acceptance sequence is visible together.")]
 fn corpus_sweep() {
     let Some(value) = std::env::var_os("DCTX_SWEEP_ROOTS").filter(|value| !value.is_empty()) else {
         println!("no roots");
@@ -479,7 +480,7 @@ fn sweep_lang_filter_and_refusal_budget_parse() {
     assert!(language_selected(Some(&ruby_and_c), "Ruby"));
     assert!(!language_selected(Some(&ruby_and_c), "Swift"));
     assert!(!language_selected(Some(&BTreeSet::new()), "Ruby"));
-    assert!(unknown_languages(ruby_and_c.iter().map(String::as_str)).is_empty());
+    assert_eq!(unknown_languages(ruby_and_c.iter().map(String::as_str)), [] as [&str; 0]);
     assert_eq!(
         unknown_languages(["Unknown", "Swift", "COBOL", "COBOL"]),
         vec!["COBOL", "Unknown"]
@@ -516,7 +517,7 @@ fn sweep_lang_filter_and_refusal_budget_parse() {
             .unwrap_err()
             .contains("duplicate")
     );
-    assert!(unknown_languages(budgets.keys().map(String::as_str)).is_empty());
+    assert_eq!(unknown_languages(budgets.keys().map(String::as_str)), [] as [&str; 0]);
 
     let mut reports = BTreeMap::new();
     reports.insert(
@@ -554,8 +555,8 @@ fn sweep_lang_filter_and_refusal_budget_parse() {
     );
     let mut within = budgets.clone();
     within.insert("C".to_owned(), 61);
-    assert!(budget_failures(&reports, &within).is_empty());
-    assert!(budget_failures(&reports, &BTreeMap::new()).is_empty());
+    assert_eq!(budget_failures(&reports, &within), [] as [std::string::String; 0]);
+    assert_eq!(budget_failures(&reports, &BTreeMap::new()), [] as [std::string::String; 0]);
     assert_eq!(
         format_budget_line("Swift", 0, 100),
         "BUDGET Swift refused=0 budget=100 ok"

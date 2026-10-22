@@ -21,7 +21,7 @@ proptest! {
             prop_assert_eq!(&original.nodes[1].id, &shifted.nodes[1].id);
             prop_assert_eq!(&original.nodes[1].fingerprint, &renamed.nodes[1].fingerprint);
             prop_assert_eq!(&original.references[0].src, &shifted.references[0].src);
-            prop_assert_eq!(original.nodes[1].lines[0] + blank_lines as u32, shifted.nodes[1].lines[0]);
+            prop_assert_eq!(original.nodes[1].lines[0] + u32::try_from(blank_lines).unwrap(), shifted.nodes[1].lines[0]);
         }
     }
 
@@ -35,7 +35,7 @@ proptest! {
             format!("{}{source}", "\n".repeat(blank_lines)).as_bytes()).unwrap();
         prop_assert_eq!(&original.nodes[1].id, &shifted.nodes[1].id);
         prop_assert_eq!(&original.nodes[1].fingerprint, &shifted.nodes[1].fingerprint);
-        prop_assert_eq!(original.nodes[1].lines[0] + blank_lines as u32, shifted.nodes[1].lines[0]);
+        prop_assert_eq!(original.nodes[1].lines[0] + u32::try_from(blank_lines).unwrap(), shifted.nodes[1].lines[0]);
         prop_assert_eq!(&original.references[0].src, &shifted.references[0].src);
     }
 
