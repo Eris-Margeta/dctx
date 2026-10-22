@@ -30,17 +30,25 @@ pub struct LoadedLedger {
 /// Durable image of a [`Lifecycle`]. The filesystem adapter writes it atomically.
 pub trait LedgerStore {
     /// Reads the committed ledger. Corrupt and unknown versions come back as `fault` plus an empty ledger.
+    /// # Errors
+    /// Propagates ledger I/O or invalid fallback quota errors; corrupt images are reported in `LoadedLedger::fault`.
     fn load(&self, empty_quota: Quota) -> Result<LoadedLedger, CacheError>;
 
     /// Replaces the committed ledger. A crash before the final rename keeps the previous image.
+    /// # Errors
+    /// Propagates lock, ledger encoding, staging, or atomic commit failures.
     fn store(&self, ledger: &Lifecycle) -> Result<(), CacheError>;
 }
 
 /// Reclaimed object bytes. Implementations must not follow a symlink out of the cache root.
 pub trait ObjectStore {
     /// Unlinks one reclaimed object. A missing file is success. A symlink is a refusal.
+    /// # Errors
+    /// Refuses unsafe paths or unlink failures; a missing object is accepted.
     fn unlink_object(&self, id: ObjectId) -> Result<(), CacheError>;
 
     /// Names on disk that `known` does not include. This does not delete them.
+    /// # Errors
+    /// Refuses unsafe cache paths or directory/metadata enumeration failures.
     fn orphans(&self, known: &BTreeSet<ObjectId>) -> Result<Vec<OrphanFile>, CacheError>;
 }

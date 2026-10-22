@@ -1,6 +1,6 @@
 //! Bounded scalar encoding and parsing for the ledger image.
 //! Implements CACHE-v1 ledger counts, text limits and typed corruption refusals.
-//! Depends on CacheError; restart and the domain map codecs use these primitives.
+//! Depends on `CacheError`; restart and the domain map codecs use these primitives.
 
 use crate::error::CacheError;
 

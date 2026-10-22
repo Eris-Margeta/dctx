@@ -79,6 +79,8 @@ pub struct FsLedgerStore {
 
 impl FsLedgerStore {
     /// `root` must already be a real directory. A symlink root is refused.
+    /// # Errors
+    /// Refuses an unsafe/non-directory cache root or filesystem metadata failures.
     pub fn open(root: &Path) -> Result<Self, CacheError> {
         Ok(Self {
             root: real_root(root)?,
@@ -94,11 +96,15 @@ impl FsLedgerStore {
     }
 
     /// Writes and syncs a unique temp file. The committed name is unchanged until [`Self::commit`].
+    /// # Errors
+    /// Propagates lock acquisition and ledger encoding/staging failures.
     pub fn stage(&self, ledger: &Lifecycle) -> Result<(), CacheError> {
         self.exclusive(|| self.stage_locked(ledger))
     }
 
     /// Renames this store's temp file over the committed ledger when the revision still matches.
+    /// # Errors
+    /// Propagates lock acquisition and durable ledger commit failures.
     pub fn commit(&self) -> Result<(), CacheError> {
         self.exclusive(|| self.commit_locked())
     }
@@ -108,7 +114,7 @@ impl FsLedgerStore {
         let path = self.fresh_temp()?;
         write_exclusive(&path, &bytes)?;
         let previous = {
-            let mut slot = self.staged.lock().unwrap_or_else(|err| err.into_inner());
+            let mut slot = self.staged.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
             slot.replace(Staged { path, revision: ledger.logical_revision() })
         };
         if let Some(previous) = previous {
@@ -156,6 +162,8 @@ impl FsLedgerStore {
     /// `body` returns `(value, commit)`. A false `commit` leaves the committed file unchanged.
     /// Public load and store each take this try-lock, and it is not reentrant, so a caller cannot span them.
     /// A different store that observed an older revision still fails with `stale ledger`.
+    /// # Errors
+    /// Returns `LedgerUpdateError::Cache` for locking/load/persistence faults, or `LedgerUpdateError::Body` for a rejected update.
     pub fn update<T, E>(
         &self,
         empty_quota: Quota,
@@ -257,7 +265,7 @@ impl FsLedgerStore {
     }
 
     fn staged_slot(&self) -> Option<Staged> {
-        self.staged.lock().unwrap_or_else(|err| err.into_inner()).clone()
+        self.staged.lock().unwrap_or_else(std::sync::PoisonError::into_inner).clone()
     }
 
     #[cfg(test)]
@@ -266,15 +274,15 @@ impl FsLedgerStore {
     }
 
     fn clear_staged(&self) {
-        *self.staged.lock().unwrap_or_else(|err| err.into_inner()) = None;
+        *self.staged.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = None;
     }
 
     fn observed(&self) -> Observed {
-        *self.observed.lock().unwrap_or_else(|err| err.into_inner())
+        *self.observed.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
     }
 
     fn set_observed(&self, observed: Observed) {
-        *self.observed.lock().unwrap_or_else(|err| err.into_inner()) = observed;
+        *self.observed.lock().unwrap_or_else(std::sync::PoisonError::into_inner) = observed;
     }
 }
 

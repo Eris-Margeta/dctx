@@ -73,6 +73,7 @@ pub struct Quota {
 
 impl Quota {
     /// CACHE-v1 product defaults.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn product_default() -> Self {
         Self {
             hard_cap: HARD_CAP_BYTES,
@@ -86,6 +87,7 @@ impl Quota {
     }
 
     /// A small quota with the same 3/4 and 3/5 ratios and no metadata reserve.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn scaled(hard: u64) -> Self {
         let mut soft = hard / 4 * 3;
         if soft == 0 {
@@ -107,6 +109,7 @@ impl Quota {
     }
 
     /// Replaces the three root ceilings. Global watermarks stay.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn with_ceilings(
         mut self,
         view: u64,
@@ -154,6 +157,7 @@ pub struct AutoCleanPolicy {
 
 impl AutoCleanPolicy {
     /// Product defaults: enabled, daily, the CACHE-v1 TTLs, and the 2 GiB cap.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn product_default() -> Self {
         Self {
             enabled: true,
@@ -167,6 +171,8 @@ impl AutoCleanPolicy {
     }
 
     /// Refuses a cap above the product hard cap. A lower cap is left for the ledger to apply.
+    /// # Errors
+    /// Refuses a system cap above the product hard cap.
     pub fn check(self) -> Result<(), CacheError> {
         if self.system_cap_bytes > HARD_CAP_BYTES {
             return Err(CacheError::InvalidRequest {
@@ -185,7 +191,7 @@ mod tests {
     fn product_figures_match_the_contract() {
         assert_eq!(HARD_CAP_BYTES, 2_147_483_648);
         assert_eq!(SOFT_WATERMARK_BYTES, 1_610_612_736);
-        assert_eq!(EVICTION_TARGET_BYTES, (12 * (1024u128 * 1024 * 1024) / 10) as u64);
+        assert_eq!(EVICTION_TARGET_BYTES, u64::try_from(12 * (1024u128 * 1024 * 1024) / 10).expect("fixture cap fits u64"));
         assert_eq!(ROOT_VIEW_CEILING_BYTES, 268_435_456);
         assert_eq!(ROOT_PREVIEW_CEILING_BYTES, 67_108_864);
         let quota = Quota::product_default();

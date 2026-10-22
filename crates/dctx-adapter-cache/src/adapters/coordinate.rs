@@ -10,6 +10,8 @@ use crate::ports::ObjectStore;
 use crate::{AutoCleanPolicy, ClockSample, MaintainReport};
 
 /// Runs one auto-clean slice. Unlink failures stay charged, are stored, and return an error.
+/// # Errors
+/// Propagates ledger lock/load/update, auto-clean policy/maintenance, persistence, or object-unlink failures.
 pub fn auto_clean(
     ledger: &FsLedgerStore,
     objects: &FsObjectStore,

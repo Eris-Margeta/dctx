@@ -75,6 +75,8 @@ pub(super) struct Pointer {
 
 impl Lifecycle {
     /// Takes the per-root writer lock.
+    /// # Errors
+    /// Refuses an unknown root or an already held writer.
     pub fn writer_acquire(
         &mut self,
         root: super::RootId,
@@ -96,6 +98,8 @@ impl Lifecycle {
     }
 
     /// Reserves the generation's byte budget. Refusal releases the lock and admits nothing.
+    /// # Errors
+    /// Refuses the wrong writer phase, disk-full state, quota exhaustion, or invalid reservation allocation.
     pub fn writer_reserve(
         &mut self,
         root: super::RootId,
@@ -122,6 +126,8 @@ impl Lifecycle {
     }
 
     /// Materialises a temp segment from the outstanding reservation.
+    /// # Errors
+    /// Refuses the wrong writer phase, bytes beyond the reservation, or exhausted object IDs.
     pub fn writer_stage_segment(
         &mut self,
         root: super::RootId,
@@ -137,6 +143,8 @@ impl Lifecycle {
     }
 
     /// Marks the temp segment complete. The pointer does not move.
+    /// # Errors
+    /// Refuses the wrong writer phase or a missing staged segment.
     pub fn writer_validate_segment(&mut self, root: super::RootId) -> Result<(), CacheError> {
         self.require_step(root, WriterStep::Staged)?;
         let Some(segment) = self.writers.get(&root).and_then(|writer| writer.segment) else {
@@ -155,6 +163,8 @@ impl Lifecycle {
     }
 
     /// Materialises the temp manifest. It stays invisible until swap.
+    /// # Errors
+    /// Refuses the wrong writer phase, invalid references, bytes beyond the reservation, or exhausted publication IDs.
     pub fn writer_stage_manifest(
         &mut self,
         root: super::RootId,
@@ -191,6 +201,8 @@ impl Lifecycle {
     }
 
     /// Marks the temp manifest complete. Swap is still required before readers can observe it.
+    /// # Errors
+    /// Refuses the wrong writer phase or a missing staged manifest.
     pub fn writer_validate_manifest(&mut self, root: super::RootId) -> Result<(), CacheError> {
         self.require_step(root, WriterStep::Manifest)?;
         let Some(object_id) = self.writers.get(&root).and_then(|writer| writer.manifest_object) else {
@@ -209,6 +221,8 @@ impl Lifecycle {
     }
 
     /// Atomic visibility point. Both objects must already be validated.
+    /// # Errors
+    /// Refuses the wrong writer phase, a missing generation/object, or unvalidated publication data.
     pub fn writer_swap(&mut self, root: super::RootId) -> Result<(), CacheError> {
         self.require_step(root, WriterStep::Ready)?;
         let generation = self
@@ -238,6 +252,8 @@ impl Lifecycle {
     }
 
     /// Releases the lock after a successful swap and returns unused reservation bytes.
+    /// # Errors
+    /// Refuses unless the writer has completed the pointer swap.
     pub fn writer_release(&mut self, root: super::RootId) -> Result<(), CacheError> {
         self.require_step(root, WriterStep::Swapped)?;
         let reservation = self.writers.get(&root).and_then(|writer| writer.reservation);
@@ -256,6 +272,8 @@ impl Lifecycle {
     }
 
     /// The session died. The lock stays dead until reconciliation sees the OS lock released.
+    /// # Errors
+    /// Refuses an absent writer or one that is not held.
     pub fn crash_writer(&mut self, root: super::RootId) -> Result<(), CacheError> {
         let Some(writer) = self.writers.get_mut(&root) else {
             return Err(CacheError::InvalidRequest { reason: "no writer" });
@@ -269,6 +287,7 @@ impl Lifecycle {
     }
 
     /// Lock phase for tests and status.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn writer_phase(&self, root: super::RootId) -> WriterPhase {
         match self.writers.get(&root).map(|writer| writer.lock) {
             Some(WriterLock::Held) => WriterPhase::Held,

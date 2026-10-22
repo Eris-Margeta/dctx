@@ -40,6 +40,7 @@ pub struct Buckets {
 
 impl Buckets {
     /// `C + Sg + R + P`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn admitted(self) -> u64 {
         self.committed
             .saturating_add(self.staged)
@@ -50,6 +51,7 @@ impl Buckets {
 
 /// One root's explainable usage. Shared bytes are also counted in every other sharing root.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools, reason = "These independent public ledger facts describe pinning, availability, expiry and maintenance without collapsing meaningful combinations.")]
 pub struct RootStatus {
     /// Registered id.
     pub id: RootId,
@@ -75,6 +77,7 @@ pub struct RootStatus {
 
 /// Point-in-time ledger report.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools, reason = "These independent public ledger facts describe pinning, availability, expiry and maintenance without collapsing meaningful combinations.")]
 pub struct Status {
     /// Configured hard cap.
     pub hard_cap: u64,
@@ -118,6 +121,7 @@ pub struct Status {
 
 impl Lifecycle {
     /// The four admission buckets.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn buckets(&self) -> Buckets {
         Buckets {
             committed: self.committed_bytes(),
@@ -128,11 +132,13 @@ impl Lifecycle {
     }
 
     /// True when legacy oversize has frozen growth.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn legacy_frozen(&self) -> bool {
         self.legacy_frozen
     }
 
     /// Status. This does not touch last-use or the cursor.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn status(&self) -> Status {
         let live = self.live_objects(true);
         let live_bytes = self.sum_iter(

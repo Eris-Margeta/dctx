@@ -136,6 +136,7 @@ impl Lifecycle {
         }
     }
 
+    #[allow(clippy::needless_pass_by_value, reason = "Applying a selected maintenance action consumes that plan step; keep ownership at the mutation boundary.")]
     fn apply_action(&mut self, action: Action, bypass: bool) -> u64 {
         match action {
             Action::Retire(id) => {
@@ -167,7 +168,7 @@ impl Lifecycle {
         let observed = object.unreachable_since.is_some() || object.retired_at.is_some();
         match state {
             Physical::PendingUnlink | Physical::Staged => {
-                let bytes = self.objects.get(&id).map(|object| object.bytes).unwrap_or(0);
+                let bytes = self.objects.get(&id).map_or(0, |object| object.bytes);
                 self.remove_object(id);
                 self.cursor_mark = id.raw().saturating_add(1);
                 bytes

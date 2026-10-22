@@ -28,6 +28,7 @@ pub struct FakeClock {
 
 impl FakeClock {
     /// Wall and monotonic origin, boot identity 1.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn at(wall_ms: u64) -> Self {
         Self { wall_ms, monotonic_ms: 0, boot_id: 1 }
     }
@@ -54,11 +55,13 @@ impl FakeClock {
     }
 
     /// The current boot identity.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn boot_id(&self) -> u64 {
         self.boot_id
     }
 
     /// A sample for [`super::Lifecycle::observe`].
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn sample(&self) -> ClockSample {
         ClockSample {
             wall: Timestamp(self.wall_ms),

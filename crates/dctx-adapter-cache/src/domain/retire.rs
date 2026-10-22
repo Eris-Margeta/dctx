@@ -94,7 +94,7 @@ impl Lifecycle {
             if !(due || over || pressure) {
                 continue;
             }
-            let rank = if due || over { 0 } else { 1 };
+            let rank = i32::from(!(due || over));
             rows.push((
                 rank,
                 manifest.last_use.0,
@@ -191,6 +191,8 @@ impl Lifecycle {
     }
 
     /// Drops the recovery pointer once the current generation is validated and the writer is idle.
+    /// # Errors
+    /// Refuses an unknown root ID.
     pub fn release_recovery(&mut self, root: RootId) -> Result<(), CacheError> {
         if !self.roots.contains_key(&root) {
             return Err(CacheError::InvalidRequest { reason: "unknown root" });
@@ -200,11 +202,14 @@ impl Lifecycle {
     }
 
     /// Generation the pointer names, if any.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn current_generation(&self, root: RootId) -> Option<GenerationId> {
         self.pointers.get(&root).and_then(|pointer| pointer.current)
     }
 
     /// Opens the current generation. Quarantine and revocation fail before any fact is served.
+    /// # Errors
+    /// Refuses unavailable, missing, quarantined, revoked, or incomplete current-generation data.
     pub fn open_current(&self, root: RootId) -> Result<GenerationId, CacheError> {
         let generation = self
             .current_generation(root)
@@ -231,6 +236,8 @@ impl Lifecycle {
     }
 
     /// Quarantines an object. Maintenance becomes due. The bytes stay until an explicit rebuild.
+    /// # Errors
+    /// Refuses an unknown object ID.
     pub fn note_incompatible(&mut self, id: ObjectId) -> Result<(), CacheError> {
         let Some(object) = self.objects.get_mut(&id) else {
             return Err(CacheError::InvalidRequest { reason: "unknown object" });
@@ -242,6 +249,8 @@ impl Lifecycle {
     }
 
     /// Stops serving a manifest immediately. Physical bytes stay while a pin or another root needs them.
+    /// # Errors
+    /// Refuses an unknown manifest ID.
     pub fn revoke_manifest(&mut self, id: super::ManifestId) -> Result<(), CacheError> {
         let Some(manifest) = self.manifests.get_mut(&id) else {
             return Err(CacheError::InvalidRequest { reason: "unknown manifest" });
@@ -252,6 +261,8 @@ impl Lifecycle {
     }
 
     /// Pins one manifest. The pin blocks LRU and expiry for that manifest only.
+    /// # Errors
+    /// Refuses an unknown manifest ID.
     pub fn pin_manifest(&mut self, id: super::ManifestId, pinned: bool) -> Result<(), CacheError> {
         let Some(manifest) = self.manifests.get_mut(&id) else {
             return Err(CacheError::InvalidRequest { reason: "unknown manifest" });

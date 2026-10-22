@@ -12,11 +12,15 @@ use std::collections::BTreeMap;
 
 impl Lifecycle {
     /// Inserts a fact charged once globally. `roots` is attribution, not a per-root ceiling charge.
+    /// # Errors
+    /// Refuses invalid roots, exhausted IDs, disk-full state, or quota exhaustion.
     pub fn insert_fact(&mut self, bytes: u64, roots: &[RootId]) -> Result<ObjectId, CacheError> {
         self.insert_payload(bytes, roots, ObjectKind::Fact, 0)
     }
 
     /// Inserts a segment. `dead_ppm` is parts per million of dead bytes, used only for compaction.
+    /// # Errors
+    /// Refuses invalid roots, exhausted IDs, disk-full state, or quota exhaustion.
     pub fn insert_segment(
         &mut self,
         bytes: u64,
@@ -27,6 +31,8 @@ impl Lifecycle {
     }
 
     /// Records an incomplete staged object with no writer. Startup reclaims it after 24 hours.
+    /// # Errors
+    /// Refuses disk-full state, quota exhaustion, or exhausted object/reservation IDs.
     pub fn load_staged(&mut self, bytes: u64, created_ms: u64) -> Result<ObjectId, CacheError> {
         if self.disk_full {
             return Err(CacheError::DiskFull);
@@ -87,6 +93,8 @@ impl Lifecycle {
     }
 
     /// Publishes a validated view generation that references `refs`.
+    /// # Errors
+    /// Refuses unknown roots, invalid references, disk/quota exhaustion, or exhausted publication IDs.
     pub fn publish_view(
         &mut self,
         root: RootId,
@@ -97,6 +105,8 @@ impl Lifecycle {
     }
 
     /// Publishes an overlay. Idle overlays expire after seven days.
+    /// # Errors
+    /// Refuses unknown roots, invalid references, disk/quota exhaustion, or exhausted publication IDs.
     pub fn publish_overlay(
         &mut self,
         root: RootId,
@@ -107,6 +117,8 @@ impl Lifecycle {
     }
 
     /// Publishes a pack snapshot. The third snapshot retires the oldest and sets `history_reset`.
+    /// # Errors
+    /// Refuses unknown roots, invalid references, disk/quota exhaustion, or exhausted publication IDs.
     pub fn publish_pack(
         &mut self,
         root: RootId,
@@ -117,6 +129,8 @@ impl Lifecycle {
     }
 
     /// Publishes a managed preview. At most two generations and the preview ceiling apply.
+    /// # Errors
+    /// Refuses unknown roots, invalid references, disk/quota exhaustion, or exhausted publication IDs.
     pub fn publish_preview(
         &mut self,
         root: RootId,

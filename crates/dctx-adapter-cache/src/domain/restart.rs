@@ -76,6 +76,8 @@ impl Lifecycle {
     }
 
     /// Canonical ledger file: magic, version, length, body, then a dctx-hash SHA-256.
+    /// # Errors
+    /// Refuses an oversized ledger, unencodable fields, or a checksum input above the hash length limit.
     pub fn encode_ledger(&self) -> Result<Vec<u8>, CacheError> {
         let body = self.encode_body()?;
         let len = u32::try_from(body.len()).map_err(|_| CacheError::InvalidRequest {
@@ -97,6 +99,8 @@ impl Lifecycle {
     }
 
     /// Reads [`Self::encode_ledger`]. A bad checksum is corrupt. A foreign version is unknown.
+    /// # Errors
+    /// Refuses unknown formats, malformed/truncated/oversized framing, checksum failures, or inconsistent ledger contents.
     pub fn decode_ledger(bytes: &[u8]) -> Result<Self, CacheError> {
         if bytes.len() < 12 || bytes[..8] != LEDGER_MAGIC[..] {
             return Err(corrupt("ledger magic"));

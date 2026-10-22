@@ -71,6 +71,7 @@ pub struct KnownExport {
 
 impl KnownExport {
     /// Ownership identity, when the evidence carries one.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn identity(&self) -> Option<u64> {
         match self.evidence {
             ExportEvidence::OwnedBinary { identity, .. }
@@ -183,6 +184,7 @@ pub fn classify_export(export: &KnownExport) -> Result<u64, LeaveReason> {
 
 impl Lifecycle {
     /// Read-only plan. Does not retire, unlink, touch last-use, or move the cursor.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn legacy_dry_run(&self, exports: &[KnownExport]) -> LegacyDryRun {
         let mut candidates = Vec::new();
         let mut left_alone = Vec::new();
@@ -204,6 +206,8 @@ impl Lifecycle {
     }
 
     /// Opts an already-classified candidate into the ownership manifest.
+    /// # Errors
+    /// Refuses exports that do not match the known legacy format and identity.
     pub fn adopt_legacy(&mut self, export: &KnownExport) -> Result<(), CacheError> {
         let identity = classify_export(export).map_err(|_| CacheError::InvalidRequest {
             reason: "export is not an owned legacy artifact",
@@ -214,6 +218,8 @@ impl Lifecycle {
     }
 
     /// Removes adopted records whose fresh evidence is still a candidate. Everything else stays.
+    /// # Errors
+    /// Currently returns `Ok`; refused selections are recorded in `LegacyApplyReport::untouched` rather than returned as errors.
     pub fn legacy_apply(
         &mut self,
         exports: &[KnownExport],
@@ -264,6 +270,7 @@ impl Lifecycle {
     }
 
     /// Labels adopted into the ownership manifest.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn adopted_labels(&self) -> Vec<String> {
         self.exports.keys().cloned().collect()
     }

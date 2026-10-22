@@ -39,6 +39,8 @@ pub struct PurgeReport {
 
 impl Lifecycle {
     /// Drops managed manifests in `scope`. Adopted exports are not manifests and stay.
+    /// # Errors
+    /// Refuses an applying purge without explicit confirmation; dry runs need no confirmation.
     pub fn purge(&mut self, request: PurgeRequest) -> Result<PurgeReport, CacheError> {
         if request.dry_run {
             return Ok(self.plan_purge(request.scope));
@@ -149,6 +151,7 @@ impl Lifecycle {
         }
     }
 
+    #[allow(clippy::unused_self, reason = "Keep purge-scope selection on Lifecycle alongside purge planning and application.")]
     fn in_purge(&self, root: RootId, scope: PurgeScope) -> bool {
         match scope {
             PurgeScope::All => true,

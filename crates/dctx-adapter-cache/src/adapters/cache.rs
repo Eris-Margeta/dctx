@@ -36,11 +36,15 @@ pub struct FsObjectStore {
 
 impl FsObjectStore {
     /// `root` must already be a real directory. A symlink root is refused.
+    /// # Errors
+    /// Refuses an unsafe/non-directory cache root or filesystem metadata failures.
     pub fn open(root: &Path) -> Result<Self, CacheError> {
         Ok(Self { root: real_root(root)? })
     }
 
     /// Publishes one object file. An existing object is never truncated.
+    /// # Errors
+    /// Refuses unsafe paths or directory/object write failures under the cache root.
     pub fn put_object(&self, raw: u64, bytes: &[u8]) -> Result<(), CacheError> {
         let dir = self.root.join("objects");
         ensure_dir(&dir)?;
@@ -52,6 +56,8 @@ impl FsObjectStore {
     }
 
     /// Unlinks `relative` only when every ancestor inside the root is a real directory.
+    /// # Errors
+    /// Refuses escaping/symlink/non-file paths or metadata/unlink failures; missing files are accepted.
     pub fn unlink_relative(&self, relative: &Path) -> Result<(), CacheError> {
         let Some(path) = locate(&self.root, relative)? else {
             return Ok(());

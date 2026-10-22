@@ -23,6 +23,8 @@ pub struct CompactOutcome {
 
 impl Lifecycle {
     /// Copies a segment, then retires unpinned inputs. Refuses before any write when the copy will not fit.
+    /// # Errors
+    /// Refuses unknown/non-segment/quarantined objects, disk/quota exhaustion, or invalid references/identity during compaction.
     pub fn compact_segment(&mut self, id: ObjectId) -> Result<CompactOutcome, CacheError> {
         let Some(object) = self.objects.get(&id) else {
             return Err(CacheError::InvalidRequest { reason: "unknown object" });
@@ -53,7 +55,7 @@ impl Lifecycle {
                 let Some(manifest) = self.manifests.get(manifest_id) else {
                     continue;
                 };
-                let bytes = self.objects.get(&manifest.object).map(|object| object.bytes).unwrap_or(0);
+                let bytes = self.objects.get(&manifest.object).map_or(0, |object| object.bytes);
                 copies.push((*manifest_id, manifest.root, manifest.kind, bytes));
             }
         }

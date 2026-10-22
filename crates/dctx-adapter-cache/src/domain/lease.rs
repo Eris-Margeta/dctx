@@ -28,6 +28,8 @@ pub(super) struct Lease {
 
 impl Lifecycle {
     /// Observes the current pointer. The lease does not protect bytes until confirm.
+    /// # Errors
+    /// Refuses unknown roots, unavailable generations, or exhausted lease IDs.
     pub fn reader_begin(
         &mut self,
         root: super::RootId,
@@ -51,6 +53,8 @@ impl Lifecycle {
     }
 
     /// Pins the observed generation when it is still complete. Otherwise the handshake aborts.
+    /// # Errors
+    /// Refuses unknown/nonacquiring leases or generations no longer retained.
     pub fn reader_confirm(&mut self, id: LeaseId) -> Result<GenerationId, CacheError> {
         let Some(lease) = self.leases.get(&id) else {
             return Err(CacheError::InvalidRequest { reason: "unknown lease" });
@@ -75,6 +79,8 @@ impl Lifecycle {
 
     /// Ends an active pin. A purge marked on this generation drops logical retention
     /// when no other lease still holds it. Physical bytes wait for a later sweep.
+    /// # Errors
+    /// Refuses an unknown lease ID.
     pub fn reader_release(&mut self, id: LeaseId) -> Result<(), CacheError> {
         let Some(lease) = self.leases.get(&id) else {
             return Err(CacheError::InvalidRequest { reason: "unknown lease" });

@@ -11,6 +11,7 @@ use dctx_core::budget::Reservation;
 
 impl Lifecycle {
     /// `C + Sg + R + P`. Shared facts are stored once, so they contribute once.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn admitted(&self) -> u64 {
         self.stored_bytes().saturating_add(self.reserved_bytes())
     }
@@ -46,6 +47,7 @@ impl Lifecycle {
     }
 
     /// P4: under the cap, or frozen with no staged growth and no new reservation.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn p4_holds(&self) -> bool {
         let admitted = self.admitted();
         if self.legacy_frozen {
@@ -110,6 +112,8 @@ impl Lifecycle {
     }
 
     /// Admits `bytes` against the global cap and, when `root` is set, that root's ceiling.
+    /// # Errors
+    /// Refuses empty reservations, unknown roots, quota exhaustion, or exhausted reservation IDs.
     pub fn reserve_for(
         &mut self,
         root: Option<super::RootId>,
@@ -147,6 +151,9 @@ impl Lifecycle {
     }
 
     /// Settles a rootless or rooted reservation. `used` bytes become a committed object.
+    /// # Errors
+    /// Refuses unknown reservations, usage above the held bytes, or exhausted object IDs.
+    #[allow(clippy::needless_pass_by_value, reason = "Settling a reservation consumes the public reservation token; preserve the ownership contract even when only its ID is read.")]
     pub fn commit_reservation(
         &mut self,
         reservation: Reservation,
@@ -166,13 +173,12 @@ impl Lifecycle {
             let roots: &[super::RootId] = &[];
             let charged_root = if matches!(class, ChargeClass::Global) { None } else { root };
             let kind = match purpose {
-                Purpose::Fact => ObjectKind::Fact,
+                Purpose::Fact | Purpose::Payload => ObjectKind::Fact,
                 Purpose::Segment => ObjectKind::Segment,
                 Purpose::Staging => ObjectKind::Staging,
                 Purpose::View | Purpose::Overlay | Purpose::Pack | Purpose::Preview => {
                     ObjectKind::Manifest
                 }
-                Purpose::Payload => ObjectKind::Fact,
             };
             self.spawn(Spawn {
                 bytes: used,
@@ -194,6 +200,7 @@ impl Lifecycle {
     }
 
     /// Drops the reservation and any staged objects still tied to it.
+    #[allow(clippy::needless_pass_by_value, reason = "Aborting a reservation consumes its public token and releases the hold; preserve that ownership contract.")]
     pub fn abort_reservation(&mut self, reservation: Reservation) {
         let id = reservation.id();
         let staged: Vec<super::ObjectId> = self
@@ -275,6 +282,8 @@ impl Lifecycle {
     }
 
     /// Records bytes that were already on disk above the cap. Later admissions freeze.
+    /// # Errors
+    /// Refuses empty records, frozen legacy admission, unsettled staging/reservations, or exhausted object IDs.
     pub fn observe_legacy_wal(&mut self, bytes: u64) -> Result<super::ObjectId, CacheError> {
         if bytes == 0 {
             return Err(CacheError::InvalidRequest { reason: "legacy record is empty" });
@@ -309,6 +318,8 @@ impl Lifecycle {
     }
 
     /// Drops one observed legacy wal object. Freeze lifts once the ledger fits again.
+    /// # Errors
+    /// Refuses unknown/nonlegacy objects or objects still retained by a live manifest/lease.
     pub fn reclaim_legacy(&mut self, id: super::ObjectId) -> Result<u64, CacheError> {
         let Some(object) = self.objects.get(&id) else {
             return Err(CacheError::InvalidRequest { reason: "unknown object" });
@@ -326,6 +337,8 @@ impl Lifecycle {
     }
 
     /// Lowers the hard cap. Growth freezes when committed bytes already sit above it.
+    /// # Errors
+    /// Refuses caps below emergency metadata or cap changes while staging/reservations are unsettled.
     pub fn set_hard_cap(&mut self, hard: u64) -> Result<(), CacheError> {
         if hard < self.quota.emergency_metadata {
             return Err(CacheError::InvalidRequest {

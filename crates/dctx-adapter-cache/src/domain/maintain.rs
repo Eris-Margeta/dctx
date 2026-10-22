@@ -10,6 +10,8 @@ pub use super::maintain_types::{GcRequest, MaintainReport, SliceBudget};
 
 impl Lifecycle {
     /// One startup slice when daily work, pressure, quarantine or abandoned staging is due.
+    /// # Errors
+    /// Propagates startup maintenance planning/execution failures.
     pub fn startup(
         &mut self,
         clock: super::ClockSample,
@@ -19,6 +21,8 @@ impl Lifecycle {
     }
 
     /// [`Self::startup`] with a host-supplied per-object cost so the 25 ms bound can be tested.
+    /// # Errors
+    /// Propagates maintenance planning/execution failures after reconciling process evidence.
     pub fn startup_with(
         &mut self,
         clock: super::ClockSample,
@@ -59,6 +63,8 @@ impl Lifecycle {
     }
 
     /// Explicit GC. Returns [`CacheError::Busy`] when a startup slice holds the lock.
+    /// # Errors
+    /// Refuses concurrent maintenance or an invalid/unexecutable collection request.
     pub fn gc(&mut self, request: GcRequest<'_>) -> Result<MaintainReport, CacheError> {
         if self.maintenance.is_some() {
             return Err(CacheError::Busy);
@@ -67,6 +73,8 @@ impl Lifecycle {
     }
 
     /// Runs GC on a copy so the caller's cursor, clock and bytes stay put.
+    /// # Errors
+    /// Propagates collection planning failures from the simulated ledger.
     pub fn plan_gc(&self, request: GcRequest<'_>) -> Result<MaintainReport, CacheError> {
         let mut copy = self.clone();
         copy.maintenance = None;
@@ -74,6 +82,8 @@ impl Lifecycle {
     }
 
     /// Holds the maintenance lock the way another session would. Startup then defers.
+    /// # Errors
+    /// Returns `CacheError::Busy` if maintenance is already held.
     pub fn hold_maintenance(&mut self, session: super::SessionId) -> Result<(), CacheError> {
         if self.maintenance.is_some() {
             return Err(CacheError::Busy);
@@ -85,6 +95,8 @@ impl Lifecycle {
 
     /// One bounded cleanup when `policy` is enabled and the interval has elapsed.
     /// A disabled policy does not touch the ledger. A system cap above the current hard cap is not applied.
+    /// # Errors
+    /// Refuses an invalid policy/cap transition or propagates maintenance planning/execution failures.
     pub fn auto_clean(
         &mut self,
         clock: super::ClockSample,
@@ -147,6 +159,8 @@ impl Lifecycle {
     }
 
     /// Releases a lock held by `session`.
+    /// # Errors
+    /// Refuses a session that does not hold the maintenance lock.
     pub fn release_maintenance(&mut self, session: super::SessionId) -> Result<(), CacheError> {
         match self.maintenance {
             Some(current) if current == session => {

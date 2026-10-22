@@ -71,6 +71,7 @@ pub enum CacheError {
 
 impl CacheError {
     /// Maps onto the stable port error. Pinned and pending stay in [`CacheError::CacheLimit`].
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn into_dctx(self) -> DctxError {
         match self {
             Self::CacheLimit { requested, available, .. } => {
@@ -79,13 +80,12 @@ impl CacheError {
             Self::Busy => DctxError::Busy,
             Self::Cancelled => DctxError::Cancelled,
             Self::InvalidRequest { reason } => DctxError::InvalidRequest { reason },
-            Self::CorruptIndex { reason } => DctxError::CorruptIndex { reason },
+            Self::CorruptIndex { reason } | Self::CorruptLedger { reason } => DctxError::CorruptIndex { reason },
             Self::PolicyDenied => DctxError::PolicyDenied,
             Self::DiskFull => DctxError::io("disk full"),
             Self::UnknownLedgerVersion { .. } => {
                 DctxError::CorruptIndex { reason: "unknown ledger version" }
             }
-            Self::CorruptLedger { reason } => DctxError::CorruptIndex { reason },
             Self::OutsideCacheRoot => {
                 DctxError::InvalidRequest { reason: "path escapes the cache root" }
             }

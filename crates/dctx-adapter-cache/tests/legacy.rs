@@ -76,7 +76,7 @@ fn legacy_dry_run_never_touches_unowned_exports() {
     assert!(life.adopt_legacy(&extension).is_err());
     assert_eq!(life.logical_revision(), revision);
     let refused = life.legacy_apply(&exports, &[9, 5, 8]).expect("apply");
-    assert!(refused.reclaimed.is_empty());
+    assert_eq!(refused.reclaimed, [] as [dctx_adapter_cache::ReclaimedExport; 0]);
     assert_eq!(life.touches(), 0);
     assert!(refused.untouched.iter().any(|row| row.reason == LeaveReason::NotAdopted));
     assert!(refused.untouched.iter().any(|row| row.reason == LeaveReason::Modified));
@@ -88,12 +88,12 @@ fn legacy_dry_run_never_touches_unowned_exports() {
     assert_eq!(applied.reclaimed.len(), 1);
     assert_eq!(applied.reclaimed[0].bytes, 12);
     assert_eq!(life.touches(), 1);
-    assert!(life.adopted_labels().is_empty());
+    assert_eq!(life.adopted_labels(), [] as [std::string::String; 0]);
 
     life.adopt_legacy(&registry).expect("adopt");
     let changed = KnownExport { evidence: ExportEvidence::Modified { identity: 9 }, ..registry };
     let stayed = life.legacy_apply(&[changed], &[9]).expect("apply");
-    assert!(stayed.reclaimed.is_empty());
+    assert_eq!(stayed.reclaimed, [] as [dctx_adapter_cache::ReclaimedExport; 0]);
     assert_eq!(stayed.untouched[0].reason, LeaveReason::Modified);
     assert_eq!(life.touches(), 1);
     assert_eq!(life.adopted_labels(), vec!["registry/cache.bin".to_string()]);

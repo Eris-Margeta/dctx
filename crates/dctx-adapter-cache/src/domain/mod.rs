@@ -1,6 +1,6 @@
 //! In-memory cache ledger: quotas, roots, objects, manifests, leases and cursors.
 //! Implements ARCHITECTURE-PROPOSAL §4, CACHE-v1 and the DX-A2 lifecycle model (P3, P4, P8).
-//! Depends on dctx-core timestamps and reservations. The facade drives startup, auto_clean, gc, status and purge.
+//! Depends on dctx-core timestamps and reservations. The facade drives startup, `auto_clean`, gc, status and purge.
 //! No daemon and no version-control identity. [`Lifecycle::encode_ledger`] is the versioned image of this state.
 
 mod clock;
@@ -185,6 +185,9 @@ pub(super) struct CleanTtl {
 
 impl Lifecycle {
     /// Empty ledger under `quota`. Watermarks must be ordered and the metadata reserve must fit.
+    /// # Errors
+    /// Refuses quota watermarks or ceilings that fail quota validation.
+    #[allow(clippy::needless_pass_by_value, reason = "Lifecycle construction takes ownership of the public quota configuration; preserve the existing value-taking API.")]
     pub fn new(quota: Quota) -> Result<Self, crate::error::CacheError> {
         quota.check()?;
         Ok(Self::open(quota))
@@ -226,6 +229,7 @@ impl Lifecycle {
     }
 
     /// Product defaults: 2 GiB cap, 1.5 GiB soft watermark, 1.2 GiB target.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn product_default() -> Self {
         Self::open(Quota::product_default())
     }
@@ -248,6 +252,8 @@ impl Lifecycle {
     }
 
     /// Registers a caller-opened root. A second registration of the same id is refused.
+    /// # Errors
+    /// Refuses an already registered root ID.
     pub fn register_root(&mut self, id: RootId) -> Result<(), crate::error::CacheError> {
         if self.roots.contains_key(&id) {
             return Err(crate::error::CacheError::InvalidRequest { reason: "root already registered" });
@@ -271,6 +277,8 @@ impl Lifecycle {
     }
 
     /// In-memory last use always moves. The persisted stamp moves at most once per five minutes.
+    /// # Errors
+    /// Refuses an unknown root ID.
     pub fn touch(&mut self, root: RootId) -> Result<(), crate::error::CacheError> {
         if !self.roots.contains_key(&root) {
             return Err(crate::error::CacheError::InvalidRequest { reason: "unknown root" });
@@ -300,6 +308,8 @@ impl Lifecycle {
     }
 
     /// An explicit pin opts out of expiry and LRU. It does not raise the hard cap.
+    /// # Errors
+    /// Refuses an unknown root ID.
     pub fn pin_root(&mut self, root: RootId, pinned: bool) -> Result<(), crate::error::CacheError> {
         let record = self.roots.get_mut(&root).ok_or(crate::error::CacheError::InvalidRequest {
             reason: "unknown root",
@@ -310,16 +320,22 @@ impl Lifecycle {
     }
 
     /// Records a missing root. A repeated probe does not restart the seven-day grace clock.
+    /// # Errors
+    /// Refuses an unknown root ID.
     pub fn note_missing(&mut self, root: RootId) -> Result<(), crate::error::CacheError> {
         self.mark_unavailable(root, false)
     }
 
     /// Records an offline or permission failure. Grace is shared with [`Self::note_missing`].
+    /// # Errors
+    /// Refuses an unknown root ID.
     pub fn note_offline(&mut self, root: RootId) -> Result<(), crate::error::CacheError> {
         self.mark_unavailable(root, true)
     }
 
     /// The root is reachable again. Grace ends.
+    /// # Errors
+    /// Refuses an unknown root ID.
     pub fn note_online(&mut self, root: RootId) -> Result<(), crate::error::CacheError> {
         let record = self.roots.get_mut(&root).ok_or(crate::error::CacheError::InvalidRequest {
             reason: "unknown root",
@@ -355,6 +371,7 @@ impl Lifecycle {
         self.logical_revision = self.logical_revision.saturating_add(1);
     }
 
+    #[allow(clippy::needless_pass_by_value, reason = "Object creation consumes an assembled Spawn record at the ledger mutation boundary.")]
     fn spawn(&mut self, spec: Spawn<'_>) -> Result<ObjectId, crate::error::CacheError> {
         let id = ObjectId::new(self.ids.object);
         self.ids.object = self.ids.object.checked_add(1).ok_or(
@@ -420,69 +437,79 @@ impl Lifecycle {
         }
     }
 
+    #[allow(clippy::unused_self, reason = "Keep saturating ledger accounting on Lifecycle beside the quota and reachability computations that use it.")]
     pub(super) fn sum_iter(&self, values: impl Iterator<Item = u64>) -> u64 {
-        values.fold(0u64, |acc, value| acc.saturating_add(value))
+        values.fold(0u64, u64::saturating_add)
     }
 
     /// Ledger revision. Dry-runs do not move it.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn logical_revision(&self) -> u64 {
         self.logical_revision
     }
 
     /// How many legacy apply removals have run.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn touches(&self) -> u64 {
         self.touches
     }
 
     /// Wall time the ledger is using. A rejected backward sample does not change this.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn wall(&self) -> Timestamp {
         self.wall
     }
 
     /// True after a backward wall sample.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn clock_fault(&self) -> bool {
         self.clock_fault
     }
 
     /// Boot identity last accepted by reconciliation.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn boot_id(&self) -> u64 {
         self.boot_id
     }
 
     /// True while a maintenance slice holds the non-blocking lock.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn maintenance_held(&self) -> bool {
         self.maintenance.is_some()
     }
 
     /// Cursor for the next startup sweep. Zero means the next pass starts at the first object.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn cursor(&self) -> u64 {
         self.cursor_mark
     }
 
     /// Objects currently in the ledger, in id order.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn object_ids(&self) -> BTreeSet<ObjectId> {
         self.objects.keys().copied().collect()
     }
 
     /// Wall time of the last auto-clean slice that ran. `None` until the first one.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn last_auto_clean(&self) -> Option<Timestamp> {
         self.last_auto_clean
     }
 
     pub(super) fn overlay_ttl(&self) -> u64 {
-        self.clean_ttl.map(|ttl| ttl.overlay).unwrap_or(quota::OVERLAY_TTL_MS)
+        self.clean_ttl.map_or(quota::OVERLAY_TTL_MS, |ttl| ttl.overlay)
     }
 
     pub(super) fn preview_ttl(&self) -> u64 {
-        self.clean_ttl.map(|ttl| ttl.preview).unwrap_or(quota::PREVIEW_TTL_MS)
+        self.clean_ttl.map_or(quota::PREVIEW_TTL_MS, |ttl| ttl.preview)
     }
 
     pub(super) fn root_ttl(&self) -> u64 {
-        self.clean_ttl.map(|ttl| ttl.root).unwrap_or(quota::ROOT_TTL_MS)
+        self.clean_ttl.map_or(quota::ROOT_TTL_MS, |ttl| ttl.root)
     }
 
     pub(super) fn staging_ttl(&self) -> u64 {
-        self.clean_ttl.map(|ttl| ttl.staging).unwrap_or(quota::STAGING_TTL_MS)
+        self.clean_ttl.map_or(quota::STAGING_TTL_MS, |ttl| ttl.staging)
     }
 
     pub(super) fn debug_check(&self) {
