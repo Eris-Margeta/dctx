@@ -21,6 +21,9 @@ pub struct RestrictedEntry {
 impl RestrictedEntry {
     /// Binds the expected supervising parent and a 16 MiB–1 GiB address-space ceiling.
     /// No total-runtime deadline is imposed; progress policy belongs to the host.
+    ///
+    /// # Errors
+    /// Returns a resource-limit error when the parent PID or the address-space ceiling is outside its supported range.
     pub fn new(parent: u32, memory_bytes: u64) -> Result<Self, PlatformError> {
         if parent <= 1
             || parent > i32::MAX as u32
@@ -82,6 +85,7 @@ fn bootstrap() -> Result<(), PlatformError> {
     Ok(())
 }
 
+#[allow(clippy::cast_possible_wrap, reason = "RestrictedEntry::new has already checked that the parent PID is in 2..=i32::MAX.")]
 fn lifecycle(entry: RestrictedEntry) -> Result<(), PlatformError> {
     let expected = rustix::process::Pid::from_raw(entry.parent as i32)
         .ok_or_else(|| unsupported(Unsupported::Lifecycle))?;
@@ -124,6 +128,9 @@ fn lifecycle(entry: RestrictedEntry) -> Result<(), PlatformError> {
 /// Requires complete ABI4 enforcement: older/disabled kernels fail rather than degrade.
 /// This irreversible primitive alone is NOT confinement (pre-opened FDs/UDP/exec remain).
 /// Use only in a disposable trusted process and exit on error, including partial setup.
+///
+/// # Errors
+/// Returns an unsupported Landlock error when complete ABI4 enforcement cannot be established, including partial setup.
 pub fn restrict_filesystem() -> Result<(), PlatformError> {
     let apply = || -> Result<_, landlock::RulesetError> {
         Ruleset::default()

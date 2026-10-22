@@ -56,6 +56,7 @@ pub enum PlatformError {
 
 impl PlatformError {
     /// Frozen protocol category; capability details remain host-side audit metadata.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn code(&self) -> ErrorCode {
         match self {
             Self::Unsupported(_) => ErrorCode::UnsupportedPlatform,

@@ -1,5 +1,5 @@
 //! Linux-only adversary operations for the trusted subprocess fixture.
-//! Each forbidden effect is attempted after run_restricted; success is a test failure.
+//! Each forbidden effect is attempted after `run_restricted`; success is a test failure.
 //! Depends on safe std/rustix APIs only; never executes arbitrary input as command text.
 
 use dctx_plugin_platform::linux::{RestrictedEntry, restrict_filesystem, run_restricted};
@@ -18,6 +18,7 @@ fn io_error(_: std::io::Error) -> PlatformError {
     PlatformError::Io
 }
 
+#[allow(clippy::too_many_lines, reason = "Keep the confinement probe effect-dispatch cases together so each forbidden syscall has one explicit test entry.")]
 pub(super) fn run() -> Result<(), PlatformError> {
     let args: Vec<_> = std::env::args().collect();
     let mode = args.get(1).ok_or(PlatformError::InvalidPath)?.clone();
@@ -63,9 +64,9 @@ pub(super) fn run() -> Result<(), PlatformError> {
     let parent =
         rustix::process::getppid().ok_or(PlatformError::Unsupported(Unsupported::Lifecycle))?;
     let parent = if mode == "wrong-parent" {
-        parent.as_raw_pid() as u32 + 1
+        u32::try_from(parent.as_raw_pid()).expect("positive parent PID") + 1
     } else {
-        parent.as_raw_pid() as u32
+        u32::try_from(parent.as_raw_pid()).expect("positive parent PID")
     };
     let entry = RestrictedEntry::new(parent, 256 * 1024 * 1024)?;
     run_restricted(entry, move || {

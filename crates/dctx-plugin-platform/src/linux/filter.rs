@@ -91,7 +91,7 @@ mod tests {
     fn policy_compiles_within_kernel_instruction_limit() {
         if cfg!(any(target_arch = "x86_64", target_arch = "aarch64")) {
             let program = compile().unwrap();
-            assert!(!program.is_empty());
+            assert_ne!(program, []);
             assert!(program.len() < 4096);
         } else {
             assert!(compile().is_err());

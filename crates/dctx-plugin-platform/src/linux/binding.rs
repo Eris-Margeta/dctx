@@ -21,6 +21,7 @@ pub struct ObjectIdentity {
 }
 
 impl ObjectIdentity {
+    #[allow(clippy::cast_possible_wrap, reason = "Linux stat nanosecond fields are in 0..1_000_000_000, which fits i64.")]
     fn checked(stat: &Stat) -> Result<Self, PlatformError> {
         if FileType::from_raw_mode(stat.st_mode) != FileType::RegularFile || stat.st_nlink != 1 {
             return Err(PlatformError::Conflict);
@@ -48,6 +49,9 @@ pub struct RootHandle {
 impl RootHandle {
     /// Binds the already authorized directory object. Caller establishes its project identity.
     /// No path lookup or ambient root discovery takes place here.
+    ///
+    /// # Errors
+    /// Returns an IO error if descriptor metadata cannot be read, or a conflict if the descriptor is not a directory.
     pub fn new(directory: File) -> Result<Self, PlatformError> {
         let stat = fstat(&directory).map_err(|_| PlatformError::Io)?;
         if FileType::from_raw_mode(stat.st_mode) != FileType::Directory {
@@ -82,6 +86,9 @@ impl RootHandle {
 
     /// Inspects an authorized name without opening a device for IO or reading source bytes.
     /// Rejects directories, symlinks, special objects and multiply linked files.
+    ///
+    /// # Errors
+    /// Refuses unavailable or unsupported path resolution, unsafe object kinds and conflicting links; propagates metadata IO failures.
     pub fn identity(&self, path: &RelativePath) -> Result<ObjectIdentity, PlatformError> {
         let object = self.open(path, OFlags::PATH)?;
         ObjectIdentity::checked(&fstat(&object).map_err(|_| PlatformError::Io)?)
@@ -90,6 +97,9 @@ impl RootHandle {
     /// Copies only an authorized object, checks the authorized digest, then seals the copy.
     /// The host must check selection/consent before this call and again before delivery.
     /// Metadata alone never authorizes an in-place edit; digest mismatch delivers no bytes.
+    ///
+    /// # Errors
+    /// Refuses changed identities, digest mismatches, oversized snapshots, unsupported resolution and IO or sealing failures.
     pub fn snapshot(
         &self,
         path: &RelativePath,
@@ -117,6 +127,9 @@ impl RootHandle {
 
     /// Refuses existing-file compare-and-replace before any write.
     /// renameat2 and advisory locks do not implement this contract against hostile writers.
+    ///
+    /// # Errors
+    /// Always returns the unsupported conditional-replace error before writing any bytes.
     pub fn replace(
         &self,
         _path: &RelativePath,

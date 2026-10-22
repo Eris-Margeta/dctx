@@ -76,7 +76,7 @@ fn restricted_computation_and_every_escape_run_in_distinct_processes() {
     for path in [&source, &home, &cache] {
         let result = run(command("read", path));
         assert_eq!(result.status.signal(), Some(31), "direct read: {result:?}");
-        assert!(result.stdout.is_empty());
+        assert_eq!(result.stdout, []);
     }
     let marker = dir.path().join("escape-marker");
     for mode in [
@@ -156,7 +156,7 @@ fn bootstrap_never_calls_body_with_secrets_files_or_wrong_parent() {
     ] {
         let result = run(request);
         assert_eq!(result.status.code(), Some(125), "{result:?}");
-        assert!(result.stdout.is_empty());
+        assert_eq!(result.stdout, []);
         assert!(!String::from_utf8_lossy(&result.stderr).contains("fixture-secret"));
     }
 }

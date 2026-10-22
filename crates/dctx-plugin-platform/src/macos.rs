@@ -8,6 +8,9 @@ use crate::{PlatformError, Unsupported};
 pub const DENY_ALL_PROFILE: &str = include_str!("../profiles/macos-deny-all.sb");
 
 /// Refuses launch on both macOS architectures; no unsafe FFI or deprecated helper fallback.
+///
+/// # Errors
+/// Always returns the unsupported Seatbelt error because no macOS provider is qualified.
 pub fn require_provider() -> Result<(), PlatformError> {
     Err(PlatformError::Unsupported(Unsupported::Seatbelt))
 }

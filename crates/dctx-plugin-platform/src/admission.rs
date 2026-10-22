@@ -1,5 +1,5 @@
 //! Platform admission gates, separate from installation and broker consent.
-//! Implements Lifecycle EnableOrRefuse and PP4; signatures never imply confinement.
+//! Implements Lifecycle `EnableOrRefuse` and PP4; signatures never imply confinement.
 //! Linux building blocks cannot mint a proven-launch disposition on their own.
 
 use crate::{PlatformError, Unsupported};
@@ -10,7 +10,7 @@ use std::process::Child;
 pub enum Target {
     /// Linux x86-64 GNU.
     LinuxX86_64,
-    /// Linux AArch64 GNU, independently qualified.
+    /// Linux `AArch64` GNU, independently qualified.
     LinuxAarch64,
     /// macOS Apple silicon.
     MacosAarch64,
@@ -24,6 +24,7 @@ pub enum Target {
 
 impl Target {
     /// Target compiled into this adapter; musl and other runtimes remain unqualified.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn current() -> Self {
         if cfg!(all(
             target_os = "linux",
@@ -77,8 +78,11 @@ pub struct Support {
 pub trait ConfinementProvider {
     /// Reports missing evidence before enablement or handshake.
     fn support(&self, kind: LaunchKind) -> Support;
-    /// Starts only a qualified confined worker, otherwise returns UnsupportedPlatform.
+    /// Starts only a qualified confined worker, otherwise returns `UnsupportedPlatform`.
     /// No pathname/argv escape hatch exists while launch is unsupported.
+    ///
+    /// # Errors
+    /// Refuses an unqualified platform or confinement profile and propagates worker-launch failures.
     fn launch(&self, kind: LaunchKind) -> Result<Child, PlatformError>;
 }
 

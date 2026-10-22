@@ -20,6 +20,7 @@ pub struct SealedSnapshot {
 }
 
 impl SealedSnapshot {
+    #[allow(clippy::cast_possible_truncation, reason = "The requested copy chunk is clamped to the 16 KiB stack buffer before converting to usize.")]
     pub(super) fn copy_checked(
         mut source: &File,
         digest: ContentDigest,
@@ -71,11 +72,15 @@ impl SealedSnapshot {
     }
 
     /// Exact digest and byte count of the immutable copy.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn digest(&self) -> ContentDigest {
         self.digest
     }
 
     /// Reads an independently positioned bounded chunk from the sealed bytes.
+    ///
+    /// # Errors
+    /// Returns a resource-limit error for overflow or an out-of-bounds range, or an IO error when reading the sealed file fails.
     pub fn read(&self, offset: u64, length: usize) -> Result<Vec<u8>, PlatformError> {
         let end = offset
             .checked_add(length as u64)

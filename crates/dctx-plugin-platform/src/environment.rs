@@ -15,6 +15,7 @@ impl NoSecretEnvironment {
     }
 
     /// Verifies the actual bootstrap environment before entry into restricted code.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_clean(self) -> bool {
         std::env::vars_os().all(|(key, value)| (key == "LANG" || key == "LC_ALL") && value == "C")
     }

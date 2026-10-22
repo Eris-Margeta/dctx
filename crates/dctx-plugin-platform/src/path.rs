@@ -11,6 +11,9 @@ pub struct RelativePath(String);
 impl RelativePath {
     /// Validates a bounded literal name. Unicode names are refused in this initial profile.
     /// The host separately rejects case-fold collisions across its resource declarations.
+    ///
+    /// # Errors
+    /// Returns an invalid-path error for empty, oversized, non-ASCII, reserved or ambiguous path components.
     pub fn new(value: &str) -> Result<Self, PlatformError> {
         if value.is_empty() || value.len() > 4096 || !value.is_ascii() {
             return Err(PlatformError::InvalidPath);
@@ -42,6 +45,7 @@ impl RelativePath {
     }
 
     /// The validated spelling; resolution still requires a retained root handle.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_str(&self) -> &str {
         &self.0
     }
