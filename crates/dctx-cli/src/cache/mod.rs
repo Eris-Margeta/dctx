@@ -38,6 +38,8 @@ pub struct CacheEnv<'a> {
 }
 
 /// Runs a cache command against the persisted ledger and prints the report.
+/// # Errors
+/// Returns command parsing, cache policy, ledger, maintenance, or filesystem failures as display text.
 pub fn run(args: &[String]) -> Result<(), String> {
     let report = run_in(args, None)?;
     if report.is_empty() {
@@ -51,6 +53,8 @@ pub fn run(args: &[String]) -> Result<(), String> {
 }
 
 /// Same as [`run`] for an explicit cache root. `None` uses [`host::cache_root_dir`].
+/// # Errors
+/// Returns command parsing, root/policy validation, ledger, maintenance, or filesystem failures as display text.
 pub fn run_in(args: &[String], root: Option<&Path>) -> Result<String, String> {
     let command = parse::parse(args)?;
     if matches!(command, Command::Help) {
@@ -313,7 +317,7 @@ mod tests {
         )
         .expect("apply");
         assert!(applied.contains("reclaimed_bytes: 12"));
-        assert!(life.adopted_labels().is_empty());
+        assert_eq!(life.adopted_labels(), [] as [std::string::String; 0]);
     }
 
     #[test]

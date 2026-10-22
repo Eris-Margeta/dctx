@@ -10,12 +10,16 @@ use dctx_template::to_bytes;
 use crate::host;
 
 /// Prints the result of `template build` or `template list`.
+/// # Errors
+/// Returns template command parsing, compilation, loading, or listing failures.
 pub fn run(args: &[String]) -> Result<(), String> {
     println!("{}", execute(args)?);
     Ok(())
 }
 
 /// Compiles or lists and returns the report. `--output` is the only write.
+/// # Errors
+/// Returns missing/unknown actions, invalid arguments, or template filesystem/compilation failures.
 pub fn execute(args: &[String]) -> Result<String, String> {
     if args.first().map(String::as_str) != Some("template") {
         return Err("expected template".to_string());
@@ -137,18 +141,24 @@ fn hex(bytes: &[u8]) -> String {
 }
 
 /// Facade session used by the TUI template actions. No home path is consulted.
+/// # Errors
+/// Returns template argument, source reading, compilation, or output persistence failures.
 pub fn build_path(path: &Path) -> Result<(), String> {
     println!("{}", execute(&["template".into(), "build".into(), path.display().to_string()])?);
     Ok(())
 }
 
 /// TUI list. It does not scan a home template directory.
+/// # Errors
+/// Returns template directory discovery or listing failures.
 pub fn list_default() -> Result<(), String> {
     println!("{}", execute(&["template".into(), "list".into()])?);
     Ok(())
 }
 
 /// Load the legacy default asset or a named compiled-v1 template from the legacy cache.
+/// # Errors
+/// Returns cache-path discovery, compiled template reading, or template decoding failures.
 pub fn legacy_template(name: &str) -> Result<dctx_template::Template, String> {
     if name == "default" {
         return Ok(dctx_template::Template::parse(include_str!("../../dctx-template/templates/default.dctx_template")));

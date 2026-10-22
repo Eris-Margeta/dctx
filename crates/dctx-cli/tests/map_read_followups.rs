@@ -6,6 +6,7 @@
 
 #![forbid(unsafe_code)]
 
+use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
@@ -153,7 +154,7 @@ fn lines_35_36_match_disk_lines() {
     let repo = Repository::new("lines");
     let mut body = String::new();
     for number in 1..=40 {
-        body.push_str(&format!("// L{number:02}\n"));
+        let _ = writeln!(body, "// L{number:02}");
     }
     fs::write(repo.repo().join("lines.rs"), &body).expect("source");
     let page = repo.run(&["map", "read", "m:lines.rs", "--lines", "35-36", "--json"]);
@@ -195,16 +196,13 @@ fn a_module_past_the_budget_returns_a_marked_prefix_and_the_rest_once() {
         let source = json_field(&page, "source_utf8").expect("source");
         let marked = source.contains("[DCTX_TRUNCATED]");
         seen.push_str(&without_mark(&source));
-        match json_field(&page, "next") {
-            Some(token) => {
-                assert!(marked, "{page}");
-                assert!(token.contains("|read|m:wide.rs|"), "{token}");
-                cursor = Some(token);
-            }
-            None => {
-                assert!(!marked, "{page}");
-                break;
-            }
+        if let Some(token) = json_field(&page, "next") {
+            assert!(marked, "{page}");
+            assert!(token.contains("|read|m:wide.rs|"), "{token}");
+            cursor = Some(token);
+        } else {
+            assert!(!marked, "{page}");
+            break;
         }
     }
     assert!(pages > 1, "the module fit in one page");

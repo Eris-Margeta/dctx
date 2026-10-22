@@ -34,6 +34,7 @@ pub struct MenuItem {
 }
 impl MenuItem {
     /// Creates a menu row by copying its label and description.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(key: char, label: &str, description: &str) -> Self {
         Self { key, label: label.to_string(), description: description.to_string() }
     }
@@ -50,6 +51,7 @@ pub struct Menu {
 }
 impl Menu {
     /// Creates an empty menu with the supplied title.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(title: &str) -> Self {
         Self { title: title.to_string(), items: Vec::new(), footer: None }
     }
@@ -119,15 +121,18 @@ pub struct MenuContext {
 }
 impl MenuContext {
     /// Creates context for a directory with no previous revision.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(current_dir: String) -> Self {
         Self { current_dir, last_version: None }
     }
     /// Sets the displayed snapshot revision.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn with_version(mut self, version: String) -> Self {
         self.last_version = Some(version);
         self
     }
     /// Formats the directory and revision labels for display.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn format(&self) -> String {
         format!(
             "Directory: {} | Last Snapshot: {}",
@@ -286,6 +291,7 @@ fn filters() {
     }
 }
 
+#[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss, reason = "Match the existing public filter conversion: truncate fractional bytes, map negatives/NaN to zero, and saturate overflow at u64::MAX.")]
 fn size_filter(filter: &mut FilterConfig) -> io::Result<()> {
     let input = get_input("Large (L) or Small (S) files?")?.to_lowercase();
     let large = matches!(input.as_str(), "l" | "large");

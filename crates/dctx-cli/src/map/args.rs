@@ -43,6 +43,7 @@ Examples:
   dctx map map m:crates/dctx-cli/src/lib.rs --cursor '<next from the previous page>'
 ";
 
+#[allow(clippy::too_many_lines, reason = "Keep this ordered command transaction or flag dispatch with its shared validation state and existing error ordering.")]
 pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     let verb = match args.first().map(String::as_str) {
         Some("map") => Verb::Map,
@@ -104,7 +105,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
                 }
             }
             "--depth" if matches!(verb, Verb::Map | Verb::Neighbors) => {
-                request.depth = number(value)?
+                request.depth = number(value)?;
             }
             "--limit" if matches!(verb, Verb::Map | Verb::Find | Verb::Neighbors | Verb::Explain | Verb::Read) => {
                 let limit = number(value)?;
@@ -114,7 +115,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
                 request.limit = limit;
             }
             "--offset" if matches!(verb, Verb::Map | Verb::Find | Verb::Neighbors) => {
-                request.offset = number(value)?
+                request.offset = number(value)?;
             }
             "--kind" if verb == Verb::Find => {
                 request.kinds = value.split(',').map(str::to_owned).collect();
@@ -145,7 +146,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
             }
             "--in" if verb == Verb::Find => request.within = Some(value.clone()),
             "--edge" if verb == Verb::Neighbors => {
-                request.edges = value.split(',').map(edge).collect::<Result<_, _>>()?
+                request.edges = value.split(',').map(edge).collect::<Result<_, _>>()?;
             }
             "--dir" if verb == Verb::Neighbors => {
                 request.direction = match value.as_str() {
@@ -206,7 +207,7 @@ fn edge(value: &str) -> Result<EdgeKind, String> {
 mod tests {
     use super::*;
     fn options(args: &[&str]) -> Result<Options, String> {
-        parse(&args.iter().map(|s| s.to_string()).collect::<Vec<_>>())
+        parse(&args.iter().map(std::string::ToString::to_string).collect::<Vec<_>>())
     }
     #[test]
     fn five_verbs_and_bounds() {

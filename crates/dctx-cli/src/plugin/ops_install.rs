@@ -20,10 +20,7 @@ pub(super) fn install_cmd(env: &mut Env<'_>, install: &Install, json: bool) -> O
                 Ok(index) => index,
                 Err(error) => return fail("install", &error, json),
             };
-            let entry = match index.entries.iter().find(|entry| entry.repository.eq_ignore_ascii_case(repository)) {
-                Some(entry) => entry,
-                None => return fail("install", &DistributionError::NotFound, json),
-            };
+            let Some(entry) = index.entries.iter().find(|entry| entry.repository.eq_ignore_ascii_case(repository)) else { return fail("install", &DistributionError::NotFound, json) };
             let parsed = match version.as_deref().map(Version::parse).transpose() {
                 Ok(version) => version,
                 Err(error) => return fail("install", &error, json),
@@ -49,10 +46,7 @@ pub(super) fn install_cmd(env: &mut Env<'_>, install: &Install, json: bool) -> O
             }
         }
         Install::File { path, id, enable, approve } => {
-            let bytes = match fs::read(Path::new(path)) {
-                Ok(bytes) => bytes,
-                Err(_) => return fail("install", &DistributionError::NotFound, json),
-            };
+            let Ok(bytes) = fs::read(Path::new(path)) else { return fail("install", &DistributionError::NotFound, json) };
             let parsed_id = match PluginId::parse(id) {
                 Ok(id) => id,
                 Err(error) => return fail("install", &error, json),

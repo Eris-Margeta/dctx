@@ -6,6 +6,7 @@
 
 #![forbid(unsafe_code)]
 
+use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
@@ -269,7 +270,7 @@ fn lines_35_36_match_disk_and_an_inner_symbol_range_is_not_shifted() {
     let repo = Repository::new("lines");
     let mut body = String::from("// L01\nfn inner() {\n    let kept_line = 1;\n    let next_line = 2;\n}\n");
     for number in 6..=40 {
-        body.push_str(&format!("// L{number:02}\n"));
+        let _ = writeln!(body, "// L{number:02}");
     }
     repo.write("lines.rs", &body);
     let page = repo.run(&["map", "read", "m:lines.rs", "--lines", "35-36", "--json"]);

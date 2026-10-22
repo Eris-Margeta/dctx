@@ -103,7 +103,7 @@ pub(super) fn is_bundled_selection(env: &Env<'_>, id: &PluginId) -> bool {
         return false;
     }
     match dist(env).registry() {
-        Ok(registry) => registry.get(id).map(|record| record.origin == Origin::Bundled).unwrap_or(true),
+        Ok(registry) => registry.get(id).is_none_or(|record| record.origin == Origin::Bundled),
         Err(_) => false,
     }
 }

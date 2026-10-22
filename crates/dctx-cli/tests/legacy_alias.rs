@@ -1,6 +1,6 @@
 //! Binary compatibility checks for D3-LEGACY-REMOVAL §5 D3-04.
 //! Each child receives a private HOME/XDG/cache and empty PATH; no Git is available.
-//! Pinned renderer fixtures are immutable oracles; timestamps come from std FileTimes.
+//! Pinned renderer fixtures are immutable oracles; timestamps come from std `FileTimes`.
 //! Clipboard probes supply only a fake clipboard executable and record its exact stdin.
 
 use dctx_pack::{decode_legacy, LegacyBodies, LegacyLimits};
@@ -393,7 +393,7 @@ fn template_failure_keeps_the_previous_export_and_state() {
     let text = case.text();
     let binary = fs::read(case.binary()).unwrap();
     assert!(contains(&text, b"alpha\n"));
-    assert!(!text.is_empty());
+    assert_ne!(text, [] as [u8; 0]);
 
     case.write("a.txt", b"beta-changed\n");
     case.config("default_template = 'missing'\n");

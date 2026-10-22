@@ -13,6 +13,7 @@ use plugin::UnsupportedTarget;
 use plugin::disk::target_for;
 
 #[test]
+#[allow(clippy::no_effect_underscore_binding, reason = "Type-check the linked worker entry without executing it during target-mapping tests.")]
 fn every_supported_triple_maps_to_its_manifest_target() {
     let _worker_entry = plugin::enter_worker;
     for (os, arch, env, expected) in [

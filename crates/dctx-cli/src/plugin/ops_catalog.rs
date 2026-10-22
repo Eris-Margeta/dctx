@@ -27,7 +27,7 @@ pub(super) fn search(env: &mut Env<'_>, query: &str, refresh: bool, json: bool) 
     };
     let age = env.index.fetched_at.map(|at| env.clock.now().saturating_sub(at));
     let hits: Vec<String> = index.search(query).iter().map(|entry| hit(entry)).collect();
-    let age_json = age.map(|age| age.to_string()).unwrap_or_else(|| "null".to_owned());
+    let age_json = age.map_or_else(|| "null".to_owned(), |age| age.to_string());
     done("search", json, env, |fields| {
         format!(
             "{fields},\"cache_age_secs\":{age_json},\"trust\":\"verified\",\"query\":{},\"hits\":[{}]",
@@ -38,7 +38,7 @@ pub(super) fn search(env: &mut Env<'_>, query: &str, refresh: bool, json: bool) 
 }
 
 pub(super) fn hit(entry: &dctx_plugin_distribution::IndexEntry) -> String {
-    let version = entry.releases.first().map(|release| release.version.as_str()).unwrap_or("");
+    let version = entry.releases.first().map_or("", |release| release.version.as_str());
     format!(
         "{{\"id\":{},\"repository\":{},\"summary\":{},\"version\":{}}}",
         render::json_string(entry.id.as_str()),

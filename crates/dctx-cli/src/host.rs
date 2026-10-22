@@ -60,11 +60,15 @@ pub struct AutoReport {
 }
 
 /// Ephemeral session with no source files. Template compile uses it.
+/// # Errors
+/// Returns session builder or storage/cache setup failures.
 pub fn open_memory() -> Result<Session, String> {
     build(MemorySource::new(), "memory", "default", RuleSources::default())
 }
 
 /// Opens `path` as a facade source with the product cache ceiling.
+/// # Errors
+/// Returns source-root, project-rule, session builder, or storage/cache setup failures.
 pub fn open_dir(path: &Path) -> Result<Session, String> {
     let (source, place, _) = open_source(path)?;
     let rules = project_rules(path)?;
@@ -76,11 +80,15 @@ pub fn open_dir(path: &Path) -> Result<Session, String> {
 /// An absolute cache root is attached when one can be created. A relative `DCTX_CACHE_DIR`,
 /// or a cache that will not open, falls back to an ephemeral session. Nothing is written
 /// inside the scanned project.
+/// # Errors
+/// Returns source-root, project-rule, managed-cache, or session setup failures.
 pub fn open_mapped(path: &Path) -> Result<(Session, String), String> {
     open_mapped_at(path, cache_root_dir().ok().as_deref())
 }
 
 /// Same map session with an explicit cache root, including isolated test caches.
+/// # Errors
+/// Returns source-root, project-rule, managed-cache, or session setup failures.
 pub fn open_mapped_at(path: &Path, root: Option<&Path>) -> Result<(Session, String), String> {
     let (source, place, key) = open_source(path)?;
     let rules = project_rules(path)?;
@@ -90,16 +98,14 @@ pub fn open_mapped_at(path: &Path, root: Option<&Path>) -> Result<(Session, Stri
     if ensure_cache_dir(root).is_err() {
         return Ok((build(source, &place, "default", rules)?, key));
     }
-    match build_cached(source, &place, root, rules.clone()) {
-        Ok(session) => Ok((session, key)),
-        Err(_) => {
-            let (source, place, key) = open_source(path)?;
-            Ok((build(source, &place, "default", rules)?, key))
-        }
+    if let Ok(session) = build_cached(source, &place, root, rules.clone()) { Ok((session, key)) } else {
+        let (source, place, key) = open_source(path)?;
+        Ok((build(source, &place, "default", rules)?, key))
     }
 }
 
 /// True when map should print whether the generation was reused. Set `DCTX_REUSE_REPORT=1`.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn reuse_report_enabled() -> bool {
     std::env::var("DCTX_REUSE_REPORT").ok().as_deref() == Some("1")
 }
@@ -140,6 +146,9 @@ pub enum SessionCacheCall {
 }
 
 /// Runs one cache operation on a fresh ephemeral session so the CLI calls the facade.
+/// # Errors
+/// Returns cache-session setup or collection/purge failures.
+#[allow(clippy::needless_pass_by_value, reason = "The public cache dispatcher consumes one command value; preserve its existing ownership contract.")]
 pub fn session_cache(call: SessionCacheCall) -> Result<CacheReport, String> {
     let mut session = build(MemorySource::new(), "cache", "status", RuleSources::default())?;
     match call {
@@ -152,6 +161,8 @@ pub fn session_cache(call: SessionCacheCall) -> Result<CacheReport, String> {
 }
 
 /// `DCTX_CACHE_DIR` when it is set, otherwise the platform cache directory.
+/// # Errors
+/// Returns an invalid explicit cache root or failure to determine a supported system cache path.
 pub fn cache_root_dir() -> Result<PathBuf, String> {
     if let Ok(raw) = std::env::var("DCTX_CACHE_DIR") {
         if !raw.is_empty() {
@@ -164,11 +175,13 @@ pub fn cache_root_dir() -> Result<PathBuf, String> {
 }
 
 /// True when this argv and `DCTX_AUTO_CLEAN` allow a piggy-back slice.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn auto_clean_allowed(args: &[String]) -> bool {
     auto_clean_enabled(args, std::env::var("DCTX_AUTO_CLEAN").ok().as_deref())
 }
 
 /// Pure form of [`auto_clean_allowed`]. `env_value` of `"0"` disables the slice.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn auto_clean_enabled(args: &[String], env_value: Option<&str>) -> bool {
     if args.iter().any(|arg| arg == "--no-auto-clean") {
         return false;
@@ -177,11 +190,14 @@ pub fn auto_clean_enabled(args: &[String], env_value: Option<&str>) -> bool {
 }
 
 /// Drops `--no-auto-clean` so command parsers keep their existing flag sets.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn without_auto_flag(args: Vec<String>) -> Vec<String> {
     args.into_iter().filter(|arg| arg != "--no-auto-clean").collect()
 }
 
 /// Creates the cache root when it is missing. A symlink root is refused.
+/// # Errors
+/// Refuses relative/unsafe/non-directory roots or directory creation/metadata failures.
 pub fn ensure_cache_dir(root: &Path) -> Result<(), String> {
     absolute_root(root)?;
     match fs::symlink_metadata(root) {
@@ -195,6 +211,8 @@ pub fn ensure_cache_dir(root: &Path) -> Result<(), String> {
 }
 
 /// Loads the facade ledger. A missing file is an empty product ledger. Corruption is returned.
+/// # Errors
+/// Returns cache-root, lock, ledger I/O, or invalid/corrupt ledger failures.
 pub fn load_ledger(root: &Path) -> Result<Lifecycle, String> {
     let store = FsLedgerStore::open(root).map_err(|error| error.to_string())?;
     read_opened(&store)
@@ -204,6 +222,8 @@ pub fn load_ledger(root: &Path) -> Result<Lifecycle, String> {
 /// A fresh store has not observed a committed revision, so an existing `ledger.v1` is `stale ledger`.
 /// A load-modify-store cycle must reuse the store that observed the revision,
 /// so stale writes can be refused.
+/// # Errors
+/// Returns cache-root, lock, ledger encoding, or durable persistence failures.
 pub fn store_ledger(root: &Path, life: &Lifecycle) -> Result<(), String> {
     debug_assert_eq!(LEDGER_FILE, dctx_adapter_cache::adapters::LEDGER_FILE);
     FsLedgerStore::open(root).and_then(|store| store.store(life)).map_err(|error| error.to_string())
@@ -229,6 +249,8 @@ fn read_opened(store: &FsLedgerStore) -> Result<Lifecycle, String> {
 }
 
 /// Reads `policy.v1`. A missing file is the product default.
+/// # Errors
+/// Returns unreadable or malformed cache policy errors; a missing policy uses defaults.
 pub fn load_policy(root: &Path) -> Result<CachePolicy, String> {
     let path = root.join(POLICY_FILE);
     match fs::read_to_string(&path) {
@@ -239,6 +261,8 @@ pub fn load_policy(root: &Path) -> Result<CachePolicy, String> {
 }
 
 /// Shows the policy, or stores a tightened one. A show does not create the file.
+/// # Errors
+/// Returns policy loading/validation, cap application, ledger, or policy persistence failures.
 pub fn configure(
     root: &Path,
     auto: Option<bool>,
@@ -265,6 +289,8 @@ pub fn configure(
 }
 
 /// Last slice, recorded reclaim and the next due time. This does not run a slice.
+/// # Errors
+/// Returns policy or ledger loading failures.
 pub fn auto_report(root: &Path) -> Result<AutoReport, String> {
     let policy = load_policy(root)?;
     let last = load_ledger(root)?.last_auto_clean().map(|stamp| stamp.0);
@@ -291,6 +317,8 @@ pub fn piggyback_auto_clean() {
 
 /// Runs auto-clean at `root` when `allow` and the persisted policy are both on.
 /// Returns bytes reclaimed by this open. Zero when the slice is disabled or not due.
+/// # Errors
+/// Returns cache-root, policy, ledger, auto-clean/session, or policy persistence failures.
 pub fn piggyback_at(root: &Path, allow: bool) -> Result<u64, String> {
     if !allow {
         return Ok(0);
@@ -493,7 +521,7 @@ fn build_cached(
     root: &Path,
     rules: RuleSources,
 ) -> Result<Session, String> {
-    let mut policy = load_policy(root).map(|item| item.auto).unwrap_or_else(|_| AutoCleanConfig::default());
+    let mut policy = load_policy(root).map_or_else(|_| AutoCleanConfig::default(), |item| item.auto);
     let env_off = std::env::var("DCTX_AUTO_CLEAN").ok().as_deref() == Some("0");
     if !MAP_AUTO_CLEAN.load(Ordering::Relaxed) || env_off {
         policy.enabled = false;
@@ -741,11 +769,11 @@ fn rewrite_nested_line(prefix: &str, line: &str) -> String {
 }
 
 /// Unix milliseconds for the injected clock. The facade does not read the clock itself.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn unix_millis() -> u64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|duration| u64::try_from(duration.as_millis()).unwrap_or(u64::MAX))
-        .unwrap_or(0)
+        .map_or(0, |duration| u64::try_from(duration.as_millis()).unwrap_or(u64::MAX))
 }
 
 #[cfg(test)]
@@ -857,15 +885,6 @@ mod tests {
     #[cfg(unix)]
     #[test]
     fn an_ignored_unreadable_directory_is_not_listed() {
-        use std::os::unix::fs::PermissionsExt;
-        let root = scratch("ignored-corpus");
-        fs::write(root.join(".gitignore"), "/corpus/\n").expect("ignore");
-        let corpus = root.join("corpus");
-        fs::create_dir(&corpus).expect("corpus");
-        fs::write(corpus.join("ready.json"), b"{}\n").expect("ready");
-        let mut perms = fs::metadata(&corpus).expect("meta").permissions();
-        perms.set_mode(0o0);
-        fs::set_permissions(&corpus, perms).expect("chmod");
         struct Restore(PathBuf);
         impl Drop for Restore {
             fn drop(&mut self) {
@@ -877,6 +896,15 @@ mod tests {
                 let _ = fs::set_permissions(&self.0, perms);
             }
         }
+        use std::os::unix::fs::PermissionsExt;
+        let root = scratch("ignored-corpus");
+        fs::write(root.join(".gitignore"), "/corpus/\n").expect("ignore");
+        let corpus = root.join("corpus");
+        fs::create_dir(&corpus).expect("corpus");
+        fs::write(corpus.join("ready.json"), b"{}\n").expect("ready");
+        let mut perms = fs::metadata(&corpus).expect("meta").permissions();
+        perms.set_mode(0o0);
+        fs::set_permissions(&corpus, perms).expect("chmod");
         {
             let _restore = Restore(corpus);
             let text = local_ignore_text(&root, None).expect("rules").expect("text");

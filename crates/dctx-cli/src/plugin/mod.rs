@@ -146,7 +146,7 @@ pub(crate) fn outcome_at(
         Ok(target) => target,
         Err(error) => {
             let command = if args.get(1).is_some_and(|arg| arg == "plugin") {
-                args.get(2).map(String::as_str).unwrap_or("plugin")
+                args.get(2).map_or("plugin", String::as_str)
             } else { "git" };
             let body = if request.json {
                 format!(

@@ -96,7 +96,7 @@ fn count_line(stderr: &str, label: &str) -> u64 {
 }
 
 fn payload(stdout: &str) -> &str {
-    stdout.rfind("pack bytes=").map(|pos| &stdout[..pos]).unwrap_or_else(|| panic!("status line in {stdout}"))
+    stdout.rfind("pack bytes=").map_or_else(|| panic!("status line in {stdout}"), |pos| &stdout[..pos])
 }
 
 fn file_paths(page: &str) -> BTreeSet<String> {
@@ -162,6 +162,7 @@ fn ignored_files_stay_unread_until_opt_in_and_a_rule_edit_rebuilds() {
 }
 
 #[test]
+#[allow(clippy::case_sensitive_file_extension_comparisons, reason = "The export fixture selects literal lowercase .txt paths; folding case would change the fixture policy.")]
 fn pack_ext_opens_only_rust_files_and_matches_the_filtered_page() {
     let repo = Repository::new();
     let place = repo.repo().to_string_lossy().into_owned();

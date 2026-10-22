@@ -44,7 +44,7 @@ use dctx_plugin_distribution::{LockToken, SafeFileName, Store};
 pub struct SystemClock;
 
 impl Clock for SystemClock {
-    fn now(&self) -> u64 { SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_secs()).unwrap_or(0) }
+    fn now(&self) -> u64 { SystemTime::now().duration_since(UNIX_EPOCH).map_or(0, |d| d.as_secs()) }
 }
 
 /// Network port that never connects. TLS is a separate reviewed adapter.
@@ -86,12 +86,12 @@ pub(crate) fn target_for(os: &str, arch: &str, env: &str) -> Result<Target, supe
 /// `DCTX_PLUGIN_ROOT`, or the platform config directory. Does not create it.
 pub fn default_root() -> PathBuf {
     if let Some(root) = std::env::var_os("DCTX_PLUGIN_ROOT") { return PathBuf::from(root); }
-    let home = std::env::var_os("HOME").map(PathBuf::from).unwrap_or_else(|| PathBuf::from("."));
+    let home = std::env::var_os("HOME").map_or_else(|| PathBuf::from("."), PathBuf::from);
     match std::env::consts::OS {
         "macos" => home.join("Library/Application Support/dctx/plugin-config"),
         "windows" => std::env::var_os("APPDATA").map(PathBuf::from).unwrap_or(home).join("dctx").join("Plugins"),
         _ => {
-            let config = std::env::var_os("XDG_CONFIG_HOME").map(PathBuf::from).unwrap_or_else(|| home.join(".config"));
+            let config = std::env::var_os("XDG_CONFIG_HOME").map_or_else(|| home.join(".config"), PathBuf::from);
             config.join("dctx").join("plugins")
         }
     }
@@ -135,6 +135,7 @@ impl FsStore {
         { let _ = create; Err(io::Error::other("native store semantics are not qualified")) }
     }
 
+    #[allow(clippy::unused_self, reason = "Keep the store directory helper on FsStore alongside its retained-root and lock operations.")]
     fn key_dir(&self, root: &File, kind: &str, key: &InstallKey, create: bool) -> io::Result<File> {
         descend(root.try_clone()?, &PathBuf::from(kind).join(key.components().iter().collect::<PathBuf>()), create)
     }
@@ -274,6 +275,7 @@ fn private_options() -> OpenOptions {
     options
 }
 #[cfg(target_os = "linux")]
+#[allow(clippy::unnecessary_wraps, reason = "Retain the shared platform entry interface: unsupported platforms refuse, while Linux constructs its descriptor-relative path infallibly.")]
 fn entry(directory: &File, name: impl AsRef<Path>) -> Result<PathBuf, DistributionError> {
     #[cfg(unix)]
     {

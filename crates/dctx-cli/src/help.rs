@@ -3,10 +3,12 @@
 //! Depends on [`dctx::Capabilities`]. `dctx --help` and `dctx --version --verbose` print [`text`] or [`limits`].
 //! Limits describe this binary. They are not a promise that a host tokenizer was linked.
 
+use std::fmt::Write as _;
 use crate::tui::{Menu, MenuContext};
 use dctx::Capabilities;
 
 /// Build the main menu
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn create_main_menu(context: &MenuContext) -> Menu {
     let mut menu = Menu::new("dctx - Directory Context Generator");
 
@@ -22,6 +24,7 @@ pub fn create_main_menu(context: &MenuContext) -> Menu {
 }
 
 /// Build the advanced menu
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn create_advanced_menu() -> Menu {
     let mut menu = Menu::new("Advanced Options");
 
@@ -35,6 +38,7 @@ pub fn create_advanced_menu() -> Menu {
 }
 
 /// Build the filter submenu
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn create_filter_menu() -> Menu {
     let mut menu = Menu::new("Filter Options");
 
@@ -51,6 +55,7 @@ pub fn create_filter_menu() -> Menu {
 }
 
 /// Build the template submenu
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn create_template_menu() -> Menu {
     let mut menu = Menu::new("Template Management");
 
@@ -64,6 +69,7 @@ pub fn create_template_menu() -> Menu {
 }
 
 /// Build the cache/debug submenu
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn create_cache_menu() -> Menu {
     let mut menu = Menu::new("Cache & Debug");
 
@@ -77,6 +83,7 @@ pub fn create_cache_menu() -> Menu {
 }
 
 /// Full help page, including snapshot compatibility and the facade commands.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn text() -> String {
     let mut out = String::from(
         "\
@@ -147,21 +154,22 @@ Examples:
 }
 
 /// Feature, storage and precision limits for this build.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn limits() -> String {
     let caps = Capabilities::current();
     let mut out = String::new();
     out.push_str("Feature and precision limits:\n");
     push(&mut out, "facade_version", caps.facade_version);
     push(&mut out, "profile", caps.profile);
-    out.push_str(&format!("wire_version: {}\n", caps.wire_version));
-    out.push_str(&format!("segment_version: {}\n", caps.segment_version));
+    let _ = writeln!(out, "wire_version: {}", caps.wire_version);
+    let _ = writeln!(out, "segment_version: {}", caps.segment_version);
     push(&mut out, "storage", caps.storage);
     push(&mut out, "features", &caps.features.join(","));
     push(&mut out, "parsers", &caps.parsers.join(","));
     push(&mut out, "languages", &caps.languages.join(","));
     push(&mut out, "unsafe_boundary", caps.unsafe_boundary);
-    out.push_str(&format!("native_code: {}\n", caps.native_code));
-    out.push_str(&format!("git: {}\n", caps.git));
+    let _ = writeln!(out, "native_code: {}", caps.native_code);
+    let _ = writeln!(out, "git: {}", caps.git);
     push(&mut out, "subprocess", caps.subprocess);
     out.push_str(
         "\
@@ -172,12 +180,12 @@ token estimate: ceil(2 * UTF-8 bytes / 7) is an estimate, not a tokenizer guaran
 cache cap: 2 GiB hard, 1.5 GiB soft watermark, 1.2 GiB eviction target.
 ",
     );
-    out.push_str(&format!(
-        "cache ttl: idle overlays and previews {} days, unpinned roots {} days, staging {} day.\n",
+    let _ = writeln!(out,
+        "cache ttl: idle overlays and previews {} days, unpinned roots {} days, staging {} day.",
         dctx_adapter_cache::OVERLAY_TTL_MS / dctx_adapter_cache::DAY_MS,
         dctx_adapter_cache::ROOT_TTL_MS / dctx_adapter_cache::DAY_MS,
         dctx_adapter_cache::STAGING_TTL_MS / dctx_adapter_cache::DAY_MS
-    ));
+    );
     out.push_str("auto-clean interval: 1 day.\n");
     out
 }

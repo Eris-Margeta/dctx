@@ -2,6 +2,7 @@
 //! Implements PLUGINS.md §5.1 "`--json` equivalents" and escaped display text.
 //! Depends on std. Used by the plugin entry and the operation results.
 
+use std::fmt::Write as _;
 use dctx_plugin_distribution::{Enablement, Origin, PluginStatus, escape_display};
 
 /// Help for §5 commands. Printing it starts no worker and touches no registry.
@@ -39,7 +40,7 @@ pub fn json_string(text: &str) -> String {
             '\n' => out.push_str("\\n"),
             '\r' => out.push_str("\\r"),
             '\t' => out.push_str("\\t"),
-            other if other.is_control() => out.push_str(&format!("\\u{:04x}", other as u32)),
+            other if other.is_control() => { let _ = write!(out, "\\u{:04x}", other as u32); },
             other => out.push(other),
         }
     }
@@ -49,7 +50,7 @@ pub fn json_string(text: &str) -> String {
 
 /// One list row, text or JSON.
 pub fn status_line(status: &PluginStatus, alias: &str, consent: &str, worker: &str, json: bool) -> String {
-    let version = status.version.as_ref().map(|version| version.as_str()).unwrap_or("-");
+    let version = status.version.as_ref().map_or("-", dctx_plugin_distribution::Version::as_str);
     if json {
         format!(
             "{{\"id\":{},\"version\":{},\"origin\":{},\"alias\":{},\"enablement\":{},\"consent\":{},\"blocked\":{},\"worker\":{}}}",

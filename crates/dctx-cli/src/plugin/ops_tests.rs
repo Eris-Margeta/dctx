@@ -154,12 +154,12 @@
         let help = run(&world, &mut index, &["plugin", "help"]);
         assert_eq!(help.code, 0);
         assert!(help.body.contains("plugin search"));
-        assert!(world.net.requests().is_empty());
+        assert_eq!(world.net.requests(), [] as [std::string::String; 0]);
         assert_eq!(world.store.load_registry().unwrap(), before);
         let search = run(&world, &mut index, &["plugin", "search", "git", "--json"]);
         assert_eq!(search.code, 0);
         assert!(search.body.contains("\"trust\":\"absent\""));
-        assert!(world.net.requests().is_empty());
+        assert_eq!(world.net.requests(), [] as [std::string::String; 0]);
     }
 
     #[cfg(not(feature = "git-worker"))]
@@ -198,7 +198,7 @@
         let missing = run(&world, &mut index, &["plugin", "search", "--refresh", "--json"]);
         assert_eq!(missing.code, 0, "{}", missing.body);
         assert!(missing.body.contains("Protect exports"));
-        assert!(!world.net.requests().is_empty());
+        assert_ne!(world.net.requests(), [] as [std::string::String; 0]);
         let requests = world.net.requests().len();
         let cached = run(&world, &mut index, &["plugin", "search", "git", "--json"]);
         assert_eq!(cached.code, 0);
@@ -256,7 +256,7 @@
         assert_eq!(updated.code, 0, "{}", updated.body);
         assert!(updated.body.contains("containing-release"));
         assert!(updated.body.contains("\"downloaded\":false"));
-        assert!(world.net.requests().is_empty());
+        assert_eq!(world.net.requests(), [] as [std::string::String; 0]);
         let verified = run(&world, &mut index, &["plugin", "verify", "dctx/git", "--json"]);
         assert_eq!(verified.code, 0, "{}", verified.body);
         assert!(verified.body.contains("\"executed\":false"));

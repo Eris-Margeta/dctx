@@ -123,7 +123,7 @@ pub enum Install {
 
 /// Parses `dctx plugin ...` or `dctx git ...`. `args[0]` is the program name.
 pub fn parse_argv(args: &[String]) -> Result<Request, String> {
-    let rest = args.get(1).map(String::as_str).unwrap_or("");
+    let rest = args.get(1).map_or("", String::as_str);
     match rest {
         "git" => parse_git(&args[2..]),
         "plugin" => parse_plugin(&args[2..]),
@@ -169,7 +169,7 @@ fn parse_search(args: &[String]) -> Result<Action, String> {
         match arg.as_str() {
             "--refresh" => refresh = true,
             other if other.starts_with('-') => return Err(format!("unknown search flag: {other}")),
-            other if query.is_empty() => query = other.to_owned(),
+            other if query.is_empty() => other.clone_into(&mut query),
             _ => return Err("search accepts one query".to_owned()),
         }
     }
@@ -198,7 +198,7 @@ fn parse_install(args: &[String]) -> Result<Install, String> {
         }
         index += 1;
     }
-    let sources = url.is_some() as u8 + file.is_some() as u8 + locator.is_some() as u8;
+    let sources = u8::from(url.is_some()) + u8::from(file.is_some()) + u8::from(locator.is_some());
     if sources != 1 {
         return Err("install requires one of <owner/repo>, --url or --file".to_owned());
     }

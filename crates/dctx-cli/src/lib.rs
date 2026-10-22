@@ -33,6 +33,7 @@ use std::{
 
 /// Settings shared by the alias and the interactive snapshot actions.
 #[derive(Debug)]
+#[allow(clippy::struct_excessive_bools, reason = "These independent snapshot/presentation switches preserve the existing public configuration and combinations.")]
 pub struct SnapshotConfig {
     /// Directory to snapshot.
     pub target_path: PathBuf,
@@ -67,7 +68,7 @@ impl Default for SnapshotConfig {
     }
 }
 
-/// Caps aligned with the legacy DIRCTXTV state file (64 MiB, depth 128, 100_000 nodes).
+/// Caps aligned with the legacy DIRCTXTV state file (64 MiB, depth 128, `100_000` nodes).
 /// `DCTX_ALIAS_MAX_*` may tighten a cap for tests; a value above the cap is ignored.
 /// Tree-only mode still stores bodies in that file, so it uses these caps instead of skipping reads.
 fn scan_limits() -> PackLimits {
@@ -93,6 +94,7 @@ fn tightened(name: &str, cap: u64) -> Option<u64> {
 }
 
 /// The binary and TUI retain the alias's fatal setup-error behavior.
+#[allow(clippy::needless_pass_by_value, reason = "The public headless entry point consumes its command configuration for one execution; preserve that ownership contract.")]
 pub fn run_headless_mode(config: SnapshotConfig) {
     if let Err(error) = snapshot(&config) {
         eprintln!("❌ {error}");
@@ -101,6 +103,10 @@ pub fn run_headless_mode(config: SnapshotConfig) {
 }
 
 /// Scan, version, save and export a legacy snapshot without starting plugins or Git.
+/// # Errors
+/// Returns path/registry/rule/cache/source failures, snapshot/diff generation errors, state persistence errors, or export failures.
+#[allow(clippy::unnecessary_debug_formatting, reason = "Retain quoted and escaped filesystem paths in setup errors, including paths containing controls or spaces.")]
+#[allow(clippy::too_many_lines, reason = "Keep the ordered legacy scan, version, save and export transaction together so its setup and failure ordering remain visible.")]
 pub fn snapshot(config: &SnapshotConfig) -> Result<(), String> {
     let started = Instant::now();
     let settings = compat::app_config();

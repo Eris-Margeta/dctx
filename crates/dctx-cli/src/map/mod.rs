@@ -114,11 +114,11 @@ fn facade_request(
         QueryVerb::Read => Verb::Read,
     });
     if request.verb == QueryVerb::Find {
-        mapped.query = request.target.clone();
+        mapped.query.clone_from(&request.target);
     } else {
-        mapped.target = request.target.clone();
+        mapped.target.clone_from(&request.target);
     }
-    mapped.kinds = request.kinds.clone();
+    mapped.kinds.clone_from(&request.kinds);
     mapped.edges = request.edges.iter().map(|edge| edge.as_str().to_string()).collect();
     mapped.direction = match request.direction {
         QueryDirection::In => Direction::In,
@@ -139,7 +139,7 @@ fn facade_request(
         mapped.limits.encoded_bytes = Some(u64::try_from(request.budget.bytes()).unwrap_or(u64::MAX));
     }
     mapped.output_format = if matches!(format, Format::Json) { 2 } else { 1 };
-    mapped.within = request.within.clone();
+    mapped.within.clone_from(&request.within);
     mapped.continuation = continuation;
     mapped.full = request.full;
     if let Some([start, end]) = request.lines {

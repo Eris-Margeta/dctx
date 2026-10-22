@@ -6,6 +6,7 @@
 
 #![forbid(unsafe_code)]
 
+use std::fmt::Write as _;
 use std::fs;
 use std::path::PathBuf;
 use std::process::{Command, Output};
@@ -50,7 +51,7 @@ impl Repository {
         for (name, symbol, extra) in specs {
             let mut body = format!("fn {symbol}() {{}}\n");
             for index in 0..extra {
-                body.push_str(&format!("fn {symbol}_x{index}() {{}}\n"));
+                let _ = writeln!(body, "fn {symbol}_x{index}() {{}}");
             }
             fs::write(root.join("repo").join(name), &body).expect("source");
             files.push((name.to_string(), body.len() as u64, extra + 1));
@@ -204,8 +205,8 @@ mod tests {
         assert!(warm_err.lines().any(|line| line == "cached_content_reads 6"), "{warm_err}");
         assert_eq!(warm.stdout, plain.stdout);
         assert_eq!(cold.stdout, plain.stdout);
-        assert!(!plain.stdout.is_empty());
-        assert!(plain.stderr.is_empty());
+        assert_ne!(plain.stdout, [] as [u8; 0]);
+        assert_eq!(plain.stderr, [] as [u8; 0]);
         let (stages, files) = stages_and_files(&warm_err);
         assert_eq!(stages.iter().map(|(name, _)| *name).collect::<Vec<_>>(), STAGES);
         assert_eq!(files.len(), 5, "{warm_err}");

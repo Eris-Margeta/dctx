@@ -20,6 +20,7 @@ use std::{
 };
 
 /// Legacy directories are separate from the v2 managed-cache root.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn cache_dir() -> Option<PathBuf> {
     directory("LOCALAPPDATA", "XDG_CACHE_HOME", ".cache")
 }
@@ -41,6 +42,7 @@ fn directory(windows: &str, xdg: &str, fallback: &str) -> Option<PathBuf> {
 }
 
 /// Missing or unreadable config retains the historic defaults.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn app_config() -> settings::AppConfig {
     config_dir()
         .and_then(|dir| fs::read_to_string(dir.join(settings::CONFIG_FILENAME)).ok())
@@ -49,13 +51,16 @@ pub fn app_config() -> settings::AppConfig {
 }
 
 /// Stable UTF-8 FNV-1a id, including the legacy 16-digit lower-case representation.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn path_id(path: &str) -> String {
     let hash =
-        path.bytes().fold(0xcbf29ce484222325u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3));
+        path.bytes().fold(0xcbf2_9ce4_8422_2325_u64, |hash, byte| (hash ^ u64::from(byte)).wrapping_mul(0x0100_0000_01b3));
     format!("{hash:016x}")
 }
 
 /// Existing registry rows win over hashing; the final row for a path wins.
+/// # Errors
+/// Returns filesystem I/O errors or an invalid existing/generated project ID.
 pub fn project_id(cache: &Path, path: &Path) -> io::Result<String> {
     fs::create_dir_all(cache)?;
     let registry = cache.join("projects.db");
@@ -202,6 +207,8 @@ fn read_state(path: &Path) -> Result<(DirContextTreeNode, Version), String> {
 }
 
 /// Metadata-only history preserves the old reader and folder-recreation heuristic.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(clippy::unnecessary_debug_formatting, reason = "Retain quoted and escaped filesystem paths in user diagnostics, including paths containing controls or spaces.")]
 pub fn load_state(root: &Path, binary: &Path, reset: bool) -> Option<(DirContextTreeNode, Version)> {
     if reset {
         println!("🔄 Force Reset enabled.");
@@ -236,6 +243,7 @@ pub fn load_state(root: &Path, binary: &Path, reset: bool) -> Option<(DirContext
 }
 
 /// TUI history uses the same legacy registry and binary codec as the alias.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn last_version(path: &Path) -> Option<String> {
     let root = fs::canonicalize(path).ok()?;
     let cache = cache_dir()?;
@@ -245,6 +253,8 @@ pub fn last_version(path: &Path) -> Option<String> {
 }
 
 /// Encode before touching the previous binary, so codec refusal leaves it intact.
+/// # Errors
+/// Returns legacy encoding/limit errors or a failed atomic state replacement.
 pub fn save_state(path: &Path, tree: &DirContextTreeNode, version: &Version) -> Result<(), String> {
     let bytes = encode_legacy(tree, version, LegacyLimits::default()).map_err(|error| error.to_string())?;
     replace_bytes(path, &bytes).map_err(|error| error.to_string())
@@ -255,6 +265,8 @@ fn rule(path: &Path) -> Result<Option<String>, String> {
 }
 
 /// Ignore and omit rules are fixed before any source read. A missing or unreadable omit file adds no rules.
+/// # Errors
+/// Returns errors reading global or project ignore/omit rule files.
 pub fn scan_policy(root: &Path, verbose: bool) -> Result<SelectionPolicy, String> {
     let global_ignore = config_dir().map(|dir| rule(&dir.join("ignore"))).transpose()?.flatten();
     let global_omit = config_dir().map(|dir| rule(&dir.join("omitcontent"))).transpose()?.flatten();
@@ -281,6 +293,7 @@ pub fn scan_policy(root: &Path, verbose: bool) -> Result<SelectionPolicy, String
 }
 
 /// Rendering skipped unreadable omit files in the legacy host.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn output_policy(root: &Path) -> SelectionPolicy {
     let global = config_dir().and_then(|dir| rule(&dir.join("omitcontent")).ok().flatten());
     let local = rule(&root.join(".dctxomitcontent")).ok().flatten();
@@ -293,6 +306,8 @@ pub fn output_policy(root: &Path) -> SelectionPolicy {
 
 /// Publish one named export by renaming a completed temp file in the same directory.
 /// No reset, version bump or corruption path sweeps old exports.
+/// # Errors
+/// Returns output replacement failures; optional diff cleanup is best effort.
 pub fn export(path: &Path, bytes: &[u8], diff: bool) -> Result<(), String> {
     replace_bytes(path, bytes).map_err(|error| format!("Write error for {}: {error}", path.display()))?;
     println!(
@@ -305,6 +320,8 @@ pub fn export(path: &Path, bytes: &[u8], diff: bool) -> Result<(), String> {
 }
 
 /// Resolve clipboard tools without launching a command-discovery child.
+/// # Errors
+/// Returns unsupported-platform/tool-not-found errors, spawn/stdin/wait failures, or a nonzero clipboard-tool exit.
 pub fn copy_to_clipboard(bytes: &[u8]) -> Result<(), String> {
     let candidates: &[&str] = if cfg!(target_os = "macos") {
         &["pbcopy"]

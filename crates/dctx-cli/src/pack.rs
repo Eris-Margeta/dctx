@@ -112,6 +112,8 @@ Pack filters (ADR-011, ADR-009):
 }
 
 /// Parses `pack` arguments, runs the facade, and emits only the requested destination.
+/// # Errors
+/// Returns argument parsing, snapshot/rendering, or output failures.
 pub fn run(args: &[String]) -> Result<(), String> {
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         print!("{}", crate::help::text());
@@ -127,6 +129,8 @@ pub fn run(args: &[String]) -> Result<(), String> {
 }
 
 /// Runs pack and returns the page. Tests use this so stdout stays a projection.
+/// # Errors
+/// Returns argument parsing, source/session, snapshot/rendering, or requested-format failures.
 pub fn execute(args: &[String]) -> Result<PackOutcome, String> {
     let plan = parse(args)?;
     if plan.report_format.is_some() {
@@ -190,9 +194,9 @@ fn source_page(plan: &Plan) -> Result<(Vec<u8>, u64, String), String> {
 fn view_request(filters: &Filters) -> PackRequest {
     let mut request = PackRequest::new();
     request.apply_filters = true;
-    request.extensions = filters.config.extensions.clone();
-    request.include_patterns = filters.include_patterns.clone();
-    request.exclude_patterns = filters.exclude_patterns.clone();
+    request.extensions.clone_from(&filters.config.extensions);
+    request.include_patterns.clone_from(&filters.include_patterns);
+    request.exclude_patterns.clone_from(&filters.exclude_patterns);
     request.include_binary = filters.config.include_binary;
     request.only_empty = filters.config.only_empty;
     request.only_non_empty = filters.config.only_non_empty;
@@ -572,6 +576,7 @@ fn project_name(path: &Path) -> String {
 }
 
 /// Project the scanned facts into pure renderer input, preserving presentation-only omit rules.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn legacy_markers(
     node: &dctx_core::datatypes::DirContextTreeNode,
     policy: &dctx_core::selection::SelectionPolicy,

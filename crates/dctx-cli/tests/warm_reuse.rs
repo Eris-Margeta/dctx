@@ -1,7 +1,7 @@
 //! Two CLI processes reuse one generation, then a same-stamp edit rebuilds.
-//! Covers DCTX-SERIOUS-GAPS G6. The content check is digest_text, as in read_verified.
-//! Depends on the compiled dctx-cli and an absolute DCTX_CACHE_DIR. No network.
-//! The second process prints `generation reused` and a lower content_reads count.
+//! Covers DCTX-SERIOUS-GAPS G6. The content check is `digest_text`, as in `read_verified`.
+//! Depends on the compiled dctx-cli and an absolute `DCTX_CACHE_DIR`. No network.
+//! The second process prints `generation reused` and a lower `content_reads` count.
 //! A same-length edit restored to the old mtime still shows the new symbol.
 
 #![forbid(unsafe_code)]

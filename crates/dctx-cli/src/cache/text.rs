@@ -3,6 +3,7 @@
 //! Depends on adapter status types and the facade [`dctx::CacheReport`]. The command module prints this text.
 //! JSON is hand-built so the CLI does not add a serializer.
 
+use std::fmt::Write as _;
 use dctx::CacheReport;
 use dctx_adapter_cache::{Blocker, MaintainReport, PurgeReport, Status, DAY_MS};
 
@@ -230,12 +231,12 @@ fn on_off(enabled: bool) -> &'static str {
 fn root_lines(report: &Status) -> String {
     let mut out = String::new();
     for root in &report.roots {
-        out.push_str(&format!(
-            "root {} exclusive={} shared={}\n",
+        let _ = writeln!(out,
+            "root {} exclusive={} shared={}",
             root.id.raw(),
             root.exclusive_bytes,
             root.shared_bytes
-        ));
+        );
     }
     out
 }

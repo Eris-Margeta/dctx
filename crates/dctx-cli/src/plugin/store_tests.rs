@@ -50,7 +50,7 @@ fn missing_root_read_is_side_effect_free() {
     let fixture = Fixture::new();
     let store = fixture.store();
     assert_eq!(store.load_registry().unwrap(), None);
-    assert!(store.staged().unwrap().is_empty());
+    assert_eq!(store.staged().unwrap(), [] as [dctx_plugin_distribution::InstallKey; 0]);
     assert!(!store.root.exists());
     let lock = store.try_lock().unwrap();
     store.save_registry(lock, b"{}").unwrap();
@@ -97,7 +97,7 @@ fn crash_cuts_preserve_complete_registry_and_installations() {
         let expected = if matches!(phase, "registry-renamed" | "complete") { b"{\"active\":\"new\"}" } else { b"{\"active\":\"old\"}" };
         assert_eq!(registry, expected, "{phase}");
         if phase == "install-synced" {
-            assert!(store.installed().unwrap().is_empty());
+            assert_eq!(store.installed().unwrap(), [] as [dctx_plugin_distribution::InstallKey; 0]);
             assert_eq!(store.staged().unwrap(), [key()]);
         } else {
             assert_eq!(store.installed().unwrap(), [key()]);
@@ -147,7 +147,7 @@ fn concurrent_clients_cannot_both_activate() {
     first.stdin.take().unwrap().write_all(b"x").unwrap();
     second.stdin.take().unwrap().write_all(b"x").unwrap();
     let mut codes = [first.wait().unwrap().code().unwrap(), second.wait().unwrap().code().unwrap()];
-    codes.sort();
+    codes.sort_unstable();
     assert_eq!(codes, [0, 3]);
     assert_eq!(store.load_registry().unwrap().unwrap(), b"{\"active\":\"winner\"}");
     assert_eq!(store.try_lock(), Err(DistributionError::Busy));
@@ -241,9 +241,9 @@ fn incomplete_temporary_and_duplicate_publication_preserve_previous_state() {
     assert_eq!(store.publish(lock, &key()), Err(DistributionError::Interrupted));
     assert_eq!(store.read_installed(&key(), &payload()).unwrap(), b"complete");
     store.discard_staging(lock, &key()).unwrap();
-    assert!(store.staged().unwrap().is_empty());
+    assert_eq!(store.staged().unwrap(), [] as [dctx_plugin_distribution::InstallKey; 0]);
     store.remove_installed(lock, &key()).unwrap();
-    assert!(store.installed().unwrap().is_empty());
+    assert_eq!(store.installed().unwrap(), [] as [dctx_plugin_distribution::InstallKey; 0]);
     store.unlock(lock);
 }
 
@@ -267,7 +267,7 @@ fn temp_root_create_read_publish_and_lock() {
     let fixture = Fixture::new();
     let store = fixture.store();
     assert_eq!(store.load_registry().unwrap(), None);
-    assert!(store.staged().unwrap().is_empty());
+    assert_eq!(store.staged().unwrap(), [] as [dctx_plugin_distribution::InstallKey; 0]);
     let lock = store.try_lock().unwrap();
     store.save_registry(lock, b"{\"active\":\"one\"}").unwrap();
     assert_eq!(store.load_registry().unwrap().unwrap(), b"{\"active\":\"one\"}");
@@ -275,7 +275,7 @@ fn temp_root_create_read_publish_and_lock() {
     store.publish(lock, &key()).unwrap();
     assert_eq!(store.read_installed(&key(), &payload()).unwrap(), b"complete");
     assert_eq!(store.installed().unwrap(), [key()]);
-    assert!(store.staged().unwrap().is_empty());
+    assert_eq!(store.staged().unwrap(), [] as [dctx_plugin_distribution::InstallKey; 0]);
     assert_eq!(fixture.store().try_lock(), Err(DistributionError::Busy));
     store.unlock(lock);
     let regained = store.try_lock().unwrap();
@@ -315,6 +315,7 @@ fn dotdot_component_is_refused() {
 
 #[test]
 #[ignore = "placeholder: Windows store semantics are not qualified and this test does not qualify them"]
+#[allow(clippy::assertions_on_constants, reason = "This ignored qualification placeholder asserts its required Windows executor; the sentinel does not qualify Windows semantics.")]
 fn windows_replace_and_acl_semantics() {
     // TODO: qualify old/new complete replacement and inherited/explicit ACL refusal on Windows.
     // This test must gain native assertions before Windows store operations are enabled.
