@@ -101,6 +101,7 @@ impl<'a> Lexer<'a> {
         Kind::Punct
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn try_raw(&mut self) -> Option<Kind> {
         let rest = &self.b[self.pos..];
         let prefix = RAW.iter().find(|prefix| rest.starts_with(prefix))?;
@@ -157,6 +158,7 @@ impl<'a> Lexer<'a> {
         None
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn scan_quoted(&mut self, quote: u8, reason: DiagnosticReason) -> Kind {
         let start = self.pos;
         self.pos += 1;
@@ -297,6 +299,7 @@ impl<'a> Lexer<'a> {
         self.line_token = true;
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn skip_block_in_directive(&mut self) {
         let start = self.pos;
         self.pos += 2;
@@ -328,6 +331,7 @@ impl<'a> Lexer<'a> {
         RAW.iter().any(|prefix| rest.starts_with(prefix))
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn line_comment(&mut self) {
         let start = self.pos;
         self.pos += 2;
@@ -343,6 +347,7 @@ impl<'a> Lexer<'a> {
         });
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn block_comment(&mut self) {
         let start = self.pos;
         self.pos += 2;
@@ -376,6 +381,7 @@ impl<'a> Lexer<'a> {
         });
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn push(&mut self, kind: Kind, start: usize) {
         self.tokens.push(Token {
             kind,

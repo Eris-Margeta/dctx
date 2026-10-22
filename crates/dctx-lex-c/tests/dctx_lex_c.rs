@@ -3,6 +3,7 @@
 //! Every node is owned by the file module and every span lies inside the file.
 #![forbid(unsafe_code)]
 
+use std::fmt::Write as _;
 use dctx_lex_c::{
     Completion, DiagnosticReason, Dialect, LexError, LexedFile, Limits, Precision, CLexer, PARSER_ID,
     PARSER_REVISION,
@@ -75,12 +76,12 @@ fn refs(facts: &LexedFile, kind: EdgeKind) -> Vec<(&str, Precision)> {
 }
 
 fn file_lines(source: &str) -> u32 {
-    source.bytes().filter(|byte| *byte == b'\n').count() as u32 + 1
+    u32::try_from(source.bytes().filter(|byte| *byte == b'\n').count()).expect("bounded test coordinate") + 1
 }
 
 fn check_invariants(path: &str, source: &str, facts: &LexedFile) {
     let lines = file_lines(source);
-    assert!(!facts.nodes.is_empty());
+    assert_ne!(facts.nodes, []);
     assert_eq!(facts.nodes[0].fact.kind, NodeKind::Module);
     assert_eq!(facts.nodes[0].fact.name, path);
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
@@ -131,7 +132,7 @@ fn check_invariants(path: &str, source: &str, facts: &LexedFile) {
         assert_eq!(reference.fact.owner_path, path);
         assert!(ids.contains(reference.fact.src.as_str()), "{}", reference.fact.src);
         assert_ne!(reference.fact.kind, EdgeKind::Contains);
-        assert!(!reference.fact.name.is_empty());
+        assert_ne!(reference.fact.name, "");
     }
 }
 
@@ -350,13 +351,14 @@ fn signatures(facts: &LexedFile) -> Vec<(&str, &str)> {
 }
 
 #[test]
+#[allow(clippy::cast_possible_truncation, reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound.")]
 fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
     let mut state = 0x1234_5678_9abc_def0_u64;
     for _ in 0..200 {
         let len = (xorshift(&mut state) as usize) % 301;
         let mut bytes = Vec::with_capacity(len);
         for _ in 0..len {
-            bytes.push(xorshift(&mut state) as u8);
+            bytes.push(xorshift(&mut state).to_le_bytes()[0]);
         }
         assert_stable("f.c", &bytes);
         assert_stable("f.rs", &bytes);
@@ -469,7 +471,7 @@ int after_stop(void);
 
 #[test]
 fn conditional_braces_and_directive_comments_stay_complete() {
-    let source = r#"
+    let source = r"
 #include /* note */ <extra.h>
 #define FOO /* comment
 int leaked(void);
@@ -484,7 +486,7 @@ int wrapped(void) {
   }
 }
 int use_foo(void);
-"#;
+";
     let facts = extract("cond.c", source);
     assert!(facts.diagnostics.is_empty(), "{:?}", facts.diagnostics);
     assert_eq!(facts.completion, Completion::Complete);
@@ -507,7 +509,7 @@ fn comparisons_do_not_accumulate_into_angle_depth() {
     });
     let mut source = String::from("void f() {\n");
     for i in 0..6 {
-        source.push_str(&format!("  if (a{i} < b{i}) x++;\n"));
+        writeln!(source, "  if (a{i} < b{i}) x++;").expect("writing to a String cannot fail");
     }
     source.push_str("}\n");
     let facts = lexer

@@ -150,10 +150,12 @@ impl<'a> Walker<'a> {
         self.kind(index) == Some(Kind::Ident)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(crate) fn start_of(&self, index: usize) -> u32 {
         self.toks.get(index).map_or(self.logical.len() as u32, |token| token.start)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(crate) fn end_of(&self, index: usize) -> u32 {
         self.toks.get(index).map_or(self.logical.len() as u32, |token| token.end)
     }
@@ -208,7 +210,7 @@ impl<'a> Walker<'a> {
             return None;
         }
         let name = if scope.name.is_empty() {
-            item.local.clone()
+            item.local
         } else {
             format!("{}::{}", scope.name, item.local)
         };
@@ -226,7 +228,7 @@ impl<'a> Walker<'a> {
         let sig_end = item.sig_end.clamp(start_l, end_l);
         let mut signature = normalize(slice(self.logical, start_l, sig_end));
         if signature.is_empty() {
-            signature = name.clone();
+            signature.clone_from(&name);
         }
         let summary = match self.doc_before(item.first) {
             Some(text) => Summary {
@@ -301,6 +303,7 @@ impl<'a> Walker<'a> {
         [left, right.max(left)]
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn physical_slice(&self, start: u32, end: u32) -> &str {
         let from = self.lexed.map.physical(start) as usize;
         let to = self.lexed.map.physical(end).min(self.original.len() as u32) as usize;
@@ -309,7 +312,7 @@ impl<'a> Walker<'a> {
 
     pub(crate) fn doc_before(&self, token: usize) -> Option<String> {
         let start = self.toks.get(token)?.start;
-        let prev_end = token.checked_sub(1).map(|index| self.toks[index].end).unwrap_or(0);
+        let prev_end = token.checked_sub(1).map_or(0, |index| self.toks[index].end);
         let mut limit = start;
         let mut group = Vec::new();
         for comment in self.lexed.comments.iter().rev() {
@@ -436,8 +439,9 @@ fn gap_ok(src: &str, from: u32, to: u32) -> bool {
         && gap.bytes().all(|byte| matches!(byte, b' ' | b'\t' | b'\r' | b'\n'))
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 fn leading_doc(src: &str, comments: &[Comment], first: Option<&Token>) -> Option<String> {
-    let limit = first.map(|token| token.start).unwrap_or(src.len() as u32);
+    let limit = first.map_or(src.len() as u32, |token| token.start);
     let mut parts = Vec::new();
     let mut expect = 0u32;
     for comment in comments {

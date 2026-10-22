@@ -15,6 +15,7 @@ use std::cmp::Reverse;
 use std::collections::{BTreeMap, BTreeSet};
 
 impl Walker<'_> {
+    #[allow(clippy::too_many_lines, reason = "Keep the ordered C/C++ declaration-kind dispatch together with its shared token boundaries and recovery.")]
     pub(crate) fn type_decl(
         &mut self,
         sig: usize,
@@ -82,7 +83,7 @@ impl Walker<'_> {
             "struct" => Some(SymbolKind::Struct),
             _ => Some(SymbolKind::Type),
         };
-        let header_end = body.map(|(open, _)| self.start_of(open)).unwrap_or(self.start_of(last));
+        let header_end = body.map_or(self.start_of(last), |(open, _)| self.start_of(open));
         if let Some((_, ref name)) = tag {
             let item = Item {
                 symbol,
@@ -217,6 +218,7 @@ pub(super) struct Draft {
 }
 
 impl Draft {
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(super) fn new(path: &str, source: &str, max_facts: usize) -> Result<Self, LexError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
         let lines = source.bytes().filter(|byte| *byte == b'\n').count() as u32 + 1;
@@ -293,6 +295,7 @@ impl Draft {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(super) fn finish(
         mut self,
         lexed: &Lexed,
@@ -328,7 +331,7 @@ impl Draft {
             reason,
         }));
         diagnostics.sort_by_key(|diagnostic| (diagnostic.byte, diagnostic.reason as u8));
-        let first = diagnostics.first().map(|diagnostic| diagnostic.byte).unwrap_or(u32::MAX);
+        let first = diagnostics.first().map_or(u32::MAX, |diagnostic| diagnostic.byte);
         let completion = if diagnostics.is_empty() {
             Completion::Complete
         } else {

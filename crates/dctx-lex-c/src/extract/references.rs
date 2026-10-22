@@ -36,7 +36,7 @@ impl Walker<'_> {
                 index = after;
                 continue;
             }
-            if self.ident(index) && !self.is_noise(self.text(index)) {
+            if self.ident(index) && !Self::is_noise(self.text(index)) {
                 let (name, next) = self.render_chain(index);
                 let bare_at = next.saturating_sub(1);
                 if bare_at >= skip_lo && bare_at < skip_hi {
@@ -221,7 +221,7 @@ impl Walker<'_> {
             || self.ident(prev)
     }
 
-    fn is_noise(&self, word: &str) -> bool {
+    fn is_noise(word: &str) -> bool {
         matches!(
             word,
             "const" | "volatile" | "static" | "extern" | "inline" | "constexpr" | "consteval"

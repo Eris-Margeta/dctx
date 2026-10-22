@@ -195,11 +195,11 @@ impl Walker<'_> {
         }
         if self.can_name(keyword + 1) && self.is(keyword + 2, "=") {
             let name = self.text(keyword + 1).to_string();
-            if !self.known_macro(&name) {
+            if self.known_macro(&name) {
+                self.problem(self.start_of(keyword + 1), DiagnosticReason::HiddenByMacro);
+            } else {
                 self.emit_alias(sig, keyword + 1, last, &name, scope, "using");
                 self.emit_types(keyword + 3, stop, usize::MAX, usize::MAX, scope);
-            } else {
-                self.problem(self.start_of(keyword + 1), DiagnosticReason::HiddenByMacro);
             }
             return stop;
         }
@@ -435,6 +435,7 @@ impl Walker<'_> {
     /// No diagnostic: a diagnostic refuses the whole file downstream, and real
     /// sources contain macros and forms this walker does not model. Hidden names
     /// and macro-introduced types still diagnose at their own sites.
+    #[allow(clippy::unused_self, reason = "This no-op recovery hook deliberately remains a Walker operation alongside the branches that report skipped spans.")]
     pub(crate) fn note_skipped(&mut self, _start: usize, _end: usize) {}
 
     pub(crate) fn decl_public(&self, start: usize, name: usize, scope: &Scope) -> bool {

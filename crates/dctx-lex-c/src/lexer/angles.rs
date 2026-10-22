@@ -19,6 +19,7 @@ impl AngleDepth {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(crate) fn depth(&self) -> u32 {
         self.opens.len() as u32
     }
@@ -29,6 +30,8 @@ impl AngleDepth {
     }
 
     /// Parentheses plus open template lists. Declarator names use one level of either.
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
+    #[allow(clippy::cast_possible_wrap, reason = "Template stack size is bounded by the 8 MiB input ceiling and therefore fits i32.")]
     pub(crate) fn nest(&self) -> i32 {
         self.paren + self.opens.len() as i32
     }
@@ -43,8 +46,7 @@ impl AngleDepth {
     /// `opens_template` is read only for `<`.
     pub(crate) fn observe(&mut self, spelling: &str, opens_template: bool) {
         match spelling {
-            "(" | "[" => self.paren += 1,
-            "{" => self.paren += 1,
+            "(" | "[" | "{" => self.paren += 1,
             ")" | "]" | "}" => {
                 if self.paren > 0 {
                     self.paren -= 1;

@@ -128,7 +128,7 @@ mod tests {
             "int ready(void) { return 1; }\nint broken(int x) { return x( }\nint later(void);\n",
         );
         assert_eq!(damaged.completion, Completion::Partial);
-        assert!(!damaged.diagnostics.is_empty());
+        assert_ne!(damaged.diagnostics, []);
 
         let ready_id = node(&damaged, "ready").id.as_str();
         let ready = damaged

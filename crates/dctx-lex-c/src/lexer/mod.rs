@@ -77,6 +77,7 @@ pub(crate) struct SourceMap {
 
 impl SourceMap {
     /// One-based physical line of a logical byte.
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub fn line(&self, logical: u32) -> u32 {
         let logical_line = self
             .logical_line_starts
@@ -122,6 +123,7 @@ pub(crate) struct Lexed {
 pub(crate) const NONE: u32 = u32::MAX;
 
 /// Lexes `source`, strips line splices and pairs `()`, `[]` and `{}`.
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     let (logical, map) = prepare(source);
     let (tokens, comments, mut problems) = {
@@ -152,6 +154,7 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
 /// Problems found while lexing, as `(logical byte, reason)`.
 pub(crate) type Problems = Vec<(u32, DiagnosticReason)>;
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 fn prepare(source: &str) -> (String, SourceMap) {
     let bytes = source.as_bytes();
     let mut logical = String::with_capacity(source.len());
@@ -331,6 +334,7 @@ fn token_spelling<'a>(source: &'a str, token: &Token, braces: &BTreeMap<String, 
     text
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 fn push_open(
     map: &SourceMap,
     tokens: &[Token],
@@ -349,6 +353,7 @@ fn push_open(
     Ok(())
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 fn close_bracket(
     tokens: &[Token],
     index: usize,
