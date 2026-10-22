@@ -184,7 +184,7 @@ fn assert_malformed_brackets() {
     let clean = "package p\nfunc Kept() {}\n";
     let good = extract(PATH, clean);
     assert_eq!(good.completion, Completion::Complete);
-    assert!(good.diagnostics.is_empty());
+    assert_eq!(good.diagnostics, []);
     assert!(good.nodes.iter().any(|node| node.fact.name == "Kept"));
 
     let mut hostile = format!("package p\nfunc Kept() {{}}\n// {SENTINEL}\n");
@@ -198,6 +198,7 @@ fn assert_malformed_brackets() {
     assert!(!format!("{:?}", facts.diagnostics).contains(SENTINEL));
 }
 
+#[allow(clippy::needless_pass_by_value, reason = "This test helper owns the two throwaway typed errors for a single equality and redaction check.")]
 fn assert_exact(error: LexError, expected: LexError, display: &str) {
     assert_eq!(error, expected);
     assert_eq!(error.to_string(), display);

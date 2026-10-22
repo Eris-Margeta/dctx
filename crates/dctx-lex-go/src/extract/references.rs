@@ -8,6 +8,7 @@ use dctx_map_model::EdgeKind;
 impl Walker<'_> {
     /// Walks a type starting at `index`. Named types, map keys and type arguments
     /// are emitted when `emit` is set. A slice or array bracket is a length, not a type.
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(crate) fn skip_type(
         &mut self,
         mut index: usize,
@@ -98,6 +99,7 @@ impl Walker<'_> {
     }
 
     /// Comma-separated types inside an instantiation. `end` is the closing bracket.
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn type_arguments(&mut self, mut index: usize, end: usize, emit: bool, owner: usize, scope: &str) {
         let limit = self.toks.len().saturating_add(1) as u32;
         let mut steps = 0_u32;

@@ -104,6 +104,7 @@ impl<'a> Lexer<'a> {
         Kind::Punct
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn scan_quoted(&mut self, quote: u8) -> Kind {
         let start = self.pos;
         self.pos += 1;
@@ -130,6 +131,7 @@ impl<'a> Lexer<'a> {
         if quote == b'\'' { Kind::BadRune } else { Kind::BadStr }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn scan_raw(&mut self) -> Kind {
         let start = self.pos;
         self.pos += 1;
@@ -237,6 +239,7 @@ impl<'a> Lexer<'a> {
         false
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn line_comment(&mut self) {
         let start = self.pos;
         self.pos += 2;
@@ -250,6 +253,7 @@ impl<'a> Lexer<'a> {
         self.comments.push((start as u32, end as u32));
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn block_comment(&mut self) -> bool {
         let start = self.pos;
         self.pos += 2;
@@ -288,6 +292,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn push_semi(&mut self, at: usize) {
         let at = at as u32;
         self.tokens.push(Token {
@@ -313,6 +318,7 @@ fn continues_ident(ch: char) -> bool {
 impl Lexer<'_> {
     /// Records the token that `scan_one` just finished. Split from `run` so the
     /// scan loop stays a single screen. `end` is the scanner cursor.
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn push_scanned(&mut self, kind: Kind, start: usize) {
         self.tokens.push(Token {
             kind,

@@ -89,7 +89,7 @@ mod tests {
         // edge; PARSERS-v1 layers partial completion over the syntax label.
         let damaged = extract("package p\nfunc Ready() {}\nfunc Broken() {\n\treturn len(s\n}\nconst Later = 1\n");
         assert_eq!(damaged.completion, Completion::Partial);
-        assert!(!damaged.diagnostics.is_empty());
+        assert_ne!(damaged.diagnostics, []);
 
         let ready = edge_to(&damaged, "Ready");
         assert_eq!(ready.fact.kind, EdgeKind::Contains);

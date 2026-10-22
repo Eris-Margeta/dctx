@@ -79,9 +79,8 @@ impl Walker<'_> {
                     Some(path) if !path.is_empty() => {
                         self.refer(0, "", EdgeKind::Imports, path, alias, (index, cursor));
                     }
-                    Some(_) => self.problem(self.start_byte(cursor), DiagnosticReason::Unrecognized),
-                    None => self.problem(self.start_byte(cursor), DiagnosticReason::Unrecognized),
-                }
+                    Some(_) | None => self.problem(self.start_byte(cursor), DiagnosticReason::Unrecognized),
+                    }
                 cursor += 1;
             }
             Some(Kind::BadStr) => cursor += 1,

@@ -19,7 +19,7 @@ impl Walker<'_> {
             }
             cursor = (close + 1).min(end);
         }
-        self.finish_func(index, cursor, end, scope, receiver, false)
+        self.finish_func(index, cursor, end, scope, receiver.as_deref(), false)
     }
 
     pub(crate) fn method_decl(&mut self, name_at: usize, end: usize, scope: &Scope) -> usize {
@@ -32,7 +32,7 @@ impl Walker<'_> {
         name_at: usize,
         end: usize,
         scope: &Scope,
-        receiver: Option<String>,
+        receiver: Option<&str>,
         iface: bool,
     ) -> usize {
         if !self.can_be_name(name_at) {
@@ -40,8 +40,8 @@ impl Walker<'_> {
             return self.skip_tail(name_at, end);
         }
         let bare = self.text(name_at).to_string();
-        let local = match &receiver {
-            Some(base) => format!("{base}::{bare}"),
+        let local = match receiver {
+            Some(receiver_type) => format!("{receiver_type}::{bare}"),
             None => bare.clone(),
         };
         let mut cursor = name_at + 1;

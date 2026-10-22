@@ -93,6 +93,7 @@ pub(super) struct Draft {
 }
 
 impl Draft {
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(super) fn new(path: &str, source: &str, max_facts: usize) -> Result<Self, LexError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
         let module = Node {
@@ -198,7 +199,7 @@ impl Draft {
             reason,
         }));
         diagnostics.sort_by_key(|diagnostic| (diagnostic.byte, diagnostic.reason as u8));
-        let first = diagnostics.first().map(|diagnostic| diagnostic.byte).unwrap_or(u32::MAX);
+        let first = diagnostics.first().map_or(u32::MAX, |diagnostic| diagnostic.byte);
         let completion = if diagnostics.is_empty() {
             Completion::Complete
         } else {

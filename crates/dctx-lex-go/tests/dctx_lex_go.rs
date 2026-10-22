@@ -39,7 +39,7 @@ fn golden_fixture_extracts_declarations_imports_and_references() {
     let facts = extract("pkg/demo.go", BASIC);
     assert_eq!(facts.dialect, Dialect::Go);
     assert_eq!(facts.completion, Completion::Complete, "{:?}", facts.diagnostics);
-    assert!(facts.diagnostics.is_empty());
+    assert_eq!(facts.diagnostics, []);
     assert!(facts.nodes.iter().all(|node| node.precision == Precision::Structural));
     assert!(facts.edges.iter().all(|edge| edge.precision == Precision::Structural));
     assert!(facts.references.iter().all(|reference| reference.precision == Precision::Structural));
@@ -166,7 +166,7 @@ fn ambiguous_selectors_and_composite_receivers_abstain() {
     let receiver = extract("p.go", "package p\nfunc (s []byte) M() {}\nfunc (s *Box) Ok() {}\n");
     assert_eq!(receiver.completion, Completion::Partial);
     assert!(names(&receiver).contains(&"Box::Ok"), "{:?}", names(&receiver));
-    assert!(!names(&receiver).iter().any(|name| name.ends_with("M")));
+    assert!(!names(&receiver).iter().any(|name| name.ends_with('M')));
 }
 
 fn assert_symbol(facts: &LexedFile, name: &str, symbol: Option<SymbolKind>, public: bool, doc: &str) {
@@ -225,12 +225,12 @@ fn type_names(facts: &LexedFile) -> Vec<&str> {
 }
 
 fn file_lines(source: &str) -> u32 {
-    source.bytes().filter(|byte| *byte == b'\n').count() as u32 + 1
+    u32::try_from(source.bytes().filter(|byte| *byte == b'\n').count()).expect("bounded test coordinate") + 1
 }
 
 fn check_invariants(source: &str, facts: &LexedFile) {
     let lines = file_lines(source);
-    assert!(!facts.nodes.is_empty());
+    assert_ne!(facts.nodes, []);
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
     assert!(facts.diagnostics.len() <= LexedFile::MAX_DIAGNOSTICS);
     if facts.diagnostics.is_empty() {
@@ -246,7 +246,7 @@ fn check_invariants(source: &str, facts: &LexedFile) {
     for reference in &facts.references {
         let [start, end] = reference.fact.lines;
         assert!(start >= 1 && start <= end && end <= lines);
-        assert!(!reference.fact.name.is_empty());
+        assert_ne!(reference.fact.name, "");
     }
 }
 
@@ -276,13 +276,14 @@ fn xorshift(state: &mut u64) -> u64 {
 }
 
 #[test]
+#[allow(clippy::cast_possible_truncation, reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound.")]
 fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
     let mut state = 0x1234_5678_9abc_def0_u64;
     for _ in 0..200 {
         let len = (xorshift(&mut state) as usize) % 301;
         let mut bytes = Vec::with_capacity(len);
         for _ in 0..len {
-            bytes.push(xorshift(&mut state) as u8);
+            bytes.push(xorshift(&mut state).to_le_bytes()[0]);
         }
         assert_stable("f.go", &bytes);
         assert_stable("f.rs", &bytes);
