@@ -1,5 +1,5 @@
 //! Plugin events: progress samples and the cancelled acknowledgement (no response is ever sent).
-//! Implements events.schema.json; sequencing rules live in session::progress (W-PROGRESS).
+//! Implements events.schema.json; sequencing rules live in `session::progress` (W-PROGRESS).
 //! Depends on json, common, scalars, refusal; used by envelope and session.
 
 use crate::json::fields::{Fields, Obj, positive, uint};
@@ -57,6 +57,7 @@ pub enum Event {
 
 impl Event {
     /// Wire method name.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn method(&self) -> &'static str {
         match self {
             Self::Progress(_) => "progress",
@@ -65,6 +66,7 @@ impl Event {
     }
 
     /// Invocation the event belongs to.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn invocation(&self) -> &Token {
         match self {
             Self::Progress(progress) => &progress.invocation,

@@ -155,6 +155,8 @@ pub enum ResultBody {
 
 impl ResultBody {
     /// Decodes `value` with the exact result schema of `method`.
+    /// # Errors
+    /// Refuses a value that violates the selected method's result schema, bounds, or semantic rules.
     pub fn decode(method: Method, value: &Json) -> Result<Self, Refusal> {
         let mut f = Fields::of(value)?;
         let body = match method {
@@ -233,6 +235,7 @@ impl ResultBody {
     }
 
     /// Whether `value` matches at least one result shape (the generic `anyOf` union).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn matches_any(value: &Json) -> bool {
         Method::ALL.iter().any(|method| Self::decode(*method, value).is_ok())
     }

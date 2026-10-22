@@ -1,4 +1,4 @@
-//! Blocking std::io adapter over the sans-IO frame codec (the crate's only IO; records stay IO-free).
+//! Blocking `std::io` adapter over the sans-IO frame codec (the crate's only IO; records stay IO-free).
 //! Implements plugin-api wire.md §Bytes "split reads/writes are legal and must reconstruct the same message"
 //! for any reader/writer that returns short counts or `Interrupted`. Depends on frame and refusal.
 //! Used by host process adapters and worker binaries; stderr is never read here.
@@ -46,6 +46,8 @@ impl<R: Read> FrameReader<R> {
     }
 
     /// Next frame body; `Ok(None)` at a clean end of stream between frames.
+    /// # Errors
+    /// Returns an I/O error on a failed read, or a framing refusal for malformed, oversized, or truncated input.
     pub fn next_frame(&mut self) -> Result<Option<Vec<u8>>, StreamError> {
         loop {
             if self.start < self.pending.len() {
@@ -73,6 +75,8 @@ impl<R: Read> FrameReader<R> {
 }
 
 /// Writes one frame completely, tolerating short writes and interruptions, then flushes.
+/// # Errors
+/// Returns a framing refusal for an invalid body/cap, or an I/O error when writing or flushing fails.
 pub fn write_frame<W: Write>(writer: &mut W, body: &[u8], cap: u32) -> Result<(), StreamError> {
     let frame = encode_frame(body, cap)?;
     writer.write_all(&frame).map_err(|error| StreamError::Io(error.kind()))?;
@@ -142,14 +146,14 @@ mod tests {
 
     #[test]
     fn truncated_stream_and_io_errors_are_typed() {
-        let mut reader = FrameReader::new(&[3u8, 0, 0, 0, b'{'][..]);
-        assert!(matches!(reader.next_frame(), Err(StreamError::Protocol(r)) if r.reason == "truncated-body"));
         struct Broken;
         impl Read for Broken {
             fn read(&mut self, _: &mut [u8]) -> io::Result<usize> {
                 Err(io::Error::from(ErrorKind::BrokenPipe))
             }
         }
+        let mut reader = FrameReader::new(&[3u8, 0, 0, 0, b'{'][..]);
+        assert!(matches!(reader.next_frame(), Err(StreamError::Protocol(r)) if r.reason == "truncated-body"));
         assert_eq!(FrameReader::new(Broken).next_frame(), Err(StreamError::Io(ErrorKind::BrokenPipe)));
         let mut reader = FrameReader::new(&[0u8; 4][..]);
         reader.decoder_mut().set_cap(16).expect("cap");

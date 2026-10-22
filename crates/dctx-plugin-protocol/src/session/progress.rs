@@ -1,7 +1,7 @@
 //! Progress sequencing for one invocation: payload sequence, per-phase monotone counts and stable units.
 //! Implements wire.md §Bootstrap progress rules (W-PROGRESS): seq starts at 1 and strictly increases,
 //! completed is monotone and <= total within a phase, unit/total stable per phase, bounded phase table.
-//! Depends on records::events and refusal; used by session::Session. Wait references are checked there.
+//! Depends on `records::events` and refusal; used by `session::Session`. Wait references are checked there.
 
 use std::collections::BTreeMap;
 
@@ -33,11 +33,14 @@ fn refused(reason: &'static str) -> Refusal {
 
 impl ProgressTrack {
     /// Last accepted payload sequence (0 before the first sample).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn last_seq(&self) -> u64 {
         self.last_seq
     }
 
     /// Checks `progress` against earlier samples and records it when accepted.
+    /// # Errors
+    /// Refuses nonincreasing sequences, regressing counts, exceeded totals, or unstable per-phase units/totals.
     pub fn accept(&mut self, progress: &Progress) -> Result<(), Refusal> {
         if progress.seq <= self.last_seq {
             return Err(refused("progress-sequence"));

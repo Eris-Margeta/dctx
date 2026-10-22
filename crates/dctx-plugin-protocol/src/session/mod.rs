@@ -99,6 +99,7 @@ fn state_refusal(code: ErrorCode, reason: &'static str) -> Refusal {
 
 impl Session {
     /// Starts a session with host-created `id` after a successful negotiation.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(id: Token, negotiated: Negotiated) -> Self {
         Self {
             id,
@@ -115,21 +116,25 @@ impl Session {
     }
 
     /// Current state.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn state(&self) -> SessionState {
         self.state
     }
 
     /// Frame cap now in force (lowered by initialize, never raised).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn frame_cap(&self) -> u32 {
         u32::try_from(self.limits.frame_bytes).unwrap_or(crate::frame::MAX_FRAME_CAP)
     }
 
     /// The active invocation token, if any.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn active_invocation(&self) -> Option<&Token> {
         self.active.as_ref().map(|active| &active.invocation)
     }
 
     /// Number of outstanding requests sent by `sender`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn outstanding(&self, sender: Sender) -> usize {
         self.pending.keys().filter(|id| id.sender() == sender).count()
     }
@@ -140,6 +145,8 @@ impl Session {
     }
 
     /// Validates one message sent by `sender` and applies its transition.
+    /// # Errors
+    /// Refuses ended sessions, wrong bindings/directions, unnegotiated extensions, or invalid request/response transitions.
     pub fn observe(&mut self, sender: Sender, message: &SessionMessage) -> Result<Accepted, Refusal> {
         if matches!(self.state, SessionState::Closed | SessionState::Failed) {
             return Err(state_refusal(ErrorCode::InvalidMessage, "session-ended"));
@@ -172,7 +179,7 @@ impl Session {
         let next = self.admit(request)?;
         if let Request::Initialize(init) = request {
             self.limits = init.limits;
-            self.hooks = init.hooks.clone();
+            self.hooks.clone_from(&init.hooks);
         }
         if let Request::Invoke(invocation) = request {
             let invocation = invocation.invocation.clone();

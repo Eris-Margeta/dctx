@@ -17,6 +17,8 @@ pub struct Chunk(Vec<u8>);
 
 impl Chunk {
     /// Wraps raw bytes, refusing more than [`MAX_CHUNK_BYTES`].
+    /// # Errors
+    /// Refuses chunks larger than `MAX_CHUNK_BYTES`.
     pub fn new(bytes: &[u8]) -> Result<Self, Refusal> {
         if bytes.len() > MAX_CHUNK_BYTES {
             return Err(Refusal::semantic(Predicate::WBytes, "chunk-too-large"));
@@ -25,21 +27,26 @@ impl Chunk {
     }
 
     /// The raw bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_bytes(&self) -> &[u8] {
         &self.0
     }
 
     /// Number of raw bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn len(&self) -> usize {
         self.0.len()
     }
 
     /// Whether the chunk is empty (valid at EOF and as an empty final upload chunk).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_empty(&self) -> bool {
         self.0.is_empty()
     }
 
     /// Decodes canonical base64 text.
+    /// # Errors
+    /// Refuses noncanonical base64, invalid padding/alphabet, or decoded data above the chunk limit.
     pub fn decode_base64(text: &str) -> Result<Self, Refusal> {
         let bytes = text.as_bytes();
         if bytes.len() > MAX_CHUNK_CHARS || bytes.len() & 3 != 0 {
@@ -77,6 +84,7 @@ impl Chunk {
     }
 
     /// Canonical base64 text.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn encode_base64(&self) -> String {
         const ALPHABET: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
         let mut out = String::with_capacity(self.0.len().div_ceil(3) * 4);

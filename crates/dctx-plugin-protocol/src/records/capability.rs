@@ -1,7 +1,7 @@
 //! Capability ceilings, grants and liveness policies carried by initialize.
 //! Implements capabilities.schema.json, common.schema.json `grant` and dts.schema.json `$defs/liveness`.
 //! A capability is a requested ceiling, never consent (S-CAPABILITY). Depends on json, scalars, refusal.
-//! Used by requests::Initialize and by host grant intersection code.
+//! Used by `requests::Initialize` and by host grant intersection code.
 
 use crate::json::fields::{Fields, Obj, array, boolean, constant, int_in, positive, string, uint, unique_list};
 use crate::json::value::Json;
@@ -70,6 +70,8 @@ pub enum Capability {
 
 impl Capability {
     /// Decodes one closed capability object.
+    /// # Errors
+    /// Refuses unknown capability kinds, missing/extra fields, or invalid capability values and bounds.
     pub fn decode(value: &Json) -> Result<Self, Refusal> {
         let mut f = Fields::of(value)?;
         let capability = match string(f.req("kind")?)? {

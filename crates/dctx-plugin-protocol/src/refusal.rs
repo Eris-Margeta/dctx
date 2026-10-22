@@ -1,6 +1,6 @@
 //! Typed protocol refusal: the single error every codec and session check returns.
 //! Implements the validation layers of plugin-api README.md §Files and the predicate names of semantics.md/requirements.md.
-//! Depends on records::failure for the closed error code set; used by every module and by host/worker callers.
+//! Depends on `records::failure` for the closed error code set; used by every module and by host/worker callers.
 //! A refusal carries only static safe names, never message bytes, paths or source data.
 
 use std::fmt;
@@ -24,6 +24,7 @@ pub enum Stage {
 
 impl Stage {
     /// Corpus spelling of the stage.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Frame => "frame",
@@ -68,6 +69,7 @@ pub enum Predicate {
 
 impl Predicate {
     /// Corpus spelling of the predicate.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::WFrame => "W-FRAME",
@@ -102,31 +104,32 @@ pub struct Refusal {
 
 impl Refusal {
     /// Builds a refusal from its parts.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn new(code: ErrorCode, stage: Stage, predicate: Predicate, reason: &'static str) -> Self {
         Self { code, stage, predicate, reason }
     }
 
-    /// Frame-layer InvalidMessage.
+    /// Frame-layer `InvalidMessage`.
     pub(crate) const fn frame(reason: &'static str) -> Self {
         Self::new(ErrorCode::InvalidMessage, Stage::Frame, Predicate::WFrame, reason)
     }
 
-    /// Decode-layer InvalidMessage.
+    /// Decode-layer `InvalidMessage`.
     pub(crate) const fn decode(reason: &'static str) -> Self {
         Self::new(ErrorCode::InvalidMessage, Stage::Decode, Predicate::WJson, reason)
     }
 
-    /// Schema-layer InvalidMessage.
+    /// Schema-layer `InvalidMessage`.
     pub(crate) const fn schema(reason: &'static str) -> Self {
         Self::new(ErrorCode::InvalidMessage, Stage::Schema, Predicate::SBounds, reason)
     }
 
-    /// Semantic-layer InvalidMessage for a named rule.
+    /// Semantic-layer `InvalidMessage` for a named rule.
     pub(crate) const fn semantic(predicate: Predicate, reason: &'static str) -> Self {
         Self::new(ErrorCode::InvalidMessage, Stage::Semantic, predicate, reason)
     }
 
-    /// Session-layer InvalidMessage for a named rule.
+    /// Session-layer `InvalidMessage` for a named rule.
     pub(crate) const fn session(predicate: Predicate, reason: &'static str) -> Self {
         Self::new(ErrorCode::InvalidMessage, Stage::Session, predicate, reason)
     }

@@ -1,7 +1,7 @@
 //! Result checks that need the pending request: chunk arithmetic, probe echoes and hook output rules.
-//! Implements wire.md §Bytes "offset + decoded_length <= size; eof iff equal; never more than requested"
-//! (W-BYTES), the exact probe challenge echo and S-CONFIG/S-RESULT "ordinary hooks return command_output=[]".
-//! Depends on records; used by session::Session when a response resolves a pending request.
+//! Implements wire.md §Bytes "offset + `decoded_length` <= size; eof iff equal; never more than requested"
+//! (W-BYTES), the exact probe challenge echo and S-CONFIG/S-RESULT "ordinary hooks return `command_output`=[]".
+//! Depends on records; used by `session::Session` when a response resolves a pending request.
 
 use crate::records::broker::ChunkRead;
 use crate::records::requests::Request;
@@ -13,6 +13,8 @@ fn bytes(reason: &'static str) -> Refusal {
 }
 
 /// Checks a delivered chunk against the read that requested it (checked arithmetic throughout).
+/// # Errors
+/// Refuses mismatched offsets, excessive lengths, overflow, inconsistent EOF/size, or invalid read completion.
 pub fn check_chunk(read: &ChunkRead, chunk: &ChunkResult) -> Result<(), Refusal> {
     let delivered = u64::try_from(chunk.bytes.len()).map_err(|_| bytes("chunk-length"))?;
     if chunk.offset != read.offset {
@@ -32,6 +34,8 @@ pub fn check_chunk(read: &ChunkRead, chunk: &ChunkResult) -> Result<(), Refusal>
 }
 
 /// Applies every request-dependent rule to a resolved result.
+/// # Errors
+/// Refuses a result inconsistent with its request, including chunk bounds, probe echoes, and hook output rules.
 pub fn check_result(request: &Request, body: &ResultBody) -> Result<(), Refusal> {
     match (request, body) {
         (Request::OutputRead(read) | Request::FileRead(read) | Request::StateRead(read), ResultBody::Chunk(chunk)) => {

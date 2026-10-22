@@ -130,6 +130,7 @@ pub struct WireError {
 
 impl WireError {
     /// A refusal with no effect and no receipts.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn refusal(code: ErrorCode, phase: Phase, reason: Name) -> Self {
         let details =
             ErrorDetails { reason, resource_handle: None, limit: None, output_committed: None, reap_pending: None, exit_code: None };
@@ -137,6 +138,8 @@ impl WireError {
     }
 
     /// Decodes the closed error object and applies the S-REPLAY retry rule.
+    /// # Errors
+    /// Refuses invalid error fields, bounds, or a retryable error with partial/unknown effects.
     pub fn decode(value: &Json) -> Result<Self, Refusal> {
         let mut fields = Fields::of(value)?;
         let error = Self {

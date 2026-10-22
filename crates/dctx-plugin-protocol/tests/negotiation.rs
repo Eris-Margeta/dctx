@@ -48,6 +48,9 @@ fn canonical_fixture(stem: &str) -> Vec<u8> {
     to_canonical(&decode_object(&fixture_bytes(stem), DecodeLimits::WIRE).expect("json"))
 }
 
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+/// # Panics
+/// Panics if the checked-in hello/selection fixtures no longer negotiate.
 pub fn negotiated() -> Negotiated {
     let (id, hello) = hello();
     accept_answer(&id, &hello, &bootstrap("hello-selected"), &selected().identity, &[]).expect("negotiates")
@@ -61,7 +64,7 @@ fn hello_selected_golden() {
     let negotiated = negotiated();
     let apis: Vec<&str> = negotiated.apis.iter().map(Name::as_str).collect();
     assert_eq!(apis, ["file.read", "file.stage", "file.replace", "program.run"]);
-    assert!(negotiated.unavailable.is_empty());
+    assert_eq!(negotiated.unavailable, [] as [dctx_plugin_protocol::records::scalars::Name; 0]);
     assert_eq!(negotiated.frame_cap, 1_048_576);
 }
 

@@ -16,6 +16,8 @@ fn too_large() -> Refusal {
 }
 
 /// Encodes one frame, refusing an empty body or one above `cap`.
+/// # Errors
+/// Refuses empty bodies and lengths above the supplied cap or protocol maximum.
 pub fn encode_frame(body: &[u8], cap: u32) -> Result<Vec<u8>, Refusal> {
     if body.is_empty() {
         return Err(Refusal::frame("zero-length"));
@@ -49,16 +51,20 @@ impl Default for FrameDecoder {
 
 impl FrameDecoder {
     /// A decoder at the bootstrap cap.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new() -> Self {
         Self { cap: BOOTSTRAP_FRAME_CAP, prefix: [0; 4], prefix_len: 0, expected: 0, body: Vec::new(), poisoned: false }
     }
 
     /// Current cap.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn cap(&self) -> u32 {
         self.cap
     }
 
     /// Applies a negotiated cap; it may be lowered or set once from bootstrap, never above 1 MiB.
+    /// # Errors
+    /// Refuses zero or a cap above `MAX_FRAME_CAP`.
     pub fn set_cap(&mut self, cap: u32) -> Result<(), Refusal> {
         if cap == 0 || cap > MAX_FRAME_CAP {
             return Err(too_large());
@@ -68,6 +74,7 @@ impl FrameDecoder {
     }
 
     /// Whether no partial frame is buffered.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_idle(&self) -> bool {
         self.prefix_len == 0 && self.body.is_empty()
     }
@@ -75,6 +82,8 @@ impl FrameDecoder {
     /// Consumes bytes from `input`, stopping after at most one completed frame.
     /// Returns the number of bytes consumed and the completed body, if any.
     /// After a refusal the stream is desynchronized and every later call refuses.
+    /// # Errors
+    /// Refuses malformed or oversized frames and any input after a framing refusal desynchronized the stream.
     pub fn push(&mut self, input: &[u8]) -> Result<(usize, Option<Vec<u8>>), Refusal> {
         if self.poisoned {
             return Err(Refusal::frame("stream-desynchronized"));
@@ -118,6 +127,8 @@ impl FrameDecoder {
     }
 
     /// Declares end of stream: a buffered partial prefix or body is refused.
+    /// # Errors
+    /// Refuses a truncated prefix/body or an already desynchronized stream.
     pub fn finish(&self) -> Result<(), Refusal> {
         if self.poisoned {
             Err(Refusal::frame("stream-desynchronized"))
@@ -131,6 +142,8 @@ impl FrameDecoder {
     }
 
     /// Feeds a whole buffer and collects every completed body.
+    /// # Errors
+    /// Propagates framing refusals from `Self::push`, including an already desynchronized stream.
     pub fn push_all(&mut self, mut input: &[u8]) -> Result<Vec<Vec<u8>>, Refusal> {
         let mut bodies = Vec::new();
         while !input.is_empty() {

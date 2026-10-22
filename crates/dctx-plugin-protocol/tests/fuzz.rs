@@ -87,7 +87,6 @@ proptest! {
 
     #[test]
     fn trickled_reader_sees_the_same_frames(step in 1usize..40) {
-        let (stream, bodies) = stream();
         struct Steps { data: Vec<u8>, pos: usize, step: usize }
         impl std::io::Read for Steps {
             fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
@@ -97,6 +96,7 @@ proptest! {
                 Ok(count)
             }
         }
+        let (stream, bodies) = stream();
         let mut reader = FrameReader::new(Steps { data: stream, pos: 0, step });
         reader.decoder_mut().set_cap(MAX_FRAME_CAP).expect("cap");
         let mut seen = Vec::new();

@@ -2,7 +2,7 @@
 //! Implements docs/design/plugin-api/{wire.md, semantics.md, *.schema.json}: u32 LE frames, strict bounded
 //! JSON, canonical encoding, closed records, version negotiation and a pure session tracker.
 //! Depends on std only. Used by the plugin host, platform adapters, the Git plugin and distribution.
-//! Domain records, negotiation and session tracking do no IO; `stream` is the only std::io adapter.
+//! Domain records, negotiation and session tracking do no IO; `stream` is the only `std::io` adapter.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]

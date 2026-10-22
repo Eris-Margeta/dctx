@@ -56,7 +56,7 @@ pub enum BootstrapMessage {
         /// Selection.
         selected: Box<HelloSelected>,
     },
-    /// Worker refusal (for example UnsupportedVersion).
+    /// Worker refusal (for example `UnsupportedVersion`).
     Refused {
         /// Echoed hello ID.
         id: RequestId,

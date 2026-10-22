@@ -1,11 +1,12 @@
 //! Canonical JSON writer used for every encoded frame body and every digest input.
 //! Implements plugin-api wire.md §Bytes "Canonical bytes": keys sorted by byte order, no whitespace,
 //! decimal integers, `\"`/`\\` and lowercase `\u00xx` control escapes, other Unicode as raw UTF-8.
-//! Depends on json::value; used by records::envelope, frame encoding and action argument digests.
+//! Depends on `json::value`; used by `records::envelope`, frame encoding and action argument digests.
 
 use super::value::Json;
 
 /// Canonical bytes of `value`.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn to_canonical(value: &Json) -> Vec<u8> {
     let mut out = Vec::new();
     write_canonical(value, &mut out);

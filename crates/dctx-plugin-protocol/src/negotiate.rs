@@ -18,6 +18,8 @@ fn negotiation(code: ErrorCode, reason: &'static str) -> Refusal {
 }
 
 /// Checks min <= max and one range per major.
+/// # Errors
+/// Refuses reversed minor ranges or duplicate major versions.
 pub fn validate_ranges(ranges: &[VersionRange]) -> Result<(), Refusal> {
     for (index, range) in ranges.iter().enumerate() {
         if range.min_minor > range.max_minor {
@@ -31,6 +33,8 @@ pub fn validate_ranges(ranges: &[VersionRange]) -> Result<(), Refusal> {
 }
 
 /// Highest common major, then highest common minor.
+/// # Errors
+/// Refuses invalid ranges or an offer with no supported version in common.
 pub fn select_version(offer: &[VersionRange], supported: &[VersionRange]) -> Result<ApiVersion, Refusal> {
     validate_ranges(offer)?;
     validate_ranges(supported)?;
@@ -61,7 +65,9 @@ pub struct WorkerProfile {
     pub optional_apis: Vec<Name>,
 }
 
-/// Worker side: answers one hello with a selection or an UnsupportedVersion refusal.
+/// Worker side: answers one hello with a selection or an `UnsupportedVersion` refusal.
+/// # Errors
+/// Propagates malformed version-range refusals; lack of a common version is encoded as a refused answer.
 pub fn answer_hello(id: &RequestId, hello: &Hello, worker: &WorkerProfile) -> Result<BootstrapMessage, Refusal> {
     Ok(match select_version(&hello.versions, &worker.supported) {
         Ok(version) => BootstrapMessage::Selected {
@@ -104,6 +110,8 @@ pub struct Negotiated {
 }
 
 /// Host side: accepts a worker's answer to `hello` against the install record and extension registry.
+/// # Errors
+/// Refuses an unbound response, worker refusal, invalid selection, identity mismatch, or unsupported API/extension requirements.
 pub fn accept_answer(
     hello_id: &RequestId,
     hello: &Hello,

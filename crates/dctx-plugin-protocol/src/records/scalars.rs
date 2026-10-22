@@ -1,6 +1,6 @@
-//! Validated string newtypes: tokens, request IDs, plugin IDs, names, roles, aliases, SemVer, digests, paths, text.
+//! Validated string newtypes: tokens, request IDs, plugin IDs, names, roles, aliases, `SemVer`, digests, paths, text.
 //! Implements common.schema.json string `$defs` with byte-length bounds and whole-string matching (S-BOUNDS),
-//! plus the plugin-ID component and SemVer prerelease rules of S-MANIFEST. Depends on json and refusal.
+//! plus the plugin-ID component and `SemVer` prerelease rules of S-MANIFEST. Depends on json and refusal.
 //! Used by every record; a value of these types is always valid by construction.
 
 use crate::json::fields::string;
@@ -15,6 +15,8 @@ macro_rules! text_type {
 
         impl $name {
             /// Validates `value` against the contract pattern and bounds.
+            /// # Errors
+            /// Refuses text outside this scalar's contract pattern or length bounds.
             pub fn new(value: &str) -> Result<Self, Refusal> {
                 if $check(value) { Ok(Self(value.to_owned())) } else { Err(Refusal::schema($reason)) }
             }
@@ -60,7 +62,7 @@ text_type!(
     Alias, is_alias, "invalid-alias"
 );
 text_type!(
-    /// SemVer 2.0 version string.
+    /// `SemVer` 2.0 version string.
     SemVer, is_semver, "invalid-semver"
 );
 text_type!(
@@ -87,6 +89,7 @@ pub enum Sender {
 
 impl Sender {
     /// The other side of the session.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn peer(self) -> Self {
         match self {
             Self::Host => Self::Plugin,
@@ -97,6 +100,7 @@ impl Sender {
 
 impl RequestId {
     /// Side that owns this ID.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn sender(&self) -> Sender {
         if self.0.starts_with("h:") { Sender::Host } else { Sender::Plugin }
     }

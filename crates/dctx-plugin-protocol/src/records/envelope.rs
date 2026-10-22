@@ -32,16 +32,20 @@ impl Eq for PendingResult {}
 
 impl PendingResult {
     /// Wraps a typed result for sending.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn from_body(body: &ResultBody) -> Self {
         Self(body.encode())
     }
 
     /// Resolves the result with the pending request's method.
+    /// # Errors
+    /// Refuses a result that does not satisfy the pending method's schema or semantic rules.
     pub fn resolve(&self, method: Method) -> Result<ResultBody, Refusal> {
         ResultBody::decode(method, &self.0)
     }
 
     /// The validated union value.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_json(&self) -> &Json {
         &self.0
     }
@@ -104,11 +108,15 @@ pub enum WireMessage {
 
 impl WireMessage {
     /// Decodes one frame body under `limits` through the decode, schema and semantic layers.
+    /// # Errors
+    /// Propagates JSON decode limits, schema violations, and protocol semantic refusals.
     pub fn decode(body: &[u8], limits: DecodeLimits) -> Result<Self, Refusal> {
         Self::from_json(&decode_object(body, limits)?)
     }
 
     /// Decodes an already strictly decoded value.
+    /// # Errors
+    /// Refuses bootstrap/session schema violations or invalid protocol field values.
     pub fn from_json(value: &Json) -> Result<Self, Refusal> {
         if value.get("wire").is_some() {
             return BootstrapMessage::decode(value).map(Self::Bootstrap);
@@ -117,6 +125,7 @@ impl WireMessage {
     }
 
     /// Canonical JSON value.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn to_json(&self) -> Json {
         match self {
             Self::Bootstrap(message) => message.encode(),
@@ -125,6 +134,7 @@ impl WireMessage {
     }
 
     /// Canonical frame body bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn encode(&self) -> Vec<u8> {
         to_canonical(&self.to_json())
     }

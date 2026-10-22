@@ -1,7 +1,7 @@
 //! Closed-object reader, bounded value readers and object builder shared by every record codec.
 //! Implements the structural layer of plugin-api README.md (closed shapes, `additionalProperties:false`)
-//! and the integer/string/array bounds of semantics.md S-BOUNDS. Depends on json::value and refusal.
-//! Used by records::* decode/encode functions; not part of the public API.
+//! and the integer/string/array bounds of semantics.md S-BOUNDS. Depends on `json::value` and refusal.
+//! Used by `records::`* decode/encode functions; not part of the public API.
 
 use super::value::{Json, MAX_SAFE_INTEGER};
 use crate::refusal::Refusal;

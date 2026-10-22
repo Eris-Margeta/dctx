@@ -92,6 +92,7 @@ pub(crate) fn decode_hook_decl(value: &Json) -> Result<HookName, Refusal> {
     Ok(name)
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref, reason = "This encoder is passed as a callback over borrowed hook declarations, matching the other record encoders.")]
 pub(crate) fn encode_hook_decl(name: &HookName) -> Json {
     Obj::new().put("name", name.encode()).put("version", Json::Int(1)).build()
 }
@@ -473,7 +474,7 @@ mod tests {
         assert!(matches!(Wait::decode(&json(r#"{"broker_request":"p:1"}"#)), Ok(Wait::BrokerRequest(_))));
         assert!(matches!(Wait::decode(&json(r#"{"dependency":"dep:1"}"#)), Ok(Wait::Dependency(_))));
         assert!(Wait::decode(&json(r#"{"broker_request":"p:1","dependency":"d"}"#)).is_err());
-        assert!(Wait::decode(&json(r#"{}"#)).is_err());
+        assert!(Wait::decode(&json(r"{}")).is_err());
         let resource = Resource::decode(&json(r#"{"handle":"file:ignore","kind":"file","bytes":3}"#)).expect("valid");
         assert_eq!(Resource::decode(&resource.encode()), Ok(resource));
         let record = CommandRecord::decode(&json(r#"{"type":"record","name":"protection","fields":{"protected":true,"n":[1,"x"]}}"#))

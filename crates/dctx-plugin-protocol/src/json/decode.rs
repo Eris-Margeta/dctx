@@ -1,7 +1,7 @@
 //! Strict bounded JSON decoder for frame bodies and other preserved contract documents.
 //! Implements plugin-api wire.md §Bytes and semantics.md S-BOUNDS: no BOM, UTF-8 only, one root object,
 //! no trailing JSON, no duplicate keys, integer-only numbers, no NUL or unpaired surrogates, depth/member caps.
-//! Depends on json::value and refusal; used by records::envelope and by fixture-driven tests.
+//! Depends on `json::value` and refusal; used by `records::envelope` and by fixture-driven tests.
 
 use std::collections::BTreeSet;
 
@@ -30,6 +30,8 @@ impl DecodeLimits {
 }
 
 /// Decodes exactly one JSON object from `bytes` under `limits`.
+/// # Errors
+/// Refuses invalid UTF-8/JSON, non-object roots, duplicate members, trailing data, or exceeded decode limits.
 pub fn decode_object(bytes: &[u8], limits: DecodeLimits) -> Result<Json, Refusal> {
     if bytes.len() > limits.max_bytes {
         return Err(Refusal::new(ErrorCode::ResourceLimit, Stage::Frame, Predicate::WFrame, "document-too-large"));
@@ -134,7 +136,7 @@ impl Parser<'_> {
             members.push((key, value));
             self.skip_whitespace();
             match self.next()? {
-                b',' => continue,
+                b',' => {},
                 b'}' => return Ok(Json::Object(members)),
                 _ => return Err(Refusal::decode("unexpected-token")),
             }
@@ -154,7 +156,7 @@ impl Parser<'_> {
             items.push(self.value(depth)?);
             self.skip_whitespace();
             match self.next()? {
-                b',' => continue,
+                b',' => {},
                 b']' => return Ok(Json::Array(items)),
                 _ => return Err(Refusal::decode("unexpected-token")),
             }
@@ -271,7 +273,7 @@ mod tests {
     use super::*;
 
     fn reason(text: &str) -> &'static str {
-        decode_object(text.as_bytes(), DecodeLimits::WIRE).map(|_| "accepted").unwrap_or_else(|r| r.reason)
+        decode_object(text.as_bytes(), DecodeLimits::WIRE).map_or_else(|r| r.reason, |_| "accepted")
     }
 
     #[test]

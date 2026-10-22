@@ -75,7 +75,10 @@ pub fn with_id(mut message: SessionMessage, id: &str) -> SessionMessage {
 }
 
 pub fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
+    use std::fmt::Write as _;
+    let mut text = String::with_capacity(bytes.len() * 2);
+    for byte in bytes { let _ = write!(text, "{byte:02x}"); }
+    text
 }
 
 pub fn unhex(text: &str) -> Vec<u8> {

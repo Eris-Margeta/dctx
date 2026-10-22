@@ -1,5 +1,5 @@
 //! Session request params: the host control requests and the dispatch over every method.
-//! Implements requests.schema.json (`initialize`, `probe`, `cancel`, `shutdown`, plus broker::* forms) and the
+//! Implements requests.schema.json (`initialize`, `probe`, `cancel`, `shutdown`, plus `broker::`* forms) and the
 //! S-REPLAY action input: canonical `{method, params}` without `params.action_id` (wire.md §Bytes).
 //! Depends on json, common, capability, invocation, broker, method; used by envelope and session.
 
@@ -126,6 +126,7 @@ pub enum Request {
 
 impl Request {
     /// The request's method.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn method(&self) -> Method {
         match self {
             Self::Initialize(_) => Method::Initialize,
@@ -146,6 +147,8 @@ impl Request {
     }
 
     /// Decodes `params` for `method`.
+    /// # Errors
+    /// Refuses parameters that violate the selected method's closed schema, bounds, or semantic rules.
     pub fn decode(method: Method, params: &Json) -> Result<Self, Refusal> {
         Ok(match method {
             Method::Initialize => Self::Initialize(Box::new(decode_initialize(params)?)),
@@ -204,13 +207,12 @@ impl Request {
                 Obj::new().put("invocation", invocation.encode()).put("reason", reason.encode()).build()
             }
             Self::Shutdown { reason } => Obj::new().put("reason", reason.encode()).build(),
-            Self::OutputRead(read) => read.encode("handle"),
+            Self::OutputRead(read) | Self::StateRead(read) => read.encode("handle"),
             Self::OutputList(list) => list.encode(),
             Self::FileRead(read) => read.encode("resource"),
             Self::FileStage(stage) => stage.encode(),
             Self::FileReplace(replace) => with_action(replace.encode_without_action(), &replace.action_id),
             Self::ProgramRun(run) => with_action(run.encode_without_action(), &run.action_id),
-            Self::StateRead(read) => read.encode("handle"),
             Self::StateWrite(write) => with_action(write.encode_without_action(), &write.action_id),
             Self::StateReclaim(reclaim) => with_action(reclaim.encode_without_action(), &reclaim.action_id),
         }
@@ -218,6 +220,7 @@ impl Request {
 
     /// Replay key and canonical argument bytes `{method, params}` without `action_id` (S-REPLAY).
     /// `None` for requests that carry no action ID.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn action_input(&self) -> Option<(&Token, Vec<u8>)> {
         let (action, params) = match self {
             Self::FileReplace(replace) => (&replace.action_id, replace.encode_without_action()),

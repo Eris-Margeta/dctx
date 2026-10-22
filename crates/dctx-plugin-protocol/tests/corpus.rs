@@ -60,8 +60,8 @@ fn request_for(method: Method, hook: &str) -> Request {
 /// Decodes a body; when the case names a pending method, resolves and checks the result against it.
 fn body_outcome(case: &Json, bytes: &[u8]) -> Result<WireMessage, Refusal> {
     let message = WireMessage::decode(bytes, DecodeLimits::WIRE)?;
-    let pending = case.get("context").map(|context| text(context, "pending_method")).unwrap_or("");
-    let hook = case.get("context").map(|context| text(context, "hook")).unwrap_or("");
+    let pending = case.get("context").map_or("", |context| text(context, "pending_method"));
+    let hook = case.get("context").map_or("", |context| text(context, "hook"));
     if let (Some(method), WireMessage::Session(session)) = (Method::parse(pending), &message)
         && let SessionBody::Response { outcome: Outcome::Result(result), .. } = &session.body {
             let body = result.resolve(method)?;
@@ -71,6 +71,7 @@ fn body_outcome(case: &Json, bytes: &[u8]) -> Result<WireMessage, Refusal> {
     Ok(message)
 }
 
+#[allow(clippy::needless_pass_by_value, reason = "The assertion consumes one completed decode outcome; retaining ownership keeps the fixture call sites and failure reporting together.")]
 fn assert_expectation(id: &str, case: &Json, outcome: Result<WireMessage, Refusal>) {
     let valid = expect_field(case, "valid") == Some(&Json::Bool(true));
     match outcome {

@@ -1,6 +1,6 @@
 //! Session method registry: the closed v1 method set, its sender and whether it is a broker effect.
 //! Implements the method table of plugin-api wire.md §Bootstrap and lifecycle.
-//! Depends on scalars::Sender; used by requests, results, session and negotiation.
+//! Depends on `scalars::Sender`; used by requests, results, session and negotiation.
 //! Unknown methods (for example any network method) do not parse and are refused.
 
 use crate::records::scalars::Sender;
@@ -41,6 +41,7 @@ wire_enum!(
 
 impl Method {
     /// The only side allowed to send this request.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn sender(self) -> Sender {
         match self {
             Self::Initialize | Self::Invoke | Self::Probe | Self::Cancel | Self::Shutdown => Sender::Host,
@@ -49,11 +50,13 @@ impl Method {
     }
 
     /// Whether this is a plugin broker request bound to the active invocation.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn is_broker(self) -> bool {
         matches!(self.sender(), Sender::Plugin)
     }
 
     /// Whether the request carries an `action_id` replay key (S-REPLAY).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn has_action_id(self) -> bool {
         matches!(self, Self::FileReplace | Self::ProgramRun | Self::StateWrite | Self::StateReclaim)
     }

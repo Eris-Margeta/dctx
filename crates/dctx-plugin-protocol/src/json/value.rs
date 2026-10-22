@@ -1,6 +1,6 @@
 //! JSON value tree produced by the strict decoder and consumed by record codecs.
 //! Implements the value layer of plugin-api wire.md §Bytes and semantics.md S-BOUNDS.
-//! Depends on nothing; used by json::decode, json::encode, json::fields and records.
+//! Depends on nothing; used by `json::decode`, `json::encode`, `json::fields` and records.
 //! Objects keep member order and never contain a duplicate key; numbers are integers only.
 
 /// Largest integer the contract admits (2^53 - 1).
@@ -25,16 +25,19 @@ pub enum Json {
 
 impl Json {
     /// Builds a string value.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn str(value: &str) -> Self {
         Self::Str(value.to_owned())
     }
 
     /// Builds an integer from an already bounded unsigned value.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn uint(value: u64) -> Self {
         Self::Int(i64::try_from(value).unwrap_or(i64::MAX))
     }
 
     /// Member lookup on an object; `None` for other values.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn get(&self, key: &str) -> Option<&Json> {
         match self {
             Self::Object(members) => members.iter().find(|(name, _)| name == key).map(|(_, value)| value),
@@ -43,6 +46,7 @@ impl Json {
     }
 
     /// Object members, if this is an object.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_object(&self) -> Option<&[(String, Json)]> {
         match self {
             Self::Object(members) => Some(members),
@@ -51,6 +55,7 @@ impl Json {
     }
 
     /// Array items, if this is an array.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_array(&self) -> Option<&[Json]> {
         match self {
             Self::Array(items) => Some(items),
@@ -59,6 +64,7 @@ impl Json {
     }
 
     /// String contents, if this is a string.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_str(&self) -> Option<&str> {
         match self {
             Self::Str(text) => Some(text),
@@ -67,6 +73,7 @@ impl Json {
     }
 
     /// Integer, if this is a number.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_int(&self) -> Option<i64> {
         match self {
             Self::Int(value) => Some(*value),
@@ -75,6 +82,7 @@ impl Json {
     }
 
     /// Boolean, if this is a boolean.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             Self::Bool(value) => Some(*value),
@@ -83,6 +91,7 @@ impl Json {
     }
 
     /// Structural equality that ignores object member order (JSON Schema `uniqueItems` semantics).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn same_value(&self, other: &Json) -> bool {
         match (self, other) {
             (Self::Object(left), Self::Object(right)) => {

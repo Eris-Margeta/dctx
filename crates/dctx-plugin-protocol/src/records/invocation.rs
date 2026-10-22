@@ -1,7 +1,7 @@
 //! Invoke payloads: the six closed hook/command invocation forms.
 //! Implements invocation.schema.json (before/after pack, before/after index, cache-gc, command) and
 //! wire.md §Invocation boundaries: projects and resources are opaque handles, never OS paths.
-//! Depends on json, scalars, common and refusal; used by requests::Request::Invoke and session hook checks.
+//! Depends on json, scalars, common and refusal; used by `requests::Request::Invoke` and session hook checks.
 
 use crate::json::fields::{Fields, Obj, array, constant_int, constant_true, list, string, uint, unique_list};
 use crate::json::value::Json;
@@ -201,6 +201,7 @@ pub struct Invocation {
 
 impl Invocation {
     /// The declared hook this invocation runs, or `None` for a command.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn hook(&self) -> Option<HookName> {
         match self.payload {
             HookPayload::BeforePackOutputWritten { .. } => Some(HookName::BeforePackOutputWritten),

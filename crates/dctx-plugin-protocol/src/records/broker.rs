@@ -1,7 +1,7 @@
 //! Plugin broker request params: output, file, program and state effects.
 //! Implements requests.schema.json `output.*`, `file.*`, `program.run` and `state.*`; Git has exactly one
 //! recipe with handle arguments, never argv (S-CAPABILITY). Depends on json, scalars, bytes and refusal.
-//! Used by requests::Request; replay keys use `action_id` (S-REPLAY).
+//! Used by `requests::Request`; replay keys use `action_id` (S-REPLAY).
 
 use crate::json::fields::{Fields, Obj, array, boolean, constant, int_in, uint, unique_list};
 use crate::json::value::Json;
