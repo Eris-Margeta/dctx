@@ -123,7 +123,13 @@ mod tests {
     use crate::HashError;
 
     fn hex(digest: &ContentDigest) -> String {
-        digest.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect()
+        use std::fmt::Write;
+
+        let mut hex = String::with_capacity(64);
+        for byte in digest.as_bytes() {
+            write!(hex, "{byte:02x}").unwrap();
+        }
+        hex
     }
 
     fn assert_vector(message: &[u8], expected_hex: &str) {
