@@ -51,6 +51,7 @@ pub(crate) struct Lexed {
 
 impl Lexed {
     /// One-based line of a byte offset. Rows advance on `\n` only.
+    #[allow(clippy::cast_possible_truncation, reason = "Line counts cannot exceed the 8 MiB input ceiling enforced by RubyLexer::extract.")]
     pub fn line(&self, byte: u32) -> u32 {
         self.line_starts.partition_point(|&start| start <= byte).max(1) as u32
     }
@@ -126,6 +127,7 @@ fn line_starts(source: &str) -> Vec<u32> {
     starts
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Line counts cannot exceed the 8 MiB input ceiling enforced by RubyLexer::extract.")]
 fn line_of(starts: &[u32], byte: u32) -> u32 {
     starts.partition_point(|&start| start <= byte).max(1) as u32
 }

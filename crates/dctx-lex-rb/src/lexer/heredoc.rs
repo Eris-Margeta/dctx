@@ -13,13 +13,13 @@ pub(super) struct Pending {
 }
 
 impl Lx<'_> {
-    pub(super) fn try_heredoc(&mut self) -> Result<bool, crate::domain::LexError> {
+    pub(super) fn try_heredoc(&mut self) -> bool {
         if self.fname || !self.src.get(self.i..).unwrap_or("").starts_with("<<") {
-            return Ok(false);
+            return false;
         }
         // `class <<self` is a singleton class, even with no space before `self`.
         if self.prev_token_is("class") {
-            return Ok(false);
+            return false;
         }
         let start = self.i;
         let mut j = self.i + 2;
@@ -29,7 +29,7 @@ impl Lx<'_> {
             j += 1;
         }
         let Some((term, interp, end)) = self.heredoc_term(j) else {
-            return Ok(false);
+            return false;
         };
         self.i = end;
         let slot = self.tokens.len();
@@ -43,7 +43,7 @@ impl Lx<'_> {
         });
         self.expr = false;
         self.fname = false;
-        Ok(true)
+        true
     }
 
     fn prev_token_is(&self, word: &str) -> bool {
@@ -118,12 +118,12 @@ impl Lx<'_> {
     fn flush_heredocs(&mut self) -> Result<(), crate::domain::LexError> {
         let pending = std::mem::take(&mut self.pending);
         for doc in pending {
-            self.read_heredoc(doc)?;
+            self.read_heredoc(&doc)?;
         }
         Ok(())
     }
 
-    fn read_heredoc(&mut self, doc: Pending) -> Result<(), crate::domain::LexError> {
+    fn read_heredoc(&mut self, doc: &Pending) -> Result<(), crate::domain::LexError> {
         let mut dynamic = false;
         loop {
             if self.i >= self.b.len() {

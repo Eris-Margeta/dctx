@@ -40,7 +40,7 @@ impl Lx<'_> {
         if byte == b'\n' {
             return self.on_newline();
         }
-        if self.at_bol() && self.try_begin()? {
+        if self.at_bol() && self.try_begin() {
             return Ok(());
         }
         if self.at_bol() && self.try_data() {
@@ -65,7 +65,7 @@ impl Lx<'_> {
         if byte == b':' {
             return self.colon();
         }
-        if byte == b'<' && self.try_heredoc()? {
+        if byte == b'<' && self.try_heredoc() {
             return Ok(());
         }
         if byte.is_ascii_digit() {
@@ -85,9 +85,9 @@ impl Lx<'_> {
         self.operator()
     }
 
-    fn try_begin(&mut self) -> Result<bool, LexError> {
+    fn try_begin(&mut self) -> bool {
         if !word_at(self.src, self.i, "=begin") {
-            return Ok(false);
+            return false;
         }
         let start = self.i;
         self.i += "=begin".len();
@@ -101,13 +101,13 @@ impl Lx<'_> {
                     self.i += 1;
                 }
                 self.comments.push((as_u32(start), as_u32(self.i)));
-                return Ok(true);
+                return true;
             }
             self.i += 1;
         }
         self.problem(start, DiagnosticReason::UnterminatedComment);
         self.comments.push((as_u32(start), as_u32(self.i)));
-        Ok(true)
+        true
     }
 
     fn try_data(&mut self) -> bool {

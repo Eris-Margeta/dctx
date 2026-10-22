@@ -23,6 +23,7 @@ impl Limits {
     };
 
     /// Clamps every limit to its ceiling.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn narrowed(self) -> Self {
         Self {
             max_bytes: self.max_bytes.min(Self::CEILING.max_bytes),

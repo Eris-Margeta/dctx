@@ -27,6 +27,7 @@ pub struct RubyLexer {
 
 impl RubyLexer {
     /// Builds an extractor. Limits above the ceilings are narrowed to them.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(limits: Limits) -> Self {
         Self {
             limits: limits.narrowed(),
@@ -35,6 +36,7 @@ impl RubyLexer {
 
     /// Extracts facts from one place-relative path and its authorized bytes.
     ///
+    /// # Errors
     /// Refuses a bad path, an unsupported extension, invalid UTF-8, or input past
     /// the byte, depth, or fact ceilings. Malformed source still returns facts
     /// plus diagnostics.

@@ -140,7 +140,7 @@ fn check_invariants(path: &str, source: &str, facts: &LexedFile) {
         assert_eq!(reference.fact.owner_path, path);
         assert!(ids.contains(reference.fact.src.as_str()), "{}", reference.fact.src);
         assert_ne!(reference.fact.kind, EdgeKind::Contains);
-        assert!(!reference.fact.name.is_empty());
+        assert_ne!(reference.fact.name, "");
     }
 }
 
@@ -330,13 +330,14 @@ fn incomplete_fixture_keeps_partial_facts() {
 }
 
 #[test]
+#[allow(clippy::cast_possible_truncation, reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound.")]
 fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
     let mut state = 0x1234_5678_9abc_def0_u64;
     for _ in 0..200 {
         let len = (xorshift(&mut state) as usize) % 301;
         let mut bytes = Vec::with_capacity(len);
         for _ in 0..len {
-            bytes.push(xorshift(&mut state) as u8);
+            bytes.push(xorshift(&mut state).to_le_bytes()[0]);
         }
         assert_stable("f.rb", &bytes);
         assert_stable("f.rs", &bytes);
