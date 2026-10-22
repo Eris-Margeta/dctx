@@ -5,14 +5,14 @@
 use crate::compress::compress;
 
 pub(crate) const INITIAL: [u64; 8] = [
-    0x6a09e667f3bcc908,
-    0xbb67ae8584caa73b,
-    0x3c6ef372fe94f82b,
-    0xa54ff53a5f1d36f1,
-    0x510e527fade682d1,
-    0x9b05688c2b3e6c1f,
-    0x1f83d9abfb41bd6b,
-    0x5be0cd19137e2179,
+    0x6a09_e667_f3bc_c908,
+    0xbb67_ae85_84ca_a73b,
+    0x3c6e_f372_fe94_f82b,
+    0xa54f_f53a_5f1d_36f1,
+    0x510e_527f_ade6_82d1,
+    0x9b05_688c_2b3e_6c1f,
+    0x1f83_d9ab_fb41_bd6b,
+    0x5be0_cd19_137e_2179,
 ];
 
 /// Allocation-free SHA-512 state for messages shorter than 2^128 bits.
@@ -34,6 +34,7 @@ impl Default for Sha512 {
 
 impl Sha512 {
     /// Creates an empty SHA-512 state.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the public constructor's existing caller lint behavior.")]
     pub const fn new() -> Self {
         Self {
             state: INITIAL,
@@ -66,6 +67,7 @@ impl Sha512 {
     }
 
     /// Consumes the state, adds FIPS padding and returns 64 digest bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the consuming digest API's existing caller lint behavior.")]
     pub fn finalize(mut self) -> [u8; 64] {
         self.buffer[self.used] = 0x80;
         self.buffer[self.used + 1..].fill(0);
@@ -83,6 +85,7 @@ impl Sha512 {
     }
 
     /// Hashes a message in one call.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the one-shot digest API's existing caller lint behavior.")]
     pub fn digest(bytes: &[u8]) -> [u8; 64] {
         let mut hash = Self::new();
         hash.update(bytes);

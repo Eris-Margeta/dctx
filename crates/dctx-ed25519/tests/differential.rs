@@ -135,7 +135,7 @@ fn sha512_padding_boundaries_at_every_split() {
     for length in [
         0, 1, 31, 32, 63, 64, 65, 111, 112, 113, 127, 128, 129, 239, 240, 255, 256, 257,
     ] {
-        let message: Vec<_> = (0..length).map(|i| i as u8).collect();
+        let message: Vec<_> = (0..length).map(|i: usize| i.to_le_bytes()[0]).collect();
         let expected: [u8; 64] = sha2::Sha512::digest(&message).into();
         for split in 0..=length {
             let mut hash = Sha512::default();

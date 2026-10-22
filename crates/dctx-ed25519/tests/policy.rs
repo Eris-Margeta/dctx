@@ -128,7 +128,7 @@ fn scalar_malleability_and_all_neighboring_lengths_fail() {
     let mut carry = 0u16;
     for (byte, modulus) in changed[32..].iter_mut().zip(&order) {
         let sum = u16::from(*byte) + u16::from(*modulus) + carry;
-        *byte = sum as u8;
+        *byte = sum.to_le_bytes()[0];
         carry = sum >> 8;
     }
     assert!(!reference_accepts(&key, &message, &changed));
