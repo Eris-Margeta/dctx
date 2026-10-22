@@ -27,6 +27,7 @@ pub struct KotlinLexer {
 
 impl KotlinLexer {
     /// Builds an extractor. Limits above the ceilings are narrowed to them.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(limits: Limits) -> Self {
         Self {
             limits: limits.narrowed(),
@@ -38,6 +39,10 @@ impl KotlinLexer {
     /// Refuses a bad path, a non-Kotlin extension, invalid UTF-8, or input past
     /// the byte, depth, or fact ceilings. Malformed source still returns facts
     /// plus diagnostics.
+    ///
+    /// # Errors
+    /// Refuses unsupported paths, invalid UTF-8 or model identities, and
+    /// input exceeding the byte, nesting or fact ceilings.
     pub fn extract(&self, path: &str, bytes: &[u8]) -> Result<LexedFile, LexError> {
         Dialect::for_path(path).ok_or(LexError::UnsupportedDialect)?;
         if bytes.len() > self.limits.max_bytes {

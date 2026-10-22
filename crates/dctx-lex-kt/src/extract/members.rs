@@ -5,7 +5,7 @@ use super::{Prefix, Scope, Walker};
 use crate::domain::DiagnosticReason;
 use dctx_map_model::SymbolKind;
 
-impl<'a> Walker<'a> {
+impl Walker<'_> {
     pub(crate) fn class_body(&mut self, open: usize, scope: &Scope, enum_head: bool) {
         let Some(close) = self.matched(open, usize::MAX) else { return };
         if self.depth >= 64 {

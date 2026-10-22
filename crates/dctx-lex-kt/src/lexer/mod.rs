@@ -39,18 +39,18 @@ pub(crate) struct Token {
     pub start: u32,
     /// Exclusive byte end. Equal to `start` for an inserted semicolon.
     pub end: u32,
-    /// `1 + index` of an adjacent preceding KDoc comment, or zero.
+    /// `1 + index` of an adjacent preceding `KDoc` comment, or zero.
     pub doc: u32,
 }
 
-/// A comment span. KDoc is `/** ... */` and not the empty `/**/`.
+/// A comment span. `KDoc` is `/** ... */` and not the empty `/**/`.
 #[derive(Debug, Clone, Copy)]
 pub(crate) struct Comment {
     /// Inclusive byte start.
     pub start: u32,
     /// Exclusive byte end.
     pub end: u32,
-    /// Whether the comment is KDoc.
+    /// Whether the comment is `KDoc`.
     pub javadoc: bool,
 }
 
@@ -76,6 +76,7 @@ pub(crate) type Problems = Vec<(u32, DiagnosticReason)>;
 
 impl Lexed {
     /// One-based line of a byte offset. Rows advance on `\n` only.
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub fn line(&self, byte: u32) -> u32 {
         self.line_starts.partition_point(|&start| start <= byte) as u32
     }
@@ -93,6 +94,7 @@ const KEYWORDS: &[&str] = &[
 ];
 
 /// Lexes `source` and pairs `()`, `[]` and `{}`.
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     let mut line_starts = vec![0];
     line_starts.extend(
@@ -128,10 +130,12 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     })
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 fn line_of(line_starts: &[u32], byte: u32) -> u32 {
     line_starts.partition_point(|&start| start <= byte) as u32
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 fn pair(
     source: &str,
     tokens: &[Token],
@@ -168,6 +172,7 @@ fn pair(
     Ok(partner)
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 fn close_bracket(
     source: &str,
     tokens: &[Token],
@@ -327,6 +332,7 @@ impl scan::Lexer<'_> {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn push(&mut self, kind: Kind, start: usize) {
         let end = self.pos;
         let doc = self.doc_for(start as u32);
@@ -335,6 +341,7 @@ impl scan::Lexer<'_> {
         self.insert = ends_stmt(kind, self.snippet(start, end));
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn push_semi(&mut self, at: usize) {
         let at = at as u32;
         self.tokens.push(Token { kind: Kind::Semi, start: at, end: at, doc: 0 });
@@ -352,6 +359,7 @@ impl scan::Lexer<'_> {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn doc_for(&self, start: u32) -> u32 {
         let Some((index, comment)) = self.comments.iter().enumerate().next_back() else {
             return 0;
@@ -359,7 +367,7 @@ impl scan::Lexer<'_> {
         if !comment.javadoc || comment.end > start {
             return 0;
         }
-        let prev = self.tokens.last().map(|token| token.end).unwrap_or(0);
+        let prev = self.tokens.last().map_or(0, |token| token.end);
         if comment.start < prev || !gap_ok(self.src, comment.end, start) {
             return 0;
         }
@@ -424,8 +432,7 @@ fn ident_at(rest: &str) -> &str {
             (*index == 0 && scan::starts_ident(*ch)) || (*index > 0 && scan::continues_ident(*ch))
         })
         .last()
-        .map(|(index, ch)| index + ch.len_utf8())
-        .unwrap_or(0);
+        .map_or(0, |(index, ch)| index + ch.len_utf8());
     rest.get(..end).unwrap_or("")
 }
 

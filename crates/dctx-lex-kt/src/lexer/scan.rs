@@ -215,6 +215,7 @@ impl<'a> Lexer<'a> {
         }
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn scan_interp(&mut self, max_depth: u32) -> Result<bool, u32> {
         let mut depth = 1u32;
         if depth > max_depth {
@@ -263,6 +264,7 @@ impl<'a> Lexer<'a> {
         Ok(false)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn fail_string(&mut self, start: usize, raw: bool, emitted: bool) {
         let reason = if raw {
             DiagnosticReason::UnterminatedRaw
@@ -292,6 +294,7 @@ impl<'a> Lexer<'a> {
         *next == b'{' || starts_ident(self.char_at(self.pos + 1))
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn scan_char(&mut self) {
         let start = self.pos;
         self.pos += 1;
@@ -320,6 +323,7 @@ impl<'a> Lexer<'a> {
         self.push(Kind::BadChar, start);
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn scan_ticks(&mut self) {
         let start = self.pos;
         self.pos += 1;
@@ -379,6 +383,7 @@ impl<'a> Lexer<'a> {
         self.block_comment(max_depth)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn line_comment(&mut self) {
         if self.insert && self.groups == 0 {
             self.push_semi(self.pos);
@@ -400,6 +405,7 @@ impl<'a> Lexer<'a> {
         self.insert = false;
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn block_comment(&mut self, max_depth: u32) -> Result<(), u32> {
         let start = self.pos;
         let newline_before = self.insert && self.groups == 0 && self.comment_has_newline(start);

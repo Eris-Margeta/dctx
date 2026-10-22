@@ -46,6 +46,7 @@ impl Scope {
 }
 
 /// Modifiers and annotations in front of one declaration.
+#[allow(clippy::struct_excessive_bools, reason = "Retain independent lexical modifier facts, including combinations in malformed Kotlin input; this prefix scanner does not validate their legality.")]
 pub(crate) struct Prefix {
     pub next: usize,
     pub public: bool,
@@ -114,6 +115,7 @@ pub(crate) struct Walker<'a> {
 }
 
 impl Draft {
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn new(path: &str, source: &str, lexed: &Lexed, max_facts: usize) -> Result<Self, LexError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
         let lines = source.bytes().filter(|byte| *byte == b'\n').count() as u32 + 1;
@@ -194,7 +196,7 @@ impl Draft {
             reason,
         }));
         diagnostics.sort_by_key(|diagnostic| diagnostic.byte);
-        let first_problem = diagnostics.first().map(|item| item.byte).unwrap_or(u32::MAX);
+        let first_problem = diagnostics.first().map_or(u32::MAX, |item| item.byte);
         let completion = if diagnostics.is_empty() { Completion::Complete } else { Completion::Partial };
         diagnostics.truncate(LexedFile::MAX_DIAGNOSTICS);
         let path = self.path.clone();
@@ -339,6 +341,7 @@ impl<'a> Walker<'a> {
     pub(crate) fn start_byte(&self, index: usize) -> u32 {
         self.toks.get(index).map_or(0, |token| token.start)
     }
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(crate) fn end_byte(&self, index: usize) -> u32 {
         self.toks.get(index).map_or(self.src.len() as u32, |token| token.end)
     }
@@ -355,7 +358,7 @@ impl<'a> Walker<'a> {
         (partner != NONE && (partner as usize) > index && (partner as usize) < end).then_some(partner as usize)
     }
     pub(crate) fn after(&self, index: usize) -> usize {
-        self.matched(index, usize::MAX).map(|partner| partner + 1).unwrap_or(index + 1)
+        self.matched(index, usize::MAX).map_or(index + 1, |partner| partner + 1)
     }
     pub(crate) fn is_semi(&self, index: usize) -> bool {
         self.kind(index) == Some(Kind::Semi)
@@ -406,12 +409,9 @@ impl<'a> Walker<'a> {
             self.problem(self.start_byte(symbol.first), DiagnosticReason::UnsupportedName);
             return None;
         }
-        let id = match StableId::new(NodeKind::Symbol, &self.draft.path, Some(&qualified), None) {
-            Ok(id) => id,
-            Err(_) => {
-                self.problem(self.start_byte(symbol.first), DiagnosticReason::UnsupportedName);
-                return None;
-            }
+        let Ok(id) = StableId::new(NodeKind::Symbol, &self.draft.path, Some(&qualified), None) else {
+            self.problem(self.start_byte(symbol.first), DiagnosticReason::UnsupportedName);
+            return None;
         };
         if !self.draft.accept() {
             return None;

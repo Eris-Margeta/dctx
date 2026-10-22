@@ -17,7 +17,7 @@ struct Header {
     sig_end: u32,
 }
 
-impl<'a> Walker<'a> {
+impl Walker<'_> {
     pub(crate) fn type_decl(&mut self, begin: usize, prefix: &Prefix, end: usize, scope: &Scope) -> usize {
         let keyword_at = prefix.next;
         let keyword = self.text(keyword_at);

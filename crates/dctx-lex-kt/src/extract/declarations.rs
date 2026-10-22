@@ -9,7 +9,7 @@ const USE_SITE: &[&str] = &[
     "delegate", "field", "file", "get", "param", "property", "receiver", "set", "setparam",
 ];
 
-impl<'a> Walker<'a> {
+impl Walker<'_> {
     pub(crate) fn declaration(&mut self, index: usize, end: usize, scope: &Scope, file: bool) -> usize {
         let begin = self.skip_semis(index, end);
         if begin >= end || self.is(begin, "}") {
@@ -180,7 +180,7 @@ impl<'a> Walker<'a> {
         let header = self.fun_after(close, end);
         let scan = self.body_scan(header.cursor, end);
         let (last, next, body) = self.fun_tail(header.cursor, end, header.sig_end, keyword_at);
-        self.finish_fun(FinishedFun {
+        self.finish_fun(&FinishedFun {
             begin,
             prefix,
             name_at,
@@ -219,7 +219,7 @@ impl<'a> Walker<'a> {
         }
     }
 
-    fn finish_fun(&mut self, fun: FinishedFun<'_, '_>) {
+    fn finish_fun(&mut self, fun: &FinishedFun<'_, '_>) {
         let Some(child) = self.emit(
             self.fun_symbol(fun.begin, fun.prefix, fun.name_at, (fun.last, fun.sig_end, fun.body), fun.scope),
             fun.scope,

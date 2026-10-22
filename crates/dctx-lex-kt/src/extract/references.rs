@@ -5,7 +5,7 @@ use super::{decl_word, is_modifier, Scope, Walker};
 use crate::lexer::keyword;
 use dctx_map_model::EdgeKind;
 
-impl<'a> Walker<'a> {
+impl Walker<'_> {
     pub(crate) fn scan_refs(&mut self, start: usize, end: usize, scope: &Scope) {
         let mut index = start;
         let mut guard = 0usize;

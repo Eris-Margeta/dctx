@@ -53,7 +53,7 @@ fn uses(facts: &LexedFile) -> Vec<&str> {
 }
 
 fn file_lines(source: &str) -> u32 {
-    source.bytes().filter(|byte| *byte == b'\n').count() as u32 + 1
+    u32::try_from(source.bytes().filter(|byte| *byte == b'\n').count()).expect("bounded test coordinate") + 1
 }
 
 fn check_store(source: &str, facts: &LexedFile) {
@@ -104,7 +104,7 @@ fn check_store(source: &str, facts: &LexedFile) {
     for reference in &facts.references {
         let fact = &reference.fact;
         assert_eq!(fact.owner_path, facts.path);
-        assert!(!fact.name.is_empty());
+        assert_ne!(fact.name, "");
         assert!(ids.contains(fact.src.as_str()), "{}", fact.src);
         let [start, end] = fact.lines;
         assert!(start >= 1 && end >= start && end <= lines, "{start}..{end}");
@@ -173,14 +173,14 @@ fn basic_fixture_matches_the_golden_shape() {
     assert_eq!(node(&facts, "App::greeting").signature, "private val greeting: String");
     assert!(!node(&facts, "App::greeting").public);
     assert!(node(&facts, "Box::item").public);
-    assert_eq!(node(&facts, "Box").symbol_kind.map(|kind| kind.as_str()), Some("class"));
-    assert_eq!(node(&facts, "Point").symbol_kind.map(|kind| kind.as_str()), Some("struct"));
-    assert_eq!(node(&facts, "Color").symbol_kind.map(|kind| kind.as_str()), Some("enum"));
-    assert_eq!(node(&facts, "Task").symbol_kind.map(|kind| kind.as_str()), Some("interface"));
-    assert_eq!(node(&facts, "Id").symbol_kind.map(|kind| kind.as_str()), Some("type"));
-    assert_eq!(node(&facts, "identity").symbol_kind.map(|kind| kind.as_str()), Some("fn"));
-    assert_eq!(node(&facts, "Box::show").symbol_kind.map(|kind| kind.as_str()), Some("method"));
-    assert_eq!(node(&facts, "Box::item").symbol_kind.map(|kind| kind.as_str()), Some("const"));
+    assert_eq!(node(&facts, "Box").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("class"));
+    assert_eq!(node(&facts, "Point").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("struct"));
+    assert_eq!(node(&facts, "Color").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("enum"));
+    assert_eq!(node(&facts, "Task").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("interface"));
+    assert_eq!(node(&facts, "Id").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("type"));
+    assert_eq!(node(&facts, "identity").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("fn"));
+    assert_eq!(node(&facts, "Box::show").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("method"));
+    assert_eq!(node(&facts, "Box::item").symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("const"));
     assert_eq!(
         imports(&facts),
         [("kotlin.collections.List", None), ("kotlin.collections.*", None), ("com.example.util.Names", Some("Labels"))]
@@ -238,13 +238,14 @@ fn tilde_in_a_name_is_abstained() {
 }
 
 #[test]
+#[allow(clippy::cast_possible_truncation, reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound.")]
 fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
     let mut state = 0x1234_5678_9abc_def0_u64;
     for _ in 0..200 {
         let len = (xorshift(&mut state) as usize) % 301;
         let mut bytes = Vec::with_capacity(len);
         for _ in 0..len {
-            bytes.push(xorshift(&mut state) as u8);
+            bytes.push(xorshift(&mut state).to_le_bytes()[0]);
         }
         assert_stable("f.kt", &bytes);
     }
