@@ -2,7 +2,7 @@
 //! Implements PLUGINS.md §6.2 steps 4–5 and git.md "If rules, current marker and coverage are complete,
 //! return ok/already-protected with zero writes" / "append missing literals in order; separator if
 //! needed; header only when adding rules; current marker only when absent" (G-IDEMPOTENT, G-REPLACE).
-//! Pure; depends on rules, text and coverage. Used by app::protect.
+//! Pure; depends on rules, text and coverage. Used by `app::protect`.
 
 use crate::domain::coverage::{Coverage, NestedRules, evaluate};
 use crate::domain::rules::{HEADER, REQUIRED_PATTERNS, current_marker, is_current_marker, known_pattern};
@@ -35,6 +35,7 @@ pub enum Plan {
 }
 
 /// Whether the four literals and the current host marker are all present (the old fast path, plus rules).
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn missing(text: &IgnoreText, host_version: &str) -> (Vec<&'static str>, bool) {
     let mut present = [false; REQUIRED_PATTERNS.len()];
     let mut marker = false;
@@ -49,6 +50,7 @@ pub fn missing(text: &IgnoreText, host_version: &str) -> (Vec<&'static str>, boo
 }
 
 /// Computes the plan; coverage is evaluated on the text as it would be committed.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn plan(text: &IgnoreText, host_version: &str, nested: &[NestedRules], custom_output: bool) -> Plan {
     let (appended_rules, marker_added) = missing(text, host_version);
     let newline = text.newline().as_str();

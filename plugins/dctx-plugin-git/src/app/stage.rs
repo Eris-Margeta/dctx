@@ -1,8 +1,8 @@
 //! The staging request: `program.run git.add-ignore` with handles only, and how its answer is reported.
 //! Implements PLUGINS.md §6.2 steps 7–8 and git.md "Missing Git / denied stage / nonzero exit =>
-//! warning/rules-written-not-staged ... Crash/uncertain staging => EffectUnknown, no automatic retry"
+//! warning/rules-written-not-staged ... Crash/uncertain staging => `EffectUnknown`, no automatic retry"
 //! (G-STAGE, G-RECIPE). The broker fixes operand, cwd and executable; the plugin sends no argv.
-//! Depends on ports::Broker and app::failure; used by app::protect.
+//! Depends on `ports::Broker` and `app::failure`; used by `app::protect`.
 
 use dctx_plugin_protocol::records::broker::GitAddIgnore;
 use dctx_plugin_protocol::records::events::ProgressUnit;
@@ -44,6 +44,8 @@ fn uncertain(receipts: &[Token], mut extra: Vec<Token>, reason: &'static str) ->
 }
 
 /// Requests staging when granted; `receipts` are the effects already committed in this invocation.
+/// # Errors
+/// Returns cancellation or uncertain-effect failures when staging cannot be safely classified; ordinary denial is a staging result.
 pub fn stage(
     broker: &mut dyn Broker,
     run: &Run<'_>,

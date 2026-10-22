@@ -1,8 +1,8 @@
 //! The broker port over the framed session: send a `p:` request, then drain host traffic until its answer.
 //! Implements wire.md "A worker may request broker actions while host awaits invoke; both sides drain
 //! concurrently" for a single-threaded worker: probes are answered (waiting on the request), a cancel is
-//! accepted and ends the wait (the request is abandoned). Depends on adapters::link and ports.
-//! Used by adapters::worker during one invoke.
+//! accepted and ends the wait (the request is abandoned). Depends on `adapters::link` and ports.
+//! Used by `adapters::worker` during one invoke.
 
 use std::io::{Read, Write};
 

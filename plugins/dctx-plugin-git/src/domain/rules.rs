@@ -1,7 +1,7 @@
 //! The restored ADR-005 rule set: four required literals, the automated-rules header and the host marker.
 //! Implements PLUGINS.md §6.1 and plugin-api git.md "Required literals, in order": the marker carries the
 //! **host** dctx version, never the plugin version. Pure; no IO.
-//! Used by domain::text (line recognition), domain::plan (append) and domain::coverage (output classes).
+//! Used by `domain::text` (line recognition), `domain::plan` (append) and `domain::coverage` (output classes).
 
 /// The required literal patterns, in append order.
 pub const REQUIRED_PATTERNS: [&str; 4] = [".dctx", ".dctx/", "*.llmcontext.txt", "*.llmcontext-*-diff.txt"];
@@ -16,16 +16,19 @@ pub const MARKER_PREFIX: &str = "# [dctx v";
 pub const MARKER_SUFFIX: &str = "]";
 
 /// The exact current marker line for `host_version` (without a line ending).
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn current_marker(host_version: &str) -> String {
     format!("{MARKER_PREFIX}{host_version}{MARKER_SUFFIX}")
 }
 
 /// Whether `line` is the current marker: trimmed exact comparison, as in the historical fast path.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn is_current_marker(line: &str, host_version: &str) -> bool {
     line.trim().strip_prefix(MARKER_PREFIX).and_then(|rest| rest.strip_suffix(MARKER_SUFFIX)) == Some(host_version)
 }
 
 /// Whether `line` is any dctx marker (current or old); old markers are preserved, never removed.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn is_any_marker(line: &str) -> bool {
     line.trim().strip_prefix(MARKER_PREFIX).and_then(|rest| rest.strip_suffix(MARKER_SUFFIX)).is_some_and(|v| !v.is_empty())
 }
@@ -34,6 +37,7 @@ pub fn is_any_marker(line: &str) -> bool {
 ///
 /// Git keeps leading whitespace significant and drops only unescaped trailing spaces, so a known
 /// line is the literal followed by nothing but spaces. (The historical code trimmed both sides.)
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn known_pattern(line: &str) -> Option<usize> {
     let body = line.trim_end_matches(' ');
     REQUIRED_PATTERNS.iter().position(|pattern| *pattern == body)

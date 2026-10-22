@@ -56,7 +56,7 @@ fn the_parity_corpus_passes_over_the_wire() {
     for case in &cases() {
         let (mut broker, _, invocation) = setup(case);
         let mut init = initialize();
-        if case.input.is_none() && !case.raw.get("file_exists").and_then(|v| v.as_bool()).unwrap_or(false) {
+        if case.input.is_none() && !case.raw.get("file_exists").and_then(dctx_plugin_protocol::Json::as_bool).unwrap_or(false) {
             init.resources.retain(|resource| resource.handle.as_str() != "file:ignore");
         }
         if broker.nested.contains_key("file:nested") {
@@ -169,6 +169,7 @@ fn broker_answer(broker: &mut FakeBroker, read: &dctx_plugin_protocol::records::
     ResultBody::Chunk(broker.file_read(read).expect("read"))
 }
 
+#[allow(clippy::needless_pass_by_value, reason = "The fixture builder consumes its typed response body to form one encoded late message.")]
 fn late_response(id: dctx_plugin_protocol::records::scalars::RequestId, body: ResultBody) -> Vec<u8> {
     let message = dctx_plugin_protocol::records::envelope::SessionMessage {
         session: token("s:1"),

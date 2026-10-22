@@ -1,7 +1,7 @@
 //! One `.gitignore` line classified as blank, comment or rule (negation, directory-only, last component).
 //! Implements the gitignore line grammar used by G-COVERAGE: `#` comments, unescaped trailing spaces
 //! dropped, `!` negation, trailing `/` directory-only; escapes stay for the glob tokenizer. Pure; no IO.
-//! Used by domain::coverage.
+//! Used by `domain::coverage`.
 
 use crate::domain::glob::{Glob, Unsupported};
 
@@ -40,6 +40,7 @@ fn strip_trailing_spaces(line: &str) -> &str {
 }
 
 /// Classifies one line (without its line ending).
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn parse_line(line: &str) -> Line {
     if line.starts_with('#') {
         return Line::Comment;
@@ -62,6 +63,8 @@ pub fn parse_line(line: &str) -> Line {
 
 impl Rule {
     /// The glob of the last path component, which any name the rule matches must satisfy.
+    /// # Errors
+    /// Returns `Unsupported` for forms outside the supported last-component glob profile.
     pub fn last_component(&self) -> Result<Glob, Unsupported> {
         let last = self.body.rsplit('/').next().unwrap_or(&self.body);
         if last.is_empty() {

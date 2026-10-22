@@ -1,4 +1,4 @@
-//! Boundary audits: no direct filesystem/process/network access in the worker, forbid(unsafe_code), and the
+//! Boundary audits: no direct filesystem/process/network access in the worker, `forbid(unsafe_code)`, and the
 //! source manifest/handshake agreeing with the frozen manifest-git fixture.
 //! Implements PLUGINS.md §7.2 PL-G "no direct fs/process access in worker" and G-PROFILE.
 //! Reads the crate's own sources at compile time; depends on tests/common for fixtures.

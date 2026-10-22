@@ -1,7 +1,7 @@
 //! Typed invoke failures: a host error passed through, or a plugin refusal with its known effect state.
 //! Implements PLUGINS.md §3.2 error objects `{code,phase,retryable,effect_state,receipt_ids,details}` and the
 //! S-REPLAY rule (partial/unknown effects are never retryable). Depends on dctx-plugin-protocol.
-//! Used by every app module; adapters::worker converts it to the wire error.
+//! Used by every app module; `adapters::worker` converts it to the wire error.
 
 use dctx_plugin_protocol::records::failure::ErrorDetails;
 use dctx_plugin_protocol::records::scalars::{Name, Token};
@@ -30,17 +30,20 @@ pub struct Failure {
 
 impl Failure {
     /// A refusal before any effect.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn refused(code: ErrorCode, phase: Phase, reason: &'static str) -> Self {
         Self { code, phase, reason, effect: EffectState::None, receipts: Vec::new(), limit: None, host: None }
     }
 
     /// A refusal for an exceeded bound.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn limit(reason: &'static str, limit: &'static str) -> Self {
         Self { limit: Some(limit), ..Self::refused(ErrorCode::ResourceLimit, Phase::Invoke, reason) }
     }
 
     /// Converts a broker failure. `pending_mutation` marks a request whose effect may have happened;
     /// `receipts` are the effects already committed in this invocation.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn from_broker(failure: BrokerFailure, pending_mutation: bool, receipts: &[Token]) -> Self {
         let settled = if receipts.is_empty() { EffectState::None } else { EffectState::Committed };
         let uncertain = if pending_mutation { EffectState::Unknown } else { settled };
@@ -71,6 +74,8 @@ impl Failure {
     }
 
     /// The wire error object; uncertain effects are never retryable.
+    /// # Errors
+    /// Refuses reason/limit names outside the protocol scalar format.
     pub fn to_wire(&self) -> Result<WireError, Refusal> {
         if let Some(host) = &self.host {
             return Ok(WireError { retryable: false, ..(**host).clone() });

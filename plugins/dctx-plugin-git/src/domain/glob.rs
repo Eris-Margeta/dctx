@@ -1,7 +1,7 @@
 //! Single path-component gitignore globs and a sound "can these two globs match a common name" test.
 //! Implements the supported-ignore-semantics subset of plugin-api git.md (G-COVERAGE): `*`, `?`, classes
 //! and backslash escapes; unsupported forms are reported, never assumed harmless. Pure; no IO.
-//! Used by domain::coverage to decide whether a negation can re-include a dctx export.
+//! Used by `domain::coverage` to decide whether a negation can re-include a dctx export.
 //! The intersection over-approximates (ASCII case-folded, negated classes overlap) so it never misses one.
 
 /// A glob that this profile cannot evaluate (for example an unterminated class).
@@ -84,6 +84,8 @@ fn parse_class(chars: &[char], start: usize) -> Result<(Token, usize), Unsupport
 
 impl Glob {
     /// Tokenizes one component; a `/` inside is unsupported here.
+    /// # Errors
+    /// Returns `Unsupported` for path separators, dangling escapes, or unsupported/malformed character classes.
     pub fn parse(component: &str) -> Result<Self, Unsupported> {
         let chars: Vec<char> = component.chars().collect();
         let mut tokens = Vec::new();
@@ -122,6 +124,7 @@ impl Glob {
     }
 
     /// Whether some single name could match both globs (sound over-approximation).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn intersects(&self, other: &Self) -> bool {
         let (a, b) = (&self.tokens, &other.tokens);
         let width = b.len() + 1;
@@ -154,6 +157,7 @@ impl Glob {
     }
 
     /// Whether the glob matches `name` (exact, case-sensitive Git semantics).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn matches(&self, name: &str) -> bool {
         let chars: Vec<char> = name.chars().collect();
         let width = chars.len() + 1;

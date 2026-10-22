@@ -102,7 +102,7 @@ impl Host {
         let answer = self.read_raw().expect("answer");
         match WireMessage::decode(&answer, DecodeLimits::BOOTSTRAP).expect("bootstrap answer") {
             WireMessage::Bootstrap(message) => message,
-            other => panic!("{other:?}"),
+            WireMessage::Session(other) => panic!("{other:?}"),
         }
     }
 
@@ -122,6 +122,7 @@ impl Host {
         answer
     }
 
+    #[allow(clippy::unused_self, reason = "Keep construction of the fixed fixture session message beside the host tracker methods that send it.")]
     fn message(&self, body: SessionBody) -> SessionMessage {
         SessionMessage { session: token("s:1"), extensions: None, body }
     }
@@ -159,7 +160,7 @@ impl Host {
                     self.send_raw(&WireMessage::Session(reply).encode(), MAX_FRAME_CAP);
                 }
                 SessionBody::Event { .. } => {}
-                other => panic!("unexpected {other:?}"),
+                other @ SessionBody::Response { .. } => panic!("unexpected {other:?}"),
             }
         }
     }

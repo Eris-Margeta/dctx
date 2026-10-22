@@ -1,7 +1,7 @@
 //! Planned-output coverage: do the required rules still ignore every dctx export class after negations?
 //! Implements plugin-api git.md "Verify planned output coverage ... including negations and authorized
 //! nested rules. Missing authorized evidence => coverage-unknown; known negation/custom-name conflict =>
-//! rules-conflict" (G-COVERAGE). Pure; nested rule bytes come through the broker. Used by domain::plan.
+//! rules-conflict" (G-COVERAGE). Pure; nested rule bytes come through the broker. Used by `domain::plan`.
 
 use crate::domain::glob::Glob;
 use crate::domain::pattern::{Line, parse_line};
@@ -24,6 +24,7 @@ impl OutputClass {
     pub const ALL: [Self; 3] = [Self::Text, Self::Diff, Self::State];
 
     /// Class of a planned output role; `None` is a custom output the v1 rules cannot vouch for.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn of_role(role: &str) -> Option<Self> {
         match role {
             "pack-text" => Some(Self::Text),
@@ -75,6 +76,7 @@ pub enum NestedRules {
 }
 
 /// Folds verdicts: a known conflict outranks unknown evidence, which outranks verified.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn worst(left: Coverage, right: Coverage) -> Coverage {
     match (left, right) {
         (Coverage::Conflict, _) | (_, Coverage::Conflict) => Coverage::Conflict,

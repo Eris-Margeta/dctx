@@ -2,7 +2,7 @@
 //! Implements PLUGINS.md §6.2 steps 2–8 and the git.md outcome table through the broker port only:
 //! no repository => skipped with zero reads; no `.gitignore` => skipped, never created; conflict/unknown
 //! coverage => warning with zero writes; a committed edit keeps its receipt whatever staging does.
-//! Depends on domain, ports, app::{binding, transfer, stage}; used by app::hook and app::command.
+//! Depends on domain, ports, `app::{binding`, transfer, stage}; used by `app::hook` and `app::command`.
 
 use dctx_plugin_protocol::records::broker::FileReplace;
 use dctx_plugin_protocol::records::common::{Limits, Severity};
@@ -73,6 +73,7 @@ pub struct Report {
 
 impl Report {
     /// A result with no effects.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn plain(status: InvokeStatus, reason: Reason) -> Self {
         Self { status, reason: reason.as_str(), receipts: Vec::new(), diagnostics: Vec::new(), protected: false, staged: false }
     }
@@ -103,6 +104,8 @@ fn nested_evidence(broker: &mut dyn Broker, run: &Run<'_>, max: u64) -> Result<V
 }
 
 /// Runs protection for one invocation.
+/// # Errors
+/// Refuses unbound resources, denied reads/writes, invalid ignore text, exceeded limits, or failed/uncertain broker effects.
 pub fn protect(broker: &mut dyn Broker, run: &Run<'_>) -> Result<Report, Failure> {
     let Some(repository) = run.repository else { return Ok(Report::plain(InvokeStatus::Skipped, Reason::NotARepository)) };
     match run.binding.repository(repository) {
@@ -203,6 +206,8 @@ fn apply_explicit(report: &mut Report, staging: Staging, receipt: Option<Token>)
 }
 
 /// A fixed replay key token.
+/// # Errors
+/// Refuses text outside the protocol action-token format.
 pub fn action(text: &'static str) -> Result<Token, Failure> {
     Token::new(text).map_err(|_| Failure::refused(ErrorCode::InvalidMessage, Phase::Invoke, "invalid-action-id"))
 }

@@ -8,6 +8,7 @@
 pub mod cases;
 pub mod host;
 
+use std::fmt::Write as _;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 
@@ -162,7 +163,7 @@ impl FakeBroker {
         token(&format!("receipt:{kind}.{}", self.receipts))
     }
 
-    fn replay(&mut self, action: &Token, arguments: String) -> Result<Option<Token>, BrokerFailure> {
+    fn replay(&mut self, action: &Token, arguments: &str) -> Result<Option<Token>, BrokerFailure> {
         match self.actions.get(action.as_str()) {
             Some((recorded, receipt)) if *recorded == arguments => Ok(Some(receipt.clone())),
             Some(_) => Err(host_error(ErrorCode::Conflict, "replay-arguments-differ", EffectState::None)),
@@ -219,7 +220,7 @@ impl Broker for FakeBroker {
     fn file_replace(&mut self, replace: &FileReplace) -> Result<Replaced, BrokerFailure> {
         self.log.push("file.replace".into());
         let arguments = format!("{}|{}|{}", replace.resource.as_str(), replace.precondition.as_str(), replace.upload.as_str());
-        if let Some(receipt) = self.replay(&replace.action_id, arguments.clone())? {
+        if let Some(receipt) = self.replay(&replace.action_id, &arguments)? {
             return Ok(Replaced { precondition: self.precondition(), receipt });
         }
         if let Some(edit) = self.concurrent_edit.take() {
@@ -272,5 +273,7 @@ impl Broker for FakeBroker {
 /// Lowercase hex of a SHA-256 computed with the first-party dctx-hash crate.
 pub fn sha256_hex(bytes: &[u8]) -> String {
     let digest = dctx_hash::Sha256::digest(bytes).expect("digest");
-    digest.as_bytes().iter().map(|byte| format!("{byte:02x}")).collect()
+    let mut text = String::with_capacity(64);
+    for byte in digest.as_bytes() { let _ = write!(text, "{byte:02x}"); }
+    text
 }

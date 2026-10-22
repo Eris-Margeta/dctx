@@ -1,7 +1,7 @@
 //! The worker's side of one framed session: strict decode, session tracking of both directions, sending.
 //! Implements wire.md §Bytes and §Bootstrap and lifecycle via dctx-plugin-protocol's `FrameReader`,
 //! `write_frame` and `Session` (W-STATE, W-BINDING, W-PROGRESS). Only inherited stdio streams are used.
-//! Used by adapters::wire_broker (broker calls) and adapters::worker (lifecycle loop).
+//! Used by `adapters::wire_broker` (broker calls) and `adapters::worker` (lifecycle loop).
 
 use std::collections::BTreeSet;
 use std::io::{Read, Write};
@@ -61,6 +61,8 @@ impl<R: Read, W: Write> Link<R, W> {
     }
 
     /// Next host message, `None` at a clean end of stream. Late answers to abandoned requests are dropped.
+    /// # Errors
+    /// Returns stream/decode failures or a protocol refusal for bootstrap traffic after negotiation.
     pub fn recv(&mut self) -> Result<Option<SessionMessage>, WorkerError> {
         loop {
             let Some(frame) = self.reader.next_frame().map_err(stream)? else { return Ok(None) };
@@ -80,12 +82,16 @@ impl<R: Read, W: Write> Link<R, W> {
     }
 
     /// Validates a host message against the session; a refusal ends the session.
+    /// # Errors
+    /// Refuses an unstarted session or a host message that violates session state/bindings.
     pub fn observe_host(&mut self, message: &SessionMessage) -> Result<Accepted, WorkerError> {
         let session = self.session.as_mut().ok_or(WorkerError::Protocol(violation("session-not-started")))?;
         session.observe(Sender::Host, message).map_err(WorkerError::Protocol)
     }
 
     /// Sends a body after the tracker accepts it as a plugin message.
+    /// # Errors
+    /// Returns an unstarted-session refusal, an invalid local transition, or a frame/write failure.
     pub fn send(&mut self, body: SessionBody) -> Result<(), WorkerError> {
         let (Some(session), Some(id)) = (self.session.as_mut(), self.session_id.clone()) else {
             return Err(WorkerError::Protocol(violation("session-not-started")));
@@ -97,16 +103,22 @@ impl<R: Read, W: Write> Link<R, W> {
     }
 
     /// Sends a successful response.
+    /// # Errors
+    /// Propagates session-transition, framing, or write failures from sending the response.
     pub fn respond(&mut self, id: RequestId, body: &ResultBody) -> Result<(), WorkerError> {
         self.send(SessionBody::Response { id, outcome: Outcome::Result(PendingResult::from_body(body)) })
     }
 
     /// Sends an error response.
+    /// # Errors
+    /// Propagates session-transition, framing, or write failures from sending the error.
     pub fn respond_error(&mut self, id: RequestId, error: WireError) -> Result<(), WorkerError> {
         self.send(SessionBody::Response { id, outcome: Outcome::Error(Box::new(error)) })
     }
 
     /// A fresh plugin request ID.
+    /// # Errors
+    /// Returns an internal refusal if the generated request ID is invalid.
     pub fn next_request_id(&mut self) -> Result<RequestId, WorkerError> {
         self.next_request += 1;
         RequestId::new(&format!("p:{}", self.next_request)).map_err(WorkerError::Internal)
@@ -118,6 +130,8 @@ impl<R: Read, W: Write> Link<R, W> {
     }
 
     /// Sends an event with the next envelope sequence.
+    /// # Errors
+    /// Propagates session-transition, framing, or write failures from sending the event.
     pub fn event(&mut self, event: Event) -> Result<(), WorkerError> {
         self.event_seq += 1;
         let seq = self.event_seq;

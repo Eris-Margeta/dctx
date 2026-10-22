@@ -1,7 +1,7 @@
 //! Invoke dispatch: the `before-pack-output-written` hook, the `git status|protect` command, and the
 //! typed invoke result. Implements PLUGINS.md §6.2 step 1 (project-local text exports only; outside-project
 //! => skipped without paths) and §3.2 results (`command_output` only for explicit commands, S-RESULT).
-//! Depends on app::{binding, protect}, domain::{command, coverage}; used by adapters::worker.
+//! Depends on `app::{binding`, protect}, `domain::{command`, coverage}; used by `adapters::worker`.
 
 use std::collections::BTreeMap;
 
@@ -50,6 +50,8 @@ fn scope(outputs: &[PlannedOutput], more_pages: bool) -> Scope {
 }
 
 /// Runs one invocation against the session binding.
+/// # Errors
+/// Refuses invalid command/configuration/bindings, unavailable project context, undeclared hooks, or protection failures.
 pub fn invoke(broker: &mut dyn Broker, binding: &Binding, invocation: &Invocation) -> Result<Answer, Failure> {
     let config = parse_config(&invocation.config)?;
     let grants = binding.grants(&invocation.grants, invocation.policy_epoch);
@@ -96,6 +98,8 @@ pub fn invoke(broker: &mut dyn Broker, binding: &Binding, invocation: &Invocatio
 }
 
 /// The typed invoke result for an answer.
+/// # Errors
+/// Refuses generated diagnostic/reason names or command text outside protocol scalar bounds.
 pub fn result(answer: &Answer) -> Result<ResultBody, Refusal> {
     let report = &answer.report;
     let diagnostics = report

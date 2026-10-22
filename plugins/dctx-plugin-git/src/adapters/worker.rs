@@ -2,7 +2,7 @@
 //! Implements PLUGINS.md §3.1 lifecycle and wire.md §Bootstrap and lifecycle for the dctx/git worker:
 //! highest common version, identity from the launch record, required APIs checked before selection,
 //! cancelled event then a typed Cancelled error. Same code for the standalone and same-binary worker.
-//! Depends on adapters::{link, wire_broker}, app::{binding, invoke}; used by main.rs and conformance tests.
+//! Depends on `adapters::{link`, `wire_broker`}, `app::{binding`, invoke}; used by main.rs and conformance tests.
 
 use std::io::{Read, Write};
 
@@ -42,6 +42,8 @@ pub struct LaunchIdentity {
 
 impl LaunchIdentity {
     /// Parses exactly `--publisher-key <token> --artifact-digest <sha256:...>` (either order).
+    /// # Errors
+    /// Refuses missing/unknown arguments or an invalid publisher token/artifact digest.
     pub fn from_args(args: &[String]) -> Result<Self, &'static str> {
         let (mut key, mut digest) = (None, None);
         for pair in args.chunks(2) {
@@ -62,6 +64,8 @@ impl LaunchIdentity {
     }
 
     /// The handshake identity: canonical ID and this crate's independent plugin version.
+    /// # Errors
+    /// Refuses a compiled plugin ID or package version outside the wire scalar formats.
     pub fn identity(&self) -> Result<Identity, Refusal> {
         Ok(Identity {
             id: PluginId::new(PLUGIN_ID)?,
@@ -108,6 +112,8 @@ fn negotiate<R: Read, W: Write>(
 }
 
 /// Serves one session; `Ok` after shutdown or a clean end of stream between invocations.
+/// # Errors
+/// Returns identity/negotiation failures, invalid host traffic, initialization refusals, or broker/link failures.
 pub fn serve<R: Read, W: Write>(reader: R, mut writer: W, launch: &LaunchIdentity) -> Result<(), WorkerError> {
     let identity = launch.identity().map_err(WorkerError::Internal)?;
     let mut reader = FrameReader::new(reader);

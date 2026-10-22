@@ -1,7 +1,7 @@
 //! A validated `.gitignore` body: bounded, UTF-8, no NUL, with its newline style and lines.
 //! Implements plugin-api git.md "invalid UTF-8/NUL => typed refusal" and "preserve all bytes, newline
 //! style and old markers" (G-COVERAGE, G-REPLACE). Pure; the bytes come from the broker's file.read.
-//! Used by domain::plan and domain::coverage.
+//! Used by `domain::plan` and `domain::coverage`.
 
 /// Largest `.gitignore` the v1 profile reads (the manifest's `file.read.max_bytes`).
 pub const MAX_IGNORE_BYTES: u64 = 1_048_576;
@@ -19,6 +19,7 @@ pub enum TextRefusal {
 
 impl TextRefusal {
     /// Stable safe reason name for wire error details.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn reason(self) -> &'static str {
         match self {
             Self::Oversized => "ignore-oversized",
@@ -39,6 +40,7 @@ pub enum Newline {
 
 impl Newline {
     /// The ending's bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Lf => "\n",
@@ -55,6 +57,8 @@ pub struct IgnoreText {
 
 impl IgnoreText {
     /// Validates `bytes` (size first, then NUL, then UTF-8).
+    /// # Errors
+    /// Refuses oversized text, NUL bytes, or invalid UTF-8.
     pub fn parse(bytes: &[u8], max_bytes: u64) -> Result<Self, TextRefusal> {
         if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > max_bytes {
             return Err(TextRefusal::Oversized);
@@ -67,21 +71,25 @@ impl IgnoreText {
     }
 
     /// The original text.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_str(&self) -> &str {
         &self.text
     }
 
     /// Byte length of the original text.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn len(&self) -> usize {
         self.text.len()
     }
 
     /// Whether the file is empty.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_empty(&self) -> bool {
         self.text.is_empty()
     }
 
     /// Style of the first line ending; LF when the file has none.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn newline(&self) -> Newline {
         match self.text.find('\n') {
             Some(index) if index > 0 && self.text.as_bytes()[index - 1] == b'\r' => Newline::CrLf,
@@ -90,6 +98,7 @@ impl IgnoreText {
     }
 
     /// Whether appending needs a separating line ending first (nonempty, unterminated last line).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn needs_separator(&self) -> bool {
         !self.text.is_empty() && !self.text.ends_with('\n')
     }

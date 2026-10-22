@@ -1,7 +1,7 @@
 //! Session binding from `initialize`: the fixed v1 config, grants by kind, and the ignore/repository handles.
 //! Implements plugin-api git.md "Config cannot expand these fixed v1 values" (G-PROFILE), PLUGINS.md §3.2
 //! "a plugin may refuse an unsupported configuration but may not reinterpret it", and per-invocation grant
-//! sets (only handles listed by `invoke` at its policy epoch are in force). Used by app::protect/hook.
+//! sets (only handles listed by `invoke` at its policy epoch are in force). Used by `app::protect/hook`.
 
 use dctx_plugin_protocol::records::capability::Capability;
 use dctx_plugin_protocol::records::common::{Config, ConfigValue, HookName, ResourceKind, Scalar};
@@ -80,6 +80,8 @@ fn invalid(reason: &'static str) -> Failure {
 }
 
 /// Validates config: known keys only, fixed values, defaults for absent keys.
+/// # Errors
+/// Refuses unknown keys or values outside the frozen Git configuration profile.
 pub fn parse_config(config: &Config) -> Result<GitConfig, Failure> {
     let mut parsed = GitConfig { stage: true };
     for (key, value) in config {
@@ -95,6 +97,8 @@ pub fn parse_config(config: &Config) -> Result<GitConfig, Failure> {
 }
 
 /// Binds an initialize request.
+/// # Errors
+/// Refuses undeclared hooks, unsupported grants, duplicate ignore resources, or invalid configuration.
 pub fn bind(init: &Initialize, program_api: bool) -> Result<Binding, Failure> {
     if init.hooks.iter().any(|hook| *hook != HookName::BeforePackOutputWritten) {
         return Err(Failure::refused(ErrorCode::UnsupportedCapability, Phase::Initialize, "undeclared-hook"));
@@ -121,7 +125,7 @@ pub fn bind(init: &Initialize, program_api: bool) -> Result<Binding, Failure> {
     let mut nested = Vec::new();
     let mut repositories = Vec::new();
     for resource in &init.resources {
-        let role = resource.role.as_ref().map(|role| role.as_str());
+        let role = resource.role.as_ref().map(dctx_plugin_protocol::records::scalars::Role::as_str);
         match (resource.kind, role) {
             (ResourceKind::File, None | Some("ignore")) if ignore.is_none() => ignore = Some(resource.handle.clone()),
             (ResourceKind::File, None | Some("ignore")) => return Err(invalid("duplicate-ignore-resource")),
@@ -138,6 +142,7 @@ pub fn bind(init: &Initialize, program_api: bool) -> Result<Binding, Failure> {
 
 impl Binding {
     /// Grants listed by an invocation at its policy epoch; anything else is not in force.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn grants(&self, listed: &[Token], epoch: u64) -> Grants {
         let mut grants = Grants::default();
         for bound in self.grants.iter().filter(|bound| bound.epoch == epoch && listed.contains(&bound.handle)) {
@@ -151,6 +156,7 @@ impl Binding {
     }
 
     /// The bound repository with this handle.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn repository(&self, handle: &Token) -> Option<&Repository> {
         self.repositories.iter().find(|repository| &repository.handle == handle)
     }

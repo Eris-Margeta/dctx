@@ -1,6 +1,6 @@
 //! The `dctx git` command surface: verbs `status` and `protect`, and the sole flag `protect --stage`.
 //! Implements plugin-api git.md "Command verbs are status/protect ... Unknown verbs/flags refuse; no Git
-//! passthrough" (G-PROFILE). Pure; used by app::command.
+//! passthrough" (G-PROFILE). Pure; used by `app::command`.
 
 /// A parsed command.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -27,6 +27,7 @@ pub enum CommandRefusal {
 
 impl CommandRefusal {
     /// Stable safe reason name.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn reason(self) -> &'static str {
         match self {
             Self::UnknownAlias => "unknown-alias",
@@ -37,6 +38,8 @@ impl CommandRefusal {
 }
 
 /// Parses `alias verb args...`.
+/// # Errors
+/// Refuses an unknown alias/verb or arguments outside the command profile.
 pub fn parse(alias: &str, verb: &str, args: &[&str]) -> Result<Command, CommandRefusal> {
     if alias != "git" {
         return Err(CommandRefusal::UnknownAlias);

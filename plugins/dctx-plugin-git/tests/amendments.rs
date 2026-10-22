@@ -3,6 +3,7 @@
 //! so parity does not freeze historical bugs" (G-PARITY). Plus the trace-git-* scenario pairs.
 //! Depends on tests/common's fake broker.
 
+use std::fmt::Write as _;
 mod common;
 
 use common::{FakeBroker, GitScript, binding, hook};
@@ -23,9 +24,9 @@ fn historical(content: &str, version: &str) -> Option<(String, bool)> {
     let mut out = format!("{content}\n");
     if !missing.is_empty() {
         out.push_str("# [dctx] Automated Rules\n");
-        missing.iter().for_each(|rule| out.push_str(&format!("{rule}\n")));
+        for rule in &missing { let _ = writeln!(out, "{rule}"); }
     }
-    out.push_str(&format!("{marker}\n"));
+    let _ = writeln!(out, "{marker}");
     Some((out, true))
 }
 
@@ -81,7 +82,7 @@ fn h4_staging_failures_are_reported_not_discarded() {
         assert_eq!((outcome.status.as_str(), outcome.reason.as_str(), outcome.broker.writes), ("warning", reason, 1));
     }
     let uncertain = plugin("", true, |broker| {
-        broker.git = GitScript::Refuse(ErrorCode::ExternalProgramFailed, dctx_plugin_protocol::EffectState::Unknown)
+        broker.git = GitScript::Refuse(ErrorCode::ExternalProgramFailed, dctx_plugin_protocol::EffectState::Unknown);
     });
     assert_eq!((uncertain.code, uncertain.broker.writes), (Some(ErrorCode::EffectUnknown), 1));
 }

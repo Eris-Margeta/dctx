@@ -1,7 +1,7 @@
 //! Bounded chunked transfers through the broker: whole-file `file.read` and `file.stage` uploads.
 //! Implements PLUGINS.md §3.3 "later chunks must bind that token" and §6.2 step 6 "Upload the replacement
 //! through bounded file.stage chunks"; chunk size fits the negotiated frame after base64 (wire.md §Bytes).
-//! Depends on ports::Broker; used by app::protect.
+//! Depends on `ports::Broker`; used by `app::protect`.
 
 use dctx_plugin_protocol::records::broker::{ChunkRead, FileStage};
 use dctx_plugin_protocol::records::bytes::{Chunk, MAX_CHUNK_BYTES};
@@ -26,6 +26,8 @@ pub struct Delivered {
 }
 
 /// Largest raw chunk that fits the invocation's chunk and frame limits once base64-encoded.
+/// # Errors
+/// Refuses a negotiated frame cap too small to carry a chunk.
 pub fn chunk_size(limits: &Limits) -> Result<u64, Failure> {
     let frame_fit = limits.frame_bytes.saturating_sub(ENVELOPE_BYTES) / 4 * 3;
     let size = limits.chunk_bytes.min(frame_fit).min(MAX_CHUNK_BYTES as u64);
@@ -38,6 +40,8 @@ fn protocol(reason: &'static str) -> Failure {
 
 /// Reads a whole file: refuses before more delivery when its size exceeds `max_bytes`.
 /// `phase` names the progress phase (one file per phase), or `None` for no progress samples.
+/// # Errors
+/// Refuses broker failures, changed/missing preconditions, malformed chunks, oversized files, or exceeded read budgets.
 pub fn read_file(
     broker: &mut dyn Broker,
     resource: &Token,
@@ -86,6 +90,8 @@ pub fn read_file(
 }
 
 /// Uploads `bytes` in sealed chunks bound to `precondition`; returns the sealed upload ID.
+/// # Errors
+/// Refuses broker failures, exceeded upload/chunk budgets, or inconsistent upload progress.
 pub fn upload(
     broker: &mut dyn Broker,
     resource: &Token,

@@ -1,7 +1,7 @@
 //! The broker port: every effect the plugin needs, as host requests (never direct filesystem or process).
 //! Implements PLUGINS.md §3.3 for the four git-profile methods (`file.read`, `file.stage`, `file.replace`,
 //! `program.run` git.add-ignore) plus progress events. Depends on dctx-plugin-protocol records only.
-//! Implemented by adapters::wire_broker (framed stdio) and by the tests' fake broker.
+//! Implemented by `adapters::wire_broker` (framed stdio) and by the tests' fake broker.
 
 use dctx_plugin_protocol::WireError;
 use dctx_plugin_protocol::records::broker::{ChunkRead, FileReplace, FileStage, GitAddIgnore};
@@ -54,12 +54,20 @@ pub struct ProgramRan {
 /// Host-brokered effects available to the git plugin.
 pub trait Broker {
     /// `file.read`: one bounded chunk of a granted file.
+    /// # Errors
+    /// Returns a host refusal, cancellation, or link/protocol failure while reading the granted chunk.
     fn file_read(&mut self, read: &ChunkRead) -> Result<ChunkResult, BrokerFailure>;
     /// `file.stage`: one upload chunk in host-private storage.
+    /// # Errors
+    /// Returns a host refusal, cancellation, or link/protocol failure while staging the upload.
     fn file_stage(&mut self, stage: &FileStage) -> Result<Uploaded, BrokerFailure>;
     /// `file.replace`: atomic compare-and-replace from a sealed upload.
+    /// # Errors
+    /// Returns a host refusal, cancellation, or link/protocol failure; uncertain effects must not be retried automatically.
     fn file_replace(&mut self, replace: &FileReplace) -> Result<Replaced, BrokerFailure>;
     /// `program.run` with the fixed `git.add-ignore` recipe.
+    /// # Errors
+    /// Returns a host refusal, cancellation, or link/protocol failure; uncertain effects must not be retried automatically.
     fn program_run(&mut self, run: &GitAddIgnore) -> Result<ProgramRan, BrokerFailure>;
     /// A progress sample for the active invocation (best effort; a broken link fails the next request).
     fn progress(&mut self, phase: &'static str, completed: u64, total: Option<u64>, unit: ProgressUnit);

@@ -30,6 +30,7 @@ pub enum WorkerError {
 
 impl WorkerError {
     /// Stable safe reason name.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn reason(&self) -> &'static str {
         match self {
             Self::Io(_) => "stream-failed",

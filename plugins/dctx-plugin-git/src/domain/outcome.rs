@@ -1,7 +1,7 @@
 //! Declared reason and diagnostic codes of the dctx/git manifest, and the staging verdicts they report.
 //! Implements manifest-git.json `reason_codes`/`diagnostic_codes` and the git.md outcome table
 //! ("Required visible truth"): a successful edit keeps its receipt whatever staging does (G-STAGE).
-//! Pure; used by app::protect, app::stage and app::command.
+//! Pure; used by `app::protect`, `app::stage` and `app::command`.
 
 /// A declared invoke reason code.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -32,6 +32,7 @@ pub enum Reason {
 
 impl Reason {
     /// Wire spelling (one of the manifest's `reason_codes`).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Completed => "completed",
@@ -70,6 +71,7 @@ pub enum DiagnosticCode {
 
 impl DiagnosticCode {
     /// Wire spelling (one of the manifest's `diagnostic_codes`).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::StagingDenied => "staging-denied",
@@ -100,6 +102,7 @@ pub enum Staging {
 
 impl Staging {
     /// The visible (status is warning?, reason, diagnostic) for a committed edit.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn report(self) -> (bool, Reason, Option<DiagnosticCode>) {
         match self {
             Self::NotRequested => (false, Reason::Completed, None),
