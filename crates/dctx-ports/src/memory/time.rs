@@ -25,6 +25,7 @@ pub struct CancelFlag(AtomicBool);
 
 impl CancelFlag {
     /// A flag that is not raised.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
     pub fn new() -> Self {
         Self::default()
     }
@@ -50,6 +51,7 @@ pub struct CancelAfter {
 
 impl CancelAfter {
     /// Lets `n` checks pass, then cancels.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
     pub fn new(n: u64) -> Self {
         Self { remaining: Cell::new(n), checks: Cell::new(0) }
     }

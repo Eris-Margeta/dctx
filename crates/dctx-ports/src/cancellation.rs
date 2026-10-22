@@ -11,6 +11,9 @@ pub trait Cancellation {
     fn is_cancelled(&self) -> bool;
 
     /// `Err(Cancelled)` once cancellation was requested, otherwise `Ok`.
+    ///
+    /// # Errors
+    /// Returns `Cancelled` once cancellation has been requested.
     fn checkpoint(&self) -> Result<(), DctxError> {
         if self.is_cancelled() {
             Err(DctxError::Cancelled)

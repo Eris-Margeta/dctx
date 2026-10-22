@@ -21,11 +21,13 @@ pub struct MemoryFactStore {
 
 impl MemoryFactStore {
     /// An empty store.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Number of successful publishes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
     pub fn publishes(&self) -> u64 {
         self.publishes
     }
@@ -62,16 +64,19 @@ pub struct MemoryCache {
 
 impl MemoryCache {
     /// A cache admitting at most `capacity` bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
     pub fn new(capacity: u64) -> Self {
         Self { capacity, committed: 0, outstanding: BTreeMap::new(), next_id: 1 }
     }
 
     /// Bytes committed so far.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
     pub fn committed(&self) -> u64 {
         self.committed
     }
 
     /// Bytes reserved and not yet settled.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
     pub fn reserved(&self) -> u64 {
         self.outstanding.values().sum()
     }

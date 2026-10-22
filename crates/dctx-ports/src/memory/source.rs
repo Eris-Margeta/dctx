@@ -42,6 +42,7 @@ impl Default for MemorySource {
 
 impl MemorySource {
     /// An empty root directory.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the memory adapter API's existing caller lint behavior.")]
     pub fn new() -> Self {
         Self {
             dirs: BTreeMap::from([(String::new(), 0)]),
@@ -53,6 +54,11 @@ impl MemorySource {
     }
 
     /// Adds (or replaces) a file and creates its parent directories.
+    ///
+    /// # Errors
+    /// Returns `InvalidRequest` if `path` is not a valid relative path or
+    /// names the root directory. Returns `ResourceLimit` if the path exceeds
+    /// the core path-length limit.
     pub fn insert_file(&mut self, path: &str, bytes: &[u8], modified: u64) -> Result<(), DctxError> {
         let path = RelativePath::parse(path)?;
         if path.is_root() {
@@ -64,6 +70,10 @@ impl MemorySource {
     }
 
     /// Adds a directory (and its parents) with a modification time.
+    ///
+    /// # Errors
+    /// Returns `InvalidRequest` if `path` is not a valid relative path, or
+    /// `ResourceLimit` if it exceeds the core path-length limit.
     pub fn insert_dir(&mut self, path: &str, modified: u64) -> Result<(), DctxError> {
         let path = RelativePath::parse(path)?;
         self.insert_parents(path.as_str());
