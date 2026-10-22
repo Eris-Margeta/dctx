@@ -15,6 +15,8 @@ pub const INDEX_DOMAIN: &[u8] = b"dctx-plugin-index-v1";
 pub const SIGNATURE_BYTES: usize = 64;
 
 /// Verifies `signature` over `domain || document` with `public_key`.
+/// # Errors
+/// Refuses an invalid signature length, key, or detached signature.
 pub fn verify_detached(
     domain: &[u8],
     public_key: &[u8; 32],

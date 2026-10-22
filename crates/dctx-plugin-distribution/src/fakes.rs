@@ -43,11 +43,12 @@ pub struct FakeNetwork {
 }
 
 fn locked<T>(mutex: &Mutex<T>) -> MutexGuard<'_, T> {
-    mutex.lock().unwrap_or_else(|poisoned| poisoned.into_inner())
+    mutex.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 impl FakeNetwork {
     /// Empty network.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new() -> Self {
         Self::default()
     }
@@ -155,6 +156,7 @@ pub struct MemoryStore {
 
 impl MemoryStore {
     /// Empty store.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new() -> Self {
         Self::default()
     }
@@ -165,6 +167,7 @@ impl MemoryStore {
     }
 
     /// Simulates another process holding the lock.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn hold_lock(&self) -> LockToken {
         let mut state = locked(&self.state);
         state.next_token += 1;
@@ -173,6 +176,7 @@ impl MemoryStore {
     }
 
     /// Files of a published directory.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn installed_files(&self, key: &InstallKey) -> Option<Vec<String>> {
         locked(&self.state).installed.get(key).map(|files| files.keys().cloned().collect())
     }
@@ -269,6 +273,7 @@ pub struct FixedClock(AtomicU64);
 
 impl FixedClock {
     /// Clock at `now`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn at(now: u64) -> Self {
         Self(AtomicU64::new(now))
     }

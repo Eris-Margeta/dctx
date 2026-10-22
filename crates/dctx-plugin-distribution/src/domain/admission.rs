@@ -41,6 +41,8 @@ pub struct PluginStatus {
 
 impl Registry {
     /// Admits one worker of the active version and takes a lease on its digest.
+    /// # Errors
+    /// Refuses missing/disabled/inactive plugins, required consent, untrusted or revoked versions, or stale revocation data.
     pub fn admit(
         &mut self,
         id: &PluginId,
@@ -73,6 +75,7 @@ impl Registry {
     }
 
     /// Registers the bundled build authenticated by the containing release. A sticky mask survives.
+    #[allow(clippy::needless_pass_by_value, reason = "Preserve the public value-taking registration contract for an installed version, including the already-recorded case.")]
     pub fn register_bundled(&mut self, id: &PluginId, version: InstalledVersion) {
         let record = self.plugins.entry(id.clone()).or_insert_with(|| PluginRecord {
             origin: Origin::Bundled,
@@ -81,7 +84,7 @@ impl Registry {
             high_water: 0,
             enablement: Enablement::Enabled,
             consent: None,
-            leases: Default::default(),
+            leases: std::collections::BTreeMap::default(),
             rollbacks: Vec::new(),
         });
         if record.version(&version.digest).is_none() {
@@ -94,6 +97,8 @@ impl Registry {
     }
 
     /// `plugin list` row for `id`.
+    /// # Errors
+    /// Returns `NotInstalled` for an unknown plugin ID.
     pub fn status(&self, id: &PluginId, trust: &TrustStore, now: u64) -> Result<PluginStatus, DistributionError> {
         let record = self.plugins.get(id).ok_or(DistributionError::NotInstalled)?;
         let active = record.active_version();

@@ -1,5 +1,5 @@
 //! Activation, consent, sticky disable, leases, rollback, freshness, verify and crash/concurrency.
-//! Install.tla PP9Integrity and the activation-crash/install-integrity scenario pairs;
+//! Install.tla `PP9Integrity` and the activation-crash/install-integrity scenario pairs;
 //! requirements I-ATOMIC, I-CONSENT, I-TRUST, I-MANAGEMENT, I-BUNDLED; decision 080 confinement gate.
 
 mod common;
@@ -244,7 +244,7 @@ fn concurrent_management_sees_the_lock_and_only_complete_activations() {
         let key = dctx_plugin_distribution::InstallKey { id: git.clone(), version: version.version.clone(), digest: version.digest };
         assert!(world.store.installed_files(&key).is_some(), "recorded version is a complete directory");
     }
-    assert!(world.store.staged().unwrap().is_empty());
+    assert_eq!(world.store.staged().unwrap(), [] as [dctx_plugin_distribution::InstallKey; 0]);
 }
 
 fn git_id() -> dctx_plugin_distribution::PluginId {

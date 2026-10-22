@@ -41,6 +41,9 @@ fn refuse(reason: &'static str) -> DistributionError {
 
 impl OfflineBundle {
     /// Parses `bytes`, refusing any container larger than `storage_limit`.
+    /// # Errors
+    /// Refuses exceeded storage limits, malformed framing/table entries, duplicate names, payload length mismatches, or digest failures.
+    #[allow(clippy::cast_possible_truncation, reason = "The checked sum equals the in-memory payload length; each nonnegative entry length therefore fits usize before splitting.")]
     pub fn parse(bytes: &[u8], storage_limit: u64) -> Result<Self, DistributionError> {
         if bytes.len() as u64 > storage_limit {
             return Err(DistributionError::LimitExceeded { limit: storage_limit });
@@ -93,16 +96,20 @@ impl OfflineBundle {
     }
 
     /// Entry by exact name.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn get(&self, name: &str) -> Option<&BundleEntry> {
         self.entries.iter().find(|entry| entry.name.as_str() == name)
     }
 
     /// All entries in table order.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn entries(&self) -> &[BundleEntry] {
         &self.entries
     }
 
     /// Builds container bytes; used by tests and release tooling fixtures, never by install.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(clippy::cast_possible_truncation, reason = "This infallible fixture encoder retains the existing 32-bit wire length encoding; the parser independently enforces table limits.")]
     pub fn encode(entries: &[(&str, &[u8])]) -> Vec<u8> {
         let rows: Vec<String> = entries
             .iter()
@@ -134,7 +141,7 @@ mod tests {
 
     fn with_table(table: &str, payload: &[u8]) -> Vec<u8> {
         let mut out = MAGIC.to_vec();
-        out.extend_from_slice(&(table.len() as u32).to_le_bytes());
+        out.extend_from_slice(&u32::try_from(table.len()).expect("fixture table length").to_le_bytes());
         out.extend_from_slice(table.as_bytes());
         out.extend_from_slice(payload);
         out

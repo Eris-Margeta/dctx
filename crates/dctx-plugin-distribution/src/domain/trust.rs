@@ -58,11 +58,14 @@ pub struct TrustStore {
 
 impl TrustStore {
     /// An empty store: nothing is trusted.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Adds an official key shipped with the distribution.
+    /// # Errors
+    /// Refuses a key ID already bound to a different key.
     pub fn pin_official(&mut self, key_id: KeyId, public_key: [u8; 32]) -> Result<Fingerprint, DistributionError> {
         let fingerprint = fingerprint(&public_key);
         self.add(TrustedKey { key_id, public_key, fingerprint, source: TrustSource::Pinned })?;
@@ -70,6 +73,8 @@ impl TrustStore {
     }
 
     /// Adds a key only when its bytes hash to the independently supplied fingerprint.
+    /// # Errors
+    /// Refuses a fingerprint mismatch or a key ID already bound to a different key.
     pub fn approve_key(
         &mut self,
         key_id: KeyId,
@@ -101,6 +106,7 @@ impl TrustStore {
     }
 
     /// Pinned signer of `id`, if any.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn publisher_pin(&self, id: &PluginId) -> Option<&Fingerprint> {
         self.pins.get(id)
     }
@@ -118,21 +124,26 @@ impl TrustStore {
     }
 
     /// True when the artifact digest is revoked.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_artifact_revoked(&self, digest: &Sha256Hex) -> bool {
         self.revoked_artifacts.contains(digest)
     }
 
     /// True when the signing key is revoked.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_key_revoked(&self, signer: &Fingerprint) -> bool {
         self.revoked_keys.contains(signer)
     }
 
     /// Age in seconds of the last known revocation state, `None` if never refreshed.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn revocation_age(&self, now: u64) -> Option<u64> {
         self.revocation_checked_at.map(|at| now.saturating_sub(at))
     }
 
     /// Refuses when a freshness ceiling is set and the last known state is older (or missing).
+    /// # Errors
+    /// Refuses missing or older-than-ceiling revocation data when a freshness ceiling is configured.
     pub fn check_freshness(&self, now: u64, ceiling_secs: Option<u64>) -> Result<(), DistributionError> {
         let Some(ceiling) = ceiling_secs else { return Ok(()) };
         match self.revocation_age(now) {
@@ -144,6 +155,8 @@ impl TrustStore {
     /// Authenticates exact manifest bytes for the selected identity `expected`.
     ///
     /// Order: schema, trusted key, key revocation, signature, identity, publisher pin.
+    /// # Errors
+    /// Refuses malformed manifests, unknown/revoked keys, invalid signatures, identity mismatches, or missing/conflicting publisher pins.
     pub fn authenticate(
         &self,
         manifest_bytes: &[u8],

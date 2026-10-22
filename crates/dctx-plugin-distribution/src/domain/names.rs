@@ -53,6 +53,8 @@ pub struct PluginId(String);
 
 impl PluginId {
     /// Validates `publisher/name` with path-safe halves.
+    /// # Errors
+    /// Refuses text outside the plugin ID pattern or length bounds.
     pub fn parse(text: &str) -> Result<Self, DistributionError> {
         let valid = text.len() <= MAX_NAME
             && text.split_once('/').is_some_and(|(publisher, name)| {
@@ -62,11 +64,13 @@ impl PluginId {
     }
 
     /// The ID as written.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_str(&self) -> &str {
         &self.0
     }
 
     /// Publisher and name as two validated directory components.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn components(&self) -> (&str, &str) {
         self.0.split_once('/').unwrap_or((&self.0, ""))
     }
@@ -78,6 +82,8 @@ pub struct SafeFileName(String);
 
 impl SafeFileName {
     /// Validates one file name component.
+    /// # Errors
+    /// Refuses separators, traversal/device names, or text outside the safe filename pattern/length bounds.
     pub fn parse(text: &str) -> Result<Self, DistributionError> {
         if component_ok(text, any_alnum, file_rest) {
             Ok(Self(text.to_owned()))
@@ -87,11 +93,13 @@ impl SafeFileName {
     }
 
     /// The name as written.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_str(&self) -> &str {
         &self.0
     }
 
     /// Case-folded form used to refuse case aliases on case-insensitive file systems.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn folded(&self) -> String {
         self.0.to_ascii_lowercase()
     }
@@ -103,6 +111,8 @@ pub struct KeyId(String);
 
 impl KeyId {
     /// Validates the token grammar.
+    /// # Errors
+    /// Refuses text outside the key-token grammar or length bounds.
     pub fn parse(text: &str) -> Result<Self, DistributionError> {
         let bytes = text.as_bytes();
         let valid = !bytes.is_empty()
@@ -113,6 +123,7 @@ impl KeyId {
     }
 
     /// The ID as written.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -124,6 +135,8 @@ pub struct Version(String);
 
 impl Version {
     /// Validates `MAJOR.MINOR.PATCH[-pre][+build]` without leading zeros.
+    /// # Errors
+    /// Refuses text outside the supported semantic-version syntax or length bounds.
     pub fn parse(text: &str) -> Result<Self, DistributionError> {
         let refuse = || DistributionError::malformed(Document::Manifest, "version");
         if text.is_empty() || text.len() > MAX_NAME {
@@ -144,6 +157,7 @@ impl Version {
     }
 
     /// The version as written; also a safe directory component.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -161,13 +175,13 @@ fn split_opt(text: &str, separator: char) -> (&str, Option<&str>) {
 pub enum Target {
     /// macOS arm64.
     AppleArm64,
-    /// macOS x86_64.
+    /// macOS `x86_64`.
     AppleX64,
-    /// Linux x86_64 glibc.
+    /// Linux `x86_64` glibc.
     LinuxX64,
     /// Linux aarch64 glibc.
     LinuxArm64,
-    /// Windows x86_64 MSVC.
+    /// Windows `x86_64` MSVC.
     WindowsX64,
 }
 
@@ -181,6 +195,8 @@ impl Target {
     ];
 
     /// Parses a Rust target triple from the closed set.
+    /// # Errors
+    /// Returns an unsupported-target document error for a triple outside the closed target set.
     pub fn parse(text: &str) -> Result<Self, DistributionError> {
         Self::ALL
             .iter()
@@ -190,6 +206,7 @@ impl Target {
     }
 
     /// The target triple.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_str(self) -> &'static str {
         Self::ALL.iter().find(|(target, _)| *target == self).map_or("", |(_, name)| name)
     }

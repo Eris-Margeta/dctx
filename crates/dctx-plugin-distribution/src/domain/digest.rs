@@ -15,6 +15,8 @@ pub struct Sha256Hex([u8; 32]);
 
 impl Sha256Hex {
     /// Parses exactly 64 lowercase hex digits.
+    /// # Errors
+    /// Refuses a digest that is not exactly 64 lowercase hexadecimal characters.
     pub fn parse(text: &str, document: Document) -> Result<Self, DistributionError> {
         let refuse = DistributionError::malformed(document, "sha256-hex");
         let bytes = text.as_bytes();
@@ -29,16 +31,20 @@ impl Sha256Hex {
     }
 
     /// Wraps raw digest bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn from_bytes(bytes: [u8; 32]) -> Self {
         Self(bytes)
     }
 
     /// Raw digest bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_bytes(&self) -> &[u8; 32] {
         &self.0
     }
 
     /// Hashes a complete in-memory document.
+    /// # Errors
+    /// Returns a limit error when input exceeds the SHA-256 message length limit.
     pub fn of(bytes: &[u8]) -> Result<Self, DistributionError> {
         let digest = Sha256::digest(bytes).map_err(|_| DistributionError::LimitExceeded { limit: u64::MAX })?;
         Ok(Self(*digest.as_bytes()))
@@ -66,6 +72,7 @@ fn nibble(b: u8) -> Option<u8> {
 pub type Fingerprint = Sha256Hex;
 
 /// Fingerprint of exact public key bytes.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn fingerprint(public_key: &[u8; 32]) -> Fingerprint {
     Sha256Hex::of(public_key).unwrap_or(Sha256Hex([0; 32]))
 }
@@ -83,11 +90,14 @@ pub struct PayloadCheck {
 
 impl PayloadCheck {
     /// Starts a check for `expected_bytes` with digest `expected_digest`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(expected_bytes: u64, expected_digest: Sha256Hex) -> Self {
         Self { expected_bytes, expected_digest, seen: 0, hasher: Sha256::new() }
     }
 
     /// Feeds the next chunk.
+    /// # Errors
+    /// Refuses bytes beyond the declared length or a hash input length overflow.
     pub fn update(&mut self, chunk: &[u8]) -> Result<(), DistributionError> {
         let seen = self.seen.saturating_add(chunk.len() as u64);
         if seen > self.expected_bytes {
@@ -101,6 +111,8 @@ impl PayloadCheck {
     }
 
     /// Ends the stream: exact size first, then exact digest.
+    /// # Errors
+    /// Refuses a final size mismatch or a digest that differs from the expected digest.
     pub fn finish(self) -> Result<(), DistributionError> {
         if self.seen != self.expected_bytes {
             return Err(DistributionError::SizeMismatch { expected: self.expected_bytes });
@@ -112,6 +124,8 @@ impl PayloadCheck {
     }
 
     /// Checks a complete in-memory payload.
+    /// # Errors
+    /// Refuses a size mismatch, hash length overflow, or digest mismatch.
     pub fn whole(bytes: &[u8], expected_bytes: u64, expected_digest: Sha256Hex) -> Result<(), DistributionError> {
         let mut check = Self::new(expected_bytes, expected_digest);
         check.update(bytes)?;

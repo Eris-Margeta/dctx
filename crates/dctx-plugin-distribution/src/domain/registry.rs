@@ -1,5 +1,5 @@
 //! Host-owned registry: installed immutable versions, the activation record, enablement and consent.
-//! Implements docs/formal/dctx-plugins/Install.tla (PP9Integrity: active is complete, verified and allowed;
+//! Implements docs/formal/dctx-plugins/Install.tla (`PP9Integrity`: active is complete, verified and allowed;
 //! leases only on complete versions; activation never below the high-water mark unless an approved rollback)
 //! and PLUGINS.md §5.1 enable/disable/remove semantics. Pure; depends on consent, trust and names.
 //! Used by the install and management services, persisted through `registry_codec`.
@@ -107,11 +107,13 @@ impl PluginRecord {
     }
 
     /// Installed version by digest.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn version(&self, digest: &Sha256Hex) -> Option<&InstalledVersion> {
         self.versions.iter().find(|version| version.digest == *digest)
     }
 
     /// The active installed version.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn active_version(&self) -> Option<&InstalledVersion> {
         self.active.as_ref().and_then(|digest| self.version(digest))
     }
@@ -155,6 +157,7 @@ pub struct Registry {
 
 impl Registry {
     /// Record by ID.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn get(&self, id: &PluginId) -> Option<&PluginRecord> {
         self.plugins.get(id)
     }
@@ -169,6 +172,8 @@ impl Registry {
     }
 
     /// Adds a published version inactive; refuses downgrade and sequence replay. Idempotent per digest.
+    /// # Errors
+    /// Refuses release sequence downgrades or replayed sequences with a different artifact.
     pub fn record_install(&mut self, id: &PluginId, origin: Origin, version: InstalledVersion) -> Result<(), DistributionError> {
         let record = self.plugins.entry(id.clone()).or_insert_with(|| PluginRecord::new(origin));
         if record.version(&version.digest).is_some() {
@@ -188,6 +193,8 @@ impl Registry {
     }
 
     /// Atomically selects `digest` as active; consent of an enabled plugin must cover it.
+    /// # Errors
+    /// Refuses missing, quarantined, untrusted/revoked or downgraded versions, or incompatible existing consent.
     pub fn activate(&mut self, id: &PluginId, digest: &Sha256Hex, trust: &TrustStore) -> Result<(), DistributionError> {
         let record = self.record_mut(id)?;
         let version = record.usable(digest, trust)?.clone();
@@ -201,6 +208,8 @@ impl Registry {
     }
 
     /// Explicit exact-digest rollback with a reason; cannot revive revoked or quarantined versions.
+    /// # Errors
+    /// Refuses missing or unusable versions, an empty rollback reason, or incompatible existing consent.
     pub fn rollback(&mut self, id: &PluginId, digest: &Sha256Hex, reason: &str, trust: &TrustStore) -> Result<(), DistributionError> {
         let record = self.record_mut(id)?;
         let version = record.usable(digest, trust)?.clone();
@@ -215,6 +224,8 @@ impl Registry {
     }
 
     /// Enables the active version with existing or newly approved consent.
+    /// # Errors
+    /// Refuses missing/inactive/unusable versions, missing confinement, or absent/mismatched consent approval.
     pub fn enable(
         &mut self,
         id: &PluginId,
@@ -247,6 +258,8 @@ impl Registry {
     }
 
     /// Persists disable and returns the number of worker leases the caller must cancel and reap.
+    /// # Errors
+    /// Returns `NotInstalled` for an unknown plugin ID.
     pub fn disable(&mut self, id: &PluginId) -> Result<u32, DistributionError> {
         let record = self.record_mut(id)?;
         record.enablement = Enablement::Disabled;
@@ -254,6 +267,8 @@ impl Registry {
     }
 
     /// Marks a version as failed reverification.
+    /// # Errors
+    /// Returns `NotInstalled` for an unknown plugin ID or artifact digest.
     pub fn quarantine(&mut self, id: &PluginId, digest: &Sha256Hex) -> Result<(), DistributionError> {
         let record = self.record_mut(id)?;
         let version = record.versions.iter_mut().find(|v| v.digest == *digest).ok_or(DistributionError::NotInstalled)?;
@@ -262,6 +277,8 @@ impl Registry {
     }
 
     /// Unlinks an inactive, unleased version.
+    /// # Errors
+    /// Refuses an unknown plugin/version or a version with active leases.
     pub fn remove_version(&mut self, id: &PluginId, digest: &Sha256Hex) -> Result<(), DistributionError> {
         let record = self.record_mut(id)?;
         if record.active == Some(*digest) || record.leased(digest) {
@@ -273,6 +290,8 @@ impl Registry {
     }
 
     /// Removes all versions after leases end; keeps a sticky disabled mask record.
+    /// # Errors
+    /// Refuses an unknown plugin or a plugin with active leases.
     pub fn remove_plugin(&mut self, id: &PluginId) -> Result<Vec<Sha256Hex>, DistributionError> {
         let record = self.record_mut(id)?;
         record.enablement = Enablement::Disabled;

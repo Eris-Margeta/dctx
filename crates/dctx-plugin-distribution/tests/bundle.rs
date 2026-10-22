@@ -13,7 +13,7 @@ fn refused(world: &World, bytes: &[u8]) -> E {
     let error = world.dist().install_bundle(&id(GIT), bytes).unwrap_err();
     let registry = world.dist().registry().unwrap();
     assert!(registry.get(&id(GIT)).is_none(), "refused bundle reached the registry");
-    assert!(world.dist().recover().unwrap().discarded_staging.is_empty());
+    assert_eq!(world.dist().recover().unwrap().discarded_staging, [] as [dctx_plugin_distribution::InstallKey; 0]);
     error
 }
 
@@ -47,7 +47,7 @@ fn bundle_framing_and_table_failures_are_refused() {
 
     let table = r#"{"schema":1,"entries":[{"name":"../../bin/dctx","bytes":1,"sha256":"ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}]}"#;
     let mut traversal = MAGIC.to_vec();
-    traversal.extend_from_slice(&(table.len() as u32).to_le_bytes());
+    traversal.extend_from_slice(&u32::try_from(table.len()).expect("fixture table length").to_le_bytes());
     traversal.extend_from_slice(table.as_bytes());
     traversal.push(b'a');
     assert_eq!(refused(&world, &traversal), E::Malformed { document: Document::Bundle, reason: "entry-name" });

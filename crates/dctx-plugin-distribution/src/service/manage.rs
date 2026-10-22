@@ -33,29 +33,39 @@ pub struct RecoveryReport {
 
 impl Distribution<'_> {
     /// Switches the activation record to an installed digest (update). Old versions stay for leases.
+    /// # Errors
+    /// Propagates stale revocation data, registry activation/consent refusals, and lock/storage failures.
     pub fn activate(&self, id: &PluginId, digest: &Sha256Hex) -> Result<(), DistributionError> {
         self.trust.check_freshness(self.clock.now(), self.policy.freshness_ceiling_secs)?;
         self.mutate(|registry| registry.activate(id, digest, self.trust))
     }
 
     /// Explicit exact-digest rollback below the high-water mark, with a recorded reason.
+    /// # Errors
+    /// Propagates freshness, rollback reason/version/consent refusals, and lock/storage failures.
     pub fn rollback(&self, id: &PluginId, digest: &Sha256Hex, reason: &str) -> Result<(), DistributionError> {
         self.trust.check_freshness(self.clock.now(), self.policy.freshness_ceiling_secs)?;
         self.mutate(|registry| registry.rollback(id, digest, reason, self.trust))
     }
 
     /// Enables the active version under existing or explicitly approved consent.
+    /// # Errors
+    /// Propagates freshness, version/trust/confinement/consent refusals, and lock/storage failures.
     pub fn enable(&self, id: &PluginId, approval: Option<&ConsentApproval>, confinement: Confinement) -> Result<(), DistributionError> {
         self.trust.check_freshness(self.clock.now(), self.policy.freshness_ceiling_secs)?;
         self.mutate(|registry| registry.enable(id, approval, confinement, self.trust))
     }
 
     /// Persists a sticky disable; returns how many leased workers the caller must cancel.
+    /// # Errors
+    /// Propagates unknown-plugin and lock/registry/storage failures.
     pub fn disable(&self, id: &PluginId) -> Result<u32, DistributionError> {
         self.mutate(|registry| registry.disable(id))
     }
 
     /// Removes every version after leases end; the disabled mask record stays.
+    /// # Errors
+    /// Refuses missing or leased plugins and propagates lock/registry/storage failures.
     pub fn remove(&self, id: &PluginId) -> Result<(), DistributionError> {
         let held = self.lock()?;
         let mut registry = self.registry()?;
@@ -70,6 +80,8 @@ impl Distribution<'_> {
     }
 
     /// Unlinks one inactive version whose leases have ended.
+    /// # Errors
+    /// Refuses missing or leased versions and propagates lock/registry/storage failures.
     pub fn remove_version(&self, id: &PluginId, digest: &Sha256Hex) -> Result<(), DistributionError> {
         let held = self.lock()?;
         let mut registry = self.registry()?;
@@ -81,6 +93,8 @@ impl Distribution<'_> {
     }
 
     /// Rechecks every installed version's files, signature, trust and target; quarantines failures.
+    /// # Errors
+    /// Propagates lock/registry/storage failures; per-version verification failures are returned as outcomes and trigger quarantine.
     pub fn verify(&self, id: &PluginId) -> Result<Vec<VerifyOutcome>, DistributionError> {
         let held = self.lock()?;
         let mut registry = self.registry()?;
@@ -123,12 +137,16 @@ impl Distribution<'_> {
     }
 
     /// Admits one worker on the exact active digest and leases it. The launcher must still bind bytes (PL-A).
+    /// # Errors
+    /// Propagates plugin admission/trust/freshness refusals and lock/registry/storage failures.
     pub fn admit(&self, id: &PluginId) -> Result<Admission, DistributionError> {
         let now = self.clock.now();
         self.mutate(|registry| registry.admit(id, self.trust, now, self.policy.freshness_ceiling_secs))
     }
 
     /// Ends a worker lease.
+    /// # Errors
+    /// Propagates lock/registry/storage failures while updating the lease count.
     pub fn release(&self, admission: &Admission) -> Result<(), DistributionError> {
         self.mutate(|registry| {
             registry.release(admission);
@@ -137,6 +155,8 @@ impl Distribution<'_> {
     }
 
     /// Records the bundled build the containing signed release authenticated; a sticky mask wins.
+    /// # Errors
+    /// Propagates lock/registry/storage failures while recording the bundled version.
     pub fn register_bundled(&self, id: &PluginId, version: InstalledVersion) -> Result<(), DistributionError> {
         self.mutate(|registry| {
             registry.register_bundled(id, version);
@@ -145,6 +165,8 @@ impl Distribution<'_> {
     }
 
     /// `plugin list` rows; reads metadata only.
+    /// # Errors
+    /// Propagates registry decoding/storage failures or an unavailable plugin status.
     pub fn list(&self) -> Result<Vec<PluginStatus>, DistributionError> {
         let registry = self.registry()?;
         let now = self.clock.now();
@@ -152,6 +174,8 @@ impl Distribution<'_> {
     }
 
     /// Discards partial staging and unreferenced published directories; the activation record is untouched.
+    /// # Errors
+    /// Propagates lock/registry/storage failures while removing abandoned staging or unreferenced installs.
     pub fn recover(&self) -> Result<RecoveryReport, DistributionError> {
         let held = self.lock()?;
         let registry = self.registry()?;

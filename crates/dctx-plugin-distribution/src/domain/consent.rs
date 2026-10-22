@@ -22,6 +22,8 @@ pub struct CapabilitySet {
 
 impl CapabilitySet {
     /// Reads the manifest's closed `capabilities` object.
+    /// # Errors
+    /// Refuses missing/extra capability sections, invalid capability objects, or duplicates.
     pub fn from_manifest(value: &Json) -> Result<Self, DistributionError> {
         let object = Closed::new(value, Document::Manifest, &SECTIONS, &SECTIONS)?;
         let mut entries = BTreeSet::new();
@@ -37,11 +39,13 @@ impl CapabilitySet {
     }
 
     /// True when every entry here is also in `granted`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_within(&self, granted: &Self) -> bool {
         self.entries.is_subset(&granted.entries)
     }
 
     /// Entries in `self` that `granted` does not contain, as display-ready canonical JSON.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn expansion_over(&self, granted: &Self) -> Vec<(String, String)> {
         self.entries
             .difference(&granted.entries)
@@ -50,11 +54,13 @@ impl CapabilitySet {
     }
 
     /// Number of entries.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn len(&self) -> usize {
         self.entries.len()
     }
 
     /// True when nothing is requested.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
@@ -110,11 +116,13 @@ pub struct ConsentRecord {
 
 impl ConsentRecord {
     /// True when a release by `signer` requesting `requested` needs no new consent.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn covers(&self, signer: &Fingerprint, requested: &CapabilitySet) -> bool {
         self.signer == *signer && requested.is_within(&self.capabilities)
     }
 
     /// The record derived for an equal/narrower update, or `None` when consent must be asked again.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn derive(&self, digest: Sha256Hex, signer: &Fingerprint, requested: &CapabilitySet) -> Option<Self> {
         self.covers(signer, requested).then(|| Self { digest, ..self.clone() })
     }

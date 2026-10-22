@@ -13,6 +13,8 @@ use crate::error::{DistributionError, Document};
 pub const MAX_SUMS_BYTES: u64 = 65_536;
 
 /// Refuses unless `sums` lists exactly the manifest's payloads with identical digests.
+/// # Errors
+/// Refuses oversized/non-UTF-8/malformed sums, duplicate names, or entries that differ from the signed manifest.
 pub fn check_sums(manifest: &Manifest, sums: &[u8]) -> Result<(), DistributionError> {
     if sums.len() as u64 > MAX_SUMS_BYTES {
         return Err(DistributionError::LimitExceeded { limit: MAX_SUMS_BYTES });
@@ -27,7 +29,7 @@ pub fn check_sums(manifest: &Manifest, sums: &[u8]) -> Result<(), DistributionEr
         }
     }
     let mut signed = BTreeMap::new();
-    for payload in manifest.artifacts.iter().flat_map(|artifact| artifact.payloads()) {
+    for payload in manifest.artifacts.iter().flat_map(super::manifest::Artifact::payloads) {
         signed.insert(payload.file.as_str(), payload.sha256);
     }
     if listed == signed { Ok(()) } else { Err(DistributionError::SumsMismatch) }

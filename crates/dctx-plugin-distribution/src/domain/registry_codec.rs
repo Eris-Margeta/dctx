@@ -33,6 +33,7 @@ fn refuse(reason: &'static str) -> DistributionError {
 }
 
 /// Canonical bytes of `registry`.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn encode(registry: &Registry) -> Vec<u8> {
     let plugins = registry.records().map(|(id, record)| encode_record(id, record)).collect();
     to_canonical(&obj(vec![("format", Json::uint(FORMAT)), ("plugins", Json::Array(plugins))]))
@@ -91,6 +92,8 @@ fn encode_consent(consent: &ConsentRecord) -> Json {
 }
 
 /// Restores a registry, refusing unknown formats and fields.
+/// # Errors
+/// Refuses malformed/oversized JSON, unsupported formats, duplicate IDs, or invalid registry records.
 pub fn decode(bytes: &[u8]) -> Result<Registry, DistributionError> {
     let value = decode_object(bytes, LIMITS).map_err(|refusal| refuse(refusal.reason))?;
     let top = Closed::new(&value, Document::Registry, &["format", "plugins"], &["format", "plugins"])?;

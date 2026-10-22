@@ -45,6 +45,8 @@ enum Source<'s> {
 
 impl Distribution<'_> {
     /// Installs `id` from the verified discovery index (newest stable or exact `version`).
+    /// # Errors
+    /// Propagates index/trust selection, network/origin, signature, payload, quota, lock, and storage failures.
     pub fn install_from_index(
         &self,
         index: &VerifiedIndex,
@@ -57,6 +59,8 @@ impl Distribution<'_> {
     }
 
     /// Installs from a signed manifest URL (`--url`); identity must match the approved `id`.
+    /// # Errors
+    /// Propagates origin/network, manifest/trust/signature, payload, quota, lock, and storage failures.
     pub fn install_url(&self, id: &PluginId, manifest_url: &HttpsUrl) -> Result<InstallReport, DistributionError> {
         self.install_remote(id, manifest_url, None)
     }
@@ -86,6 +90,8 @@ impl Distribution<'_> {
     }
 
     /// Installs an offline `.dctx-plugin` bundle (`--file`) with the same trust gates; no network use.
+    /// # Errors
+    /// Refuses malformed/oversized bundles, missing payloads, trust/signature/digest failures, unsupported targets, or lock/storage failures.
     pub fn install_bundle(&self, id: &PluginId, bytes: &[u8]) -> Result<InstallReport, DistributionError> {
         let held = self.lock()?;
         let bundle = OfflineBundle::parse(bytes, self.policy.max_bundle_bytes)?;
@@ -102,6 +108,7 @@ impl Distribution<'_> {
         self.accept(&held, verified, &signature, Source::Bundle(&bundle))
     }
 
+    #[allow(clippy::needless_pass_by_value, reason = "The install transaction owns its verified manifest and selected payload source until publication completes.")]
     fn accept(
         &self,
         held: &super::Held<'_>,
@@ -210,7 +217,7 @@ fn check_bundle_payloads(bundle: &OfflineBundle, artifact: &Artifact, verified: 
         }
     }
     let other_targets = verified.manifest.artifacts.iter().filter(|other| other.target != artifact.target);
-    let foreign: Vec<&str> = other_targets.flat_map(|other| other.payloads()).map(|p| p.file.as_str()).collect();
+    let foreign: Vec<&str> = other_targets.flat_map(super::super::domain::manifest::Artifact::payloads).map(|p| p.file.as_str()).collect();
     for entry in bundle.entries() {
         let name = entry.name.as_str();
         let selected = artifact.payloads().any(|payload| payload.file.as_str() == name);

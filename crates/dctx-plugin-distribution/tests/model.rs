@@ -1,5 +1,5 @@
 #![allow(clippy::drop_non_drop)]
-//! Property test of Install.tla PP9Integrity over random install/activate/fault/revoke/rollback runs:
+//! Property test of Install.tla `PP9Integrity` over random install/activate/fault/revoke/rollback runs:
 //! the active version is always complete, recorded and below or at the high-water mark, admission never
 //! leases a revoked or quarantined digest, and no refusal leaves staging behind.
 

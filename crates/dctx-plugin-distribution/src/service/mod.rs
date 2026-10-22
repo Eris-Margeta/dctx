@@ -38,6 +38,7 @@ pub struct InstallPolicy {
 
 impl InstallPolicy {
     /// Defaults for `target`: 256 MiB per artifact, bundles up to 8 artifacts' worth, no ceiling.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(target: Target) -> Self {
         Self {
             target,
@@ -71,6 +72,8 @@ impl<'a> Distribution<'a> {
     }
 
     /// Current registry, read without the lock (list/info/search never mutate).
+    /// # Errors
+    /// Propagates storage read errors or malformed registry decoding.
     pub fn registry(&self) -> Result<Registry, DistributionError> {
         match self.store.load_registry()? {
             Some(bytes) => registry_codec::decode(&bytes),

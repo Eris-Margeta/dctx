@@ -74,6 +74,8 @@ pub struct Manifest {
 
 impl Manifest {
     /// Decodes and checks exact manifest bytes (256 KiB, depth 32, 4096 members, no duplicate keys).
+    /// # Errors
+    /// Refuses malformed/oversized JSON, invalid identity/version/fields, unsupported manifest format, or duplicate artifacts.
     pub fn parse(bytes: &[u8]) -> Result<Self, DistributionError> {
         let value = decode_object(bytes, DecodeLimits::MANIFEST)
             .map_err(|refusal| DistributionError::malformed(Document::Manifest, refusal.reason))?;
@@ -110,11 +112,14 @@ impl Manifest {
     }
 
     /// The exact bytes that were signed.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 
     /// The artifact for `target`, or [`DistributionError::UnsupportedTarget`].
+    /// # Errors
+    /// Returns `UnsupportedTarget` if the manifest has no artifact for the requested target.
     pub fn artifact_for(&self, target: Target) -> Result<&Artifact, DistributionError> {
         self.artifacts.iter().find(|artifact| artifact.target == target).ok_or(DistributionError::UnsupportedTarget)
     }

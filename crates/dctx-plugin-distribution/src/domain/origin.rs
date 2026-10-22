@@ -21,6 +21,8 @@ pub struct HttpsUrl {
 
 impl HttpsUrl {
     /// Parses and checks the URL grammar the installer accepts.
+    /// # Errors
+    /// Refuses malformed URLs, non-HTTPS schemes, fragments, userinfo, or invalid host/port syntax.
     pub fn parse(text: &str) -> Result<Self, OriginRefusal> {
         if text.len() > MAX_URL || text.bytes().any(|b| b <= b' ' || b >= 0x7f || b == b'\\') {
             return Err(OriginRefusal::Syntax);
@@ -49,11 +51,13 @@ impl HttpsUrl {
     }
 
     /// Lowercase host, IPv6 literals keep their brackets.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn host(&self) -> &str {
         &self.host
     }
 
     /// `host[:port]`, the unit of origin comparison.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn origin(&self) -> String {
         match self.port {
             Some(port) => format!("{}:{port}", self.host),
@@ -62,6 +66,7 @@ impl HttpsUrl {
     }
 
     /// The URL of `file` in the same directory as this URL.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn sibling(&self, file: &SafeFileName) -> Self {
         let path = self.path.split('?').next().unwrap_or("/");
         let directory = &path[..path.rfind('/').map_or(0, |index| index + 1)];
@@ -92,6 +97,7 @@ fn split_port(authority: &str) -> Result<(&str, Option<u16>), OriginRefusal> {
 }
 
 /// True for loopback, private, link-local, CGNAT, unspecified, multicast and unique-local addresses.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn is_private_address(address: IpAddr) -> bool {
     match address {
         IpAddr::V4(v4) => private_v4(v4),
@@ -138,6 +144,8 @@ impl Default for OriginPolicy {
 
 impl OriginPolicy {
     /// Checks a URL's host before connecting.
+    /// # Errors
+    /// Refuses private destination hosts when private destinations are not allowed.
     pub fn check_url(&self, url: &HttpsUrl) -> Result<(), OriginRefusal> {
         if self.allow_private {
             return Ok(());
@@ -151,6 +159,8 @@ impl OriginPolicy {
     }
 
     /// Checks the address the connection actually reached (binds DNS to the connection).
+    /// # Errors
+    /// Refuses private peer addresses when private destinations are not allowed.
     pub fn check_peer(&self, peer: IpAddr) -> Result<(), OriginRefusal> {
         if !self.allow_private && is_private_address(peer) {
             return Err(OriginRefusal::PrivateDestination);
@@ -159,6 +169,8 @@ impl OriginPolicy {
     }
 
     /// Checks a redirect from the selected origin `selected` to `target`.
+    /// # Errors
+    /// Refuses a disallowed destination or an origin outside the selected/approved redirect origins.
     pub fn check_redirect(&self, selected: &HttpsUrl, target: &HttpsUrl) -> Result<(), OriginRefusal> {
         self.check_url(target)?;
         let origin = target.origin();

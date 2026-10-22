@@ -31,6 +31,8 @@ pub struct Response {
 /// Credential-free HTTPS GET. Adapters must not attach ambient browser or Git credentials.
 pub trait Network {
     /// Issues one request without following redirects.
+    /// # Errors
+    /// Returns `NetworkError` when the credential-free HTTPS request cannot complete.
     fn get(&self, url: &HttpsUrl) -> Result<Response, NetworkError>;
 }
 
@@ -40,11 +42,13 @@ pub struct LockToken(u64);
 
 impl LockToken {
     /// Wraps an adapter-chosen token value.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn new(value: u64) -> Self {
         Self(value)
     }
 
     /// The adapter's token value.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn value(self) -> u64 {
         self.0
     }
@@ -63,6 +67,7 @@ pub struct InstallKey {
 
 impl InstallKey {
     /// Validated relative path components; never string-concatenated from untrusted input.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn components(&self) -> [String; 4] {
         let (publisher, name) = self.id.components();
         [publisher.to_owned(), name.to_owned(), self.version.as_str().to_owned(), self.digest.to_string()]
@@ -72,26 +77,46 @@ impl InstallKey {
 /// The managed plugin data root. Every mutation requires the operation lock.
 pub trait Store {
     /// Takes the operation lock or returns [`DistributionError::Busy`].
+    /// # Errors
+    /// Returns `Busy` if the operation lock is held, or a storage error if locking fails.
     fn try_lock(&self) -> Result<LockToken, DistributionError>;
     /// Releases the operation lock.
     fn unlock(&self, token: LockToken);
     /// Current registry bytes, `None` before first use.
+    /// # Errors
+    /// Returns a storage error if the registry cannot be read safely.
     fn load_registry(&self) -> Result<Option<Vec<u8>>, DistributionError>;
     /// Atomically replaces the registry: readers see the old or the new bytes, never a mix.
+    /// # Errors
+    /// Returns a lock/storage error if the registry cannot be atomically replaced.
     fn save_registry(&self, token: LockToken, bytes: &[u8]) -> Result<(), DistributionError>;
     /// Appends bytes to a staged regular file (owner-only permissions, same filesystem as installs).
+    /// # Errors
+    /// Returns a lock/storage error if safe staging or append fails.
     fn stage_append(&self, token: LockToken, key: &InstallKey, file: &SafeFileName, bytes: &[u8]) -> Result<(), DistributionError>;
     /// Atomically publishes the staging directory as an immutable version directory.
+    /// # Errors
+    /// Returns a lock/storage error if the staging directory cannot be atomically published.
     fn publish(&self, token: LockToken, key: &InstallKey) -> Result<(), DistributionError>;
     /// Deletes a staging directory, if any.
+    /// # Errors
+    /// Returns a lock/storage error if the staging directory cannot be safely removed.
     fn discard_staging(&self, token: LockToken, key: &InstallKey) -> Result<(), DistributionError>;
     /// Keys with leftover staging directories.
+    /// # Errors
+    /// Returns a storage error if staged install keys cannot be enumerated safely.
     fn staged(&self) -> Result<Vec<InstallKey>, DistributionError>;
     /// Keys of published version directories.
+    /// # Errors
+    /// Returns a storage error if published install keys cannot be enumerated safely.
     fn installed(&self) -> Result<Vec<InstallKey>, DistributionError>;
     /// Reads one published file for reverification.
+    /// # Errors
+    /// Returns a storage error if the published file cannot be safely read.
     fn read_installed(&self, key: &InstallKey, file: &SafeFileName) -> Result<Vec<u8>, DistributionError>;
     /// Unlinks a published version directory.
+    /// # Errors
+    /// Returns a lock/storage error if the immutable version directory cannot be safely removed.
     fn remove_installed(&self, token: LockToken, key: &InstallKey) -> Result<(), DistributionError>;
 }
 

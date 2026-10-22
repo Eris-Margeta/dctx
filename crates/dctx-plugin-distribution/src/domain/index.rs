@@ -4,6 +4,7 @@
 //! HTTPS locators, monotonic sequence and escaped display text. Inclusion grants nothing.
 //! Pure; depends on signature, origin, fields and names. Used by the install service and CLI/app search.
 
+use std::fmt::Write as _;
 use std::collections::BTreeSet;
 
 use dctx_plugin_protocol::{DecodeLimits, Json, decode_object};
@@ -51,6 +52,8 @@ pub struct IndexEntry {
 
 impl IndexEntry {
     /// The exact version, or the highest release sequence when `version` is `None`.
+    /// # Errors
+    /// Returns `NotFound` when the requested version, or any release for an unversioned selection, is absent.
     pub fn select(&self, version: Option<&Version>) -> Result<&IndexRelease, DistributionError> {
         match version {
             Some(version) => self.releases.iter().find(|release| release.version == *version),
@@ -71,6 +74,8 @@ pub struct VerifiedIndex {
 
 impl VerifiedIndex {
     /// Verifies `bytes` and its detached signature, then checks the closed schema.
+    /// # Errors
+    /// Refuses oversized index bytes, invalid signatures, or malformed index data.
     pub fn verify(bytes: &[u8], signature: &[u8], index_key: &[u8; 32]) -> Result<Self, DistributionError> {
         if bytes.len() > INDEX_LIMITS.max_bytes {
             return Err(DistributionError::LimitExceeded { limit: INDEX_LIMITS.max_bytes as u64 });
@@ -103,6 +108,8 @@ impl VerifiedIndex {
     }
 
     /// Refuses a refresh that would replace a newer cached index.
+    /// # Errors
+    /// Refuses an index sequence below the cached sequence.
     pub fn check_newer_than(&self, cached_sequence: Option<u64>) -> Result<(), DistributionError> {
         match cached_sequence {
             Some(cached) if self.sequence < cached => Err(DistributionError::Downgrade { candidate: self.sequence, floor: cached }),
@@ -111,6 +118,8 @@ impl VerifiedIndex {
     }
 
     /// Entry by ID; refuses when the curated fingerprint contradicts an existing publisher pin.
+    /// # Errors
+    /// Refuses a missing plugin entry or a publisher fingerprint that conflicts with the trust pin.
     pub fn entry(&self, id: &PluginId, trust: &TrustStore) -> Result<&IndexEntry, DistributionError> {
         let entry = self.entries.iter().find(|entry| entry.id == *id).ok_or(DistributionError::NotFound)?;
         match trust.publisher_pin(id) {
@@ -120,6 +129,7 @@ impl VerifiedIndex {
     }
 
     /// Case-insensitive search over ID, repository and summary; never fetches anything.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn search(&self, query: &str) -> Vec<&IndexEntry> {
         let query = query.to_lowercase();
         self.entries
@@ -180,13 +190,14 @@ fn parse_entry(value: &Json) -> Result<IndexEntry, DistributionError> {
 }
 
 /// Escapes control, bidirectional and other invisible format characters for terminal display.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn escape_display(text: &str) -> String {
     let mut out = String::with_capacity(text.len());
     for c in text.chars() {
         let invisible = c.is_control()
             || matches!(c, '\u{200b}'..='\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{2069}' | '\u{feff}');
         if invisible {
-            out.push_str(&format!("\\u{{{:04x}}}", c as u32));
+            let _ = write!(out, "\\u{{{:04x}}}", c as u32);
         } else if c == '\\' {
             out.push_str("\\\\");
         } else {
@@ -210,7 +221,7 @@ mod tests {
         assert_eq!(entry.select(None).unwrap().release_sequence, 1);
         assert_eq!(entry.select(Some(&Version::parse("9.9.9").unwrap())), Err(DistributionError::NotFound));
         assert_eq!(index.search("GIT").len(), 1);
-        assert!(index.search("nothing-like-this").is_empty());
+        assert_eq!(index.search("nothing-like-this"), [] as [&crate::domain::index::IndexEntry; 0]);
     }
 
     #[test]
