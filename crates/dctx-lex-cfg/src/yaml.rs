@@ -22,7 +22,7 @@ struct Parser<'a> {
     broke: bool,
 }
 
-impl<'a> Parser<'a> {
+impl Parser<'_> {
     fn diagnose(&mut self, byte: usize, reason: DiagnosticReason) {
         self.draft.diagnose(byte, reason);
     }
@@ -68,6 +68,7 @@ impl<'a> Parser<'a> {
     fn row_break(&mut self, indent: usize, dash: bool) -> bool {
         self.cur.eof() || self.indent() != indent || self.at_dash() != dash
     }
+    #[allow(clippy::option_option, reason = "The outer Option distinguishes the end of the current YAML block; the inner Option is the optional leading comment for a continuing item.")]
     fn take_lead(&mut self, indent: usize, dash: bool, first: &mut Option<String>) -> Option<Option<String>> {
         if first.is_some() { return Some(first.take()); }
         let mark = self.cur.i;
@@ -106,6 +107,7 @@ impl<'a> Parser<'a> {
         }
         Ok(())
     }
+    #[allow(clippy::needless_pass_by_value, reason = "Pending comment text is transferred at grammar dispatch boundaries and is not reusable by the caller after that item is handled.")]
     fn seq_item(&mut self, parent: Option<usize>, segment: &str, dash_indent: usize, depth: u32, start: usize, lead: Option<String>) -> Result<(), LexError> {
         self.cur.skip_spaces();
         let child_depth = depth.saturating_add(1);
@@ -165,6 +167,7 @@ impl<'a> Parser<'a> {
         self.close(node);
         Ok(())
     }
+    #[allow(clippy::needless_pass_by_value, reason = "Pending comment text is transferred at grammar dispatch boundaries and is not reusable by the caller after that item is handled.")]
     fn mapped_value(&mut self, parent: Option<usize>, key: &str, indent: usize, depth: u32, start: usize, lead: Option<String>) -> Result<(), LexError> {
         self.cur.skip_spaces();
         let anchor = self.take_mark(b'&');
@@ -203,16 +206,16 @@ impl<'a> Parser<'a> {
                 if !comment.is_empty() { self.doc(node, Some(&comment)); }
             }
             if matches!(self.cur.byte(), None | Some(b'\n' | b'\r' | b'#')) {
-                self.nest_or_fold(node, indent, depth, &anchor, start)?;
+                self.nest_or_fold(node, indent, depth, anchor.as_deref(), start)?;
             } else {
                 let text = self.fold_plain(indent);
-                self.finish_scalar(node, &text, &anchor, start)?;
+                self.finish_scalar(node, &text, anchor.as_deref(), start)?;
             }
         }
         self.close(node);
         Ok(())
     }
-    fn nest_or_fold(&mut self, node: Option<usize>, indent: usize, depth: u32, anchor: &Option<String>, start: usize) -> Result<(), LexError> {
+    fn nest_or_fold(&mut self, node: Option<usize>, indent: usize, depth: u32, anchor: Option<&str>, start: usize) -> Result<(), LexError> {
         if self.same_indent_sequence(indent) {
             self.parse_sequence(node, indent, depth.saturating_add(1), None)?;
         } else if self.peek_nested_block(indent) {
@@ -225,7 +228,7 @@ impl<'a> Parser<'a> {
         }
         Ok(())
     }
-    fn finish_scalar(&mut self, node: Option<usize>, text: &str, anchor: &Option<String>, start: usize) -> Result<(), LexError> {
+    fn finish_scalar(&mut self, node: Option<usize>, text: &str, anchor: Option<&str>, start: usize) -> Result<(), LexError> {
         let Some(index) = node else { return Ok(()) };
         if text.is_empty() { return Ok(()) }
         let signature = match anchor {
@@ -291,8 +294,7 @@ impl<'a> Parser<'a> {
     fn flow_value(&mut self, node: Option<usize>, depth: u32) -> Result<(), LexError> {
         let _ = skip_hash_comments(&mut self.cur);
         match self.cur.byte() {
-            Some(b'{') => self.flow(node, depth.saturating_add(1)),
-            Some(b'[') => self.flow(node, depth.saturating_add(1)),
+            Some(b'{' | b'[') => self.flow(node, depth.saturating_add(1)),
             Some(b'"' | b'\'') => self.read_string(node, self.cur.i),
             Some(b'*') => {
                 if let Some(alias) = self.take_mark(b'*') { self.sign(node, &format!("*{alias}")); }
@@ -570,7 +572,7 @@ impl<'a> Parser<'a> {
             self.cur.eat(b'\n');
         }
         if !keep_tail {
-            while parts.last().is_some_and(|line| line.is_empty()) { parts.pop(); }
+            while parts.last().is_some_and(std::string::String::is_empty) { parts.pop(); }
         }
         parts.into_iter().filter(|line| !line.is_empty()).collect::<Vec<_>>().join(" ")
     }
@@ -959,8 +961,7 @@ mod tests {
         file.nodes
             .iter()
             .find(|node| node.fact.name == name)
-            .map(|node| node.fact.signature.as_str())
-            .unwrap_or("")
+            .map_or("", |node| node.fact.signature.as_str())
     }
 
     #[test]

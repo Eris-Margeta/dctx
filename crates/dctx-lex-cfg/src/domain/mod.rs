@@ -1,5 +1,5 @@
 //! IO-free extraction vocabulary: facts, precision labels, limits and refusals.
-//! Implements PARSERS-v1 (ParseResult, completion, limits) for configuration files.
+//! Implements PARSERS-v1 (`ParseResult`, completion, limits) for configuration files.
 //! Used by the JSON, TOML and YAML walkers and by callers of the public API.
 //! Body fingerprints stream through `dctx_hash::Sha256` over whitespace-skipped runs.
 mod facts;
@@ -11,6 +11,7 @@ pub use facts::{
 pub use limits::{LexError, Limits};
 
 /// SHA-256 hex of the body with whitespace runs collapsed and edges trimmed.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn body_fingerprint(body: &str) -> String {
     if !has_whitespace(body) {
         return fingerprint_plain(body);

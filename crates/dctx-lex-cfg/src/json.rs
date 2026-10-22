@@ -3,6 +3,8 @@
 //! Comments are summaries in JSONC and diagnostics in JSON. Object trailing
 //! commas are accepted; array trailing commas are JSONC-only. `path` owns facts.
 //! Unescaped strings are borrowed from the source; escapes decode in one pass.
+#[cfg(test)]
+use std::fmt::Write as _;
 use crate::domain::{DiagnosticReason, Dialect, LexError, LexedFile, Limits};
 use crate::path::{Cur, Draft, Kind};
 use std::borrow::Cow;
@@ -33,7 +35,7 @@ fn walk(
     limits: &Limits,
     legacy: bool,
 ) -> Result<LexedFile, LexError> {
-    let _legacy = legacy;
+    let _ = legacy; // Only test builds enable the legacy string-decoder oracle.
     let mut parser = Parser {
         cur: Cur::new(source),
         draft: Draft::open(path, source, limits.max_facts, limits.max_depth)?,
@@ -239,6 +241,7 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
+    #[allow(clippy::needless_pass_by_value, reason = "Pending comment text is transferred at grammar dispatch boundaries and is not reusable by the caller after that item is handled.")]
     fn value(
         &mut self,
         parent: Option<usize>,
@@ -247,7 +250,7 @@ impl<'a> Parser<'a> {
         start: usize,
         doc: Option<String>,
     ) -> Result<(), LexError> {
-        let container = matches!(self.cur.byte(), Some(b'{') | Some(b'['));
+        let container = matches!(self.cur.byte(), Some(b'{' | b'['));
         let node = self.make(parent, key, container, depth, start)?;
         if let (Some(index), Some(text)) = (node, doc.as_deref()) {
             self.draft.set_doc(index, text);
@@ -625,8 +628,7 @@ mod tests {
         file.nodes
             .iter()
             .find(|node| node.fact.name == name)
-            .map(|node| node.fact.signature.as_str())
-            .unwrap_or("")
+            .map_or("", |node| node.fact.signature.as_str())
     }
 
     #[test]
@@ -726,7 +728,7 @@ mod tests {
             if index > 0 {
                 long.push(',');
             }
-            long.push_str(&format!("\"k{index}\":\"{}\"", "z".repeat(200)));
+            write!(long, "\"k{index}\":\"{}\"", "z".repeat(200)).expect("writing to a String cannot fail");
         }
         long.push('}');
         assert_oracle("long.json", &long, false, &limits);
@@ -747,9 +749,9 @@ mod tests {
             }
             let ok = if index % 2 == 0 { "true" } else { "false" };
             let hash = "ab".repeat(32);
-            out.push_str(&format!(
+            write!(out,
                 r#"{{"id":{index},"name":"item-{index}","path":"./p/{index}.rs","ok":{ok},"note":"line\n{index}","emoji":"\uD83D\uDE00","hash":"{hash}","nested":{{"a.b":1,"a":{{"b":2}},"arr":[1,2,{{"k":"v"}}]}},"deps":{{"serde":"1"}}}}"#
-            ));
+            ).expect("writing to a String cannot fail");
         }
         out.push_str("]}");
         out
@@ -761,9 +763,9 @@ mod tests {
             if index > 0 {
                 out.push_str(",\n");
             }
-            out.push_str(&format!(
+            write!(out,
                 "    {{\"n\": {index}, \"text\": \"word {index}\", \"path\": \"../x/{index}\"}}"
-            ));
+            ).expect("writing to a String cannot fail");
         }
         out.push_str("\n  ]\n}\n");
         out

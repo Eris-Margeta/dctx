@@ -104,8 +104,8 @@ impl Declared {
     }
 }
 
-const FNV_OFFSET: u64 = 0xcbf29ce484222325;
-const FNV_PRIME: u64 = 0x100000001b3;
+const FNV_OFFSET: u64 = 0xcbf2_9ce4_8422_2325;
+const FNV_PRIME: u64 = 0x0100_0000_01b3;
 
 fn fnv(mut hash: u64, bytes: &[u8]) -> u64 {
     for &byte in bytes {
@@ -174,6 +174,7 @@ impl Stored {
     }
 }
 
+#[allow(clippy::struct_excessive_bools, reason = "Container shape, array shape, open state, dependency emission and module identity are separate facts retained during staged node assembly.")]
 struct DraftNode {
     /// Byte range of the dotted name inside [`Draft::names_buf`].
     name_start: u32,
@@ -205,6 +206,7 @@ struct Lines {
     starts: Vec<u32>,
 }
 impl Lines {
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn new(source: &str) -> Self {
         let mut starts = vec![0];
         for (index, byte) in source.bytes().enumerate() {
@@ -302,7 +304,7 @@ impl<'a> Draft<'a> {
         self.lines.line(byte)
     }
     fn name_of(&self, index: usize) -> &str {
-        self.nodes.get(index).map(|node| name_at(&self.names_buf, node)).unwrap_or("")
+        self.nodes.get(index).map_or("", |node| name_at(&self.names_buf, node))
     }
     fn segment(&self, index: usize) -> &str {
         let name = self.name_of(index);
@@ -549,7 +551,7 @@ impl<'a> Draft<'a> {
 
     fn finish_with(mut self, dialect: Dialect, workers: usize) -> Result<LexedFile, LexError> {
         self.diagnostics.sort_by_key(|item| (item.byte, item.reason as u8));
-        let first = self.diagnostics.first().map(|item| item.byte).unwrap_or(u32::MAX);
+        let first = self.diagnostics.first().map_or(u32::MAX, |item| item.byte);
         let completion = if self.partial { Completion::Partial } else { Completion::Complete };
         let prepared = self.prepare_all(workers)?;
         // Small files lose to allocator contention when edges are built on many threads.
@@ -730,7 +732,7 @@ fn worker_count(nodes: usize) -> usize {
     if nodes < 1024 {
         return 1;
     }
-    let available = std::thread::available_parallelism().map(|count| count.get()).unwrap_or(1);
+    let available = std::thread::available_parallelism().map_or(1, std::num::NonZero::get);
     available.clamp(1, (nodes / 512).max(1))
 }
 

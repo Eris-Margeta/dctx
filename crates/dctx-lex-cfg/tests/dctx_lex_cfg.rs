@@ -42,8 +42,8 @@ fn refs(facts: &LexedFile) -> Vec<&str> {
 }
 
 fn assert_store(facts: &LexedFile, source: &str) {
-    let file_end = source.bytes().filter(|byte| *byte == b'\n').count() as u32 + 1;
-    assert!(!facts.nodes.is_empty());
+    let file_end = u32::try_from(source.bytes().filter(|byte| *byte == b'\n').count()).expect("bounded test coordinate") + 1;
+    assert_ne!(facts.nodes, []);
     assert_eq!(facts.nodes[0].fact.kind, NodeKind::Module, "{}", facts.path);
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
     assert!(facts.diagnostics.len() <= LexedFile::MAX_DIAGNOSTICS);
@@ -93,7 +93,7 @@ fn assert_store(facts: &LexedFile, source: &str) {
         assert!(reference.fact.alias.is_none());
         assert_eq!(reference.fact.owner_path, facts.path);
         assert!(ids.contains(reference.fact.src.as_str()), "{}", reference.fact.name);
-        assert!(!reference.fact.name.is_empty());
+        assert_ne!(reference.fact.name, "");
         let [start, end] = reference.fact.lines;
         assert!(start >= 1 && end >= start && end <= file_end, "{}", reference.fact.name);
     }
@@ -113,7 +113,7 @@ fn parser_identity_and_json_golden() {
     let facts = load("basic.json", JSON);
     assert_eq!(facts.dialect, Dialect::Json);
     assert_eq!(facts.completion, Completion::Complete);
-    assert!(facts.diagnostics.is_empty());
+    assert_eq!(facts.diagnostics, []);
     assert!(facts.nodes.iter().all(|node| node.precision == Precision::Structural));
     assert!(facts.edges.iter().all(|edge| edge.precision == Precision::Structural));
     assert!(facts.references.iter().all(|reference| reference.precision == Precision::Convention));
@@ -230,14 +230,14 @@ fn yaml_documents_are_indexed_and_a_single_marker_is_not() {
     let docs = load("a.yaml", "---\na: 1\n---\nb: 2\n");
     assert_eq!(names(&docs), ["a.yaml", "0", "0.a", "1", "1.b"]);
     assert_eq!(docs.completion, Completion::Complete);
-    assert!(docs.references.is_empty());
+    assert_eq!(docs.references, []);
     let one = load("a.yaml", "---\na: 1\n");
     assert_eq!(one.nodes[1].fact.name, "a");
     let anchored = load("a.yaml", "base: &base\n  x: 1\nuse: *base\n");
     assert_eq!(names(&anchored), ["a.yaml", "base", "base.x", "use"]);
     assert_eq!(anchored.nodes[3].fact.signature, "*base");
     assert!(anchored.nodes[1].fact.signature.contains("&base"));
-    assert!(anchored.references.is_empty());
+    assert_eq!(anchored.references, []);
 }
 
 #[test]
@@ -281,6 +281,7 @@ fn assert_stable(path: &str, bytes: &[u8]) {
 }
 
 #[test]
+#[allow(clippy::too_many_lines, reason = "This test keeps the real-world dialect samples beside their common extraction and invariant checks.")]
 fn real_world_dialects_parse_completely() {
     let yaml = load("workflows.yaml", WORKFLOWS);
     assert_eq!(yaml.completion, Completion::Complete, "{:?}", yaml.diagnostics);
@@ -420,13 +421,14 @@ fn xorshift(state: &mut u64) -> u64 {
 }
 
 #[test]
+#[allow(clippy::cast_possible_truncation, reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound.")]
 fn arbitrary_bytes_and_truncated_fixtures_stay_bounded() {
     let mut state = 0x1234_5678_9abc_def0_u64;
     for _ in 0..200 {
         let len = (xorshift(&mut state) as usize) % 301;
         let mut bytes = Vec::with_capacity(len);
         for _ in 0..len {
-            bytes.push(xorshift(&mut state) as u8);
+            bytes.push(xorshift(&mut state).to_le_bytes()[0]);
         }
         for path in ["f.json", "f.jsonc", "f.toml", "f.yaml", "f.yml", "f.cfg"] {
             assert_stable(path, &bytes);

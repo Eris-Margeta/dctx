@@ -27,7 +27,7 @@ struct Parser<'a> {
     arrays: BTreeMap<String, u32>,
 }
 
-impl<'a> Parser<'a> {
+impl Parser<'_> {
     fn diagnose(&mut self, byte: usize, reason: DiagnosticReason) {
         self.draft.diagnose(byte, reason);
     }
@@ -52,6 +52,7 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
+    #[allow(clippy::needless_pass_by_value, reason = "Pending comment text is transferred at grammar dispatch boundaries and is not reusable by the caller after that item is handled.")]
     fn header(&mut self, doc: Option<String>) -> Result<(), LexError> {
         let start = self.cur.i;
         if !self.cur.eat(b'[') {
@@ -119,6 +120,7 @@ impl<'a> Parser<'a> {
         Ok(())
     }
 
+    #[allow(clippy::needless_pass_by_value, reason = "Pending comment text is transferred at grammar dispatch boundaries and is not reusable by the caller after that item is handled.")]
     fn assignment(&mut self, doc: Option<String>) -> Result<(), LexError> {
         let start = self.cur.i;
         let Some(segments) = self.key_path() else {
@@ -416,7 +418,7 @@ impl<'a> Parser<'a> {
                         self.cur.skip_spaces();
                         continue;
                     }
-                    Some(b'u') | Some(b'U') => {
+                    Some(b'u' | b'U') => {
                         let width = if self.cur.byte() == Some(b'u') { 4 } else { 8 };
                         self.cur.i += 1;
                         let hex = self.cur.slice(self.cur.i, self.cur.i.saturating_add(width));
@@ -502,8 +504,7 @@ mod tests {
         file.nodes
             .iter()
             .find(|node| node.fact.name == name)
-            .map(|node| node.fact.signature.as_str())
-            .unwrap_or("")
+            .map_or("", |node| node.fact.signature.as_str())
     }
 
     #[test]

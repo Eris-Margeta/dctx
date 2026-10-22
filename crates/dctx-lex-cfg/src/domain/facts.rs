@@ -18,6 +18,7 @@ pub enum Dialect {
 
 impl Dialect {
     /// Selects a dialect from the final extension. Other extensions are unsupported.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn for_path(path: &str) -> Option<Self> {
         let extension = path.rsplit_once('.')?.1;
         if extension.eq_ignore_ascii_case("json") {

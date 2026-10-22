@@ -29,11 +29,16 @@ pub struct CfgLexer {
 
 impl CfgLexer {
     /// Builds an extractor. Limits above the ceilings are narrowed to them.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(limits: Limits) -> Self {
         Self { limits: limits.narrowed() }
     }
 
     /// Extracts facts from one place-relative path and its authorized bytes.
+    ///
+    /// # Errors
+    /// Refuses unsupported paths, invalid UTF-8 or model identities, and
+    /// input exceeding the byte, nesting or fact ceilings.
     pub fn extract(&self, path: &str, bytes: &[u8]) -> Result<LexedFile, LexError> {
         let dialect = Dialect::for_path(path).ok_or(LexError::UnsupportedDialect)?;
         if bytes.len() > self.limits.max_bytes {
@@ -121,7 +126,7 @@ mod tests {
         let lexer = CfgLexer::default();
         let damaged = lexer.extract("a.json", br#"{"ready":1,"broken":}"#).unwrap();
         assert_eq!(damaged.completion, Completion::Partial);
-        assert!(!damaged.diagnostics.is_empty());
+        assert_ne!(damaged.diagnostics, []);
         assert!(damaged.edges.iter().any(|edge| edge.precision == Precision::Partial));
         assert!(damaged.edges.iter().any(|edge| edge.precision == Precision::Structural));
         for edge in &damaged.edges {
