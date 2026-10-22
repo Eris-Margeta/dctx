@@ -51,7 +51,7 @@ impl Walker<'_> {
     fn local_type(&self, index: usize, end: usize) -> Option<super::DeclKind> {
         let prefix = self.prefix(index, end);
         let kind = self.decl_kind(prefix.next)?;
-        self.word(self.name_at(prefix.next, kind)).then_some(kind)
+        self.word(Self::name_at(prefix.next, kind)).then_some(kind)
     }
 
     fn emit_paren_call(&mut self, paren: usize, scope: &Scope) {
@@ -174,7 +174,7 @@ impl Walker<'_> {
             return brace + 1;
         };
         let local = format!("new {}", found.qualified);
-        let sig_end = paren_close.map(|token| self.end_byte(token)).unwrap_or_else(|| self.start_byte(brace));
+        let sig_end = paren_close.map_or_else(|| self.start_byte(brace), |token| self.end_byte(token));
         if let Some(child) = self.emit(
             SymbolDraft {
                 node_kind: NodeKind::Symbol,
@@ -221,7 +221,7 @@ impl Walker<'_> {
 
     fn emit_class_literal(&mut self, from: usize, to: usize, scope: &Scope) {
         let name = self.type_words(from, to);
-        if skips_type_word(&name) || !self.keep_type(&name, scope, &[]) {
+        if skips_type_word(&name) || !Self::keep_type(&name, scope, &[]) {
             return;
         }
         self.refer(
@@ -238,7 +238,7 @@ impl Walker<'_> {
 
     pub(crate) fn scan_annotation_list(&mut self, prefix: &Prefix, scope: &Scope) {
         for ann in &prefix.annotations {
-            if self.keep_type(&ann.name, scope, &[]) {
+            if Self::keep_type(&ann.name, scope, &[]) {
                 self.refer(
                     scope.owner,
                     scope,
@@ -309,7 +309,7 @@ impl Walker<'_> {
 
     fn use_annotation(&mut self, at: usize, scope: &Scope, extra: &[String]) {
         let name = self.annotation_name(at);
-        if skips_type_word(&name) || !self.keep_type(&name, scope, extra) {
+        if skips_type_word(&name) || !Self::keep_type(&name, scope, extra) {
             return;
         }
         self.refer(
@@ -329,7 +329,7 @@ impl Walker<'_> {
             return;
         };
         let name = self.type_words(from, to);
-        if !self.keep_type(&name, scope, extra) {
+        if !Self::keep_type(&name, scope, extra) {
             return;
         }
         self.refer(
@@ -359,7 +359,7 @@ impl Walker<'_> {
         name
     }
 
-    fn keep_type(&self, name: &str, scope: &Scope, extra: &[String]) -> bool {
+    fn keep_type(name: &str, scope: &Scope, extra: &[String]) -> bool {
         !name.is_empty()
             && !scope.type_params.iter().any(|param| param == name)
             && !extra.iter().any(|param| param == name)

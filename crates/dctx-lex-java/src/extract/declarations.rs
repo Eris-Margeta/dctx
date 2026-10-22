@@ -28,7 +28,7 @@ impl Walker<'_> {
             }
             let prefix = self.prefix(index, end);
             if let Some(kind) = self.decl_kind(prefix.next)
-                && self.word(self.name_at(prefix.next, kind))
+                && self.word(Self::name_at(prefix.next, kind))
             {
                 let next = self.type_decl(index, &prefix, kind, end, &scope);
                 index = if next > index { next } else { index + 1 };
@@ -115,7 +115,7 @@ impl Walker<'_> {
         while cursor < end && !self.is_punct(cursor, "{") {
             cursor += 1;
         }
-        self.close(cursor).map(|close| (close + 1).min(end)).unwrap_or(end)
+        self.close(cursor).map_or(end, |close| (close + 1).min(end))
     }
 
     pub(crate) fn type_decl(

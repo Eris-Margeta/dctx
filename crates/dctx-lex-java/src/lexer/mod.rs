@@ -68,11 +68,13 @@ impl Lexed {
     }
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 pub(crate) fn line_of(line_starts: &[u32], byte: u32) -> u32 {
     line_starts.partition_point(|&start| start <= byte) as u32
 }
 
 /// Lexes `source` and pairs `()`, `[]` and `{}`.
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     let mut line_starts = vec![0];
     for (index, byte) in source.bytes().enumerate() {
@@ -100,6 +102,7 @@ pub(crate) fn lex(source: &str, limits: &Limits) -> Result<Lexed, LexError> {
     })
 }
 
+#[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
 fn pair(
     source: &str,
     tokens: &[Token],
@@ -176,7 +179,7 @@ mod tests {
     fn literals_hide_declaration_shaped_text() {
         let source = "class A { String s = \"class B {}\"; String t = \"\"\"\nclass C {}\n\"\"\"; char c = '\"'; }";
         let lexed = lex(source, &Limits::default()).expect("lex");
-        assert!(lexed.diagnostics.is_empty());
+        assert_eq!(lexed.diagnostics, []);
         let owned = texts(source);
         assert!(owned.iter().any(|text| text.contains("class B")));
         assert!(owned.iter().any(|text| text.starts_with("\"\"\"")));
@@ -185,14 +188,14 @@ mod tests {
         let generics: Vec<_> = owned.into_iter().filter(|text| text == ">").collect();
         let nested = texts("class A<B<C>> {}");
         assert_eq!(nested.iter().filter(|text| text.as_str() == ">").count(), 2);
-        assert!(generics.is_empty());
+        assert_eq!(generics, [] as [String; 0]);
     }
 
     #[test]
     fn partners_lines_and_depth_are_typed() {
         let lexed = lex("class A {\n void m() { }\n}", &Limits::default()).expect("lex");
         assert_eq!(lexed.line(lexed.tokens.last().expect("token").start), 3);
-        assert!(lexed.diagnostics.is_empty());
+        assert_eq!(lexed.diagnostics, []);
         let open = lex("void m() {", &Limits::default()).expect("lex");
         assert!(open
             .diagnostics

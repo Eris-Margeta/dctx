@@ -71,18 +71,16 @@ impl<'a> Walker<'a> {
         (partner > index).then_some(partner)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(crate) fn start_byte(&self, index: usize) -> u32 {
         self.toks
-            .get(index)
-            .map(|token| token.start)
-            .unwrap_or_else(|| self.src.len() as u32)
+            .get(index).map_or_else(|| self.src.len() as u32, |token| token.start)
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(crate) fn end_byte(&self, index: usize) -> u32 {
         self.toks
-            .get(index)
-            .map(|token| token.end)
-            .unwrap_or_else(|| self.src.len() as u32)
+            .get(index).map_or_else(|| self.src.len() as u32, |token| token.end)
     }
 
     fn line_of_byte(&self, byte: u32) -> u32 {
@@ -158,7 +156,7 @@ impl<'a> Walker<'a> {
         None
     }
 
-    pub(crate) fn name_at(&self, keyword: usize, kind: DeclKind) -> usize {
+    pub(crate) fn name_at(keyword: usize, kind: DeclKind) -> usize {
         match kind {
             DeclKind::Annotation => keyword + 2,
             _ => keyword + 1,
@@ -183,12 +181,9 @@ impl<'a> Walker<'a> {
             return None;
         }
         let path = self.draft.path.clone();
-        let id = match StableId::new(draft.node_kind, &path, Some(&qualified), None) {
-            Ok(id) => id,
-            Err(_) => {
-                self.problem_at(draft.first, DiagnosticReason::UnsupportedName);
-                return None;
-            }
+        let Ok(id) = StableId::new(draft.node_kind, &path, Some(&qualified), None) else {
+            self.problem_at(draft.first, DiagnosticReason::UnsupportedName);
+            return None;
         };
         let signature = self.signature(draft.first, draft.sig_end);
         let summary = match self.doc_text(draft.first) {

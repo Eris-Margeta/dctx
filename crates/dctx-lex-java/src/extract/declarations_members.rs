@@ -40,7 +40,7 @@ impl Walker<'_> {
             return self.scan_group(at, end, scope);
         }
         if let Some(kind) = self.decl_kind(at)
-            && self.word(self.name_at(at, kind))
+            && self.word(Self::name_at(at, kind))
         {
             return self.type_decl(index, &prefix, kind, end, scope);
         }
@@ -86,7 +86,7 @@ impl Walker<'_> {
                 &prefix,
             ),
             Shape::Field { name } => self.finish_field(
-                FieldAt {
+                &FieldAt {
                     start: index,
                     type_from: cursor,
                     type_to: name,
@@ -106,13 +106,13 @@ impl Walker<'_> {
 
     fn finish_field(
         &mut self,
-        at: FieldAt,
+        at: &FieldAt,
         end: usize,
         scope: &Scope,
         prefix: &Prefix,
         extra: &[String],
     ) -> usize {
-        let mut cursor = self.one_field(&at, at.name, end, scope, prefix, extra);
+        let mut cursor = self.one_field(at, at.name, end, scope, prefix, extra);
         while self.is_punct(cursor, ",") && self.ok() {
             cursor += 1;
             cursor = self.skip_declarator_mods(cursor, end);
@@ -120,7 +120,7 @@ impl Walker<'_> {
                 break;
             }
             let next_name = cursor;
-            cursor = self.one_field(&at, next_name, end, scope, prefix, extra);
+            cursor = self.one_field(at, next_name, end, scope, prefix, extra);
         }
         let done = if self.is_punct(cursor, ";") {
             cursor + 1

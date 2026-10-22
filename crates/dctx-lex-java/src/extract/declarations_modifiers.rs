@@ -1,5 +1,5 @@
 //! Modifiers, annotations, test methods and method completion.
-//! Implements SPEC-MAP-MODE 5.1 visibility and JUnit `@Test` method facts.
+//! Implements SPEC-MAP-MODE 5.1 visibility and `JUnit` `@Test` method facts.
 //! Depends on generic declarators for parameters and thrown types.
 //! Called when a prefix is scanned or a member shape is a method or constructor.
 
@@ -192,7 +192,7 @@ impl Walker<'_> {
         paren: usize,
         end: usize,
     ) -> (usize, Option<usize>) {
-        let mut cursor = close.map(|index| index + 1).unwrap_or(paren + 1);
+        let mut cursor = close.map_or(paren + 1, |index| index + 1);
         if !self.is_word(cursor, "throws") {
             return (cursor.min(end), None);
         }
@@ -341,7 +341,7 @@ mod tests {
             .find(|node| node.fact.name == "A::saves")
             .expect("saves");
         assert_eq!(test.fact.kind.as_str(), "test");
-        assert_eq!(test.fact.symbol_kind.map(|kind| kind.as_str()), Some("method"));
+        assert_eq!(test.fact.symbol_kind.map(dctx_map_model::SymbolKind::as_str), Some("method"));
         assert_eq!(test.precision, Precision::Convention);
         let calls: Vec<_> = facts
             .references

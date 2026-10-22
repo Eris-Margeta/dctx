@@ -33,7 +33,7 @@ fn assert_translates(escaped: &str, control: &str, nodes: &[&str], calls: &[&str
     let ordinary = at("A.java", limits, control.as_bytes()).expect("control");
     assert_eq!(shape(&got), shape(&ordinary), "{escaped}");
     assert_eq!(ordinary.completion, Completion::Complete);
-    assert!(ordinary.diagnostics.is_empty());
+    assert_eq!(ordinary.diagnostics, []);
     let names: Vec<_> = ordinary.nodes.iter().skip(1).map(|node| node.fact.name.as_str()).collect();
     assert_eq!(names, nodes);
     let found: Vec<_> = ordinary
@@ -69,7 +69,7 @@ fn j1_unicode_escape_precision() {
     );
 }
 
-const GRAPH: &str = r#"
+const GRAPH: &str = r"
 class Outer {
   void run() { one(); }
   void run(String value) { two(); }
@@ -85,7 +85,7 @@ class Outer {
     };
   }
 }
-"#;
+";
 
 fn node_ids(file: &LexedFile) -> Vec<&str> {
     file.nodes.iter().map(|node| node.fact.id.as_str()).collect()
@@ -106,7 +106,7 @@ fn assert_call(facts: &LexedFile, name: &str, src: &str) {
 
 fn assert_graph(path: &str, facts: &LexedFile) {
     assert_eq!(facts.path, path);
-    assert!(!facts.nodes.is_empty());
+    assert_ne!(facts.nodes, []);
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
     let mut ids: Vec<&str> = facts.nodes.iter().map(|node| node.fact.id.as_str()).collect();
     ids.sort_unstable();
@@ -197,7 +197,7 @@ fn j3_hostile_token_and_diagnostic_bounds() {
     let mut wide = padded(b"class A {/*", b"*/}");
     let accepted = at("A.java", Limits::default(), &wide).expect("ceiling");
     assert_eq!(accepted.completion, Completion::Complete);
-    assert!(accepted.diagnostics.is_empty());
+    assert_eq!(accepted.diagnostics, []);
     assert!(accepted.nodes.iter().any(|node| node.fact.name == "A"));
     wide.push(b' ');
     assert_eq!(
@@ -244,7 +244,7 @@ fn j3_hostile_token_and_diagnostic_bounds() {
     assert_eq!(damaged.completion, Completion::Partial);
     assert_eq!(damaged.diagnostics.len(), cap);
     assert_eq!(damaged.diagnostics[0].byte, 0);
-    assert_eq!(damaged.diagnostics[cap - 1].byte, ((cap - 1) * 2) as u32);
+    assert_eq!(damaged.diagnostics[cap - 1].byte, u32::try_from((cap - 1) * 2).expect("bounded test coordinate"));
     assert!(damaged.diagnostics.iter().all(|d| d.reason == DiagnosticReason::UnterminatedString));
     assert_eq!(at("A.java", Limits::default(), &quotes(cap)).unwrap().diagnostics.len(), cap);
     let kept = at("A.java", Limits::default(), b"class A {}\n\"\n").expect("one");
@@ -254,7 +254,7 @@ fn j3_hostile_token_and_diagnostic_bounds() {
     assert!(kept.nodes.iter().any(|node| node.fact.name == "A"));
     let clean = at("A.java", Limits::default(), b"class A {}").expect("clean");
     assert_eq!(clean.completion, Completion::Complete);
-    assert!(clean.diagnostics.is_empty());
+    assert_eq!(clean.diagnostics, []);
 }
 
 #[test]
@@ -307,7 +307,7 @@ class Half {
 "#;
     let facts = at("A.java", Limits::default(), damaged.as_bytes()).expect("damaged");
     assert_eq!(facts.completion, Completion::Partial);
-    assert!(!facts.diagnostics.is_empty());
+    assert_ne!(facts.diagnostics, []);
     assert_eq!(containment(&facts, "Half::ok"), (Precision::Structural, "exact"));
     assert_eq!(containment(&facts, "Half"), (Precision::Partial, "exact"));
     assert_eq!(containment(&facts, "Half::later"), (Precision::Partial, "exact"));
@@ -318,7 +318,7 @@ class Half {
     )
     .expect("clean");
     assert_eq!(clean.completion, Completion::Complete);
-    assert!(clean.diagnostics.is_empty());
+    assert_eq!(clean.diagnostics, []);
     assert_eq!(containment(&clean, "Half"), (Precision::Structural, "exact"));
     assert_eq!(containment(&clean, "Half::ok"), (Precision::Structural, "exact"));
 }

@@ -17,6 +17,7 @@ use std::cmp::Reverse;
 use std::collections::BTreeMap;
 
 impl super::Draft {
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     pub(super) fn new(path: &str, source: &str, lexed: &Lexed, max_facts: usize) -> Result<Self, LexError> {
         let id = StableId::new(NodeKind::Module, path, None, None)?;
         let lines = source.lines().count().max(1) as u32;
@@ -113,7 +114,7 @@ impl super::Draft {
             reason,
         }));
         diagnostics.sort_by_key(|diagnostic| diagnostic.byte);
-        let first_problem = diagnostics.first().map(|d| d.byte).unwrap_or(u32::MAX);
+        let first_problem = diagnostics.first().map_or(u32::MAX, |d| d.byte);
         let completion = if diagnostics.is_empty() {
             Completion::Complete
         } else {

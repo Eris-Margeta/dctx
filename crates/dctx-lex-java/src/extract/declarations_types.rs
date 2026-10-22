@@ -33,7 +33,7 @@ impl Walker<'_> {
         end: usize,
         scope: &Scope,
     ) -> usize {
-        let name_at = self.name_at(prefix.next, kind);
+        let name_at = Self::name_at(prefix.next, kind);
         if !self.word(name_at) {
             self.problem_at(prefix.next, DiagnosticReason::Malformed);
             return self.recover(start, end);
@@ -154,17 +154,15 @@ impl Walker<'_> {
             let mut cursor = name + 1;
             let args = self.is_punct(cursor, "(").then_some(cursor);
             if let Some(open) = args {
-                cursor = self.close(open).map(|close| close + 1).unwrap_or(cursor + 1);
+                cursor = self.close(open).map_or(cursor + 1, |close| close + 1);
             }
             let body = self.is_punct(cursor, "{").then_some(cursor);
             if let Some(open) = body {
-                cursor = self.close(open).map(|close| close + 1).unwrap_or(end);
+                cursor = self.close(open).map_or(end, |close| close + 1);
             }
             let last = cursor.saturating_sub(1).max(name);
             let sig_end = args
-                .and_then(|open| self.close(open))
-                .map(|close| self.end_byte(close))
-                .unwrap_or_else(|| self.end_byte(name));
+                .and_then(|open| self.close(open)).map_or_else(|| self.end_byte(name), |close| self.end_byte(close));
             let body_span = body
                 .and_then(|open| self.close(open).map(|close| (self.start_byte(open), self.end_byte(close))))
                 .unwrap_or((self.start_byte(name), self.end_byte(name)));

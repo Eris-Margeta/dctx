@@ -41,12 +41,13 @@ fn expect(
 }
 
 #[test]
+#[allow(clippy::too_many_lines, reason = "The golden fixture is one expected declaration table and its invariant checks; splitting it would separate expected records from their verification.")]
 fn basic_fixture_matches_the_golden_facts() {
     let facts = JavaLexer::default()
         .extract("src/sample.java", BASIC.as_bytes())
         .expect("basic");
     assert_eq!(facts.completion, Completion::Complete);
-    assert!(facts.diagnostics.is_empty());
+    assert_eq!(facts.diagnostics, []);
     assert_eq!(facts.dialect, Dialect::Java);
     assert_eq!(facts.path, "src/sample.java");
     let module = &facts.nodes[0];
@@ -108,7 +109,7 @@ fn basic_fixture_matches_the_golden_facts() {
         assert_eq!(node.fact.name, expect.name, "name");
         assert_eq!(node.fact.kind.as_str(), expect.kind, "{}", expect.name);
         assert_eq!(
-            node.fact.symbol_kind.map(|kind| kind.as_str()),
+            node.fact.symbol_kind.map(dctx_map_model::SymbolKind::as_str),
             Some(expect.symbol),
             "{}",
             expect.name
@@ -116,15 +117,12 @@ fn basic_fixture_matches_the_golden_facts() {
         assert_eq!(node.fact.public, expect.public, "{}", expect.name);
         assert_eq!(node.precision, expect.precision, "{}", expect.name);
         assert_eq!(node.fact.signature, expect.signature, "{}", expect.name);
-        match expect.doc {
-            Some(text) => {
-                assert_eq!(node.fact.summary.source.as_str(), "doc", "{}", expect.name);
-                assert_eq!(node.fact.summary.text, text, "{}", expect.name);
-            }
-            None => {
-                assert_eq!(node.fact.summary.source.as_str(), "sig", "{}", expect.name);
-                assert_eq!(node.fact.summary.text, expect.signature, "{}", expect.name);
-            }
+        if let Some(text) = expect.doc {
+            assert_eq!(node.fact.summary.source.as_str(), "doc", "{}", expect.name);
+            assert_eq!(node.fact.summary.text, text, "{}", expect.name);
+        } else {
+            assert_eq!(node.fact.summary.source.as_str(), "sig", "{}", expect.name);
+            assert_eq!(node.fact.summary.text, expect.signature, "{}", expect.name);
         }
         if expect.name == "Box::Nested::ping" {
             assert_eq!(
@@ -245,7 +243,7 @@ fn incomplete_file_keeps_partial_facts() {
     assert_eq!(facts.completion, Completion::Partial);
     assert_eq!(facts.diagnostics.len(), 1);
     assert_eq!(facts.diagnostics[0].reason, DiagnosticReason::UnterminatedString);
-    let quote = INCOMPLETE.find("\"unterminated").expect("quote") as u32;
+    let quote = u32::try_from(INCOMPLETE.find("\"unterminated").expect("quote")).expect("bounded test coordinate");
     assert_eq!(facts.diagnostics[0].byte, quote);
     assert_eq!(facts.nodes[0].fact.signature, "demo");
     assert_eq!(facts.nodes[0].precision, Precision::Structural);
@@ -345,6 +343,7 @@ fn limits_refuse_with_positive_controls() {
 }
 
 #[test]
+#[allow(clippy::cast_possible_truncation, reason = "The fuzz length deliberately uses the PRNG's native low word before applying the 301-byte bound.")]
 fn truncated_prefixes_and_arbitrary_bytes_do_not_panic() {
     prefixes("src/sample.java", BASIC);
     prefixes("src/incomplete.java", INCOMPLETE);
@@ -353,7 +352,7 @@ fn truncated_prefixes_and_arbitrary_bytes_do_not_panic() {
         let len = (xorshift(&mut state) as usize) % 301;
         let mut buf = vec![0_u8; len];
         for byte in &mut buf {
-            *byte = xorshift(&mut state) as u8;
+            *byte = xorshift(&mut state).to_le_bytes()[0];
         }
         accept("fuzz.java", &buf);
     }
@@ -421,8 +420,8 @@ fn xorshift(state: &mut u64) -> u64 {
 }
 
 fn invariants(source: &str, facts: &LexedFile) {
-    let lines = source.lines().count().max(1) as u32;
-    assert!(!facts.nodes.is_empty());
+    let lines = u32::try_from(source.lines().count().max(1)).expect("bounded test coordinate");
+    assert_ne!(facts.nodes, []);
     assert_eq!(facts.edges.len(), facts.nodes.len() - 1);
     assert_eq!(facts.nodes[0].fact.kind.as_str(), "module");
     assert!(facts.diagnostics.len() <= LexedFile::MAX_DIAGNOSTICS);
@@ -443,7 +442,7 @@ fn invariants(source: &str, facts: &LexedFile) {
     }
     for reference in &facts.references {
         assert_ne!(reference.fact.kind.as_str(), "contains");
-        assert!(!reference.fact.name.is_empty());
+        assert_ne!(reference.fact.name, "");
         assert!(reference.fact.alias.is_none());
         assert!(reference.fact.lines[0] >= 1 && reference.fact.lines[0] <= lines);
         assert!(reference.fact.lines[1] >= reference.fact.lines[0] && reference.fact.lines[1] <= lines);

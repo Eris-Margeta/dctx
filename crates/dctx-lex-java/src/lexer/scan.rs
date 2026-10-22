@@ -31,7 +31,7 @@ pub(crate) fn scan(src: &str) -> (Vec<Token>, Vec<Comment>, Vec<(u32, Diagnostic
     (scanner.tokens, scanner.comments, scanner.problems)
 }
 
-impl<'a> Scanner<'a> {
+impl Scanner<'_> {
     fn run(&mut self) {
         if self.starts_with("\u{feff}") {
             self.pos += "\u{feff}".len();
@@ -113,6 +113,7 @@ impl<'a> Scanner<'a> {
         self.push_comment(start, false);
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn push_comment(&mut self, start: usize, javadoc: bool) {
         let index = u32::try_from(self.comments.len()).unwrap_or(u32::MAX);
         self.comments.push(Comment {
@@ -362,6 +363,7 @@ impl<'a> Scanner<'a> {
         self.emit(Kind::Punct, start);
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn emit(&mut self, kind: Kind, start: usize) {
         if self.pos <= start {
             return;
@@ -375,6 +377,7 @@ impl<'a> Scanner<'a> {
         self.pending_doc = 0;
     }
 
+    #[allow(clippy::cast_possible_truncation, reason = "Source offsets, line counts and token counts fit u32 because the public extractor enforces the 8 MiB input ceiling.")]
     fn problem(&mut self, at: usize, reason: DiagnosticReason) {
         self.problems.push((at as u32, reason));
     }
@@ -476,7 +479,7 @@ mod tests {
     #[test]
     fn escapes_do_not_end_a_string_early() {
         let (tokens, _, problems) = scan(r#""a\"b" '\"' "\u0041""#);
-        assert!(problems.is_empty());
+        assert_eq!(problems, []);
         assert_eq!(tokens.len(), 3);
         assert_eq!(tokens[0].kind, Kind::Str);
         assert_eq!(tokens[1].kind, Kind::Char);
