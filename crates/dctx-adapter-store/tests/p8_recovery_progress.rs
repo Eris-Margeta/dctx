@@ -1,6 +1,6 @@
 //! P8: a crash, a cancel, and a short GC budget still finish or refuse cleanly.
 //! The maintenance cursor resumes on a new store. Live bytes stay readable.
-//! CacheLimit is a different refusal from DiskFull. A stuck lock is not cleared by crash or recovery.
+//! `CacheLimit` is a different refusal from `DiskFull`. A stuck lock is not cleared by crash or recovery.
 
 mod common;
 

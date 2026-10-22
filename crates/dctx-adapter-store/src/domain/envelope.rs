@@ -16,6 +16,7 @@ pub(crate) struct Section {
     pub payload: Vec<u8>,
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref, reason = "Keep the eight-byte envelope magic borrowed like the section and byte slices throughout this codec.")]
 pub(crate) fn assemble(magic: &[u8; 8], sections: &[Section]) -> Result<Vec<u8>, StoreError> {
     if sections.len() > 64 {
         return Err(StoreError::InvalidRequest { reason: "sections" });
@@ -70,6 +71,7 @@ pub(crate) fn assemble(magic: &[u8; 8], sections: &[Section]) -> Result<Vec<u8>,
     Ok(out)
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref, reason = "Keep the eight-byte envelope magic borrowed like the section and byte slices throughout this codec.")]
 pub(crate) fn parse(magic: &[u8; 8], bytes: &[u8]) -> Result<Vec<Section>, StoreError> {
     if bytes.len() > MAX_FILE {
         return Err(StoreError::CorruptIndex { reason: "limit" });

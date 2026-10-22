@@ -17,12 +17,14 @@ impl PinnedSegment {
         Self { digest, role }
     }
 
-    /// SegmentObject digest.
+    /// `SegmentObject` digest.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn digest(&self) -> &[u8; 32] {
         &self.digest
     }
 
     /// Fact or view role stored in the manifest.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn role(&self) -> SegmentRole {
         self.role
     }
@@ -40,26 +42,31 @@ pub struct Pin {
 
 impl Pin {
     /// Lease id. Release uses this once.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn id(&self) -> u64 {
         self.id
     }
 
     /// Root whose pointer was pinned.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn root(&self) -> &str {
         &self.root
     }
 
     /// Generation observed at acquire time. It does not follow later publishes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn generation(&self) -> u64 {
         self.generation
     }
 
-    /// ManifestObject digest for this handle.
+    /// `ManifestObject` digest for this handle.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn manifest(&self) -> &[u8; 32] {
         &self.manifest
     }
 
     /// Segments this handle may read.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn segments(&self) -> &[PinnedSegment] {
         &self.segments
     }

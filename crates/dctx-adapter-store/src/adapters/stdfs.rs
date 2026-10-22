@@ -20,6 +20,9 @@ pub struct StdFs {
 
 impl StdFs {
     /// Creates `root` if needed and confines later names under its canonical path.
+    ///
+    /// # Errors
+    /// Returns directory-creation or canonicalization IO failures.
     pub fn open(root: &Path) -> Result<Self, StoreError> {
         fs::create_dir_all(root).map_err(ports::io_err)?;
         #[cfg(unix)]

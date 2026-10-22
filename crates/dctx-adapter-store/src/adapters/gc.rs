@@ -24,11 +24,17 @@ enum Remove {
 
 impl<F: StoreFs> SegmentStore<F> {
     /// Unlinks objects outside the retained closures, writer set, and active pins.
+    ///
+    /// # Errors
+    /// Refuses a crashed store or cancellation; propagates mark, cursor, unlink and durability errors.
     pub fn gc(&self, budget: GcBudget) -> Result<GcReport, StoreError> {
         self.gc_with_mark(budget, MarkMode::Reachability)
     }
 
     /// [`Self::gc`] with an explicit mark set. Production callers pass [`MarkMode::Reachability`].
+    ///
+    /// # Errors
+    /// Refuses a crashed store or cancellation; propagates mark, cursor, unlink and durability errors.
     pub fn gc_with_mark(&self, budget: GcBudget, mode: MarkMode) -> Result<GcReport, StoreError> {
         self.ensure_live()?;
         if self.pull_cancel() {
@@ -47,6 +53,9 @@ impl<F: StoreFs> SegmentStore<F> {
     }
 
     /// Removes the previous pointer once the current closure validates.
+    ///
+    /// # Errors
+    /// Refuses a crashed store, invalid root, busy lock or invalid current closure; propagates unlink and directory-sync errors.
     pub fn drop_previous(&self, root: &str) -> Result<(), StoreError> {
         self.ensure_live()?;
         crate::domain::check_root(root)?;
@@ -57,6 +66,9 @@ impl<F: StoreFs> SegmentStore<F> {
     }
 
     /// Removes a root's current and previous pointers. Segment bytes stay until leases allow GC.
+    ///
+    /// # Errors
+    /// Refuses a crashed store, invalid root or busy lock; propagates pointer removal and directory-sync errors.
     pub fn retire_root(&self, root: &str) -> Result<(), StoreError> {
         self.ensure_live()?;
         crate::domain::check_root(root)?;
@@ -129,7 +141,7 @@ impl<F: StoreFs> SegmentStore<F> {
         while index < victims.len() && *room > 0 {
             if self.pull_cancel() {
                 self.sync_dir()?;
-                self.store_cursor(victims.get(index).map(String::as_str).unwrap_or(""))?;
+                self.store_cursor(victims.get(index).map_or("", String::as_str))?;
                 return Err(StoreError::Cancelled);
             }
             let path = victims[index].clone();

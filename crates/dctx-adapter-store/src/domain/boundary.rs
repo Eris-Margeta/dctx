@@ -86,6 +86,7 @@ impl Boundary {
     ];
 
     /// Stable name stored on [`super::StoreError::Crashed`].
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::AfterLock => "after-lock",
@@ -116,6 +117,7 @@ impl Boundary {
     }
 
     /// True when the new pointer name is already durable, so recovery must see it.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn publishes_new_generation(self) -> bool {
         matches!(self, Self::AfterPointerDirSync | Self::BeforeUnlock)
     }

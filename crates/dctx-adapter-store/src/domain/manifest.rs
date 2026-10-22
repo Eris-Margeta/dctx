@@ -14,7 +14,7 @@ const MAGIC: [u8; 8] = *b"DCTXMAN\0";
 /// One segment named by a manifest.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct SegmentRef {
-    /// SegmentObject digest.
+    /// `SegmentObject` digest.
     pub digest: [u8; 32],
     /// File length, in bytes.
     pub length: u64,

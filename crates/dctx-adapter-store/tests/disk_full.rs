@@ -1,4 +1,4 @@
-//! DiskFull is the filesystem refusal. Cache admission is a different error.
+//! `DiskFull` is the filesystem refusal. Cache admission is a different error.
 //! A full disk leaves the previous generation readable, and a cleared budget can publish.
 //! Durable mode refuses a filesystem that cannot sync. Ephemeral mode does not survive a crash.
 
@@ -35,7 +35,7 @@ fn durable_mode_refuses_a_filesystem_without_sync() {
     let store = open(fs.clone());
     let err = store.publish(req("main", 1, segment("unsynced"))).unwrap_err();
     assert_eq!(err, StoreError::UnsupportedDurability { capability: "sync" });
-    assert!(fs.list_prefix("segments/").unwrap().is_empty());
+    assert_eq!(fs.list_prefix("segments/").unwrap(), [] as [std::string::String; 0]);
 
     let fs = MemoryFs::posix();
     let store = open(fs.clone());

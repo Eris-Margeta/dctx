@@ -11,7 +11,7 @@ pub(crate) const POINTER_LEN: u64 = 92;
 
 pub(crate) const MAGIC: [u8; 8] = *b"DCTXPTR\0";
 
-/// One committed pointer. The digest is a ManifestObject.
+/// One committed pointer. The digest is a `ManifestObject`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(crate) struct Pointer {
     pub generation: u64,

@@ -18,6 +18,9 @@ enum Class {
 impl<F: StoreFs> SegmentStore<F> {
     /// Selects the newest valid closure and discards temp names.
     /// A broken current pointer is copied back from the previous closure when that closure validates.
+    ///
+    /// # Errors
+    /// Refuses a crashed store, busy writer or unrecoverable pointer closure; propagates inspection, repair, cleanup and durability failures.
     pub fn recover(&self) -> Result<Recovery, StoreError> {
         self.ensure_live()?;
         if !self.fs.held_roots().is_empty() {
@@ -98,7 +101,7 @@ fn classify<F: StoreFs>(fs: &F, root: &str) -> Result<Class, StoreError> {
             Class::Repair
         }
         (PointerView::Closed(_), _) => Class::Keep,
-        (PointerView::Absent, PointerView::Closed(_)) | (PointerView::Broken, PointerView::Closed(_)) => Class::Repair,
+        (PointerView::Absent | PointerView::Broken, PointerView::Closed(_)) => Class::Repair,
         (PointerView::Absent, PointerView::Absent) => Class::Empty,
         _ => Class::Corrupt,
     })

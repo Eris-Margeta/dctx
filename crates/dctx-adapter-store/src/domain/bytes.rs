@@ -18,9 +18,9 @@ pub(crate) fn structured(kind: u16, payload: &[u8]) -> Result<[u8; 32], StoreErr
     hasher.update(b"DCTX\0").map_err(|_| StoreError::CorruptIndex { reason: "checksum" })?;
     hasher
         .update(&kind.to_le_bytes())
-        .and_then(|_| hasher.update(&1u16.to_le_bytes()))
-        .and_then(|_| hasher.update(&len.to_le_bytes()))
-        .and_then(|_| hasher.update(payload))
+        .and_then(|()| hasher.update(&1u16.to_le_bytes()))
+        .and_then(|()| hasher.update(&len.to_le_bytes()))
+        .and_then(|()| hasher.update(payload))
         .map_err(|_| StoreError::CorruptIndex { reason: "checksum" })?;
     Ok(*hasher.finalize().as_bytes())
 }

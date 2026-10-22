@@ -114,6 +114,10 @@ struct Cuts {
 
 impl<F: StoreFs> SegmentStore<F> {
     /// Publishes one generation. Crash cuts leave the previous valid generation or this one.
+    ///
+    /// # Errors
+    /// Refuses invalid requests, crashed or cancelled stores, unsupported durability, busy writers, conflicts and capacity limits; propagates codec, IO and injected-crash failures.
+    #[allow(clippy::needless_pass_by_value, reason = "Keep the public publication entry point consuming its request; borrowing would change its ownership contract.")]
     pub fn publish(&self, request: PublishRequest) -> Result<Published, StoreError> {
         self.ensure_live()?;
         self.require_durability()?;
@@ -130,6 +134,9 @@ impl<F: StoreFs> SegmentStore<F> {
     }
 
     /// Installs a pointer before its manifest exists. This is the P2 falsifying mutation.
+    ///
+    /// # Errors
+    /// Refuses invalid roots, crashed stores or unsupported durability; propagates locking, IO, codec and injected-crash failures.
     pub fn publish_unvalidated_pointer(&self, root: &str, generation: u64) -> Result<(), StoreError> {
         self.ensure_live()?;
         self.require_durability()?;
@@ -142,7 +149,7 @@ impl<F: StoreFs> SegmentStore<F> {
                 "previous.partial",
                 &previous_path(root),
                 &bytes,
-                Place { replace: true, protect: None },
+                &Place { replace: true, protect: None },
                 |_| Ok(()),
             )?;
         }
@@ -156,7 +163,7 @@ impl<F: StoreFs> SegmentStore<F> {
             "pointer.partial",
             &current_path(root),
             &pointer,
-            Place { replace: true, protect: None },
+            &Place { replace: true, protect: None },
             |_| Ok(()),
         )?;
         drop(attempt);
@@ -199,7 +206,7 @@ impl<F: StoreFs> SegmentStore<F> {
             _ => {}
         }
         let prepared = prepare(&request.segments)?;
-        let manifest = build_manifest(&self.options, request, &prepared, current.as_ref().map(|c| c.manifest))?;
+        let manifest = build_manifest(&self.options, request, &prepared, current.as_ref().map(|c| c.manifest));
         let man_bytes = encode_manifest(&manifest)?;
         let man_digest = manifest_digest(&man_bytes)?;
         let extra = self.extra_bytes(&prepared, man_bytes.len(), &request.root)?;
@@ -219,7 +226,7 @@ impl<F: StoreFs> SegmentStore<F> {
                 let bytes = segment.bytes.clone();
                 let digest = segment.digest;
                 let role = segment.role;
-                self.stage(attempt, &tmp, &dest, &bytes, Place { replace: false, protect: Some(digest) }, |read| {
+                self.stage(attempt, &tmp, &dest, &bytes, &Place { replace: false, protect: Some(digest) }, |read| {
                     decode(read, role).map_err(|_| StoreError::CorruptIndex { reason: "segment" })?;
                     let actual = segment_object_digest(read).map_err(|_| StoreError::CorruptIndex {
                         reason: "segment",
@@ -245,7 +252,7 @@ impl<F: StoreFs> SegmentStore<F> {
                 "manifest.partial",
                 &manifest_dest,
                 &man_bytes,
-                Place { replace: false, protect: Some(man_digest) },
+                &Place { replace: false, protect: Some(man_digest) },
                 |read| manifest_bytes_ok(read, &man_digest).map(|_| ()),
             )?;
         }
@@ -257,7 +264,7 @@ impl<F: StoreFs> SegmentStore<F> {
                 "previous.partial",
                 &previous_path(&request.root),
                 &bytes,
-                Place { replace: true, protect: None },
+                &Place { replace: true, protect: None },
                 |read| {
                     if decode_pointer_ok(read).is_err() {
                         return Err(StoreError::CorruptIndex { reason: "pointer" });
@@ -311,7 +318,7 @@ impl<F: StoreFs> SegmentStore<F> {
         tmp_name: &str,
         dest: &str,
         bytes: &[u8],
-        place: Place,
+        place: &Place,
         validate: impl FnOnce(&[u8]) -> Result<(), StoreError>,
     ) -> Result<(), StoreError> {
         if !tmp_name.starts_with("segment") && !tmp_name.starts_with("manifest") {
@@ -326,7 +333,7 @@ impl<F: StoreFs> SegmentStore<F> {
         tmp_name: &str,
         dest: &str,
         bytes: &[u8],
-        place: Place,
+        place: &Place,
         validate: impl FnOnce(&[u8]) -> Result<(), StoreError>,
     ) -> Result<(), StoreError> {
         let cuts = if tmp_name.starts_with("segment") {
@@ -488,8 +495,8 @@ fn build_manifest(
     request: &PublishRequest,
     prepared: &[Prepared],
     previous: Option<[u8; 32]>,
-) -> Result<Manifest, StoreError> {
-    Ok(Manifest {
+) -> Manifest {
+    Manifest {
         namespace: options.namespace.clone(),
         root: request.root.clone(),
         generation: request.generation,
@@ -506,5 +513,5 @@ fn build_manifest(
             })
             .collect(),
         revisions: request.revisions.clone(),
-    })
+    }
 }

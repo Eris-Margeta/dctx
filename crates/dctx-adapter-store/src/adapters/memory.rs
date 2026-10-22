@@ -93,16 +93,19 @@ pub struct MemoryFs {
 
 impl MemoryFs {
     /// POSIX rename-over and sync.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn posix() -> Self {
         Self::build(Profile::Posix, true, true, true)
     }
 
     /// Replace and unlink fail while a handle is open. Names are not truncated.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn windows() -> Self {
         Self::build(Profile::Windows, true, true, true)
     }
 
     /// Sync returns [`StoreError::UnsupportedDurability`].
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn no_sync() -> Self {
         Self::build(Profile::Posix, false, true, true)
     }
@@ -152,6 +155,9 @@ impl MemoryFs {
     }
 
     /// Opens a handle. On the Windows profile this blocks replace and unlink.
+    ///
+    /// # Errors
+    /// Refuses invalid or missing paths, unavailable inodes and exhausted per-inode hold counts.
     pub fn hold(&self, path: &str) -> Result<u64, StoreError> {
         check_rel(path)?;
         let mut mem = self.lock();
@@ -168,6 +174,9 @@ impl MemoryFs {
     }
 
     /// Closes a handle from [`Self::hold`].
+    ///
+    /// # Errors
+    /// Refuses unknown hold tokens or unavailable inodes.
     pub fn release_hold(&self, token: u64) -> Result<(), StoreError> {
         let mut mem = self.lock();
         let id = mem.holds.remove(&token).ok_or(StoreError::InvalidRequest { reason: "hold" })?;
@@ -177,6 +186,9 @@ impl MemoryFs {
     }
 
     /// Bytes still visible through an open handle, including after a POSIX replace.
+    ///
+    /// # Errors
+    /// Refuses unknown hold tokens or unavailable inodes.
     pub fn read_hold(&self, token: u64) -> Result<Vec<u8>, StoreError> {
         let mem = self.lock();
         let id = *mem.holds.get(&token).ok_or(StoreError::InvalidRequest { reason: "hold" })?;
@@ -329,7 +341,7 @@ impl StoreFs for MemoryFs {
         if let Some(dest) = mem.visible().get(to).copied()
             && dest != id
         {
-            let holds = mem.inodes.get(&dest).map(|inode| inode.holds).unwrap_or(0);
+            let holds = mem.inodes.get(&dest).map_or(0, |inode| inode.holds);
             if mem.profile == Profile::Windows && holds > 0 {
                 return Err(StoreError::SharingViolation);
             }
@@ -370,7 +382,7 @@ impl StoreFs for MemoryFs {
         check_rel(path)?;
         let mut mem = self.lock();
         let id = *mem.visible().get(path).ok_or_else(|| StoreError::io("missing"))?;
-        let holds = mem.inodes.get(&id).map(|inode| inode.holds).unwrap_or(0);
+        let holds = mem.inodes.get(&id).map_or(0, |inode| inode.holds);
         if mem.profile == Profile::Windows && holds > 0 {
             return Err(StoreError::SharingViolation);
         }
@@ -453,7 +465,7 @@ mod tests {
         fs.create("segments/a.seg").unwrap();
         fs.set_disk_budget(Some(0));
         assert_eq!(fs.write("segments/a.seg", b"x").unwrap_err(), StoreError::DiskFull);
-        assert!(fs.read("segments/a.seg").unwrap().is_empty());
+        assert_eq!(fs.read("segments/a.seg").unwrap(), [] as [u8; 0]);
         fs.set_disk_budget(None);
         fs.write("segments/a.seg", b"ok").unwrap();
         assert_eq!(fs.read("segments/a.seg").unwrap(), b"ok");

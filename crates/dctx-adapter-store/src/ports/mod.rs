@@ -44,12 +44,21 @@ pub trait StoreFs: Send + Sync {
     fn capabilities(&self) -> FsCapabilities;
 
     /// Records a publication cut. Fault injection may crash here.
+    ///
+    /// # Errors
+    /// Returns an injected crash, cancellation or adapter failure at the requested boundary.
     fn checkpoint(&self, boundary: Boundary) -> Result<(), StoreError>;
 
     /// Takes the per-root writer lock, or [`StoreError::Busy`].
+    ///
+    /// # Errors
+    /// Returns [`StoreError::Busy`] for a held root or an adapter/invalid-root failure.
     fn try_lock(&self, root: &str) -> Result<(), StoreError>;
 
     /// Drops a lock this process holds. A stuck mutation stays stuck.
+    ///
+    /// # Errors
+    /// Returns an invalid-root or adapter unlock failure.
     fn unlock(&self, root: &str) -> Result<(), StoreError>;
 
     /// True when this root's lock is held or stuck.
@@ -59,41 +68,77 @@ pub trait StoreFs: Send + Sync {
     fn held_roots(&self) -> Vec<String>;
 
     /// Creates an empty file. Fails when the name exists.
+    ///
+    /// # Errors
+    /// Refuses invalid paths or existing names and propagates creation failures.
     fn create(&self, path: &str) -> Result<(), StoreError>;
 
     /// Replaces the file's bytes without syncing them.
+    ///
+    /// # Errors
+    /// Refuses invalid or missing paths and propagates write failures, including disk-full errors.
     fn write(&self, path: &str, bytes: &[u8]) -> Result<(), StoreError>;
 
     /// Flushes a userspace buffer. This is not durability.
+    ///
+    /// # Errors
+    /// Returns invalid-path, missing-file or flush failures.
     fn flush(&self, path: &str) -> Result<(), StoreError>;
 
     /// Makes file bytes durable.
+    ///
+    /// # Errors
+    /// Returns invalid-path, missing-file, unsupported-durability or synchronization failures.
     fn sync_file(&self, path: &str) -> Result<(), StoreError>;
 
     /// Makes directory entries durable.
+    ///
+    /// # Errors
+    /// Returns unsupported-durability or directory synchronization failures.
     fn sync_dir(&self) -> Result<(), StoreError>;
 
     /// Renames onto a name that must not exist.
+    ///
+    /// # Errors
+    /// Refuses invalid paths or an occupied destination and propagates rename failures.
     fn rename_new(&self, from: &str, to: &str) -> Result<(), StoreError>;
 
     /// Atomically replaces `to` when the profile allows it.
+    ///
+    /// # Errors
+    /// Refuses invalid paths, unsupported replacement or sharing violations and propagates rename failures.
     fn rename_replace(&self, from: &str, to: &str) -> Result<(), StoreError>;
 
     /// Reads the visible bytes of a file.
     /// An object above its pointer, manifest, or segment ceiling is refused before those bytes are stored,
     /// including when the file grows after its length was observed.
+    ///
+    /// # Errors
+    /// Refuses invalid, missing, symlink or oversized objects and propagates read failures.
     fn read(&self, path: &str) -> Result<Vec<u8>, StoreError>;
 
     /// Whether the visible directory contains `path`.
+    ///
+    /// # Errors
+    /// Returns path-validation or filesystem inspection failures.
     fn exists(&self, path: &str) -> Result<bool, StoreError>;
 
     /// Visible byte length.
+    ///
+    /// # Errors
+    /// Returns path-validation, missing-file or metadata failures.
     fn len(&self, path: &str) -> Result<u64, StoreError>;
 
     /// Removes a name. Does not truncate a live inode.
+    ///
+    /// # Errors
+    /// Returns invalid-path, missing-file, sharing or removal failures.
     fn unlink(&self, path: &str) -> Result<(), StoreError>;
 
     /// Visible file names with this prefix, sorted.
+    ///
+    /// # Errors
+    /// Returns invalid-path, directory traversal or entry metadata failures.
     fn list_prefix(&self, prefix: &str) -> Result<Vec<String>, StoreError>;
 }
 

@@ -44,6 +44,7 @@ pub struct StoreOptions {
 
 impl StoreOptions {
     /// Durable options with the given cap and namespace `local`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn capped(cap: u64) -> Self {
         Self {
             cap,
@@ -75,6 +76,7 @@ pub struct Revisions {
 
 impl Revisions {
     /// The structural extractor's revision label.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn structural() -> Self {
         Self {
             resolver: "1".into(),
@@ -120,9 +122,9 @@ pub struct Published {
     pub root: String,
     /// Committed generation number.
     pub generation: u64,
-    /// ManifestObject digest.
+    /// `ManifestObject` digest.
     pub manifest: [u8; 32],
-    /// SegmentObject digests named by that manifest, digest order.
+    /// `SegmentObject` digests named by that manifest, digest order.
     pub segments: Vec<[u8; 32]>,
 }
 

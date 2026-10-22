@@ -1,5 +1,5 @@
 //! Filesystem publication of immutable map segments and manifest generations.
-//! Implements ARCHITECTURE-PROPOSAL §7 DX-C3, SEGMENTS-v1 publication, and CacheLifecycle P2/P3/P8.
+//! Implements ARCHITECTURE-PROPOSAL §7 DX-C3, SEGMENTS-v1 publication, and `CacheLifecycle` P2/P3/P8.
 //! Depends on `dctx-map-segment` for codec validation and `dctx-hash` for manifest digests.
 //! Callers publish through [`SegmentStore`]; engines never see filesystem paths as handles.
 //! No git, no `.git` paths, and no PID-age lock clearing (decision 078).
