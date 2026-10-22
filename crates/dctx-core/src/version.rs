@@ -41,12 +41,14 @@ impl std::error::Error for VersionExhausted {}
 
 impl Version {
     /// Defaultni početak: V1
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new_v1() -> Self {
         Self { major: 1, minor: 0 }
     }
 
     /// Parsira string poput "V1", "V1.5", "V2.0".
     /// Ako je format neispravan, vraća V1.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn parse(version_str: &str) -> Self {
         if !version_str.starts_with('V') {
             return Self::new_v1();
@@ -164,19 +166,19 @@ mod tests {
     #[test]
     fn test_display_v1() {
         let v = Version::new_v1();
-        assert_eq!(format!("{}", v), "V1");
+        assert_eq!(format!("{v}"), "V1");
     }
 
     #[test]
     fn test_display_v1_with_minor() {
         let v = Version { major: 1, minor: 5 };
-        assert_eq!(format!("{}", v), "V1.5");
+        assert_eq!(format!("{v}"), "V1.5");
     }
 
     #[test]
     fn test_display_v2() {
         let v = Version { major: 2, minor: 0 };
-        assert_eq!(format!("{}", v), "V2");
+        assert_eq!(format!("{v}"), "V2");
     }
 
     #[test]
@@ -185,7 +187,7 @@ mod tests {
             major: 2,
             minor: 10,
         };
-        assert_eq!(format!("{}", v), "V2.10");
+        assert_eq!(format!("{v}"), "V2.10");
     }
 
     #[test]
@@ -194,7 +196,7 @@ mod tests {
             major: 100,
             minor: 999,
         };
-        assert_eq!(format!("{}", v), "V100.999");
+        assert_eq!(format!("{v}"), "V100.999");
     }
 
     // --- EQUALITY TESTS ---

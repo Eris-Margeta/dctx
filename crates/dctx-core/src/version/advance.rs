@@ -20,6 +20,7 @@ impl Version {
     /// Exhaustion cannot be a `Result` here: existing callers destructure the tuple.
     /// Major 0 is the legacy unknown-version sentinel, so a later encode refuses it.
     /// Callers that publish use [`Self::try_calculate_next`] and stop before publication.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn calculate_next(
         &self,
         files_unchanged_count: usize,
@@ -36,6 +37,8 @@ impl Version {
     ///
     /// A massive change or a minor at `max_diff_files` bumps the major.
     /// Either addition that does not fit is [`VersionExhausted`].
+    /// # Errors
+    /// Returns `VersionExhausted` if the selected major or minor increment overflows.
     pub fn try_calculate_next(
         &self,
         files_unchanged_count: usize,

@@ -32,6 +32,7 @@ pub const CONFIG_FILENAME: &str = "config.toml";
 
 /// Application settings read from `config.toml`.
 #[derive(Debug, Clone)]
+#[allow(clippy::struct_excessive_bools, reason = "These independent serialized preferences retain the existing configuration schema and combinations.")]
 pub struct AppConfig {
     /// Controls whether text output files (.llmcontext.txt) are written to the
     /// local .dctx/ directory. Binary state is ALWAYS written to system cache.
@@ -73,6 +74,7 @@ impl Default for AppConfig {
 }
 
 /// Parses a whole `config.toml` text over the defaults.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn parse_config(text: &str) -> AppConfig {
     let mut config = AppConfig::default();
     for line in text.lines() {
@@ -102,10 +104,10 @@ pub fn parse_config_line(line: &str, config: &mut AppConfig) {
             }
             "default_template" => config.default_template = val.to_string(),
             "update_local_git_repo_gitignore_rules" => {
-                set_flag(val, &mut config.update_local_git_repo_gitignore_rules)
+                set_flag(val, &mut config.update_local_git_repo_gitignore_rules);
             }
             "text_output_mode_generates_diff_files" => {
-                set_flag(val, &mut config.text_output_mode_generates_diff_files)
+                set_flag(val, &mut config.text_output_mode_generates_diff_files);
             }
             "omit_svg_content" => set_flag(val, &mut config.omit_svg_content),
             _ => {}

@@ -1,6 +1,6 @@
 //! Version selection from a completed pack diff.
 //! Implements pack versioning; docs/reviews/dctx-legacy-removal.md F11.
-//! Depends on the parent Version and crate::diff::DiffReport; pure.
+//! Depends on the parent Version and `crate::diff::DiffReport`; pure.
 //! Re-exported by version for CLI and pack callers.
 //! An unchanged tree retains its previous version.
 
@@ -11,6 +11,7 @@ use crate::diff::DiffReport;
 ///
 /// No previous snapshot starts at V1 with a reset; an unchanged tree keeps the
 /// previous version; otherwise [`Version::calculate_next`] decides.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn version_after_diff(
     previous: Option<&Version>,
     report: &DiffReport,

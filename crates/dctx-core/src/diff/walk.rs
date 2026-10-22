@@ -182,7 +182,7 @@ mod tests {
         let mut node = DirContextTreeNode::new(
             NodeType::File,
             path,
-            PathBuf::from(format!("/test/{}", path)),
+            PathBuf::from(format!("/test/{path}")),
         );
         node.content_size = size;
         node.last_modified_timestamp = timestamp;
@@ -193,7 +193,7 @@ mod tests {
         DirContextTreeNode::new(
             NodeType::Directory,
             path,
-            PathBuf::from(format!("/test/{}", path)),
+            PathBuf::from(format!("/test/{path}")),
         )
     }
 

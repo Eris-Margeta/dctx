@@ -134,6 +134,7 @@ impl DctxError {
     }
 
     /// The stable code of this error.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn code(&self) -> ErrorCode {
         match self {
             Self::InvalidRequest { .. } => ErrorCode::InvalidRequest,
@@ -154,6 +155,7 @@ impl DctxError {
     }
 
     /// True if the same request may succeed when retried unchanged.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_retryable(&self) -> bool {
         matches!(self.code(), ErrorCode::Busy | ErrorCode::SourceChanged | ErrorCode::Io)
     }

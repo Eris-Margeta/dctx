@@ -1,4 +1,4 @@
-//! Domain model for file handling decisions (Include, Exclude, DebugVisible, OmitContent).
+//! Domain model for file handling decisions (Include, Exclude, `DebugVisible`, `OmitContent`).
 //! This module defines the core state machine for how dctx handles files
 //! and directories during traversal, replacing the old boolean flags.
 //! Depends on nothing; pure. Used by [`crate::selection`], [`crate::facts`] and dctx-pack.
@@ -6,7 +6,7 @@
 /// Represents the decision made about how to handle a file or directory.
 ///
 /// This enum replaces the previous approach of using multiple boolean flags
-/// (is_ignored, is_omitted, is_binary, should_debug) which created 2^N
+/// (`is_ignored`, `is_omitted`, `is_binary`, `should_debug`) which created 2^N
 /// possible states with unclear semantics.
 ///
 /// With this enum, we have exactly 4 valid states, each with clear meaning.
@@ -21,7 +21,7 @@ pub enum FileHandlingDecision {
 
     /// Exclude the item from the tree entirely.
     ///
-    /// Items matching ignore rules (e.g., .git/, node_modules/) are excluded.
+    /// Items matching ignore rules (e.g., .git/, `node_modules`/) are excluded.
     /// They do not appear in the directory tree and their contents are never
     /// read. For directories, we never recurse into them.
     ///
@@ -64,6 +64,7 @@ impl FileHandlingDecision {
     /// assert!(FileHandlingDecision::DebugVisible.should_recurse());
     /// assert!(FileHandlingDecision::OmitContent.should_recurse());
     /// ```
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn should_recurse(self) -> bool {
         match self {
             Self::Include | Self::OmitContent | Self::DebugVisible => true,
@@ -76,8 +77,8 @@ impl FileHandlingDecision {
     /// # Privacy Guarantee
     ///
     /// This method enforces the privacy guarantee: files that are Excluded
-    /// or DebugVisible are NEVER read into memory, even if they appear in
-    /// the tree (DebugVisible case).
+    /// or `DebugVisible` are NEVER read into memory, even if they appear in
+    /// the tree (`DebugVisible` case).
     ///
     /// # Examples
     ///
@@ -89,6 +90,7 @@ impl FileHandlingDecision {
     /// assert!(!FileHandlingDecision::DebugVisible.should_read_content());
     /// assert!(!FileHandlingDecision::OmitContent.should_read_content());
     /// ```
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn should_read_content(self) -> bool {
         match self {
             Self::Include => true,
@@ -108,6 +110,7 @@ impl FileHandlingDecision {
     /// assert!(FileHandlingDecision::DebugVisible.show_in_tree());
     /// assert!(FileHandlingDecision::OmitContent.show_in_tree());
     /// ```
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn show_in_tree(self) -> bool {
         match self {
             Self::Exclude => false,
@@ -125,9 +128,9 @@ impl FileHandlingDecision {
     /// # Performance Impact
     ///
     /// Skipping metadata for excluded files can save 50%+ of syscall overhead
-    /// on large directories with many ignored files (node_modules/, target/, .git/).
+    /// on large directories with many ignored files (`node_modules`/, target/, .git/).
     ///
-    /// Based on Phase 10.8.1 profiling: each fs::metadata() call takes ~17μs.
+    /// Based on Phase 10.8.1 profiling: each `fs::metadata()` call takes ~17μs.
     /// On a scan of 617,322 files with ~300,000 ignored, this optimization
     /// can save 5-10 seconds (reducing system time from 10.95s to ~5.5s).
     ///
@@ -141,11 +144,11 @@ impl FileHandlingDecision {
     /// assert!(FileHandlingDecision::DebugVisible.needs_metadata());
     /// assert!(FileHandlingDecision::OmitContent.needs_metadata());
     /// ```
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn needs_metadata(self) -> bool {
         match self {
-            Self::Include => true,      // Full info needed
-            Self::OmitContent => true,  // Show in tree with size/date
-            Self::DebugVisible => true, // Show in tree for diagnostics
+            // Included, omitted-content and diagnostic entries all display metadata.
+            Self::Include | Self::OmitContent | Self::DebugVisible => true,
             Self::Exclude => false,     // Never shown, skip metadata
         }
     }
@@ -153,7 +156,7 @@ impl FileHandlingDecision {
 
 /// Context information for making file handling decisions.
 ///
-/// This struct bundles all the information needed by the IgnoreEngine
+/// This struct bundles all the information needed by the `IgnoreEngine`
 /// to make a decision about how to handle a file or directory.
 #[derive(Debug, Clone)]
 pub struct ItemContext<'a> {
@@ -217,7 +220,7 @@ mod tests {
     #[test]
     fn test_decision_debug_format() {
         let decision = FileHandlingDecision::Include;
-        let debug_str = format!("{:?}", decision);
+        let debug_str = format!("{decision:?}");
         assert!(debug_str.contains("Include"));
     }
 

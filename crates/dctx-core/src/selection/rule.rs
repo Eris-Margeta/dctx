@@ -11,6 +11,7 @@ use crate::datatypes::{IgnoreRule, PatternType};
 /// A leading `!` negates, a trailing `/` restricts to directories and inline `#`
 /// comments are stripped. Simple shapes are classified as `Basename`, `Path`,
 /// `Suffix` (`*.ext`) or `Prefix` (`dir/*`); everything else with wildcards is `Glob`.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn parse_ignore_pattern_line(line: &str) -> Option<IgnoreRule> {
     let mut trimmed = line.trim();
     if trimmed.is_empty() || trimmed.starts_with('#') {
@@ -70,12 +71,14 @@ pub fn parse_rules(text: &str) -> Vec<IgnoreRule> {
 }
 
 /// Parses a static list of rule lines, in order.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn parse_rule_lines(lines: &[&str]) -> Vec<IgnoreRule> {
     lines.iter().filter_map(|line| parse_ignore_pattern_line(line)).collect()
 }
 
 /// The text a glob rule is matched against: the relative path when the pattern
 /// contains `/`, otherwise the item name.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn glob_subject<'a>(rule: &IgnoreRule, relative_path: &'a str, name: &'a str) -> &'a str {
     if rule.pattern.contains('/') {
         relative_path
@@ -91,6 +94,7 @@ fn anchored(pattern: &str) -> &str {
 }
 
 /// Returns true if `rule` matches the item, ignoring negation.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn rule_matches(rule: &IgnoreRule, relative_path: &str, name: &str, is_dir: bool) -> bool {
     if rule.is_dir_only && !is_dir {
         return false;
@@ -120,6 +124,7 @@ pub fn rule_matches(rule: &IgnoreRule, relative_path: &str, name: &str, is_dir: 
 
 /// Applies `rules` in order with last-match-wins semantics: a matching rule sets the
 /// item selected, a matching negation clears it. Returns the final state.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn last_match(rules: &[IgnoreRule], relative_path: &str, name: &str, is_dir: bool) -> bool {
     let mut selected = false;
     for rule in rules {

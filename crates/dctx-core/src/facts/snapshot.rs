@@ -61,6 +61,8 @@ pub struct PackSnapshot {
 
 impl PackSnapshot {
     /// Assembles a snapshot and computes its identity from `tree` and `digests`.
+    /// # Errors
+    /// Propagates snapshot encoding errors when a path or link target cannot fit the canonical length field.
     pub fn new(
         tree: DirContextTreeNode,
         version: Version,
@@ -72,31 +74,37 @@ impl PackSnapshot {
     }
 
     /// The selected tree.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn tree(&self) -> &DirContextTreeNode {
         &self.tree
     }
 
     /// Consumes the snapshot, returning its tree.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn into_tree(self) -> DirContextTreeNode {
         self.tree
     }
 
     /// Pack version of this snapshot.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn version(&self) -> &Version {
         &self.version
     }
 
     /// When the snapshot was taken (not part of its identity).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn taken_at(&self) -> Timestamp {
         self.taken_at
     }
 
     /// Content digests of read files.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn digests(&self) -> &ContentDigests {
         &self.digests
     }
 
     /// Own identity of this snapshot.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn digest(&self) -> SnapshotDigest {
         self.digest
     }
@@ -104,6 +112,8 @@ impl PackSnapshot {
 
 /// Canonical digest of a tree and its content digests. Equal facts give equal digests,
 /// independent of the clock. Children are encoded in their stored (sorted) order.
+/// # Errors
+/// Returns a resource-limit error if a path or link target cannot fit its canonical length field.
 pub fn snapshot_digest(
     tree: &DirContextTreeNode,
     digests: &ContentDigests,

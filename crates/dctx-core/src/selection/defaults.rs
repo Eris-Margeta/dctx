@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn test_hardcoded_ignore_rules_not_empty() {
-        assert!(!HARDCODED_IGNORE_RULES.is_empty());
+        assert_ne!(HARDCODED_IGNORE_RULES, [] as [&str; 0]);
         assert!(HARDCODED_IGNORE_RULES.contains(&".git/"));
         assert!(HARDCODED_IGNORE_RULES.contains(&"node_modules/"));
         assert!(HARDCODED_IGNORE_RULES.contains(&"target/"));

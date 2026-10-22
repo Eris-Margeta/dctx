@@ -1,19 +1,19 @@
 //! Legacy ignore behavior through the pure selection API (D3-LEGACY-REMOVAL §3/§5 D3-07).
 //! Depends only on dctx-core's pure policy, rules and domain decisions.
-//! Integration evidence retained when the legacy IgnoreEngine is removed.
+//! Integration evidence retained when the legacy `IgnoreEngine` is removed.
 //!
 //! Legacy test disposition (names below omit `test_`; all others retain their names):
 //! | Legacy test | Disposition |
-//! | error_display | retired: IgnoreError is an IO error; adapter coverage is in legacy_rules.rs |
-//! | cache_basic_functionality | retired: IgnoreEngine cache entries have no pure counterpart |
-//! | cache_different_paths_different_entries | retired: no pure cache entries |
-//! | cache_only_caches_glob_patterns | retired: no pure cache or cache classification |
-//! | cache_memory_usage_reasonable | retired: no pure cache allocation/statistics |
-//! | cache_stats_accuracy | retired: no pure cache capacity or statistics |
-//! | turbo_pattern_loaded | ignored: pure built-ins lack `.turbo/` |
-//! | pnpm_store_pattern_loaded | ignored: pure built-ins lack `.pnpm-store/` |
+//! | `error_display` | retired: `IgnoreError` is an IO error; adapter coverage is in `legacy_rules.rs` |
+//! | `cache_basic_functionality` | retired: `IgnoreEngine` cache entries have no pure counterpart |
+//! | `cache_different_paths_different_entries` | retired: no pure cache entries |
+//! | `cache_only_caches_glob_patterns` | retired: no pure cache or cache classification |
+//! | `cache_memory_usage_reasonable` | retired: no pure cache allocation/statistics |
+//! | `cache_stats_accuracy` | retired: no pure cache capacity or statistics |
+//! | `turbo_pattern_loaded` | ignored: pure built-ins lack `.turbo/` |
+//! | `pnpm_store_pattern_loaded` | ignored: pure built-ins lack `.pnpm-store/` |
 //! Cache negation/collision tests below retain their decisions; cache hit/key assertions
-//! are retired because SelectionPolicy has no cache. File loading is in adapter tests;
+//! are retired because `SelectionPolicy` has no cache. File loading is in adapter tests;
 //! engine layer-count tests here use explicit texts rather than ambient home discovery.
 
 #![forbid(unsafe_code)]

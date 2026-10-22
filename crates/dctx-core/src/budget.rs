@@ -8,12 +8,14 @@
 use crate::error::{DctxError, Resource};
 
 /// Estimated tokens of `bytes` UTF-8 bytes: `ceil(2 * bytes / 7)`, without overflow.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn estimate_tokens(bytes: u64) -> u64 {
     let tokens = (u128::from(bytes) * 2).div_ceil(7);
     u64::try_from(tokens).unwrap_or(u64::MAX)
 }
 
 /// Largest byte count whose estimate stays within `tokens`: `floor(7 * tokens / 2)`, saturating.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn byte_ceiling(tokens: u64) -> u64 {
     u64::try_from(u128::from(tokens) * 7 / 2).unwrap_or(u64::MAX)
 }
@@ -31,6 +33,7 @@ pub struct OutputBudget {
 
 impl OutputBudget {
     /// The tighter of two budgets in every dimension (host ∩ policy ∩ session).
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn intersect(self, other: Self) -> Self {
         Self {
             encoded_bytes: min_opt(self.encoded_bytes, other.encoded_bytes),
@@ -45,6 +48,7 @@ impl OutputBudget {
     }
 
     /// True if an answer of `bytes` encoded bytes and `records` records fits.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn admits(self, bytes: u64, records: u64) -> bool {
         self.effective_bytes().is_none_or(|cap| bytes <= cap)
             && self.records.is_none_or(|cap| records <= cap)
@@ -80,6 +84,7 @@ impl Default for PackLimits {
 
 impl PackLimits {
     /// No limits (legacy behaviour).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn unbounded() -> Self {
         Self {
             max_entries: u64::MAX,
@@ -90,16 +95,22 @@ impl PackLimits {
     }
 
     /// Refuses when `count` entries exceed [`Self::max_entries`].
+    /// # Errors
+    /// Returns `DctxError::ResourceLimit` when the entry count exceeds the configured ceiling.
     pub fn check_entries(&self, count: u64) -> Result<(), DctxError> {
         check(Resource::Entries, count, self.max_entries)
     }
 
     /// Refuses when `depth` exceeds [`Self::max_depth`].
+    /// # Errors
+    /// Returns `DctxError::ResourceLimit` when the depth exceeds the configured ceiling.
     pub fn check_depth(&self, depth: u64) -> Result<(), DctxError> {
         check(Resource::Depth, depth, self.max_depth)
     }
 
     /// Refuses when `total` content bytes exceed [`Self::max_source_bytes`].
+    /// # Errors
+    /// Returns `DctxError::ResourceLimit` when source bytes exceed the configured ceiling.
     pub fn check_source_bytes(&self, total: u64) -> Result<(), DctxError> {
         check(Resource::SourceBytes, total, self.max_source_bytes)
     }
@@ -122,16 +133,19 @@ pub struct Reservation {
 
 impl Reservation {
     /// Issued by a cache adapter for `bytes` under its own `id`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(id: u64, bytes: u64) -> Self {
         Self { id, bytes }
     }
 
     /// Adapter-scoped identity of this reservation.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn id(&self) -> u64 {
         self.id
     }
 
     /// Reserved bytes.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn bytes(&self) -> u64 {
         self.bytes
     }

@@ -23,11 +23,14 @@ pub struct RelativePath(String);
 
 impl RelativePath {
     /// The source root.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn root() -> Self {
         Self(String::new())
     }
 
     /// Validates `text` as a confined relative path.
+    /// # Errors
+    /// Returns a path-validation error for an invalid segment, or a resource-limit error above the path byte limit.
     pub fn parse(text: &str) -> Result<Self, DctxError> {
         if text.len() > MAX_PATH_BYTES {
             return Err(DctxError::ResourceLimit {
@@ -45,6 +48,8 @@ impl RelativePath {
     }
 
     /// The child `name` of this directory path. `name` must be a single segment.
+    /// # Errors
+    /// Returns a path-validation error for an invalid segment, or a resource-limit error if the joined path is too long.
     pub fn child(&self, name: &str) -> Result<Self, DctxError> {
         check_segment(name)?;
         let joined = if self.0.is_empty() {
@@ -62,21 +67,25 @@ impl RelativePath {
     }
 
     /// The path text (empty for the root).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_str(&self) -> &str {
         &self.0
     }
 
     /// True for the source root.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_root(&self) -> bool {
         self.0.is_empty()
     }
 
     /// The last segment (empty for the root).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn name(&self) -> &str {
         self.0.rsplit('/').next().unwrap_or("")
     }
 
     /// Number of segments (0 for the root).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn depth(&self) -> usize {
         if self.0.is_empty() {
             0
@@ -113,6 +122,8 @@ pub struct ViewKey(String);
 
 impl ViewKey {
     /// Validates a non-empty key of printable characters, at most [`MAX_PATH_BYTES`].
+    /// # Errors
+    /// Returns a path-validation error for an invalid segment, or a resource-limit error above the path byte limit.
     pub fn parse(text: &str) -> Result<Self, DctxError> {
         if text.is_empty() || text.chars().any(char::is_control) {
             return Err(DctxError::InvalidRequest { reason: "view key must be printable and non-empty" });
@@ -127,6 +138,7 @@ impl ViewKey {
     }
 
     /// The key text.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn as_str(&self) -> &str {
         &self.0
     }
@@ -138,6 +150,7 @@ pub struct Timestamp(pub u64);
 
 impl Timestamp {
     /// Milliseconds since the Unix epoch.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn millis(self) -> u64 {
         self.0
     }

@@ -356,12 +356,12 @@ fn collect_imports(spec: &str, prefix: &str, hits: &mut Vec<(String, String)>) {
             return;
         }
         if rest.starts_with('*') {
-            record(join_path(prefix, &rel), "*", hits);
+            record(&join_path(prefix, &rel), "*", hits);
             return;
         }
         let Some((ident, after)) = read_ident(rest) else {
             if !rel.is_empty() {
-                record(join_path(prefix, &rel), last_seg(&rel), hits);
+                record(&join_path(prefix, &rel), last_seg(&rel), hits);
             }
             return;
         };
@@ -378,16 +378,16 @@ fn collect_imports(spec: &str, prefix: &str, hits: &mut Vec<(String, String)>) {
                 Some((name, _)) => name,
                 None => "*",
             };
-            record(join_path(prefix, &rel), alias, hits);
+            record(&join_path(prefix, &rel), alias, hits);
             return;
         }
-        record(join_path(prefix, &rel), ident, hits);
+        record(&join_path(prefix, &rel), ident, hits);
         return;
     }
 }
 
-fn record(path: String, alias: &str, hits: &mut Vec<(String, String)>) {
-    if let Some(token) = forbidden_path(&path) {
+fn record(path: &str, alias: &str, hits: &mut Vec<(String, String)>) {
+    if let Some(token) = forbidden_path(path) {
         hits.push((token.to_string(), alias.to_string()));
     }
 }
@@ -611,7 +611,7 @@ fn the_check_allows_pure_snippets_and_comments() {
 fn the_check_skips_the_test_tail() {
     let source = "fn bytes(text: &str) -> usize { text.len() }\n\
                   #[cfg(test)]\nmod tests { use std::fs; }";
-    assert!(violations(source).is_empty());
+    assert_eq!(violations(source), [] as [std::string::String; 0]);
 }
 
 #[test]

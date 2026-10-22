@@ -11,9 +11,9 @@ mod template_validation_tests {
     fn parse_patterns(content: &str) -> Vec<String> {
         content
             .lines()
-            .map(|line| line.trim())
+            .map(str::trim)
             .filter(|line| !line.is_empty() && !line.starts_with('#'))
-            .map(|line| line.to_string())
+            .map(std::string::ToString::to_string)
             .collect()
     }
 
@@ -67,8 +67,7 @@ mod template_validation_tests {
             // Check for invalid characters
             assert!(
                 !pattern.contains('\0'),
-                "Pattern '{}' contains null byte",
-                pattern
+                "Pattern '{pattern}' contains null byte"
             );
 
             // Check for Windows-style paths (should use Unix-style)
@@ -80,12 +79,9 @@ mod template_validation_tests {
                     if bytes[i] == b'\\' {
                         let next = bytes[i + 1] as char;
                         // If backslash is followed by alphanumeric or space, it's likely a Windows path
-                        if next.is_alphanumeric() || next == ' ' || next == '/' {
-                            panic!(
-                                "Pattern '{}' contains Windows-style path separator - use forward slashes",
-                                pattern
-                            );
-                        }
+                        assert!(!(next.is_alphanumeric() || next == ' ' || next == '/'),
+                            "Pattern '{pattern}' contains Windows-style path separator - use forward slashes"
+                        );
                     }
                 }
             }
@@ -93,18 +89,14 @@ mod template_validation_tests {
             // Check for double slashes (likely a mistake)
             assert!(
                 !pattern.contains("//"),
-                "Pattern '{}' contains double slashes",
-                pattern
+                "Pattern '{pattern}' contains double slashes"
             );
 
             // Check for leading slashes (patterns should be relative)
-            if pattern.starts_with('/') && pattern != "/" {
-                panic!(
-                    "Pattern '{}' starts with '/' - patterns should be relative. \
-                     Use 'folder/' instead of '/folder/'",
-                    pattern
-                );
-            }
+            assert!(!(pattern.starts_with('/') && pattern != "/"),
+                "Pattern '{pattern}' starts with '/' - patterns should be relative. \
+                 Use 'folder/' instead of '/folder/'"
+            );
         }
     }
 
@@ -117,8 +109,7 @@ mod template_validation_tests {
             // Check for invalid characters
             assert!(
                 !pattern.contains('\0'),
-                "Pattern '{}' contains null byte",
-                pattern
+                "Pattern '{pattern}' contains null byte"
             );
 
             // Check for Windows-style paths (allow escaped special characters)
@@ -128,12 +119,9 @@ mod template_validation_tests {
                     if bytes[i] == b'\\' {
                         let next = bytes[i + 1] as char;
                         // If backslash is followed by alphanumeric or space, it's likely a Windows path
-                        if next.is_alphanumeric() || next == ' ' || next == '/' {
-                            panic!(
-                                "Pattern '{}' contains Windows-style path separator - use forward slashes",
-                                pattern
-                            );
-                        }
+                        assert!(!(next.is_alphanumeric() || next == ' ' || next == '/'),
+                            "Pattern '{pattern}' contains Windows-style path separator - use forward slashes"
+                        );
                     }
                 }
             }
@@ -141,17 +129,13 @@ mod template_validation_tests {
             // Check for double slashes
             assert!(
                 !pattern.contains("//"),
-                "Pattern '{}' contains double slashes",
-                pattern
+                "Pattern '{pattern}' contains double slashes"
             );
 
             // Check for leading slashes
-            if pattern.starts_with('/') && pattern != "/" {
-                panic!(
-                    "Pattern '{}' starts with '/' - patterns should be relative",
-                    pattern
-                );
-            }
+            assert!(!(pattern.starts_with('/') && pattern != "/"),
+                "Pattern '{pattern}' starts with '/' - patterns should be relative"
+            );
         }
     }
 
@@ -251,8 +235,7 @@ mod template_validation_tests {
         for pattern in critical_ignore {
             assert!(
                 ignore_patterns.contains(&pattern.to_string()),
-                "Critical ignore pattern missing: {}",
-                pattern
+                "Critical ignore pattern missing: {pattern}"
             );
         }
 
@@ -267,8 +250,7 @@ mod template_validation_tests {
         for pattern in critical_omit {
             assert!(
                 omit_patterns.contains(&pattern.to_string()),
-                "Critical omit pattern missing: {}",
-                pattern
+                "Critical omit pattern missing: {pattern}"
             );
         }
     }

@@ -6,7 +6,7 @@
 use std::path::PathBuf;
 use crate::domain::FileHandlingDecision;
 
-/// Ekvivalent za NodeType iz C-a
+/// Ekvivalent za `NodeType` iz C-a
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum NodeType {
     /// A file whose content may be included in a snapshot.
@@ -15,7 +15,7 @@ pub enum NodeType {
     Directory,
 }
 
-/// Ekvivalent za PatternType iz C-a
+/// Ekvivalent za `PatternType` iz C-a
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PatternType {
     /// No valid pattern has been assigned.
@@ -34,7 +34,7 @@ pub enum PatternType {
     Glob, // Matches complex patterns ("foo/**/bar", "config-*-prod.json")
 }
 
-/// Ekvivalent za IgnoreRule iz C-a
+/// Ekvivalent za `IgnoreRule` iz C-a
 #[derive(Debug, Clone)]
 pub struct IgnoreRule {
     /// Pattern text after ignore-rule prefixes have been removed.
@@ -60,12 +60,13 @@ impl Default for IgnoreRule {
 
 impl IgnoreRule {
     /// Konstruktor za stvaranje praznog pravila
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new() -> Self {
         Self::default()
     }
 }
 
-/// Ekvivalent za DirContextTreeNode iz C-a
+/// Ekvivalent za `DirContextTreeNode` iz C-a
 #[derive(Debug, Clone)]
 pub struct DirContextTreeNode {
     /// Whether this node represents a file or a directory.
@@ -121,6 +122,7 @@ pub struct DirContextTreeNode {
 impl DirContextTreeNode {
     /// Creates an empty node with an include decision and no file content.
     /// All sizes, timestamps and offsets start at zero; `disk_path` is stored without IO.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(node_type: NodeType, relative_path: &str, disk_path: PathBuf) -> Self {
         Self {
             node_type,
@@ -140,6 +142,7 @@ impl DirContextTreeNode {
     }
 
     /// Returns whether this node is a directory.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn is_dir(&self) -> bool {
         self.node_type == NodeType::Directory
     }
@@ -257,7 +260,7 @@ mod tests {
         let mut original =
             DirContextTreeNode::new(NodeType::File, "test.txt", PathBuf::from("/test.txt"));
         original.content_size = 100;
-        original.last_modified_timestamp = 1234567890;
+        original.last_modified_timestamp = 1_234_567_890;
 
         let cloned = original.clone();
         assert_eq!(cloned.relative_path, original.relative_path);
