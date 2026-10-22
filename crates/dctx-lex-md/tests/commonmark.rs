@@ -1,4 +1,4 @@
-//! CommonMark 0.31 heading edge cases through the public API (spec examples 62–100).
+//! `CommonMark` 0.31 heading edge cases through the public API (spec examples 62–100).
 //! Checks levels, titles, styles and that code, HTML and containers are honoured.
 //! Uses only `dctx_lex_md::extract`.
 use dctx_lex_md::{HeadingStyle, ReferenceKind, extract};
@@ -29,15 +29,15 @@ fn atx_levels_markers_and_indentation() {
             h(6, "foo")
         ]
     );
-    assert!(headings("####### foo").is_empty());
-    assert!(headings("#5 bolt\n\n#hashtag").is_empty());
-    assert!(headings("\\## foo").is_empty());
+    assert_eq!(headings("####### foo"), []);
+    assert_eq!(headings("#5 bolt\n\n#hashtag"), []);
+    assert_eq!(headings("\\## foo"), []);
     assert_eq!(
         headings(" ### foo\n  ## foo\n   # foo"),
         [h(3, "foo"), h(2, "foo"), h(1, "foo")]
     );
-    assert!(headings("    # foo").is_empty());
-    assert!(headings("foo\n    # bar").is_empty());
+    assert_eq!(headings("    # foo"), []);
+    assert_eq!(headings("foo\n    # bar"), []);
 }
 
 #[test]
@@ -89,18 +89,18 @@ fn setext_underlines_and_multiline_content() {
 
 #[test]
 fn setext_refusals() {
-    assert!(headings("    Foo\n    ---\n\n    Foo\n---").is_empty());
-    assert!(headings("Foo\n    ---").is_empty());
-    assert!(headings("Foo\n= =\n\nFoo\n--- -").is_empty());
-    assert!(headings("> Foo\n---").is_empty());
-    assert!(headings("> foo\nbar\n===").is_empty());
-    assert!(headings("- Foo\n---").is_empty());
-    assert!(headings("\n====").is_empty());
-    assert!(headings("---\n---").is_empty());
-    assert!(headings("- foo\n-----").is_empty());
-    assert!(headings("    foo\n---").is_empty());
-    assert!(headings("> foo\n-----").is_empty());
-    assert!(headings("\\> foo\n------").len() == 1);
+    assert_eq!(headings("    Foo\n    ---\n\n    Foo\n---"), []);
+    assert_eq!(headings("Foo\n    ---"), []);
+    assert_eq!(headings("Foo\n= =\n\nFoo\n--- -"), []);
+    assert_eq!(headings("> Foo\n---"), []);
+    assert_eq!(headings("> foo\nbar\n==="), []);
+    assert_eq!(headings("- Foo\n---"), []);
+    assert_eq!(headings("\n===="), []);
+    assert_eq!(headings("---\n---"), []);
+    assert_eq!(headings("- foo\n-----"), []);
+    assert_eq!(headings("    foo\n---"), []);
+    assert_eq!(headings("> foo\n-----"), []);
+    assert_eq!(headings("\\> foo\n------").len(), 1);
 }
 
 #[test]
@@ -124,7 +124,7 @@ fn setext_paragraph_boundaries() {
 fn code_blocks_never_yield_headings_or_references() {
     let doc = extract(b"# A\n\n````\n```\n# x\n```\n````\n\n~~~ md\n# y `z`\n").unwrap();
     assert_eq!(doc.headings.len(), 1);
-    assert!(doc.references.is_empty());
+    assert_eq!(doc.references, []);
     assert_eq!(doc.code_blocks.len(), 2);
     assert_eq!(doc.code_blocks[1].lines, [9, 10]);
 }

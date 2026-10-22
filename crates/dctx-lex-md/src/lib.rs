@@ -19,11 +19,19 @@ pub use domain::{
 };
 
 /// Extracts the Markdown structure of `bytes` with the default [`Limits`].
+///
+/// # Errors
+/// Returns a typed refusal for input over the byte or container-nesting limits,
+/// or for invalid UTF-8.
 pub fn extract(bytes: &[u8]) -> Result<Document, LexError> {
     extract_with(bytes, &Limits::default())
 }
 
 /// Extracts the Markdown structure of `bytes`, refusing input beyond `limits`.
+///
+/// # Errors
+/// Returns a typed refusal for input over the byte or container-nesting limits,
+/// or for invalid UTF-8.
 pub fn extract_with(bytes: &[u8], limits: &Limits) -> Result<Document, LexError> {
     let max = limits.max_bytes.min(u32::MAX as usize - 1);
     if bytes.len() > max {

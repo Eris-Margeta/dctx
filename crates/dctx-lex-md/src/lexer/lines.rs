@@ -1,5 +1,5 @@
 //! Source lines with byte offsets, column-aware indentation, and front matter.
-//! Implements CommonMark line and tab rules (tab stops of four) as far as headings need.
+//! Implements `CommonMark` line and tab rules (tab stops of four) as far as headings need.
 //! Pure string scanning; used by the block scanner.
 
 /// One source line without its `\n` or `\r\n` terminator.

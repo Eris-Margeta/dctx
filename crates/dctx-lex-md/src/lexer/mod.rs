@@ -50,6 +50,6 @@ mod tests {
     fn without_front_matter_a_dash_line_is_a_break() {
         let doc = document("---\ntitle: x\n", &Limits::default()).unwrap();
         assert_eq!(doc.front_matter, None);
-        assert!(doc.headings.is_empty());
+        assert_eq!(doc.headings, []);
     }
 }

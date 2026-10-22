@@ -1,5 +1,5 @@
 //! Block scanner: containers, paragraphs, headings, code and HTML blocks, line by line.
-//! Implements the CommonMark 0.31 block algorithm (§3.2, §4, §5) reduced to structure.
+//! Implements the `CommonMark` 0.31 block algorithm (§3.2, §4, §5) reduced to structure.
 //! Uses line and marker rules plus `leaves`; the outline step consumes its `Blocks`.
 mod leaves;
 
@@ -36,6 +36,7 @@ pub(crate) struct Paragraph {
 
 /// Block structure of one document in source order.
 #[derive(Debug, Default)]
+#[allow(clippy::struct_field_names, reason = "code_blocks matches the public document vocabulary and distinguishes code blocks from paragraphs and headings.")]
 pub(crate) struct Blocks {
     pub headings: Vec<RawHeading>,
     pub paragraphs: Vec<Paragraph>,
@@ -212,8 +213,8 @@ mod tests {
             titles("> # Quoted\n- ## Listed"),
             [(1, "Quoted".into()), (2, "Listed".into())]
         );
-        assert!(titles("- ```\n  # code\n  ```\n").is_empty());
-        assert!(titles("> ```\n> # code\n").is_empty());
+        assert_eq!(titles("- ```\n  # code\n  ```\n"), []);
+        assert_eq!(titles("> ```\n> # code\n"), []);
         assert_eq!(titles("- ```\n# out\n"), [(1, "out".into())]);
         assert_eq!(titles("> > # Deep"), [(1, "Deep".into())]);
         assert_eq!(titles("1. a\n\n   # In item"), [(1, "In item".into())]);

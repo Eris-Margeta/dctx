@@ -1,5 +1,5 @@
 //! HTML block starts and end conditions, so raw HTML is never read as Markdown.
-//! Implements CommonMark 0.31 §4.6 (all seven start conditions, simplified type 7).
+//! Implements `CommonMark` 0.31 §4.6 (all seven start conditions, simplified type 7).
 //! Pure line tests; used by the block scanner.
 
 /// Condition that ends an open HTML block.

@@ -5,7 +5,7 @@ use dctx_lex_md::{Document, LexError, Limits, extract, extract_with};
 use proptest::prelude::*;
 
 fn check(source: &str, doc: &Document) {
-    let lines = source.lines().count().max(1) as u32;
+    let lines = u32::try_from(source.lines().count().max(1)).expect("bounded test coordinate");
     assert_eq!(doc.lines, lines);
     for (index, heading) in doc.headings.iter().enumerate() {
         assert!((1..=6).contains(&heading.level));
@@ -15,10 +15,10 @@ fn check(source: &str, doc: &Document) {
         assert!(source.is_char_boundary(heading.section.end));
         assert!(heading.lines[0] >= 1 && heading.lines[0] <= heading.lines[1]);
         assert!(heading.parent.is_none_or(|parent| parent < index));
-        assert!(!heading.name.is_empty());
+        assert_ne!(heading.name, "");
     }
     for reference in &doc.references {
-        assert!(!reference.name.is_empty());
+        assert_ne!(reference.name, "");
         assert!(reference.span.start < reference.span.end && reference.span.end <= source.len());
         assert!(source.is_char_boundary(reference.span.start));
         assert!(source.is_char_boundary(reference.span.end));
@@ -125,5 +125,5 @@ fn bracket_and_backtick_floods_stay_bounded() {
     let doc = extract_with(flood.as_bytes(), &limits).unwrap();
     assert!(doc.references.len() <= 20_000);
     let titles = format!("# A\n{}", "[a](b \"".repeat(20_000));
-    assert!(extract(titles.as_bytes()).unwrap().references.is_empty());
+    assert_eq!(extract(titles.as_bytes()).unwrap().references, []);
 }

@@ -13,6 +13,7 @@ pub struct Span {
 
 impl Span {
     /// The spanned source text.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn text<'a>(&self, source: &'a str) -> &'a str {
         source.get(self.start..self.end).unwrap_or_default()
     }
@@ -54,6 +55,7 @@ pub struct Heading {
 
 impl Heading {
     /// Section text after the heading block; its fingerprint identifies the section body.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn body(&self) -> Span {
         Span {
             start: self.span.end,
@@ -131,6 +133,7 @@ pub struct Document {
 
 impl Document {
     /// Stable-id name of heading `index`: the slug plus `~ordinal` for duplicates.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn stable_name(&self, index: usize) -> Option<String> {
         let heading = self.headings.get(index)?;
         Some(match heading.ordinal {

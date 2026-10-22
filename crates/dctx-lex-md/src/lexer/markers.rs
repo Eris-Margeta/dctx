@@ -1,8 +1,9 @@
 //! Line-start markers: ATX and setext headings, code fences, thematic breaks, list items.
-//! Implements CommonMark 0.31 §4.1–4.5 and §5.2 recognition rules.
+//! Implements `CommonMark` 0.31 §4.1–4.5 and §5.2 recognition rules.
 //! Each function reads text after container prefixes and at most three columns of indent.
 
 /// ATX heading level and title without the closing `#` sequence.
+#[allow(clippy::cast_possible_truncation, reason = "ATX heading recognition has already restricted the hash count to 1 through 6.")]
 pub(crate) fn atx(text: &str) -> Option<(u8, &str)> {
     let hashes = text.bytes().take_while(|byte| *byte == b'#').count();
     if !(1..=6).contains(&hashes) {

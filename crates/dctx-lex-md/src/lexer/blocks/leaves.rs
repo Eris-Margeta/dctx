@@ -1,5 +1,5 @@
 //! Leaf blocks: paragraphs, ATX and setext headings, fenced, indented and HTML blocks.
-//! Implements CommonMark 0.31 §4.1–4.6 and §4.8 for the block scanner.
+//! Implements `CommonMark` 0.31 §4.1–4.6 and §4.8 for the block scanner.
 //! Extends `Scanner` with leaf rules; uses line, marker and HTML helpers.
 use super::{Leaf, Paragraph, RawHeading, Scanner, Segment};
 use crate::lexer::html::{self, HtmlEnd};
@@ -122,7 +122,7 @@ impl Scanner<'_> {
             return;
         };
         let title = segments
-            .iter()
+            .into_iter()
             .map(|s| self.source[s.start..s.end].trim_start_matches([' ', '\t']))
             .collect::<Vec<_>>()
             .join("\n");
@@ -224,18 +224,18 @@ mod tests {
     #[test]
     fn setext_needs_an_unlazy_paragraph() {
         assert_eq!(titles("Foo\nbar\n---"), [(2, "Foo\nbar".into())]);
-        assert!(titles("> foo\n---").is_empty());
-        assert!(titles("> foo\n===").is_empty());
-        assert!(titles("- foo\n---").is_empty());
-        assert!(titles("---\nFoo").is_empty());
-        assert!(titles("    Foo\n    ---").is_empty());
+        assert_eq!(titles("> foo\n---"), []);
+        assert_eq!(titles("> foo\n==="), []);
+        assert_eq!(titles("- foo\n---"), []);
+        assert_eq!(titles("---\nFoo"), []);
+        assert_eq!(titles("    Foo\n    ---"), []);
     }
 
     #[test]
     fn html_blocks_hide_markdown_until_they_end() {
-        assert!(titles("<div>\n# no\n</div>").is_empty());
+        assert_eq!(titles("<div>\n# no\n</div>"), []);
         assert_eq!(titles("<div>\n\n# yes"), [(1, "yes".into())]);
-        assert!(titles("<!--\n# no\n-->").is_empty());
+        assert_eq!(titles("<!--\n# no\n-->"), []);
         assert_eq!(titles("<!-- x -->\n# yes"), [(1, "yes".into())]);
     }
 

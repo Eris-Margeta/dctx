@@ -1,5 +1,5 @@
 //! Inline scan of paragraph text for code spans and inline link or image destinations.
-//! Implements CommonMark 0.31 §2.4 escapes, §6.1 code spans, §6.3 inline links, §6.5 autolinks.
+//! Implements `CommonMark` 0.31 §2.4 escapes, §6.1 code spans, §6.3 inline links, §6.5 autolinks.
 //! Pure, linear-time apart from bounded title scans; used by the outline step.
 use crate::ReferenceKind;
 
@@ -44,27 +44,24 @@ pub(crate) fn scan(text: &str, max_brackets: usize) -> Vec<InlineRef> {
                 } else {
                     closing_run(bytes, i + run, run)
                 };
-                match closer {
-                    Some(close) => {
-                        let name = text[i + run..close]
-                            .trim_matches('`')
-                            .split_whitespace()
-                            .collect::<Vec<_>>()
-                            .join(" ");
-                        if !name.is_empty() {
-                            found.push(InlineRef {
-                                kind: ReferenceKind::CodeSpan,
-                                name,
-                                start: i,
-                                end: close + run,
-                            });
-                        }
-                        i = close + run;
+                if let Some(close) = closer {
+                    let name = text[i + run..close]
+                        .trim_matches('`')
+                        .split_whitespace()
+                        .collect::<Vec<_>>()
+                        .join(" ");
+                    if !name.is_empty() {
+                        found.push(InlineRef {
+                            kind: ReferenceKind::CodeSpan,
+                            name,
+                            start: i,
+                            end: close + run,
+                        });
                     }
-                    None => {
-                        unmatched_runs.push(run);
-                        i += run;
-                    }
+                    i = close + run;
+                } else {
+                    unmatched_runs.push(run);
+                    i += run;
                 }
             }
             b'<' => i = autolink_end(bytes, i).unwrap_or(i + 1),
@@ -285,10 +282,10 @@ mod tests {
         assert_eq!(names("`a`"), [(CodeSpan, "a".into())]);
         assert_eq!(names("`` a ` b ``"), [(CodeSpan, "a ` b".into())]);
         assert_eq!(names("`a\n  b`"), [(CodeSpan, "a b".into())]);
-        assert!(names("\\`no`").is_empty());
-        assert!(names("``only one`").is_empty());
+        assert_eq!(names("\\`no`"), []);
+        assert_eq!(names("``only one`"), []);
         assert_eq!(names("`` x `y`"), [(CodeSpan, "y".into())]);
-        assert!(names("` `").is_empty());
+        assert_eq!(names("` `"), []);
         assert_eq!(scan("a `b` c", 4)[0].start..scan("a `b` c", 4)[0].end, 2..5);
     }
 
@@ -306,10 +303,10 @@ mod tests {
             [(CodeSpan, "c".into()), (ExternalLink, "https://x.y".into())]
         );
         assert_eq!(names("[x](#part)"), [(AnchorLink, "#part".into())]);
-        assert!(names("[x]()").is_empty());
-        assert!(names("[x] (a)").is_empty());
-        assert!(names("[x](a b)").is_empty());
-        assert!(names("[x][ref]").is_empty());
+        assert_eq!(names("[x]()"), []);
+        assert_eq!(names("[x] (a)"), []);
+        assert_eq!(names("[x](a b)"), []);
+        assert_eq!(names("[x][ref]"), []);
         assert!(names("`[x](a)`").iter().all(|(kind, _)| *kind == CodeSpan));
     }
 
@@ -321,7 +318,7 @@ mod tests {
             names("![a [b](c)](d)"),
             [(PathLink, "c".into()), (PathLink, "d".into())]
         );
-        assert!(names("<https://x.y/`a`>").is_empty());
+        assert_eq!(names("<https://x.y/`a`>"), []);
         assert_eq!(names("<b>`c`</b>"), [(CodeSpan, "c".into())]);
     }
 
@@ -336,9 +333,9 @@ mod tests {
 
     #[test]
     fn unbalanced_input_is_bounded() {
-        assert!(names(&"[".repeat(500)).is_empty());
-        assert!(names(&"](\"".repeat(500)).is_empty());
-        assert!(names(&"`".repeat(300)).is_empty());
-        assert!(names("[x](a\\").is_empty());
+        assert_eq!(names(&"[".repeat(500)), []);
+        assert_eq!(names(&"](\"".repeat(500)), []);
+        assert_eq!(names(&"`".repeat(300)), []);
+        assert_eq!(names("[x](a\\"), []);
     }
 }

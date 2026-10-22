@@ -49,9 +49,7 @@ pub(crate) fn document(
         let first = starts.partition_point(|start| *start < raw.span.end);
         let summary = starts
             .get(first)
-            .filter(|start| **start < next)
-            .map(|_| sentence(&paragraph_text(source, &blocks.paragraphs[first])))
-            .unwrap_or_else(|| raw.title.clone());
+            .filter(|start| **start < next).map_or_else(|| raw.title.clone(), |_| sentence(&paragraph_text(source, &blocks.paragraphs[first])));
         while parents.last().is_some_and(|(level, _)| *level >= raw.level) {
             parents.pop();
         }
