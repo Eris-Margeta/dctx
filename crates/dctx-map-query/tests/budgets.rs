@@ -1,6 +1,7 @@
 //! Wire-budget and continuation invariants through the public query API.
 //! Implements SPEC-MAP-MODE sections 3 and 4 for text and JSON.
 //! Uses real parsed source to catch skipped pages and oversized source bodies.
+use std::fmt::Write as _;
 use dctx_map_query::{AnswerBudget, FileSource, Format, Index, Request, Verb, render_answer};
 use std::{collections::BTreeSet, fs};
 
@@ -9,9 +10,8 @@ fn budget_cut_pages_preserve_every_record_and_are_deterministic() {
     let dir = tempfile::tempdir().unwrap();
     let mut code = String::new();
     for i in 0..35 {
-        code.push_str(&format!(
-            "/// Executes a bounded operation.\npub fn operation_{i:02}() {{}}\n"
-        ));
+        writeln!(code, "/// Executes a bounded operation.\npub fn operation_{i:02}() {{}}"
+        ).expect("writing to a String cannot fail");
     }
     fs::write(dir.path().join("lib.rs"), code).unwrap();
     let source = FileSource::new(dir.path()).unwrap();
@@ -73,8 +73,8 @@ fn source_is_cut_at_whole_lines_and_empty_answers_have_next_steps() {
     }
     let request = Request::new(Verb::Find, "notexistinganywhere");
     let answer = index.answer(&source, &request).unwrap();
-    assert!(answer.records.is_empty());
-    assert!(!answer.next.is_empty());
+    assert_eq!(answer.records, [] as [dctx_map_query::Record; 0]);
+    assert_ne!(answer.next, "");
     let mut bad = Request::new(Verb::Read, "s:lib.rs#long_body");
     bad.lines = Some([200, 210]);
     assert!(index.answer(&source, &bad).is_err());

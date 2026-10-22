@@ -1,6 +1,7 @@
 //! Validated traversal options and continuation commands.
 //! Implements SPEC-MAP-MODE sections 3 and 4 with explicit hard bounds.
 //! Uses model budgets; the CLI and library share these request rules.
+use std::fmt::Write as _;
 use crate::{Error, Result};
 use dctx_map_model::{AnswerBudget, EdgeKind, Verb};
 
@@ -73,6 +74,9 @@ impl Request {
     }
 
     /// Refuses invalid combinations before any source or index IO.
+    ///
+    /// # Errors
+    /// Refuses invalid verb limits, depth, targets, source ranges, full-mode combinations and escaping or malformed paths.
     pub fn validate(&self) -> Result<()> {
         let maximum = if self.verb == Verb::Find { 40 } else { 60 };
         if self.limit == 0
@@ -128,19 +132,19 @@ impl Request {
             self.budget.tokens()
         );
         if matches!(self.verb, Verb::Map | Verb::Find | Verb::Neighbors) {
-            out.push_str(&format!(" --limit {} --offset {offset}", self.limit));
+            write!(out," --limit {} --offset {offset}", self.limit).expect("writing to a String cannot fail");
         }
         if matches!(self.verb, Verb::Map | Verb::Neighbors) {
-            out.push_str(&format!(" --depth {}", self.depth));
+            write!(out," --depth {}", self.depth).expect("writing to a String cannot fail");
         }
         if !self.kinds.is_empty() {
-            out.push_str(&format!(" --kind {}", quote(&self.kinds.join(","))));
+            write!(out," --kind {}", quote(&self.kinds.join(","))).expect("writing to a String cannot fail");
         }
         if let Some(path) = &self.within {
-            out.push_str(&format!(" --in {}", quote(path)));
+            write!(out," --in {}", quote(path)).expect("writing to a String cannot fail");
         }
         if let Some(rev) = &self.revision {
-            out.push_str(&format!(" --rev {}", quote(rev)));
+            write!(out," --rev {}", quote(rev)).expect("writing to a String cannot fail");
         }
         if self.verb == Verb::Neighbors {
             out.push_str(match self.direction {
@@ -149,18 +153,18 @@ impl Request {
                 Direction::Both => " --dir both",
             });
             if !self.edges.is_empty() {
-                out.push_str(&format!(
+                write!(out,
                     " --edge {}",
                     self.edges
                         .iter()
                         .map(|e| e.as_str())
                         .collect::<Vec<_>>()
                         .join(",")
-                ));
+                ).expect("writing to a String cannot fail");
             }
         }
         if let Some([a, b]) = self.lines {
-            out.push_str(&format!(" --lines {a}-{b}"));
+            write!(out," --lines {a}-{b}").expect("writing to a String cannot fail");
         }
         if self.full {
             out.push_str(" --full");

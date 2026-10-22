@@ -36,7 +36,7 @@ pub(super) fn parse_changed(
         return Ok(BTreeMap::new());
     }
     let workers = std::thread::available_parallelism()
-        .map_or(1, |n| n.get())
+        .map_or(1, std::num::NonZero::get)
         .min(8)
         .min(pending.len());
     let cursor = AtomicUsize::new(0);
@@ -67,6 +67,7 @@ pub(super) fn parse_changed(
         Ok(parsed)
     })
 }
+#[allow(clippy::cast_possible_truncation, reason = "The line count is explicitly clamped to 1..=u32::MAX before conversion.")]
 fn parse(file: &SourceFile, path: &str, started: Instant, deadline: Option<Duration>) -> Parsed {
     if deadline.is_some_and(|limit| started.elapsed() >= limit) {
         return Err("refresh deadline exceeded".into());

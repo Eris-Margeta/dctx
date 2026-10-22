@@ -124,7 +124,7 @@ mod tests {
         assert_eq!(parsed.nodes[1].lines, [1, 1]);
         assert_eq!(parsed.nodes[2].name, "after");
         assert_eq!(parsed.nodes[2].lines, [5, 5]);
-        assert!(parsed.references.is_empty());
+        assert_eq!(parsed.references, [] as [dctx_map_parse::RawReference; 0]);
         assert!(
             parsed
                 .edges

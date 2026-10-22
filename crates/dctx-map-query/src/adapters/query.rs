@@ -13,6 +13,9 @@ use std::{collections::BTreeSet, time::Duration};
 
 impl Index {
     /// Refreshes current sources before answering; stale files are always marked.
+    ///
+    /// # Errors
+    /// Propagates request validation, source refresh, storage, revision and answer construction errors.
     pub fn query(&mut self, source: &impl Source, request: &Request) -> Result<Answer> {
         request.validate()?;
         if self.cancelled() {
@@ -31,6 +34,10 @@ impl Index {
 
     /// Queries a just-refreshed index, checking the selected records against current source.
     /// Call refresh first when discovering new files or newly introduced search terms.
+    ///
+    /// # Errors
+    /// Refuses invalid requests, an unavailable graph/revision or invalid read spans; propagates lookup, source and storage errors.
+    #[allow(clippy::too_many_lines, reason = "Keep validated verb dispatch together with the answer metadata and revision checks shared by every branch.")]
     pub fn answer(&self, source: &impl Source, request: &Request) -> Result<Answer> {
         request.validate()?;
         if !self.ready {
@@ -183,10 +190,11 @@ impl Index {
             .collect();
         for (node, score, degree) in hits {
             let mut record = Record::from(&node);
-            if !request.kinds.is_empty()
-                && !request.kinds.contains(&record.kind)
-                && !(request.kinds.iter().any(|k| k == "type")
-                    && matches!(record.kind.as_str(), "struct" | "enum" | "trait" | "type"))
+            let matches_kind = request.kinds.is_empty()
+                || request.kinds.contains(&record.kind)
+                || (request.kinds.iter().any(|k| k == "type")
+                    && matches!(record.kind.as_str(), "struct" | "enum" | "trait" | "type"));
+            if !matches_kind
             {
                 continue;
             }

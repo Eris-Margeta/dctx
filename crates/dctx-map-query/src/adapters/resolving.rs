@@ -17,6 +17,7 @@ fn root(parents: &BTreeMap<String, String>, package: &str) -> String {
     }
     current.to_owned()
 }
+#[allow(clippy::too_many_lines, reason = "Keep component discovery, ordering and resolution merging together so cross-package boundaries remain inspectable.")]
 pub(super) fn resolve_components(mut files: Vec<Facts>) -> Result<Resolution> {
     let owners: BTreeMap<_, _> = files
         .iter()
@@ -110,7 +111,7 @@ pub(super) fn resolve_components(mut files: Vec<Facts>) -> Result<Resolution> {
     let groups: Vec<_> = groups.into_values().collect();
     let cursor = AtomicUsize::new(0);
     let workers = std::thread::available_parallelism()
-        .map_or(1, |n| n.get())
+        .map_or(1, std::num::NonZero::get)
         .min(8)
         .min(groups.len());
     std::thread::scope(|scope| {

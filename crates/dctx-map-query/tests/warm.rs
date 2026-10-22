@@ -1,6 +1,6 @@
 //! Reopened production-path freshness, privacy and warm-query evidence.
 //! Implements CM-6c and SPEC-MAP-MODE section 7 with actual filesystem reads counted.
-//! Tests use the same Index::open/query/render path as the CLI, never a prepared answer.
+//! Tests use the same `Index::open/query/render` path as the CLI, never a prepared answer.
 use dctx_map_query::ports::Source;
 use dctx_map_query::{FileSource, Format, Index, Request, Verb, render_answer};
 use std::{

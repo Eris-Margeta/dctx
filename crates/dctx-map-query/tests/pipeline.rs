@@ -120,7 +120,7 @@ fn same_size_edit_is_hashed_and_invalid_source_is_never_served() {
     let read = index
         .answer(&source, &Request::new(Verb::Read, "s:src/worker.rs#work"))
         .unwrap();
-    assert!(read.records.is_empty());
+    assert_eq!(read.records, [] as [dctx_map_query::Record; 0]);
     assert!(read.identity.is_some());
     fs::write(&path, "pub fn work() { let recovered = 44; }").unwrap();
     assert!(
@@ -144,7 +144,7 @@ fn deadline_marks_changed_files_stale_and_deleted_ids_are_gone() {
     let stale = index
         .answer(&source, &Request::new(Verb::Read, "s:src/worker.rs#work"))
         .unwrap();
-    assert!(stale.records.is_empty());
+    assert_eq!(stale.records, [] as [dctx_map_query::Record; 0]);
     index.refresh(&source, None).unwrap();
     fs::remove_file(dir.path().join("src/worker.rs")).unwrap();
     let gone = index
@@ -154,7 +154,7 @@ fn deadline_marks_changed_files_stale_and_deleted_ids_are_gone() {
         )
         .unwrap();
     assert!(gone.identity.is_some());
-    assert!(gone.records.is_empty());
+    assert_eq!(gone.records, [] as [dctx_map_query::Record; 0]);
     assert!(
         render_answer(
             &gone,

@@ -1,6 +1,7 @@
 //! Source and revision boundaries for query freshness.
 //! Implements SPEC-MAP-MODE section 7 without choosing a filesystem.
 //! Used by index and query adapters to obtain current source facts.
+use std::fmt::Write as _;
 use crate::Result;
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
@@ -68,22 +69,33 @@ pub struct Snapshot {
 /// IO boundary for a complete, privacy-filtered source capture.
 pub trait Source {
     /// Captures all visible files; an incomplete scan must return an error.
+    ///
+    /// # Errors
+    /// Returns a source, policy or IO error whenever a complete authorized inventory cannot be captured.
     fn snapshot(&self) -> Result<Snapshot>;
     /// Captures changes using previously authorized metadata when supported.
+    ///
+    /// # Errors
+    /// Returns the source capture errors from [`Self::snapshot`] or an implementation-specific incremental capture.
     fn snapshot_since(&self, _previous: Option<&Snapshot>) -> Result<Snapshot> {
         self.snapshot()
     }
     /// Checks a selected record without requiring unchanged content reads.
+    ///
+    /// # Errors
+    /// Propagates source-read or hash-length failures while validating the selected file.
     fn unchanged(&self, path: &str, file: &SourceFile) -> Result<bool> {
         let hashed = dctx_hash::Sha256::digest(&self.read(path)?)
             .map_err(|error| crate::Error::Request(error.to_string()))?;
         let text = hashed
             .as_bytes()
             .iter()
-            .map(|byte| format!("{byte:02x}"))
-            .collect::<String>();
+            .fold(String::new(), |mut text, byte| { write!(text, "{byte:02x}").expect("writing to a String cannot fail"); text });
         Ok(text == file.hash)
     }
     /// Rechecks privacy and returns current bytes for a selected source span.
+    ///
+    /// # Errors
+    /// Refuses disallowed or escaping paths and propagates IO failures; no bytes may be returned without rechecking policy.
     fn read(&self, path: &str) -> Result<Vec<u8>>;
 }

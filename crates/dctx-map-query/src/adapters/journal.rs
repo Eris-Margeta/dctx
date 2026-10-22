@@ -74,7 +74,7 @@ pub(super) fn chunk(text: &str) -> Vec<String> {
             end -= 1;
         }
         if end == 0 {
-            end = rest.chars().next().map(char::len_utf8).unwrap_or(1);
+            end = rest.chars().next().map_or(1, char::len_utf8);
         }
         let (head, tail) = rest.split_at(end);
         parts.push(head.to_string());

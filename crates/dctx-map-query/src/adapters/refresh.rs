@@ -11,6 +11,9 @@ use std::time::{Duration, Instant};
 impl Index {
     /// Checks metadata first; hashes and reindexes only flagged authorized content.
     /// Disk writers serialize. A warm index returns without taking that mutex.
+    ///
+    /// # Errors
+    /// Refuses cancellation and propagates source capture, parsing, graph/storage and publication errors.
     pub fn refresh(
         &mut self,
         source: &impl Source,
@@ -36,7 +39,7 @@ impl Index {
                 && captured.stamp == file.stamp
                 && captured.hash == file.hash
             {
-                file.bytes = captured.bytes.clone();
+                file.bytes.clone_from(&captured.bytes);
             }
         }
         if !self.needs_refresh(&snapshot) {

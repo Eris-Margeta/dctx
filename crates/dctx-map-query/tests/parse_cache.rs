@@ -76,12 +76,11 @@ fn failure_has_digest_revision_span_and_only_current_file_node() {
     index.refresh(&source, None).unwrap();
     assert_eq!(index.report().parsed, 1);
     assert!(index.report().diagnostics.is_empty());
-    assert!(
-        !index
+    assert_ne!(
+        index
             .answer(&source, &Request::new(Verb::Explain, "s:lib.rs#repaired"))
             .unwrap()
-            .records
-            .is_empty()
+            .records, [] as [dctx_map_query::Record; 0]
     );
 }
 
@@ -142,7 +141,7 @@ fn deadline_failure_remains_retryable_after_reopening() {
     let read = index
         .answer(&source, &Request::new(Verb::Read, "s:lib.rs#before"))
         .unwrap();
-    assert!(read.records.is_empty());
+    assert_eq!(read.records, [] as [dctx_map_query::Record; 0]);
     drop(index);
     let mut reopened = Index::open("fixture", &database).unwrap();
     reopened.refresh(&source, None).unwrap();

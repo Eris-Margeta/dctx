@@ -1,6 +1,6 @@
 //! Proves map mode never spawns Git and never opens ignored or omitted paths.
 //! Implements decision 078 and SPEC-MAP-MODE sections 6.1 and 7.
-//! Uses FileSource, the snapshot port, and a child PATH trap via Command::env.
+//! Uses `FileSource`, the snapshot port, and a child PATH trap via `Command::env`.
 //! Rule files are still read as plain text. Git metadata is not a revision source.
 
 #![forbid(unsafe_code)]
@@ -17,7 +17,7 @@ use std::{
 
 fn exclusive() -> MutexGuard<'static, ()> {
     static LOCK: Mutex<()> = Mutex::new(());
-    LOCK.lock().unwrap_or_else(|poison| poison.into_inner())
+    LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 fn git_spawn_markers() -> Vec<String> {
@@ -119,7 +119,7 @@ fn ignored_and_omitted_paths_are_not_opened() {
     assert!(!snapshot.files.contains_key("hidden/note.rs"));
     assert!(!snapshot.directories.contains_key("hidden"));
     let omitted = &snapshot.files["omitted.txt"];
-    assert!(omitted.hash.is_empty());
+    assert_eq!(omitted.hash, "");
     assert!(!omitted.allowed);
     assert!(!omitted.readable);
     assert_eq!(omitted.size, b"SECRET-OMITTED".len() as u64);

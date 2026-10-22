@@ -6,5 +6,5 @@ use std::sync::{Mutex, MutexGuard};
 /// One writer refreshes a disk index. A warm reader does not call this.
 pub(super) fn writer_lock() -> MutexGuard<'static, ()> {
     static LOCK: Mutex<()> = Mutex::new(());
-    LOCK.lock().unwrap_or_else(|poison| poison.into_inner())
+    LOCK.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
 }

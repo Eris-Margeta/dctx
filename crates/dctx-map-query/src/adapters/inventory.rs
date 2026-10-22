@@ -1,6 +1,6 @@
 //! Metadata-first inventory with persisted directory and privacy-rule stamps.
 //! Implements SPEC-MAP-MODE sections 6.1 and 7 using the scan domain's policies.
-//! FileSource reads and hashes only flagged authorized files through the fs port.
+//! `FileSource` reads and hashes only flagged authorized files through the fs port.
 use super::source::{FileSource, digest, forbidden};
 use crate::{
     Error, Result,

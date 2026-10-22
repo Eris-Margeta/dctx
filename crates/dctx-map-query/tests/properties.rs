@@ -30,7 +30,7 @@ fn p1_denied_paths_are_not_read_indexed_or_served() {
     let hidden = index
         .answer(&source, &Request::new(Verb::Find, "hidden"))
         .unwrap();
-    assert!(hidden.records.is_empty());
+    assert_eq!(hidden.records, [] as [dctx_map_query::Record; 0]);
     assert!(
         source
             .opened_paths()
@@ -99,7 +99,7 @@ fn p3_a_pinned_segment_survives_collection() {
     store.gc(GcBudget { objects: 64 }).unwrap();
     let after = store.read_segment(&pin, &digest).unwrap();
     assert_eq!(before, after);
-    assert!(!after.is_empty());
+    assert_ne!(after, [] as [u8; 0]);
     store.release(pin).unwrap();
 }
 
@@ -223,7 +223,7 @@ fn overlay_records_dirty_added_and_deleted_after_a_clean_base() {
     let removed = index
         .answer(&source, &Request::new(Verb::Find, "gone"))
         .unwrap();
-    assert!(removed.records.is_empty());
+    assert_eq!(removed.records, [] as [dctx_map_query::Record; 0]);
 }
 
 #[test]

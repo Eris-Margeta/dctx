@@ -65,14 +65,17 @@ pub struct Index {
 
 impl Index {
     /// Creates an isolated in-memory index.
+    ///
+    /// # Errors
+    /// Returns database initialization or schema migration errors.
     pub fn in_memory(place: impl Into<String>) -> Result<Self> {
         Ok(Self::with_store(
-            place.into(),
+            &place.into(),
             Some(SqliteStore::in_memory()?),
         ))
     }
 
-    pub(crate) fn with_store(place: String, store: Option<SqliteStore>) -> Self {
+    pub(crate) fn with_store(place: &str, store: Option<SqliteStore>) -> Self {
         Self {
             store,
             disk: None,
@@ -125,6 +128,7 @@ impl Index {
 
     /// Applies a captured inventory, parsing only changed content.
     /// A finite deadline flags pending files stale; no obsolete source is served.
+    #[allow(clippy::too_many_lines, reason = "Keep ordered incremental snapshot application and its stale/publication transitions together in one operation.")]
     pub(super) fn apply_snapshot(
         &mut self,
         mut snapshot: Snapshot,

@@ -134,8 +134,7 @@ pub(super) fn read_journal(index: &Index) -> Result<Option<Journal>> {
             }
             Ok(Some(journal))
         }
-        (Err(error), _) => Err(error),
-        (Ok(_), Err(error)) => Err(error),
+        (Err(error), _) | (Ok(_), Err(error)) => Err(error),
     }
 }
 
@@ -148,7 +147,7 @@ struct Remembered {
 
 fn memory() -> MutexGuard<'static, Option<Remembered>> {
     static CACHE: Mutex<Option<Remembered>> = Mutex::new(None);
-    CACHE.lock().unwrap_or_else(|poison| poison.into_inner())
+    CACHE.lock().unwrap_or_else(std::sync::PoisonError::into_inner)
 }
 
 fn remember(database: std::path::PathBuf, root: String, generation: u64, journal: Journal) {
@@ -297,6 +296,7 @@ fn node_draft(path: &str, file: &SourceFile) -> Result<NodeDraft> {
     })
 }
 
+#[allow(clippy::case_sensitive_file_extension_comparisons, reason = "Preserve the existing literal suffix policy for source language dispatch and privacy exclusions; case folding would change which paths are parsed or denied.")]
 fn language(path: &str) -> Language {
     if path.ends_with(".rs") {
         Language::Rust
@@ -322,8 +322,7 @@ fn snapshot_digest(index: &Index) -> Result<[u8; 32]> {
     let revision = index
         .snapshot
         .as_ref()
-        .map(|snapshot| snapshot.revision.as_str())
-        .unwrap_or("");
+        .map_or("", |snapshot| snapshot.revision.as_str());
     if let Some(bytes) = decode_hex(revision) {
         return Ok(bytes);
     }

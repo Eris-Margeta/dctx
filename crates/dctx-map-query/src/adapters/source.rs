@@ -1,6 +1,7 @@
 //! Privacy-filtered snapshots and selected source reads through the filesystem port.
 //! Implements SPEC-MAP-MODE sections 6.1 and 7 using the DX-B3 source adapter.
 //! Content opens are counted; metadata and denied paths are not.
+use std::fmt::Write as _;
 use crate::{
     Error, Result,
     domain::validate_path,
@@ -29,11 +30,17 @@ pub struct FileSource {
 
 impl FileSource {
     /// Canonicalizes a directory root without changing its contents.
+    ///
+    /// # Errors
+    /// Refuses a non-directory root or excessive symlink depth; propagates path-resolution and metadata IO failures.
     pub fn new(root: impl AsRef<Path>) -> Result<Self> {
         Self::open(root.as_ref(), false)
     }
 
     /// Like [`Self::new`], and hashes bytes again when the metadata pre-filter matches.
+    ///
+    /// # Errors
+    /// Refuses a non-directory root or excessive symlink depth; propagates path-resolution and metadata IO failures.
     pub fn strict(root: impl AsRef<Path>) -> Result<Self> {
         Self::open(root.as_ref(), true)
     }
@@ -171,7 +178,7 @@ impl Source for FileSource {
 }
 
 pub(crate) fn hex(hash: [u8; 32]) -> String {
-    hash.iter().map(|byte| format!("{byte:02x}")).collect()
+    hash.iter().fold(String::new(), |mut text, byte| { write!(text, "{byte:02x}").expect("writing to a String cannot fail"); text })
 }
 
 pub(crate) fn digest_bytes(bytes: &[u8]) -> Result<[u8; 32]> {
@@ -184,6 +191,7 @@ pub(crate) fn digest(bytes: &[u8]) -> Result<String> {
     Ok(hex(digest_bytes(bytes)?))
 }
 
+#[allow(clippy::case_sensitive_file_extension_comparisons, reason = "Preserve the existing literal suffix policy for source language dispatch and privacy exclusions; case folding would change which paths are parsed or denied.")]
 pub(super) fn forbidden(name: &str) -> bool {
     matches!(
         name,

@@ -32,6 +32,9 @@ struct LegacyCache {
 impl Index {
     /// Opens the segment journal and sqlite comparison store for `database`.
     /// An empty store is a new index. A legacy `query.json` upgrades on refresh.
+    ///
+    /// # Errors
+    /// Propagates database/schema, segment-store, journal decoding and recovery errors.
     pub fn open(place: impl Into<String>, database: impl AsRef<Path>) -> Result<Self> {
         let _guard = super::database::writer_lock();
         let path = database.as_ref();
@@ -42,7 +45,7 @@ impl Index {
             .join("_");
         let disk = SqliteStore::open(path)?;
         let segments = segment::open_store(&path.with_extension("segments"), &place, path)?;
-        let mut index = Self::with_store(place, None);
+        let mut index = Self::with_store(&place, None);
         index.disk = Some(disk);
         index.segments = Some(segments);
         index.database = Some(path.to_path_buf());
@@ -80,8 +83,7 @@ impl Index {
             let revision = journal
                 .files
                 .get(path)
-                .map(|cached| cached.parser_revision)
-                .unwrap_or(0);
+                .map_or(0, |cached| cached.parser_revision);
             if revision != PARSER_REVISION {
                 file.stamp = crate::ports::FileStamp::default();
                 parser_changed = true;
@@ -187,6 +189,9 @@ impl Index {
     }
 
     /// JSON payload retained for one indexed path.
+    ///
+    /// # Errors
+    /// Refuses an unindexed path and propagates JSON serialization errors.
     pub fn file_payload(&self, path: &str) -> Result<String> {
         let file = self
             .files
@@ -196,6 +201,9 @@ impl Index {
     }
 
     /// Replaces one retained payload. A missing parser revision forces one reparse.
+    ///
+    /// # Errors
+    /// Requires a persistent database; propagates JSON decoding and journal publication errors.
     pub fn replace_file_payload(&mut self, path: &str, json: &str) -> Result<()> {
         if self.database.is_none() {
             return Err(Error::Request("replace requires a database".into()));
@@ -216,6 +224,9 @@ impl Index {
     }
 
     /// Publishes the current journal as an interrupted generation and leaves sqlite unchanged.
+    ///
+    /// # Errors
+    /// Requires a segment-backed database and propagates journal publication errors.
     pub fn mark_publication_interrupted(&mut self) -> Result<()> {
         if self.segments.is_none() {
             return Err(Error::Request(
@@ -230,6 +241,9 @@ impl Index {
     }
 
     /// True when the segment journal and the sqlite comparison store describe this graph.
+    ///
+    /// # Errors
+    /// Refuses unavailable storage and propagates stored-fact or journal read/decoding errors.
     pub fn stores_agree(&self) -> Result<bool> {
         if !self.graph_loaded {
             return Ok(false);
@@ -268,6 +282,9 @@ impl Index {
 
     /// Refresh commits persistent caches automatically while holding the writer lock.
     /// Retained for callers that explicitly saved after refreshing in earlier releases.
+    ///
+    /// # Errors
+    /// Refuses a database path different from the one selected when this index was opened.
     pub fn save(&self, database: impl AsRef<Path>) -> Result<()> {
         if self.database.as_deref() != Some(database.as_ref()) {
             return Err(Error::Request(
@@ -326,7 +343,7 @@ mod tests {
     fn mirror_files(dir: &std::path::Path) -> Vec<String> {
         let mut names = std::fs::read_dir(dir)
             .expect("cache dir")
-            .filter_map(|entry| entry.ok())
+            .filter_map(std::result::Result::ok)
             .filter_map(|entry| entry.file_name().into_string().ok())
             .filter(|name| name.starts_with("mirror-"))
             .collect::<Vec<_>>();
@@ -345,10 +362,10 @@ mod tests {
         drop(first);
         assert_eq!(mirror_files(dir.path()).len(), 1);
         drop(second);
-        assert!(mirror_files(dir.path()).is_empty());
+        assert_eq!(mirror_files(dir.path()), [] as [std::string::String; 0]);
         for _ in 0..6 {
             drop(Index::open("fixture", &database).expect("reopen"));
-            assert!(mirror_files(dir.path()).is_empty());
+            assert_eq!(mirror_files(dir.path()), [] as [std::string::String; 0]);
         }
     }
 
@@ -370,6 +387,6 @@ mod tests {
             assert_eq!(mirror_files(cache.path()).len(), 1, "refresh {generation}");
         }
         drop(index);
-        assert!(mirror_files(cache.path()).is_empty());
+        assert_eq!(mirror_files(cache.path()), [] as [std::string::String; 0]);
     }
 }

@@ -26,6 +26,7 @@ fn corpus() -> Vec<(String, String)> {
 }
 
 #[test]
+#[allow(clippy::too_many_lines, reason = "Keep repository recall assertions beside the timing and continuation checks for the same warmed index.")]
 fn dctx_repository_recall_and_latency() {
     let root = Path::new(env!("CARGO_MANIFEST_DIR"))
         .parent()
@@ -48,7 +49,7 @@ fn dctx_repository_recall_and_latency() {
         index.report().store_time
     );
     let rows = corpus();
-    assert!(!rows.is_empty());
+    assert_ne!(rows, [] as [(std::string::String, std::string::String); 0]);
     let mut hits = 0;
     let mut latency = Vec::new();
     let mut misses = Vec::new();
@@ -176,7 +177,7 @@ fn growing_repository_with_invalid_source_has_zero_reopened_content_reads() {
             let answer = reopened
                 .query(&source, &Request::new(verb, target))
                 .unwrap();
-            assert!(!answer.records.is_empty());
+            assert_ne!(answer.records, [] as [dctx_map_query::Record; 0]);
             assert_eq!(reopened.report().parsed, 0);
             assert_eq!(reopened.report().replaced, 0);
             assert!(reopened.report().diagnostics.contains_key("invalid.rs"));

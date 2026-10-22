@@ -1,15 +1,22 @@
 //! Budget-aware pagination around the model's whole-record renderer.
 //! Implements SPEC-MAP-MODE section 3 without skipping budget-cut records.
 //! Used by library and CLI; source records are shortened only at line boundaries.
+use std::fmt::Write as _;
 use crate::{Answer, AnswerBudget, Error, Format, Request, Result, Verb};
 use dctx_map_model::adapters::{RenderError, render as model_render};
 
 /// Renders complete records and an exact continuation in the selected format.
+///
+/// # Errors
+/// Propagates invalid-answer, continuation, byte-budget and JSON rendering errors.
 pub fn render_answer(answer: &Answer, request: &Request, format: Format) -> Result<String> {
     render_answer_at(answer, request, format, None)
 }
 
 /// Renders with an explicit place retained in every continuation command.
+///
+/// # Errors
+/// Propagates invalid-answer, continuation, byte-budget and JSON rendering errors.
 pub fn render_answer_at(
     answer: &Answer,
     request: &Request,
@@ -60,8 +67,7 @@ fn render(
 ) -> Result<String> {
     let mut page = page.clone();
     if let Some(place) = place {
-        page.next
-            .push_str(&format!(" --place {}", crate::domain::quote(place)));
+        write!(page.next," --place {}", crate::domain::quote(place)).expect("writing to a String cannot fail");
     }
     if format == Format::Json && !page.next.ends_with(" --json") {
         page.next.push_str(" --json");
@@ -115,6 +121,7 @@ fn explain_page(
         }
     }
 }
+#[allow(clippy::cast_possible_truncation, reason = "Head, tail and maximum are derived from a page ceiling of 120 or 400 lines, so they fit u32.")]
 fn read_page(
     page: &mut Answer,
     request: &Request,
@@ -152,7 +159,7 @@ fn read_page(
             if !body.ends_with('\n') {
                 body.push('\n');
             }
-            body.push_str(&format!("… {omitted} lines ({})\n", page.next));
+            writeln!(body, "… {omitted} lines ({})", page.next).expect("writing to a String cannot fail");
             if tail > 0 {
                 body.push_str(&lines[lines.len() - tail..].concat());
             }

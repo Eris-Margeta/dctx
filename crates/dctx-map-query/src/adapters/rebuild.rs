@@ -11,6 +11,8 @@ use dctx_map_model::Node;
 use dctx_map_store::{File, FileFacts, MapStore, Unresolved};
 use std::{collections::BTreeMap, time::Instant};
 impl Index {
+    #[allow(clippy::case_sensitive_file_extension_comparisons, reason = "Preserve the existing literal suffix policy for source language dispatch and privacy exclusions; case folding would change which paths are parsed or denied.")]
+    #[allow(clippy::too_many_lines, reason = "Keep graph reconciliation and file-owned storage writes in their transaction order.")]
     pub(super) fn rebuild(
         &mut self,
         next: &BTreeMap<String, CachedFile>,
