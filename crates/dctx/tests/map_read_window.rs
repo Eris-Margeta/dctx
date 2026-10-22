@@ -1,11 +1,12 @@
 //! Read line windows and over-budget source cuts.
-//! Implements contracts/API-PORTS-v1.md read ranges and BudgetTooSmall.
+//! Implements contracts/API-PORTS-v1.md read ranges and `BudgetTooSmall`.
 //! Depends on Session and an in-memory source. No clock and no network.
 //! `cargo nextest -p dctx` runs this. Depth is not a line number.
 //! A cut page names the next lines; following it yields each source line once.
 
 #![forbid(unsafe_code)]
 
+use std::fmt::Write as _;
 #[path = "common/mod.rs"]
 mod common;
 
@@ -17,7 +18,7 @@ use common::open_session;
 fn numbered_file() -> String {
     let mut body = String::new();
     for number in 1..=40 {
-        body.push_str(&format!("// L{number:02}\n"));
+        let _ = writeln!(body, "// L{number:02}");
     }
     body
 }
@@ -127,17 +128,14 @@ fn a_module_past_the_budget_returns_a_marked_prefix_then_the_rest_once() {
         let source = page.records[0].source_utf8.as_deref().expect("source");
         let marked = source.contains("[DCTX_TRUNCATED]");
         seen.push_str(&without_mark(source));
-        match page.next.clone() {
-            Some(token) => {
-                assert!(marked, "{source}");
-                assert!(page.more > 0, "{page:?}");
-                request.continuation = Some(token);
-                request.line_start = None;
-            }
-            None => {
-                assert!(!marked, "{source}");
-                break;
-            }
+        if let Some(token) = page.next.clone() {
+            assert!(marked, "{source}");
+            assert!(page.more > 0, "{page:?}");
+            request.continuation = Some(token);
+            request.line_start = None;
+        } else {
+            assert!(!marked, "{source}");
+            break;
         }
     }
     assert!(pages > 1, "the module fit in one page");

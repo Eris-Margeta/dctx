@@ -51,6 +51,7 @@ pub enum IdentityOutcome {
 
 impl IdentityOutcome {
     /// Wire tag: `gone`, `moved` or `ambiguous`.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(&self) -> &'static str {
         match self {
             Self::Gone { .. } => "gone",
@@ -60,6 +61,7 @@ impl IdentityOutcome {
     }
 
     /// The id the caller asked for.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn id(&self) -> &str {
         match self {
             Self::Gone { id } | Self::Ambiguous { id } => id,

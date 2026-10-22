@@ -87,10 +87,10 @@ fn key(name: &str) -> ViewKey {
 fn import_publishes_once_preserves_input_and_other_views_and_never_reads_source() {
     let mut store = Store::default();
     let old = decode_legacy(BYTES, LegacyBodies::MetadataOnly, LegacyLimits::default()).unwrap();
-    let previous = PackSnapshot::new(old.root, old.header.version, Timestamp(0), Default::default()).unwrap();
+    let previous = PackSnapshot::new(old.root, old.header.version, Timestamp(0), std::collections::BTreeMap::default()).unwrap();
     store.publish(&key("previous"), &previous).unwrap();
     let quota = quota(4096);
-    let (mut session, source) = session(store.clone(), quota.clone(), Arc::new(CancelFlag::new()), Default::default());
+    let (mut session, source) = session(store.clone(), quota.clone(), Arc::new(CancelFlag::new()), OperationLimits::default());
     let input = BYTES.to_vec();
     let snapshot = session.import_legacy(&input, "imported", LegacyBodies::Include, LegacyLimits::default()).unwrap();
     assert_eq!(input, BYTES);
@@ -102,7 +102,7 @@ fn import_publishes_once_preserves_input_and_other_views_and_never_reads_source(
     assert_eq!(store.load(&key("previous")).unwrap().unwrap().digest(), previous.digest());
     assert_eq!(store.0.lock().unwrap().publishes(), 2);
     assert_eq!(encode_legacy(snapshot.tree(), snapshot.version(), LegacyLimits::default()).unwrap(), input);
-    assert!(source.lock().unwrap().reads().is_empty());
+    assert_eq!(source.lock().unwrap().reads(), [] as [std::string::String; 0]);
     assert!(!source.lock().unwrap().touched(".gitignore"));
     assert_eq!(quota.0.lock().unwrap().committed(), BYTES.len() as u64);
     assert!(session.import_legacy(BYTES, "imported", LegacyBodies::Include, LegacyLimits::default()).is_err());
@@ -114,7 +114,7 @@ fn import_publishes_once_preserves_input_and_other_views_and_never_reads_source(
 #[test]
 fn metadata_import_does_not_invent_content_or_content_digests() {
     let store = Store::default();
-    let (mut session, _) = session(store.clone(), quota(4096), Arc::new(CancelFlag::new()), Default::default());
+    let (mut session, _) = session(store.clone(), quota(4096), Arc::new(CancelFlag::new()), OperationLimits::default());
     let snapshot =
         session.import_legacy(BYTES, "metadata", LegacyBodies::MetadataOnly, LegacyLimits::default()).unwrap();
     assert!(snapshot.tree().children[0].file_content.is_none());
@@ -127,7 +127,7 @@ fn metadata_import_does_not_invent_content_or_content_digests() {
 fn invalid_bytes_and_paths_publish_nothing() {
     let store = Store::default();
     let quota = quota(4096);
-    let (mut session, source) = session(store.clone(), quota.clone(), Arc::new(CancelFlag::new()), Default::default());
+    let (mut session, source) = session(store.clone(), quota.clone(), Arc::new(CancelFlag::new()), OperationLimits::default());
     for end in 0..BYTES.len() {
         assert!(session.import_legacy(&BYTES[..end], "new", LegacyBodies::Include, LegacyLimits::default()).is_err());
     }
@@ -139,7 +139,7 @@ fn invalid_bytes_and_paths_publish_nothing() {
     assert!(store.load(&key("new")).unwrap().is_none());
     assert_eq!(quota.0.lock().unwrap().reserved(), 0);
     assert_eq!(quota.0.lock().unwrap().committed(), 0);
-    assert!(source.lock().unwrap().reads().is_empty());
+    assert_eq!(source.lock().unwrap().reads(), [] as [std::string::String; 0]);
     assert!(session.import_legacy(BYTES, "new", LegacyBodies::Include, LegacyLimits::default()).is_ok());
 }
 
@@ -151,7 +151,7 @@ fn cache_and_publish_refusals_do_not_leave_reservations() {
         if publish_failure {
             store.0.lock().unwrap().fail_publishes();
         }
-        let (mut session, _) = session(store.clone(), quota.clone(), Arc::new(CancelFlag::new()), Default::default());
+        let (mut session, _) = session(store.clone(), quota.clone(), Arc::new(CancelFlag::new()), OperationLimits::default());
         assert!(session.import_legacy(BYTES, "new", LegacyBodies::Include, LegacyLimits::default()).is_err());
         assert_eq!(store.0.lock().unwrap().publishes(), 0);
         assert!(store.load(&key("new")).unwrap().is_none());
@@ -172,7 +172,7 @@ fn cancellation_at_either_checkpoint_leaves_the_store_untouched() {
         let store = Store::default();
         let quota = quota(4096);
         let flag = Arc::new(CancelAfter(std::sync::atomic::AtomicUsize::new(0), allowed));
-        let (mut session, _) = session(store.clone(), quota.clone(), flag, Default::default());
+        let (mut session, _) = session(store.clone(), quota.clone(), flag, OperationLimits::default());
         assert!(matches!(
             session.import_legacy(BYTES, "new", LegacyBodies::Include, LegacyLimits::default()),
             Err(dctx::DctxError::Cancelled)
@@ -185,10 +185,10 @@ fn cancellation_at_either_checkpoint_leaves_the_store_untouched() {
 #[test]
 fn session_limits_cannot_be_raised_by_import_limits() {
     for limits in [
-        OperationLimits { source_bytes: Some(1), ..Default::default() },
-        OperationLimits { work_units: Some(1), ..Default::default() },
-        OperationLimits { parse_bytes: Some(1), ..Default::default() },
-        OperationLimits { memory_bytes: Some(1), ..Default::default() },
+        OperationLimits { source_bytes: Some(1), ..OperationLimits::default() },
+        OperationLimits { work_units: Some(1), ..OperationLimits::default() },
+        OperationLimits { parse_bytes: Some(1), ..OperationLimits::default() },
+        OperationLimits { memory_bytes: Some(1), ..OperationLimits::default() },
     ] {
         let store = Store::default();
         let (mut session, _) = session(store.clone(), quota(4096), Arc::new(CancelFlag::new()), limits);

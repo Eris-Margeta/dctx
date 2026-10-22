@@ -74,48 +74,56 @@ impl SessionBuilder {
     }
 
     /// Injected clock. There is no system clock.
+    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn clock(mut self, clock: impl Clock + Send + 'static) -> Self {
         self.clock = Some(Box::new(clock));
         self
     }
 
     /// Cancellation checked at every directory and read.
+    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn cancellation(mut self, cancel: Arc<dyn Cancellation + Send + Sync>) -> Self {
         self.cancel = Some(cancel);
         self
     }
 
     /// Selection policy. The facade does not read rule files.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn selection(mut self, selection: SelectionPolicy) -> Self {
         self.selection = Some(selection);
         self
     }
 
     /// Organization ceiling passed to template compile and to limit intersection.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn ceiling(mut self, ceiling: HostCeiling) -> Self {
         self.ceiling = Some(ceiling);
         self
     }
 
     /// `PermitAll` or the ceiling's grant list.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn grants(mut self, grants: HostGrants) -> Self {
         self.grants = Some(grants);
         self
     }
 
     /// Explicit storage. Ephemeral is not a fallback for a failed disk.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn storage(mut self, storage: StoragePolicy) -> Self {
         self.storage = Some(storage);
         self
     }
 
     /// Optional caller store. Required for [`StoragePolicy::CallerOwned`].
+    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn store(mut self, store: impl FactStore + Send + 'static) -> Self {
         self.store = Some(Box::new(store));
         self
     }
 
     /// Optional caller cache. Required for [`StoragePolicy::CallerOwned`].
+    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn cache(mut self, cache: impl Cache + Send + 'static) -> Self {
         self.cache = Some(Box::new(cache));
         self
@@ -125,6 +133,7 @@ impl SessionBuilder {
     ///
     /// `path` must already be an absolute directory. The library does not create it and does not
     /// search a home directory. Omitting this method is library isolation: no ledger and no auto-clean.
+    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn cache_root(mut self, path: impl Into<PathBuf>, root_id: u64) -> Self {
         self.cache_root = Some((path.into(), root_id));
         self
@@ -132,24 +141,28 @@ impl SessionBuilder {
 
     /// Auto-clean policy used when a cache root is set. The default is enabled, daily and bounded.
     /// Isolation ignores this value. `enabled: false` skips the open-time slice.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn auto_clean(mut self, policy: AutoCleanConfig) -> Self {
         self.auto_clean = policy;
         self
     }
 
     /// Extra caps intersected with verb caps. `None` fields do not raise anything.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn limits(mut self, limits: OperationLimits) -> Self {
         self.limits = limits;
         self
     }
 
     /// Place name copied into every answer. Required.
+    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn place(mut self, place: impl Into<String>) -> Self {
         self.place = Some(place.into());
         self
     }
 
     /// View name inside an installed plan. Required. This is not discovered from disk.
+    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn view(mut self, view: impl Into<String>) -> Self {
         self.view = Some(view.into());
         self
@@ -157,18 +170,22 @@ impl SessionBuilder {
 
     /// Plugin ports. Absent means the session starts no plugin and no git child.
     /// Without `plugin-runtime`, the supplied host is unavailable: advisory hooks warn and required hooks refuse.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn plugins(mut self, plugins: PluginHost) -> Self {
         self.plugins = Some(plugins);
         self
     }
 
     /// Owned rule texts. Required to rebuild selection after a `.gitignore` edit.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn rule_sources(mut self, rules: RuleSources) -> Self {
         self.rules = Some(rules);
         self
     }
 
     /// Builds the session or reports the first missing input.
+    /// # Errors
+    /// Refuses missing/empty required builder inputs, incomplete caller-owned storage, or managed-cache setup failures.
     pub fn build(self) -> Result<Session, DctxError> {
         let clock = self.clock.ok_or_else(|| DctxError::invalid("clock is required"))?;
         let cancel = self.cancel.ok_or_else(|| DctxError::invalid("cancellation is required"))?;

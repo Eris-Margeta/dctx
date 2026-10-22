@@ -37,6 +37,7 @@ pub(crate) struct BoundaryInput<'a> {
     pub committed: bool,
 }
 
+#[allow(clippy::needless_pass_by_value, reason = "The invocation consumes its assembled boundary input at the hook transaction boundary.")]
 pub(crate) fn run_plan(host: &mut PluginHost, input: BoundaryInput<'_>, warnings: &mut Vec<HookWarning>) -> Result<(), DctxError> {
     let BoundaryInput { plan, boundary, included, epoch, now, committed } = input;
     let plugins = plan::participants(plan, boundary);
@@ -124,7 +125,7 @@ fn invoke(
     if let Err(refusal) = supervisor.launch() {
         return Err((refusal.reason, Vec::new()));
     }
-    if let Err(refusal) = supervisor.negotiated().and_then(|_| supervisor.initialized()) {
+    if let Err(refusal) = supervisor.negotiated().and_then(|()| supervisor.initialized()) {
         return Err((refusal.reason, Vec::new()));
     }
     let ledger = match recovered {
@@ -169,12 +170,9 @@ fn apply(
         }
         let read = Request::FileRead(ChunkRead { handle: file.clone(), offset: 0, length: 64, precondition: None });
         let need = Need::FileRead { path: path.clone(), bytes: 64 };
-        let (precondition, size) = match gate.call(session, host, read, need, now)? {
-            Reply::Chunk { precondition: Some(token), size, .. } => (token, size),
-            _ => return Err(super::ports::bad_token()),
-        };
+        let Reply::Chunk { precondition: Some(precondition), size, .. } = gate.call(session, host, read, need, now)? else { return Err(super::ports::bad_token()) };
         let (request, need) = match effect {
-            HookEffect::ReadGitignore => continue,
+            HookEffect::ReadGitignore | HookEffect::Fail | HookEffect::Warn => continue,
             HookEffect::ReplaceGitignore(bytes) => {
                 let need = Need::FileWrite {
                     path: path.clone(),
@@ -190,10 +188,7 @@ fn apply(
                     bytes: Chunk::new(bytes).map_err(|_| HostRefusal::limit("chunk"))?,
                     final_chunk: true,
                 });
-                let upload = match gate.call(session, host, stage, need.clone(), now)? {
-                    Reply::Staged { upload, sealed: true } => upload,
-                    _ => return Err(super::ports::bad_token()),
-                };
+                let Reply::Staged { upload, sealed: true } = gate.call(session, host, stage, need.clone(), now)? else { return Err(super::ports::bad_token()) };
                 (Request::FileReplace(FileReplace { resource: file.clone(), precondition, upload, action_id: host.next_token("a")? }), need)
             }
             HookEffect::StageGitignore => (
@@ -205,7 +200,6 @@ fn apply(
                 }),
                 Need::GitAddIgnore { path: path.clone() },
             ),
-            HookEffect::Fail | HookEffect::Warn => continue,
         };
         if !matches!(gate.call(session, host, request, need, now)?, Reply::Receipt { .. }) {
             return Err(super::ports::bad_token());

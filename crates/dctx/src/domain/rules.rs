@@ -20,6 +20,7 @@ pub struct RuleSources {
 
 impl RuleSources {
     /// The selection policy these texts compile to, including the built-in layer.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn policy(&self) -> SelectionPolicy {
         SelectionPolicy::from_texts(&RuleTexts {
             global_ignore: self.global_ignore.as_deref(),

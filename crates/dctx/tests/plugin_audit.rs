@@ -52,7 +52,8 @@ impl AuditStorage for Memory {
             return Err(AuditUnavailable);
         }
         io.bytes.extend_from_slice(frame);
-        io.durable = io.bytes.clone();
+        let Io { durable, bytes, .. } = &mut *io;
+        durable.clone_from(bytes);
         io.trace.push("sync");
         Ok(())
     }
@@ -132,7 +133,7 @@ fn synced_intent_precedes_effect_and_completion_links_without_source_bytes() {
     let text = std::str::from_utf8(&io.durable).unwrap();
     assert_eq!(text.matches(receipt.as_str()).count(), 2);
     assert!(!text.contains(std::str::from_utf8(SECRET).unwrap()));
-    assert!(broker.audit().uncertain().is_empty());
+    assert_eq!(broker.audit().uncertain(), [] as [(std::string::String, std::string::String, std::string::String); 0]);
 }
 
 #[test]
@@ -173,7 +174,7 @@ fn completion_failure_and_missing_completion_recover_uncertain_without_retry() {
     }
     let (mut control, request) = prepared(DurableAudit::new(Memory::default(), CAPACITY).unwrap(), |_| {});
     assert!(control.handle(&request).is_ok());
-    assert!(control.audit().uncertain().is_empty());
+    assert_eq!(control.audit().uncertain(), [] as [(std::string::String, std::string::String, std::string::String); 0]);
 }
 
 #[test]
@@ -186,7 +187,7 @@ fn capacity_and_read_failures_refuse_with_restore_control() {
     let (mut broker, request) = prepared(DurableAudit::new(memory.clone(), 0).unwrap(), |_| {});
     assert_eq!(broker.handle(&request).unwrap_err().code, ErrorCode::AuditUnavailable);
     assert_eq!(broker.files().inner.replaces, 0);
-    assert!(memory.0.borrow().bytes.is_empty());
+    assert_eq!(memory.0.borrow().bytes, [] as [u8; 0]);
     *broker.audit_mut() = DurableAudit::new(memory.clone(), CAPACITY).unwrap();
     assert!(broker.handle(&request).is_ok());
     let bytes = memory.0.borrow().bytes.clone();
@@ -221,7 +222,7 @@ fn links_unknown_outcomes_and_metadata_validation_have_controls() {
     completion.method = "reconcile";
     completion.reason = "reconciled";
     reopened.append(&completion).unwrap();
-    assert!(DurableAudit::new(memory, CAPACITY).unwrap().uncertain().is_empty());
+    assert_eq!(DurableAudit::new(memory, CAPACITY).unwrap().uncertain(), [] as [(std::string::String, std::string::String, std::string::String); 0]);
 }
 
 proptest! {
@@ -266,7 +267,7 @@ fn disk_effect_observes_intent_and_reopen_observes_completion() {
     assert!(audit::open(dir.path(), CAPACITY).is_err(), "exclusive writer");
     drop(broker);
     let reopened = DurableAudit::new(audit::disk::Storage::open(dir.path()).unwrap(), CAPACITY).unwrap();
-    assert!(reopened.uncertain().is_empty());
+    assert_eq!(reopened.uncertain(), [] as [(std::string::String, std::string::String, std::string::String); 0]);
     drop(reopened);
     let host = dctx::PluginHost::platform_with_audit(dir.path(), CAPACITY).unwrap();
     assert!(audit::open(dir.path(), CAPACITY).is_err(), "platform retains real audit");

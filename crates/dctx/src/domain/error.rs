@@ -39,6 +39,7 @@ pub enum Resource {
 
 impl Resource {
     /// Stable name used in error text.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Entries => "entries",
@@ -100,6 +101,7 @@ pub enum ErrorCode {
 
 impl ErrorCode {
     /// The code name used by conformance tests (`PolicyDenied`, `BudgetTooSmall`, …).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::InvalidRequest => "InvalidRequest",
@@ -218,17 +220,20 @@ pub enum DctxError {
 
 impl DctxError {
     /// An invalid request with no extra detail.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn invalid(reason: &'static str) -> Self {
         Self::InvalidRequest { reason, detail: Box::from("") }
     }
 
     /// An invalid request whose extra text is cut to at most 160 bytes
     /// at a UTF-8 character boundary.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn invalid_detail(reason: &'static str, detail: &str) -> Self {
         Self::InvalidRequest { reason, detail: bounded_detail(detail) }
     }
 
     /// A missing capability with no extra detail.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn unsupported(capability: &'static str) -> Self {
         Self::UnsupportedCapability { capability, detail: Box::from("") }
     }
@@ -239,6 +244,7 @@ impl DctxError {
     }
 
     /// Translates an engine error into the facade set.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn from_core(error: CoreError) -> Self {
         match error {
             CoreError::InvalidRequest { reason } => Self::invalid(reason),
@@ -262,6 +268,7 @@ impl DctxError {
     }
 
     /// Translates a template refusal. Plugin and parser gaps stay capability errors.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn from_template(error: TemplateError) -> Self {
         let text = error.to_string();
         match error {
@@ -292,6 +299,7 @@ impl DctxError {
     }
 
     /// The stable code of this error.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn code(&self) -> ErrorCode {
         match self {
             Self::InvalidRequest { .. } => ErrorCode::InvalidRequest,
@@ -318,6 +326,7 @@ impl DctxError {
 
     /// Whether the engine result this error refers to is already published.
     /// Only a post-commit hook failure returns true. Every other error returns false.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn output_committed(&self) -> bool {
         match self {
             Self::Hook { output_committed, .. } => *output_committed,
@@ -326,6 +335,7 @@ impl DctxError {
     }
 
     /// True when the same request may succeed later without a different grant.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn is_retryable(&self) -> bool {
         matches!(
             self.code(),

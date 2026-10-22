@@ -113,10 +113,7 @@ impl PortBody {
     }
 
     pub(crate) fn observe_gitignore(&mut self) -> IgnoreSnap {
-        let path = match ProjectPath::new(".gitignore") {
-            Ok(path) => path,
-            Err(_) => return IgnoreSnap::Unknown,
-        };
+        let Ok(path) = ProjectPath::new(".gitignore") else { return IgnoreSnap::Unknown };
         match self.identity(&path) {
             Ok(identity) => match self.read_all(&path, identity) {
                 Ok(bytes) => IgnoreSnap::Present { identity, bytes },

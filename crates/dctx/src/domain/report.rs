@@ -160,6 +160,8 @@ pub struct SegmentInfo {
 }
 
 /// Checks the segment magic, version and trailing SHA-256.
+/// # Errors
+/// Refuses short/invalid segment framing, unsupported versions, hash length overflow, or digest mismatches.
 pub fn validate_segment(bytes: &[u8]) -> Result<SegmentInfo, DctxError> {
     if bytes.len() < MIN_SEGMENT {
         return Err(DctxError::CorruptIndex { reason: "segment too short" });

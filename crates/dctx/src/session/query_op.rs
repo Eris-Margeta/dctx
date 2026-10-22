@@ -23,6 +23,8 @@ use crate::index::{collect, Collected};
 
 impl Session {
     /// Runs `request` against `handle` and writes one page when the answer fits.
+    /// # Errors
+    /// Refuses invalid/stale handles or requests, denied source access, unsupported capabilities, exceeded budgets/deadlines, or sink failures.
     pub fn query(
         &mut self,
         handle: &super::SnapshotHandle,
@@ -117,6 +119,8 @@ impl Session {
     }
 
     /// Map of `target`. Same path as [`Self::query`].
+    /// # Errors
+    /// Refuses invalid/stale handles or requests, denied source access, unsupported capabilities, exceeded budgets/deadlines, or sink failures.
     pub fn map(&mut self, handle: &super::SnapshotHandle, target: &str, sink: &mut dyn BoundedSink) -> Result<Answer, DctxError> {
         let mut request = MapRequest::new(Verb::Map);
         request.target = target.to_string();
@@ -124,6 +128,8 @@ impl Session {
     }
 
     /// Find `query`. Same path as [`Self::query`].
+    /// # Errors
+    /// Refuses invalid/stale handles or requests, denied source access, unsupported capabilities, exceeded budgets/deadlines, or sink failures.
     pub fn find(&mut self, handle: &super::SnapshotHandle, query: &str, sink: &mut dyn BoundedSink) -> Result<Answer, DctxError> {
         let mut request = MapRequest::new(Verb::Find);
         request.query = query.to_string();
@@ -131,6 +137,8 @@ impl Session {
     }
 
     /// Neighbors of `target`. Same path as [`Self::query`].
+    /// # Errors
+    /// Refuses invalid/stale handles or requests, denied source access, unsupported capabilities, exceeded budgets/deadlines, or sink failures.
     pub fn neighbors(
         &mut self,
         handle: &super::SnapshotHandle,
@@ -144,6 +152,8 @@ impl Session {
     }
 
     /// Explain `target`. Same path as [`Self::query`].
+    /// # Errors
+    /// Refuses invalid/stale handles or requests, denied source access, unsupported capabilities, exceeded budgets/deadlines, or sink failures.
     pub fn explain(
         &mut self,
         handle: &super::SnapshotHandle,
@@ -156,6 +166,8 @@ impl Session {
     }
 
     /// Read `target`. Same path as [`Self::query`].
+    /// # Errors
+    /// Refuses invalid/stale handles or requests, denied source access, unsupported capabilities, exceeded budgets/deadlines, or sink failures.
     pub fn read(
         &mut self,
         handle: &super::SnapshotHandle,
@@ -217,6 +229,7 @@ impl Session {
     }
 
     /// Writes one read page. A body that does not fit keeps the first lines that do.
+    #[allow(clippy::needless_pass_by_value, reason = "The final renderer consumes its assembled answer record before selecting the page that fits the output budget.")]
     fn finish_read(
         &self,
         sink: &mut dyn BoundedSink,

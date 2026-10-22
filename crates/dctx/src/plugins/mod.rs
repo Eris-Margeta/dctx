@@ -50,6 +50,7 @@ pub enum Boundary {
 
 impl Boundary {
     /// Wire name from the plugin contract.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::BeforePack => "before-pack-output-written",
@@ -102,12 +103,14 @@ pub struct PluginHost {
 impl PluginHost {
     /// In-memory ports with explicit consent for the bundled Git fixture only.
     /// Recipe runs count as git children and do not exec; templates cannot extend this consent.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn fake() -> Self {
         Self::from_body(ports::PortBody::fake(), true)
     }
 
     /// Platform confinement adapter without an audit location; all audit admission fails closed.
     /// Use `platform_with_audit` with the `fs` feature to supply durable storage.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn platform() -> Self {
         Self::from_body(ports::PortBody::platform(None), false)
     }
@@ -117,6 +120,8 @@ impl PluginHost {
     /// Capacity is in bytes (at most 64 MiB); full logs refuse effects without deleting evidence.
     /// Unsupported owner-only filesystem adapters return `AuditUnavailable`.
     #[cfg(feature = "fs")]
+    /// # Errors
+    /// Propagates audit-directory validation, opening, or durable recovery failures.
     pub fn platform_with_audit(
         directory: &std::path::Path,
         capacity: usize,
@@ -139,6 +144,7 @@ impl PluginHost {
     /// `Binding::generation` on policy changes (including the supplied session policy epoch).
     /// Root, session, namespace and artifact are trusted caller inputs, never template values.
     /// Defaults authorize only the in-memory bundled fixture; platform grants default to empty.
+    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn with_authority_source<F>(mut self, source: F) -> Self
     where
         F: Fn(&str, &dctx_plugin_protocol::records::scalars::Token, u64)
@@ -150,30 +156,36 @@ impl PluginHost {
     }
 
     /// Script `effects` for `plugin` at `boundary`. Later calls replace that pair.
+    #[allow(clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn on(mut self, plugin: impl Into<String>, boundary: Boundary, effects: Vec<HookEffect>) -> Self {
         self.effects.insert((plugin.into(), boundary), effects);
         self
     }
 
     /// Seeds a fake project file. The platform file port cannot store bytes.
+    /// # Errors
+    /// Refuses a poisoned plugin-port lock or a seed rejected by the underlying port.
     pub fn seed(self, path: &str, bytes: &[u8]) -> Result<Self, DctxError> {
         self.inner.lock().map_err(|_| DctxError::invalid("plugin port"))?.seed(path, bytes)?;
         Ok(self)
     }
 
     /// Workers the process port actually started.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn spawns(&self) -> u64 {
-        self.inner.lock().map(|body| body.spawns()).unwrap_or(0)
+        self.inner.lock().map_or(0, |body| body.spawns())
     }
 
     /// Launch attempts, including fail-closed platform refusals.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn admissions(&self) -> u64 {
-        self.inner.lock().map(|body| body.admissions()).unwrap_or(0)
+        self.inner.lock().map_or(0, |body| body.admissions())
     }
 
     /// Git recipe children. A refused platform recipe counts as zero.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn git_children(&self) -> u64 {
-        self.inner.lock().map(|body| body.git_children()).unwrap_or(0)
+        self.inner.lock().map_or(0, |body| body.git_children())
     }
 
     pub(crate) fn confined(&self) -> bool {
@@ -181,7 +193,7 @@ impl PluginHost {
     }
 
     pub(crate) fn observe_gitignore(&self) -> IgnoreSnap {
-        self.inner.lock().map(|mut body| body.observe_gitignore()).unwrap_or_else(|_| IgnoreSnap::unknown())
+        self.inner.lock().map_or_else(|_| IgnoreSnap::unknown(), |mut body| body.observe_gitignore())
     }
 
     pub(crate) fn effects_for(&self, plugin: &str, boundary: Boundary) -> Vec<HookEffect> {
@@ -223,6 +235,7 @@ impl PluginHost {
 }
 
 #[cfg(feature = "plugin-runtime")]
+#[allow(clippy::missing_fields_in_debug, reason = "Debug intentionally reports safe host counters and confinement only; port internals, effects and authority closures stay opaque.")]
 impl std::fmt::Debug for PluginHost {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter

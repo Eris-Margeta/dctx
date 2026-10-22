@@ -1,7 +1,7 @@
 //! Persisted map generation reused when content digests still match.
 //! Implements DCTX-SERIOUS-GAPS G6 (CLI-WARM-REUSE) on the session cache lease.
-//! Depends on Session, the index walk and digest_text (the read_verified check).
-//! The CLI calls Session::snapshot_reusable. Isolation without a cache root does not.
+//! Depends on Session, the index walk and `digest_text` (the `read_verified` check).
+//! The CLI calls `Session::snapshot_reusable`. Isolation without a cache root does not.
 //! Size and mtime are a prefilter. A same-stamp byte change still rebuilds.
 
 use std::collections::{BTreeMap, HashMap};
@@ -30,6 +30,8 @@ impl Session {
     /// uses before it returns `SourceChanged`. Size and modification time only skip that read when
     /// the inventory already differs. An empty `source_key`, or a session with no cache root, walks
     /// the source the same way as [`Self::snapshot`].
+    /// # Errors
+    /// Propagates request/capability validation, source/store/cache failures, cancellation, deadlines, and snapshot resource-limit errors.
     pub fn snapshot_reusable(
         &mut self,
         request: &SnapshotRequest,
@@ -77,10 +79,7 @@ impl Session {
         let Some(bytes) = self.load_retained()? else {
             return Ok(None);
         };
-        let decoded = match decode_generation(&bytes) {
-            Ok(decoded) => decoded,
-            Err(_) => return Ok(None),
-        };
+        let Ok(decoded) = decode_generation(&bytes) else { return Ok(None) };
         if decoded.source_key != source_key
             || decoded.view != self.view
             || decoded.generation.freshness != request.freshness
@@ -121,14 +120,10 @@ impl Session {
             verified += 1;
             match self.digest_matches_source(&file.path, digest, limits.file_bytes) {
                 Ok(true) => confirmed += 1,
-                Ok(false) => {
-                    self.content_reads += verified;
-                    return Ok(None);
-                }
                 Err(error @ (DctxError::Cancelled | DctxError::ResourceLimit { .. } | DctxError::PolicyDenied)) => {
                     return Err(error);
                 }
-                Err(_) => {
+                Ok(false) | Err(_) => {
                     self.content_reads += verified;
                     return Ok(None);
                 }
@@ -320,6 +315,7 @@ pub(super) fn encode_generation(
     Ok(out)
 }
 
+#[allow(clippy::too_many_lines, reason = "Keep the reusable-generation acceptance fixture and its sequential pointer/lease assertions together.")]
 fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
     let mut reader = Reader { rest: bytes };
     let magic = reader.take(MAGIC.len())?;
@@ -567,6 +563,7 @@ mod tests {
     use crate::domain::{AutoCleanConfig, HostGrants, MapRequest, VecSink, Verb};
     use crate::{HostCeiling, RuleTexts, StoragePolicy};
 
+    #[allow(clippy::field_reassign_with_default, reason = "Start from the public limit defaults and change only the limit exercised by this regression.")]
     fn open(source: MemorySource, cache: &std::path::Path) -> Session {
         let mut auto = AutoCleanConfig::default();
         auto.enabled = false;
@@ -632,7 +629,7 @@ mod tests {
         assert!(third.content_reads() >= 1);
         let lost = find_ids(&mut third, &handle, "lost");
         assert!(lost.iter().any(|id| id.contains("lost")), "{lost:?}");
-        assert!(find_ids(&mut third, &handle, "kept").is_empty());
+        assert_eq!(find_ids(&mut third, &handle, "kept"), [] as [std::string::String; 0]);
     }
 
     #[test]
@@ -653,6 +650,7 @@ mod tests {
         assert_eq!(other.cached_content_reads(), 0);
     }
 
+    #[allow(clippy::field_reassign_with_default, reason = "Start from the public limit defaults and change only the limit exercised by this regression.")]
     fn open_with_rules(source: MemorySource, cache: &std::path::Path, rules: crate::domain::RuleSources) -> Session {
         let mut auto = AutoCleanConfig::default();
         auto.enabled = false;

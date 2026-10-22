@@ -10,7 +10,7 @@ use crate::domain::{CacheLedger, CacheReport, GcRequest, PurgeRequest, PurgeScop
 impl Session {
     /// Current ledger totals. `reclaimed_bytes` is the open-time auto-clean total, or zero in isolation.
     pub fn cache_status(&self) -> CacheReport {
-        self.report(self.managed.as_ref().map(PersistedCache::reclaimed).unwrap_or(0), 0)
+        self.report(self.managed.as_ref().map_or(0, PersistedCache::reclaimed), 0)
     }
 
     /// Managed lifecycle figures. `None` in library isolation, where auto-clean does not run.
@@ -19,6 +19,8 @@ impl Session {
     }
 
     /// Drops generations whose handle lease is gone. `apply: false` deletes nothing.
+    /// # Errors
+    /// Refuses an unsupported cache capability or propagates disk reclamation and post-cache hook failures.
     pub fn cache_gc(&mut self, request: GcRequest) -> Result<CacheReport, DctxError> {
         if !cfg!(feature = "cache") {
             return Err(DctxError::unsupported("cache"));
@@ -34,6 +36,8 @@ impl Session {
     }
 
     /// Drops generations in `request.scope` when no handle pins them.
+    /// # Errors
+    /// Refuses an unsupported cache capability, unconfirmed applying purge, or disk reclamation failures.
     pub fn cache_purge(&mut self, request: PurgeRequest) -> Result<CacheReport, DctxError> {
         if !cfg!(feature = "cache") {
             return Err(DctxError::unsupported("cache"));
@@ -70,7 +74,7 @@ impl Session {
         let mut reclaimed = 0u64;
         let mut blocked = 0u64;
         for id in ids {
-            let pinned = self.pins.get(&id).and_then(|weak| weak.upgrade()).is_some();
+            let pinned = self.pins.get(&id).and_then(std::sync::Weak::upgrade).is_some();
             if pinned {
                 blocked += 1;
                 continue;

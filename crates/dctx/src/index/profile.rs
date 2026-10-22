@@ -1,6 +1,6 @@
 //! Opt-in monotonic stage and per-file scan counters.
 //! Implements DCTX-SERIOUS-GAPS G7 and DCTX-COLD-SCAN C5.
-//! Depends on std::time::Instant. The walk and the session record samples on this thread.
+//! Depends on `std::time::Instant`. The walk and the session record samples on this thread.
 //! The map CLI prints [`report`] on stderr. Profiling does not change stdout or the graph.
 //! A file watch closes before canonicalize, persist and query, so finalization is not that file's parse.
 //! `span conversion` is the module newline scan; per-node spans inside the lexer stay in `parse/lex`.
@@ -125,14 +125,14 @@ fn add_file_work(ns: u128) {
 }
 
 fn file_work_ns() -> u128 {
-    DATA.with(|slot| slot.borrow().as_ref().map(|profile| profile.file_work_ns).unwrap_or(0))
+    DATA.with(|slot| slot.borrow().as_ref().map_or(0, |profile| profile.file_work_ns))
 }
 
 fn push_file(path: String, bytes: u64, symbols: u64, nanos: u128) {
     with_profile(|profile| profile.files.push(FileSample { path, bytes, symbols, nanos }));
 }
 
-/// Marks that snapshot_inner already recorded canonicalize and persist.
+/// Marks that `snapshot_inner` already recorded canonicalize and persist.
 ///
 /// A later snapshot-wall remainder is reuse verification. It must not be added on top of a
 /// cold build, or the seal would be counted twice and the hooks would land on the last stage.
@@ -375,7 +375,7 @@ mod tests {
         observe_snapshot_wall(Duration::from_nanos(25));
         assert_eq!(stage_ns(Stage::PersistReuse), 15);
         mark_snapshot_accounted();
-        observe_snapshot_wall(Duration::from_nanos(999_000_000_000_000));
+        observe_snapshot_wall(Duration::from_mins(16650));
         assert_eq!(stage_ns(Stage::PersistReuse), 15);
         assert_eq!(stage_ns(Stage::Walk), 10);
     }

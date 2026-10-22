@@ -50,6 +50,7 @@ fn row(line: u32) -> usize {
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write as _;
     use super::super::lex_dispatch::line_span_oracle;
     use super::SpanIndex;
 
@@ -71,7 +72,7 @@ mod tests {
     fn spans_match_the_pre_index_scan() {
         let mut many = String::new();
         for number in 0..40 {
-            many.push_str(&format!("é{number}\r\n\n"));
+            let _ = write!(many, "é{number}\r\n\n");
         }
         many.push_str("tail");
         let samples = [

@@ -5,6 +5,7 @@
 
 #![forbid(unsafe_code)]
 
+use std::fmt::Write as _;
 use std::collections::BTreeMap;
 
 use dctx_hash::Sha256;
@@ -147,12 +148,9 @@ impl<S: AuditStorage> DurableAudit<S> {
                 }
                 audit.evidence.parse(payload)
             })();
-            match entry {
-                Ok(entry) => audit.evidence.accept(entry),
-                Err(_) => {
-                    audit.damaged = true;
-                    break;
-                }
+            if let Ok(entry) = entry { audit.evidence.accept(entry) } else {
+                audit.damaged = true;
+                break;
             }
         }
         Ok(audit)
@@ -194,13 +192,13 @@ impl<S: AuditStorage> DurableAudit<S> {
             if r.invocation != bound.key.invocation || r.args != Some(bound.args) || r.receipt.as_ref() != Some(&bound.receipt) {
                 return Err(AuditUnavailable);
             }
-            payload.push_str(&format!(
+            let _ = write!(payload,
                 "\t{}\t{}\t{}\t{}",
                 bound.key.artifact.as_str(),
                 bound.key.root.as_str(),
                 bound.key.action_id.as_str(),
                 bound.state.as_str()
-            ));
+            );
         }
         let entry = self.evidence.parse(&payload)?;
         let frame = format!("{}\t{payload}\n", checksum(payload.as_bytes())?);

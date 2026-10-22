@@ -1,6 +1,6 @@
 //! Structural extractor for the facade's supported source and configuration languages.
 //! Implements the strict parser profile: coverage `structural`.
-//! Uses lex_dispatch and dctx-lex-md. Explicit structural Rust stays line-oriented; the default walk uses syn.
+//! Uses `lex_dispatch` and dctx-lex-md. Explicit structural Rust stays line-oriented; the default walk uses syn.
 //! The snapshot walk calls [`extract_structural`]. Answer ids and the structural precision label stay put.
 
 use dctx_map_model::{NodeKind, StableId};
@@ -102,8 +102,7 @@ pub(crate) fn language_of(path: &str) -> &'static str {
     EXTENSIONS
         .iter()
         .find(|(name, _)| *name == extension)
-        .map(|(_, tag)| *tag)
-        .unwrap_or("opaque")
+        .map_or("opaque", |(_, tag)| *tag)
 }
 
 /// Lexer output for one included file. Config keeps the lex so the graph can move it once.
@@ -183,7 +182,7 @@ fn append_cfg(
         let kind_label = if graph == NodeKind::Doc {
             "heading"
         } else {
-            node.symbol_kind.map(|kind| kind.as_str()).unwrap_or("fn")
+            node.symbol_kind.map_or("fn", dctx_map_model::SymbolKind::as_str)
         };
         let source_label = node.summary.source.as_str();
         let lines = node.lines;
@@ -270,6 +269,7 @@ pub(crate) fn index_symbols(
 }
 
 /// First occurrence keeps an empty ordinal. Later copies use 2, 3, … in source order.
+#[allow(clippy::cast_possible_truncation, reason = "The hash is an intentionally native-word table index; truncation keeps its low bits before masking to a power-of-two capacity.")]
 fn duplicate_ordinals(symbols: &[Symbol]) -> Vec<Option<u32>> {
     let capacity = table_len(symbols.len());
     let mask = capacity - 1;
@@ -344,7 +344,7 @@ fn fx_hash(bytes: &[u8]) -> u64 {
     while offset + 8 <= bytes.len() {
         let mut chunk = [0u8; 8];
         chunk.copy_from_slice(&bytes[offset..offset + 8]);
-        hash = (hash.rotate_left(5) ^ u64::from_le_bytes(chunk)).wrapping_mul(0x517cc1b727220a95);
+        hash = (hash.rotate_left(5) ^ u64::from_le_bytes(chunk)).wrapping_mul(0x517c_c1b7_2722_0a95);
         offset += 8;
     }
     if offset < bytes.len() {
@@ -352,7 +352,7 @@ fn fx_hash(bytes: &[u8]) -> u64 {
         for (shift, byte) in bytes[offset..].iter().copied().enumerate() {
             tail |= u64::from(byte) << (shift * 8);
         }
-        hash = (hash.rotate_left(5) ^ tail).wrapping_mul(0x517cc1b727220a95);
+        hash = (hash.rotate_left(5) ^ tail).wrapping_mul(0x517c_c1b7_2722_0a95);
     }
     hash
 }
@@ -414,10 +414,7 @@ fn rust_decl(line: &str) -> Option<(&'static str, String)> {
 }
 
 fn markdown_symbols(bytes: &[u8]) -> Vec<Symbol> {
-    let document = match dctx_lex_md::extract(bytes) {
-        Ok(document) => document,
-        Err(_) => return Vec::new(),
-    };
+    let Ok(document) = dctx_lex_md::extract(bytes) else { return Vec::new() };
     let mut symbols = Vec::new();
     for heading in document.headings {
         if heading.title.is_empty() {
@@ -465,7 +462,7 @@ fn keyword_name(line: &str, keyword: &str) -> Option<String> {
 fn ident_of(text: &str) -> Option<String> {
     let mut name = String::new();
     for (index, ch) in text.chars().enumerate() {
-        let ok = ch == '_' || ch.is_ascii_alphanumeric() || (index == 0 && ch == '_');
+        let ok = ch == '_' || ch.is_ascii_alphanumeric();
         let start_ok = index != 0 || ch == '_' || ch.is_ascii_alphabetic();
         if index == 0 && !start_ok {
             return None;
@@ -560,8 +557,8 @@ mod tests {
         assert_eq!(script[0].name, "ping");
         assert_eq!(script[0].kind, "fn");
         assert_eq!(script[0].summary_source, "sig");
-        assert!(extract_structural("blob.bin", b"fn ping() {}\0").is_empty());
-        assert!(extract_structural("notes.txt", b"# Fixture\n").is_empty());
+        assert_eq!(extract_structural("blob.bin", b"fn ping() {}\0"), [] as [crate::index::extract::Symbol; 0]);
+        assert_eq!(extract_structural("notes.txt", b"# Fixture\n"), [] as [crate::index::extract::Symbol; 0]);
     }
 
     #[test]
@@ -644,8 +641,8 @@ mod tests {
             assert_eq!(symbols[0].summary, control[0].summary);
             assert_eq!(symbols[0].summary_source, control[0].summary_source);
         }
-        assert!(extract_structural("Guardfile", source).is_empty());
-        assert!(extract_structural("config.ru", source).is_empty());
+        assert_eq!(extract_structural("Guardfile", source), [] as [crate::index::extract::Symbol; 0]);
+        assert_eq!(extract_structural("config.ru", source), [] as [crate::index::extract::Symbol; 0]);
         assert_eq!(extract_structural("A.RS", b"fn RustMain() {}\n")[0].name, "RustMain");
         assert_eq!(extract_structural("README.MD", b"# MdMain\n")[0].name, "MdMain");
     }
@@ -668,7 +665,7 @@ mod tests {
                         super::super::write_stable_id(&mut out, super::letter_byte(kind), path, name, stored);
                         out
                     });
-                    assert_eq!(formatted.as_deref(), old.as_ref().map(|id| id.as_str()), "{kind:?} {name:?} {ordinal:?}");
+                    assert_eq!(formatted.as_deref(), old.as_ref().map(dctx_map_model::StableId::as_str), "{kind:?} {name:?} {ordinal:?}");
                     if let Some(id) = &formatted {
                         let node = node_of(super::letter_byte(kind), got.unwrap_or(0), name, path_span);
                         assert!(super::super::id_matches(&text, &node, id), "{id}");
@@ -678,11 +675,12 @@ mod tests {
             }
         }
         let bad = "../x";
-        assert!(!dctx_map_model::StableId::new(NodeKind::Module, bad, None, None).is_ok());
+        assert!(dctx_map_model::StableId::new(NodeKind::Module, bad, None, None).is_err());
         assert!(super::stored_ordinal(NodeKind::Symbol, bad, "ping", None, false).is_none());
     }
 
     #[test]
+    #[allow(clippy::cast_possible_truncation, reason = "The hash is an intentionally native-word table index; truncation keeps its low bits before masking to a power-of-two capacity.")]
     fn duplicate_ordinals_match_the_pre_change_index() {
         let symbols = vec![
             sample("ping"),

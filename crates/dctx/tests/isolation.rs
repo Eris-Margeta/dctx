@@ -130,7 +130,7 @@ fn ceiling_exclude_is_not_expanded_by_an_include_selection() {
     let mut sink = VecSink::new();
     let gone = denied.explain(&handle, "s:src/lib.rs#ping", &mut sink).expect("gone");
     assert_eq!(gone.next.as_deref(), Some("map"));
-    assert!(gone.records.is_empty());
+    assert_eq!(gone.records, [] as [dctx::AnswerRecord; 0]);
 
     let mut allowed = open_session(tree());
     let handle = allowed.snapshot(&SnapshotRequest::immutable()).expect("permit");
@@ -163,7 +163,7 @@ fn plan_roots_exclude_readme_and_templates_fail_closed() {
     assert_eq!(session.content_reads(), 3);
     let mut sink = VecSink::new();
     let gone = session.explain(&narrowed, "d:README.md#Fixture", &mut sink).expect("outside");
-    assert!(gone.records.is_empty());
+    assert_eq!(gone.records, [] as [dctx::AnswerRecord; 0]);
     let mut sink = VecSink::new();
     let ping = session.explain(&narrowed, "s:src/lib.rs#ping", &mut sink).expect("inside");
     assert_eq!(ping.records[0].path, "src/lib.rs");

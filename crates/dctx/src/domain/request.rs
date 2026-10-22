@@ -27,6 +27,7 @@ pub enum Verb {
 
 impl Verb {
     /// Wire name (`map`, `find`, `neighbors`, `explain`, `read`).
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Map => "map",
@@ -38,6 +39,8 @@ impl Verb {
     }
 
     /// Parses a wire name.
+    /// # Errors
+    /// Refuses an unknown verb name.
     pub fn parse(text: &str) -> Result<Self, DctxError> {
         match text {
             "map" => Ok(Self::Map),
@@ -64,6 +67,7 @@ pub enum Direction {
 
 impl Direction {
     /// Wire name.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::Out => "out",
@@ -86,6 +90,7 @@ pub enum FreshnessMode {
 
 impl FreshnessMode {
     /// Wire name.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::ImmutableSnapshot => "immutable_snapshot",
@@ -108,16 +113,19 @@ pub struct SnapshotRequest {
 
 impl SnapshotRequest {
     /// Immutable snapshot with safety caps.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn immutable() -> Self {
         Self { request_version: REQUEST_VERSION, freshness: FreshnessMode::ImmutableSnapshot, limits: OperationLimits::default() }
     }
 
     /// Metadata inventory with safety caps.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn metadata() -> Self {
         Self { request_version: REQUEST_VERSION, freshness: FreshnessMode::Metadata, limits: OperationLimits::default() }
     }
 
     /// Strict snapshot with safety caps.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn strict() -> Self {
         Self { request_version: REQUEST_VERSION, freshness: FreshnessMode::Strict, limits: OperationLimits::default() }
     }
@@ -125,6 +133,7 @@ impl SnapshotRequest {
 
 /// One pack run. The session's selection policy is the policy; this request does not load files.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[allow(clippy::struct_excessive_bools, reason = "These independent public pack options retain their existing combinations and serialized request schema.")]
 pub struct PackRequest {
     /// Must be [`REQUEST_VERSION`].
     pub request_version: u32,
@@ -164,6 +173,7 @@ pub struct PackRequest {
 
 impl PackRequest {
     /// JSON v2 pack of the session view.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new() -> Self {
         Self {
             request_version: REQUEST_VERSION,
@@ -186,6 +196,7 @@ impl PackRequest {
     }
 
     /// True when a directory may be listed. Include patterns do not drop directories.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn admits_directory(&self, path: &str, name: &str) -> bool {
         if !self.apply_filters {
             return true;
@@ -194,6 +205,7 @@ impl PackRequest {
     }
 
     /// True when a file may be opened. `size` is used only for the empty and byte-size filters.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn admits_file(&self, path: &str, name: &str, size: u64) -> bool {
         if !self.apply_filters {
             return true;
@@ -209,6 +221,7 @@ impl PackRequest {
     }
 
     /// True when admission needs a size, so the caller stats the file before deciding.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn filters_need_size(&self) -> bool {
         self.apply_filters
             && (self.only_empty || self.only_non_empty || self.min_size_bytes.is_some() || self.max_size_bytes.is_some())
@@ -288,6 +301,7 @@ pub struct MapRequest {
 
 impl MapRequest {
     /// A request for `verb` at version 1, JSON v2, both directions.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(verb: Verb) -> Self {
         Self {
             request_version: REQUEST_VERSION,
@@ -310,6 +324,8 @@ impl MapRequest {
     }
 
     /// Checks the read line window. A positive read `depth` is the hop cap, not a line.
+    /// # Errors
+    /// Refuses incompatible window selectors, invalid line starts, or limits above the selected verb's hard caps.
     pub fn validate(&self) -> Result<(), DctxError> {
         if let Some(start) = self.line_start {
             if self.verb != Verb::Read {

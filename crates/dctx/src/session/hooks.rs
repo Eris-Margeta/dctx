@@ -21,17 +21,17 @@ impl Session {
 
     /// Workers the process port started. Zero when the session has no plugin host.
     pub fn plugin_spawns(&self) -> u64 {
-        self.plugins.as_ref().map(crate::plugins::PluginHost::spawns).unwrap_or(0)
+        self.plugins.as_ref().map_or(0, crate::plugins::PluginHost::spawns)
     }
 
     /// Launch attempts, including a fail-closed platform refusal. Zero without a host.
     pub fn plugin_admissions(&self) -> u64 {
-        self.plugins.as_ref().map(crate::plugins::PluginHost::admissions).unwrap_or(0)
+        self.plugins.as_ref().map_or(0, crate::plugins::PluginHost::admissions)
     }
 
     /// Git recipe children. A refused platform recipe counts as zero.
     pub fn git_children(&self) -> u64 {
-        self.plugins.as_ref().map(crate::plugins::PluginHost::git_children).unwrap_or(0)
+        self.plugins.as_ref().map_or(0, crate::plugins::PluginHost::git_children)
     }
 
     pub(super) fn reset_hook_warnings(&mut self) {
@@ -162,7 +162,7 @@ impl Session {
 
     #[cfg(feature = "plugin-runtime")]
     fn observe_ignore(&self) -> IgnoreSnap {
-        self.plugins.as_ref().map(crate::plugins::PluginHost::observe_gitignore).unwrap_or_else(IgnoreSnap::unknown)
+        self.plugins.as_ref().map_or_else(IgnoreSnap::unknown, crate::plugins::PluginHost::observe_gitignore)
     }
 
     #[cfg(feature = "plugin-runtime")]
@@ -171,6 +171,7 @@ impl Session {
     }
 
     #[cfg(feature = "plugin-runtime")]
+    #[allow(clippy::needless_pass_by_value, reason = "Reloading consumes the before-hook observation after comparing it with the new state; keep that temporal ownership boundary.")]
     fn reload_ignore(&mut self, before: IgnoreSnap, spawned: bool) -> Result<(), DctxError> {
         let after = self.observe_ignore();
         if before.same_file(&after) {

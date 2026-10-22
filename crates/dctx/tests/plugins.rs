@@ -81,7 +81,7 @@ fn open(
     required: bool,
     roots: &str,
 ) -> Session {
-    let selection = rules.as_ref().map(RuleSources::policy).unwrap_or_else(|| SelectionPolicy::from_texts(&RuleTexts::default()));
+    let selection = rules.as_ref().map_or_else(|| SelectionPolicy::from_texts(&RuleTexts::default()), RuleSources::policy);
     let mut builder = Session::builder(tree)
         .clock(FixedClock(Timestamp(0)))
         .cancellation(Arc::new(CancelFlag::new()))
@@ -188,7 +188,7 @@ fn corpus_fake_runs_five_hooks_without_git_children() {
     assert_eq!(session.plugin_admissions(), 5);
     assert_eq!(session.plugin_spawns(), 5);
     assert_eq!(session.git_children(), 0);
-    assert!(session.hook_warnings().is_empty());
+    assert_eq!(session.hook_warnings(), []);
     session.cache_gc(GcRequest { apply: false }).expect("dry");
     assert_eq!(session.plugin_admissions(), 5);
     assert_eq!(session.plugin_spawns(), 5);

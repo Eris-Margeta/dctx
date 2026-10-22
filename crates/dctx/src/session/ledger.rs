@@ -102,6 +102,7 @@ impl Cache for AccountingCache {
     }
 }
 
+#[allow(clippy::missing_fields_in_debug, reason = "Debug intentionally reports aggregate accounting without exposing the wrapped cache implementation.")]
 impl std::fmt::Debug for AccountingCache {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
@@ -206,7 +207,7 @@ impl PersistedCache {
             self.life.touch(self.root_id).map_err(map_cache)?;
             match self.ledger.store(&self.life) {
                 Ok(()) => return Ok(()),
-                Err(error) if cache_bind::is_conflict(&error) => continue,
+                Err(error) if cache_bind::is_conflict(&error) => {},
                 Err(error) => return Err(map_cache(error)),
             }
         }

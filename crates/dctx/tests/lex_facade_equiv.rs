@@ -77,7 +77,7 @@ fn nested_json_map_find_and_explain_share_kinds_summaries_and_spans() {
     let outline = session.query(&handle, &map_request, &mut VecSink::new()).expect("map");
     assert!(outline.records.len() > 20, "{}", outline.records.len());
     for record in &outline.records {
-        let name = record.id.split_once('#').map(|(_, name)| name).unwrap_or(record.id.as_str());
+        let name = record.id.split_once('#').map_or(record.id.as_str(), |(_, name)| name);
         let mut find_request = MapRequest::new(Verb::Find);
         find_request.query = name.to_string();
         find_request.within = Some("nested.json".to_string());
@@ -87,8 +87,8 @@ fn nested_json_map_find_and_explain_share_kinds_summaries_and_spans() {
         assert_eq!(hit.summary, record.summary);
         assert_eq!(hit.summary_source, record.summary_source);
         assert_eq!(hit.lines, record.lines);
-        assert!(!record.kind.is_empty());
-        assert!(!record.summary_source.is_empty());
+        assert_ne!(record.kind, "");
+        assert_ne!(record.summary_source, "");
     }
     for record in outline.records.iter().step_by(outline.records.len() / 3) {
         let explained = session.explain(&handle, &record.id, &mut VecSink::new()).expect("explain");

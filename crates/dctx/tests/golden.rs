@@ -172,7 +172,7 @@ fn gone_is_ok_and_unknown_transport_writes_nothing() {
     let gone = session.explain(&handle, "s:src/lib.rs#missing", &mut sink).expect("gone");
     assert!(matches!(gone.outcome, Some(IdentityOutcome::Gone { .. })));
     assert_eq!(gone.next.as_deref(), Some("map"));
-    assert!(gone.records.is_empty());
+    assert_eq!(gone.records, [] as [dctx::AnswerRecord; 0]);
     assert!(!sink.is_empty());
 
     let mut alias = VecSink::new();

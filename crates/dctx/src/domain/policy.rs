@@ -46,7 +46,7 @@ pub struct PolicyView<'a> {
     pub view: &'a str,
 }
 
-impl<'a> PolicyView<'a> {
+impl PolicyView<'_> {
     /// The decision for `path`. The empty root is decided too; the walk still lists it.
     pub fn decide(&self, path: &str, is_dir: bool) -> Result<FileHandlingDecision, DctxError> {
         let host = host_decision(self.grants, self.ceiling, path);

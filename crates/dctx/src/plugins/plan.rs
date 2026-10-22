@@ -224,7 +224,7 @@ hooks = [\"before-pack-output-written\", \"cache-gc\"]
         assert_eq!(before, ["dctx/git", "ex/other"]);
         let gc: Vec<&str> = participants(&compiled, Boundary::CacheGc).iter().map(|plugin| plugin.id.as_str()).collect();
         assert_eq!(gc, ["dctx/git"]);
-        assert!(participants(&compiled, Boundary::AfterIndex).is_empty());
+        assert_eq!(participants(&compiled, Boundary::AfterIndex), [] as [&dctx_template::PluginBinding; 0]);
     }
 
     #[test]

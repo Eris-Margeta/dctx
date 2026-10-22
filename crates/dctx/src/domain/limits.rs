@@ -48,6 +48,7 @@ pub struct OperationLimits {
 
 impl OperationLimits {
     /// The tighter of two limits in every dimension.
+    #[allow(clippy::must_use_candidate, clippy::return_self_not_must_use, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn intersect(self, other: Self) -> Self {
         Self {
             encoded_bytes: min_opt(self.encoded_bytes, other.encoded_bytes),
@@ -228,9 +229,9 @@ pub(crate) fn resolve_query(
         u32::try_from(choose(asked, u64::from(cap.default_lines), u64::from(cap.hard_lines), "lines")?)
             .unwrap_or(cap.hard_lines)
     };
-    let tokens = policy.estimated_tokens.map(|limit| tokens.min(limit)).unwrap_or(tokens);
-    let records = policy.records.map(|limit| records.min(limit)).unwrap_or(records);
-    let depth = policy.depth.map(|limit| depth.min(limit)).unwrap_or(depth);
+    let tokens = policy.estimated_tokens.map_or(tokens, |limit| tokens.min(limit));
+    let records = policy.records.map_or(records, |limit| records.min(limit));
+    let depth = policy.depth.map_or(depth, |limit| depth.min(limit));
     if tokens == 0 || records == 0 {
         return Err(DctxError::BudgetTooSmall { minimum_bytes: 1 });
     }

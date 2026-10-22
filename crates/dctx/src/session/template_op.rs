@@ -10,6 +10,8 @@ use crate::domain::DctxError;
 
 impl Session {
     /// Compiles DTS source against this session's ceiling. No IO.
+    /// # Errors
+    /// Refuses unsupported template access, invalid template syntax, or operations above the capability ceiling.
     pub fn compile_template(&self, source: &str) -> Result<ContextPlan, DctxError> {
         if !cfg!(feature = "templates") {
             return Err(DctxError::unsupported("templates"));
@@ -18,6 +20,8 @@ impl Session {
     }
 
     /// Loads a compiled plan and re-checks it against the ceiling.
+    /// # Errors
+    /// Refuses unsupported template access, invalid compiled-plan data, or operations above the capability ceiling.
     pub fn load_template(&self, bytes: &[u8]) -> Result<ContextPlan, DctxError> {
         if !cfg!(feature = "templates") {
             return Err(DctxError::unsupported("templates"));

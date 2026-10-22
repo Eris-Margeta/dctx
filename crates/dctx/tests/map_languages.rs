@@ -1,6 +1,6 @@
 //! Public map verbs over temporary repositories covering the facade's new lexers.
 //! Implements SPEC-MAP-MODE 4–6.2 and the selection rule that excluded bytes stay unread.
-//! Uses FsSource and an explicit Session policy, following fs_fixture's construction.
+//! Uses `FsSource` and an explicit Session policy, following `fs_fixture`'s construction.
 //! All sources are inline; existing facade golden fixtures remain unchanged.
 
 #![forbid(unsafe_code)]
@@ -137,9 +137,9 @@ fn find_and_outline_cover_every_new_language_extension() {
 
     let opaque = session.map(&handle, "m:sample.unknown", &mut VecSink::new()).expect("opaque outline");
     assert!(opaque.outcome.is_none(), "the opaque file still has a module");
-    assert!(opaque.records.is_empty());
+    assert_eq!(opaque.records, [] as [dctx::AnswerRecord; 0]);
     let hidden = session.find(&handle, "HiddenOpaque", &mut VecSink::new()).expect("opaque find");
-    assert!(hidden.records.is_empty());
+    assert_eq!(hidden.records, [] as [dctx::AnswerRecord; 0]);
     assert_eq!(session.content_reads(), reads, "find and outline never reread content");
 }
 
@@ -181,6 +181,13 @@ const SHARED_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
 
 #[test]
 fn extension_case_and_ruby_basenames_match_the_shared_literal() {
+    fn at(session: &mut Session, handle: &dctx::SnapshotHandle, symbol: &str, path: &str) -> dctx::AnswerRecord {
+        let mut request = MapRequest::new(Verb::Find);
+        request.query = symbol.to_string();
+        request.within = Some(path.to_string());
+        let found = session.query(handle, &request, &mut VecSink::new()).unwrap_or_else(|error| panic!("{path}: {error}"));
+        found.records.into_iter().find(|record| record.path == path).unwrap_or_else(|| panic!("{path} has no {symbol}"))
+    }
     // Rust, JavaScript and Markdown have no row in `FIXTURES`. The facade unit
     // test covers those extensions. Every other shared extension must.
     const WITHOUT_SESSION_FIXTURE: &[&str] = &[
@@ -223,13 +230,7 @@ fn extension_case_and_ruby_basenames_match_the_shared_literal() {
     let mut session = open(root.path(), SelectionPolicy::from_texts(&RuleTexts::default()));
     let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
 
-    fn at(session: &mut Session, handle: &dctx::SnapshotHandle, symbol: &str, path: &str) -> dctx::AnswerRecord {
-        let mut request = MapRequest::new(Verb::Find);
-        request.query = symbol.to_string();
-        request.within = Some(path.to_string());
-        let found = session.query(handle, &request, &mut VecSink::new()).unwrap_or_else(|error| panic!("{path}: {error}"));
-        found.records.into_iter().find(|record| record.path == path).unwrap_or_else(|| panic!("{path} has no {symbol}"))
-    }
+
 
     for (lower, upper, symbol) in &pairs {
         let control = at(&mut session, &handle, symbol, lower);

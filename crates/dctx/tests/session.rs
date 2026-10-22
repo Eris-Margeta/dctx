@@ -45,7 +45,7 @@ fn cancel_before_snapshot_and_during_the_walk_keep_no_generation() {
     let error = session.snapshot(&SnapshotRequest::immutable()).expect_err("mid");
     assert_eq!(error, DctxError::Cancelled);
     assert_eq!(session.generation_count(), 0);
-    assert!(!log.lock().expect("log").listed().is_empty());
+    assert_ne!(log.lock().expect("log").listed(), [] as [std::string::String; 0]);
 
     let mut session = open_session(common::repository());
     let handle = session.snapshot(&SnapshotRequest::immutable()).expect("later");
@@ -64,7 +64,7 @@ fn pack_publishes_once_and_refuses_git_before_a_read() {
     let error = session.pack(&request, &mut sink).expect_err("git");
     assert!(matches!(error, DctxError::UnsupportedCapability { capability: "git", .. }));
     assert!(sink.is_empty());
-    assert!(log.lock().expect("log").reads().is_empty());
+    assert_eq!(log.lock().expect("log").reads(), [] as [std::string::String; 0]);
 
     request.git_revision = None;
     request.output_format = 7;
@@ -72,7 +72,7 @@ fn pack_publishes_once_and_refuses_git_before_a_read() {
     let error = session.pack(&request, &mut sink).expect_err("format");
     assert_eq!(error, DctxError::UnsupportedVersion { found: 7 });
     assert!(sink.is_empty());
-    assert!(log.lock().expect("log").reads().is_empty());
+    assert_eq!(log.lock().expect("log").reads(), [] as [std::string::String; 0]);
 
     request.output_format = 2;
     let mut sink = VecSink::new();

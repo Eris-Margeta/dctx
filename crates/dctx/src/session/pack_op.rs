@@ -92,6 +92,8 @@ impl Source for FilteredSource<'_> {
 
 impl Session {
     /// Runs pack and writes one page. A budget under 64 bytes is refused before publish.
+    /// # Errors
+    /// Refuses unsupported requests/formats, insufficient budgets, cancellation/deadlines, source/storage/hook failures, or sink errors.
     pub fn pack(&mut self, request: &PackRequest, sink: &mut dyn BoundedSink) -> Result<PackReport, DctxError> {
         if !cfg!(feature = "pack") {
             return Err(DctxError::unsupported("pack"));
@@ -139,7 +141,7 @@ impl Session {
         let changes = engine.diff.stats.files_added + engine.diff.stats.files_removed + engine.diff.stats.files_modified;
         let mut public = PackReport {
             version: engine.snapshot.version().to_string(),
-            previous: engine.previous_version.as_ref().map(|version| version.to_string()),
+            previous: engine.previous_version.as_ref().map(std::string::ToString::to_string),
             published: engine.published,
             major_reset: engine.major_reset,
             digest: engine.snapshot.digest().to_string(),

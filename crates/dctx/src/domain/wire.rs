@@ -3,11 +3,13 @@
 //! Depends on [`super::answer`]. The session writes the returned string as one sink page.
 //! `score` is a sort key and is not a JSON field. The object has no `vcs` field and no git id.
 
+use std::fmt::Write as _;
 use super::answer::{Answer, AnswerRecord};
 use super::error::DctxError;
 use super::request::Verb;
 
 /// Encodes `answer` as one JSON v2 document plus a trailing LF.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn encode_answer(place: &str, answer: &Answer) -> String {
     let mut out = String::new();
     out.push('{');
@@ -144,7 +146,7 @@ fn push_string(out: &mut String, text: &str) {
             '\t' => out.push_str("\\t"),
             control if (control as u32) < 0x20 => {
                 let code = u32::from(control);
-                out.push_str(&format!("\\u{code:04x}"));
+                let _ = write!(out, "\\u{code:04x}");
             }
             other => out.push(other),
         }

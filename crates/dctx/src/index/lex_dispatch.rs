@@ -60,7 +60,7 @@ fn from_nodes(text: &str, nodes: impl IntoIterator<Item = Node>) -> Vec<Symbol> 
         let kind_label = if graph == NodeKind::Doc {
             "heading"
         } else {
-            node.symbol_kind.map(|kind| kind.as_str()).unwrap_or("fn")
+            node.symbol_kind.map_or("fn", dctx_map_model::SymbolKind::as_str)
         };
         let source_label = node.summary.source.as_str();
         let lines = node.lines;
@@ -125,14 +125,14 @@ mod tests {
         let lexed = dctx_lex_py::PyLexer::default().extract("a.py", partial.as_bytes()).expect("partial");
         assert_eq!(lexed.completion, dctx_lex_py::Completion::Partial);
         assert!(lexed.nodes.iter().any(|node| node.fact.name == "Ready"));
-        assert!(symbols("python", "a.py", &partial).is_empty());
+        assert_eq!(symbols("python", "a.py", &partial), [] as [crate::index::extract::Symbol; 0]);
 
         assert_eq!(symbols("config", "a.json", "{\"Ready\": 1}")[0].name, "Ready");
         let partial = "{\"Ready\": 1, \"broken\":";
         let lexed = dctx_lex_cfg::CfgLexer::default().extract("a.json", partial.as_bytes()).expect("partial");
         assert_eq!(lexed.completion, dctx_lex_cfg::Completion::Partial);
         assert!(lexed.nodes.iter().any(|node| node.fact.name == "Ready"));
-        assert!(symbols("config", "a.json", partial).is_empty());
+        assert_eq!(symbols("config", "a.json", partial), [] as [crate::index::extract::Symbol; 0]);
     }
 
     #[test]
@@ -142,7 +142,7 @@ mod tests {
             dctx_lex_py::PyLexer::default().extract("a.py", source.as_bytes()),
             Err(dctx_lex_py::LexError::TooDeep { .. })
         ));
-        assert!(symbols("python", "a.py", &source).is_empty());
+        assert_eq!(symbols("python", "a.py", &source), [] as [crate::index::extract::Symbol; 0]);
         for extension in ["py", "go", "java", "c", "json", "cs", "kt", "rb", "php", "swift"] {
             let path = format!("a.{extension}");
             assert!(extract_structural(&path, &[0xff]).is_empty(), "invalid UTF-8: {path}");
@@ -168,8 +168,8 @@ mod tests {
             assert_eq!(got[0].signature, control[0].signature);
         }
         // Not a defect: dctx-lex-rb returns UnsupportedDialect for these.
-        assert!(symbols("ruby", "Guardfile", source).is_empty());
-        assert!(symbols("ruby", "config.ru", source).is_empty());
+        assert_eq!(symbols("ruby", "Guardfile", source), [] as [crate::index::extract::Symbol; 0]);
+        assert_eq!(symbols("ruby", "config.ru", source), [] as [crate::index::extract::Symbol; 0]);
     }
 
     #[test]
@@ -342,7 +342,7 @@ mod tests {
             let kind = if graph == NodeKind::Doc {
                 "heading".to_string()
             } else {
-                node.symbol_kind.map(|kind| kind.as_str().to_string()).unwrap_or_else(|| "fn".to_string())
+                node.symbol_kind.map_or_else(|| "fn".to_string(), |kind| kind.as_str().to_string())
             };
             symbols.push(super::super::extract::Symbol {
                 name: node.name,

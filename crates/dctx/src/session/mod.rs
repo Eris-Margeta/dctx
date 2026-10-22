@@ -74,21 +74,25 @@ pub struct SnapshotHandle {
 
 impl SnapshotHandle {
     /// Generation id. The first snapshot in a session is 1.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn generation(&self) -> u64 {
         self.generation
     }
 
     /// Policy epoch observed when the snapshot was taken.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn epoch(&self) -> u64 {
         self.epoch
     }
 
     /// Own snapshot digest.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn digest(&self) -> &str {
         &self.digest
     }
 
     /// True when this handle was installed from a persisted generation whose digests still matched.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn reused(&self) -> bool {
         self.reused
     }
@@ -165,6 +169,8 @@ impl Session {
     /// The first number is the owners alive now. The second was sampled while the latest query
     /// borrowed this generation, and it is `0` before that query. After a query the sample is the
     /// live count plus one: the query shares the stored rows and then drops that share.
+    /// # Errors
+    /// Returns a stale-generation error if the generation has been reclaimed.
     pub fn generation_shares(&self, handle: &SnapshotHandle) -> Result<(usize, usize), DctxError> {
         let shared = self
             .generations
@@ -174,6 +180,7 @@ impl Session {
     }
 
     /// Policy epoch. Installing a plan or revising the selection increments it.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn epoch(&self) -> u64 {
         self.epoch
     }
@@ -203,6 +210,8 @@ impl Session {
     /// A cold build records canonicalize and persist inside the snapshot. This wall is not added
     /// on top of those stages. A reused generation never enters that path, so the remainder after
     /// its metadata walk is the persist/reuse stage.
+    /// # Errors
+    /// Propagates request/capability validation, source/store/cache failures, cancellation, deadlines, and snapshot resource-limit errors.
     pub fn snapshot_reusable_for_profile(
         &mut self,
         request: &SnapshotRequest,
@@ -217,6 +226,8 @@ impl Session {
     }
 
     /// Same as [`Self::query`]. The sample starts after file watches have closed, so it is not parse time.
+    /// # Errors
+    /// Refuses invalid/stale handles or requests, denied source access, unsupported capabilities, exceeded budgets/deadlines, or sink failures.
     pub fn query_for_profile(
         &mut self,
         handle: &SnapshotHandle,
@@ -233,6 +244,8 @@ impl Session {
     }
 
     /// Takes a snapshot. Cancellation and a cache refusal leave `generation_count` unchanged.
+    /// # Errors
+    /// Propagates request/capability validation, source/store/cache failures, cancellation, deadlines, and snapshot resource-limit errors.
     pub fn snapshot(&mut self, request: &SnapshotRequest) -> Result<SnapshotHandle, DctxError> {
         self.snapshot_inner(request, None, true)
     }
@@ -390,6 +403,7 @@ impl Session {
     }
 }
 
+#[allow(clippy::missing_fields_in_debug, reason = "Debug intentionally reports session identity and generation counts without exposing source, storage, grants or callback internals.")]
 impl std::fmt::Debug for Session {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         formatter
@@ -479,7 +493,7 @@ mod tests {
         session.enable_profile();
         let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
         let persist = crate::index::profile::stage_ns(crate::index::profile::Stage::PersistReuse);
-        session.observe_profile_snapshot(std::time::Duration::from_nanos(999_000_000_000_000));
+        session.observe_profile_snapshot(std::time::Duration::from_mins(16650));
         assert_eq!(crate::index::profile::stage_ns(crate::index::profile::Stage::PersistReuse), persist);
         let mut request = MapRequest::new(Verb::Find);
         request.query = "alpha".to_string();

@@ -42,6 +42,6 @@ fn pending_receipt_survives_reopen_and_completion_clears_it() {
     record.kind = AuditKind::Completion;
     record.reason = "committed";
     reopened.append(&record).unwrap();
-    assert!(reopened.uncertain().is_empty());
-    assert!(DurableAudit::new(reopened.storage, 8192).unwrap().uncertain().is_empty());
+    assert_eq!(reopened.uncertain(), [] as [(std::string::String, std::string::String, std::string::String); 0]);
+    assert_eq!(DurableAudit::new(reopened.storage, 8192).unwrap().uncertain(), [] as [(std::string::String, std::string::String, std::string::String); 0]);
 }

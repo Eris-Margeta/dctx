@@ -59,7 +59,7 @@ fn query_records_match_the_pre_index_spans() {
         assert!(!outline.records.is_empty(), "{path} produced no symbols");
         assert_eq!(outline.more, 0, "{path}");
         for record in &outline.records {
-            let name = record.id.split_once('#').map(|(_, name)| name).unwrap_or_else(|| panic!("id {}", record.id));
+            let name = record.id.split_once('#').map_or_else(|| panic!("id {}", record.id), |(_, name)| name);
             let mut find_request = MapRequest::new(Verb::Find);
             find_request.query = name.to_string();
             find_request.within = Some((*path).to_string());

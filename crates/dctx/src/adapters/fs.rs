@@ -22,6 +22,8 @@ pub struct FsSource {
 
 impl FsSource {
     /// Canonicalizes `path` and requires a directory. An empty path is [`DctxError::InvalidRequest`].
+    /// # Errors
+    /// Refuses an empty/non-directory source root or canonicalization/metadata I/O failures.
     pub fn open(path: &Path) -> Result<Self, DctxError> {
         if path.as_os_str().is_empty() {
             return Err(DctxError::invalid("source path is empty"));
@@ -106,8 +108,7 @@ fn modified_millis(meta: &std::fs::Metadata) -> u64 {
     meta.modified()
         .ok()
         .and_then(|time| time.duration_since(std::time::UNIX_EPOCH).ok())
-        .map(|duration| u64::try_from(duration.as_millis()).unwrap_or(u64::MAX))
-        .unwrap_or(0)
+        .map_or(0, |duration| u64::try_from(duration.as_millis()).unwrap_or(u64::MAX))
 }
 
 fn map_io(error: std::io::Error) -> CoreError {
@@ -136,7 +137,7 @@ mod tests {
         let dir = tempfile::tempdir().expect("temp");
         let source = FsSource::open(dir.path()).expect("open");
         assert_eq!(source.root_kind().expect("root"), NodeType::Directory);
-        assert!(source.entries(&RelativePath::root()).expect("entries").is_empty());
+        assert_eq!(source.entries(&RelativePath::root()).expect("entries"), [] as [dctx_core::facts::SourceEntry; 0]);
         let path = RelativePath::parse("missing.txt").expect("path");
         let grant = ReadGrant::authorize(&path, FileHandlingDecision::Include, true).expect("grant");
         let error = source.read(&grant, 32).expect_err("read");

@@ -1,4 +1,4 @@
-//! Explicit legacy import through FactStore (D3-LEGACY-REMOVAL §5 D3-02).
+//! Explicit legacy import through `FactStore` (D3-LEGACY-REMOVAL §5 D3-02).
 //! Depends on dctx-pack's bounded codec and the session's injected store/cache/clock.
 //! Hosts supply immutable bytes and an empty destination view. No discovery or cleanup runs.
 
@@ -22,7 +22,9 @@ impl Session {
     /// Selection rules are not reapplied to historical facts and no source is read.
     /// `MetadataOnly` keeps bodies and digests absent; `Include` treats even legacy
     /// zero padding as bytes, since the wire format has no omission marker.
-    /// One FactStore publish is the commit point, as in `pack`.
+    /// One `FactStore` publish is the commit point, as in `pack`.
+    /// # Errors
+    /// Refuses unsupported pack access, invalid/existing destinations, invalid legacy data, exhausted revisions, cancellation/deadlines, or cache/store limits/failures.
     pub fn import_legacy(
         &mut self,
         bytes: &[u8],

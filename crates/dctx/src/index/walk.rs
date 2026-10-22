@@ -95,11 +95,11 @@ pub(crate) fn walk_source(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
     if state.entries > args.limits.entries {
         return Err(limit(Resource::Entries, args.limits.entries));
     }
-    visit_dir(args, &languages, &RelativePath::root(), &mut state)?;
+    visit_dir(args, languages.as_deref(), &RelativePath::root(), &mut state)?;
     Ok(finish(args, state))
 }
 
-fn visit_dir(args: &WalkArgs<'_>, languages: &Option<Vec<String>>, dir: &RelativePath, state: &mut State) -> Result<(), DctxError> {
+fn visit_dir(args: &WalkArgs<'_>, languages: Option<&[String]>, dir: &RelativePath, state: &mut State) -> Result<(), DctxError> {
     checkpoint(args)?;
     let mut entries = args.source.entries(dir).map_err(DctxError::from_core)?;
     entries.sort_by(|left, right| left.name.cmp(&right.name));
@@ -124,14 +124,14 @@ fn visit_dir(args: &WalkArgs<'_>, languages: &Option<Vec<String>>, dir: &Relativ
         if entry.is_dir() && decision.should_recurse() {
             visit_dir(args, languages, &path, state)?;
         } else if !entry.is_dir() {
-            visit_file(args, path, decision, state)?;
+            visit_file(args, &path, decision, state)?;
         }
     }
     Ok(())
 }
 
-fn visit_file(args: &WalkArgs<'_>, path: RelativePath, decision: FileHandlingDecision, state: &mut State) -> Result<(), DctxError> {
-    let meta = match args.source.metadata(&path).map_err(DctxError::from_core) {
+fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDecision, state: &mut State) -> Result<(), DctxError> {
+    let meta = match args.source.metadata(path).map_err(DctxError::from_core) {
         Ok(meta) => meta,
         Err(error @ (DctxError::Cancelled | DctxError::ResourceLimit { .. })) => return Err(error),
         Err(_) => {
@@ -161,7 +161,7 @@ fn visit_file(args: &WalkArgs<'_>, path: RelativePath, decision: FileHandlingDec
     // Drop writes this file before the function returns, so seal and query cannot join its parse.
     let mut watch = FileWatch::begin(path.as_str());
     let read_mark = profile::start();
-    let read = read_file(args, &path, state);
+    let read = read_file(args, path, state);
     watch.charge(Stage::Read, read_mark);
     let bytes = match read {
         Ok(bytes) => bytes,
@@ -311,7 +311,7 @@ fn finish(args: &WalkArgs<'_>, state: State) -> Walked {
     }
 }
 
-fn language_ok(languages: &Option<Vec<String>>, path: &str) -> bool {
+fn language_ok(languages: Option<&[String]>, path: &str) -> bool {
     match languages {
         None => true,
         Some(list) => list.iter().any(|language| language == language_of(path)),
@@ -329,6 +329,7 @@ fn line_span(bytes: &[u8]) -> u32 {
     u32::try_from(lines).unwrap_or(u32::MAX).max(1)
 }
 
+#[allow(clippy::naive_bytecount, reason = "Line counting uses standard iterators over the already bounded source buffer without another dependency.")]
 fn bytecount(bytes: &[u8], needle: u8) -> usize {
     bytes.iter().filter(|byte| **byte == needle).count()
 }
@@ -344,6 +345,7 @@ fn limit(resource: Resource, limit: u64) -> DctxError {
 
 #[cfg(test)]
 mod tests {
+    use std::fmt::Write as _;
     use super::*;
     use crate::domain::{FreshnessMode, HostGrants, OperationLimits, ParserChoice, PolicyView};
     use dctx_core::selection::{RuleTexts, SelectionPolicy};
@@ -396,11 +398,11 @@ mod tests {
         for count in 1..=5 {
             let mut body = String::new();
             for index in 0..count {
-                body.push_str(&format!("fn f{index}() {{}}\n"));
+                let _ = writeln!(body, "fn f{index}() {{}}");
             }
             let path = format!("f{count}.rs");
             source.insert_file(&path, body.as_bytes(), 0).expect("file");
-            expected.push((path, body.len() as u64, count as u64));
+            expected.push((path, body.len() as u64, u64::try_from(count).expect("nonnegative fixture count")));
         }
         let selection = SelectionPolicy::from_texts(&RuleTexts::default());
         let ceiling = HostCeiling::base();

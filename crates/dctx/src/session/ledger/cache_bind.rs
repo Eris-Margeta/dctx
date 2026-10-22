@@ -156,10 +156,7 @@ impl PersistedCache {
         let Some(generation) = self.life.current_generation(self.root_id) else {
             return Ok(None);
         };
-        let manifest_id = match manifest_object(&self.life, self.root_id, generation) {
-            Ok(id) => id,
-            Err(_) => return Ok(None),
-        };
+        let Ok(manifest_id) = manifest_object(&self.life, self.root_id, generation) else { return Ok(None) };
         let Some(manifest) = read_object(&self.root_path, manifest_id.raw())? else {
             return Ok(None);
         };
@@ -197,7 +194,7 @@ impl PersistedCache {
                     self.life = working;
                     return Ok(Some(SnapshotLease { root: self.root_path.clone(), lease }));
                 }
-                Err(error) if is_conflict(&error) => continue,
+                Err(error) if is_conflict(&error) => {},
                 Err(error) => return Err(map_cache(error)),
             }
         }
@@ -333,7 +330,7 @@ fn release_persisted(root: &Path, lease: LeaseId) -> Result<(), CacheError> {
         }
         match ledger.store(&life) {
             Ok(()) => return Ok(()),
-            Err(error) if is_conflict(&error) => continue,
+            Err(error) if is_conflict(&error) => {},
             Err(error) => return Err(error),
         }
     }

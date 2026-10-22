@@ -14,6 +14,8 @@ pub const STRUCTURAL_PARSER: &str = "dctx-structural/1";
 ///
 /// The core does not accept a git object id. Callers that need one use a plugin and get
 /// [`DctxError::UnsupportedCapability`].
+/// # Errors
+/// Returns a resource-limit error if the input exceeds the SHA-256 message length limit.
 pub fn object_key(bytes: &[u8]) -> Result<String, DctxError> {
     let digest = Sha256::digest(bytes).map_err(|_| DctxError::ResourceLimit {
         resource: Resource::FileBytes,
