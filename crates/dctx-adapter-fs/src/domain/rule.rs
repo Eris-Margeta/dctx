@@ -45,6 +45,7 @@ impl Rule {
 
 /// Parses one rule line. Blank lines and comments are `None`.
 /// `[` is a literal byte, matching the existing plain matcher.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn parse_rule(line: &str) -> Option<Rule> {
     let mut text = line.trim();
     if text.is_empty() || text.starts_with('#') {

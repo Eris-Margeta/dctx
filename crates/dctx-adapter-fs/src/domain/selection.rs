@@ -17,6 +17,7 @@ pub enum FileHandlingDecision {
 
 impl FileHandlingDecision {
     /// Whether a directory with this decision may be listed.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn should_recurse(self) -> bool {
         match self {
             Self::Include | Self::OmitContent | Self::DebugVisible => true,
@@ -25,16 +26,19 @@ impl FileHandlingDecision {
     }
 
     /// Whether file bytes may be opened. Only [`FileHandlingDecision::Include`] allows it.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn should_read_content(self) -> bool {
         matches!(self, Self::Include)
     }
 
     /// Whether the path appears in an inventory at all.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn show_in_tree(self) -> bool {
         !matches!(self, Self::Exclude)
     }
 
     /// Whether size, mtime, and inode may be read. Exclude never asks.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn needs_metadata(self) -> bool {
         !matches!(self, Self::Exclude)
     }

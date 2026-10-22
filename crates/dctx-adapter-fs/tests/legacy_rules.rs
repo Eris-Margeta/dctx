@@ -1,11 +1,11 @@
 //! Filesystem rule-loading evidence for D3-LEGACY-REMOVAL §3/§5 D3-07.
-//! Uses public FsSource with temp roots and an injected SourceFs error control.
-//! Complements core selection_legacy/selection_omit_legacy without legacy imports.
+//! Uses public `FsSource` with temp roots and an injected `SourceFs` error control.
+//! Complements core `selection_legacy/selection_omit_legacy` without legacy imports.
 //!
-//! Legacy coverage: engine_build_success/loads_hardcoded/loads_global/loads_local
-//! map to the loading tests below; error_display maps to typed Rule diagnostics.
+//! Legacy coverage: `engine_build_success/loads_hardcoded/loads_global/loads_local`
+//! map to the loading tests below; `error_display` maps to typed Rule diagnostics.
 //! Legacy omit loader's unreadable-file fallback is retired: adapter rule IO is
-//! deliberately fail-closed (SourceError::Rule), tested with readable controls.
+//! deliberately fail-closed (`SourceError::Rule`), tested with readable controls.
 //! Global files are caller-supplied `ignore`/`omitcontent`; no home discovery.
 
 #![forbid(unsafe_code)]

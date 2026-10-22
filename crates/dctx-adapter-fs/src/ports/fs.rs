@@ -57,13 +57,28 @@ pub enum FsOp {
 /// Injected filesystem. Content, policy text, and metadata are separate methods.
 pub trait SourceFs {
     /// Reads symlink-aware metadata. Must not follow links.
+    ///
+    /// # Errors
+    /// Returns the underlying metadata error, including missing or inaccessible paths.
     fn metadata(&self, path: &Path) -> io::Result<EntryMeta>;
     /// Lists immediate children without reading their bytes.
+    ///
+    /// # Errors
+    /// Returns the directory-open or entry-enumeration error.
     fn read_dir(&self, path: &Path) -> io::Result<Vec<DirEntry>>;
     /// Returns the stored link target, not a canonicalized path.
+    ///
+    /// # Errors
+    /// Returns the link-read error, including when the path is not a readable symlink.
     fn read_link(&self, path: &Path) -> io::Result<std::path::PathBuf>;
     /// Opens a regular file. Must refuse a symlink instead of following it.
+    ///
+    /// # Errors
+    /// Returns a read error for missing, inaccessible, non-regular or symlink paths.
     fn read_file(&self, path: &Path) -> io::Result<Vec<u8>>;
     /// Reads rule text. `Ok(None)` means the file is absent. Other errors stay errors.
+    ///
+    /// # Errors
+    /// Returns rule-read or text-decoding errors; an absent policy file is not an error.
     fn read_policy(&self, path: &Path) -> io::Result<Option<String>>;
 }

@@ -19,11 +19,13 @@ impl SelectionPolicy {
 
     /// Compiles explicit lines with no built-in patterns.
     /// Unreadable files are the loader's job; blank and comment lines are skipped.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn from_lines(ignore: &[&str], omit: &[&str]) -> Self {
         Self::from_rules(parse_lines(ignore), parse_lines(omit))
     }
 
     /// Decides one path with no ancestor constraint.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn decide(&self, context: &ItemContext<'_>) -> FileHandlingDecision {
         if last_match(&self.ignore, context) {
             return if context.debug_mode {
@@ -39,6 +41,7 @@ impl SelectionPolicy {
     }
 
     /// Keeps an excluded or debug-visible ancestor closed, including negated children.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn decide_with_parent(
         &self,
         context: &ItemContext<'_>,

@@ -124,6 +124,7 @@ pub struct AuthorizedFile {
 
 impl AuthorizedFile {
     /// The identity a later [`Validation`] compares against.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn identity(&self) -> RecordedIdentity {
         RecordedIdentity {
             stamp: self.stamp,

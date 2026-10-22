@@ -189,7 +189,7 @@ fn strict_digest_catches_same_size_same_mtime_edit() {
         .validate("note.txt", &first.identity(), FreshnessMode::Metadata)
         .unwrap();
     assert!(matches!(metadata, Validation::MetadataMatch { .. }));
-    assert!(source.filesystem().read_files().is_empty());
+    assert_eq!(source.filesystem().read_files(), [] as [std::path::PathBuf; 0]);
     let strict = source
         .validate("note.txt", &first.identity(), FreshnessMode::Strict)
         .unwrap();

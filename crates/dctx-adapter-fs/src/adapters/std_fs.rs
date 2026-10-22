@@ -108,6 +108,7 @@ fn modified_ns(meta: &fs::Metadata) -> io::Result<u128> {
 }
 
 #[cfg(unix)]
+#[allow(clippy::unnecessary_wraps, reason = "The cross-platform file-index hook returns None on platforms without Unix inode metadata.")]
 fn file_index(meta: &fs::Metadata) -> Option<u64> {
     use std::os::unix::fs::MetadataExt;
     Some(meta.ino())

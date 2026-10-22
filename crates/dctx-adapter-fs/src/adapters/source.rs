@@ -47,6 +47,9 @@ pub struct FsSource<F> {
 
 impl FsSource<StdFs> {
     /// Canonicalizes `root` and loads rules from the process filesystem.
+    ///
+    /// # Errors
+    /// Returns a source error when the root cannot be canonicalized or when loading its metadata or selection rules fails.
     pub fn open(root: &std::path::Path, options: SourceOptions) -> Result<Self, SourceError> {
         let root = fs::canonicalize(root).map_err(|source| SourceError::io(root, source))?;
         Self::load(root, options, StdFs)
@@ -55,6 +58,10 @@ impl FsSource<StdFs> {
 
 impl<F: SourceFs> FsSource<F> {
     /// Loads rules through `fs`. `root` must already be absolute.
+    ///
+    /// # Errors
+    /// Refuses a non-absolute or non-directory root; propagates metadata, rule-read and invalid-rule failures.
+    #[allow(clippy::needless_pass_by_value, reason = "Keep the existing public load signature; the options value is the session configuration transferred by the caller.")]
     pub fn load(root: PathBuf, options: SourceOptions, fs: F) -> Result<Self, SourceError> {
         if !root.is_absolute() {
             return Err(SourceError::InvalidPath { path: root });
@@ -81,11 +88,17 @@ impl<F: SourceFs> FsSource<F> {
     }
 
     /// Lists visible files. Excluded paths are not opened. Escapes fail the inventory.
+    ///
+    /// # Errors
+    /// Returns filesystem, invalid-path or confinement errors encountered while walking visible entries.
     pub fn inventory(&self) -> Result<Vec<SourceFile>, SourceError> {
         walk::inventory(&self.root, &self.policy, &self.fs, self.debug, self.mode)
     }
 
     /// Reads one included file. A race returns [`SourceError::Stale`] and no bytes.
+    ///
+    /// # Errors
+    /// Refuses missing, excluded or escaping paths; propagates IO errors and reports a stale identity without returning bytes.
     pub fn read(&self, relative: &str) -> Result<AuthorizedFile, SourceError> {
         let resolved = self.included(relative)?;
         match read_authorized(&self.fs, &resolved.disk)? {
@@ -104,6 +117,9 @@ impl<F: SourceFs> FsSource<F> {
 
     /// Checks a recorded identity. Metadata mode does not open the file.
     /// Strict mode hashes with `dctx-hash` and reports a same-stamp byte change as a mismatch.
+    ///
+    /// # Errors
+    /// Refuses excluded or escaping paths and propagates IO failures; ordinary missing or changed identities are returned as stale validation results.
     pub fn validate(
         &self,
         relative: &str,
