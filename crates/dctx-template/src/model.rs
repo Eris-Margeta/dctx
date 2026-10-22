@@ -1,5 +1,5 @@
-//! Typed ContextPlan, host ceiling and plugin catalog.
-//! Implements contracts/DTS-v2.md (ContextPlanV1) and PLUGINS.md §3.5 declarations.
+//! Typed `ContextPlan`, host ceiling and plugin catalog.
+//! Implements contracts/DTS-v2.md (`ContextPlanV1`) and PLUGINS.md §3.5 declarations.
 //! Depends on [`crate::error`] and [`dctx_core::FileHandlingDecision`]. Used by compile, encode and render.
 //! Templates narrow these ceilings; they never raise them.
 
@@ -154,6 +154,7 @@ pub struct RenderProgram {
 
 impl RenderProgram {
     /// Number of instructions across partials and layouts.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn instruction_count(&self) -> usize {
         let partials: usize = self.partials.iter().map(|code| code.instructions.len()).sum();
         let layouts: usize = self.layouts.iter().map(|code| code.instructions.len()).sum();
@@ -195,6 +196,7 @@ pub struct ContextPlan {
 impl ContextPlan {
     /// Selection and extraction digests.
     /// These identify map facts. Plugin configuration is not part of either value.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn map_facts(&self) -> ([u8; 32], [u8; 32]) {
         (self.selection_digest, self.extraction_digest)
     }
@@ -256,6 +258,7 @@ pub struct HostCeiling {
 
 impl HostCeiling {
     /// Spec maximums, pure parsers, pack and map, no grants and no plugins.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn base() -> Self {
         let mut capabilities = BTreeSet::new();
         for name in [

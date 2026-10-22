@@ -57,11 +57,11 @@ pub(super) fn bind_decl(
     let hooks = hooks_of(&decl.hooks, catalog)?;
     let denied = denied_set(host, &decl.id);
     let allow = expand_allow(&decl.allow, catalog, &denied)?;
-    let user = host.user_config.get(&decl.id).map(Vec::as_slice).unwrap_or(&[]);
+    let user = host.user_config.get(&decl.id).map_or(&[][..], Vec::as_slice);
     let config = merge_config(&decl.id, &catalog.fields, &decl.config, user)?;
     let alias = decl.alias.clone().unwrap_or_else(|| catalog.alias.clone());
     claim_alias(&alias, aliases)?;
-    let listed = enabled.map(|set| set.contains(&decl.id)).unwrap_or(true);
+    let listed = enabled.is_none_or(|set| set.contains(&decl.id));
     if host.disabled_plugins.contains(&decl.id) {
         if decl.required {
             return Err(TemplateError::UserDisabled { id: decl.id.clone() });
@@ -103,7 +103,7 @@ pub(super) fn bind_catalog(
     let selectors = granted_selectors(catalog, &denied);
     let allow = expand_allow(&selectors, catalog, &denied)?;
     let hooks = hooks_of(&catalog.hooks, catalog)?;
-    let user = host.user_config.get(&catalog.id).map(Vec::as_slice).unwrap_or(&[]);
+    let user = host.user_config.get(&catalog.id).map_or(&[][..], Vec::as_slice);
     let config = merge_config(&catalog.id, &catalog.fields, &[], user)?;
     Ok(active(catalog, &catalog.version, catalog.alias.clone(), false, Effect { hooks, allow, config }, &[], &[]))
 }

@@ -1,6 +1,6 @@
 //! Selection, extraction, budget, view and render section payload codecs.
 //! Implements contracts/DTS-v2.md compiled IR and IDENTITY-v1.
-//! Depends on plan model types, opcode validation and bounded byte I/O; used by the ContextPlan binary codec.
+//! Depends on plan model types, opcode validation and bounded byte I/O; used by the `ContextPlan` binary codec.
 
 use dctx_core::FileHandlingDecision;
 

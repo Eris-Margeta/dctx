@@ -89,12 +89,12 @@ full = "{{prefix}}_END"
 
 #[test]
 fn test_template_parse_partial_tree() {
-    let raw = r#"
+    let raw = r"
 [VARIABLES]
 [PARTIAL:TREE_ENTRY]
 {{{node.type_char}}} {{{node.path}}}
 [LAYOUT]
-"#;
+";
     let tmpl = Template::parse(raw);
     assert!(tmpl.partial_tree_entry.contains("{{{node.type_char}}}"));
     assert!(tmpl.partial_tree_entry.contains("{{{node.path}}}"));
@@ -117,14 +117,14 @@ fn test_template_parse_partial_file() {
 
 #[test]
 fn test_template_parse_layout() {
-    let raw = r#"
+    let raw = r"
 [VARIABLES]
 [LAYOUT]
 === TREE ===
 {{{comp.tree}}}
 === FILES ===
 {{{comp.files}}}
-"#;
+";
     let tmpl = Template::parse(raw);
     assert!(tmpl.layout.contains("{{{comp.tree}}}"));
     assert!(tmpl.layout.contains("{{{comp.files}}}"));
@@ -329,10 +329,10 @@ marker = "X"
 
 #[test]
 fn test_compile_fails_on_invalid_template() {
-    let raw = r#"
+    let raw = r"
 [VARIABLES]
 [LAYOUT]
-"#;
+";
     let tmpl = Template::parse(raw);
     assert!(tmpl.compile("test").is_err());
 }

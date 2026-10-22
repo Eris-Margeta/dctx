@@ -175,9 +175,9 @@ required = false
     let gone = plan.plugins.plugins.iter().find(|plugin| plugin.id == "ex/gone").expect("gone");
     assert_eq!(gone.state, PluginState::Unavailable);
     assert_eq!(gone.resolution, Resolution::Unavailable { reason: UnavailableReason::NotInstalled });
-    assert!(gone.allow.is_empty());
-    assert!(gone.hooks.is_empty());
-    assert!(gone.config.is_empty());
+    assert_eq!(gone.allow, [] as [dctx_template::Capability; 0]);
+    assert_eq!(gone.hooks, [] as [dctx_template::HookDecl; 0]);
+    assert_eq!(gone.config, [] as [dctx_template::ConfigEntry; 0]);
     assert!(gone.digest.is_none());
 
     let nope = git_source().replace("config.stage = true", "config.stage = true\nconfig.nope = true");
@@ -213,9 +213,9 @@ config.stage = true
     );
     let disabled = compile(&optional, &host).expect("sticky disable");
     assert_eq!(disabled.plugins.plugins[0].state, PluginState::Disabled);
-    assert!(disabled.plugins.plugins[0].allow.is_empty());
-    assert!(disabled.plugins.plugins[0].config.is_empty());
-    assert!(disabled.plugins.order.is_empty());
+    assert_eq!(disabled.plugins.plugins[0].allow, [] as [dctx_template::Capability; 0]);
+    assert_eq!(disabled.plugins.plugins[0].config, [] as [dctx_template::ConfigEntry; 0]);
+    assert_eq!(disabled.plugins.order, [] as [std::string::String; 0]);
     assert_eq!(disabled.plugins.plugins[0].digest, bundled_git_plugin().digest);
 
     host.disabled_plugins.clear();
@@ -293,7 +293,7 @@ Hello {{name}}
 ";
     let bare_host = HostCeiling::base();
     let bare = compile(source, &bare_host).expect("library");
-    assert!(bare.plugins.plugins.is_empty());
+    assert_eq!(bare.plugins.plugins, [] as [dctx_template::PluginBinding; 0]);
     let mut plugin_host = git_host();
     let with = compile(source, &plugin_host).expect("distribution");
     assert_eq!(with.plugins.plugins[0].state, PluginState::Enabled);
@@ -306,7 +306,7 @@ Hello {{name}}
     plugin_host.disabled_plugins.insert("dctx/git".to_string());
     let off = compile(source, &plugin_host).expect("user disable");
     assert_eq!(off.plugins.plugins[0].state, PluginState::Disabled);
-    assert!(off.plugins.plugins[0].allow.is_empty());
+    assert_eq!(off.plugins.plugins[0].allow, [] as [dctx_template::Capability; 0]);
     assert_eq!(render_plan(&off, "pack", &[], "demo", &plugin_host).expect("off"), bare_text);
 
     plugin_host.disabled_plugins.clear();
@@ -328,7 +328,7 @@ required = false
     let host = HostCeiling::base();
     let plan = compile(&source, &host).expect("optional");
     assert_eq!(plan.plugins.plugins[0].state, PluginState::Unavailable);
-    assert!(plan.plugins.plugins[0].allow.is_empty());
+    assert_eq!(plan.plugins.plugins[0].allow, [] as [dctx_template::Capability; 0]);
     let bytes = to_bytes(&plan).expect("encode");
     assert_eq!(load(&bytes, &host).expect("still missing"), plan);
     let err = load(&bytes, &git_host()).expect_err("now installed");

@@ -1,4 +1,4 @@
-//! Pure DTS v1 renderer and v2 ContextPlan compiler.
+//! Pure DTS v1 renderer and v2 `ContextPlan` compiler.
 //! Implements ARCHITECTURE-PROPOSAL §2 and §7 row DX-B2, contracts/DTS-v2.md, and PLUGINS.md §3.5.
 //! Depends on dctx-core for decisions and token estimates, and on dctx-hash for SHA-256.
 //! No filesystem, process, network or plugin execution; callers use [`compile`], [`load`] and [`render_plan`].
@@ -43,6 +43,9 @@ pub use v1::{render_markers, replace_vars, CompiledTemplate, MarkerNode, Templat
 
 /// Loads a plan and checks plugin locks, order and ceilings against `host`.
 /// [`from_bytes`] checks structure only. A blob the current policy would refuse does not load.
+///
+/// # Errors
+/// Propagates binary decoding failures and refuses plugin locks, ordering, grants or ceilings that the current host policy rejects.
 pub fn load(bytes: &[u8], host: &HostCeiling) -> Result<ContextPlan, TemplateError> {
     let plan = from_bytes(bytes)?;
     plugin_plan::revalidate(&plan, host)?;

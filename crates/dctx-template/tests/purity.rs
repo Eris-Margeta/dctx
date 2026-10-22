@@ -55,7 +55,7 @@ fn production_sources_name_no_io() {
 #[test]
 fn the_check_catches_io_and_allows_std_io() {
     let bad = "fn bad() { let _ = std::fs::read(\"x\"); }\n";
-    assert!(!violations(bad).is_empty());
+    assert_ne!(violations(bad), [] as [std::string::String; 0]);
     let ok = "fn read(r: &mut std::io::Stdin) {}\n";
-    assert!(violations(ok).is_empty());
+    assert_eq!(violations(ok), [] as [std::string::String; 0]);
 }

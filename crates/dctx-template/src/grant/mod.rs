@@ -90,11 +90,11 @@ fn semver_ok(text: &str) -> bool {
     if parts.next().is_some() || !numeric(major) || !numeric(minor) || !numeric(patch) {
         return false;
     }
-    pre.map(|text| pre_ok(text, true)).unwrap_or(true) && build.map(|text| pre_ok(text, false)).unwrap_or(true)
+    pre.is_none_or(|text| pre_ok(text, true)) && build.is_none_or(|text| pre_ok(text, false))
 }
 
 fn numeric(part: &str) -> bool {
-    !part.is_empty() && !(part.len() > 1 && part.starts_with('0')) && part.bytes().all(|byte| byte.is_ascii_digit())
+    !part.is_empty() && (part.len() <= 1 || !part.starts_with('0')) && part.bytes().all(|byte| byte.is_ascii_digit())
 }
 
 fn pre_ok(text: &str, reject_leading_zero: bool) -> bool {

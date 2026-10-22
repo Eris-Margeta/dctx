@@ -17,6 +17,9 @@ use crate::source::{guard_source, include_names, parse_v2, BudgetDraft, Draft, I
 use crate::v1::{replace_vars, Template};
 
 /// Compiles v1 or v2 source into a sealed [`ContextPlan`].
+///
+/// # Errors
+/// Refuses invalid or oversized source, unresolved references, unsupported features and plugin/grant/budget requests outside the host ceiling.
 pub fn compile(source: &str, host: &HostCeiling) -> Result<ContextPlan, TemplateError> {
     guard_source(source)?;
     let mut plan = match version_decl_plan(source, host)? {

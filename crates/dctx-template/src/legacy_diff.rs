@@ -7,11 +7,13 @@ use dctx_core::datatypes::NodeType;
 use dctx_core::diff::{ChangeType, DiffReport};
 use dctx_core::version::Version;
 
+use std::fmt::Write as _;
 use crate::legacy_output::FileMode;
 use crate::{MarkerNode, Template};
 
 /// Renders the legacy diff signature, summary, updated tree and changed file blocks.
 /// Summary entries retain caller order; blocks retain tree order and full-tree ids.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn render_legacy_diff(
     template: &Template,
     root: &MarkerNode,
@@ -30,7 +32,7 @@ pub fn render_legacy_diff(
             ChangeType::Modified => "MODIFIED",
         };
         let suffix = if entry.node_type == NodeType::Directory { "/" } else { "" };
-        output.push_str(&format!("[{change}] {}{suffix}\n", entry.relative_path));
+        let _ = writeln!(output, "[{change}] {}{suffix}", entry.relative_path);
     }
     output.push_str("</CHANGES_SUMMARY>\n\n<UPDATED_DIRECTORY_TREE>\n");
     let changed = diff.entries.iter()

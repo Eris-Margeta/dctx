@@ -136,7 +136,7 @@ fn unquote(value: &str, line: u32) -> Result<String, TemplateError> {
         }
         return Ok(out);
     }
-    if value.chars().any(|ch| ch.is_whitespace()) {
+    if value.chars().any(char::is_whitespace) {
         return Err(TemplateError::InvalidSyntax { line, detail: "string".into() });
     }
     Ok(value.to_string())

@@ -24,6 +24,7 @@ pub struct Template {
 
 impl Template {
     /// Parses v1 source. Unknown headers do not change the current section.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn parse(raw: &str) -> Self {
         let mut variables = HashMap::new();
         let mut partial_tree = String::new();
@@ -68,7 +69,7 @@ impl Template {
             }
         }
 
-        finish(variables, partial_tree, partial_file, layout)
+        finish(variables, &partial_tree, &partial_file, &layout)
     }
 
     /// Inserts a runtime variable such as `project`.
@@ -77,6 +78,7 @@ impl Template {
     }
 
     /// Reports empty layouts, unresolved `{{var}}` references and variable cycles.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn validate(&self) -> Vec<TemplateValidationError> {
         let mut errors = Vec::new();
         if self.layout.is_empty() {
@@ -94,9 +96,9 @@ impl Template {
 
 pub(crate) fn finish(
     mut variables: HashMap<String, String>,
-    partial_tree: String,
-    partial_file: String,
-    layout: String,
+    partial_tree: &str,
+    partial_file: &str,
+    layout: &str,
 ) -> Template {
     let raw = variables.clone();
     for _ in 0..2 {
@@ -119,6 +121,8 @@ pub(crate) fn finish(
 }
 
 /// Replaces `{{key}}` using `HashMap` iteration order, matching the v1 renderer.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+#[allow(clippy::implicit_hasher, reason = "Keep the public v1 HashMap signature and its documented default-hasher iteration contract; generalizing it would change the API.")]
 pub fn replace_vars(text: &str, vars: &HashMap<String, String>) -> String {
     let mut result = text.to_string();
     if !result.contains("{{") {
@@ -187,7 +191,7 @@ fn find_cycles(vars: &HashMap<String, String>) -> Vec<String> {
             .into_iter()
             .filter(|name| vars.contains_key(name))
             .map(|name| {
-                vars.get_key_value(&name).map(|(k, _)| k.as_str()).unwrap_or("")
+                vars.get_key_value(&name).map_or("", |(k, _)| k.as_str())
             })
             .filter(|name| !name.is_empty())
             .collect();
@@ -238,11 +242,11 @@ mod tests {
         let raw = "[VARIABLES]\na = \"A\"\nb = \"{{a}}B\"\nc = \"{{b}}C\"\n[LAYOUT]\nx\n";
         let template = Template::parse(raw);
         assert_eq!(template.variables.get("c").map(String::as_str), Some("ABC"));
-        assert!(template.cycles.is_empty());
+        assert_eq!(template.cycles, [] as [std::string::String; 0]);
 
         let cyclic = "[VARIABLES]\na = \"{{b}}\"\nb = \"{{a}}\"\n[LAYOUT]\n{{a}}\n";
         let template = Template::parse(cyclic);
-        assert!(!template.cycles.is_empty());
+        assert_ne!(template.cycles, [] as [std::string::String; 0]);
         assert!(template.validate().iter().any(|err| matches!(err, TemplateValidationError::Cycle(_))));
     }
 }

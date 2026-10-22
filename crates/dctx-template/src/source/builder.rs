@@ -8,8 +8,8 @@ use crate::error::TemplateError;
 use crate::model::Selection;
 use crate::v1::{replace_vars, Template};
 
-use super::draft::*;
-use super::fields::*;
+use super::draft::{Draft, IndexDraft, BudgetDraft, ViewDraft, GroupDraft, PluginDecl};
+use super::fields::{apply_select, apply_index, apply_budget, apply_view, apply_group, apply_plugin};
 use super::value::{check_ident, header, once, parse_version, split_key};
 
 /// Parses a v2 document. Call only after [`super::version_decl`] returned [`super::VersionDecl::V2`].
@@ -22,13 +22,13 @@ pub(crate) fn parse_v2(source: &str) -> Result<Draft, TemplateError> {
             continue;
         }
         if let Some((kind, name)) = header(trimmed) {
-            builder.flush()?;
+            builder.flush();
             builder.open(kind, name.trim(), line_no)?;
             continue;
         }
         builder.line(trimmed, line, line_no)?;
     }
-    builder.flush()?;
+    builder.flush();
     builder.finish()
 }
 
@@ -136,33 +136,26 @@ impl Builder {
         Ok(())
     }
 
-    fn flush(&mut self) -> Result<(), TemplateError> {
+    fn flush(&mut self) {
         match std::mem::replace(&mut self.current, Current::Empty) {
-            Current::Empty | Current::Variables => Ok(()),
-            Current::Dts => Ok(()),
+            Current::Empty | Current::Variables | Current::Dts => {},
             Current::Select(section) => {
                 self.selections.push(section);
-                Ok(())
             }
             Current::Index(section) => {
                 self.indexes.push(section);
-                Ok(())
             }
             Current::Budget(section) => {
                 self.budgets.push(section);
-                Ok(())
             }
             Current::View(section) => {
                 self.views.push(section);
-                Ok(())
             }
             Current::Plugins(section) => {
                 self.groups.push(section);
-                Ok(())
             }
             Current::Plugin(section) => {
                 self.plugins.push(section);
-                Ok(())
             }
             Current::Text { name, layout, body } => {
                 let text = body.trim().to_string();
@@ -171,7 +164,6 @@ impl Builder {
                 } else {
                     self.partials.push((name, text));
                 }
-                Ok(())
             }
         }
     }
@@ -228,7 +220,7 @@ impl Builder {
         let tree = body_named(&partials, "TREE_ENTRY");
         let file = body_named(&partials, "FILE_BLOCK");
         let layout = body_named(&layouts, "main");
-        let template = crate::v1::finish(variables, tree, file, layout);
+        let template = crate::v1::finish(variables, &tree, &file, &layout);
         let resolved_partials = resolve_bodies(&partials, &template);
         let resolved_layouts = resolve_bodies(&layouts, &template);
         Ok(Draft {

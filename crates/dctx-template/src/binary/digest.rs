@@ -1,6 +1,6 @@
-//! ContextPlan section bodies, domain digests and provenance.
+//! `ContextPlan` section bodies, domain digests and provenance.
 //! Implements contracts/DTS-v2.md compiled IR and IDENTITY-v1.
-//! Depends on dctx-hash, section codecs and byte readers; used by the ContextPlan binary codec.
+//! Depends on dctx-hash, section codecs and byte readers; used by the `ContextPlan` binary codec.
 
 use dctx_hash::Sha256;
 
@@ -8,7 +8,7 @@ use crate::error::{TemplateError, MAX_PLAN_BYTES};
 use crate::model::ContextPlan;
 
 use super::io::Reader;
-use super::sections::*;
+use super::sections::{encode_selections, encode_indexes, encode_budgets, encode_views, encode_render};
 use super::{IR_MAJOR, IR_MINOR, SCHEMA};
 
 pub(super) struct Body {

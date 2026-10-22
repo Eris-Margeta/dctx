@@ -1,4 +1,4 @@
-//! V2 ContextPlan compile, canonical bytes and domain digests.
+//! V2 `ContextPlan` compile, canonical bytes and domain digests.
 
 use dctx_core::FileHandlingDecision;
 use dctx_template::{bundled_git_plugin, compile, from_bytes, to_bytes, HostCeiling, PluginState};

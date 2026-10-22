@@ -143,7 +143,7 @@ fn compile_text(
                 return Err(TemplateError::UnresolvedVariable { name: name.to_string() });
             }
         }
-        i += text[i..].chars().next().map(|ch| ch.len_utf8()).unwrap_or(1);
+        i += text[i..].chars().next().map_or(1, char::len_utf8);
     }
     push_text(&mut out, strings, &text[lit..])?;
     Ok(out)

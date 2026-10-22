@@ -1,4 +1,4 @@
-//! Binary plugin section of a ContextPlan.
+//! Binary plugin section of a `ContextPlan`.
 //! Implements contracts/DTS-v2.md section payloads for the plugin extension.
 //! Depends on [`crate::plugin`] and [`crate::error`]. [`crate::binary`] frames the bytes.
 //! Field order is fixed so a reload reproduces the compiled value.

@@ -75,7 +75,7 @@ c = \"{{b}}C\"
 {{c}}
 ");
     assert_eq!(chain.variables.get("c").map(String::as_str), Some("ABC"));
-    assert!(chain.cycles.is_empty());
+    assert_eq!(chain.cycles, [] as [std::string::String; 0]);
 }
 
 #[test]

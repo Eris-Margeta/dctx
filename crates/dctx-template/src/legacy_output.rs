@@ -9,6 +9,7 @@ use dctx_core::datatypes::NodeType;
 use dctx_core::diff::{ChangeType, DiffReport};
 use dctx_core::version::Version;
 
+use std::fmt::Write as _;
 use crate::error::TemplateError;
 use crate::{MarkerNode, Template};
 
@@ -39,6 +40,7 @@ pub struct LegacyOutput {
 
 impl LegacyOutput {
     /// Explicit template and layout, omitting SVG content and hiding ignored entries.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn new(template: Template, layout: LegacyLayout) -> Self {
         Self { template, layout, omit_svg_content: true, debug_ignored: false }
     }
@@ -46,6 +48,7 @@ impl LegacyOutput {
 
 /// Renders a legacy snapshot, including its version signature and optional file blocks.
 /// The template already contains runtime variables; all bytes and decisions are injected.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn render_legacy_snapshot(
     template: &Template,
     root: &MarkerNode,
@@ -99,6 +102,9 @@ impl Template {
     ///
     /// The expansion is measured first. A larger page returns [`TemplateError::BudgetTooSmall`]
     /// with the exact byte length and does not allocate that expansion.
+    ///
+    /// # Errors
+    /// Returns a budget or size-overflow error when the page or an intermediate expansion exceeds its ceiling.
     pub fn legacy_snapshot_within(
         &self,
         root: &MarkerNode,
@@ -128,6 +134,9 @@ impl Template {
     ///
     /// File blocks are measured first. A larger page returns [`TemplateError::BudgetTooSmall`]
     /// with the exact byte length and does not allocate that expansion.
+    ///
+    /// # Errors
+    /// Returns a budget or size-overflow error when the page or an intermediate expansion exceeds its ceiling.
     pub fn legacy_diff_within(
         &self,
         root: &MarkerNode,
@@ -190,7 +199,7 @@ fn diff_document_len(
             ChangeType::Modified => "MODIFIED",
         };
         let suffix = if entry.node_type == NodeType::Directory { "/" } else { "" };
-        prefix.push_str(&format!("[{change}] {}{suffix}\n", entry.relative_path));
+        let _ = writeln!(prefix, "[{change}] {}{suffix}", entry.relative_path);
     }
     prefix.push_str("</CHANGES_SUMMARY>\n\n<UPDATED_DIRECTORY_TREE>\n");
     let glued = add_len(u64::try_from(prefix.len()).unwrap_or(u64::MAX), tree_trimmed)?;

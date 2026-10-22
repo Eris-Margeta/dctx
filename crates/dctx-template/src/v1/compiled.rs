@@ -29,6 +29,9 @@ pub struct CompiledTemplate {
 
 impl Template {
     /// Validates and substitutes `{{var}}` into the partials and layout.
+    ///
+    /// # Errors
+    /// Returns validation errors for reference cycles or unresolved variables.
     pub fn compile(&self, name: &str) -> Result<CompiledTemplate, Vec<TemplateValidationError>> {
         let errors = self.validate();
         if !errors.is_empty() {
@@ -46,6 +49,9 @@ impl Template {
 
 impl CompiledTemplate {
     /// Writes magic `DCTXTMPL`, version 1, then name, variables, partials and layout.
+    ///
+    /// # Errors
+    /// Refuses fields too long for their encoded lengths and propagates writer IO failures.
     pub fn serialize<W: Write>(&self, writer: &mut W) -> io::Result<()> {
         writer.write_all(MAGIC)?;
         writer.write_all(&VERSION.to_le_bytes())?;
@@ -70,6 +76,9 @@ impl CompiledTemplate {
     }
 
     /// Reads a template written by [`CompiledTemplate::serialize`].
+    ///
+    /// # Errors
+    /// Refuses invalid magic, versions, lengths or UTF-8 and propagates incomplete-read/reader IO failures.
     pub fn deserialize<R: Read>(reader: &mut R) -> io::Result<Self> {
         let mut magic = [0u8; 8];
         reader.read_exact(&mut magic)?;
@@ -96,6 +105,7 @@ impl CompiledTemplate {
     }
 
     /// Rebuilds a [`Template`] whose partials are already substituted.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn to_template(&self) -> Template {
         Template {
             variables: self.variables.clone(),

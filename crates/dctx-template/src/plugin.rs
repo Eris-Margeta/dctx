@@ -18,6 +18,7 @@ pub enum NetworkPolicy {
 
 impl NetworkPolicy {
     /// Width rank. A template may only move toward [`NetworkPolicy::None`].
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn rank(self) -> u8 {
         match self {
             Self::None => 0,
@@ -27,6 +28,7 @@ impl NetworkPolicy {
     }
 
     /// Canonical token stored on a group.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
             Self::None => "none",
@@ -335,6 +337,7 @@ pub struct ResourceLimits {
 
 impl ResourceLimits {
     /// Defaults from the v1 git manifest and dts plan fixture.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn standard() -> Self {
         Self {
             frame_bytes: 1_048_576,
@@ -352,6 +355,9 @@ impl ResourceLimits {
     }
 
     /// Every field is at most `ceiling`.
+    ///
+    /// # Errors
+    /// Returns a budget-above-ceiling error for the first resource field that exceeds the corresponding ceiling.
     pub fn within(&self, ceiling: &Self) -> Result<(), TemplateError> {
         within(self.frame_bytes, ceiling.frame_bytes, "frame_bytes")?;
         within(self.read_bytes, ceiling.read_bytes, "read_bytes")?;
@@ -405,6 +411,7 @@ pub enum Liveness {
 
 impl Liveness {
     /// Unattended fail-closed defaults from the dts plan fixture.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn fail_closed() -> Self {
         Self::UnattendedFailClosed { sample_ms: 1000, cancel_grace_ms: 5000 }
     }
@@ -431,6 +438,7 @@ pub struct PluginPlan {
 pub const RESERVED_ALIASES: &[&str] = &["plugin", "pack", "map", "cache", "template", "help", "version"];
 
 /// The bundled `dctx/git` manifest from the plugin-api fixtures. The host still opts in.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn bundled_git_plugin() -> KnownPlugin {
     KnownPlugin {
         id: "dctx/git".to_string(),

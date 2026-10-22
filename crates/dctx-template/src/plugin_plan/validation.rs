@@ -94,10 +94,10 @@ pub(super) fn confirm_digest(source: Option<&str>, locked: Option<[u8; 32]>) -> 
     match (source, locked) {
         (None, _) => Ok(()),
         (Some(text), Some(pinned)) => {
-            if parse_digest(text)? != pinned {
-                Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin digest mismatch".into() })
-            } else {
+            if parse_digest(text)? == pinned {
                 Ok(())
+            } else {
+                Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin digest mismatch".into() })
             }
         }
         (Some(_), None) => Err(TemplateError::InvalidSyntax { line: 0, detail: "plugin digest".into() }),

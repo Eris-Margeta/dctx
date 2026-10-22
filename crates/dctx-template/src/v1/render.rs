@@ -36,6 +36,7 @@ pub struct MarkerNode {
 
 impl MarkerNode {
     /// A directory node with no children.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn dir(path: &str, modified: u64) -> Self {
         Self {
             relative_path: path.to_string(),
@@ -51,6 +52,7 @@ impl MarkerNode {
     }
 
     /// A file node. `content` is rendered only when the node is included.
+    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub fn file(path: &str, content: &[u8], modified: u64) -> Self {
         Self {
             relative_path: path.to_string(),
@@ -67,6 +69,7 @@ impl MarkerNode {
 }
 
 /// Renders `root` with the v1 marker rules. `template.variables` must already hold `project` when the layout uses it.
+#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn render_markers(template: &Template, root: &MarkerNode, tree_only: bool) -> String {
     let (tree, files) = template.marker_components(root, &FileMode::Markers { tree_only });
     template.marker_layout(tree.trim(), files.trim())
@@ -114,7 +117,7 @@ fn render_node(
     };
 
     let type_char = if node.is_dir { "[D]" } else { "[F]" };
-    let size_attr = template.variables.get("attr_size").map(String::as_str).unwrap_or("SIZE");
+    let size_attr = template.variables.get("attr_size").map_or("SIZE", String::as_str);
     let size_part = if node.is_dir {
         String::new()
     } else {
@@ -155,6 +158,7 @@ fn render_node(
     }
 }
 
+#[allow(clippy::naive_bytecount, reason = "Count newline bytes with standard iterators to preserve the renderer line-count convention without adding a byte-count dependency.")]
 fn file_body(node: &MarkerNode, mode: &FileMode<'_>) -> (usize, String) {
     if let Some(message) = mode.omission(node) {
         return (0, message);
@@ -171,9 +175,9 @@ fn file_body(node: &MarkerNode, mode: &FileMode<'_>) -> (usize, String) {
 
 /// End-marker prefix used when a plan render escapes file content.
 pub fn end_marker_of(variables: &HashMap<String, String>) -> String {
-    let open = variables.get("end_marker_open").map(String::as_str).unwrap_or("</");
-    let name = variables.get("file_end_marker").map(String::as_str).unwrap_or("FILE");
-    let close = variables.get("end_marker_close").map(String::as_str).unwrap_or(">");
+    let open = variables.get("end_marker_open").map_or("</", String::as_str);
+    let name = variables.get("file_end_marker").map_or("FILE", String::as_str);
+    let close = variables.get("end_marker_close").map_or(">", String::as_str);
     format!("{open}{name}{close}")
 }
 
@@ -351,10 +355,10 @@ impl Doc {
             let text = self.materialize()?;
             return Ok(Doc::from_string(text.trim().to_string()));
         }
-        self.trim_large()
+        Ok(self.trim_large())
     }
 
-    fn trim_large(&self) -> Result<Doc, TemplateError> {
+    fn trim_large(&self) -> Doc {
         let mut pieces = self.pieces.clone();
         while pieces.first().is_some_and(|piece| whitespace_unit(&piece.text)) {
             pieces.remove(0);
@@ -363,12 +367,12 @@ impl Doc {
             pieces.pop();
         }
         if pieces.is_empty() {
-            return Ok(Doc::default());
+            return Doc::default();
         }
         trim_start_side(&mut pieces);
         trim_end_side(&mut pieces);
         pieces.retain(|piece| piece.times > 0 && !piece.text.is_empty());
-        Ok(Doc { pieces })
+        Doc { pieces }
     }
 }
 
@@ -544,7 +548,7 @@ impl Template {
         if !node.is_dir && !node.is_ignored && mode.includes(node) {
             let content = match mode.omission(node) {
                 Some(message) => message.len() as u64,
-                None => node.content.as_ref().map(|bytes| bytes.len() as u64).unwrap_or(0).saturating_mul(3),
+                None => node.content.as_ref().map_or(0, |bytes| bytes.len() as u64).saturating_mul(3),
             };
             let block = block_upper(
                 &self.partial_file_block,
@@ -607,7 +611,7 @@ impl Template {
 
     fn tree_entry(&self, node: &MarkerNode, current_id: &str, depth: usize) -> Result<String, TemplateError> {
         let type_char = if node.is_dir { "[D]" } else { "[F]" };
-        let size_attr = self.variables.get("attr_size").map(String::as_str).unwrap_or("SIZE");
+        let size_attr = self.variables.get("attr_size").map_or("SIZE", String::as_str);
         let size_part = if node.is_dir {
             String::new()
         } else {
@@ -671,6 +675,7 @@ fn block_upper(partial: &str, replacements: &[(&str, u64)]) -> u64 {
     upper.saturating_add(partial.len() as u64)
 }
 
+#[allow(clippy::naive_bytecount, reason = "Count newline bytes with standard iterators to preserve the renderer line-count convention without adding a byte-count dependency.")]
 fn measured_body(node: &MarkerNode, mode: &FileMode<'_>) -> (usize, String) {
     if let Some(message) = mode.omission(node) {
         return (0, message);
@@ -717,9 +722,9 @@ mod measure_tests {
     fn repeated_content_over_the_ceiling_keeps_one_segment() {
         let times = 4096u64;
         let unit = 8192u64;
-        let template = repeated(times as usize);
+        let template = repeated(usize::try_from(times).unwrap());
         let mut root = MarkerNode::dir("", 0);
-        root.children.push(MarkerNode::file("a.txt", &vec![b'Q'; unit as usize], 1));
+        root.children.push(MarkerNode::file("a.txt", &vec![b'Q'; usize::try_from(unit).unwrap()], 1));
         let mode = FileMode::Snapshot { tree_only: false, omit_svg_content: true };
         assert!(!template.legacy_expansion_fits(&root, &mode));
         let (_tree_raw, _tree_trimmed, files_raw, body) = template.measure_legacy(&root, &mode).expect("measure");

@@ -3,6 +3,7 @@
 //! Depends on [`crate::model`], [`crate::opcode`] and dctx-core glob matching. Callers use [`render_plan`].
 //! A template decision wider than the host grant is clamped on the render path and refused by [`authorize_path`].
 
+use std::fmt::Write as _;
 use std::collections::HashMap;
 
 use dctx_core::budget::estimate_tokens;
@@ -34,6 +35,9 @@ pub struct AnswerRecord {
 }
 
 /// Keeps `requested` when it is no wider than `host` in content or visibility.
+///
+/// # Errors
+/// Returns a grant-expansion error if the requested content or visibility exceeds the host decision.
 pub fn narrow_decision(
     host: FileHandlingDecision,
     requested: FileHandlingDecision,
@@ -46,6 +50,9 @@ pub fn narrow_decision(
 }
 
 /// Intersects the host grant with the template selection. Expansion is an error.
+///
+/// # Errors
+/// Returns a grant-expansion error when template selection widens the host decision.
 pub fn authorize_path(
     host: &HostCeiling,
     selection: &Selection,
@@ -55,6 +62,9 @@ pub fn authorize_path(
 }
 
 /// Renders `view_name` for `records`. The answer is sorted, capped, and free of denied bytes.
+///
+/// # Errors
+/// Refuses missing views/references, unavailable capabilities, exceeded ceilings, invalid render instructions or a budget too small for the answer.
 pub fn render_plan(
     plan: &ContextPlan,
     view_name: &str,
@@ -95,7 +105,7 @@ pub fn render_plan(
     }
     let prepared = prepare(records, host, &selection, budget.depth);
     if view.layout_label == "JSON" {
-        return choose(prepared.len(), &budget, |count, truncated| json_document(&prepared, count, truncated));
+        return choose(prepared.len(), &budget, |count, truncated| Ok(json_document(&prepared, count, truncated)));
     }
     let end_marker = {
         let variables: HashMap<String, String> = plan.render.variables.iter().cloned().collect();
@@ -305,6 +315,7 @@ fn file_value(field: u16, id: &str, path: &str, lines: &str, size: &str, content
     }
 }
 
+#[allow(clippy::naive_bytecount, reason = "Count newline bytes with standard iterators to preserve the renderer line-count convention without adding a byte-count dependency.")]
 fn file_text(item: &Prepared, end_marker: &str) -> (usize, String) {
     if item.decision == FileHandlingDecision::OmitContent {
         return (0, "[Content omitted by pattern rules]".to_string());
@@ -373,7 +384,7 @@ fn layout_value(field: u16, tree: &str, files: &str, project: &str) -> String {
     }
 }
 
-fn json_document(items: &[Prepared], count: usize, truncated: bool) -> Result<String, TemplateError> {
+fn json_document(items: &[Prepared], count: usize, truncated: bool) -> String {
     let mut out = String::from("{\"records\":[");
     for (index, item) in items.iter().take(count).enumerate() {
         if index > 0 {
@@ -388,7 +399,7 @@ fn json_document(items: &[Prepared], count: usize, truncated: bool) -> Result<St
     out.push_str("],\"truncated\":");
     out.push_str(if truncated { "true" } else { "false" });
     out.push('}');
-    Ok(out)
+    out
 }
 
 fn json_content(item: &Prepared) -> String {
@@ -413,7 +424,7 @@ fn push_json(out: &mut String, text: &str) {
             '\t' => out.push_str("\\t"),
             other if (other as u32) < 0x20 => {
                 let code = other as u32;
-                out.push_str(&format!("\\u{code:04x}"));
+                let _ = write!(out,"\\u{code:04x}");
             }
             other => out.push(other),
         }

@@ -148,6 +148,7 @@ budget = \"b\"
 }
 
 #[test]
+#[allow(clippy::similar_names, reason = "plan and plain distinguish the compiled plan from its plain rendered output in this escaping comparison.")]
 fn json_counts_escaped_utf8_and_quotes() {
     let wide = "\
 [DTS]

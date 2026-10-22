@@ -1,4 +1,4 @@
-//! Versioned ContextPlan binary: magic `DCTXIR`, seven sections, trailing SHA-256.
+//! Versioned `ContextPlan` binary: magic `DCTXIR`, seven sections, trailing SHA-256.
 //! Implements contracts/DTS-v2.md compiled IR and IDENTITY-v1 domain separation.
 //! Depends on [`dctx_hash`] and [`crate::model`]. [`crate::lower`] seals plans through [`seal`].
 //! Load checks magic and version before the digest, then refuses unknown sections and opcodes.
@@ -58,11 +58,18 @@ pub(crate) fn encode(plan: &ContextPlan, check_ops: bool) -> Result<Vec<u8>, Tem
 }
 
 /// Encodes `plan`, refusing unknown opcodes.
+///
+/// # Errors
+/// Refuses invalid plans, unrepresentable fields or lengths and an envelope above the plan-size ceiling.
 pub fn to_bytes(plan: &ContextPlan) -> Result<Vec<u8>, TemplateError> {
     encode(plan, true)
 }
 
 /// Loads a plan. Version is checked before the trailing digest.
+///
+/// # Errors
+/// Refuses malformed, truncated, unsupported, oversized or digest-inconsistent envelopes and invalid plan structure.
+#[allow(clippy::similar_names, reason = "reader and render name the binary reader and render digest; keeping those protocol roles recognizable is clearer than unrelated replacements.")]
 pub fn from_bytes(bytes: &[u8]) -> Result<ContextPlan, TemplateError> {
     if bytes.len() > usize::try_from(MAX_PLAN_BYTES).unwrap_or(usize::MAX) {
         return Err(TemplateError::Limit { what: "plan", limit: u64::from(MAX_PLAN_BYTES) });

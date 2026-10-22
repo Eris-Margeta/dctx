@@ -9,7 +9,7 @@ use dctx_core::FileHandlingDecision;
 use crate::error::TemplateError;
 use crate::model::{SelectRule, Selection};
 
-use super::draft::*;
+use super::draft::{IndexDraft, BudgetDraft, ViewDraft, GroupDraft, PluginDecl};
 use super::value::{once, parse_raw, split_key};
 
 pub(super) fn apply_select(section: &mut Selection, trimmed: &str, line: u32, seen: &mut BTreeSet<String>) -> Result<(), TemplateError> {
