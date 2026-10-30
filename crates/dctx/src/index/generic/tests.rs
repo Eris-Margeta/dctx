@@ -18,7 +18,7 @@ fn every_brace_language_finds_its_types_and_functions() {
     let scala = "object Main {\n  def run(x: Int): Int = helper(x)\n  def helper(y: Int): Int = {\n    if (y > 0) { y + 1 } else { 0 }\n  }\n}\nclass Box(val v: Int) {\n  def get: Int = v\n}\ntrait Shape\n";
     assert_eq!(
         named("scala", scala),
-        [pair("Main", "type"), pair("Main::run", "fn"), pair("Main::helper", "fn"), pair("Box", "type"), pair("Box::get", "fn"), pair("Shape", "type")]
+        [pair("Main", "type"), pair("Main::run", "fn"), pair("Main::helper", "fn"), pair("Box", "type"), pair("Box::v", "const"), pair("Box::get", "fn"), pair("Shape", "type")]
     );
     let dart = "class Greeter {\n  String greet(String n) {\n    if (n.isEmpty) { return \"x\"; }\n    return \"hi\";\n  }\n}\nint main() {\n  return 0;\n}\nFuture<void> later() async {}\n";
     assert_eq!(named("dart", dart), [pair("Greeter", "type"), pair("Greeter::greet", "fn"), pair("main", "fn"), pair("later", "fn")]);

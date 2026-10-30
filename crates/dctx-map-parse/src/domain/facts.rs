@@ -165,6 +165,7 @@ const EXTENSIONS: &[(&str, Language)] = &[
     ("sh", Language::Shell),
     ("bash", Language::Shell),
     ("zsh", Language::Shell),
+    ("bats", Language::Shell),
     ("mk", Language::Make),
     ("proto", Language::Proto),
     ("pas", Language::Pascal),
@@ -221,6 +222,10 @@ impl Language {
         }
         if let Some((_, language)) = INFRA_BASENAMES.iter().find(|(name, _)| base.eq_ignore_ascii_case(name)) {
             return *language;
+        }
+        // `pgtap.sql.in`: a SQL template that a build step turns into `.sql`. Duplicated in `dctx` `index/extract.rs`.
+        if base.len() > ".sql.in".len() && base.get(base.len() - ".sql.in".len()..).is_some_and(|tail| tail.eq_ignore_ascii_case(".sql.in")) {
+            return Self::Sql;
         }
         let Some(extension) = base.rsplit_once('.').map(|(_, extension)| extension.to_ascii_lowercase()) else {
             return Self::Unknown;
@@ -356,13 +361,15 @@ mod tests {
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
             "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy",
-            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
+            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
             "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl", "scm", "ss", "el", "nix",
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
         let extensions: Vec<&str> = EXTENSIONS.iter().map(|(extension, _)| *extension).collect();
         assert_eq!(extensions, LITERAL_EXTENSIONS);
         assert_eq!(RUBY_BASENAMES, LITERAL_RUBY_BASENAMES);
+        assert_eq!(Language::for_path("sql/pgtap.sql.in"), Language::Sql);
+        assert_eq!(Language::for_path("Makefile.in"), Language::Unknown);
         for (extension, language) in EXTENSIONS {
             assert_eq!(Language::for_path(&format!("src/app.{extension}")), *language);
             assert_eq!(

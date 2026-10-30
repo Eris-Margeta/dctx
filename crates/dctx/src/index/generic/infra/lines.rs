@@ -19,7 +19,7 @@ const PASCAL_BRACE: Syntax = Syntax { line: &[], block: Some(("{", "}")), nested
 /// Words that may sit between `CREATE` and the object keyword.
 const SQL_MODIFIERS: &[&str] = &[
     "OR", "REPLACE", "TEMP", "TEMPORARY", "UNIQUE", "MATERIALIZED", "RECURSIVE", "GLOBAL", "LOCAL", "UNLOGGED", "EXTERNAL",
-    "VIRTUAL", "CLUSTERED", "NONCLUSTERED", "FULLTEXT", "SPATIAL", "EDITIONABLE", "NONEDITIONABLE",
+    "VIRTUAL", "CLUSTERED", "NONCLUSTERED", "FULLTEXT", "SPATIAL", "EDITIONABLE", "NONEDITIONABLE", "FOREIGN",
 ];
 
 /// First words of a Makefile line that are directives, never a target.
@@ -28,7 +28,8 @@ const MAKE_DIRECTIVES: &[&str] = &[
     "endif", "define", "undefine",
 ];
 
-/// SQL `CREATE [OR REPLACE] TABLE|VIEW|FUNCTION|PROCEDURE|INDEX|TRIGGER|TYPE|SCHEMA|SEQUENCE name`, case-insensitive.
+/// SQL `CREATE [OR REPLACE] TABLE|VIEW|FUNCTION|PROCEDURE|INDEX|TRIGGER|TYPE|SCHEMA|SEQUENCE|DOMAIN|AGGREGATE|RULE|POLICY name`
+/// (and `CREATE FOREIGN TABLE`), case-insensitive.
 /// A statement runs to the next `;` outside a `$$` body, or is one line when none follows.
 pub(super) fn sql(text: &str) -> Vec<Decl> {
     let masked = mask(text, &SQL);
@@ -70,8 +71,8 @@ fn sql_decl(shown: &str, original: &str) -> Option<(String, &'static str)> {
     let (kind, object) = loop {
         let upper = words.next()?.to_ascii_uppercase();
         match upper.as_str() {
-            "TABLE" | "VIEW" | "TYPE" | "INDEX" | "SCHEMA" | "SEQUENCE" => break ("type", upper.clone()),
-            "FUNCTION" | "PROCEDURE" | "TRIGGER" => break ("fn", upper.clone()),
+            "TABLE" | "VIEW" | "TYPE" | "INDEX" | "SCHEMA" | "SEQUENCE" | "DOMAIN" => break ("type", upper.clone()),
+            "FUNCTION" | "PROCEDURE" | "TRIGGER" | "AGGREGATE" | "RULE" | "POLICY" => break ("fn", upper.clone()),
             word if SQL_MODIFIERS.contains(&word) || word.contains('=') => {}
             _ => return None,
         }

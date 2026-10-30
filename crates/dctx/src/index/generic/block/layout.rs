@@ -3,6 +3,7 @@
 //! a declaration runs to the last line indented under it. Bodies are never entered. Haskell, which shares the helpers below, is in `haskell.rs`.
 
 use super::super::{ident_at, is_denied, mask, signature_of, Decl, Syntax};
+use super::ocaml_body::{nested_fn, type_members, Nested};
 
 /// OCaml: nested `(* *)` comments and double-quoted strings. A single quote is a character or a type variable, never a string.
 const OCAML: Syntax = Syntax { line: &[], block: Some(("(*", "*)")), nested: true, quotes: b"\"", triple: false };
@@ -40,6 +41,11 @@ pub(super) fn ocaml(text: &str) -> Vec<Decl> {
     // A module whose `struct` is on a later line, and the declaration whose indented body is being read.
     let mut pending: Option<(usize, usize)> = None;
     let mut current: Option<(usize, usize)> = None;
+    // Inside the declaration being read: its latest `and` sibling, the functions its body defines, and the type that takes
+    // constructors and fields from these lines with its record brace depth.
+    let mut sibling: Option<usize> = None;
+    let mut nested = Nested::default();
+    let mut members: Option<(usize, i32)> = None;
     for (index, (shown, original)) in masked.split('\n').zip(text.split('\n')).enumerate() {
         let number = u32::try_from(index + 1).unwrap_or(u32::MAX);
         let line = shown.trim();
@@ -53,10 +59,19 @@ pub(super) fn ocaml(text: &str) -> Vec<Decl> {
         if let Some((at, base)) = current {
             if indent > base || line.starts_with('|') || first == "and" {
                 decls[at].lines[1] = number;
+                if let Some(other) = sibling {
+                    decls[other].lines[1] = number;
+                }
                 belongs = true;
+                body_line(&mut decls, BodyLine { number, indent, base, at, line, original }, &mut sibling, &mut nested, &mut members);
             } else {
                 current = None;
             }
+        }
+        if current.is_none() {
+            sibling = None;
+            nested.clear();
+            members = None;
         }
         let fits = match stack.last() {
             None => indent == 0,
@@ -89,6 +104,7 @@ pub(super) fn ocaml(text: &str) -> Vec<Decl> {
                 current = None;
             } else {
                 current = Some((at, indent));
+                members = start_members(&mut decls, at, line, number, original);
             }
         }
         for word in line.split(|c: char| !is_ident_char(c)).filter(|word| !word.is_empty()) {
@@ -175,7 +191,10 @@ fn ocaml_decl(line: &str, in_class: bool) -> Option<(String, &'static str, bool)
             }
             let name = ocaml_ident(rest).filter(|name| name.starts_with(char::is_uppercase))?;
             let opens = line.split(|c: char| !is_ident_char(c)).any(|word| matches!(word, "struct" | "sig")) || line.ends_with('=');
-            opens.then(|| (name.to_string(), "type", true))
+            // `module Fmt = Cmdliner_base.Fmt` and `module Arg : Arg_intf`: an alias or a declaration with a named signature.
+            let tail = rest[name.len()..].trim_start();
+            let named = tail.strip_prefix(['=', ':']).is_some_and(|after| ident_run(after.trim_start()).starts_with(char::is_uppercase));
+            (opens || named).then(|| (name.to_string(), "type", opens))
         }
         _ => None,
     }
@@ -193,4 +212,83 @@ fn skip_words<'a>(mut text: &'a str, words: &[&str]) -> &'a str {
 fn ocaml_ident(text: &str) -> Option<&str> {
     let name = ident_run(text);
     name.starts_with(|c: char| c.is_alphabetic() || c == '_').then_some(name)
+}
+
+/// One body line of the declaration `at` (declared at column `base`), as `ocaml` hands it to [`body_line`].
+struct BodyLine<'a> {
+    /// 1-based line number.
+    number: u32,
+    /// Column of the line.
+    indent: usize,
+    /// Column of the declaration.
+    base: usize,
+    /// Index of the declaration.
+    at: usize,
+    /// The masked, trimmed line.
+    line: &'a str,
+    /// The line as written, for signatures.
+    original: &'a str,
+}
+
+/// What a body line adds: an `and` sibling at the declaration's own column, the constructors and fields of a type, or a function
+/// defined inside a `let` body (`outer::inner`).
+fn body_line(decls: &mut Vec<Decl>, body: BodyLine, sibling: &mut Option<usize>, nested: &mut Nested, members: &mut Option<(usize, i32)>) {
+    let BodyLine { number, indent, base, at, line, original } = body;
+    if ident_run(line) == "and" && indent == base {
+        let keyword = ident_at(&decls[at].signature).unwrap_or("let").to_string();
+        let Some((name, kind, _)) = ocaml_decl(&format!("{keyword}{}", &line["and".len()..]), false) else {
+            return;
+        };
+        let owner = decls[at].name.rsplit_once("::").map(|(owner, _)| owner.to_string());
+        let name = match owner {
+            Some(owner) => format!("{owner}::{name}"),
+            None => name,
+        };
+        decls.push(Decl { name, kind, lines: [number, number], signature: signature_of(original) });
+        let new = decls.len() - 1;
+        *sibling = Some(new);
+        nested.clear();
+        *members = start_members(decls, new, line, number, original);
+        return;
+    }
+    if let Some((owner, depth)) = members.as_mut() {
+        let owner_name = decls[*owner].name.clone();
+        for (member, kind) in type_members(line, false, depth) {
+            decls.push(Decl { name: format!("{owner_name}::{member}"), kind, lines: [number, number], signature: signature_of(original) });
+        }
+        return;
+    }
+    let host = sibling.unwrap_or(at);
+    if decls[host].kind != "fn" {
+        return;
+    }
+    let closed_here = nested.close(indent, line.starts_with('|'));
+    for open in nested.indices() {
+        decls[open].lines[1] = number;
+    }
+    if ident_run(line) == "and" && !closed_here {
+        return;
+    }
+    if let Some((name, one_line)) = nested_fn(line) {
+        let owner = decls[nested.innermost().unwrap_or(host)].name.clone();
+        decls.push(Decl { name: format!("{owner}::{name}"), kind: "fn", lines: [number, number], signature: signature_of(original) });
+        if !one_line {
+            nested.push(decls.len() - 1, indent);
+        }
+    }
+}
+
+/// For a `type` declaration `at` on `line`: records the constructors and fields its own line lists and returns the state that
+/// collects the rest from its body lines. Any other declaration collects none.
+fn start_members(decls: &mut Vec<Decl>, at: usize, line: &str, number: u32, original: &str) -> Option<(usize, i32)> {
+    let is_type = decls[at].kind == "type" && matches!(ident_run(line), "type" | "and");
+    if !is_type {
+        return None;
+    }
+    let mut depth = 0i32;
+    let owner = decls[at].name.clone();
+    for (member, kind) in type_members(line, true, &mut depth) {
+        decls.push(Decl { name: format!("{owner}::{member}"), kind, lines: [number, number], signature: signature_of(original) });
+    }
+    Some((at, depth))
 }

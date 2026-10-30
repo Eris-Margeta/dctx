@@ -110,6 +110,7 @@ const EXTENSIONS: &[(&str, &str)] = &[
     ("sh", "shell"),
     ("bash", "shell"),
     ("zsh", "shell"),
+    ("bats", "shell"),
     ("mk", "make"),
     ("proto", "proto"),
     ("pas", "pascal"),
@@ -158,6 +159,9 @@ pub(crate) fn language_of(path: &str) -> &'static str {
     if let Some((_, tag)) = INFRA_BASENAMES.iter().find(|(name, _)| base.eq_ignore_ascii_case(name)) {
         return tag;
     }
+    if is_sql_template(base) {
+        return "sql";
+    }
     let Some(extension) = base.rsplit_once('.').map(|(_, extension)| extension.to_ascii_lowercase()) else {
         return "opaque";
     };
@@ -165,6 +169,11 @@ pub(crate) fn language_of(path: &str) -> &'static str {
         .iter()
         .find(|(name, _)| *name == extension)
         .map_or("opaque", |(_, tag)| *tag)
+}
+
+/// True for `pgtap.sql.in`: a SQL template that a build step turns into `.sql`. Duplicate of `dctx-map-parse` `facts.rs`.
+fn is_sql_template(base: &str) -> bool {
+    base.len() > ".sql.in".len() && base.get(base.len() - ".sql.in".len()..).is_some_and(|tail| tail.eq_ignore_ascii_case(".sql.in"))
 }
 
 /// Lexer output for one included file and its raw call and import references. Config keeps the lex so the graph can move it once.
@@ -757,6 +766,7 @@ mod tests {
             ("sh", "shell"),
             ("bash", "shell"),
             ("zsh", "shell"),
+            ("bats", "shell"),
             ("mk", "make"),
             ("proto", "proto"),
             ("pas", "pascal"),
@@ -788,6 +798,10 @@ mod tests {
             assert_eq!(language_of(&format!("src/app.{extension}")), *tag);
             assert_eq!(language_of(&format!("dir.dot/app.{}", extension.to_ascii_uppercase())), *tag);
         }
+        assert_eq!(language_of("sql/pgtap.sql.in"), "sql");
+        assert_eq!(language_of("sql/PGTAP.SQL.IN"), "sql");
+        assert_eq!(language_of("Makefile.in"), "opaque");
+        assert_eq!(language_of(".sql.in"), "opaque");
         for basename in LITERAL_RUBY_BASENAMES {
             assert_eq!(language_of(basename), "ruby");
             assert_eq!(language_of(&format!("lib/{}", basename.to_ascii_lowercase())), "ruby");

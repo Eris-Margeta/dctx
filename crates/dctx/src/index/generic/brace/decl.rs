@@ -16,7 +16,7 @@ pub(super) enum Inside {
     Struct,
     /// Directly in the body of an enum: bare names are its values.
     Enum,
-    /// Directly in the body of a Scala def: only nested defs count.
+    /// In the body of a Scala def or val (only nested defs count) or of a Zig function or test (only nested types count).
     Body,
 }
 
@@ -50,7 +50,8 @@ pub(super) fn declarations(lang: &Lang, line: &str, original: &str, scope: &Scop
     let mods = &line[..line.len() - rest.len()];
     let found = core(lang, rest);
     if scope.inside == Inside::Body {
-        return found.filter(|(_, kind)| *kind == "fn").into_iter().collect();
+        let wanted = if lang.const_type { "type" } else { "fn" };
+        return found.filter(|(_, kind)| *kind == wanted).into_iter().collect();
     }
     let found = found
         .or_else(|| zig_test(lang, line, original).map(|name| (name, "fn")))
@@ -238,4 +239,68 @@ fn balanced_angle(text: &str) -> Option<usize> {
         }
     }
     None
+}
+
+/// The body kind of a Zig anonymous type that starts `text` (`struct`, `packed struct`, `union(enum)`, `enum(u8)`, `opaque`).
+fn anonymous_shape(text: &str) -> Option<Inside> {
+    let mut rest = text.trim_start();
+    while let Some(word) = ident_at(rest).filter(|word| matches!(*word, "packed" | "extern")) {
+        rest = rest[word.len()..].trim_start();
+    }
+    match ident_at(rest)? {
+        "struct" | "union" => Some(Inside::Struct),
+        "enum" => Some(Inside::Enum),
+        "opaque" => Some(Inside::Type),
+        _ => None,
+    }
+}
+
+/// Zig `name: struct {` or `mode: enum { a, b } = .a,`: the body kind of the anonymous type a field is declared with.
+pub(super) fn field_shape(line: &str) -> Option<Inside> {
+    let line = line.trim_start();
+    let name = ident_at(line)?;
+    let after = line[name.len()..].trim_start().strip_prefix(':').filter(|after| !after.starts_with(':'))?;
+    anonymous_shape(after)
+}
+
+/// Zig `return struct {` inside a function that returns a type: the body kind of the returned type.
+pub(super) fn returned_shape(line: &str) -> Option<Inside> {
+    let after = line.trim_start().strip_prefix("return").filter(|after| after.starts_with(char::is_whitespace))?;
+    anonymous_shape(after)
+}
+
+/// Scala `class Str(private val chars: Array[Char], var n: Int)`: the `val` (`const`) and `var` (`var`) parameters of a class
+/// header line, read from parenthesis `depth` on (the depth the header was at when the line began) up to the body's `{`.
+pub(super) fn class_params(line: &str, mut depth: usize) -> Vec<Found> {
+    let mut found = Vec::new();
+    let mut at = 0usize;
+    let bytes = line.as_bytes();
+    while at < bytes.len() {
+        match bytes[at] {
+            b'(' => depth += 1,
+            b')' => depth = depth.saturating_sub(1),
+            b'{' if depth == 0 => break,
+            byte if byte.is_ascii_alphabetic() && (at == 0 || !(bytes[at - 1].is_ascii_alphanumeric() || bytes[at - 1] == b'_')) => {
+                let word = ident_at(&line[at..]).unwrap_or("");
+                let after = &line[at + word.len()..];
+                let kind = match word {
+                    "val" => Some("const"),
+                    "var" => Some("var"),
+                    _ => None,
+                };
+                if depth > 0
+                    && let Some(kind) = kind
+                    && after.starts_with(char::is_whitespace)
+                    && let Some(name) = ident_at(after.trim_start()).filter(|name| !is_denied(name))
+                {
+                    found.push((name.to_string(), kind));
+                }
+                at += word.len().max(1);
+                continue;
+            }
+            _ => {}
+        }
+        at += 1;
+    }
+    found
 }

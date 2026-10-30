@@ -165,6 +165,7 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
         return Vec::new();
     };
     let scala = tag == "scala";
+    let zig = tag == "zig";
     let solidity = tag == "solidity";
     let masked = mask(text, &lang.syntax);
     let mut decls: Vec<Decl> = Vec::new();
@@ -206,6 +207,12 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
         }
         let top = stack.last();
         let in_scope = top.is_none_or(|frame| frame.container.is_some());
+        // Scala: a class header goes on over this line (an open parameter list, or a further `(..)` list after the name).
+        let header_depth = match cont.as_ref() {
+            Some(c) if !c.body => Some(c.depth),
+            _ => (scala && open.is_some() && line.starts_with('(')).then_some(0),
+        };
+        let mut fresh = false;
         if open.is_none() && cont.is_none() && !in_header && in_scope {
             let scope = Scope { inside: top.map_or(Inside::File, |frame| frame.inside), owner: top.and_then(|frame| frame.container.as_deref()) };
             for (name, kind) in declarations(lang, line, original, &scope) {
@@ -215,13 +222,31 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
                 };
                 decls.push(Decl { name, kind, lines: [number, number], signature: signature_of(original) });
                 open = Some(decls.len() - 1);
+                fresh = true;
             }
             // A type whose body is on its own line (`enum E { A, B }`) lists its members right here.
-            if let Some(at) = open.filter(|&at| decls[at].kind == "type") {
+            // A Zig field typed by an anonymous `enum { a, b }` lists its values the same way.
+            let inline = open.and_then(|at| match decls[at].kind {
+                "type" => Some(shape(lang, line)),
+                "field" if zig => decl::field_shape(line).filter(|inside| *inside == Inside::Enum),
+                _ => None,
+            });
+            if let (Some(at), Some(inside)) = (open, inline) {
                 let parent = decls[at].name.clone();
-                for (member, kind) in data::inline_members(lang, line, shape(lang, line)) {
+                for (member, kind) in data::inline_members(lang, line, inside) {
                     decls.push(Decl { name: format!("{parent}::{member}"), kind, lines: [number, number], signature: signature_of(original) });
                 }
+            }
+        }
+        // Scala: `val` and `var` parameters of a class header are members of the class.
+        let params_depth = if fresh { Some(0) } else { header_depth };
+        if scala
+            && let Some(at) = open.filter(|&at| decls[at].kind == "type")
+            && let Some(depth) = params_depth
+        {
+            let parent = decls[at].name.clone();
+            for (member, kind) in decl::class_params(line, depth) {
+                decls.push(Decl { name: format!("{parent}::{member}"), kind, lines: [number, number], signature: signature_of(original) });
             }
         }
         for byte in shown.bytes() {
@@ -232,8 +257,23 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
                     let decl = if parens.depth == 0 { open.take() } else { None };
                     let (container, inside) = match decl {
                         Some(at) if decls[at].kind == "type" => (Some(decls[at].name.clone()), shape(lang, &decls[at].signature)),
-                        Some(at) if scala && decls[at].kind == "fn" => (Some(decls[at].name.clone()), Inside::Body),
-                        _ => (None, Inside::File),
+                        // Scala defs and vals and Zig functions and tests: nested declarations are named under them.
+                        Some(at) if (scala || zig) && decls[at].kind == "fn" => (Some(decls[at].name.clone()), Inside::Body),
+                        Some(at) if scala && matches!(decls[at].kind, "const" | "var") => (Some(decls[at].name.clone()), Inside::Body),
+                        Some(at) if zig && decls[at].kind == "field" => match decl::field_shape(&decls[at].signature) {
+                            Some(inside) => (Some(decls[at].name.clone()), inside),
+                            None => (None, Inside::File),
+                        },
+                        Some(_) => (None, Inside::File),
+                        // A block inside a body stays in that body; a Zig `return struct {` gives the function its members.
+                        None => {
+                            let body = stack.last().filter(|frame| (scala || zig) && frame.inside == Inside::Body);
+                            let returned = if zig { decl::returned_shape(line) } else { None };
+                            match body {
+                                Some(frame) => (frame.container.clone(), returned.unwrap_or(Inside::Body)),
+                                None => (None, Inside::File),
+                            }
+                        }
                     };
                     stack.push(Frame { container, decl, inside });
                 }
@@ -291,9 +331,10 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
     to_symbols(text, decls)
 }
 
-/// True for a Scala line that goes on with the header above it (`extends A`, `with B`), so a `{` may still follow.
+/// True for a Scala line that goes on with the header above it (`extends A`, `with B`, a further `(implicit ..)` parameter
+/// list), so a `{` may still follow.
 fn continues_header(line: &str) -> bool {
-    ident_at(line).is_some_and(|word| matches!(word, "extends" | "with"))
+    line.starts_with('(') || ident_at(line).is_some_and(|word| matches!(word, "extends" | "with"))
 }
 
 /// Parenthesis depth at the end of the masked `line` when it starts at `depth`, and whether a plain `=` (not `==`, `=>`,
