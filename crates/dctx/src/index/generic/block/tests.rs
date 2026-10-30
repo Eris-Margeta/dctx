@@ -349,10 +349,11 @@ and 'a conv =
   | Files | Dirs
 let find_sub ?start ~sub s =
   let len_sub = String.length sub in
-  let rec loop i k =
-    if i > k then None else loop (i + 1) k
+  let rec aux fv = function
+  | [] -> fv
+  | v :: vs -> aux (v :: fv) vs
   in
-  loop 0 len_sub
+  aux [] len_sub
 let err_cmd exit cmd = Fmt.str "%s" cmd
 "#;
     assert_eq!(
@@ -371,11 +372,11 @@ let err_cmd exit cmd = Fmt.str "%s" cmd
             pair("conv::Files", "const"),
             pair("conv::Dirs", "const"),
             pair("find_sub", "fn"),
-            pair("find_sub::loop", "fn"),
+            pair("find_sub::aux", "fn"),
             pair("err_cmd", "fn"),
         ]
     );
     let found = symbols("ocaml", text);
     let span = |name: &str| found.iter().find(|symbol| symbol.name == name).map(|symbol| symbol.lines);
-    assert_eq!((span("t"), span("conv"), span("find_sub"), span("find_sub::loop")), (Some([3, 8]), Some([6, 8]), Some([9, 14]), Some([11, 12])));
+    assert_eq!((span("t"), span("conv"), span("find_sub"), span("find_sub::aux")), (Some([3, 8]), Some([6, 8]), Some([9, 15]), Some([11, 13])));
 }
