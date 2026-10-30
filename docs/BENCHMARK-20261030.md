@@ -40,6 +40,33 @@ This is the same protocol as October: 70 questions over seven corpora, 354 gold 
 - Config-key and concept questions score 0 under the October mapping.
 - A supplementary run that uses the verbs added since October reached 96 points (`map grep` for config keys, `map skeleton` for outlines). It is not the October protocol, so it is not counted above.
 
+### Task-level re-run 2 (dctx `5e1b12b`, 30 October, 13:12 UTC)
+
+dctx `5e1b12b` adds call-site lines on caller records (DCX-40), the config-key literal fallback (DCX-41) and multi-word concept ranking (DCX-42). Protocol, mapping and scorer are unchanged. The headline is in `research/bench-3way-20261030/tasks/results/run2-5e1b12b/`.
+
+| Tool | Points /140 | Gold facts /354 | Tokens | Facts per 1k tokens |
+|---|---|---|---|---|
+| Trail-Code 0.28.0 | **122** | **312** | 88,923 | 3.51 |
+| dctx `5e1b12b` | **102** (run 1: 77) | 243 (run 1: 195) | **28,742** | **8.45** |
+| graphify 0.9.97, code-only | 96 | 238 | 197,203 | 1.21 |
+
+By question type, out of 14:
+
+| Type | dctx | Trail-Code | graphify |
+|---|---|---|---|
+| definition and callers | **12** | 10 | 10 |
+| impact | **14** | 13 | 12 |
+| source | **14** | 12 | 0 |
+| callees | **10** | 8 | 8 |
+| overview | **14** | 13 | 11 |
+| collision | 10 | 12 | **13** |
+| outline | 11 | **14** | 12 |
+| exports | 8 | **14** | **14** |
+| config key | 7 | **14** | 6 |
+| concept | 2 | **12** | 10 |
+
+dctx now leads on five types and comes second overall, ahead of graphify. Trail-Code still wins outline, exports, config key and concept questions, and is 20 points ahead in total.
+
 ## Run 4: callers recall wave (main `de06a3d`, 30 October, 09:17 UTC)
 
 The dctx binary's sha256 is `0a41481ffc6f9ecd5713be5af561bef9f1c13f980bfa69748d84540520b4086e`. New since run 3:
