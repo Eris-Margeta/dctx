@@ -27,11 +27,135 @@ const PROTO: &str = "syntax = \"proto3\";\n// message Hidden {}\nmessage User {\
 const PASCAL: &str = "unit U;\ninterface\nprocedure Hello;\nfunction Twice(x: Integer): Integer;\n(* procedure Hidden; *)\n{ function Hidden2: Integer; }\n// procedure Hidden3;\ntype\n  TFoo = class\n    procedure Bar;\n  end;\nimplementation\nprocedure Hello;\nbegin\n  WriteLn('procedure Fake;');\nend;\nfunction Twice(x: Integer): Integer;\nbegin\n  Result := x * 2;\nend;\nprocedure TFoo.Bar;\nbegin\nend;\nclass function TFoo.Make: TFoo;\nbegin\nend.\n";
 const GRAPHQL: &str = "\"\"\"\ntype Hidden { a: Int }\n\"\"\"\n# type Hidden2 { a: Int }\nscalar Date\ntype Query {\n  user(id: ID!): User\n  type: String\n}\ntype User implements Node & Entity {\n  id: ID!\n  \"desc\"\n  name: String\n}\ninput NewUser { name: String! }\nenum Role { ADMIN USER }\ninterface Node { id: ID! }\nunion Result = User | Query\nextend type Query { me: User }\n";
 
+const MEMBERS_HCL: &str = "locals {\n  region = \"eu\"\n  tags = {\n    inner = 1\n  }\n  list = [\n    a = 1\n  ]\n  same == 2\n}\ndata \"aws_ami\" \"base\" {\n  most_recent = true\n}\nprovider \"aws\" {\n  region = local.region\n}\n";
+const MEMBERS_SQL: &str = "CREATE SCHEMA billing;\nCREATE SCHEMA IF NOT EXISTS AUTHORIZATION bob;\nCREATE TABLE billing.invoice (\n  id INT\n);\nCREATE TYPE billing.mood AS ENUM ('sad');\nCREATE SEQUENCE invoice_seq;\nCREATE INDEX billing.idx_inv ON billing.invoice (id);\nCREATE TRIGGER audit AFTER INSERT ON billing.invoice FOR EACH ROW EXECUTE FUNCTION f();\n";
+const MEMBERS_SHELL: &str = "export APP_HOME=/opt/app B=2\nalias ll=\"ls -l\"\nreadonly MAX=3\ndeclare -r LIMIT=4\ndeclare -x LEVEL=5\nexport -f start\nexport PATH\nexport APP_HOME=/again\nstart() {\n  export INSIDE=1\n}\n";
+const MEMBERS_MAKE: &str = "CC := gcc\nCFLAGS ?= -O2\nLIBS += -lm\nSRCS = a.c \\\n  b.c\nbuild: CFLAGS = -g\n\t$(CC) x.c\noverride X = 1\nCC := clang\n";
+const MEMBERS_DOCKER: &str = "ARG BASE=node\nFROM node:20 AS base\nARG VERSION=1\nENV NODE_ENV=production PORT=\"80 81\" \\\n  DEBUG=0\nENV legacy value\nFROM alpine\nENV OTHER=1\n";
+const MEMBERS_PROTO: &str = "message User {\n  string id = 1;\n  repeated string tags = 2;\n  map<string, int32> counts = 3;\n  oneof kind {\n    int32 a = 4;\n  }\n  option deprecated = true;\n  reserved 9;\n  enum Role {\n    option allow_alias = true;\n    ADMIN = 0;\n    GUEST = -1;\n  }\n}\nservice S {\n  option x = 1;\n  rpc Get (User) returns (User);\n}\n";
+const MEMBERS_GRAPHQL: &str = "type User {\n  id: ID!\n  posts(\n    first: Int\n    after: String\n  ): [Post]\n  \"\"\"\n  fake: Int\n  \"\"\"\n  name: String\n}\ninput NewUser {\n  name: String\n}\nenum Role {\n  ADMIN\n  USER @deprecated\n}\n";
+
+#[test]
+fn terraform_locals_keys_and_data_blocks_are_symbols() {
+    assert_eq!(
+        named("hcl", MEMBERS_HCL),
+        [
+            pair("region", "const"),
+            pair("tags", "const"),
+            pair("list", "const"),
+            pair("data.aws_ami.base", "type"),
+            pair("aws_ami.base", "type"),
+            pair("aws", "type")
+        ]
+    );
+    assert_eq!(lines_of("hcl", MEMBERS_HCL, "tags"), [3, 5]);
+}
+
+#[test]
+fn sql_schemas_sequences_and_qualified_names_use_the_last_segment() {
+    assert_eq!(
+        named("sql", MEMBERS_SQL),
+        [
+            pair("billing", "type"),
+            pair("invoice", "type"),
+            pair("mood", "type"),
+            pair("invoice_seq", "type"),
+            pair("idx_inv", "type"),
+            pair("audit", "fn")
+        ]
+    );
+}
+
+#[test]
+fn shell_variables_and_aliases_are_symbols_at_file_level() {
+    assert_eq!(
+        named("shell", MEMBERS_SHELL),
+        [
+            pair("APP_HOME", "var"),
+            pair("B", "var"),
+            pair("ll", "fn"),
+            pair("MAX", "const"),
+            pair("LIMIT", "const"),
+            pair("LEVEL", "var"),
+            pair("start", "fn")
+        ]
+    );
+}
+
+#[test]
+fn makefile_variable_assignments_are_symbols() {
+    assert_eq!(named("make", MEMBERS_MAKE), [pair("CC", "var"), pair("CFLAGS", "var"), pair("LIBS", "var"), pair("SRCS", "var"), pair("build", "fn"), pair("X", "var")]);
+    assert_eq!(lines_of("make", MEMBERS_MAKE, "SRCS"), [4, 5]);
+}
+
+#[test]
+fn dockerfile_arg_and_env_names_sit_under_their_stage() {
+    assert_eq!(
+        named("docker", MEMBERS_DOCKER),
+        [
+            pair("BASE", "var"),
+            pair("base", "type"),
+            pair("base::VERSION", "var"),
+            pair("base::NODE_ENV", "var"),
+            pair("base::PORT", "var"),
+            pair("base::DEBUG", "var"),
+            pair("base::legacy", "var"),
+            pair("OTHER", "var")
+        ]
+    );
+}
+
+#[test]
+fn protobuf_fields_and_enum_values_nest_under_their_message() {
+    assert_eq!(
+        named("proto", MEMBERS_PROTO),
+        [
+            pair("User", "type"),
+            pair("User::id", "field"),
+            pair("User::tags", "field"),
+            pair("User::counts", "field"),
+            pair("User::a", "field"),
+            pair("User::Role", "type"),
+            pair("User::Role::ADMIN", "const"),
+            pair("User::Role::GUEST", "const"),
+            pair("S", "type"),
+            pair("S::Get", "fn")
+        ]
+    );
+}
+
+#[test]
+fn graphql_fields_and_enum_values_nest_under_their_type() {
+    assert_eq!(
+        named("graphql", MEMBERS_GRAPHQL),
+        [
+            pair("User", "type"),
+            pair("User::id", "field"),
+            pair("User::posts", "field"),
+            pair("User::name", "field"),
+            pair("NewUser", "type"),
+            pair("NewUser::name", "field"),
+            pair("Role", "type"),
+            pair("Role::ADMIN", "const"),
+            pair("Role::USER", "const")
+        ]
+    );
+}
+
 #[test]
 fn every_infra_format_finds_its_declarations() {
     assert_eq!(
         named("hcl", HCL),
-        [pair("aws_s3_bucket.logs", "type"), pair("data.aws_ami.ubuntu", "type"), pair("region", "type"), pair("vpc", "type"), pair("id", "type"), pair("aws", "type")]
+        [
+            pair("aws_s3_bucket.logs", "type"),
+            pair("data.aws_ami.ubuntu", "type"),
+            pair("aws_ami.ubuntu", "type"),
+            pair("region", "type"),
+            pair("vpc", "type"),
+            pair("id", "type"),
+            pair("aws", "type"),
+            pair("resource", "const")
+        ]
     );
     assert_eq!(
         named("sql", SQL),
@@ -43,18 +167,24 @@ fn every_infra_format_finds_its_declarations() {
             pair("trg", "fn"),
             pair("mood", "type"),
             pair("my_proc", "fn"),
-            pair("public.Quoted", "type")
+            pair("Quoted", "type")
         ]
     );
     assert_eq!(named("shell", SHELL), [pair("setup", "fn"), pair("teardown", "fn"), pair("build-all", "fn"), pair("run_it", "fn")]);
-    assert_eq!(named("make", MAKE), [pair("build", "fn"), pair("test", "fn"), pair("lint", "fn"), pair("all", "fn")]);
+    assert_eq!(
+        named("make", MAKE),
+        [pair("CC", "var"), pair("OBJS", "var"), pair("build", "fn"), pair("test", "fn"), pair("lint", "fn"), pair("all", "fn"), pair("FOO", "var")]
+    );
     assert_eq!(named("docker", DOCKER), [pair("builder", "type"), pair("runtime", "type")]);
     assert_eq!(
         named("proto", PROTO),
         [
             pair("User", "type"),
+            pair("User::id", "field"),
             pair("User::Address", "type"),
+            pair("User::Address::street", "field"),
             pair("User::Kind", "type"),
+            pair("User::Kind::A", "const"),
             pair("Users", "type"),
             pair("Users::Get", "fn"),
             pair("Users::Watch", "fn"),
@@ -67,7 +197,19 @@ fn every_infra_format_finds_its_declarations() {
     );
     assert_eq!(
         named("graphql", GRAPHQL),
-        [pair("Date", "type"), pair("Query", "type"), pair("User", "type"), pair("NewUser", "type"), pair("Role", "type"), pair("Node", "type"), pair("Result", "type")]
+        [
+            pair("Date", "type"),
+            pair("Query", "type"),
+            pair("Query::user", "field"),
+            pair("Query::type", "field"),
+            pair("User", "type"),
+            pair("User::id", "field"),
+            pair("User::name", "field"),
+            pair("NewUser", "type"),
+            pair("Role", "type"),
+            pair("Node", "type"),
+            pair("Result", "type")
+        ]
     );
 }
 
@@ -123,6 +265,8 @@ fn malformed_and_truncated_input_never_panics() {
         "$$ $$ $$", "function", "function ", "f(", "f()", "<<", "<<EOF", "<<-'", "FROM", "FROM x AS", "message", "message {",
         "rpc", "}}}} message A {{ rpc b(", "\"\"\" unterminated", "/* unterminated", "(* unterminated", "{ unterminated",
         "procedure", "class", "procedure .", "procedure 1x;", "x:", ":", "::=", "define", "define X\n", "a b c: \n\t",
+        "locals {", "locals {\n  a =", "locals {\n  a = [\n", "export", "export A=", "alias =", "alias", "declare -r", "ARG", "ENV", "ENV A=\"", "ENV A=1 \\\n", "CC :=", "export X ?=", "X = a \\\n",
+        "enum E {\n A = ", "type T {\n a(", "type T {\n a(\n", "message M {\noneof ", "message M {\noneof x {\n int32 a = 1;\n}\n", "CREATE SCHEMA", "CREATE SEQUENCE", "CREATE SCHEMA AUTHORIZATION",
         "\u{1F600}: x", "r\u{e9}sum\u{e9}() {", "\r\n\r\n", "\u{0}\u{1}", "type", "type X", "scalar\n",
     ];
     for tag in TAGS {
@@ -133,7 +277,7 @@ fn malformed_and_truncated_input_never_panics() {
         let _ = symbols(tag, &deep);
         assert!(symbols(tag, "").is_empty());
     }
-    for (tag, full) in [("hcl", HCL), ("sql", SQL), ("shell", SHELL), ("make", MAKE), ("docker", DOCKER), ("proto", PROTO), ("pascal", PASCAL), ("graphql", GRAPHQL)] {
+    for (tag, full) in [("hcl", HCL), ("sql", SQL), ("shell", SHELL), ("make", MAKE), ("docker", DOCKER), ("proto", PROTO), ("pascal", PASCAL), ("graphql", GRAPHQL), ("hcl", MEMBERS_HCL), ("sql", MEMBERS_SQL), ("shell", MEMBERS_SHELL), ("make", MEMBERS_MAKE), ("docker", MEMBERS_DOCKER), ("proto", MEMBERS_PROTO), ("graphql", MEMBERS_GRAPHQL)] {
         for cut in (0..full.len()).filter(|&at| full.is_char_boundary(at)) {
             let _ = symbols(tag, &full[..cut]);
         }

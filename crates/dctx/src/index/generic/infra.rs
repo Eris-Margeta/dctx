@@ -1,8 +1,10 @@
 //! Infra and config formats: Terraform/HCL, shell, protobuf, GraphQL and Dockerfile stages (here), SQL, Makefile and Pascal
-//! (in `lines`). Every symbol is a guess. A declaration is picked from one masked line; brace-bodied formats follow brace
+//! (in `lines`); member-level parsers (locals keys, shell variables, protobuf and GraphQL members, Dockerfile `ARG`/`ENV`) sit in
+//! `members`. Every symbol is a guess. A declaration is picked from one masked line; brace-bodied formats follow brace
 //! depth for the end line, and protobuf nests as `Parent::child`. Heuristic by design: bodies are never entered.
 
 mod lines;
+mod members;
 #[cfg(test)]
 mod tests;
 
@@ -59,6 +61,8 @@ struct Frame {
     container: Option<String>,
     /// Index of the declaration whose end line this brace sets.
     decl: Option<usize>,
+    /// Keyword that opened the container (`message`, `enum`, `type`, ...), empty outside a container.
+    word: String,
 }
 
 /// Brace bookkeeping shared by the brace-bodied formats.
@@ -71,12 +75,14 @@ struct Walk {
     pending: Option<usize>,
     /// True when a `type` declaration is a container whose members are qualified with its name.
     nest: bool,
+    /// Set for a line whose brace group (a protobuf `oneof`) keeps the surrounding container; consumed by the next `finish`.
+    inherit: bool,
 }
 
 impl Walk {
     /// A walk that nests members under `type` declarations when `nest` is set.
     fn new(nest: bool) -> Self {
-        Self { decls: Vec::new(), stack: Vec::new(), pending: None, nest }
+        Self { decls: Vec::new(), stack: Vec::new(), pending: None, nest, inherit: false }
     }
 
     /// The declaration waiting for this line's brace, if any. Call first on every non-blank line.
@@ -90,6 +96,11 @@ impl Walk {
     /// True at file level and directly inside a container, where declarations may appear.
     fn in_scope(&self) -> bool {
         self.stack.last().is_none_or(|frame| frame.container.is_some())
+    }
+
+    /// The keyword of the container directly around this point (`message`, `enum`, `type`, ...), if any.
+    fn container_word(&self) -> Option<&str> {
+        self.stack.last().filter(|frame| frame.container.is_some()).map(|frame| frame.word.as_str())
     }
 
     /// Records `found` (unless a brace-only line continues `open`) and follows the braces of the masked line.
@@ -110,7 +121,12 @@ impl Walk {
                 b'{' => {
                     let decl = open.take();
                     let container = decl.filter(|&at| self.nest && self.decls[at].kind == "type").map(|at| self.decls[at].name.clone());
-                    self.stack.push(Frame { container, decl });
+                    let word = decl.filter(|_| container.is_some()).and_then(|at| ident_at(&self.decls[at].signature)).unwrap_or("").to_string();
+                    let (container, word) = match self.stack.last() {
+                        Some(parent) if self.inherit && decl.is_none() => (parent.container.clone(), parent.word.clone()),
+                        _ => (container, word),
+                    };
+                    self.stack.push(Frame { container, decl, word });
                 }
                 b'}' => {
                     if let Some(frame) = self.stack.pop()
@@ -125,23 +141,43 @@ impl Walk {
         // No brace yet and the line is not an expression or a statement end: the body may start on the next line.
         let line = shown.trim();
         self.pending = open.filter(|_| !line.ends_with(';') && !line.contains('='));
+        self.inherit = false;
     }
 }
 
-/// Terraform/HCL blocks at column 0: `resource "t" "n"` is `t.n`, `data "t" "n"` is `data.t.n`, the rest are `kind "n"`.
+/// Terraform/HCL blocks at column 0: `resource "t" "n"` is `t.n`, `data "t" "n"` is `data.t.n` (and also `t.n`), the rest are
+/// `kind "n"`. The keys of a `locals` block are symbols of their own.
 fn hcl(text: &str) -> Vec<Decl> {
     let masked = mask(text, &HCL);
     let mut walk = Walk::new(false);
+    let mut locals = false;
+    let mut depth = 0i32;
     for (number, shown, original) in numbered(&masked, text) {
         let line = shown.trim();
         if line.is_empty() {
             continue;
         }
+        if walk.stack.is_empty() {
+            locals = !shown.starts_with(char::is_whitespace) && ident_at(line) == Some("locals");
+            depth = 0;
+        }
         let open = walk.begin(line);
-        let found = if open.is_none() { hcl_decl(shown, original) } else { None };
+        let mut found = if open.is_none() { hcl_decl(shown, original) } else { None };
+        if found.is_none() && open.is_none() && locals && walk.stack.len() == 1 && depth == 0 {
+            found = members::locals_key(line);
+        }
         walk.finish(number, shown, original, open, found);
+        depth = (depth + members::bracket_delta(shown)).max(0);
     }
-    walk.decls
+    let mut decls = Vec::with_capacity(walk.decls.len());
+    for decl in walk.decls {
+        let alias = decl.name.strip_prefix("data.").filter(|_| decl.signature.starts_with("data ")).map(str::to_string);
+        decls.push(decl.clone());
+        if let Some(name) = alias {
+            decls.push(Decl { name, ..decl });
+        }
+    }
+    decls
 }
 
 /// Name and wire kind when the line (masked and original) opens a top-level HCL block.
@@ -176,11 +212,13 @@ fn quoted_labels(mut rest: &str) -> Vec<String> {
     labels
 }
 
-/// Shell functions: `name() {` and `function name {`. Heredoc bodies are skipped; nesting is not tracked.
+/// Shell functions (`name() {`, `function name {`) and, at file level, `alias` names and `export`/`readonly`/`declare` variables.
+/// Heredoc bodies are skipped; nesting is not tracked.
 fn shell(text: &str) -> Vec<Decl> {
     let masked = mask(text, &SHELL);
     let mut walk = Walk::new(false);
     let mut heredoc: Option<String> = None;
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
     for (number, shown, original) in numbered(&masked, text) {
         if let Some(tag) = &heredoc {
             if original.trim() == tag {
@@ -193,6 +231,13 @@ fn shell(text: &str) -> Vec<Decl> {
             continue;
         }
         let open = walk.begin(line);
+        if open.is_none() && walk.stack.is_empty() {
+            for (name, kind) in members::shell_vars(line) {
+                if seen.insert(name.clone()) {
+                    walk.decls.push(Decl { name, kind, lines: [number, number], signature: signature_of(original) });
+                }
+            }
+        }
         let found = if open.is_none() { shell_decl(line) } else { None };
         walk.finish(number, shown, original, open, found);
         heredoc = heredoc_tag(shown, original);
@@ -228,7 +273,7 @@ fn shell_decl(line: &str) -> Option<(String, &'static str)> {
     ok.then(|| (name.to_string(), "fn"))
 }
 
-/// Protobuf `message`, `enum`, `service` and the `rpc` inside a service, nested as `Parent::child`.
+/// Protobuf `message`, `enum`, `service`, the `rpc` inside a service, and message fields and enum values, nested as `Parent::child`.
 fn proto(text: &str) -> Vec<Decl> {
     let masked = mask(text, &PROTO);
     let mut walk = Walk::new(true);
@@ -238,28 +283,39 @@ fn proto(text: &str) -> Vec<Decl> {
             continue;
         }
         let open = walk.begin(line);
-        let found = if open.is_none() && walk.in_scope() { keyword_decl(line, &["message", "enum", "service"], &["rpc"]) } else { None };
+        let found = if open.is_none() && walk.in_scope() {
+            keyword_decl(line, &["message", "enum", "service"], &["rpc"]).or_else(|| members::proto_member(line, walk.container_word()))
+        } else {
+            None
+        };
+        walk.inherit = ident_at(line) == Some("oneof");
         walk.finish(number, shown, original, open, found);
     }
     walk.decls
 }
 
-/// GraphQL `type`, `input`, `enum`, `interface`, `union` and `scalar` at file level.
+/// GraphQL `type`, `input`, `enum`, `interface`, `union` and `scalar` at file level, and the fields (enum values) inside them.
 fn graphql(text: &str) -> Vec<Decl> {
     let masked = mask(text, &GRAPHQL);
-    let mut walk = Walk::new(false);
+    let mut walk = Walk::new(true);
+    let mut args = 0i32;
     for (number, shown, original) in numbered(&masked, text) {
         let line = shown.trim();
         if line.is_empty() {
             continue;
         }
         let open = walk.begin(line);
-        let found = if open.is_none() && walk.stack.is_empty() {
+        let found = if open.is_some() {
+            None
+        } else if walk.stack.is_empty() {
             keyword_decl(line, &["type", "input", "enum", "interface", "union", "scalar"], &[])
+        } else if args == 0 {
+            members::graphql_member(line, walk.container_word())
         } else {
             None
         };
         walk.finish(number, shown, original, open, found);
+        args = (args + members::bracket_delta(shown)).max(0);
     }
     walk.decls
 }
@@ -279,17 +335,31 @@ fn keyword_decl(line: &str, types: &[&str], fns: &[&str]) -> Option<(String, &'s
     Some((name.to_string(), kind))
 }
 
-/// Dockerfile named stages: `FROM image AS name`. A stage runs until the next `FROM`; unnamed stages are not symbols.
+/// Dockerfile named stages: `FROM image AS name`, and the `ARG` and `ENV` names (under their stage when it is named).
+/// A stage runs until the next `FROM`; unnamed stages are not symbols.
 fn docker(text: &str) -> Vec<Decl> {
     let masked = mask(text, &DOCKER);
     let mut decls: Vec<Decl> = Vec::new();
     let mut current: Option<usize> = None;
+    let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
+    let mut carry: Option<members::Carry> = None;
     let mut last = 0u32;
     for (number, shown, original) in numbered(&masked, text) {
         let mut words = shown.split_whitespace();
         let Some(first) = words.next() else {
             continue;
         };
+        let (names, next) = members::docker_names(shown, carry.take());
+        carry = next;
+        for name in names {
+            let name = match current {
+                Some(at) => format!("{}::{name}", decls[at].name),
+                None => name,
+            };
+            if seen.insert(name.clone()) {
+                decls.push(Decl { name, kind: "var", lines: [number, number], signature: signature_of(original) });
+            }
+        }
         if first.eq_ignore_ascii_case("from") {
             if let Some(at) = current.take() {
                 decls[at].lines[1] = last;

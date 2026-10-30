@@ -28,7 +28,7 @@ const MAKE_DIRECTIVES: &[&str] = &[
     "endif", "define", "undefine",
 ];
 
-/// SQL `CREATE [OR REPLACE] TABLE|VIEW|FUNCTION|PROCEDURE|INDEX|TRIGGER|TYPE name`, case-insensitive.
+/// SQL `CREATE [OR REPLACE] TABLE|VIEW|FUNCTION|PROCEDURE|INDEX|TRIGGER|TYPE|SCHEMA|SEQUENCE name`, case-insensitive.
 /// A statement runs to the next `;` outside a `$$` body, or is one line when none follows.
 pub(super) fn sql(text: &str) -> Vec<Decl> {
     let masked = mask(text, &SQL);
@@ -67,11 +67,11 @@ fn sql_decl(shown: &str, original: &str) -> Option<(String, &'static str)> {
     }
     let body = original.get(shown.len() - start.len()..)?;
     let mut words = body.split_whitespace().skip(1);
-    let kind = loop {
+    let (kind, object) = loop {
         let upper = words.next()?.to_ascii_uppercase();
         match upper.as_str() {
-            "TABLE" | "VIEW" | "TYPE" | "INDEX" => break "type",
-            "FUNCTION" | "PROCEDURE" | "TRIGGER" => break "fn",
+            "TABLE" | "VIEW" | "TYPE" | "INDEX" | "SCHEMA" | "SEQUENCE" => break ("type", upper.clone()),
+            "FUNCTION" | "PROCEDURE" | "TRIGGER" => break ("fn", upper.clone()),
             word if SQL_MODIFIERS.contains(&word) || word.contains('=') => {}
             _ => return None,
         }
@@ -79,11 +79,15 @@ fn sql_decl(shown: &str, original: &str) -> Option<(String, &'static str)> {
     let name = words.find(|word| !matches!(word.to_ascii_uppercase().as_str(), "IF" | "NOT" | "EXISTS" | "CONCURRENTLY"))?;
     let name: String = name.split(['(', ';', ',']).next()?.chars().filter(|c| !matches!(*c, '"' | '`' | '[' | ']')).collect();
     let valid = name.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '.' | '$' | '-'));
-    (valid && !name.is_empty() && !name.eq_ignore_ascii_case("on") && !is_denied(&name.to_ascii_lowercase())).then_some((name, kind))
+    // A schema-qualified name (`billing.invoice`) is known by its last segment.
+    let name = name.rsplit('.').next().unwrap_or_default().to_string();
+    let unnamed = name.is_empty() || name.eq_ignore_ascii_case("on") || (object == "SCHEMA" && name.eq_ignore_ascii_case("authorization"));
+    (valid && !unnamed && !is_denied(&name.to_ascii_lowercase())).then_some((name, kind))
 }
 
-/// Makefile `target:` rules at column 0. Special `.NAME` targets, assignments, patterns and `define` bodies are skipped.
-/// A target runs through its tab-indented recipe; a target repeated later is not repeated.
+/// Makefile `target:` rules and `NAME :=|?=|=|+=|!= value` variable assignments at column 0. Special `.NAME` targets, patterns
+/// and `define` bodies are skipped. A target runs through its tab-indented recipe, a variable through its `\` continuations;
+/// a target or variable repeated later is not repeated.
 pub(super) fn make(text: &str) -> Vec<Decl> {
     let masked = mask(text, &MAKE);
     let rows: Vec<(u32, &str, &str)> = numbered(&masked, text).collect();
@@ -97,6 +101,18 @@ pub(super) fn make(text: &str) -> Vec<Decl> {
         }
         if shown.strip_prefix("define").is_some_and(|rest| rest.starts_with(char::is_whitespace)) {
             define = true;
+            continue;
+        }
+        if let Some(name) = make_variable(shown.trim_end()) {
+            let mut end = number;
+            let mut at = at;
+            while rows[at].1.trim_end().ends_with('\\') && at + 1 < rows.len() {
+                at += 1;
+                end = rows[at].0;
+            }
+            if seen.insert(format!("${name}")) {
+                decls.push(Decl { name, kind: "var", lines: [number, end], signature: signature_of(original) });
+            }
             continue;
         }
         let names = make_targets(shown.trim_end());
@@ -118,6 +134,23 @@ pub(super) fn make(text: &str) -> Vec<Decl> {
         }
     }
     decls
+}
+
+/// The variable a Makefile assignment line sets (`CC := gcc`, `export X ?= 1`, `OBJS += a.o`), or none when it is not one.
+fn make_variable(line: &str) -> Option<String> {
+    if line.starts_with(char::is_whitespace) {
+        return None;
+    }
+    let mut rest = line;
+    while let Some(word) = ident_at(rest).filter(|word| matches!(*word, "export" | "override" | "private")) {
+        rest = rest[word.len()..].strip_prefix(char::is_whitespace)?.trim_start();
+    }
+    let end = rest.find(|c: char| !(c.is_alphanumeric() || matches!(c, '_' | '-' | '.'))).unwrap_or(rest.len());
+    let name = &rest[..end];
+    let after = rest[end..].trim_start();
+    let assigned = [":::=", "::=", ":=", "?=", "+=", "!=", "="].iter().any(|op| after.starts_with(op));
+    let valid = name.starts_with(|c: char| c.is_alphabetic() || c == '_') && !MAKE_DIRECTIVES.contains(&name) && !is_denied(name);
+    (assigned && valid && !after.starts_with("==")).then(|| name.to_string())
 }
 
 /// The target names of a rule line, or none when the line is not a rule.
