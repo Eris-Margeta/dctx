@@ -1,12 +1,20 @@
 //! Hidden-name and extension helpers for pack file filters.
 //! Implements the name rules used by [`super::include`] (leading dot, last extension).
 //! Depends on nothing; pure over a file or directory name.
-//! Used by [`super::include`].
+//! Used by [`super::include`] and, for the secret-shaped rule, by the pack scan.
 //! A leading-dot name such as `.gitignore` has extension `gitignore`.
 
 /// Check if a file/folder name is hidden (starts with '.')
 pub(super) fn is_hidden(name: &str) -> bool {
     name.starts_with('.') && name != "." && name != ".."
+}
+
+/// True for env-shaped file names that pack never prints by default: `.env`, `.env.*`, `*.env`, `.envrc`.
+/// The match is ASCII case-insensitive and looks at the final path component only.
+#[must_use]
+pub fn is_secret_shaped_name(name: &str) -> bool {
+    let lower = name.to_ascii_lowercase();
+    lower == ".env" || lower == ".envrc" || lower.starts_with(".env.") || lower.ends_with(".env")
 }
 
 /// Extract file extension from filename
@@ -40,6 +48,16 @@ mod tests {
         assert!(!is_hidden("file.txt"));
         assert!(!is_hidden(".")); // Current dir marker
         assert!(!is_hidden("..")); // Parent dir marker
+    }
+
+    #[test]
+    fn secret_shaped_names_cover_env_files_only() {
+        for name in [".env", ".env.local", ".env.production", "settings.env", ".envrc", ".ENV", "prod.ENV"] {
+            assert!(is_secret_shaped_name(name), "{name}");
+        }
+        for name in ["environment.rs", "env.rs", "envrc", "src", ".environment", "app.py", "myenv"] {
+            assert!(!is_secret_shaped_name(name), "{name}");
+        }
     }
 
     #[test]

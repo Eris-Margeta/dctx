@@ -7,6 +7,8 @@
 mod include;
 mod names;
 
+pub use names::is_secret_shaped_name;
+
 /// Configuration for file filtering
 #[derive(Debug, Clone, Default)]
 #[allow(clippy::struct_excessive_bools, reason = "These independent public filters retain their existing combinations, including empty selections.")]

@@ -586,7 +586,8 @@ pub fn legacy_markers(
     let omit_content = if node.is_binary_file || node.binary_file_type.is_some() {
         false
     } else {
-        dctx_core::selection::rule::last_match(policy.omit_rules(), &node.relative_path, name, is_dir)
+        node.handling_decision == dctx_core::FileHandlingDecision::OmitContent
+            || dctx_core::selection::rule::last_match(policy.omit_rules(), &node.relative_path, name, is_dir)
     };
     dctx_template::MarkerNode {
         relative_path: node.relative_path.clone(),
@@ -631,6 +632,21 @@ mod tests {
         assert!(outcome.report_line.contains(&format!("bytes={}", outcome.body.len())));
         let listed: Vec<_> = std::fs::read_dir(&path).expect("list").flatten().collect();
         assert_eq!(listed.len(), 1);
+        let _ = std::fs::remove_dir_all(&path);
+    }
+
+    #[test]
+    fn env_shaped_files_are_never_printed_by_default() {
+        let path = project("envfiles");
+        for name in [".env", ".env.local", "settings.env", ".envrc"] {
+            std::fs::write(path.join(name), b"K=CANARYSECRET\n").expect("env");
+        }
+        let outcome = execute(&["pack".into(), path.display().to_string()]).expect("pack");
+        let text = std::str::from_utf8(&outcome.body).expect("utf8");
+        assert!(!text.contains("CANARYSECRET"), "{text}");
+        assert!(text.contains("fn kept() {}"), "{text}");
+        let json = execute(&["pack".into(), path.display().to_string(), "--json".into()]).expect("json");
+        assert!(!String::from_utf8_lossy(&json.body).contains("CANARYSECRET"));
         let _ = std::fs::remove_dir_all(&path);
     }
 

@@ -7,6 +7,7 @@ use dctx_core::budget::PackLimits;
 use dctx_core::datatypes::{DirContextTreeNode, NodeType};
 use dctx_core::domain::{FileHandlingDecision, ItemContext};
 use dctx_core::error::{DctxError, Resource};
+use dctx_core::filter::is_secret_shaped_name;
 use dctx_core::facts::{apply_content, mark_subtree_ignored, ContentDigests, Diagnostic, ReadGrant};
 use dctx_core::ids::RelativePath;
 use dctx_core::selection::SelectionPolicy;
@@ -152,7 +153,7 @@ impl Walk<'_> {
                 is_directory: entry.is_dir(),
                 debug_mode: self.options.debug_ignored,
             };
-            let decision = self.options.policy.decide(&context);
+            let decision = withhold_secret_shaped(self.options.policy.decide(&context), &entry.name, entry.is_dir());
             if !decision.show_in_tree() {
                 continue;
             }
@@ -196,6 +197,16 @@ impl Walk<'_> {
     }
 }
 
+/// Env-shaped files (`.env`, `.env.*`, `*.env`, `.envrc`) stay in the tree by name but are never read.
+/// Only an `Include` verdict is downgraded; `Exclude` and `DebugVisible` already read nothing.
+fn withhold_secret_shaped(decision: FileHandlingDecision, name: &str, is_dir: bool) -> FileHandlingDecision {
+    if decision == FileHandlingDecision::Include && !is_dir && is_secret_shaped_name(name) {
+        FileHandlingDecision::OmitContent
+    } else {
+        decision
+    }
+}
+
 /// Children order of the legacy walker: relative path, byte-wise.
 fn by_path(a: &DirContextTreeNode, b: &DirContextTreeNode) -> Ordering {
     a.relative_path.cmp(&b.relative_path)
@@ -236,6 +247,24 @@ mod tests {
         assert_eq!(out.digests.keys().collect::<Vec<_>>(), ["src/main.rs"]);
         assert_eq!(out.content_bytes, 13);
         assert_eq!(out.entries, 4);
+    }
+
+    #[test]
+    fn secret_shaped_files_are_listed_but_never_read() {
+        let mut source = MemorySource::new();
+        source.insert_file("app.py", b"def f(): pass\n", 1).unwrap();
+        for (path, at) in [(".env", 2), (".env.local", 3), ("settings.env", 4), (".envrc", 5), ("sub/.env.production", 6)] {
+            source.insert_file(path, b"K=CANARYSECRET\n", at).unwrap();
+        }
+        let policy = SelectionPolicy::from_texts(&RuleTexts::default());
+        let options = ScanOptions { policy: &policy, debug_ignored: false, limits: PackLimits::unbounded() };
+        let out = scan(&source, &CancelFlag::new(), options).unwrap();
+        assert_eq!(source.reads(), ["app.py"]);
+        assert_eq!(out.digests.keys().collect::<Vec<_>>(), ["app.py"]);
+        let env = out.tree.children.iter().find(|c| c.relative_path == ".env").unwrap();
+        assert_eq!(env.handling_decision, FileHandlingDecision::OmitContent);
+        assert!(env.file_content.is_none());
+        assert!(!format!("{:?}", out.tree).contains("CANARYSECRET"));
     }
 
     #[test]
