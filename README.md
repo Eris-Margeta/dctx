@@ -132,9 +132,20 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 - **Deterministic**: the same tree and question give the same bytes, so prompt caches hit.
 - **Precision and freshness**: use `--json` for the structured metadata. Structural declarations and conservative call edges do not imply exact semantic resolution.
 - **Structural language coverage**: Rust, JavaScript, TypeScript/TSX, Python, Go, Java, C/C++, C#, Kotlin, Ruby, PHP, Swift, Markdown, and JSON/JSONC/TOML/YAML configuration. The [extension dispatch](crates/dctx/src/index/extract.rs) and [language tests](crates/dctx/tests/map_languages.rs) cover more languages than the current `--version --verbose` capability list reports; this is not full compiler semantics.
+- **Outline symbols** (`guess` confidence): Scala, Dart, Zig, Solidity, Gleam, Groovy, Elixir, Lua, OCaml, R, Julia, Haskell, Terraform/HCL, SQL, shell, Makefile, Dockerfile, protobuf, Pascal and GraphQL. Headed sections for `.txt`, `.rst`, `.adoc`, `.org` and `.tex` documents.
+- **Outline symbols and calls**: Clojure, Common Lisp, Scheme, Emacs Lisp and Nix. The script blocks of Vue, Svelte, Astro and HTML.
 - **No Git, no network for map queries**: identity comes from dctx's own content digest; map does not need Git history or embeddings.
+- **Skeleton and grep**: `dctx map skeleton <file>` prints the declaration signatures of one file, with no bodies, in source order. `dctx map grep <literal>` is an exhaustive literal search of indexed files, with hits grouped by enclosing symbol; `-i` makes it ASCII case-insensitive.
+- **Hubs**: `dctx map hubs` lists the most-called symbols and the file and symbol counts per directory (`--limit` 1 to 60, default 20).
+- **Path**: `dctx map path <FROM> <TO>` prints the shortest edge path (calls, imports, contains) of at most 8 hops, or `no path`.
+- **Export**: `dctx map export --format json|mermaid` writes the whole graph as one deterministic document. The mermaid form is a flowchart of calls and imports. `--output PATH` writes a file.
+- **Neighbors**: `--edge calls|imports` selects the edge kind, and `--depth` goes up to 4. Inbound call records carry their call-site lines, at most three per record: `\tL6,L7` in text and a `sites` array in JSON.
+- **Find**: quote a multi-word concept as one argument. For config keys with no symbol match, `find` falls back to literal hits.
+- **MCP**: `dctx mcp` runs a stdio MCP server that exposes the map verbs as tools, including skeleton, path and export.
+- **Byte-stable answers**: the text header is `# <place> <verb>`, and JSON leaves out the snapshot digest, generation and age. `--meta` restores them.
+- **Source limit**: `DCTX_MAX_SOURCE_BYTES` sets the total source bytes one scan may read (1 to 17179869184; default 1 GiB).
 
-Details: [Map mode guide](docs/guides/MAP-MODE.md). Planned next — an MCP server, agent hooks, blast radius for a diff, delta answers and prefix-stable context tiers — is specified in [docs/SPEC.md](docs/SPEC.md#31-roadmap-and-acceptance-gates).
+Details: [Map mode guide](docs/guides/MAP-MODE.md). The three-way benchmark against graphify and Trail-Code is in [docs/BENCHMARK-20261030.md](docs/BENCHMARK-20261030.md). Planned next — agent hooks, blast radius for a diff, delta answers and prefix-stable context tiers — is specified in [docs/SPEC.md](docs/SPEC.md#31-roadmap-and-acceptance-gates).
 
 ---
 
