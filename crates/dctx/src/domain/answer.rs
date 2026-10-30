@@ -99,6 +99,8 @@ pub struct AnswerRecord {
     pub target: Option<String>,
     /// `exact`, `name` or `guess`. Calls are never `exact`.
     pub confidence: Option<String>,
+    /// Up to three 1-based lines inside the caller's span where it calls the neighbors target; inbound `calls` records only.
+    pub sites: Vec<u32>,
     /// Sort key. Higher is a better find hit. Not part of the public JSON object.
     pub score: i64,
 }
@@ -120,6 +122,7 @@ impl AnswerRecord {
             direction: None,
             target: None,
             confidence: None,
+            sites: Vec::new(),
             score: 0,
         }
     }

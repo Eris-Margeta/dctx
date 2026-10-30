@@ -254,6 +254,7 @@ pub(super) fn record_of(text: &TextBlob, node: &IndexedNode) -> AnswerRecord {
         direction: None,
         target: None,
         confidence,
+        sites: Vec::new(),
         score: 0,
     }
 }

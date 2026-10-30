@@ -106,6 +106,9 @@ impl Session {
             more = u64::try_from(records.len() - cap).unwrap_or(u64::MAX);
             records.truncate(cap);
         }
+        if request.verb == Verb::Neighbors {
+            self.attach_sites(&generation, request, &mut records);
+        }
         let had_records = !records.is_empty();
         let mut last_fail = 1u64;
         loop {

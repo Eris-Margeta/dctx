@@ -17,6 +17,7 @@ mod ledger;
 mod pack_op;
 mod query_op;
 mod reuse;
+mod sites_op;
 mod template_op;
 
 use std::collections::BTreeMap;

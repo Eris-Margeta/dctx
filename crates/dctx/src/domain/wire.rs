@@ -84,6 +84,7 @@ pub fn encode_text(place: &str, answer: &Answer, meta: bool) -> String {
         out.push_str(&record.kind);
         out.push('\t');
         out.push_str(&record.path);
+        push_sites_text(&mut out, &record.sites);
         out.push('\n');
         if answer.verb == Verb::Grep {
             super::append_rows(&mut out, record);
@@ -108,6 +109,14 @@ pub fn encode_text(place: &str, answer: &Answer, meta: bool) -> String {
         out.push('\n');
     }
     out
+}
+
+/// Appends the call-site lines of a record as `\tL<a>,L<b>`; nothing when there are none.
+fn push_sites_text(out: &mut String, sites: &[u32]) {
+    for (index, line) in sites.iter().enumerate() {
+        out.push(if index == 0 { '\t' } else { ',' });
+        let _ = write!(out, "L{line}");
+    }
 }
 
 /// One skeleton line: `<id>\t<kind>\tL<start>-<end>\t<signature>`. The module line carries its path, and tabs or newlines inside a signature become spaces.
@@ -152,6 +161,16 @@ fn encode_record(out: &mut String, record: &AnswerRecord, compact: bool) {
     let target = record.target.as_deref().filter(|target| !(compact && record.id.ends_with(target)));
     field_opt_in(out, "target", target, compact);
     field_opt_in(out, "confidence", record.confidence.as_deref(), compact);
+    if !record.sites.is_empty() {
+        out.push_str(",\"sites\":[");
+        for (index, line) in record.sites.iter().enumerate() {
+            if index > 0 {
+                out.push(',');
+            }
+            let _ = write!(out, "{line}");
+        }
+        out.push(']');
+    }
     out.push('}');
 }
 
@@ -289,6 +308,20 @@ mod tests {
         let text = encode_text("fixture", &answer, false);
         assert_eq!(text, "# fixture skeleton\nm:a.py\tmodule\tL1-9\ta.py\ns:a.py#Repo::get\tfn\tL2-3\tdef get(self, key):\n");
         assert!(encode_answer("fixture", &answer).contains("\"signature\":\"def get(self,\\tkey):\""));
+    }
+
+    #[test]
+    fn call_sites_follow_the_record_line_and_the_json_object_when_present() {
+        let mut answer = sample();
+        answer.verb = Verb::Neighbors;
+        answer.outcome = None;
+        let mut with = AnswerRecord::basic("calls:in:s:a.py#caller", "fn", "a.py");
+        with.sites = vec![6, 7];
+        answer.records = vec![with, AnswerRecord::basic("calls:in:s:a.py#other", "fn", "a.py")];
+        assert_eq!(encode_text("fixture", &answer, false), "# fixture neighbors\ncalls:in:s:a.py#caller\tfn\ta.py\tL6,L7\ncalls:in:s:a.py#other\tfn\ta.py\n");
+        let json = encode_answer("fixture", &answer);
+        assert_eq!(json.matches("\"sites\"").count(), 1);
+        assert!(json.contains("\"sites\":[6,7]}"), "{json}");
     }
 
     fn sample() -> Answer {

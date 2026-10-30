@@ -64,6 +64,7 @@ mod tests {
             direction: None,
             target: None,
             confidence: None,
+            sites: Vec::new(),
             score: 0,
         }
     }
