@@ -93,6 +93,8 @@ impl Session {
                 records
             }
         };
+        // Callers are ranked over the whole answer, before the cursor and the page cut, so every page sees one order.
+        let ranked = request.verb == Verb::Neighbors && self.rank_sites(&generation, request, &mut records);
         if request.verb != Verb::Read
             && let Some(last) = cursor_id
         {
@@ -106,7 +108,14 @@ impl Session {
             records.truncate(cap);
         }
         if request.verb == Verb::Neighbors {
-            self.attach_sites(&generation, request, &mut records);
+            if !ranked {
+                self.attach_sites(&generation, request, &mut records);
+            }
+            let fits = |page: &[AnswerRecord], more: u64| {
+                let next = if more > 0 { page.last().map(|record| cursor(generation.id, request.verb, &record.id)) } else { None };
+                within_budget(&encode_page(request, &self.place, &self.answer_of(&generation, request.verb, page.to_vec(), more, next, None)), &resolved)
+            };
+            super::sites_op::fit_neighbors(&mut records, &mut more, fits);
         }
         let had_records = !records.is_empty();
         let mut last_fail = 1u64;

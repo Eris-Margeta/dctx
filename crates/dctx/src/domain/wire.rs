@@ -151,7 +151,7 @@ fn push_skeleton_line(out: &mut String, record: &AnswerRecord) {
     out.push('\n');
 }
 
-/// One record object. A `compact` record (neighbors) leaves out null fields and a `target` that its id already ends with.
+/// One record object. A `compact` record (neighbors) leaves out null fields, an empty summary and a `target` that its id already ends with.
 fn encode_record(out: &mut String, record: &AnswerRecord, compact: bool) {
     out.push('{');
     field_str(out, "id", &record.id, true);
@@ -162,8 +162,11 @@ fn encode_record(out: &mut String, record: &AnswerRecord, compact: bool) {
     out.push(',');
     out.push_str(&record.lines[1].to_string());
     out.push(']');
-    field_str(out, "summary", &record.summary, false);
-    field_str(out, "summary_source", &record.summary_source, false);
+    // A compact record without a summary leaves out both summary fields.
+    if !(compact && record.summary.is_empty()) {
+        field_str(out, "summary", &record.summary, false);
+        field_str(out, "summary_source", &record.summary_source, false);
+    }
     field_opt_in(out, "signature", record.signature.as_deref(), compact);
     match record.span {
         Some([start, end]) => {
