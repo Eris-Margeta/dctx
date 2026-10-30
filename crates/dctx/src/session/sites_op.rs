@@ -47,7 +47,7 @@ impl Session {
                 };
                 files.insert(job.path.clone(), bytes);
             }
-            // Every direct caller counts as at least one site: a call on its own first line (a one-line function) is not listed.
+            // Every direct caller counts as at least one site, also one whose file cannot be read or whose call the scan does not see.
             if let Some(count) = counts.get_mut(job.index) {
                 *count = 1;
             }

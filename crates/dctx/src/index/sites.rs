@@ -1,8 +1,10 @@
 //! Call-site lines for inbound `calls` records of a neighbors answer.
 //! Implements the `sites` field: the 1-based absolute lines inside a caller's span where the callee's last name segment occurs as a call.
 //! Depends on the caller's verified bytes, which the session reads; this module only plans the reads and scans the text.
-//! At most [`MAX_SITES`] lines per record, ascending, and never the caller's own declaration line.
-//! [`rank`] puts the direct callers with the most call-site lines first, so a budget-cut first page covers the most call sites.
+//! At most [`MAX_SITES`] lines per record, ascending. The caller's first line counts too (a one-line arrow or lambda caller), except the
+//! declaration of a recursive caller's own name.
+//! [`rank`] names every calling file once before a second caller of any file, each run with the most call-site lines first, so a
+//! budget-cut first page covers the most calling files and call sites.
 
 use super::extract::language_of;
 use super::{query, Generation};
@@ -22,6 +24,8 @@ pub(crate) struct SiteJob {
     pub span: [u64; 2],
     /// Absolute line of the caller's first line, its declaration.
     pub first: u32,
+    /// True when the caller's own last name segment is the callee name, so its declaration on the first line is not a call.
+    pub own: bool,
 }
 
 /// The callee name to look for and the caller records to scan.
@@ -52,7 +56,8 @@ pub(crate) fn plan(generation: &Generation, request: &MapRequest, records: &[Ans
         let Some(caller) = query::lookup(&generation.nodes, &generation.text, target) else {
             continue;
         };
-        jobs.push(SiteJob { index, path: record.path.clone(), span: caller.span, first: caller.lines[0] });
+        let own = caller.name.rsplit(['.', ':', '#']).next() == Some(name);
+        jobs.push(SiteJob { index, path: record.path.clone(), span: caller.span, first: caller.lines[0], own });
     }
     (!jobs.is_empty()).then(|| SitePlan { name: name.to_string(), jobs })
 }
@@ -65,13 +70,24 @@ fn depth_one(record: &AnswerRecord) -> bool {
     record.id.strip_prefix(edge).and_then(|rest| rest.strip_prefix(':')).and_then(|rest| rest.strip_prefix(direction)).and_then(|rest| rest.strip_prefix(':')) == Some(target)
 }
 
-/// Stably reorders the leading depth-one records so that, inside one edge kind, a record with more call-site lines (`counts[i]` for record `i`) comes first.
-/// Ties keep their earlier order (target, then id). Deeper records stay where they are, after every depth-one record.
+/// Stably reorders the leading depth-one records inside one edge kind: first the best caller of every (direction, file), then the other
+/// callers; each run with more call-site lines (`counts[i]` for record `i`) first. Ties keep their earlier order (target, then id).
+/// Deeper records stay where they are, after every depth-one record.
 pub(crate) fn rank(records: &mut Vec<AnswerRecord>, counts: &[usize]) {
     let head = records.iter().take_while(|record| depth_one(record)).count();
     let count = |index: usize| counts.get(index).copied().unwrap_or(0);
     let mut order: Vec<usize> = (0..head).collect();
     order.sort_by(|&left, &right| records[left].edge.cmp(&records[right].edge).then(count(right).cmp(&count(left))));
+    let repeat: Vec<bool> = {
+        let mut seen = std::collections::HashSet::new();
+        let mut flags = vec![false; head];
+        for &index in &order {
+            let record = &records[index];
+            flags[index] = !seen.insert((record.edge.as_deref(), record.direction.as_deref(), record.path.as_str()));
+        }
+        flags
+    };
+    order.sort_by(|&left, &right| records[left].edge.cmp(&records[right].edge).then(repeat[left].cmp(&repeat[right])));
     if order.iter().enumerate().all(|(position, &index)| position == index) {
         return;
     }
@@ -90,12 +106,21 @@ pub(crate) fn scan(bytes: &[u8], job: &SiteJob, name: &str) -> Vec<u32> {
     };
     let tokens = matches!(language_of(&job.path), "ocaml" | "haskell" | "shell");
     let mut lines = Vec::new();
-    for (offset, line) in text.split('\n').enumerate().skip(1) {
+    for (offset, line) in text.split('\n').enumerate() {
+        // A recursive caller's first line holds its own declaration; any other first line is code (`onclick: () => target(x)`).
+        let line = if offset == 0 && job.own { after_first(line, name) } else { line };
         if has_call(line, name, tokens) {
             lines.push(job.first.saturating_add(u32::try_from(offset).unwrap_or(u32::MAX)));
         }
     }
     lines
+}
+
+/// The part of `line` after the first whole-word `name`, or an empty line when there is none.
+fn after_first<'a>(line: &'a str, name: &str) -> &'a str {
+    line.match_indices(name)
+        .find(|(at, _)| !line[..*at].chars().next_back().is_some_and(is_word) && !line[at + name.len()..].chars().next().is_some_and(is_word))
+        .map_or("", |(at, _)| &line[at + name.len()..])
 }
 
 /// True for a character that can continue a name.
@@ -124,7 +149,7 @@ mod tests {
 
     /// A job over the whole of `source`, whose first line is line `first`.
     fn job(path: &str, source: &str, first: u32) -> SiteJob {
-        SiteJob { index: 0, path: path.to_string(), span: [0, u64::try_from(source.len()).unwrap_or(0)], first }
+        SiteJob { index: 0, path: path.to_string(), span: [0, u64::try_from(source.len()).unwrap_or(0)], first, own: false }
     }
 
     #[test]
@@ -132,7 +157,11 @@ mod tests {
         let source = "def caller():\n    x = 1\n    y = target()\n    return target () + y\n    z = retarget(1) + target_b(2) + target\n    m = target!(1)\n    n = obj.target(2)\n";
         assert_eq!(scan(source.as_bytes(), &job("a.py", source, 4), "target"), [6, 7, 9, 10]);
         let own = "fn target() {\n    target();\n}\n";
-        assert_eq!(scan(own.as_bytes(), &job("a.rs", own, 10), "target"), [11]);
+        assert_eq!(scan(own.as_bytes(), &SiteJob { own: true, ..job("a.rs", own, 10) }, "target"), [11]);
+        let inline = "fn target() { target() }\n";
+        assert_eq!(scan(inline.as_bytes(), &SiteJob { own: true, ..job("a.rs", inline, 3) }, "target"), [3]);
+        let arrow = "onclick: () => target(data),";
+        assert_eq!(scan(arrow.as_bytes(), &job("a.js", arrow, 226), "target"), [226]);
         let many = "f\n target(\n target(\n target(\n target(\n";
         assert_eq!(scan(many.as_bytes(), &job("a.rs", many, 1), "target"), [2, 3, 4, 5]);
     }
@@ -166,6 +195,19 @@ mod tests {
     }
 
     #[test]
+    fn rank_names_every_calling_file_before_a_second_caller_of_one_file() {
+        let at = |path: &str, name: &str| {
+            let mut record = record("calls", "in", &format!("s:{path}#{name}"), 1);
+            record.path = path.to_string();
+            record
+        };
+        let mut records = vec![at("a.go", "a1"), at("a.go", "a2"), at("a.go", "a3"), at("b.go", "b1"), at("c.go", "c1"), at("c.go", "c2")];
+        rank(&mut records, &[1, 4, 2, 1, 1, 3]);
+        let ids: Vec<&str> = records.iter().map(|record| record.id.as_str()).collect();
+        assert_eq!(ids, ["calls:in:s:a.go#a2", "calls:in:s:c.go#c2", "calls:in:s:b.go#b1", "calls:in:s:a.go#a3", "calls:in:s:a.go#a1", "calls:in:s:c.go#c1"]);
+    }
+
+    #[test]
     fn ocaml_haskell_and_shell_count_whole_word_tokens() {
         let source = "let caller x =\n  let y = target x in\n  retarget y\n  target\n";
         assert_eq!(scan(source.as_bytes(), &job("a.ml", source, 1), "target"), [2, 4]);
@@ -176,7 +218,7 @@ mod tests {
 
     #[test]
     fn a_span_outside_the_bytes_or_not_text_yields_no_sites() {
-        let bad = SiteJob { index: 0, path: "a.py".to_string(), span: [0, 99], first: 1 };
+        let bad = SiteJob { index: 0, path: "a.py".to_string(), span: [0, 99], first: 1, own: false };
         assert!(scan(b"x", &bad, "target").is_empty());
         assert!(scan(&[0xff, 0xfe, b'\n', 0xff], &SiteJob { span: [0, 4], ..bad }, "target").is_empty());
     }
