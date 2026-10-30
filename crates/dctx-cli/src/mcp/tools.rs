@@ -13,14 +13,16 @@ struct Prop {
     help: &'static str,
 }
 
-/// One tool: a `dctx map` verb with an optional positional first argument.
+/// One tool: a `dctx map` verb with an optional positional first argument (and optionally a second).
 struct Tool {
     /// Tool name, equal to the map verb.
     name: &'static str,
     /// Description shown to the model.
     help: &'static str,
-    /// Property that becomes the positional argument, if the verb has one.
+    /// Property that becomes the first positional argument, if the verb has one.
     positional: Option<&'static str>,
+    /// Property that becomes the second positional argument (used by `path` for `to`).
+    second_positional: Option<&'static str>,
     /// All verb-specific properties, positional first.
     props: &'static [Prop],
 }
@@ -29,7 +31,7 @@ const fn prop(name: &'static str, ty: &'static str, help: &'static str) -> Prop 
     Prop { name, ty, help }
 }
 
-/// Properties every verb accepts (`hubs` has no cursor).
+/// Properties every verb accepts (some verbs drop some of them).
 const COMMON: [Prop; 3] = [
     prop("budget", "integer", "Output token budget, 1..2000"),
     prop("cursor", "string", "The next token of an earlier page, to continue it"),
@@ -41,6 +43,7 @@ const TOOLS: &[Tool] = &[
         name: "map",
         help: "Structural map of a file, directory or node: its symbols and their relations.",
         positional: Some("target"),
+        second_positional: None,
         props: &[
             prop("target", "string", "Stable id (m:, s:, ...) or a place-relative file path"),
             prop("depth", "integer", "Levels to expand, 1..3"),
@@ -51,6 +54,7 @@ const TOOLS: &[Tool] = &[
         name: "find",
         help: "Find symbols, modules and docs by name or words.",
         positional: Some("query"),
+        second_positional: None,
         props: &[
             prop("query", "string", "Words or a name to look for"),
             prop("kind", "array", "Kinds: fn, method, struct, enum, trait, impl, const, type, macro, class, interface, symbol, module, package, place, doc, test"),
@@ -62,6 +66,7 @@ const TOOLS: &[Tool] = &[
         name: "neighbors",
         help: "Nodes connected to a node by calls or imports, up to 4 hops.",
         positional: Some("id"),
+        second_positional: None,
         props: &[
             prop("id", "string", "Stable node id from a find or map answer"),
             prop("edge", "array", "Edge kinds, for example calls, imports"),
@@ -74,12 +79,14 @@ const TOOLS: &[Tool] = &[
         name: "explain",
         help: "Describe one node: its kind, place, signature and relations.",
         positional: Some("id"),
+        second_positional: None,
         props: &[prop("id", "string", "Stable node id")],
     },
     Tool {
         name: "read",
         help: "Read the source of one node, or of absolute lines inside it.",
         positional: Some("id"),
+        second_positional: None,
         props: &[
             prop("id", "string", "Stable node id"),
             prop("lines", "string", "Absolute source lines inside the node, as A-B"),
@@ -90,12 +97,14 @@ const TOOLS: &[Tool] = &[
         name: "hubs",
         help: "Most-called symbols and per-directory file and symbol counts of the place.",
         positional: None,
+        second_positional: None,
         props: &[prop("limit", "integer", "Hub lines, 1..60 (default 20)")],
     },
     Tool {
         name: "grep",
         help: "Exhaustive literal search of indexed files, hits grouped by enclosing symbol.",
         positional: Some("query"),
+        second_positional: None,
         props: &[
             prop("query", "string", "The literal text to search for"),
             prop("ignore_case", "boolean", "ASCII case-insensitive match"),
@@ -103,11 +112,41 @@ const TOOLS: &[Tool] = &[
             prop("limit", "integer", "Page size"),
         ],
     },
+    Tool {
+        name: "skeleton",
+        help: "Skeleton of a file or directory: its symbols and their relations, without depth expansion.",
+        positional: Some("target"),
+        second_positional: None,
+        props: &[
+            prop("target", "string", "Stable id (m:, s:, ...) or a place-relative file path"),
+        ],
+    },
+    Tool {
+        name: "path",
+        help: "Shortest edge path between two nodes (calls, imports, contains), at most 8 hops.",
+        positional: Some("from"),
+        second_positional: Some("to"),
+        props: &[
+            prop("from", "string", "Start node id (s:...) or place-relative file"),
+            prop("to", "string", "End node id (s:...) or place-relative file"),
+            prop("meta", "boolean", "Include hop metadata"),
+        ],
+    },
+    Tool {
+        name: "export",
+        help: "Whole graph as one deterministic document: graph JSON or a Mermaid flowchart.",
+        positional: None,
+        second_positional: None,
+        props: &[
+            prop("format", "string", "Output format: json or mermaid"),
+        ],
+    },
 ];
 
-/// Every property `tool` accepts: its own, then the common ones that apply.
+/// Every property `tool` accepts: its own, then the common ones not already in its own set.
 fn accepted(tool: &Tool) -> Vec<&Prop> {
-    tool.props.iter().chain(COMMON.iter().filter(|extra| tool.name != "hubs" || extra.name != "cursor")).collect()
+    let own_names: std::collections::HashSet<&str> = tool.props.iter().map(|p| p.name).collect();
+    tool.props.iter().chain(COMMON.iter().filter(|extra| !own_names.contains(extra.name) && !(tool.name == "hubs" && extra.name == "cursor") && !(tool.name == "export" && extra.name != "budget") && !(tool.name == "skeleton" && extra.name != "budget" && extra.name != "json"))).collect()
 }
 
 fn schema_of(tool: &Tool) -> Json {
@@ -121,8 +160,17 @@ fn schema_of(tool: &Tool) -> Json {
             (p.name.to_string(), Json::obj(members))
         })
         .collect();
-    let required = tool.positional.map_or(Json::Arr(Vec::new()), |name| Json::Arr(vec![Json::str(name)]));
-    Json::obj(vec![("type", Json::str("object")), ("properties", Json::Obj(properties)), ("required", required), ("additionalProperties", Json::Bool(false))])
+    let mut required_names = Vec::new();
+    if let Some(name) = tool.positional {
+        required_names.push(Json::str(name));
+    }
+    if let Some(name) = tool.second_positional {
+        required_names.push(Json::str(name));
+    }
+    if tool.name == "export" {
+        required_names.push(Json::str("format"));
+    }
+    Json::obj(vec![("type", Json::str("object")), ("properties", Json::Obj(properties)), ("required", Json::Arr(required_names)), ("additionalProperties", Json::Bool(false))])
 }
 
 /// The `tools/list` result.
@@ -161,7 +209,21 @@ pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String
             _ => return Err(format!("{first} is required and must be a non-empty string")),
         }
     }
-    for p in known.iter().filter(|p| Some(p.name) != tool.positional) {
+    if let Some(second) = tool.second_positional {
+        let value = members.iter().find(|(key, _)| key == second).map(|(_, value)| value);
+        match value.and_then(Json::as_str) {
+            Some(text) if !text.is_empty() => out.push(text.to_string()),
+            _ => return Err(format!("{second} is required and must be a non-empty string")),
+        }
+    }
+    if tool.name == "export" {
+        let value = members.iter().find(|(key, _)| key == "format").map(|(_, value)| value);
+        match value.and_then(Json::as_str) {
+            Some(text) if !text.is_empty() => out.extend(["--format".to_string(), text.to_string()]),
+            _ => return Err("format is required and must be json or mermaid".into()),
+        }
+    }
+    for p in known.iter().filter(|p| Some(p.name) != tool.positional && Some(p.name) != tool.second_positional && !(tool.name == "export" && p.name == "format")) {
         let Some((_, value)) = members.iter().find(|(key, _)| key == p.name) else { continue };
         if matches!(value, Json::Null) {
             continue;
@@ -205,6 +267,24 @@ mod tests {
         assert!(args("find", r#"{"query":"a","bogus":1}"#).unwrap_err().contains("bogus"));
         assert!(args("find", r#"{"query":"a","limit":true}"#).unwrap_err().contains("limit"));
         assert!(args("hubs", r#"{"cursor":"x"}"#).is_err());
-        assert!(list().get("tools").is_some() && exists("map") && !exists("path"));
+        assert!(list().get("tools").is_some() && exists("map") && exists("path"));
+    }
+
+    #[test]
+    fn new_tools_become_cli_arguments() {
+        assert_eq!(args("skeleton", r#"{"target":"m:a.py"}"#).unwrap(), ["skeleton", "m:a.py"]);
+        assert_eq!(args("skeleton", r#"{"target":"m:a.py","json":true}"#).unwrap(), ["skeleton", "m:a.py", "--json"]);
+        assert_eq!(args("path", r#"{"from":"s:a.py#a","to":"s:a.py#b"}"#).unwrap(), ["path", "s:a.py#a", "s:a.py#b"]);
+        assert_eq!(args("path", r#"{"from":"s:a.py#a","to":"s:a.py#b","json":true,"meta":true}"#).unwrap(), ["path", "s:a.py#a", "s:a.py#b", "--meta", "--json"]);
+        assert_eq!(args("export", r#"{"format":"json"}"#).unwrap(), ["export", "--format", "json"]);
+        assert_eq!(args("export", r#"{"format":"mermaid"}"#).unwrap(), ["export", "--format", "mermaid"]);
+        assert!(args("path", r#"{"from":"s:a"}"#).unwrap_err().contains("to"));
+        assert!(args("export", "{}").unwrap_err().contains("format"));
+    }
+
+    #[test]
+    fn all_ten_tools_are_registered() {
+        let names: Vec<&str> = TOOLS.iter().map(|t| t.name).collect();
+        assert_eq!(names, ["map", "find", "neighbors", "explain", "read", "hubs", "grep", "skeleton", "path", "export"]);
     }
 }

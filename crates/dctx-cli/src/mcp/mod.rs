@@ -11,7 +11,7 @@ use std::io::{BufRead, Write};
 /// Protocol version answered when the client names none.
 const DEFAULT_PROTOCOL: &str = "2025-06-18";
 /// Usage text for `dctx mcp --help`.
-const HELP: &str = "Usage: dctx mcp [PATH]\n  Serve the map verbs (map, find, neighbors, explain, read, hubs, grep) as MCP tools over stdio.\n  One JSON-RPC 2.0 message per line. Tools run in PATH (default: the current directory).\n";
+const HELP: &str = "Usage: dctx mcp [PATH]\n  Serve the map verbs (map, find, neighbors, explain, read, hubs, grep, skeleton, path, export) as MCP tools over stdio.\n  One JSON-RPC 2.0 message per line. Tools run in PATH (default: the current directory).\n";
 
 /// Entry point for `dctx mcp [PATH]`: serves stdin to stdout until end of input.
 pub(crate) fn run(args: &[String]) -> Result<(), String> {
@@ -142,7 +142,7 @@ mod tests {
         let result = |n: usize, key: &str| replies[n].get("result").and_then(|r| r.get(key)).cloned();
         assert_eq!(result(0, "protocolVersion"), Some(Json::str("2024-11-05")));
         assert_eq!(replies[1].get("id"), Some(&Json::str("a")));
-        assert!(matches!(result(2, "tools"), Some(Json::Arr(tools)) if tools.len() == 7));
+        assert!(matches!(result(2, "tools"), Some(Json::Arr(tools)) if tools.len() == 10));
         let text = |n: usize| match result(n, "content") {
             Some(Json::Arr(items)) => items[0].get("text").and_then(Json::as_str).map(str::to_string),
             _ => None,
