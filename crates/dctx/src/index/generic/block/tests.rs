@@ -22,7 +22,7 @@ fn every_block_language_finds_its_types_and_functions() {
     let ocaml = "let add x y = x + y\nlet rec fact n = if n = 0 then 1 else n * fact (n - 1)\ntype shape = Circle | Square\nmodule Geo = struct\n  let area r = r *. r\nend\n";
     assert_eq!(
         named("ocaml", ocaml),
-        [pair("add", "fn"), pair("fact", "fn"), pair("shape", "type"), pair("Geo", "type"), pair("Geo::area", "fn")]
+        [pair("add", "fn"), pair("fact", "fn"), pair("shape", "type"), pair("shape::Circle", "const"), pair("shape::Square", "const"), pair("Geo", "type"), pair("Geo::area", "fn")]
     );
     let r = "add <- function(x, y) {\n  x + y\n}\nscale = function(v) v * 2\n";
     assert_eq!(named("r", r), [pair("add", "fn"), pair("scale", "fn")]);
@@ -213,6 +213,8 @@ fn ocaml_lists_exceptions_module_types_classes_and_their_members() {
         named("ocaml", text),
         [
             pair("point", "type"),
+            pair("point::x", "field"),
+            pair("point::y", "field"),
             pair("Bad", "type"),
             pair("S", "type"),
             pair("S::run", "fn"),
@@ -252,4 +254,128 @@ fn haskell_lists_record_fields_and_instance_methods() {
     );
     let area = found.iter().find(|symbol| symbol.name == "HasArea.Shape::area").expect("instance method");
     assert_eq!(area.lines, [13, 15]);
+}
+
+/// Lua shapes from lume and its tests: functions inside function bodies and functions stored under a string key.
+#[test]
+fn lua_nested_functions_and_string_keyed_functions_are_symbols() {
+    let text = r#"local function isequal(a, b)
+  local t = {}
+  function t.table(a, b)
+    return true
+  end
+  function t.number(a, b) return math.abs(a - b) < 10e-9 end
+  return t[type(a)]
+end
+tests["lume.vector"] = function()
+  local function cmp(a, b) return math.abs(a - b) < 10e-6 end
+  testeq(cmp(1, 1), true)
+end
+function lume.hotswap(modname)
+  local function update(old, new)
+    if updated[old] then return end
+  end
+  local err = nil
+end
+"#;
+    let found = symbols("lua", text);
+    let listed: Vec<(&str, &str, [u32; 2])> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines)).collect();
+    assert_eq!(
+        listed,
+        [
+            ("isequal", "fn", [1, 8]),
+            ("isequal::t::table", "fn", [3, 5]),
+            ("isequal::t::number", "fn", [6, 6]),
+            ("tests[\"lume.vector\"]", "fn", [9, 12]),
+            ("tests[\"lume.vector\"]::cmp", "fn", [10, 10]),
+            ("lume::hotswap", "fn", [13, 18]),
+            ("lume::hotswap::update", "fn", [14, 16]),
+        ]
+    );
+}
+
+/// nimble_options' test module: ExUnit `describe` groups hold their `test` blocks.
+#[test]
+fn elixir_ex_unit_describe_and_test_blocks_are_symbols() {
+    let text = r#"defmodule NimbleOptionsTest do
+  use ExUnit.Case, async: true
+
+  describe "validate keys" do
+    test "known options without types" do
+      assert true
+    end
+
+    test "unknown options", %{a: a} do
+      assert a
+    end
+  end
+
+  test "top level" do
+    :ok
+  end
+
+  def buffer_keep(value) do
+    value
+  end
+end
+"#;
+    let found = symbols("elixir", text);
+    let listed: Vec<(&str, &str, [u32; 2])> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.kind.as_str(), symbol.lines)).collect();
+    assert_eq!(
+        listed,
+        [
+            ("NimbleOptionsTest", "type", [1, 21]),
+            ("NimbleOptionsTest::describe \"validate keys\"", "type", [4, 12]),
+            ("NimbleOptionsTest::describe \"validate keys\"::test \"known options without types\"", "fn", [5, 7]),
+            ("NimbleOptionsTest::describe \"validate keys\"::test \"unknown options\"", "fn", [9, 11]),
+            ("NimbleOptionsTest::test \"top level\"", "fn", [14, 16]),
+            ("NimbleOptionsTest::buffer_keep", "fn", [18, 20]),
+        ]
+    );
+    // Outside a module a `test "x"` line is a call, not a declaration.
+    assert!(named("elixir", "test \"loose\" do\n  :ok\nend\n").is_empty());
+}
+
+/// cmdliner shapes: a module alias, constructors and record fields, `and` types, and a function defined in a `let` body.
+#[test]
+fn ocaml_aliases_constructors_fields_and_types_and_nested_functions_are_symbols() {
+    let text = r#"module Fmt = Cmdliner_base.Fmt
+type absence = Err | Val of string Lazy.t | Doc of string
+type t =
+  { codes : int * int;
+    mutable doc : string }
+and 'a conv =
+  | Conv : 'a -> 'a conv
+  | Files | Dirs
+let find_sub ?start ~sub s =
+  let len_sub = String.length sub in
+  let rec loop i k =
+    if i > k then None else loop (i + 1) k
+  in
+  loop 0 len_sub
+let err_cmd exit cmd = Fmt.str "%s" cmd
+"#;
+    assert_eq!(
+        named("ocaml", text),
+        [
+            pair("Fmt", "type"),
+            pair("absence", "type"),
+            pair("absence::Err", "const"),
+            pair("absence::Val", "const"),
+            pair("absence::Doc", "const"),
+            pair("t", "type"),
+            pair("t::codes", "field"),
+            pair("t::doc", "field"),
+            pair("conv", "type"),
+            pair("conv::Conv", "const"),
+            pair("conv::Files", "const"),
+            pair("conv::Dirs", "const"),
+            pair("find_sub", "fn"),
+            pair("find_sub::loop", "fn"),
+            pair("err_cmd", "fn"),
+        ]
+    );
+    let found = symbols("ocaml", text);
+    let span = |name: &str| found.iter().find(|symbol| symbol.name == name).map(|symbol| symbol.lines);
+    assert_eq!((span("t"), span("conv"), span("find_sub"), span("find_sub::loop")), (Some([3, 8]), Some([6, 8]), Some([9, 14]), Some([11, 12])));
 }

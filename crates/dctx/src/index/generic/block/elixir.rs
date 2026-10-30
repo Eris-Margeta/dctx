@@ -7,7 +7,7 @@ use super::super::{ident_at, is_denied, mask, Decl, Syntax};
 use super::{Block, Tok};
 
 /// How Elixir reads: `#` comments, `do` blocks, no bracket flattening.
-pub(super) const SCAN: Block = Block { mask: mask_of, decl: decl_of, word: word_of, flat: false };
+pub(super) const SCAN: Block = Block { mask: mask_of, decl: decl_of, word: word_of, flat: false, nested: false };
 
 /// Elixir: `#` comments, quoted strings and heredocs.
 fn mask_of(text: &str) -> String {
@@ -24,12 +24,15 @@ fn word_of(word: &str, next: Option<u8>) -> Tok {
 }
 
 /// `defmodule`, `defprotocol` and `defimpl` (type), `defstruct` (type named like its module), `@type` (type), `@spec` (fn until [`finish`] decides),
-/// and `def`, `defp`, `defmacro` and friends (fn).
-fn decl_of(line: &str, owner: Option<&str>) -> Option<(String, &'static str)> {
+/// `def`, `defp`, `defmacro` and friends (fn), and inside a module the ExUnit `describe "name"` (type) and `test "name"` (fn).
+fn decl_of(line: &str, source: &str, owner: Option<&str>) -> Option<(String, &'static str)> {
     if let Some(attribute) = line.strip_prefix('@') {
         return attribute_decl(attribute);
     }
     let word = ident_at(line)?;
+    if matches!(word, "describe" | "test") && owner.is_some() {
+        return ex_unit(word, line, source);
+    }
     if matches!(word, "defstruct" | "defexception") {
         let own = owner?.rsplit([':', '.']).next().filter(|last| !last.is_empty())?;
         return Some((own.to_string(), "type"));
@@ -100,4 +103,26 @@ pub(super) fn finish(decls: Vec<Decl>) -> Vec<Decl> {
             Some(decl)
         })
         .collect()
+}
+
+/// ExUnit `describe "name" do` (type) and `test "name" do` or `test "name", context do` (fn), named `describe "name"` and
+/// `test "name"` from the unmasked line. A name over 80 characters is cut there.
+fn ex_unit(word: &str, line: &str, source: &str) -> Option<(String, &'static str)> {
+    let after = source.get(word.len()..)?;
+    let body = after.strip_prefix(char::is_whitespace)?.trim_start().strip_prefix('"')?;
+    let mut end = None;
+    let mut escaped = false;
+    for (at, c) in body.char_indices() {
+        if escaped {
+            escaped = false;
+        } else if c == '\\' {
+            escaped = true;
+        } else if c == '"' {
+            end = Some(at);
+            break;
+        }
+    }
+    let name: String = body[..end?].chars().take(80).collect();
+    let block = line.split(|c: char| !(c.is_alphanumeric() || c == '_')).any(|part| part == "do");
+    block.then(|| (format!("{word} \"{name}\""), if word == "describe" { "type" } else { "fn" }))
 }

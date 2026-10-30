@@ -166,6 +166,14 @@ fn hcl(text: &str) -> Vec<Decl> {
         if found.is_none() && open.is_none() && locals && walk.stack.len() == 1 && depth == 0 {
             found = members::locals_key(line);
         }
+        // `dynamic "ingress" {` anywhere inside a block: `<block>::dynamic.ingress`.
+        if found.is_none()
+            && open.is_none()
+            && let Some(top) = walk.stack.first().and_then(|frame| frame.decl)
+            && let Some(label) = members::dynamic_label(line, original.trim_start())
+        {
+            found = Some((format!("{}::dynamic.{label}", walk.decls[top].name), "type"));
+        }
         walk.finish(number, shown, original, open, found);
         depth = (depth + members::bracket_delta(shown)).max(0);
     }
@@ -212,7 +220,8 @@ fn quoted_labels(mut rest: &str) -> Vec<String> {
     labels
 }
 
-/// Shell functions (`name() {`, `function name {`) and, at file level, `alias` names and `export`/`readonly`/`declare` variables.
+/// Shell functions (`name() {`, `function name {`), bats `@test "name" {` blocks and, at file level, `alias` names and
+/// `export`/`readonly`/`declare` variables.
 /// Heredoc bodies are skipped; nesting is not tracked.
 fn shell(text: &str) -> Vec<Decl> {
     let masked = mask(text, &SHELL);
@@ -238,7 +247,7 @@ fn shell(text: &str) -> Vec<Decl> {
                 }
             }
         }
-        let found = if open.is_none() { shell_decl(line) } else { None };
+        let found = if open.is_none() { shell_decl(line).or_else(|| members::bats_test(line, original.trim_start())) } else { None };
         walk.finish(number, shown, original, open, found);
         heredoc = heredoc_tag(shown, original);
     }

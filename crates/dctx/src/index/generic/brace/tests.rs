@@ -127,3 +127,56 @@ fn an_open_parenthesis_does_not_turn_parameters_into_fields() {
     let stray = format!("fn a( \n{}fn b() void {{\n}}\n", "x\n".repeat(130));
     assert!(named("zig", &stray).iter().any(|(name, _)| name == "b"));
 }
+
+/// Fansi's `ColorCategory`: a second parameter list on its own line, then `extends .. {`; its `val` parameter is a member.
+#[test]
+fn scala_class_params_split_headers_and_defs_deep_in_a_body_are_symbols() {
+    let text = "abstract class ColorCategory(offset: Int, width: Int, val colorCode: Int)\n                            (implicit catName: sourcecode.Name)\n                             extends Category (offset, width)(catName){\n  private[this] def True0(r: Int) = {\n    r\n  }\n}\nobject Str {\n  def apply(raw: CharSequence): Str = {\n    while(i < 1){\n      if (c == 1) {\n        def isDigit(index: Int) = {\n          index < 3\n        }\n      }\n    }\n  }\n}\nobject FansiTests extends TestSuite{\n  val tests = Tests{\n    test(\"x\"){\n      def tabulate(all: Seq[Int]) = {\n        all\n      }\n    }\n  }\n}\n";
+    expect(
+        named("scala", text),
+        &[
+            ("ColorCategory", "type"),
+            ("ColorCategory::colorCode", "const"),
+            ("ColorCategory::True0", "fn"),
+            ("Str", "type"),
+            ("Str::apply", "fn"),
+            ("Str::apply::isDigit", "fn"),
+            ("FansiTests", "type"),
+            ("FansiTests::tests", "const"),
+            ("FansiTests::tests::tabulate", "fn"),
+        ],
+    );
+    let found = symbols("scala", text);
+    assert_eq!(found[0].lines, [1, 7]);
+    assert_eq!(found[5].lines, [12, 14]);
+}
+
+/// zig-args shapes: a type declared inside a function or a test, the members of a returned `struct`, and anonymous field types.
+#[test]
+fn zig_types_inside_functions_returned_structs_and_anonymous_field_types_are_symbols() {
+    let text = "fn parseInternal() void {\n    while (true) {\n        const Pair = struct {\n            name: []const u8,\n        };\n    }\n    var found = false;\n}\npub fn Parser(comptime Generic: type) type {\n    return struct {\n        const Self = @This();\n        arena: u32,\n        pub fn deinit(self: Self) void {\n            _ = self;\n        }\n    };\n}\nconst Verbs = union(enum) {\n    compact: struct {\n        host: ?[]const u8 = null,\n        mode: enum { default, special } = .default,\n    },\n    forward: void,\n};\ntest \"full help\" {\n    const Options = struct {\n        boolflag: bool = false,\n    };\n}\n";
+    expect(
+        named("zig", text),
+        &[
+            ("parseInternal", "fn"),
+            ("parseInternal::Pair", "type"),
+            ("parseInternal::Pair::name", "field"),
+            ("Parser", "fn"),
+            ("Parser::arena", "field"),
+            ("Parser::deinit", "fn"),
+            ("Verbs", "type"),
+            ("Verbs::compact", "field"),
+            ("Verbs::compact::host", "field"),
+            ("Verbs::compact::mode", "field"),
+            ("Verbs::compact::mode::default", "const"),
+            ("Verbs::compact::mode::special", "const"),
+            ("Verbs::forward", "field"),
+            ("test \"full help\"", "fn"),
+            ("test \"full help\"::Options", "type"),
+            ("test \"full help\"::Options::boolflag", "field"),
+        ],
+    );
+    let found = symbols("zig", text);
+    assert_eq!(found[1].lines, [3, 5]);
+    assert_eq!(found[7].lines, [19, 22]);
+}

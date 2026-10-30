@@ -158,3 +158,38 @@ pub(super) fn docker_names(line: &str, carry: Option<Carry>) -> (Vec<String>, Op
     let next = (line.trim_end().ends_with('\\') && !legacy).then_some(kind);
     (names, next)
 }
+
+/// The quoted text at the start of `text` (`"..."` or `'...'`, a backslash escapes in double quotes) and what follows it.
+/// `None` when it does not close on the line.
+fn quoted(text: &str) -> Option<(&str, &str)> {
+    let quote = text.chars().next().filter(|c| matches!(c, '"' | '\''))?;
+    let body = &text[1..];
+    let mut escaped = false;
+    for (at, c) in body.char_indices() {
+        if escaped {
+            escaped = false;
+        } else if c == '\\' && quote == '"' {
+            escaped = true;
+        } else if c == quote {
+            return Some((&body[..at], &body[at + 1..]));
+        }
+    }
+    None
+}
+
+/// Terraform `dynamic "ingress" {` (masked `line`, unmasked `source`, both trimmed at the start): the block label.
+pub(super) fn dynamic_label(line: &str, source: &str) -> Option<String> {
+    let after = line.strip_prefix("dynamic").filter(|after| after.starts_with(char::is_whitespace))?;
+    let (label, _) = quoted(source.get(line.len() - after.len()..)?.trim_start())?;
+    let valid = !label.is_empty() && label.chars().all(|c| c.is_alphanumeric() || matches!(c, '_' | '-'));
+    (valid && line.ends_with('{')).then(|| label.to_string())
+}
+
+/// A bats `@test "name" {` block (masked `line`, unmasked `source`, both trimmed at the start): `@test "name"`, as a `fn`.
+/// A name over 80 characters is cut there.
+pub(super) fn bats_test(line: &str, source: &str) -> Option<(String, &'static str)> {
+    let after = line.strip_prefix("@test").filter(|after| after.starts_with(char::is_whitespace))?;
+    let (name, tail) = quoted(source.get(line.len() - after.len()..)?.trim_start())?;
+    let name: String = name.chars().take(80).collect();
+    (tail.trim() == "{").then(|| (format!("@test \"{name}\""), "fn"))
+}

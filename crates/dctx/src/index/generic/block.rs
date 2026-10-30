@@ -8,6 +8,7 @@ mod elixir;
 mod haskell;
 mod julia;
 mod layout;
+mod ocaml_body;
 mod lua;
 mod r;
 #[cfg(test)]
@@ -31,12 +32,15 @@ enum Tok {
 struct Block {
     /// Blanks comments and strings, keeping every offset.
     mask: fn(&str) -> String,
-    /// Name and wire kind when a trimmed, masked line declares something; the second argument is the qualified name of the enclosing type.
-    decl: fn(&str, Option<&str>) -> Option<(String, &'static str)>,
+    /// Name and wire kind when a trimmed, masked line declares something. The second argument is the same line unmasked (same
+    /// offsets, for names inside strings), the third the qualified name of the enclosing type.
+    decl: fn(&str, &str, Option<&str>) -> Option<(String, &'static str)>,
     /// What a word does to the block stack, given the byte that follows it.
     word: fn(&str, Option<u8>) -> Tok,
     /// True when words inside brackets are ignored (Julia's `a[end]` and comprehensions).
     flat: bool,
+    /// True when functions declared inside a function body are symbols too, named `outer::inner` (Lua).
+    nested: bool,
 }
 
 /// True for the six tags of this family.
@@ -64,6 +68,8 @@ struct Frame {
     container: Option<String>,
     /// Index of the declaration whose end line this block sets.
     decl: Option<usize>,
+    /// True inside a function body (with [`Block::nested`]): only nested functions are declared here.
+    body: bool,
 }
 
 /// One word of a masked line with the bytes around it.
@@ -125,11 +131,14 @@ fn scan(block: &Block, text: &str) -> Vec<Decl> {
         let at_top = brackets == 0;
         let mut open = pending.take();
         let in_scope = stack.last().is_none_or(|frame| frame.container.is_some());
+        let in_body = stack.last().is_some_and(|frame| frame.body);
         let owner = stack.last().and_then(|frame| frame.container.as_deref());
+        let source = original.get(shown.len() - shown.trim_start().len()..).unwrap_or("");
         if open.is_none()
             && in_scope
             && at_top
-            && let Some((name, kind)) = (block.decl)(line, owner)
+            && let Some((name, kind)) = (block.decl)(line, source, owner)
+            && (!in_body || kind == "fn")
         {
             let name = match owner {
                 Some(owner) => format!("{owner}::{name}"),
@@ -152,8 +161,17 @@ fn scan(block: &Block, text: &str) -> Vec<Decl> {
             match (block.word)(word.text, word.next) {
                 Tok::Open => {
                     let decl = open.take();
-                    let container = decl.filter(|&at| decls[at].kind == "type").map(|at| decls[at].name.clone());
-                    stack.push(Frame { container, decl });
+                    let (container, body) = match decl {
+                        Some(at) if decls[at].kind == "type" => (Some(decls[at].name.clone()), false),
+                        Some(at) if block.nested && decls[at].kind == "fn" => (Some(decls[at].name.clone()), true),
+                        Some(_) => (None, false),
+                        // A loop or branch inside a function body is still that body.
+                        None => match stack.last() {
+                            Some(frame) if frame.body => (frame.container.clone(), true),
+                            _ => (None, false),
+                        },
+                    };
+                    stack.push(Frame { container, decl, body });
                 }
                 Tok::Close => {
                     if let Some(frame) = stack.pop()

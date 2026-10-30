@@ -5,7 +5,7 @@ use super::super::{ident_at, is_denied, mask, Syntax};
 use super::{Block, Tok};
 
 /// How Lua reads: `--` comments, `[[ ]]` strings, blocks closed by `end` or `until`.
-pub(super) const SCAN: Block = Block { mask: mask_of, decl: decl_of, word: word_of, flat: false };
+pub(super) const SCAN: Block = Block { mask: mask_of, decl: decl_of, word: word_of, flat: false, nested: true };
 
 /// Lua: `--[[ ]]` comments first, then `--` comments and strings, then `[[ ]]` long strings.
 fn mask_of(text: &str) -> String {
@@ -46,8 +46,9 @@ fn is_constant(name: &str) -> bool {
     name.len() > 1 && name.starts_with(|c: char| c.is_ascii_uppercase()) && name.chars().all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
 }
 
-/// `function a.b(`, `function a:b(`, `local function x(`, `name = function(` (fn); `a.b = value` (field); `t = {` (var); `MAX = value` (const).
-fn decl_of(line: &str, _owner: Option<&str>) -> Option<(String, &'static str)> {
+/// `function a.b(`, `function a:b(`, `local function x(`, `name = function(`, `tests["name"] = function(` (fn); `a.b = value` (field);
+/// `t = {` (var); `MAX = value` (const).
+fn decl_of(line: &str, source: &str, _owner: Option<&str>) -> Option<(String, &'static str)> {
     let mut rest = line;
     let local = ident_at(rest) == Some("local");
     if local {
@@ -59,6 +60,9 @@ fn decl_of(line: &str, _owner: Option<&str>) -> Option<(String, &'static str)> {
         return tail.trim_start().starts_with('(').then(|| name_of(path)).flatten().map(|name| (name, "fn"));
     }
     let (path, tail) = path_of(rest);
+    if tail.starts_with('[') {
+        return keyed(path, tail, source.get(line.len() - tail.len()..)?);
+    }
     let value = tail.trim_start().strip_prefix('=').filter(|after| !after.starts_with('='))?.trim_start();
     let name = name_of(path)?;
     if ident_at(value) == Some("function") && value["function".len()..].trim_start().starts_with('(') {
@@ -74,4 +78,16 @@ fn decl_of(line: &str, _owner: Option<&str>) -> Option<(String, &'static str)> {
         return Some((name, "var"));
     }
     is_constant(&name).then_some((name, "const"))
+}
+
+/// `tests["lume.clamp"] = function(`: the function stored under a string key, named `tests["lume.clamp"]` as written.
+/// `tail` is the masked text from the `[` on and `source` the same text unmasked.
+fn keyed(path: &str, tail: &str, source: &str) -> Option<(String, &'static str)> {
+    let close = tail.find(']')?;
+    let key = source.get(1..close)?.trim();
+    let quoted = key.len() >= 2 && ((key.starts_with('"') && key.ends_with('"')) || (key.starts_with('\'') && key.ends_with('\'')));
+    let value = tail[close + 1..].trim_start().strip_prefix('=').filter(|after| !after.starts_with('='))?.trim_start();
+    let function = ident_at(value) == Some("function") && value["function".len()..].trim_start().starts_with('(');
+    let table = name_of(path)?;
+    (quoted && function && key.chars().count() <= 80 && !path.contains(':')).then(|| (format!("{table}[{key}]"), "fn"))
 }

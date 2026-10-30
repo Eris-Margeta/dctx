@@ -204,6 +204,8 @@ mod tests {
             names,
             [
                 ("Str", [3, 16]),
+                ("Str::chars", [3, 3]),
+                ("Str::colors", [3, 3]),
                 ("Str::hashCode", [5, 5]),
                 ("Str::length", [6, 6]),
                 ("Str::splitAt", [7, 10]),
@@ -258,6 +260,8 @@ mod tests {
                 ("parse", [8, 13]),
                 ("parseInternal", [15, 22]),
                 ("Result", [24, 31]),
+                ("Result::options", [26, 26]),
+                ("Result::deinit", [27, 29]),
                 ("parseInt", [33, 36]),
                 ("test \"parse int\"", [38, 40]),
             ]

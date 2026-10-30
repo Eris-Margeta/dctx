@@ -295,6 +295,8 @@ fn extensions_and_basenames_dispatch_to_the_infra_family() {
         ("b.sh", "shell"),
         ("b.bash", "shell"),
         ("b.zsh", "shell"),
+        ("test/bats.bats", "shell"),
+        ("sql/pgtap.sql.in", "sql"),
         ("rules.mk", "make"),
         ("Makefile", "make"),
         ("GNUmakefile", "make"),
@@ -319,4 +321,21 @@ fn extensions_and_basenames_dispatch_to_the_infra_family() {
     assert_eq!(found.iter().map(|symbol| symbol.name.as_str()).collect::<Vec<_>>(), ["build"]);
     assert!(refs.is_empty());
     assert!(extract_structural_refs("a.sh", &[0xff]).0.is_empty());
+}
+
+/// Real forms from bats-core, pgTAP and terraform-aws-vpc: `@test` blocks, `CREATE DOMAIN`/`AGGREGATE`/`RULE`/`POLICY`/`FOREIGN TABLE`, `dynamic` blocks.
+#[test]
+fn bats_tests_more_sql_objects_and_terraform_dynamic_blocks_are_symbols() {
+    let bats = "#!/usr/bin/env bats\n\nsetup() {\n  load test_helper\n}\n\n@test \"no arguments prints message and usage instructions\" {\n  reentrant_run bats\n  [ $status -eq 1 ]\n}\n\n@test 'single quoted' {\n  true\n}\n";
+    assert_eq!(named("shell", bats), [pair("setup", "fn"), pair("@test \"no arguments prints message and usage instructions\"", "fn"), pair("@test \"single quoted\"", "fn")]);
+    assert_eq!(lines_of("shell", bats, "@test \"no arguments prints message and usage instructions\""), [7, 10]);
+    let sql = "CREATE DOMAIN public.us_postal_code AS TEXT CHECK(\n  VALUE ~ '^\\d{5}$'\n);\nCREATE AGGREGATE public.tap_accum (\n  sfunc = array_append\n);\nCREATE RULE ins_me AS ON INSERT TO public.fou DO NOTHING;\nCREATE POLICY p_read ON public.t USING (true);\nCREATE FOREIGN TABLE public.ft_foo(id int) SERVER s;\nCREATE FOREIGN DATA WRAPPER dummy;\n";
+    assert_eq!(
+        named("sql", sql),
+        [pair("us_postal_code", "type"), pair("tap_accum", "fn"), pair("ins_me", "fn"), pair("p_read", "fn"), pair("ft_foo", "type")]
+    );
+    assert_eq!(lines_of("sql", sql, "us_postal_code"), [1, 3]);
+    let hcl = "resource \"aws_default_security_group\" \"this\" {\n  vpc_id = aws_vpc.this[0].id\n\n  dynamic \"ingress\" {\n    for_each = var.ingress\n    content {\n      self = lookup(ingress.value, \"self\", null)\n    }\n  }\n}\n";
+    assert_eq!(named("hcl", hcl), [pair("aws_default_security_group.this", "type"), pair("aws_default_security_group.this::dynamic.ingress", "type")]);
+    assert_eq!(lines_of("hcl", hcl, "aws_default_security_group.this::dynamic.ingress"), [4, 9]);
 }

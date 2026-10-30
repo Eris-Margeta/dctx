@@ -257,7 +257,8 @@ mod tests {
             assert_eq!(call_names(body, tag, "none"), ["real", "other"], "{tag}");
         }
         let lua = "function f()\n  local g = function(x) return h(x) end\n  while (ready()) do\n    step()\n  end\nend\n";
-        assert_eq!(pairs("lua", lua), [pair("f", "h"), pair("f", "ready"), pair("f", "step")]);
+        // The nested `g` is a symbol of its own (`f::g`); the outer body still holds every call.
+        assert_eq!(pairs("lua", lua), [pair("f", "h"), pair("f", "ready"), pair("f", "step"), pair("f::g", "h")]);
     }
 
     #[test]

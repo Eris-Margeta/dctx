@@ -5,7 +5,7 @@ use super::super::{ident_at, is_denied, mask, skip_modifiers, Syntax};
 use super::{Block, Tok};
 
 /// How Julia reads: `#` and `#= =#` comments, block keywords closed by `end`, words inside brackets ignored.
-pub(super) const SCAN: Block = Block { mask: mask_of, decl: decl_of, word: word_of, flat: true };
+pub(super) const SCAN: Block = Block { mask: mask_of, decl: decl_of, word: word_of, flat: true, nested: false };
 
 /// Words that can be followed by a parenthesis without being a function name.
 const KEYWORDS: &[&str] = &[
@@ -31,7 +31,7 @@ fn word_of(word: &str, _next: Option<u8>) -> Tok {
 
 /// `function f(`, `macro m(` and `f(x) = ...` (fn); `struct X`, `mutable struct X`, `abstract type X` and `module X` (type);
 /// `const X = ...` (const); `x::T` inside a type (field).
-fn decl_of(line: &str, owner: Option<&str>) -> Option<(String, &'static str)> {
+fn decl_of(line: &str, _source: &str, owner: Option<&str>) -> Option<(String, &'static str)> {
     let rest = skip_modifiers(line, &["mutable"]);
     let word = ident_at(rest)?;
     let after = &rest[word.len()..];
