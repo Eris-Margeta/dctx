@@ -244,6 +244,41 @@ mod tests {
         assert_eq!(lines, [("Box", [1, 7]), ("Box::get", [6, 6]), ("Wide", [8, 11]), ("Wide::run", [10, 10])]);
     }
 
+    /// The zig-args shapes the benchmark lost: multi-line parameter lists, `comptime` params, parenthesised return types, `try`, a returned struct and a `test` block.
+    const ARGS_ZIG: &str = "const std = @import(\"std\");\n\npub fn parseForCurrent(comptime Spec: type, init: u32) !Result(Spec, null) {\n    var result = try parseInternal(Spec, null, init);\n    return result;\n}\n\npub fn parse(\n    comptime Spec: type,\n    args: u32,\n) !Result(Spec, null) {\n    return parseInternal(Spec, null, args);\n}\n\nfn parseInternal(\n    comptime Generic: type,\n    comptime MaybeVerb: ?type,\n    args: u32,\n) !Result(Generic, MaybeVerb) {\n    _ = try parseInt(u32, \"1\");\n    return undefined;\n}\n\npub fn Result(comptime Generic: type, comptime MaybeVerb: ?type) type {\n    return struct {\n        options: Generic,\n        pub fn deinit(self: @This()) void {\n            _ = self;\n        }\n    };\n}\n\nfn parseInt(comptime T: type, str: []const u8) !T {\n    _ = str;\n    return 0;\n}\n\ntest \"parse int\" {\n    try std.testing.expectEqual(@as(i32, 50), try parseInt(i32, \"50\"));\n}\n";
+
+    #[test]
+    fn real_world_zig_multi_line_headers_try_and_test_blocks_keep_their_calls() {
+        let found = symbols("zig", ARGS_ZIG);
+        let spans: Vec<_> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.lines)).collect();
+        assert_eq!(
+            spans,
+            [
+                ("parseForCurrent", [3, 6]),
+                ("parse", [8, 13]),
+                ("parseInternal", [15, 22]),
+                ("Result", [24, 31]),
+                ("parseInt", [33, 36]),
+                ("test \"parse int\"", [38, 40]),
+            ]
+        );
+        let got: Vec<_> = refs_of("zig", "args.zig", ARGS_ZIG).into_iter().map(|reference| (reference.src, reference.name)).collect();
+        let pair = |src: &str, name: &str| (src.to_string(), name.to_string());
+        assert_eq!(
+            got,
+            [
+                pair("s:args.zig#parseForCurrent", "Result"),
+                pair("s:args.zig#parseForCurrent", "parseInternal"),
+                pair("s:args.zig#parse", "Result"),
+                pair("s:args.zig#parse", "parseInternal"),
+                pair("s:args.zig#parseInternal", "Result"),
+                pair("s:args.zig#parseInternal", "parseInt"),
+                pair("s:args.zig#test \"parse int\"", "expectEqual"),
+                pair("s:args.zig#test \"parse int\"", "parseInt"),
+            ]
+        );
+    }
+
     #[test]
     fn new_names_a_type_not_a_call_unless_a_def_has_that_name() {
         let text = "object M {\n  def make = new Foo(1)\n  def deep = new a.b.Bar(baz(2))\n  def Foo(x: Int) = x\n  def keep = new Other(new Foo(3))\n}\n";
