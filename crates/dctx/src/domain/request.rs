@@ -23,10 +23,12 @@ pub enum Verb {
     Explain,
     /// A verified source span.
     Read,
+    /// Literal text search over the indexed files, hits grouped by enclosing symbol.
+    Grep,
 }
 
 impl Verb {
-    /// Wire name (`map`, `find`, `neighbors`, `explain`, `read`).
+    /// Wire name (`map`, `find`, `neighbors`, `explain`, `read`, `grep`).
     #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -35,6 +37,7 @@ impl Verb {
             Self::Neighbors => "neighbors",
             Self::Explain => "explain",
             Self::Read => "read",
+            Self::Grep => "grep",
         }
     }
 
@@ -48,6 +51,7 @@ impl Verb {
             "neighbors" => Ok(Self::Neighbors),
             "explain" => Ok(Self::Explain),
             "read" => Ok(Self::Read),
+            "grep" => Ok(Self::Grep),
             _ => Err(DctxError::invalid("unknown verb")),
         }
     }
@@ -270,7 +274,7 @@ pub struct MapRequest {
     pub verb: Verb,
     /// Stable id for map, neighbors, explain and read.
     pub target: String,
-    /// Find text. Matching is case-sensitive.
+    /// Find text, or the literal for grep. Matching is case-sensitive unless `ignore_case` is set.
     pub query: String,
     /// Kind filter. Empty admits every kind.
     pub kinds: Vec<String>,
@@ -299,6 +303,8 @@ pub struct MapRequest {
     pub within: Option<String>,
     /// When set, the page also carries the snapshot digest, the generation and the freshness age. Off by default so equal answers are equal bytes.
     pub meta: bool,
+    /// Grep only: fold ASCII letters when matching the literal.
+    pub ignore_case: bool,
 }
 
 impl MapRequest {
@@ -323,6 +329,7 @@ impl MapRequest {
             git_revision: None,
             within: None,
             meta: false,
+            ignore_case: false,
         }
     }
 
@@ -330,6 +337,12 @@ impl MapRequest {
     /// # Errors
     /// Refuses incompatible window selectors, invalid line starts, or limits above the selected verb's hard caps.
     pub fn validate(&self) -> Result<(), DctxError> {
+        if self.verb == Verb::Grep && self.query.is_empty() {
+            return Err(DctxError::invalid("grep requires a literal"));
+        }
+        if self.ignore_case && self.verb != Verb::Grep {
+            return Err(DctxError::invalid("ignore case applies only to grep"));
+        }
         if let Some(start) = self.line_start {
             if self.verb != Verb::Read {
                 return Err(DctxError::invalid("line start applies only to read"));
@@ -357,7 +370,7 @@ mod tests {
 
     #[test]
     fn verb_names_round_trip() {
-        for name in ["map", "find", "neighbors", "explain", "read"] {
+        for name in ["map", "find", "neighbors", "explain", "read", "grep"] {
             assert_eq!(Verb::parse(name).expect("verb").as_str(), name);
         }
         assert!(Verb::parse("pack").is_err());

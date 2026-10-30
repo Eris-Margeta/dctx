@@ -6,6 +6,7 @@
 mod extract;
 mod generic;
 pub(crate) mod hubs;
+mod grep;
 mod lex_dispatch;
 pub(crate) mod profile;
 mod query;
@@ -19,6 +20,7 @@ mod span_index;
 mod syn_extract;
 mod walk;
 
+pub(crate) use grep::grep_records;
 pub(crate) use query::{collect, Collected};
 pub(crate) use segment::canonical_bytes;
 pub(crate) use walk::{walk_source, WalkArgs};

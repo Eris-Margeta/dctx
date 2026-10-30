@@ -6,6 +6,7 @@
 mod answer;
 mod capabilities;
 mod error;
+mod grep_lines;
 mod identity;
 mod limits;
 mod policy;
@@ -32,6 +33,7 @@ pub use request::{
 pub use sink::{BoundedSink, VecSink};
 pub use wire::{encode_answer, encode_answer_with};
 
+pub(crate) use grep_lines::{append_rows, append_summary, hit_row, shrink};
 pub(crate) use identity::digest_text;
 pub(crate) use limits::{
     check_deadline, resolve_query, resolve_scan, within_budget, ResolvedLimits, ScanLimits,

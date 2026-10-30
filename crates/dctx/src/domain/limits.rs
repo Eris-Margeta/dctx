@@ -196,6 +196,16 @@ fn verb_cap(verb: Verb) -> VerbCap {
             default_lines: 120,
             hard_lines: 400,
         },
+        Verb::Grep => VerbCap {
+            default_tokens: 500,
+            hard_tokens: 2_000,
+            default_records: 60,
+            hard_records: 60,
+            default_depth: 0,
+            hard_depth: 0,
+            default_lines: 0,
+            hard_lines: 0,
+        },
     }
 }
 

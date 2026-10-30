@@ -26,6 +26,8 @@ pub(crate) fn collect(generation: &Generation, request: &MapRequest, depth: u32)
         Verb::Neighbors => neighbors(generation, request, depth),
         Verb::Explain => explain(generation, request),
         Verb::Read => read(generation, request),
+        // Grep reads file bytes, so the session answers it through `grep_records`.
+        Verb::Grep => Ok(Collected::Records(Vec::new())),
     }
 }
 
@@ -217,7 +219,7 @@ fn direction_ok(requested: Direction, actual: &str) -> bool {
     }
 }
 
-fn record_of(text: &TextBlob, node: &IndexedNode) -> AnswerRecord {
+pub(super) fn record_of(text: &TextBlob, node: &IndexedNode) -> AnswerRecord {
     let mut id = String::new();
     write_node_id(&mut id, text, node);
     // Files read by a heuristic family are labelled; lexed languages leave the field to neighbors.

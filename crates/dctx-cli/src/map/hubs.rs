@@ -42,7 +42,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         }
     }
     request.validate().map_err(|e| e.to_string())?;
-    Ok(Options { request, format, place, continuation: None, budget_set, profile: false, meta, hubs: true })
+    Ok(Options { request, format, place, continuation: None, budget_set, profile: false, meta, hubs: true, grep: false, ignore_case: false })
 }
 
 /// Runs the hubs verb on `handle` and returns the page.

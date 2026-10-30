@@ -81,6 +81,11 @@ fn execute_with(
     }
     let mut request = facade_request(&options.request, options.format, options.continuation, options.budget_set);
     request.meta = options.meta;
+    if options.grep {
+        // The CLI parses grep as a find-shaped request; the facade knows the real verb.
+        request.verb = Verb::Grep;
+        request.ignore_case = options.ignore_case;
+    }
     let mut sink = VecSink::new();
     let queried = if profiling {
         session.query_for_profile(&handle, &request, &mut sink)
@@ -209,6 +214,29 @@ mod tests {
         assert!(execute(&["index".into()]).is_err());
         assert!(execute(&["stats".into()]).is_err());
         assert!(execute(&["summaries".into()]).is_err());
+    }
+
+    #[test]
+    fn grep_finds_a_literal_and_groups_hits_by_symbol() {
+        let fixture = tempfile::tempdir().expect("fixture");
+        let path = fixture.path().join("place");
+        let cache = fixture.path().join("cache");
+        std::fs::create_dir_all(&path).expect("temp");
+        std::fs::write(path.join("a.py"), b"def alpha():\n    x = \"NEEDLE one\"\n\ndef beta():\n    return \"needle two\"\n").expect("source");
+        std::fs::write(path.join(".env"), b"NEEDLE=secret\n").expect("env");
+        let run = |extra: &[&str]| {
+            let mut arguments: Vec<String> = vec!["grep".into(), "NEEDLE".into(), "--place".into(), path.display().to_string()];
+            arguments.extend(extra.iter().map(ToString::to_string));
+            execute_with(&arguments, |place| host::open_mapped_at(place, Some(&cache))).expect("grep")
+        };
+        let page = run(&[]);
+        assert!(page.starts_with("# "), "{page}");
+        assert!(page.contains(" grep\n"), "{page}");
+        assert!(page.contains("s:a.py#alpha\t") && page.contains("\ta.py\n  L2: x = \"NEEDLE one\"\n"), "{page}");
+        assert!(!page.contains("beta") && !page.contains("secret"), "{page}");
+        assert!(page.ends_with("1 hits in 1 symbols\n"), "{page}");
+        assert!(run(&["-i"]).contains("s:a.py#beta"));
+        assert!(run(&["--in", "nowhere"]).ends_with("0 hits\n"));
     }
 
     #[test]

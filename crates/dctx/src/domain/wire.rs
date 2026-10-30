@@ -81,6 +81,12 @@ pub fn encode_text(place: &str, answer: &Answer, meta: bool) -> String {
         out.push('\t');
         out.push_str(&record.path);
         out.push('\n');
+        if answer.verb == Verb::Grep {
+            super::append_rows(&mut out, record);
+        }
+    }
+    if answer.verb == Verb::Grep {
+        super::append_summary(&mut out, &answer.records);
     }
     if let Some(outcome) = &answer.outcome {
         out.push_str(outcome.as_str());

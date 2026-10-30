@@ -48,7 +48,11 @@ impl Session {
         let resolved = self.query_limits(request)?;
         let now = self.clock.now().millis();
         check_deadline(now, now, request.limits.deadline_ms)?;
-        let collected = collect(&generation, request, resolved.depth)?;
+        let collected = if request.verb == Verb::Grep {
+            Collected::Records(self.grep_hits(&generation, request)?)
+        } else {
+            collect(&generation, request, resolved.depth)?
+        };
         let mut records = match collected {
             Collected::Outcome(outcome) => {
                 let answer = self.answer_of(&generation, request.verb, Vec::new(), 0, Some("map".to_string()), Some(outcome));
@@ -112,6 +116,14 @@ impl Session {
             last_fail = len.max(1);
             if records.is_empty() {
                 return Err(DctxError::BudgetTooSmall { minimum_bytes: last_fail });
+            }
+            // A lone grep group that is too big loses half of its hits and says how many.
+            if request.verb == Verb::Grep
+                && let [only] = records.as_mut_slice()
+                && let Some(shorter) = only.source_utf8.as_deref().and_then(crate::domain::shrink)
+            {
+                only.source_utf8 = Some(shorter);
+                continue;
             }
             records.pop();
             more = more.saturating_add(1);
@@ -318,7 +330,7 @@ impl Session {
         (answer, encoded)
     }
 
-    fn read_verified(&mut self, path: &str, expected: ContentDigest) -> Result<Vec<u8>, DctxError> {
+    pub(super) fn read_verified(&mut self, path: &str, expected: ContentDigest) -> Result<Vec<u8>, DctxError> {
         let relative = RelativePath::parse(path).map_err(DctxError::from_core)?;
         let grant = ReadGrant::authorize(&relative, FileHandlingDecision::Include, true).ok_or(DctxError::PolicyDenied)?;
         self.content_reads += 1;

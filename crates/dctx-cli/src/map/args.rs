@@ -19,6 +19,10 @@ pub(super) struct Options {
     pub meta: bool,
     /// True for `dctx map hubs`, which has no target and its own flags (see `hubs`).
     pub hubs: bool,
+    /// True for `grep`. The request then carries `Verb::Find` and `request.target` is the literal.
+    pub grep: bool,
+    /// True when the caller passed `-i` or `--ignore-case` to grep.
+    pub ignore_case: bool,
 }
 pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read> <TARGET> [OPTIONS]
        dctx map hubs [--limit N] [--json] [--place PATH] [--budget TOKENS] [--meta]
@@ -37,7 +41,9 @@ pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read>
   --offset N              Refused. Pass the previous page's next value to --cursor.
   --cursor TOKEN          Opaque continuation. A stale token is rejected.
   --kind fn,type,doc      Find kinds
-  --in PATH               Find within a relative path
+  --in PATH               Find or grep within a relative path
+  grep LITERAL            Exhaustive literal search of indexed files, hits grouped by enclosing symbol
+  -i, --ignore-case       Grep: ASCII case-insensitive match
   --edge calls,imports    Neighbor edge filter
   --dir in|out|both       Neighbor direction
   --lines A-B --full      Read those absolute source lines inside the node; full permits 400
@@ -62,12 +68,16 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         Some("neighbors") => Verb::Neighbors,
         Some("explain") => Verb::Explain,
         Some("read") => Verb::Read,
+        // Grep shares find's bounds (one literal, --in, --limit); the facade request is rewritten in the parent module.
+        Some("grep") => Verb::Find,
         _ => {
             return Err(
-                "expected map, find, neighbors, explain or read; try: dctx map --help".into(),
+                "expected map, find, neighbors, explain, read or grep; try: dctx map --help".into(),
             )
         }
     };
+    let grep = args.first().map(String::as_str) == Some("grep");
+    let mut ignore_case = false;
     let mut request = Request::new(verb, "");
     let mut place = PathBuf::from(".");
     let mut format = Format::Text;
@@ -94,6 +104,10 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         }
         if flag == "--meta" {
             meta = true;
+            continue;
+        }
+        if grep && (flag == "-i" || flag == "--ignore-case") {
+            ignore_case = true;
             continue;
         }
         if !flag.starts_with('-') {
@@ -133,7 +147,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
             "--offset" if matches!(verb, Verb::Map | Verb::Find | Verb::Neighbors) => {
                 request.offset = number(value)?;
             }
-            "--kind" if verb == Verb::Find => {
+            "--kind" if verb == Verb::Find && !grep => {
                 request.kinds = value.split(',').map(str::to_owned).collect();
                 if request.kinds.iter().any(|k| {
                     ![
@@ -200,6 +214,8 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         profile,
         meta,
         hubs: false,
+        grep,
+        ignore_case,
     })
 }
 fn number<T: std::str::FromStr>(value: &str) -> Result<T, String> {
@@ -250,6 +266,14 @@ mod tests {
         assert!(options(&["find", "--meta", "kept"]).expect("meta").meta);
         assert!(!options(&["find", "kept"]).expect("plain").meta);
         assert!(HELP.contains("DCTX_PROFILE=1"));
+        let grepped = options(&["grep", "NEEDLE", "-i", "--in", "src"]).expect("grep");
+        assert!(grepped.grep && grepped.ignore_case);
+        assert_eq!(grepped.request.target, "NEEDLE");
+        assert_eq!(grepped.request.within.as_deref(), Some("src"));
+        assert!(!options(&["find", "NEEDLE"]).expect("find").grep);
+        assert!(options(&["find", "NEEDLE", "-i"]).is_err());
+        assert!(options(&["grep", "NEEDLE", "--kind", "fn"]).is_err());
+        assert!(options(&["grep"]).is_err());
         assert_eq!(
             options(&["read", "s:a.rs#a", "--lines", "35-36"])
                 .expect("lines")
