@@ -267,7 +267,13 @@ impl<'ast> Visit<'ast> for Extractor<'_> {
         };
         let end = node.semi_token.as_ref().map_or(end, |semi| semi.spans[0]);
         let span = first(&[&node.mac.path]).map_or(end, |start| start.join(end).unwrap_or(end));
-        self.declare(Kind::Macro, &ident(name), &node.attrs, false, span, None);
+        let frame = self.declare(Kind::Macro, &ident(name), &node.attrs, false, span, None);
+        let body = node.mac.tokens.clone();
+        self.within(frame, |this| super::syntax_refs::token_calls(this, body));
+    }
+
+    fn visit_macro(&mut self, node: &'ast syn::Macro) {
+        super::syntax_refs::macro_args(self, node);
     }
 
     fn visit_item_use(&mut self, node: &'ast syn::ItemUse) {
