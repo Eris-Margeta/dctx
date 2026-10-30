@@ -97,3 +97,14 @@ fn the_first_duplicate_member_keeps_its_calls() {
     assert!(edges.contains(&"calls s:a.ts#detect>s:a.ts#has name".to_string()), "{edges:?}");
     assert!(edges.contains(&"calls s:a.ts#detect~2>s:a.ts#has name".to_string()), "{edges:?}");
 }
+
+#[test]
+fn a_bare_call_inside_a_python_method_reaches_the_imported_function_not_a_method() {
+    let edges = linked(&[
+        ("util.py", "def save():\n    return 1\n"),
+        ("m.py", "from util import save\n\nclass A:\n    def save(self):\n        return save()\n\n    def run(self):\n        return self.save()\n"),
+    ]);
+    assert!(edges.contains(&"calls s:m.py#A::save>s:util.py#save name".to_string()), "{edges:?}");
+    assert!(!edges.iter().any(|edge| edge.starts_with("calls s:m.py#A::save>s:m.py#A::save")), "{edges:?}");
+    assert!(edges.iter().any(|edge| edge.starts_with("calls s:m.py#A::run>s:m.py#A::save")), "{edges:?}");
+}

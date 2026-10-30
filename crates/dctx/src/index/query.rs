@@ -101,6 +101,10 @@ fn find(generation: &Generation, request: &MapRequest) -> Vec<AnswerRecord> {
         if score == 0 {
             continue;
         }
+        // A key of a data file (JSON, YAML, TOML) that matches by name ranks below a code symbol of the same name, even a qualified one.
+        if score >= 2500 && language_of(text.get(node.path)) == "config" {
+            score -= DATA_KEY_PENALTY;
+        }
         let mut record = record_of(text, node);
         record.score = score;
         records.push(record);
@@ -108,6 +112,9 @@ fn find(generation: &Generation, request: &MapRequest) -> Vec<AnswerRecord> {
     records.sort_by(|left, right| right.score.cmp(&left.score).then(left.id.cmp(&right.id)));
     records
 }
+
+/// Score taken off a name match on a data-file key, so `2400` and `1900` sit below code's `3000` and `2500` and above a substring match.
+const DATA_KEY_PENALTY: i64 = 600;
 
 /// Breadth-first neighbors. Each node is listed once, at its smallest depth, levels in order, each level by edge, target and id.
 /// A line deeper than one carries its depth after the direction, as `calls:in:2:<id>`; depth-1 lines keep `calls:in:<id>`.
@@ -161,13 +168,23 @@ fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Resul
         }
         found.sort_by(|left, right| left.edge.cmp(&right.edge).then(left.target.cmp(&right.target)).then(left.id.cmp(&right.id)));
         found.dedup_by(|left, right| left.id == right.id);
-        records.append(&mut found);
+        records.append(&mut spread_by_file(found));
         // The root stays listable at depth one (a self call); from depth two on it and every earlier node are settled.
         seen.insert(root);
         seen.extend(next.iter().copied());
         frontier = next;
     }
     Ok(Collected::Records(records))
+}
+
+/// Reorders one level, sorted by edge, so within each edge the first record of every (direction, file) comes before the repeats.
+/// A first page then names every calling file before it lists more callers of one file. Both runs keep the sorted order.
+fn spread_by_file(found: Vec<AnswerRecord>) -> Vec<AnswerRecord> {
+    let mut seen = std::collections::HashSet::new();
+    let mut keyed: Vec<(bool, AnswerRecord)> =
+        found.into_iter().map(|record| (!seen.insert((record.edge.clone(), record.direction.clone(), record.path.clone())), record)).collect();
+    keyed.sort_by(|left, right| left.1.edge.cmp(&right.1.edge).then(left.0.cmp(&right.0)));
+    keyed.into_iter().map(|(_, record)| record).collect()
 }
 
 /// Longest summary kept on an edge record, in characters.

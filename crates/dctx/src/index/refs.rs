@@ -7,6 +7,7 @@ use std::collections::{BTreeMap, HashMap};
 
 use dctx_map_model::EdgeKind;
 
+use super::extract::language_of;
 use super::refs_names::{call_segments, import_segments, last_segment, module_keys};
 use super::{write_node_id, IndexedEdge, IndexedNode, TextBlob};
 
@@ -45,6 +46,9 @@ pub(crate) struct FileRefs {
     /// Raw calls and imports in source order.
     pub refs: Vec<RawRef>,
 }
+
+/// Languages where a call spelled as a bare name never reaches a method: a method needs a receiver (`self.`, `this.`, `x.`) or a type path (`Self::`).
+const RECEIVER_ONLY: &[&str] = &["rust", "python", "javascript", "typescript", "go"];
 
 /// Edge confidence in rank order: a lower rank wins when two references reach the same pair.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -148,11 +152,14 @@ impl<'a> Tables<'a> {
                 }
             }
         }
+        let receiver_only = self.nodes.get(file.first as usize).is_some_and(|module| RECEIVER_ONLY.contains(&language_of(self.text.get(module.path))));
         for reference in file.refs.iter().filter(|reference| reference.kind == EdgeKind::Calls) {
             let Some(&src) = ids.get(&reference.src) else { continue };
             let segments = call_segments(&reference.name);
             let Some((callee, qualifier)) = segments.split_last() else { continue };
-            let (targets, rank) = self.call_targets(file, &reference.scope, qualifier, callee, &bindings);
+            // `interpolate(..)` inside the method `Captures::interpolate` is the imported free function, not the method itself.
+            let free = receiver_only && reference.name.chars().all(|ch| ch.is_alphanumeric() || ch == '_' || ch == '$');
+            let (targets, rank) = self.call_targets(file, &reference.scope, qualifier, callee, &bindings, free);
             for dst in targets {
                 note(found, src, true, dst, rank);
             }
@@ -182,13 +189,18 @@ impl<'a> Tables<'a> {
     }
 
     /// Targets of one call: lexical scope, then imports, then module paths, then a project-wide guess.
-    fn call_targets(&self, file: &FileRefs, scope: &str, qualifier: &[String], callee: &str, bindings: &[Binding]) -> (Vec<u32>, Rank) {
+    ///
+    /// A `free` call (a bare name in a [`RECEIVER_ONLY`] language) skips every candidate of kind `method`.
+    fn call_targets(&self, file: &FileRefs, scope: &str, qualifier: &[String], callee: &str, bindings: &[Binding], free: bool) -> (Vec<u32>, Rank) {
         let qualified = qualifier.join("::");
         let mut walk = scope;
         loop {
             let name = [walk, qualified.as_str(), callee].iter().filter(|part| !part.is_empty()).copied().collect::<Vec<_>>().join("::");
             if let Some(hit) = self.names.get(&(file.first, name.as_str())) {
-                return Self::pick(hit);
+                let hit = self.reachable(hit, free);
+                if !hit.is_empty() {
+                    return Self::pick(&hit);
+                }
             }
             if walk.is_empty() {
                 break;
@@ -219,7 +231,12 @@ impl<'a> Tables<'a> {
         {
             return Self::pick(hit);
         }
-        (self.guess(file, callee, !qualifier.is_empty()), Rank::Guess)
+        (self.guess(file, callee, !qualifier.is_empty(), free), Rank::Guess)
+    }
+
+    /// The candidates a call can reach: all of `hits`, or for a `free` call those that are not methods.
+    fn reachable(&self, hits: &[u32], free: bool) -> Vec<u32> {
+        hits.iter().copied().filter(|&hit| !free || self.nodes.get(hit as usize).is_some_and(|node| node.kind != "method")).collect()
     }
 
     /// Hits inside one file: a single one is a `name` match, overloads are guesses.
@@ -233,8 +250,9 @@ impl<'a> Tables<'a> {
     /// The one project-wide symbol with this last segment, preferring the caller's directory when several exist.
     ///
     /// A call with a receiver (`recv.name()`) that still has several candidates resolves to the one candidate of kind `method`, so a lone method wins over same-named free functions, and a lone owned class method (`Owner::name`) wins over object-literal members. Two or more of the same standing stay ambiguous and emit nothing.
-    fn guess(&self, file: &FileRefs, callee: &str, receiver: bool) -> Vec<u32> {
+    fn guess(&self, file: &FileRefs, callee: &str, receiver: bool, free: bool) -> Vec<u32> {
         let Some(hits) = self.bare.get(callee) else { return Vec::new() };
+        let hits = self.reachable(hits, free);
         if let [only] = hits.as_slice() {
             return vec![*only];
         }
