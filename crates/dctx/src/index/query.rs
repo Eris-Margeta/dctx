@@ -263,7 +263,8 @@ fn score_of(text: &TextBlob, node: &IndexedNode, query: &str) -> i64 {
     if node.name == query {
         return 3000;
     }
-    if node.name.strip_suffix(query).is_some_and(|head| head.ends_with("::")) {
+    // A qualified name matches on its last part: `Type::name` for symbols, `table.key` for configuration keys.
+    if node.name.strip_suffix(query).is_some_and(|head| head.ends_with("::") || head.ends_with('.')) {
         return 2500;
     }
     if node.name.contains(query) {
@@ -304,6 +305,9 @@ mod tests {
         assert_eq!(score_of(&text, &node, "missing"), 0);
         let qualified = IndexedNode { name: "tests::ping".to_string(), ..node };
         assert_eq!(score_of(&text, &qualified, "ping"), 2500);
+        let key = IndexedNode { name: "server.max_upload_size".to_string(), ..qualified };
+        assert_eq!(score_of(&text, &key, "max_upload_size"), 2500);
+        assert_eq!(score_of(&text, &key, "upload"), 1000);
     }
 
     #[test]

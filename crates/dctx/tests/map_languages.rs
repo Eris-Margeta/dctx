@@ -233,9 +233,13 @@ fn find_and_outline_cover_every_new_language_extension() {
     let opaque = session.map(&handle, "m:sample.unknown", &mut VecSink::new()).expect("opaque outline");
     assert!(opaque.outcome.is_none(), "the opaque file still has a module");
     assert_eq!(opaque.records, [] as [dctx::AnswerRecord; 0]);
-    let hidden = session.find(&handle, "HiddenOpaque", &mut VecSink::new()).expect("opaque find");
-    assert_eq!(hidden.records, [] as [dctx::AnswerRecord; 0]);
     assert_eq!(session.content_reads(), reads, "find and outline never reread content");
+    // No symbol matches, so find falls back to the literal search: a `text` hit, labelled as text coverage.
+    let hidden = session.find(&handle, "HiddenOpaque", &mut VecSink::new()).expect("opaque find");
+    assert_eq!(hidden.records.len(), 1);
+    assert_eq!((hidden.records[0].kind.as_str(), hidden.records[0].path.as_str()), ("text", "sample.unknown"));
+    assert_eq!(hidden.records[0].lines, [1, 1]);
+    assert_eq!(hidden.precision.coverage, "text");
 }
 
 #[test]
@@ -261,7 +265,8 @@ fn selection_excludes_or_omits_new_languages_before_content_reads() {
             assert!(outline.records.is_empty(), "excluded outline {path}");
             assert!(matches!(outline.outcome, Some(IdentityOutcome::Gone { .. })));
         }
-        assert_eq!(session.content_reads(), 1);
+        // Each empty find falls back to the literal search, which may reread only the visible control.
+        assert!(session.content_reads() <= 1 + files.len() as u64, "excluded files stay unread");
     }
 }
 
@@ -359,7 +364,7 @@ fn extension_case_and_ruby_basenames_match_the_shared_literal() {
     }
     for hidden in ["GuardHidden", "ConfigHidden"] {
         let found = session.find(&handle, hidden, &mut VecSink::new()).expect("opaque find");
-        assert!(found.records.is_empty(), "{hidden}");
+        assert!(found.records.iter().all(|record| record.kind == "text"), "{hidden} is no symbol: {:?}", found.records);
     }
 }
 
@@ -423,5 +428,5 @@ fn infra_basenames_are_outlined_and_labelled_guess() {
         assert_eq!(record.confidence.as_deref(), Some("guess"), "{path}");
     }
     let hidden = session.find(&handle, "BakHidden", &mut VecSink::new()).expect("opaque find");
-    assert!(hidden.records.is_empty());
+    assert!(hidden.records.iter().all(|record| record.kind == "text"), "BakHidden is no symbol: {:?}", hidden.records);
 }

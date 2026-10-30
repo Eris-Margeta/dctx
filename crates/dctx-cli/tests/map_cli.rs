@@ -127,9 +127,11 @@ fn map_binary_finds_and_outlines_new_languages_without_git() {
         assert_eq!(repo.run(&["map", "map", &format!("m:{path}")]), mapped);
     }
 
+    // An opaque file has no symbol, so find falls back to the literal search: a `text` record, labelled text coverage.
     let missing = repo.run(&["map", "find", "OpaqueBeacon", "--json"]);
-    assert!(missing.contains("\"records\":[]"), "{missing}");
-    assert!(!missing.contains("OpaqueBeacon"), "{missing}");
+    assert!(missing.contains("\"kind\":\"text\"") && missing.contains("\"path\":\"sample.unknown\""), "{missing}");
+    assert!(missing.contains("\"coverage\":\"text\""), "{missing}");
+    assert!(!missing.contains("\"id\":\"s:"), "{missing}");
     let opaque = repo.run(&["map", "map", "m:sample.unknown", "--json"]);
     assert!(opaque.contains("\"records\":[]"), "{opaque}");
     assert!(!opaque.contains("OpaqueBeacon"), "{opaque}");

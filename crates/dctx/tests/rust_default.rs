@@ -34,6 +34,7 @@ fn default_snapshot_uses_bounded_syn_and_rejects_comment_and_string_decoys() {
     for decoy in ["Phantom", "Blocked", "Ghost", "RawDecoy"] {
         let mut sink = VecSink::new();
         let found = session.find(&handle, decoy, &mut sink).expect(decoy);
-        assert!(found.records.is_empty(), "{decoy} was fabricated");
+        // The literal fallback may list the text line, but never a symbol.
+        assert!(found.records.iter().all(|record| record.kind == "text"), "{decoy} was fabricated: {:?}", found.records);
     }
 }

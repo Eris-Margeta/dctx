@@ -54,6 +54,7 @@ impl Session {
         } else {
             collect(&generation, request, resolved.depth)?
         };
+        let mut text_match = false;
         let mut records = match collected {
             Collected::Outcome(outcome) => {
                 let answer = self.answer_of(&generation, request.verb, Vec::new(), 0, Some("map".to_string()), Some(outcome));
@@ -78,12 +79,17 @@ impl Session {
                 let origin = start.unwrap_or(record.lines[0].max(1));
                 return self.finish_read(sink, request, &generation, record, &resolved, origin, sliced_cap || resume_beyond);
             }
-            Collected::Records(records) => {
+            Collected::Records(mut records) => {
                 let explain_path = records.first().map(|record| record.path.clone());
                 if matches!(request.verb, Verb::Explain | Verb::Skeleton)
                     && let Some(path) = explain_path
                 {
                     self.authorize(&path)?;
+                }
+                // A find that matched no symbol or key falls back to the literal search of grep, labelled `text`.
+                if records.is_empty() && request.verb == Verb::Find && super::grep_op::text_fallback_applies(request) {
+                    records = self.text_hits(&generation, request)?;
+                    text_match = !records.is_empty();
                 }
                 records
             }
@@ -104,7 +110,10 @@ impl Session {
         let mut last_fail = 1u64;
         loop {
             let next = if more > 0 { records.last().map(|record| cursor(generation.id, request.verb, &record.id)) } else { None };
-            let answer = self.answer_of(&generation, request.verb, records.clone(), more, next.clone(), None);
+            let mut answer = self.answer_of(&generation, request.verb, records.clone(), more, next.clone(), None);
+            if text_match {
+                answer.precision.coverage = "text".to_string();
+            }
             let encoded = encode_page(request, &self.place, &answer);
             let len = u64::try_from(encoded.len()).unwrap_or(u64::MAX);
             if within_budget(&encoded, &resolved) {

@@ -4,7 +4,7 @@
 
 use super::Session;
 use crate::domain::{AnswerRecord, DctxError, MapRequest};
-use crate::index::{grep_records, Generation};
+use crate::index::{grep_records, text_records, Generation};
 
 impl Session {
     /// Hit groups for `request`, one per enclosing symbol, from verified bytes only.
@@ -15,5 +15,47 @@ impl Session {
             }
             self.read_verified(path, digest).map(Some)
         })
+    }
+
+    /// Literal-hit records for a `find` that matched no symbol, from verified bytes only. Same file gate as [`Self::grep_hits`].
+    pub(super) fn text_hits(&mut self, generation: &Generation, request: &MapRequest) -> Result<Vec<AnswerRecord>, DctxError> {
+        text_records(generation, request, |path, digest| {
+            if self.authorize(path).is_err() {
+                return Ok(None);
+            }
+            self.read_verified(path, digest).map(Some)
+        })
+    }
+}
+
+/// True when `find` may fall back to a literal search for `request`: a single token of letters, digits, `_`, `-` or `.`,
+/// and no kind filter that excludes `text`. A continuation is fine: it only resumes the same fallback page.
+pub(super) fn text_fallback_applies(request: &MapRequest) -> bool {
+    let token = !request.query.is_empty() && request.query.chars().all(|ch| ch.is_alphanumeric() || matches!(ch, '_' | '-' | '.'));
+    token && (request.kinds.is_empty() || request.kinds.iter().any(|kind| kind == "text"))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::domain::Verb;
+
+    #[test]
+    fn fallback_applies_to_one_token_only() {
+        let ask = |query: &str| {
+            let mut request = MapRequest::new(Verb::Find);
+            request.query = query.to_string();
+            request
+        };
+        assert!(text_fallback_applies(&ask("max_upload_size")));
+        assert!(text_fallback_applies(&ask("server.max-upload")));
+        assert!(!text_fallback_applies(&ask("two words")));
+        assert!(!text_fallback_applies(&ask("")));
+        assert!(!text_fallback_applies(&ask("a/b")));
+        let mut kinded = ask("key");
+        kinded.kinds = vec!["fn".to_string()];
+        assert!(!text_fallback_applies(&kinded));
+        kinded.kinds.push("text".to_string());
+        assert!(text_fallback_applies(&kinded));
     }
 }

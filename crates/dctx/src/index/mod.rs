@@ -24,7 +24,7 @@ mod text_docs;
 mod syn_extract;
 mod walk;
 
-pub(crate) use grep::grep_records;
+pub(crate) use grep::{grep_records, text_records};
 pub(crate) use query::{collect, Collected};
 pub(crate) use segment::canonical_bytes;
 pub(crate) use walk::{walk_source, WalkArgs};
