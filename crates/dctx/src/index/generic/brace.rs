@@ -117,28 +117,54 @@ struct Frame {
     decl: Option<usize>,
 }
 
+/// A Scala declaration whose parameter list or expression body runs on past its first line (Scala only).
+struct Cont {
+    /// Index of the declaration.
+    decl: usize,
+    /// Indentation of the declaration line.
+    indent: usize,
+    /// Parentheses opened and not yet closed.
+    depth: usize,
+    /// Number of open braces at the declaration; braces opened by the body stand above it.
+    base: usize,
+    /// True once the `=` of a function was seen: what follows is its expression body, not a `{` that opens a block.
+    body: bool,
+}
+
 /// Symbols of `text`, or none for an unknown tag.
 pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
     let Some(lang) = lang(tag) else {
         return Vec::new();
     };
+    let scala = tag == "scala";
     let masked = mask(text, &lang.syntax);
     let mut decls: Vec<Decl> = Vec::new();
     let mut stack: Vec<Frame> = Vec::new();
     // A declaration whose `{` has not appeared yet: it may open on a following line of its own.
     let mut pending: Option<usize> = None;
+    // Scala: a declaration still reading its multi-line parameter list or its brace-less expression body.
+    let mut cont: Option<Cont> = None;
     for (index, (shown, original)) in masked.split('\n').zip(text.split('\n')).enumerate() {
         let number = u32::try_from(index + 1).unwrap_or(u32::MAX);
         let line = shown.trim();
         if line.is_empty() {
             continue;
         }
-        if !line.starts_with('{') {
+        let indent = shown.len() - shown.trim_start().len();
+        // A brace-less body ends at the first line that is not indented past its `def` (and not inside open parens or braces).
+        if cont.as_ref().is_some_and(|c| c.body && c.depth == 0 && stack.len() <= c.base && indent <= c.indent) {
+            cont = None;
+        }
+        if cont.is_none() && !(line.starts_with('{') || (scala && continues_header(line))) {
             pending = None;
         }
         let mut open = pending.take();
+        if let Some(c) = cont.as_ref().filter(|c| !c.body) {
+            open = Some(c.decl);
+        }
         let in_scope = stack.last().is_none_or(|frame| frame.container.is_some());
         if open.is_none()
+            && cont.is_none()
             && in_scope
             && let Some((name, kind)) = declaration(lang, line)
         {
@@ -167,10 +193,60 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
                 _ => {}
             }
         }
+        if scala {
+            let (depth, assigned) = scan_parens(shown, cont.as_ref().map_or(0, |c| c.depth));
+            if let Some(c) = cont.as_mut().filter(|c| c.body) {
+                decls[c.decl].lines[1] = number;
+                c.depth = depth;
+            } else if let Some(at) = open {
+                let body = assigned && decls[at].kind == "fn";
+                decls[at].lines[1] = number;
+                match cont.as_mut() {
+                    Some(c) => {
+                        c.depth = depth;
+                        c.body |= body;
+                    }
+                    None => cont = Some(Cont { decl: at, indent, depth, base: stack.len(), body }),
+                }
+                // Header done and no expression body: back to the one-line rules below.
+                if depth == 0 && !body {
+                    cont = None;
+                }
+            } else {
+                cont = None;
+            }
+            if cont.is_some() {
+                continue;
+            }
+        }
         // No brace yet and the line is not an expression or a statement end: the body may start on the next line.
         pending = open.filter(|_| !line.ends_with(';') && !line.contains('='));
     }
     to_symbols(text, decls)
+}
+
+/// True for a Scala line that goes on with the header above it (`extends A`, `with B`), so a `{` may still follow.
+fn continues_header(line: &str) -> bool {
+    ident_at(line).is_some_and(|word| matches!(word, "extends" | "with"))
+}
+
+/// Parenthesis depth at the end of the masked `line` when it starts at `depth`, and whether a plain `=` (not `==`, `=>`,
+/// `<=`, `>=`, `!=`) stands outside every parenthesis: the assignment of a `def name(..) = body`.
+fn scan_parens(line: &str, mut depth: usize) -> (usize, bool) {
+    let bytes = line.as_bytes();
+    let mut assigned = false;
+    for (at, &byte) in bytes.iter().enumerate() {
+        match byte {
+            b'(' => depth += 1,
+            b')' => depth = depth.saturating_sub(1),
+            b'=' if depth == 0 && !assigned => {
+                let before = at.checked_sub(1).map(|prior| bytes[prior]);
+                assigned = !matches!(before, Some(b'=' | b'!' | b'<' | b'>')) && !matches!(bytes.get(at + 1), Some(b'=' | b'>' | b':'));
+            }
+            _ => {}
+        }
+    }
+    (depth, assigned)
 }
 
 /// Name and wire kind when `line` (masked, trimmed) declares something in `lang`.

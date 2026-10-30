@@ -3,7 +3,7 @@
 //! The references are raw: `refs.rs` resolves them (same file first, then a unique project name) and drops ambiguous ones.
 //! Heuristic by design: no types, no receivers; a call is a bare identifier followed by an opening parenthesis.
 
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use dctx_map_model::{EdgeKind, NodeKind};
 
@@ -32,6 +32,9 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
     let masked = mask(text, &syntax);
     let mut seen: HashMap<&str, u32> = HashMap::new();
     let mut refs = Vec::new();
+    // Scala: `new X(..)` builds a value; it calls a def only when the file defines a def named `X`.
+    let defined: HashSet<&str> = symbols.iter().filter(|symbol| symbol.kind == "fn").map(|symbol| symbol.name.rsplit("::").next().unwrap_or(&symbol.name)).collect();
+    let skip_new = (language == "scala").then_some(&defined);
     for symbol in symbols {
         let count = seen.entry(symbol.name.as_str()).or_insert(0);
         *count += 1;
@@ -45,7 +48,7 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
         let mut src = String::new();
         write_stable_id(&mut src, b's', path, &symbol.name, ordinal);
         let own = symbol.name.rsplit("::").next().unwrap_or(&symbol.name);
-        for name in call_names(body, own) {
+        for name in call_names(body, own, skip_new) {
             refs.extend(RawRef::new(&src, EdgeKind::Calls, name, &symbol.name, None));
         }
     }
@@ -70,12 +73,16 @@ fn is_word(byte: u8) -> bool {
 /// Called names in `body`, in source order and without repeats.
 ///
 /// A call is an identifier followed by `(`, with one space or tab allowed between. Keywords, declarations, `@builtin(`
-/// forms and the function's own name on its declaration line (the first line of `body`) are not calls.
-fn call_names<'a>(body: &'a str, own: &str) -> Vec<&'a str> {
+/// forms and the function's own name on its declaration line (the first line of `body`) are not calls. With `skip_new`
+/// (Scala) a type named right after `new`, dotted path included, is not a call unless it is one of the given def names.
+fn call_names<'a>(body: &'a str, own: &str, skip_new: Option<&HashSet<&str>>) -> Vec<&'a str> {
     let bytes = body.as_bytes();
     let first_line_end = body.find('\n').unwrap_or(body.len());
     let mut found: Vec<&str> = Vec::new();
     let mut previous: Option<(&str, usize)> = None;
+    // End of the last `new` word, and end of the last word of the type path that followed it.
+    let mut after_new: Option<usize> = None;
+    let mut path_end: Option<usize> = None;
     let mut at = 0usize;
     while at < bytes.len() {
         if !is_word(bytes[at]) {
@@ -86,11 +93,15 @@ fn call_names<'a>(body: &'a str, own: &str) -> Vec<&'a str> {
         let word = &body[at..end];
         let declared = previous.is_some_and(|(prior, prior_end)| DECLARES.contains(&prior) && body[prior_end..at].trim().is_empty());
         previous = Some((word, end));
+        let in_new = after_new.is_some_and(|stop| body[stop..at].trim().is_empty()) || path_end.is_some_and(|stop| &body[stop..at] == ".");
+        after_new = (word == "new").then_some(end);
+        path_end = in_new.then_some(end);
+        let new_type = in_new && skip_new.is_some_and(|defs| !defs.contains(word));
         let open = end + usize::from(matches!(bytes.get(end), Some(b' ' | b'\t')));
         let calls = bytes.get(open) == Some(&b'(') && !word.starts_with(|c: char| c.is_ascii_digit());
         let builtin = at > 0 && bytes[at - 1] == b'@';
         let own_declaration = at < first_line_end && word == own;
-        if calls && !declared && !builtin && !own_declaration && !NOT_CALLS.contains(&word) && !is_denied(word) && !found.contains(&word) {
+        if calls && !declared && !new_type && !builtin && !own_declaration && !NOT_CALLS.contains(&word) && !is_denied(word) && !found.contains(&word) {
             found.push(word);
         }
         at = end;
@@ -147,7 +158,7 @@ mod tests {
     #[test]
     fn keywords_are_not_calls() {
         let body = "x = if (a) 1 else 2\nwhile (b) {}\nfor (i <- 1) {}\nswitch (c) {}\nmatch (d) {}\nreturn (e)\ncatch (f) {}\nfunction (g) {}\nfn (h) {}\ndef (i) {}\nnew (j)\nsizeof(k)\nrequire(l)\nemit (m)\nassert(n)\nreal (1)\nother(2)\n";
-        assert_eq!(call_names(body, "none"), ["real", "other"]);
+        assert_eq!(call_names(body, "none", None), ["real", "other"]);
         let sol = "contract C {\n    function f() public returns (uint) {\n        emit Sent(1);\n        require(ok);\n        return g();\n    }\n}\n";
         // `emit Name(..)` names an event, which is a function symbol: the event is called, `emit` is not.
         assert_eq!(pairs("solidity", sol), [pair("C::f", "Sent"), pair("C::f", "g")]);
@@ -180,5 +191,64 @@ mod tests {
             }
         }
         assert_eq!(pairs("scala", "def g() = h ()\r\n"), [pair("g", "h")]);
+    }
+
+    /// The corpus file the benchmark missed: modifiers before every keyword, brace-less expression bodies, a call on the declaration line.
+    const FANSI: &str = "package fansi\n\nclass Str private(private val chars: Array[Char], private val colors: Array[Int]) {\n  require(chars.length == colors.length)\n  override def hashCode() = java.util.Arrays.hashCode(chars)\n  def length = chars.length\n  def splitAt(index: Int) = (\n    new Str(chars, colors),\n    new Str(chars, colors)\n  )\n  def firstHalf: Str = splitAt(length / 2)._1\n  def render = {\n    val b = new StringBuilder\n    b.toString\n  }\n}\nobject Str {\n  implicit def implicitApply(raw: CharSequence): Str = apply(raw)\n  def apply(raw: CharSequence): Str = parse(raw)\n  private[this] def parse(raw: CharSequence): Str = ???\n  case class State(bits: Long)\n  sealed trait Attr\n}\n";
+
+    #[test]
+    fn real_world_scala_modifiers_and_expression_bodies_give_symbols_and_calls() {
+        let found = symbols("scala", FANSI);
+        let names: Vec<_> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.lines)).collect();
+        assert_eq!(
+            names,
+            [
+                ("Str", [3, 16]),
+                ("Str::hashCode", [5, 5]),
+                ("Str::length", [6, 6]),
+                ("Str::splitAt", [7, 10]),
+                ("Str::firstHalf", [11, 11]),
+                ("Str::render", [12, 15]),
+                ("Str", [17, 23]),
+                ("Str::implicitApply", [18, 18]),
+                ("Str::apply", [19, 19]),
+                ("Str::parse", [20, 20]),
+                ("Str::State", [21, 21]),
+                ("Str::Attr", [22, 22]),
+            ]
+        );
+        // The declaration line is scanned after its `=`; `new Str(..)` builds a value and calls nothing.
+        assert_eq!(
+            pairs("scala", FANSI),
+            [pair("Str::firstHalf", "splitAt"), pair("Str::implicitApply", "apply"), pair("Str::apply", "parse")]
+        );
+    }
+
+    #[test]
+    fn a_def_without_braces_ends_at_the_next_line_not_indented_past_it() {
+        let text = "object M {\n  def a =\n    b(1)\n      .c(2)\n\n  // note\n  def d = e(3)\n  def f(x: Int,\n        y: Int) =\n    g(x, y)\n  def h: Int\n}\ndef top = k(\n  1\n)\ndef after = 2\n";
+        let found = symbols("scala", text);
+        let lines: Vec<_> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.lines)).collect();
+        assert_eq!(lines, [("M", [1, 12]), ("M::a", [2, 4]), ("M::d", [7, 7]), ("M::f", [8, 10]), ("M::h", [11, 11]), ("top", [13, 15]), ("after", [16, 16])]);
+        assert_eq!(
+            pairs("scala", text),
+            [pair("M::a", "b"), pair("M::a", "c"), pair("M::d", "e"), pair("M::f", "g"), pair("top", "k")]
+        );
+    }
+
+    #[test]
+    fn a_scala_header_over_several_lines_still_opens_its_body() {
+        let text = "case class Box(\n  a: Int,\n  b: Int = 1\n) extends Base\n  with Other {\n  def get = a\n}\nclass Wide(x: Int)\n  extends Base {\n  def run = get()\n}\n";
+        let found = symbols("scala", text);
+        let lines: Vec<_> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.lines)).collect();
+        assert_eq!(lines, [("Box", [1, 7]), ("Box::get", [6, 6]), ("Wide", [8, 11]), ("Wide::run", [10, 10])]);
+    }
+
+    #[test]
+    fn new_names_a_type_not_a_call_unless_a_def_has_that_name() {
+        let text = "object M {\n  def make = new Foo(1)\n  def deep = new a.b.Bar(baz(2))\n  def Foo(x: Int) = x\n  def keep = new Other(new Foo(3))\n}\n";
+        assert_eq!(pairs("scala", text), [pair("M::make", "Foo"), pair("M::deep", "baz"), pair("M::keep", "Foo")]);
+        // Other languages keep their old scan.
+        assert_eq!(pairs("groovy", "class G {\n  def a() {\n    return new Foo(1)\n  }\n}\n"), [pair("G::a", "Foo")]);
     }
 }
