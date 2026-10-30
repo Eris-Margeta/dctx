@@ -82,7 +82,7 @@ impl Request {
         if self.limit == 0
             || self.limit > maximum
             || self.depth == 0
-            || self.depth > if self.verb == Verb::Neighbors { 2 } else { 3 }
+            || self.depth > if self.verb == Verb::Neighbors { 4 } else { 3 }
         {
             return Err(Error::Request(
                 "limit or depth exceeds the verb's bounds".into(),

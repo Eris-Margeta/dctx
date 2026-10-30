@@ -311,7 +311,7 @@ dctx map <map|find|neighbors|explain|read|grep|status> [TARGET] [OPTIONS]
 |---|---|---|
 | `map [TARGET]` | Outline a node or file (`--depth 1..3`) — landed; the project root, `p:`, `k:` and directory targets as a paged overview — **target, P1** (today refused or `gone`, TC-F05; the only overview is the unbounded legacy tree) | 2,000 |
 | `find TARGET` | Search names and concepts (`--kind`, `--in`) | 2,000 |
-| `neighbors TARGET` | Relations (`--edge`, `--dir in\|out\|both`, `--depth 1..2`) | 2,000 |
+| `neighbors TARGET` | Relations (`--edge`, `--dir in\|out\|both`, `--depth 1..4`) | 2,000 |
 | `explain TARGET` | One node's details: signature, doc line, edges summary | 1,000 |
 | `read TARGET` | Exact source (`--lines A-B`, `--full` up to 400 lines, `--level`) | 2,000 |
 | `grep PATTERN` (target, P1) | Literal or simple-glob text search over authorized files under the same ignore rules, grouped by enclosing symbol id, budgeted, paged (today: no text search; config-key questions scored 0/14) | 2,000 |

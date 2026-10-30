@@ -93,15 +93,20 @@ fn find(generation: &Generation, request: &MapRequest) -> Vec<AnswerRecord> {
     records
 }
 
+/// Breadth-first neighbors. Each node is listed once, at its smallest depth, levels in order, each level by edge, target and id.
+/// A line deeper than one carries its depth after the direction, as `calls:in:2:<id>`; depth-1 lines keep `calls:in:<id>`.
 fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Result<Collected, DctxError> {
     let text = &generation.text;
     let Some(root) = require_index(&generation.nodes, text, &request.target)? else {
         return Ok(missing(&request.target));
     };
     let mut frontier = vec![root];
+    let mut seen: std::collections::HashSet<u32> = std::collections::HashSet::new();
     let mut records = Vec::new();
-    for _ in 0..depth {
-        let mut next = Vec::new();
+    for level in 1..=depth {
+        let mut found = Vec::new();
+        let mut next: Vec<u32> = Vec::new();
+        let mut queued: std::collections::HashSet<u32> = std::collections::HashSet::new();
         for id in &frontier {
             for edge in &generation.edges {
                 let (direction, other) = if edge.src == *id {
@@ -111,7 +116,7 @@ fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Resul
                 } else {
                     continue;
                 };
-                if !direction_ok(request.direction, direction) {
+                if !direction_ok(request.direction, direction) || seen.contains(&other) {
                     continue;
                 }
                 let edge_name = text.get(edge.edge);
@@ -126,21 +131,25 @@ fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Resul
                 }
                 let mut record = record_of(text, node);
                 let node_id = record.id.clone();
-                record.id = format!("{edge_name}:{direction}:{node_id}");
+                record.id = if level > 1 { format!("{edge_name}:{direction}:{level}:{node_id}") } else { format!("{edge_name}:{direction}:{node_id}") };
                 record.edge = Some(edge_name.to_string());
                 record.direction = Some(direction.to_string());
                 record.target = Some(node_id);
                 record.confidence = Some(text.get(edge.confidence).to_string());
-                records.push(record);
-                next.push(other);
+                found.push(record);
+                if queued.insert(other) {
+                    next.push(other);
+                }
             }
         }
+        found.sort_by(|left, right| left.edge.cmp(&right.edge).then(left.target.cmp(&right.target)).then(left.id.cmp(&right.id)));
+        found.dedup_by(|left, right| left.id == right.id);
+        records.append(&mut found);
+        // The root stays listable at depth one (a self call); from depth two on it and every earlier node are settled.
+        seen.insert(root);
+        seen.extend(next.iter().copied());
         frontier = next;
     }
-    records.sort_by(|left, right| {
-        left.edge.cmp(&right.edge).then(left.target.cmp(&right.target)).then(left.id.cmp(&right.id))
-    });
-    records.dedup_by(|left, right| left.id == right.id);
     Ok(Collected::Records(records))
 }
 
@@ -302,3 +311,7 @@ mod tests {
         assert_eq!(record_of(&text, &node(python)).confidence, None);
     }
 }
+
+#[cfg(test)]
+#[path = "neighbors_tests.rs"]
+mod neighbors_tests;

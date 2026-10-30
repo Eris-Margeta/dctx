@@ -172,7 +172,7 @@ fn verb_cap(verb: Verb) -> VerbCap {
             default_records: 20,
             hard_records: 60,
             default_depth: 1,
-            hard_depth: 2,
+            hard_depth: 4,
             default_lines: 0,
             hard_lines: 0,
         },

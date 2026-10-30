@@ -28,7 +28,7 @@ pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read>
   --profile               Stderr stage timings and the five slowest files. DCTX_PROFILE=1 is the same switch.
   --budget TOKENS         Output tokens, 1..2000 (explain max: 1000).
                           Read with no --budget uses the 2,000-token hard cap.
-  --depth N               Map: 1..3; neighbors: 1..2. Explain and read take no depth.
+  --depth N               Map: 1..3; neighbors: 1..4. Explain and read take no depth.
   --limit N               Map, find and neighbors page size. Explain and read accept only 1.
   --offset N              Refused. Pass the previous page's next value to --cursor.
   --cursor TOKEN          Opaque continuation. A stale token is rejected.
@@ -254,7 +254,7 @@ mod tests {
             vec!["stats"],
             vec!["find"],
             vec!["find", "x", "--budget", "2001"],
-            vec!["neighbors", "x", "--depth", "3"],
+            vec!["neighbors", "x", "--depth", "5"],
             vec!["read", "x", "--lines", "4-2"],
             vec!["read", "x", "--limit", "2"],
             vec!["map", "--dir", "out"],
