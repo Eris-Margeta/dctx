@@ -77,3 +77,14 @@ fn an_ambiguous_bare_name_gets_no_edge_and_a_unique_one_is_a_guess() {
     let one = linked(&[("x/a.py", "def work():\n    return 1\n"), ("z/c.py", "def run():\n    return work()\n")]);
     assert!(one.contains(&"calls s:z/c.py#run>s:x/a.py#work guess".to_string()), "{one:?}");
 }
+
+#[test]
+fn a_receiver_call_prefers_the_single_method_candidate() {
+    let one = linked(&[("b.ts", "export class Svc {\n  doIt(): number { return 1; }\n}\nconst o = { doIt() { return 2; } };\nexport function useDot(s: Svc) { return s.doIt(); }\n")]);
+    assert!(one.contains(&"calls s:b.ts#useDot>s:b.ts#Svc::doIt guess".to_string()), "{one:?}");
+    let two = linked(&[
+        ("c/one.ts", "export class A { run(): number { return 1; } }\n"),
+        ("c/two.ts", "export class B { run(): number { return 2; } }\nexport function both(x: any) { return x.run(); }\n"),
+    ]);
+    assert!(two.iter().all(|edge| !edge.starts_with("calls ")), "{two:?}");
+}

@@ -215,7 +215,7 @@ impl<'a> Tables<'a> {
         {
             return Self::pick(hit);
         }
-        (self.guess(file, callee), Rank::Guess)
+        (self.guess(file, callee, !qualifier.is_empty()), Rank::Guess)
     }
 
     /// Hits inside one file: a single one is a `name` match, overloads are guesses.
@@ -227,7 +227,9 @@ impl<'a> Tables<'a> {
     }
 
     /// The one project-wide symbol with this last segment, preferring the caller's directory when several exist.
-    fn guess(&self, file: &FileRefs, callee: &str) -> Vec<u32> {
+    ///
+    /// A call with a receiver (`recv.name()`) that still has several candidates resolves to the one candidate of kind `method`, so a lone method wins over same-named free functions, and a lone owned class method (`Owner::name`) wins over object-literal members. Two or more of the same standing stay ambiguous and emit nothing.
+    fn guess(&self, file: &FileRefs, callee: &str, receiver: bool) -> Vec<u32> {
         let Some(hits) = self.bare.get(callee) else { return Vec::new() };
         if let [only] = hits.as_slice() {
             return vec![*only];
@@ -238,7 +240,19 @@ impl<'a> Tables<'a> {
             .copied()
             .filter(|&hit| self.nodes.get(hit as usize).is_some_and(|node| dir_of(self.text.get(node.path)) == here))
             .collect();
-        if near.len() == 1 { near } else { Vec::new() }
+        if near.len() == 1 {
+            return near;
+        }
+        if !receiver {
+            return Vec::new();
+        }
+        let methods: Vec<u32> = hits.iter().copied().filter(|&hit| self.nodes.get(hit as usize).is_some_and(|node| node.kind == "method")).collect();
+        // Object-literal members are methods too, but carry no owner prefix; a class method (`Owner::name`) outranks them.
+        let owned: Vec<u32> = methods.iter().copied().filter(|&hit| self.nodes.get(hit as usize).is_some_and(|node| node.name.contains("::"))).collect();
+        match (methods.as_slice(), owned.as_slice()) {
+            ([only], _) | (_, [only]) => vec![*only],
+            _ => Vec::new(),
+        }
     }
 
     /// Module index of the file holding node `index`.

@@ -64,3 +64,19 @@ fn deeper_nodes_follow_by_depth_once_and_carry_the_depth() {
     // The back edge reaches f1, which is the root and already settled.
     assert_eq!(ids(4), ids(3));
 }
+
+/// A self call (`f1 -> f1`) is listed for an inbound walk as well as an outbound one.
+#[test]
+fn a_self_edge_is_listed_inbound() {
+    let mut generation = chain();
+    let calls = generation.edges[0].edge;
+    let name = generation.edges[0].confidence;
+    generation.edges = vec![IndexedEdge { src: 0, dst: 0, edge: calls, confidence: name }];
+    for (direction, want) in [(Direction::In, "calls:in:s:a.py#f1"), (Direction::Out, "calls:out:s:a.py#f1")] {
+        let mut request = MapRequest::new(Verb::Neighbors);
+        request.target = "s:a.py#f1".to_string();
+        request.direction = direction;
+        let Collected::Records(records) = collect(&generation, &request, 1).expect("collect") else { panic!("records") };
+        assert_eq!(records.into_iter().map(|record| record.id).collect::<Vec<_>>(), [want]);
+    }
+}

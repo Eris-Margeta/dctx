@@ -112,7 +112,7 @@ fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Resul
         let mut queued: std::collections::HashSet<u32> = std::collections::HashSet::new();
         for id in &frontier {
             for edge in &generation.edges {
-                let (direction, other) = if edge.src == *id {
+                let (direction, other) = if edge.src == *id && direction_ok(request.direction, "out") {
                     ("out", edge.dst)
                 } else if edge.dst == *id {
                     ("in", edge.src)
