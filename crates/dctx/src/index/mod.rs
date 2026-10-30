@@ -4,6 +4,7 @@
 //! Callers see an [`crate::domain::Answer`], never this module.
 
 mod extract;
+mod generic;
 mod lex_dispatch;
 pub(crate) mod profile;
 mod query;

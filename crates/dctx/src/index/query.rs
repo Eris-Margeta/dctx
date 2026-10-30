@@ -3,7 +3,8 @@
 //! Depends on the in-memory generation. Map, find and neighbors do not read the source.
 //! A missing id is [`Collected::Outcome`], not an empty success.
 
-use super::{id_matches, write_node_id, Generation, IndexedNode, TextBlob};
+use super::extract::language_of;
+use super::{generic, id_matches, write_node_id, Generation, IndexedNode, TextBlob};
 use crate::domain::{AnswerRecord, Direction, IdentityOutcome, MapRequest, Verb, DctxError};
 
 /// Records for a page, a verified read, or a normal identity outcome.
@@ -210,6 +211,8 @@ fn direction_ok(requested: Direction, actual: &str) -> bool {
 fn record_of(text: &TextBlob, node: &IndexedNode) -> AnswerRecord {
     let mut id = String::new();
     write_node_id(&mut id, text, node);
+    // Files read by a heuristic family are labelled; lexed languages leave the field to neighbors.
+    let confidence = generic::handles(language_of(text.get(node.path))).then(|| generic::GUESS.to_string());
     AnswerRecord {
         id,
         kind: node.kind.clone(),
@@ -223,7 +226,7 @@ fn record_of(text: &TextBlob, node: &IndexedNode) -> AnswerRecord {
         edge: None,
         direction: None,
         target: None,
-        confidence: None,
+        confidence,
         score: 0,
     }
 }
@@ -276,5 +279,26 @@ mod tests {
         assert_eq!(score_of(&text, &node, "missing"), 0);
         let qualified = IndexedNode { name: "tests::ping".to_string(), ..node };
         assert_eq!(score_of(&text, &qualified, "ping"), 2500);
+    }
+
+    #[test]
+    fn records_of_heuristic_languages_are_labelled_guess() {
+        let mut text = TextBlob::default();
+        let scala = text.push("src/Main.scala");
+        let python = text.push("src/main.py");
+        let node = |path| IndexedNode {
+            letter: b's',
+            ordinal: 0,
+            kind: "fn".to_string(),
+            name: "run".to_string(),
+            path,
+            lines: [1, 1],
+            span: [0, 0],
+            summary: String::new(),
+            summary_source: "sig".to_string(),
+            signature: String::new(),
+        };
+        assert_eq!(record_of(&text, &node(scala)).confidence.as_deref(), Some("guess"));
+        assert_eq!(record_of(&text, &node(python)).confidence, None);
     }
 }

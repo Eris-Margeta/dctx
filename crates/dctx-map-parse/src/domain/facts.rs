@@ -37,6 +37,18 @@ pub enum Language {
     Php,
     /// Swift source (`.swift`).
     Swift,
+    /// Scala source (`.scala`) and scripts (`.sc`). Heuristic symbols live in the facade.
+    Scala,
+    /// Dart source.
+    Dart,
+    /// Zig source.
+    Zig,
+    /// Solidity source (`.sol`).
+    Solidity,
+    /// Gleam source.
+    Gleam,
+    /// Groovy source (`.groovy`) and Gradle build scripts (`.gradle`).
+    Groovy,
     /// No grammar; only a module node is emitted.
     Unknown,
 }
@@ -88,6 +100,14 @@ const EXTENSIONS: &[(&str, Language)] = &[
     ("phtml", Language::Php),
     ("inc", Language::Php),
     ("swift", Language::Swift),
+    ("scala", Language::Scala),
+    ("sc", Language::Scala),
+    ("dart", Language::Dart),
+    ("zig", Language::Zig),
+    ("sol", Language::Solidity),
+    ("gleam", Language::Gleam),
+    ("groovy", Language::Groovy),
+    ("gradle", Language::Groovy),
 ];
 
 /// Ruby basenames accepted by `dctx-lex-rb` (`Dialect::for_path`).
@@ -242,7 +262,8 @@ mod tests {
         const LITERAL_EXTENSIONS: &[&str] = &[
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
-            "rb", "rake", "gemspec", "php", "phtml", "inc", "swift",
+            "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy",
+            "gradle",
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
         let extensions: Vec<&str> = EXTENSIONS.iter().map(|(extension, _)| *extension).collect();

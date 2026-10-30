@@ -57,6 +57,10 @@ impl Parser for PureParser {
             Language::Ruby => ruby::parse_pure(path, bytes),
             Language::Php => php::parse_pure(path, bytes),
             Language::Swift => swift::parse_pure(path, bytes),
+            // Heuristic families are extracted by the facade; here they stay module-only.
+            Language::Scala | Language::Dart | Language::Zig | Language::Solidity | Language::Gleam | Language::Groovy => {
+                fallback(path, source)
+            }
             Language::Unknown => fallback(path, source),
         }
     }
@@ -88,6 +92,9 @@ impl Parser for TreeSitterParser {
             Language::Ruby => return ruby::parse_pure(path, bytes),
             Language::Php => return php::parse_pure(path, bytes),
             Language::Swift => return swift::parse_pure(path, bytes),
+            Language::Scala | Language::Dart | Language::Zig | Language::Solidity | Language::Gleam | Language::Groovy => {
+                return fallback(path, source);
+            }
             Language::Unknown => return fallback(path, source),
             Language::Rust
             | Language::JavaScript
@@ -113,6 +120,12 @@ impl Parser for TreeSitterParser {
             | Language::Ruby
             | Language::Php
             | Language::Swift
+            | Language::Scala
+            | Language::Dart
+            | Language::Zig
+            | Language::Solidity
+            | Language::Gleam
+            | Language::Groovy
             | Language::Unknown => {}
         }
         facts.finish()

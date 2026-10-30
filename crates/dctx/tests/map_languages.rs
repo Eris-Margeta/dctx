@@ -89,6 +89,36 @@ const FIXTURES: &[Fixture] = &[
         source: "func SwiftMain() {}\n",
         symbol: "SwiftMain",
     },
+    Fixture {
+        extensions: &["scala", "sc"],
+        source: "object ScalaMain {\n  def run(): Int = 1\n}\n",
+        symbol: "ScalaMain",
+    },
+    Fixture {
+        extensions: &["dart"],
+        source: "int DartMain() {\n  return 1;\n}\n",
+        symbol: "DartMain",
+    },
+    Fixture {
+        extensions: &["zig"],
+        source: "pub fn ZigMain() void {}\n",
+        symbol: "ZigMain",
+    },
+    Fixture {
+        extensions: &["sol"],
+        source: "contract SolMain {\n  function run() public {}\n}\n",
+        symbol: "SolMain",
+    },
+    Fixture {
+        extensions: &["gleam"],
+        source: "pub fn GleamMain() {\n  1\n}\n",
+        symbol: "GleamMain",
+    },
+    Fixture {
+        extensions: &["groovy", "gradle"],
+        source: "class GroovyMain {\n  def run() {}\n}\n",
+        symbol: "GroovyMain",
+    },
 ];
 
 fn write_sources(root: &Path) -> Vec<(String, &'static str)> {
@@ -175,7 +205,7 @@ fn selection_excludes_or_omits_new_languages_before_content_reads() {
 const SHARED_EXTENSIONS: &[&str] = &[
     "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java", "c", "h",
     "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts", "rb", "rake", "gemspec",
-    "php", "phtml", "inc", "swift",
+    "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy", "gradle",
 ];
 const SHARED_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
 
