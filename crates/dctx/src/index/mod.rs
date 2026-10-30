@@ -4,6 +4,7 @@
 //! Callers see an [`crate::domain::Answer`], never this module.
 
 mod extract;
+pub(crate) mod export;
 mod generic;
 pub(crate) mod hubs;
 pub(crate) mod path;

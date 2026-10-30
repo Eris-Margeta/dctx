@@ -6,6 +6,7 @@
 //! A plugin host is optional. The library default starts none and schedules no hook.
 
 mod build;
+mod export_op;
 mod cache_op;
 mod grep_op;
 mod hooks;

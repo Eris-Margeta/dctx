@@ -39,7 +39,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     let [from, to] = <[String; 2]>::try_from(ends).map_err(|_| "path requires two targets: path <FROM> <TO>".to_string())?;
     request.target = from;
     request.validate().map_err(|e| e.to_string())?;
-    Ok(Options { request, format, place, continuation: None, budget_set, profile: false, meta, hubs: false, grep: false, ignore_case: false, skeleton: false, to: Some(to) })
+    Ok(Options { request, format, place, continuation: None, budget_set, profile: false, meta, hubs: false, grep: false, ignore_case: false, skeleton: false, to: Some(to), export: None })
 }
 
 /// Runs the path verb on `handle` and returns the page.

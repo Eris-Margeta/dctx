@@ -5,6 +5,7 @@
 //! It does not write inside the scanned project. A bad target is refused before the scan.
 
 mod args;
+mod export_verb;
 mod hubs;
 mod skeleton;
 mod path_verb;
@@ -49,7 +50,7 @@ fn execute_with(
     if options.request.offset > 0 {
         return Err("the facade pages with the next cursor, not --offset".to_string());
     }
-    if !options.hubs {
+    if !options.hubs && options.export.is_none() {
         options.request.target = prepare_target(options.request.verb, &options.request.target, &options.place)?;
         if let Some(to) = options.to.take() {
             options.to = Some(prepare_target(options.request.verb, &to, &options.place)?);
@@ -83,6 +84,9 @@ fn execute_with(
     }
     if options.hubs {
         return hubs::answer(&mut session, &handle, &options);
+    }
+    if options.export.is_some() {
+        return export_verb::answer(&mut session, &handle, &options);
     }
     if options.to.is_some() {
         return path_verb::answer(&mut session, &handle, &options);
