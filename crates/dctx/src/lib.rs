@@ -24,7 +24,7 @@ pub const FACADE_VERSION: &str = "0.1.0";
 pub const WIRE_VERSION: u32 = 2;
 
 pub use domain::{
-    encode_answer, object_key, validate_segment, Answer, AnswerRecord, AutoCleanConfig, BoundedSink, CacheLedger,
+    encode_answer, encode_answer_with, object_key, validate_segment, Answer, AnswerRecord, AutoCleanConfig, BoundedSink, CacheLedger,
     CacheReport, Capabilities,
     Direction, DctxError, ErrorCode, Freshness, FreshnessMode, GcRequest, HostGrants, IdentityOutcome, MapRequest,
     OperationLimits, PackReport, PackRequest, Precision, PurgeRequest, PurgeScope, Resource, RuleSources, SegmentInfo,

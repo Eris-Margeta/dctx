@@ -14,7 +14,7 @@ use super::ledger::READ_CAP;
 use super::pack_op::{reject_format, reject_git};
 use super::Session;
 use crate::domain::{
-    check_deadline, cursor, encode_answer, encode_text, parse_cursor, within_budget, Answer, AnswerRecord,
+    check_deadline, cursor, encode_answer_with, encode_text, parse_cursor, within_budget, Answer, AnswerRecord,
     BoundedSink, Direction, Freshness, IdentityOutcome, MapRequest, OperationLimits, Precision, ResolvedLimits, Verb,
     DctxError, REQUEST_VERSION,
 };
@@ -100,7 +100,7 @@ impl Session {
         loop {
             let next = if more > 0 { records.last().map(|record| cursor(generation.id, request.verb, &record.id)) } else { None };
             let answer = self.answer_of(&generation, request.verb, records.clone(), more, next.clone(), None);
-            let encoded = encode_page(request.output_format, &self.place, &answer);
+            let encoded = encode_page(request, &self.place, &answer);
             let len = u64::try_from(encoded.len()).unwrap_or(u64::MAX);
             if within_budget(&encoded, &resolved) {
                 if records.is_empty() && had_records {
@@ -314,7 +314,7 @@ impl Session {
         let mut record = record.clone();
         record.source_utf8 = source;
         let answer = self.answer_of(generation, request.verb, vec![record], more, next, None);
-        let encoded = encode_page(request.output_format, &self.place, &answer);
+        let encoded = encode_page(request, &self.place, &answer);
         (answer, encoded)
     }
 
@@ -393,7 +393,7 @@ fn write_answer(
     answer: Answer,
     resolved: &ResolvedLimits,
 ) -> Result<Answer, DctxError> {
-    let encoded = encode_page(request.output_format, place, &answer);
+    let encoded = encode_page(request, place, &answer);
     if !within_budget(&encoded, resolved) {
         let minimum_bytes = u64::try_from(encoded.len()).unwrap_or(u64::MAX).max(1);
         return Err(DctxError::BudgetTooSmall { minimum_bytes });
@@ -402,8 +402,8 @@ fn write_answer(
     Ok(answer)
 }
 
-fn encode_page(format: u32, place: &str, answer: &Answer) -> Vec<u8> {
-    if format == 1 { encode_text(place, answer).into_bytes() } else { encode_answer(place, answer).into_bytes() }
+fn encode_page(request: &MapRequest, place: &str, answer: &Answer) -> Vec<u8> {
+    if request.output_format == 1 { encode_text(place, answer, request.meta).into_bytes() } else { encode_answer_with(place, answer, request.meta).into_bytes() }
 }
 
 const OMITTED_LINE: &str = "[DCTX_OMITTED]\n";

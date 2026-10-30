@@ -73,7 +73,8 @@ fn execute_with(
         eprintln!("content_reads {}", session.content_reads());
         eprintln!("cached_content_reads {}", session.cached_content_reads());
     }
-    let request = facade_request(&options.request, options.format, options.continuation, options.budget_set);
+    let mut request = facade_request(&options.request, options.format, options.continuation, options.budget_set);
+    request.meta = options.meta;
     let mut sink = VecSink::new();
     let queried = if profiling {
         session.query_for_profile(&handle, &request, &mut sink)

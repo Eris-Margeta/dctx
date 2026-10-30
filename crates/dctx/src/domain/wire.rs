@@ -8,20 +8,30 @@ use super::answer::{Answer, AnswerRecord};
 use super::error::DctxError;
 use super::request::Verb;
 
-/// Encodes `answer` as one JSON v2 document plus a trailing LF.
+/// Encodes `answer` as one JSON v2 document plus a trailing LF, without `snapshot`, `generation` or `freshness.age_s`.
 #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 pub fn encode_answer(place: &str, answer: &Answer) -> String {
+    encode_answer_with(place, answer, false)
+}
+
+/// Like [`encode_answer`]. `meta` restores `snapshot`, `generation` and `freshness.age_s`.
+#[must_use]
+pub fn encode_answer_with(place: &str, answer: &Answer, meta: bool) -> String {
     let mut out = String::new();
     out.push('{');
     field_raw(&mut out, "v", "2", true);
     field_str(&mut out, "place", place, false);
-    field_str(&mut out, "snapshot", &answer.snapshot, false);
-    field_raw(&mut out, "generation", &answer.generation.to_string(), false);
+    if meta {
+        field_str(&mut out, "snapshot", &answer.snapshot, false);
+        field_raw(&mut out, "generation", &answer.generation.to_string(), false);
+    }
     field_str(&mut out, "verb", answer.verb.as_str(), false);
     out.push_str(",\"freshness\":{");
     field_str(&mut out, "mode", &answer.freshness.mode, true);
     field_str(&mut out, "state", &answer.freshness.state, false);
-    field_raw(&mut out, "age_s", &answer.freshness.age_s.to_string(), false);
+    if meta {
+        field_raw(&mut out, "age_s", &answer.freshness.age_s.to_string(), false);
+    }
     out.push('}');
     out.push_str(",\"precision\":{");
     field_str(&mut out, "coverage", &answer.precision.coverage, true);
@@ -50,17 +60,19 @@ pub fn encode_answer(place: &str, answer: &Answer) -> String {
     out
 }
 
-/// Encodes `answer` as text. The header carries the own digest, never a git revision.
-pub fn encode_text(place: &str, answer: &Answer) -> String {
+/// Encodes `answer` as text. The header is `# <place> <verb>`; with `meta` it also carries the own digest and generation, never a git revision.
+pub fn encode_text(place: &str, answer: &Answer, meta: bool) -> String {
     let mut out = String::new();
     out.push_str("# ");
     out.push_str(place);
     out.push(' ');
     out.push_str(answer.verb.as_str());
-    out.push(' ');
-    out.push_str(&answer.snapshot);
-    out.push_str(" g=");
-    out.push_str(&answer.generation.to_string());
+    if meta {
+        out.push(' ');
+        out.push_str(&answer.snapshot);
+        out.push_str(" g=");
+        out.push_str(&answer.generation.to_string());
+    }
     out.push('\n');
     for record in &answer.records {
         out.push_str(&record.id);
@@ -202,6 +214,25 @@ mod tests {
             out
         };
         assert_eq!(quoted, "\"\\u0001\"");
+    }
+
+    #[test]
+    fn answers_from_different_snapshots_are_equal_bytes_without_meta() {
+        let first = sample();
+        let mut second = sample();
+        second.snapshot = "v1:sha256:cd:7".to_string();
+        second.generation = 7;
+        second.freshness.age_s = 99;
+        assert_eq!(encode_answer("fixture", &first), encode_answer("fixture", &second));
+        assert_eq!(encode_text("fixture", &first, false), encode_text("fixture", &second, false));
+        assert!(encode_text("fixture", &first, false).starts_with("# fixture find\n"));
+        let json = encode_answer("fixture", &first);
+        assert!(!json.contains("\"snapshot\"") && !json.contains("generation") && !json.contains("age_s"));
+        assert!(json.contains("\"mode\":\"immutable_snapshot\"") && json.contains("\"state\":\"verified\""));
+        assert_ne!(encode_answer_with("fixture", &first, true), encode_answer_with("fixture", &second, true));
+        assert!(encode_answer_with("fixture", &first, true).contains("\"snapshot\":\"v1:sha256:ab:1\",\"generation\":1"));
+        assert!(encode_answer_with("fixture", &first, true).contains("\"age_s\":0"));
+        assert!(encode_text("fixture", &first, true).starts_with("# fixture find v1:sha256:ab:1 g=1\n"));
     }
 
     fn sample() -> Answer {

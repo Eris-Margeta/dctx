@@ -15,12 +15,16 @@ pub(super) struct Options {
     pub budget_set: bool,
     /// True when the caller passed `--profile`. `DCTX_PROFILE=1` is applied by the caller.
     pub profile: bool,
+    /// True when the caller passed `--meta`: the snapshot digest, generation and age come back in the answer.
+    pub meta: bool,
 }
 pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read> <TARGET> [OPTIONS]
   TARGET                  Required. map accepts a stable id or a place-relative file.
                           A file path is read as m:<path>. Omitting TARGET does not scan.
   --json                  Facade JSON v2, including the precision label
   --place PATH            Place or worktree root (default: current directory)
+  --meta                  Restore the snapshot digest and generation in the text header and the snapshot, generation and age_s JSON fields.
+                          Without it the answer bytes do not change across unrelated edits or time.
   --profile               Stderr stage timings and the five slowest files. DCTX_PROFILE=1 is the same switch.
   --budget TOKENS         Output tokens, 1..2000 (explain max: 1000).
                           Read with no --budget uses the 2,000-token hard cap.
@@ -64,6 +68,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     let mut continuation = None;
     let mut budget_set = false;
     let mut profile = false;
+    let mut meta = false;
     let mut index = 1;
     while index < args.len() {
         let flag = &args[index];
@@ -78,6 +83,10 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         }
         if flag == "--profile" {
             profile = true;
+            continue;
+        }
+        if flag == "--meta" {
+            meta = true;
             continue;
         }
         if !flag.starts_with('-') {
@@ -182,6 +191,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         continuation,
         budget_set,
         profile,
+        meta,
     })
 }
 fn number<T: std::str::FromStr>(value: &str) -> Result<T, String> {
@@ -228,6 +238,9 @@ mod tests {
         assert_eq!(profiled.request.target, "kept");
         assert!(!options(&["find", "kept"]).expect("plain").profile);
         assert!(HELP.contains("--profile"));
+        assert!(HELP.contains("--meta"));
+        assert!(options(&["find", "--meta", "kept"]).expect("meta").meta);
+        assert!(!options(&["find", "kept"]).expect("plain").meta);
         assert!(HELP.contains("DCTX_PROFILE=1"));
         assert_eq!(
             options(&["read", "s:a.rs#a", "--lines", "35-36"])

@@ -30,7 +30,7 @@ pub use request::{
     Direction, FreshnessMode, MapRequest, PackRequest, SnapshotRequest, Verb, REQUEST_VERSION,
 };
 pub use sink::{BoundedSink, VecSink};
-pub use wire::encode_answer;
+pub use wire::{encode_answer, encode_answer_with};
 
 pub(crate) use identity::digest_text;
 pub(crate) use limits::{

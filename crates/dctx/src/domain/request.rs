@@ -297,6 +297,8 @@ pub struct MapRequest {
     pub git_revision: Option<String>,
     /// Optional path prefix. Records outside it are dropped.
     pub within: Option<String>,
+    /// When set, the page also carries the snapshot digest, the generation and the freshness age. Off by default so equal answers are equal bytes.
+    pub meta: bool,
 }
 
 impl MapRequest {
@@ -320,6 +322,7 @@ impl MapRequest {
             full: false,
             git_revision: None,
             within: None,
+            meta: false,
         }
     }
 
