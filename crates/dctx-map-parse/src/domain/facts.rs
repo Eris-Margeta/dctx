@@ -63,6 +63,22 @@ pub enum Language {
     Julia,
     /// Haskell source.
     Haskell,
+    /// Terraform/HCL (`.tf`, `.tfvars`, `.hcl`). Heuristic symbols live in the facade.
+    Hcl,
+    /// SQL (`.sql`).
+    Sql,
+    /// Shell scripts (`.sh`, `.bash`, `.zsh`).
+    Shell,
+    /// Makefiles (`.mk`, `Makefile`, `GNUmakefile`).
+    Make,
+    /// Dockerfiles (`Dockerfile`, `Containerfile`).
+    Docker,
+    /// Protocol Buffers (`.proto`).
+    Proto,
+    /// Pascal and Delphi (`.pas`, `.pp`, `.dpr`).
+    Pascal,
+    /// GraphQL schemas (`.graphql`, `.gql`).
+    Graphql,
     /// No grammar; only a module node is emitted.
     Unknown,
 }
@@ -136,6 +152,20 @@ const EXTENSIONS: &[(&str, Language)] = &[
     ("r", Language::R),
     ("jl", Language::Julia),
     ("hs", Language::Haskell),
+    ("tf", Language::Hcl),
+    ("tfvars", Language::Hcl),
+    ("hcl", Language::Hcl),
+    ("sql", Language::Sql),
+    ("sh", Language::Shell),
+    ("bash", Language::Shell),
+    ("zsh", Language::Shell),
+    ("mk", Language::Make),
+    ("proto", Language::Proto),
+    ("pas", Language::Pascal),
+    ("pp", Language::Pascal),
+    ("dpr", Language::Pascal),
+    ("graphql", Language::Graphql),
+    ("gql", Language::Graphql),
 ];
 
 /// Ruby basenames accepted by `dctx-lex-rb` (`Dialect::for_path`).
@@ -144,6 +174,15 @@ const EXTENSIONS: &[(&str, Language)] = &[
 /// `Gemfile.lock` stays unknown. `Guardfile` and `config.ru` are not in the
 /// lexer, so they are not in this list: classifying them would refuse the file.
 const RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
+
+/// Extensionless basenames of infra formats, compared case-insensitively on the final path segment.
+/// Duplicated in `dctx` `index/extract.rs` and locked by `tests/lexers_extensions.rs`.
+const INFRA_BASENAMES: &[(&str, Language)] = &[
+    ("Makefile", Language::Make),
+    ("GNUmakefile", Language::Make),
+    ("Dockerfile", Language::Docker),
+    ("Containerfile", Language::Docker),
+];
 
 impl Language {
     /// Selects a grammar from the final path segment.
@@ -157,6 +196,9 @@ impl Language {
         let base = path.rsplit(['/', '\\']).next().unwrap_or(path);
         if RUBY_BASENAMES.iter().any(|name| base.eq_ignore_ascii_case(name)) {
             return Self::Ruby;
+        }
+        if let Some((_, language)) = INFRA_BASENAMES.iter().find(|(name, _)| base.eq_ignore_ascii_case(name)) {
+            return *language;
         }
         let Some(extension) = base.rsplit_once('.').map(|(_, extension)| extension.to_ascii_lowercase()) else {
             return Self::Unknown;
@@ -292,7 +334,7 @@ mod tests {
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
             "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy",
-            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs",
+            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql",
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
         let extensions: Vec<&str> = EXTENSIONS.iter().map(|(extension, _)| *extension).collect();

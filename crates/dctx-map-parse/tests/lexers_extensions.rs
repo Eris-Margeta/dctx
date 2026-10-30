@@ -68,6 +68,20 @@ const SHARED_EXTENSIONS: &[(&str, Language)] = &[
     ("r", Language::R),
     ("jl", Language::Julia),
     ("hs", Language::Haskell),
+    ("tf", Language::Hcl),
+    ("tfvars", Language::Hcl),
+    ("hcl", Language::Hcl),
+    ("sql", Language::Sql),
+    ("sh", Language::Shell),
+    ("bash", Language::Shell),
+    ("zsh", Language::Shell),
+    ("mk", Language::Make),
+    ("proto", Language::Proto),
+    ("pas", Language::Pascal),
+    ("pp", Language::Pascal),
+    ("dpr", Language::Pascal),
+    ("graphql", Language::Graphql),
+    ("gql", Language::Graphql),
 ];
 
 /// Basenames `dctx-lex-rb` accepts. Same order as `facts::RUBY_BASENAMES`.
@@ -94,7 +108,7 @@ fn for_path_matches_the_shared_literal() {
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
             "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy",
-            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs",
+            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql",
         ]
     );
     for basename in SHARED_RUBY_BASENAMES {
@@ -110,6 +124,28 @@ fn for_path_matches_the_shared_literal() {
     assert_eq!(Language::for_path("Guardfile"), Language::Unknown);
     assert_eq!(Language::for_path("config.ru"), Language::Unknown);
     assert_eq!(Language::for_path("pkg/app.pyw"), Language::Unknown);
+}
+
+/// Extensionless infra basenames. Same list as `facts::INFRA_BASENAMES` and the facade's `index/extract.rs`.
+const SHARED_INFRA_BASENAMES: &[(&str, Language)] = &[
+    ("Makefile", Language::Make),
+    ("GNUmakefile", Language::Make),
+    ("Dockerfile", Language::Docker),
+    ("Containerfile", Language::Docker),
+];
+
+#[test]
+fn infra_basenames_match_the_shared_literal() {
+    for (basename, language) in SHARED_INFRA_BASENAMES {
+        assert_eq!(Language::for_path(basename), *language, "{basename}");
+        assert_eq!(Language::for_path(&basename.to_ascii_lowercase()), *language);
+        assert_eq!(Language::for_path(&format!("ci/{basename}")), *language);
+        assert_eq!(Language::for_path(&format!("ci\\{basename}")), *language);
+        let facts = PureParser.parse(basename, b"x\n").expect(basename);
+        assert_eq!(facts.nodes.len(), 1, "module only: {basename}");
+    }
+    assert_eq!(Language::for_path("Makefile.bak"), Language::Unknown);
+    assert_eq!(Language::for_path("Dockerfile.dev"), Language::Unknown);
 }
 
 #[test]

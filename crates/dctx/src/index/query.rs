@@ -298,6 +298,7 @@ mod tests {
         let mut text = TextBlob::default();
         let scala = text.push("src/Main.scala");
         let python = text.push("src/main.py");
+        let infra = text.push("deploy/Makefile");
         let node = |path| IndexedNode {
             letter: b's',
             ordinal: 0,
@@ -311,6 +312,7 @@ mod tests {
             signature: String::new(),
         };
         assert_eq!(record_of(&text, &node(scala)).confidence.as_deref(), Some("guess"));
+        assert_eq!(record_of(&text, &node(infra)).confidence.as_deref(), Some("guess"));
         assert_eq!(record_of(&text, &node(python)).confidence, None);
     }
 }

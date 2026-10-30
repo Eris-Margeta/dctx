@@ -6,6 +6,7 @@
 
 mod block;
 mod brace;
+mod infra;
 #[cfg(test)]
 mod tests;
 
@@ -28,7 +29,7 @@ const SIGNATURE_MAX: usize = 160;
 
 /// True when `language` (a tag of `extract::language_of`) is extracted by a generic family.
 pub(super) fn handles(language: &str) -> bool {
-    brace::handles(language) || block::handles(language)
+    brace::handles(language) || block::handles(language) || infra::handles(language)
 }
 
 /// Symbols of `text` for a language that [`handles`]. Anything else, and any malformed input, yields none.
@@ -38,6 +39,9 @@ pub(super) fn symbols(language: &str, text: &str) -> Vec<Symbol> {
     }
     if block::handles(language) {
         return block::symbols(language, text);
+    }
+    if infra::handles(language) {
+        return infra::symbols(language, text);
     }
     Vec::new()
 }

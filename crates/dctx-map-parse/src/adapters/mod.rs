@@ -64,6 +64,14 @@ impl Parser for PureParser {
             Language::Elixir | Language::Lua | Language::OCaml | Language::R | Language::Julia | Language::Haskell => {
                 fallback(path, source)
             }
+            Language::Hcl
+            | Language::Sql
+            | Language::Shell
+            | Language::Make
+            | Language::Docker
+            | Language::Proto
+            | Language::Pascal
+            | Language::Graphql => fallback(path, source),
             Language::Unknown => fallback(path, source),
         }
     }
@@ -101,6 +109,14 @@ impl Parser for TreeSitterParser {
             Language::Elixir | Language::Lua | Language::OCaml | Language::R | Language::Julia | Language::Haskell => {
                 return fallback(path, source);
             }
+            Language::Hcl
+            | Language::Sql
+            | Language::Shell
+            | Language::Make
+            | Language::Docker
+            | Language::Proto
+            | Language::Pascal
+            | Language::Graphql => return fallback(path, source),
             Language::Unknown => return fallback(path, source),
             Language::Rust
             | Language::JavaScript
@@ -139,6 +155,14 @@ impl Parser for TreeSitterParser {
             | Language::R
             | Language::Julia
             | Language::Haskell
+            | Language::Hcl
+            | Language::Sql
+            | Language::Shell
+            | Language::Make
+            | Language::Docker
+            | Language::Proto
+            | Language::Pascal
+            | Language::Graphql
             | Language::Unknown => {}
         }
         facts.finish()

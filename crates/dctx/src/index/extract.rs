@@ -103,6 +103,20 @@ const EXTENSIONS: &[(&str, &str)] = &[
     ("r", "r"),
     ("jl", "julia"),
     ("hs", "haskell"),
+    ("tf", "hcl"),
+    ("tfvars", "hcl"),
+    ("hcl", "hcl"),
+    ("sql", "sql"),
+    ("sh", "shell"),
+    ("bash", "shell"),
+    ("zsh", "shell"),
+    ("mk", "make"),
+    ("proto", "proto"),
+    ("pas", "pascal"),
+    ("pp", "pascal"),
+    ("dpr", "pascal"),
+    ("graphql", "graphql"),
+    ("gql", "graphql"),
 ];
 
 /// Duplicate of `dctx-map-parse` `domain::facts::RUBY_BASENAMES`.
@@ -111,6 +125,12 @@ const EXTENSIONS: &[(&str, &str)] = &[
 /// `Guardfile` and `config.ru`. A basename wins over the extension.
 const RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
 
+/// Duplicate of `dctx-map-parse` `domain::facts::INFRA_BASENAMES`: files with no extension that are still a known format.
+///
+/// Compared case-insensitively on the final path segment, like [`RUBY_BASENAMES`].
+const INFRA_BASENAMES: &[(&str, &str)] =
+    &[("Makefile", "make"), ("GNUmakefile", "make"), ("Dockerfile", "docker"), ("Containerfile", "docker")];
+
 /// Language tag from the final path segment. Anything else is `opaque`.
 ///
 /// Extensions are case-insensitive. See [`EXTENSIONS`] and [`RUBY_BASENAMES`].
@@ -118,6 +138,9 @@ pub(crate) fn language_of(path: &str) -> &'static str {
     let base = path.rsplit(['/', '\\']).next().unwrap_or(path);
     if RUBY_BASENAMES.iter().any(|name| base.eq_ignore_ascii_case(name)) {
         return "ruby";
+    }
+    if let Some((_, tag)) = INFRA_BASENAMES.iter().find(|(name, _)| base.eq_ignore_ascii_case(name)) {
+        return tag;
     }
     let Some(extension) = base.rsplit_once('.').map(|(_, extension)| extension.to_ascii_lowercase()) else {
         return "opaque";
@@ -656,6 +679,20 @@ mod tests {
             ("r", "r"),
             ("jl", "julia"),
             ("hs", "haskell"),
+            ("tf", "hcl"),
+            ("tfvars", "hcl"),
+            ("hcl", "hcl"),
+            ("sql", "sql"),
+            ("sh", "shell"),
+            ("bash", "shell"),
+            ("zsh", "shell"),
+            ("mk", "make"),
+            ("proto", "proto"),
+            ("pas", "pascal"),
+            ("pp", "pascal"),
+            ("dpr", "pascal"),
+            ("graphql", "graphql"),
+            ("gql", "graphql"),
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
         assert_eq!(EXTENSIONS, LITERAL_EXTENSIONS);
@@ -669,6 +706,15 @@ mod tests {
             assert_eq!(language_of(&format!("lib/{}", basename.to_ascii_lowercase())), "ruby");
             assert_eq!(language_of(&format!("lib\\{basename}")), "ruby");
         }
+        for (basename, tag) in [("Makefile", "make"), ("GNUmakefile", "make"), ("Dockerfile", "docker"), ("Containerfile", "docker")] {
+            assert_eq!(INFRA_BASENAMES.iter().find(|(name, _)| *name == basename).map(|(_, found)| *found), Some(tag));
+            assert_eq!(language_of(basename), tag);
+            assert_eq!(language_of(&basename.to_ascii_lowercase()), tag);
+            assert_eq!(language_of(&format!("ci/{basename}")), tag);
+            assert_eq!(language_of(&format!("ci\\{basename}")), tag);
+        }
+        assert_eq!(INFRA_BASENAMES.len(), 4);
+        assert_eq!(language_of("Makefile.bak"), "opaque");
         assert_eq!(language_of("php"), "opaque");
         assert_eq!(language_of("Gemfile.lock"), "opaque");
         // Not a defect: the Ruby lexer rejects these paths.

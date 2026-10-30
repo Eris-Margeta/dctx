@@ -149,6 +149,41 @@ const FIXTURES: &[Fixture] = &[
         source: "hsMain :: Int -> Int\nhsMain x = x\n",
         symbol: "hsMain",
     },
+    Fixture {
+        extensions: &["tf", "tfvars", "hcl"],
+        source: "variable \"HclMain\" {\n  default = 1\n}\n",
+        symbol: "HclMain",
+    },
+    Fixture {
+        extensions: &["sql"],
+        source: "CREATE TABLE SqlMain (\n  id INT\n);\n",
+        symbol: "SqlMain",
+    },
+    Fixture {
+        extensions: &["sh", "bash", "zsh"],
+        source: "ShellMain() {\n  echo hi\n}\n",
+        symbol: "ShellMain",
+    },
+    Fixture {
+        extensions: &["mk"],
+        source: "MakeMain: deps\n\t@true\n",
+        symbol: "MakeMain",
+    },
+    Fixture {
+        extensions: &["proto"],
+        source: "message ProtoMain {\n  string id = 1;\n}\n",
+        symbol: "ProtoMain",
+    },
+    Fixture {
+        extensions: &["pas", "pp", "dpr"],
+        source: "procedure PascalMain;\nbegin\nend;\n",
+        symbol: "PascalMain",
+    },
+    Fixture {
+        extensions: &["graphql", "gql"],
+        source: "type GraphqlMain {\n  id: ID\n}\n",
+        symbol: "GraphqlMain",
+    },
 ];
 
 fn write_sources(root: &Path) -> Vec<(String, &'static str)> {
@@ -236,6 +271,7 @@ const SHARED_EXTENSIONS: &[&str] = &[
     "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java", "c", "h",
     "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts", "rb", "rake", "gemspec",
     "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy", "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs",
+    "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql",
 ];
 const SHARED_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
 
@@ -357,4 +393,35 @@ fn text_documents_become_doc_sections_found_by_kind_doc_and_readable() {
     read.target = id;
     let page = session.query(&handle, &read, &mut VecSink::new()).expect("read");
     assert!(page.records[0].source_utf8.as_deref().is_some_and(|text| text.contains("Run the thing.")));
+}
+
+/// Extensionless infra basenames and the symbol each fixture declares. Same list as `index/extract.rs`.
+const INFRA_BASENAMES: &[(&str, &str, &str)] = &[
+    ("Makefile", "MakeBase: deps\n\t@true\n", "MakeBase"),
+    ("GNUmakefile", "GnuBase:\n\t@true\n", "GnuBase"),
+    ("Dockerfile", "FROM alpine AS DockerBase\nRUN true\n", "DockerBase"),
+    ("Containerfile", "FROM alpine AS ContainerBase\nRUN true\n", "ContainerBase"),
+];
+
+#[test]
+fn infra_basenames_are_outlined_and_labelled_guess() {
+    let root = tempfile::tempdir().expect("temp");
+    std::fs::create_dir_all(root.path().join("nested")).expect("dir");
+    let mut paths = Vec::new();
+    for (basename, source, symbol) in INFRA_BASENAMES {
+        for path in [basename.to_string(), format!("nested/{}", basename.to_ascii_lowercase())] {
+            std::fs::write(root.path().join(&path), source).expect("source");
+            paths.push((path, *symbol));
+        }
+    }
+    std::fs::write(root.path().join("Makefile.bak"), "BakHidden:\n\t@true\n").expect("bak");
+    let mut session = open(root.path(), SelectionPolicy::from_texts(&RuleTexts::default()));
+    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    for (path, symbol) in &paths {
+        let outline = session.map(&handle, &format!("m:{path}"), &mut VecSink::new()).expect("outline");
+        let record = outline.records.iter().find(|item| item.id == format!("s:{path}#{symbol}")).unwrap_or_else(|| panic!("{path} has no {symbol}"));
+        assert_eq!(record.confidence.as_deref(), Some("guess"), "{path}");
+    }
+    let hidden = session.find(&handle, "BakHidden", &mut VecSink::new()).expect("opaque find");
+    assert!(hidden.records.is_empty());
 }
