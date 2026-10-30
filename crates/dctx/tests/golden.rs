@@ -50,7 +50,7 @@ fn five_verbs_project_the_golden_symbol() {
     assert!(map.records[0].source_utf8.is_none());
     assert_eq!(map.precision.coverage, "structural");
     assert_eq!(map.precision.completion, "complete");
-    assert_eq!(map.precision.parser, "dctx-structural/1");
+    assert_eq!(map.precision.parser, "dctx-structural/2");
     assert_eq!(map.freshness.mode, FreshnessMode::ImmutableSnapshot.as_str());
     assert_eq!(map.freshness.state, "verified");
     assert_eq!(map.freshness.age_s, 0);
@@ -58,7 +58,7 @@ fn five_verbs_project_the_golden_symbol() {
     let text = std::str::from_utf8(sink.as_bytes()).expect("utf8");
     assert!(text.contains("\"place\":\"fixture\""));
     assert!(text.contains("\"coverage\":\"structural\""));
-    assert!(text.contains("\"parser\":\"dctx-structural/1\""));
+    assert!(text.contains("\"parser\":\"dctx-structural/2\""));
     assert!(!text.contains("\"vcs\""));
     assert!(!text.contains("syntax"));
 

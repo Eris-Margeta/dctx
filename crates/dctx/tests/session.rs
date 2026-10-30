@@ -244,3 +244,86 @@ fn ping_only() -> MemorySource {
     source.insert_file("src/lib.rs", PING, 0).expect("lib");
     source
 }
+
+#[test]
+fn a_segment_written_before_the_v2_parser_id_is_rebuilt_not_reused() {
+    let dir = tempfile::tempdir().expect("temp");
+    let cache = dir.path().join("cache");
+    std::fs::create_dir(&cache).expect("dir");
+    let mut session = open_with_cache(markdown_source(b"# Title\n\nSome text.\n"), &cache);
+    let handle = session.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("cold");
+    assert!(!handle.reused());
+    assert_eq!(handle.generation(), 1);
+    let cold_reads = session.content_reads();
+    assert!(cold_reads >= 1);
+    drop(handle);
+    drop(session);
+
+    // An upgraded binary must not reuse a segment an older binary wrote with the structural v1 parser id.
+    let patched = patch_persisted_parser(&cache, dctx::STRUCTURAL_PARSER.as_bytes(), b"dctx-structural/1");
+    assert!(patched, "the persisted segment carries no structural parser id");
+
+    let mut warm = open_with_cache(markdown_source(b"# Title\n\nSome text.\n"), &cache);
+    let handle = warm.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("warm");
+    assert!(!handle.reused());
+    assert_eq!(warm.cached_content_reads(), 0);
+    assert!(warm.content_reads() >= cold_reads);
+    drop(handle);
+    drop(warm);
+
+    // The same segment, left unpatched, must be reused on a warm start so the parser id is the gate.
+    let mut warm2 = open_with_cache(markdown_source(b"# Title\n\nSome text.\n"), &cache);
+    let handle = warm2.snapshot_reusable(&SnapshotRequest::strict(), "/src").expect("warm2");
+    assert!(handle.reused());
+    assert!(warm2.cached_content_reads() >= 1);
+    assert_eq!(warm2.content_reads(), 0);
+}
+
+/// One Markdown file, whose generation keeps the structural parser id on every feature set.
+fn markdown_source(body: &[u8]) -> MemorySource {
+    let mut source = MemorySource::new();
+    source.insert_file("doc.md", body, 9).expect("file");
+    source
+}
+
+/// A session with a cache root and auto-clean disabled, so a warm start can load the retained segment.
+#[allow(clippy::field_reassign_with_default, reason = "Start from the public limit defaults and disable only auto-clean for the regression.")]
+fn open_with_cache(source: MemorySource, cache: &std::path::Path) -> dctx::Session {
+    let mut auto = dctx::AutoCleanConfig::default();
+    auto.enabled = false;
+    dctx::Session::builder(source)
+        .clock(dctx::memory::FixedClock(dctx::Timestamp(0)))
+        .cancellation(Arc::new(CancelFlag::new()))
+        .selection(dctx::SelectionPolicy::from_texts(&dctx::RuleTexts::default()))
+        .ceiling(dctx::HostCeiling::base())
+        .grants(dctx::HostGrants::PermitAll)
+        .storage(StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 })
+        .place("fixture")
+        .view("default")
+        .cache_root(cache, 1)
+        .auto_clean(auto)
+        .build()
+        .expect("session")
+}
+
+/// Rewrites the parser id inside the persisted segment, simulating the bytes an older binary wrote.
+fn patch_persisted_parser(cache: &std::path::Path, from: &[u8], to: &[u8]) -> bool {
+    let entries = std::fs::read_dir(cache.join("objects")).expect("objects");
+    let mut patched = false;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        let Ok(mut bytes) = std::fs::read(&path) else {
+            continue;
+        };
+        if !bytes.starts_with(b"dctxgen1") {
+            continue;
+        }
+        let Some(position) = bytes.windows(from.len()).position(|window| window == from) else {
+            continue;
+        };
+        bytes[position..position + from.len()].copy_from_slice(to);
+        std::fs::write(&path, &bytes).expect("patch");
+        patched = true;
+    }
+    patched
+}

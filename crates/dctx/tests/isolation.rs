@@ -68,7 +68,7 @@ fn missing_clock_is_invalid_and_place_is_the_one_supplied() {
     assert_eq!(caps.cancellation, "checkpoint");
     assert_eq!(caps.features.contains(&"map"), cfg!(feature = "map"));
     assert_eq!(caps.features.contains(&"fs"), cfg!(feature = "fs"));
-    assert!(caps.parsers.contains(&"dctx-structural/1"));
+    assert!(caps.parsers.contains(&"dctx-structural/2"));
     if cfg!(feature = "syntax-rust") {
         assert_eq!(caps.profile, "enhanced");
         assert_eq!(caps.unsafe_boundary, "syn-dependency");

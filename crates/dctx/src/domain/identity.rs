@@ -8,7 +8,7 @@ use dctx_hash::Sha256;
 use super::error::{DctxError, Resource};
 
 /// Parser id recorded on strict structural answers.
-pub const STRUCTURAL_PARSER: &str = "dctx-structural/1";
+pub const STRUCTURAL_PARSER: &str = "dctx-structural/2";
 
 /// Algorithm-tagged object key of `bytes`.
 ///
