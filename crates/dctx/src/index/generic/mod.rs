@@ -10,6 +10,7 @@ mod calls_block;
 mod calls_brace;
 mod calls_infra;
 mod infra;
+pub(super) mod web;
 #[cfg(test)]
 mod tests;
 

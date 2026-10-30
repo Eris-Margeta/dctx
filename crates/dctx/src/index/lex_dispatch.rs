@@ -55,6 +55,8 @@ pub(super) fn lexed(language: &str, path: &str, text: &str) -> (Vec<Symbol>, Vec
         "ruby" => complete_symbols!(dctx_lex_rb, RubyLexer),
         "php" => complete_symbols!(dctx_lex_php, PhpLexer),
         "swift" => complete_symbols!(dctx_lex_swift, SwiftLexer),
+        // Vue, Svelte, Astro and HTML: script blocks through the JS/TS lexer, headings as doc nodes.
+        "web" => super::generic::web::lexed(path, text),
         // Heuristic families without a first-party lexer: records carry confidence `guess`, no references.
         guessed if super::generic::handles(guessed) => {
             let symbols = super::generic::symbols(guessed, text);

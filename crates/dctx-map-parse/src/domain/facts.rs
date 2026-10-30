@@ -79,6 +79,8 @@ pub enum Language {
     Pascal,
     /// GraphQL schemas (`.graphql`, `.gql`).
     Graphql,
+    /// Vue, Svelte, Astro and HTML (`.vue`, `.svelte`, `.astro`, `.html`, `.htm`). Script and heading symbols live in the facade.
+    Web,
     /// No grammar; only a module node is emitted.
     Unknown,
 }
@@ -166,6 +168,11 @@ const EXTENSIONS: &[(&str, Language)] = &[
     ("dpr", Language::Pascal),
     ("graphql", Language::Graphql),
     ("gql", Language::Graphql),
+    ("vue", Language::Web),
+    ("svelte", Language::Web),
+    ("astro", Language::Web),
+    ("html", Language::Web),
+    ("htm", Language::Web),
 ];
 
 /// Ruby basenames accepted by `dctx-lex-rb` (`Dialect::for_path`).
@@ -334,7 +341,7 @@ mod tests {
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
             "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy",
-            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql",
+            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
         let extensions: Vec<&str> = EXTENSIONS.iter().map(|(extension, _)| *extension).collect();

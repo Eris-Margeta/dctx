@@ -71,7 +71,8 @@ impl Parser for PureParser {
             | Language::Docker
             | Language::Proto
             | Language::Pascal
-            | Language::Graphql => fallback(path, source),
+            | Language::Graphql
+            | Language::Web => fallback(path, source),
             Language::Unknown => fallback(path, source),
         }
     }
@@ -116,7 +117,8 @@ impl Parser for TreeSitterParser {
             | Language::Docker
             | Language::Proto
             | Language::Pascal
-            | Language::Graphql => return fallback(path, source),
+            | Language::Graphql
+            | Language::Web => return fallback(path, source),
             Language::Unknown => return fallback(path, source),
             Language::Rust
             | Language::JavaScript
@@ -163,6 +165,7 @@ impl Parser for TreeSitterParser {
             | Language::Proto
             | Language::Pascal
             | Language::Graphql
+            | Language::Web
             | Language::Unknown => {}
         }
         facts.finish()

@@ -117,6 +117,11 @@ const EXTENSIONS: &[(&str, &str)] = &[
     ("dpr", "pascal"),
     ("graphql", "graphql"),
     ("gql", "graphql"),
+    ("vue", "web"),
+    ("svelte", "web"),
+    ("astro", "web"),
+    ("html", "web"),
+    ("htm", "web"),
 ];
 
 /// Duplicate of `dctx-map-parse` `domain::facts::RUBY_BASENAMES`.
@@ -748,6 +753,11 @@ mod tests {
             ("dpr", "pascal"),
             ("graphql", "graphql"),
             ("gql", "graphql"),
+            ("vue", "web"),
+            ("svelte", "web"),
+            ("astro", "web"),
+            ("html", "web"),
+            ("htm", "web"),
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
         assert_eq!(EXTENSIONS, LITERAL_EXTENSIONS);

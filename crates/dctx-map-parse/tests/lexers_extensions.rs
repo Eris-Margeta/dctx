@@ -82,6 +82,11 @@ const SHARED_EXTENSIONS: &[(&str, Language)] = &[
     ("dpr", Language::Pascal),
     ("graphql", Language::Graphql),
     ("gql", Language::Graphql),
+    ("vue", Language::Web),
+    ("svelte", Language::Web),
+    ("astro", Language::Web),
+    ("html", Language::Web),
+    ("htm", Language::Web),
 ];
 
 /// Basenames `dctx-lex-rb` accepts. Same order as `facts::RUBY_BASENAMES`.
@@ -108,7 +113,7 @@ fn for_path_matches_the_shared_literal() {
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
             "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy",
-            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql",
+            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
         ]
     );
     for basename in SHARED_RUBY_BASENAMES {
