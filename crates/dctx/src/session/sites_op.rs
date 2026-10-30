@@ -1,6 +1,6 @@
 //! Call-site lines for a neighbors page. Reads each caller's file once through the same verified read as `read`.
 //! Implements the `sites` field of inbound `calls` records and the caller order: direct callers with more call sites come first.
-//! A file that cannot be read or verified leaves its records without sites, ranked as zero sites.
+//! A file that cannot be read or verified leaves its records without sites, ranked as one site.
 //! Depends on [`crate::index::sites`] for the plan, the scan and the ranking.
 
 use std::collections::HashMap;
@@ -34,7 +34,7 @@ impl Session {
         }
     }
 
-    /// Scans the jobs of `plan`, keeps the first [`sites::MAX_SITES`] lines on each record and returns every record's full call-site count.
+    /// Scans the jobs of `plan`, keeps the first [`sites::MAX_SITES`] lines on each record and returns every record's full call-site count, at least one for a direct caller.
     fn fill_sites(&mut self, generation: &Generation, plan: &sites::SitePlan, records: &mut [AnswerRecord]) -> Vec<usize> {
         let mut counts = vec![0; records.len()];
         let mut files: HashMap<String, Option<Vec<u8>>> = HashMap::new();
@@ -47,12 +47,16 @@ impl Session {
                 };
                 files.insert(job.path.clone(), bytes);
             }
+            // Every direct caller counts as at least one site: a call on its own first line (a one-line function) is not listed.
+            if let Some(count) = counts.get_mut(job.index) {
+                *count = 1;
+            }
             if let Some(Some(bytes)) = files.get(&job.path)
                 && let Some(record) = records.get_mut(job.index)
             {
                 let mut lines = sites::scan(bytes, job, &plan.name);
                 if let Some(count) = counts.get_mut(job.index) {
-                    *count = lines.len();
+                    *count = lines.len().max(1);
                 }
                 lines.truncate(sites::MAX_SITES);
                 record.sites = lines;
