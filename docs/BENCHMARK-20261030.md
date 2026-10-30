@@ -15,7 +15,8 @@ the work is [`GAP-MATRIX-20261030.md`](GAP-MATRIX-20261030.md). Where another to
 
 | Area | Result |
 |---|---|
-| Callers (depth 1) against a tool-independent gold set, 80 targets on 4 corpora | **dctx leads on recall at equal precision**: P 0.993 / R 0.461 (first page), P 0.995 / R 0.706 following up to 5 pages. Trail-Code P 0.986 / R 0.436, graphify P 0.989 / R 0.196. Per corpus, Trail-Code wins ripgrep and trailcode, and dctx wins flask and pocketbase. Before tonight dctx recall was 0. |
+| Task-level questions, October protocol (70 questions) | **Run 5: dctx 136 of 140, Trail-Code 122, graphify 96**, with dctx using 28.5k tokens against Trail-Code's 88.9k. See "Latest" below. |
+| Callers (depth 1) against a tool-independent gold set, 80 targets on 4 corpora | **Run 5: dctx P 0.995 / R 0.851 (first page), R 0.968 following 5 pages.** Run 1 below: dctx P 0.993 / R 0.461 (first page), P 0.995 / R 0.706 following up to 5 pages. Trail-Code P 0.986 / R 0.436, graphify P 0.989 / R 0.196. Per corpus, Trail-Code wins ripgrep and trailcode, and dctx wins flask and pocketbase. Before tonight dctx recall was 0. |
 | Cold index | **dctx fastest on all 6 corpora**: 0.16–1.16 s against 1.17–58.3 s for Trail-Code and 4.5–59 s for graphify. Peak RSS 19–90 MB against 121–1,020 MB and 74–394 MB. |
 | Warm queries (median of 5, including process start) | **dctx fastest** on search, callers and skeleton everywhere: 44–226 ms against 0.98–1.9 s for Trail-Code and 0.38–1.4 s for graphify. graphify's overview is a 7 ms read of a pre-written file. |
 | Answer size | dctx `map hubs` gives the smallest overview on 4 of 6 corpora (Trail-Code on trailcode and docs) (30–652 tokens; Trail-Code 18–2,538; graphify 3,827–11,591). graphify gives the smallest callers and skeleton answers. dctx's skeleton is the largest of the three on ripgrep (1,784 tokens). Before tonight dctx's only overview was a 0.45–2.6 M-token `pack`. |
@@ -24,6 +25,58 @@ the work is [`GAP-MATRIX-20261030.md`](GAP-MATRIX-20261030.md). Where another to
 | Language coverage, mixed corpus (10 languages) | **Symbols: dctx 10 of 10, Trail-Code 7, graphify 5.** **Call edges, run 3: dctx 10 of 10, Trail-Code 7, graphify 5** (run 1: dctx 0). dctx's new outline tier is symbols only, labelled `guess`. Terraform and SQL get symbols only from dctx. |
 | Plain-text docs (.md/.rst/.txt/.adoc corpus) | dctx indexes the corpus into headed sections (0.18 s). graphify's code-only mode produced no index, and Trail-Code indexes no doc nodes. |
 | Privacy canary (git-tracked `.env` files) | Run 3: **clean for all three tools** (DCX-30). Run 1: **dctx still leaked on one path.** `pack`, `find` and `grep` are clean now; before tonight `pack` printed the canary. But an explicit `dctx map read m:.env` returns the file. Trail-Code and graphify leaked nothing. The fix is card DCX-30, which has not landed. |
+
+## Latest: run 5 and task-level re-run 3 (main `a906884`, 30 October, 16:39 and 17:05 UTC)
+
+dctx `a906884` adds four cards on top of run 4. DCX-50 spreads callers over files, makes bare calls skip methods, and ranks data-file keys below code. DCX-51 puts exported declarations first in outlines, gives read sites for config keys, adds line numbers to find, and ranks exact-word concepts first. DCX-52 orders callers by call-site count and fits pages to the budget. DCX-53 adds deeper Scala, Zig, Lua, Elixir and OCaml symbols. All 36 landed checks passed together on build-host before the run. The binary's sha256 starts with `76d8e9b59821`. Raw results are in `research/bench-3way-20261030/results/run5-a906884/` and `research/bench-3way-20261030/tasks/results/run3-a906884/`.
+
+**Task-level protocol** (70 questions, 354 gold facts; generator, mapping and scorer unchanged):
+
+| Tool | Points /140 | Gold facts /354 | Tokens | Facts per 1k tokens |
+|---|---|---|---|---|
+| dctx `a906884` | **136** (re-run 2: 102) | **342** (243) | **28,472** | **12.0** |
+| Trail-Code 0.28.0 | 122 | 312 | 88,923 | 3.51 |
+| graphify 0.9.97, code-only | 96 | 238 | 197,203 | 1.21 |
+
+**dctx now wins the task-level test.** It scores 14 points more than Trail-Code with a third of Trail-Code's tokens. By question type, out of 14:
+
+| Type | dctx | Trail-Code | graphify |
+|---|---|---|---|
+| definition and callers | **14** | 10 | 10 |
+| impact | **14** | 13 | 12 |
+| outline | **14** | **14** | 12 |
+| config key | **14** | **14** | 6 |
+| exports | **14** | **14** | **14** |
+| source | **14** | 12 | 0 |
+| callees | **10** | 8 | 8 |
+| overview | **14** | 13 | 11 |
+| collision | **14** | 12 | 13 |
+| concept | **14** | 12 | 10 |
+
+dctx leads or ties on every type. The 4 points it still loses are all callees questions: ripgrep, pocketbase, django and core lose 1 each. In the three public corpora every missing fact is a call that the index could not resolve: a receiver method (`line_terminator`, `lookup_allowed`), a builtin (`callable`) or an external package (`Validate`). The core rows are sanitized. Card DCX-54 lists these calls.
+
+**Three-way run 5** (the same harness as runs 1-4):
+
+| Callers P / R (first page) | Run 4 | Run 5 | Trail-Code | graphify |
+|---|---|---|---|---|
+| flask | 1.000 / 0.977 | 1.000 / 0.977 | 0.962 / 0.328 | 0.933 / 0.195 |
+| ripgrep | 0.990 / 0.527 | 0.990 / 0.801 | 0.987 / 0.327 | 1.000 / 0.032 |
+| pocketbase | 1.000 / 0.815 | 1.000 / 0.842 | 1.000 / 0.099 | 1.000 / 0.383 |
+| trailcode | 0.991 / 0.738 | 0.992 / 0.852 | 0.989 / **0.902** | 1.000 / 0.215 |
+| all | 0.995 / 0.725 | **0.995 / 0.851** | 0.986 / 0.436 | 0.989 / 0.196 |
+
+Following up to 5 pages, dctx reaches P 0.996 / R 0.968 (run 4: 0.982; the site-count order moves some callers past page 5). Trail-Code still wins the trailcode corpus on page 1.
+
+The rest of run 5, against the same Trail-Code and graphify runs:
+- Cold index: dctx 0.13-1.09 s, Trail-Code 1.42-55.5 s, graphify 4.3-61.5 s.
+- Peak memory: dctx 19-90 MB, Trail-Code 121-1,015 MB, graphify 74-393 MB.
+- Warm search, callers and skeleton: dctx 43-195 ms, Trail-Code 0.97-2.0 s, graphify 0.41-2.1 s.
+- No tool leaked the canary.
+- Network: dctx and graphify made 0 attempts. Trail-Code made 1 blocked connect when `DO_NOT_TRACK` was unset.
+
+Call-edge coverage on the mixed corpus is **8 of 10** by the probe; Trail-Code has 7 and graphify 5. The probe samples the first 25 symbols of the six largest files per language. It now follows every skeleton page, so its symbol counts are comparable with Trail-Code's full listing. Two languages miss for reasons outside the call resolver:
+- OCaml: the first 25 symbols all come from `cmdliner.mli`, an interface file with no bodies. On `cmdliner_arg.ml` itself, `str_of_pp` lists 3 callers with their call lines. Card DCX-57 makes an interface declaration answer for its definition.
+- Shell: the first 25 symbols are bats `@test` blocks in `test/bats.bats`, which call external commands only.
 
 ## Task-level questions: the October protocol, re-run on 30 October
 
