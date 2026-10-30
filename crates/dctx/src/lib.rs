@@ -28,7 +28,7 @@ pub use domain::{
     CacheReport, Capabilities,
     Direction, DctxError, ErrorCode, Freshness, FreshnessMode, GcRequest, HostGrants, IdentityOutcome, MapRequest,
     OperationLimits, PackReport, PackRequest, Precision, PurgeRequest, PurgeScope, Resource, RuleSources, SegmentInfo,
-    SnapshotRequest, VecSink, Verb, REQUEST_VERSION, STRUCTURAL_PARSER,
+    SnapshotRequest, VecSink, Verb, parse_source_ceiling, source_ceiling, REQUEST_VERSION, SOURCE_ENV, STRUCTURAL_PARSER,
 };
 pub use plugins::{Boundary, HookEffect, HookWarning, PluginHost};
 pub use ports::{Cache, Cancellation, Clock, FactStore, Source};

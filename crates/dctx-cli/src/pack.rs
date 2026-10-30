@@ -172,7 +172,7 @@ fn source_page(plan: &Plan) -> Result<(Vec<u8>, u64, String), String> {
         dctx_pack::ScanOptions {
             policy: &policy,
             debug_ignored: plan.filters.debug_ignored,
-            limits: facade_scan_limits(),
+            limits: facade_scan_limits()?,
         },
     )
     .map_err(|error| error.to_string())?;
@@ -287,14 +287,14 @@ impl<S: Source> Source for NarrowedSource<'_, S> {
     }
 }
 
-/// Safety caps from `crates/dctx/src/domain/limits.rs`. `resolve_scan` is crate-private.
-fn facade_scan_limits() -> PackLimits {
-    PackLimits {
+/// Safety caps from `crates/dctx/src/domain/limits.rs`. `resolve_scan` is crate-private; the source cap follows `DCTX_MAX_SOURCE_BYTES`.
+fn facade_scan_limits() -> Result<PackLimits, String> {
+    Ok(PackLimits {
         max_entries: 100_000,
         max_depth: 256,
         max_file_bytes: 8 * 1024 * 1024,
-        max_source_bytes: 64 * 1024 * 1024,
-    }
+        max_source_bytes: dctx::source_ceiling().map_err(|error| error.to_string())?,
+    })
 }
 
 fn emit(destination: &Destination, body: &[u8], files: u64, version: &str) -> Result<PackOutcome, String> {

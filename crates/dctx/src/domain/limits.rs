@@ -8,6 +8,7 @@ use dctx_core::budget::{byte_ceiling, estimate_tokens};
 use dctx_template::{BudgetPlan, HostCeiling};
 
 use super::error::{DctxError, Resource};
+use super::source_ceiling::source_ceiling;
 use super::request::Verb;
 
 /// Most directory levels one snapshot will walk when the caller sets no depth.
@@ -16,8 +17,6 @@ pub(crate) const SAFETY_DEPTH: u64 = 256;
 pub(crate) const SAFETY_ENTRIES: u64 = 100_000;
 /// Most bytes read from one file.
 pub(crate) const SAFETY_FILE: u64 = 8 * 1024 * 1024;
-/// Most content bytes read from one snapshot.
-pub(crate) const SAFETY_SOURCE: u64 = 64 * 1024 * 1024;
 /// Read token budget when the caller sets none. Equal to the verb hard cap.
 /// `floor(7 * 2000 / 2)` is 7,000 bytes, enough for a typical module page (~5 KB encoded).
 /// The old 500-token default admitted 1,750 bytes and dropped that single record.
@@ -273,7 +272,7 @@ fn choose(requested: Option<u64>, default: u64, hard: u64, what: &'static str) -
     }
 }
 
-/// Snapshot walk caps. `None` becomes the safety cap. A value above the safety cap is refused.
+/// Snapshot walk caps. `None` becomes the safety cap; the source cap is 1 GiB or `DCTX_MAX_SOURCE_BYTES`. A value above the safety cap is refused.
 pub(crate) struct ScanLimits {
     /// Entry cap, including directories.
     pub entries: u64,
@@ -290,7 +289,7 @@ pub(crate) fn resolve_scan(limits: &OperationLimits) -> Result<ScanLimits, DctxE
         entries: under(limits.work_units, SAFETY_ENTRIES, "work")?,
         depth: under(limits.depth.map(u64::from), SAFETY_DEPTH, "depth")?,
         file_bytes: under(limits.parse_bytes, SAFETY_FILE, "file")?,
-        source_bytes: under(limits.source_bytes, SAFETY_SOURCE, "source")?,
+        source_bytes: under(limits.source_bytes, source_ceiling()?, "source")?,
     })
 }
 
@@ -373,6 +372,17 @@ mod tests {
         assert_eq!(resolve_scan(&limits).expect("narrow").entries, 4);
         limits.work_units = Some(0);
         assert!(resolve_scan(&limits).is_err());
+    }
+
+    #[test]
+    fn source_cap_defaults_to_the_ceiling_and_refuses_a_raised_request() {
+        let ceiling = super::source_ceiling().expect("ceiling");
+        let mut limits = OperationLimits::default();
+        assert_eq!(resolve_scan(&limits).expect("default").source_bytes, ceiling);
+        limits.source_bytes = Some(ceiling + 1);
+        assert!(resolve_scan(&limits).is_err());
+        limits.source_bytes = Some(1);
+        assert_eq!(resolve_scan(&limits).expect("narrow").source_bytes, 1);
     }
 }
 

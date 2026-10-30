@@ -38,6 +38,7 @@ pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read|
   --meta                  Restore the snapshot digest and generation in the text header and the snapshot, generation and age_s JSON fields.
                           Without it the answer bytes do not change across unrelated edits or time.
   --profile               Stderr stage timings and the five slowest files. DCTX_PROFILE=1 is the same switch.
+  DCTX_MAX_SOURCE_BYTES   Env: total source bytes one scan may read, 1..17179869184 (default 1073741824 = 1 GiB).
   --budget TOKENS         Output tokens, 1..2000 (explain max: 1000).
                           Read with no --budget uses the 2,000-token hard cap.
   --depth N               Map: 1..3; neighbors: 1..4. Explain and read take no depth.
@@ -273,6 +274,7 @@ mod tests {
         assert!(options(&["find", "--meta", "kept"]).expect("meta").meta);
         assert!(!options(&["find", "kept"]).expect("plain").meta);
         assert!(HELP.contains("DCTX_PROFILE=1"));
+        assert!(HELP.contains("DCTX_MAX_SOURCE_BYTES"));
         let grepped = options(&["grep", "NEEDLE", "-i", "--in", "src"]).expect("grep");
         assert!(grepped.grep && grepped.ignore_case);
         assert_eq!(grepped.request.target, "NEEDLE");

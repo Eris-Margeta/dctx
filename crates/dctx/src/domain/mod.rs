@@ -14,6 +14,7 @@ mod report;
 mod request;
 mod rules;
 mod sink;
+mod source_ceiling;
 mod wire;
 
 pub use answer::{Answer, AnswerRecord, Freshness, IdentityOutcome, Precision};
@@ -21,6 +22,7 @@ pub use capabilities::Capabilities;
 pub use error::{DctxError, ErrorCode, Resource};
 pub use identity::{object_key, STRUCTURAL_PARSER};
 pub use limits::OperationLimits;
+pub use source_ceiling::{parse_source_ceiling, source_ceiling, SOURCE_ENV};
 pub use policy::{HostGrants, PolicyView};
 pub use rules::RuleSources;
 pub use report::{
