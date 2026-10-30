@@ -1,13 +1,22 @@
 //! Brace-family declarations: Scala, Dart, Zig, Solidity, Gleam and Groovy.
 //! A small keyword table per language picks `type` and `fn` declarations from lines the masked source shows at file level
-//! or directly inside a type body. Nesting follows brace depth, so a function in a class is `Class::name`.
-//! Heuristic by design: one declaration per line, bodies are never entered.
+//! or directly inside a type body; [`decl`] reads one line, [`data`] adds constants, variables, fields and enum values.
+//! Nesting follows brace depth, so a function in a class is `Class::name`, an enum value `Enum::value`, and (Scala only) a
+//! def inside a def `outer::inner`. Heuristic by design: one declaration per line, other bodies are never entered.
 
-use super::{ident_at, is_denied, mask, signature_of, skip_modifiers, to_symbols, Decl, Syntax};
+mod data;
+mod decl;
+#[cfg(test)]
+mod tests;
+
+use super::{ident_at, mask, signature_of, to_symbols, Decl, Syntax};
 use crate::index::extract::Symbol;
+use decl::{declarations, shape, Inside, Scope};
 
 /// How one language declares things.
 struct Lang {
+    /// The language tag this table belongs to.
+    tag: &'static str,
     /// Comment and string syntax.
     syntax: Syntax,
     /// Words that may precede a declaration keyword.
@@ -27,9 +36,10 @@ struct Lang {
 const SLASHES: Syntax = Syntax { line: &["//"], block: Some(("/*", "*/")), nested: false, quotes: b"\"'", triple: false };
 
 const SCALA: Lang = Lang {
+    tag: "scala",
     syntax: Syntax { nested: true, triple: true, ..SLASHES },
     modifiers: &["private", "protected", "override", "final", "abstract", "sealed", "implicit", "lazy", "case", "open", "inline", "transparent", "opaque", "infix"],
-    types: &["class", "object", "trait", "enum"],
+    types: &["class", "object", "trait", "enum", "type"],
     fns: &["def"],
     paren: false,
     typed: false,
@@ -37,9 +47,10 @@ const SCALA: Lang = Lang {
 };
 
 const DART: Lang = Lang {
+    tag: "dart",
     syntax: Syntax { nested: true, triple: true, ..SLASHES },
-    modifiers: &["abstract", "base", "final", "sealed", "interface", "static", "external", "const", "late"],
-    types: &["class", "mixin", "enum"],
+    modifiers: &["abstract", "base", "final", "sealed", "interface", "static", "external", "const", "late", "factory"],
+    types: &["class", "mixin", "enum", "extension"],
     fns: &[],
     paren: true,
     typed: true,
@@ -47,6 +58,7 @@ const DART: Lang = Lang {
 };
 
 const ZIG: Lang = Lang {
+    tag: "zig",
     syntax: Syntax { line: &["//", "\\\\"], block: None, quotes: b"\"'", ..SLASHES },
     modifiers: &["pub", "export", "inline", "noinline", "extern", "comptime", "threadlocal"],
     types: &[],
@@ -57,16 +69,18 @@ const ZIG: Lang = Lang {
 };
 
 const SOLIDITY: Lang = Lang {
+    tag: "solidity",
     syntax: SLASHES,
     modifiers: &["abstract"],
-    types: &["contract", "interface", "library"],
-    fns: &["function", "event", "modifier"],
+    types: &["contract", "interface", "library", "struct", "enum", "type"],
+    fns: &["function", "event", "modifier", "error"],
     paren: false,
     typed: false,
     const_type: false,
 };
 
 const GLEAM: Lang = Lang {
+    tag: "gleam",
     syntax: Syntax { line: &["//"], block: None, quotes: b"\"", ..SLASHES },
     modifiers: &["pub", "opaque"],
     types: &["type"],
@@ -77,8 +91,9 @@ const GLEAM: Lang = Lang {
 };
 
 const GROOVY: Lang = Lang {
+    tag: "groovy",
     syntax: Syntax { line: &["//", "#!"], triple: true, ..SLASHES },
-    modifiers: &["public", "private", "protected", "static", "final", "abstract", "synchronized"],
+    modifiers: &["public", "private", "protected", "static", "final", "abstract", "synchronized", "transient", "volatile"],
     types: &["class", "interface", "trait", "enum"],
     fns: &["def"],
     paren: true,
@@ -115,6 +130,19 @@ struct Frame {
     container: Option<String>,
     /// Index of the declaration whose end line this brace sets.
     decl: Option<usize>,
+    /// What kind of body this is, for the declarations directly inside it.
+    inside: Inside,
+}
+
+/// A declaration header that runs over several lines because a parenthesis is still open (every language but Scala).
+#[derive(Default)]
+struct Parens {
+    /// Parentheses and brackets opened and not yet closed.
+    depth: usize,
+    /// The declaration whose header this is, if the line that opened it declared one.
+    decl: Option<usize>,
+    /// Lines the header has lasted; a stray `(` must not hide the rest of the file.
+    lines: u32,
 }
 
 /// A Scala declaration whose parameter list or expression body runs on past its first line (Scala only).
@@ -137,6 +165,7 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
         return Vec::new();
     };
     let scala = tag == "scala";
+    let solidity = tag == "solidity";
     let masked = mask(text, &lang.syntax);
     let mut decls: Vec<Decl> = Vec::new();
     let mut stack: Vec<Frame> = Vec::new();
@@ -144,6 +173,10 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
     let mut pending: Option<usize> = None;
     // Scala: a declaration still reading its multi-line parameter list or its brace-less expression body.
     let mut cont: Option<Cont> = None;
+    // Other languages: a parameter list that runs over several lines.
+    let mut parens = Parens::default();
+    // Solidity: lines of a function header (modifiers, `returns`) read so far while waiting for its `{` or `;`.
+    let mut header_lines = 0u32;
     for (index, (shown, original)) in masked.split('\n').zip(text.split('\n')).enumerate() {
         let number = u32::try_from(index + 1).unwrap_or(u32::MAX);
         let line = shown.trim();
@@ -155,33 +188,54 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
         if cont.as_ref().is_some_and(|c| c.body && c.depth == 0 && stack.len() <= c.base && indent <= c.indent) {
             cont = None;
         }
-        if cont.is_none() && !(line.starts_with('{') || (scala && continues_header(line))) {
+        let in_parens = parens.depth > 0;
+        let in_header = in_parens || (solidity && header_lines < 12 && !line.starts_with('{') && pending.is_some_and(|at| decls[at].kind == "fn"));
+        header_lines = if in_header && !in_parens { header_lines + 1 } else { 0 };
+        if cont.is_none() && !in_header && !(line.starts_with('{') || (scala && continues_header(line))) {
             pending = None;
         }
         let mut open = pending.take();
+        if in_parens {
+            open = parens.decl;
+        }
         if let Some(c) = cont.as_ref().filter(|c| !c.body) {
             open = Some(c.decl);
         }
-        let in_scope = stack.last().is_none_or(|frame| frame.container.is_some());
-        if open.is_none()
-            && cont.is_none()
-            && in_scope
-            && let Some((name, kind)) = declaration(lang, line)
-        {
-            let owner = stack.last().and_then(|frame| frame.container.as_deref());
-            let name = match owner {
-                Some(owner) => format!("{owner}::{name}"),
-                None => name,
-            };
-            decls.push(Decl { name, kind, lines: [number, number], signature: signature_of(original) });
-            open = Some(decls.len() - 1);
+        if in_header && let Some(at) = open {
+            decls[at].lines[1] = number;
+        }
+        let top = stack.last();
+        let in_scope = top.is_none_or(|frame| frame.container.is_some());
+        if open.is_none() && cont.is_none() && !in_header && in_scope {
+            let scope = Scope { inside: top.map_or(Inside::File, |frame| frame.inside), owner: top.and_then(|frame| frame.container.as_deref()) };
+            for (name, kind) in declarations(lang, line, original, &scope) {
+                let name = match scope.owner {
+                    Some(owner) => format!("{owner}::{name}"),
+                    None => name,
+                };
+                decls.push(Decl { name, kind, lines: [number, number], signature: signature_of(original) });
+                open = Some(decls.len() - 1);
+            }
+            // A type whose body is on its own line (`enum E { A, B }`) lists its members right here.
+            if let Some(at) = open.filter(|&at| decls[at].kind == "type") {
+                let parent = decls[at].name.clone();
+                for (member, kind) in data::inline_members(lang, line, shape(lang, line)) {
+                    decls.push(Decl { name: format!("{parent}::{member}"), kind, lines: [number, number], signature: signature_of(original) });
+                }
+            }
         }
         for byte in shown.bytes() {
             match byte {
+                b'(' | b'[' if !scala => parens.depth += 1,
+                b')' | b']' if !scala => parens.depth = parens.depth.saturating_sub(1),
                 b'{' => {
-                    let decl = open.take();
-                    let container = decl.filter(|&at| decls[at].kind == "type").map(|at| decls[at].name.clone());
-                    stack.push(Frame { container, decl });
+                    let decl = if parens.depth == 0 { open.take() } else { None };
+                    let (container, inside) = match decl {
+                        Some(at) if decls[at].kind == "type" => (Some(decls[at].name.clone()), shape(lang, &decls[at].signature)),
+                        Some(at) if scala && decls[at].kind == "fn" => (Some(decls[at].name.clone()), Inside::Body),
+                        _ => (None, Inside::File),
+                    };
+                    stack.push(Frame { container, decl, inside });
                 }
                 b'}' => {
                     if let Some(frame) = stack.pop()
@@ -191,6 +245,18 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
                     }
                 }
                 _ => {}
+            }
+        }
+        if !scala {
+            if parens.depth > 0 {
+                parens.lines += 1;
+                if parens.lines > 120 {
+                    parens.depth = 0;
+                }
+                parens.decl = open;
+            } else {
+                parens.lines = 0;
+                parens.decl = None;
             }
         }
         if scala {
@@ -247,94 +313,4 @@ fn scan_parens(line: &str, mut depth: usize) -> (usize, bool) {
         }
     }
     (depth, assigned)
-}
-
-/// Name and wire kind when `line` (masked, trimmed) declares something in `lang`.
-fn declaration(lang: &Lang, line: &str) -> Option<(String, &'static str)> {
-    let rest = skip_modifiers(line, lang.modifiers);
-    if lang.typed
-        && ident_at(rest).is_none_or(|word| !lang.types.contains(&word))
-        && let Some(name) = typed_function(rest)
-    {
-        return Some((name, "fn"));
-    }
-    let word = ident_at(rest)?;
-    let after = &rest[word.len()..];
-    if lang.types.contains(&word) {
-        return name_after(after, false).map(|name| (name, "type"));
-    }
-    if lang.fns.contains(&word) {
-        return name_after(after, lang.paren).map(|name| (name, "fn"));
-    }
-    if lang.const_type && word == "const" {
-        return const_type(after).map(|name| (name, "type"));
-    }
-    None
-}
-
-/// The name that follows a declaration keyword. `paren` requires `(` right after it.
-fn name_after(after: &str, paren: bool) -> Option<String> {
-    if !after.starts_with(char::is_whitespace) {
-        return None;
-    }
-    let mut rest = after.trim_start();
-    // `mixin class Name`: the second keyword is part of the declaration.
-    if ident_at(rest) == Some("class") {
-        rest = rest["class".len()..].trim_start();
-    }
-    let name = ident_at(rest).filter(|name| !is_denied(name))?;
-    (!paren || rest[name.len()..].trim_start().starts_with('(')).then(|| name.to_string())
-}
-
-/// Zig `const Name = [packed|extern] struct|enum|union|opaque`.
-fn const_type(after: &str) -> Option<String> {
-    let rest = after.trim_start();
-    let name = ident_at(rest).filter(|name| !is_denied(name))?;
-    let mut value = rest[name.len()..].trim_start().strip_prefix('=')?.trim_start();
-    while let Some(word) = ident_at(value).filter(|word| matches!(*word, "packed" | "extern")) {
-        value = value[word.len()..].trim_start();
-    }
-    let kind = ident_at(value)?;
-    matches!(kind, "struct" | "enum" | "union" | "opaque").then(|| name.to_string())
-}
-
-/// Dart `Type name(` or `Type<T> name<U>(`: a return type, a name and a parameter list.
-fn typed_function(rest: &str) -> Option<String> {
-    let first = ident_at(rest)?;
-    if is_denied(first) {
-        return None;
-    }
-    let mut after = &rest[first.len()..];
-    after = after.strip_prefix('.').and_then(ident_at).map_or(after, |segment| &after[1 + segment.len()..]);
-    if after.starts_with('<') {
-        let close = balanced_angle(after)?;
-        after = &after[close..];
-    }
-    after = after.strip_prefix('?').unwrap_or(after);
-    if !after.starts_with(char::is_whitespace) {
-        return None;
-    }
-    let rest = after.trim_start();
-    let name = ident_at(rest).filter(|name| !is_denied(name))?;
-    let tail = rest[name.len()..].trim_start();
-    tail.starts_with(['(', '<']).then(|| name.to_string())
-}
-
-/// Offset just past the `>` that closes the `<` at the start of `text`, on one line.
-fn balanced_angle(text: &str) -> Option<usize> {
-    let mut depth = 0usize;
-    for (offset, c) in text.char_indices() {
-        match c {
-            '<' => depth += 1,
-            '>' => {
-                depth = depth.checked_sub(1)?;
-                if depth == 0 {
-                    return Some(offset + 1);
-                }
-            }
-            c if c.is_alphanumeric() || matches!(c, '_' | '$' | '?' | ',' | ' ' | '.') => {}
-            _ => return None,
-        }
-    }
-    None
 }

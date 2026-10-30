@@ -23,7 +23,7 @@ fn every_brace_language_finds_its_types_and_functions() {
     let dart = "class Greeter {\n  String greet(String n) {\n    if (n.isEmpty) { return \"x\"; }\n    return \"hi\";\n  }\n}\nint main() {\n  return 0;\n}\nFuture<void> later() async {}\n";
     assert_eq!(named("dart", dart), [pair("Greeter", "type"), pair("Greeter::greet", "fn"), pair("main", "fn"), pair("later", "fn")]);
     let zig = "const std = @import(\"std\");\npub fn main() void {\n    helper();\n}\nfn helper() void {\n    while (true) {}\n}\nconst Point = struct { x: i32 };\n";
-    assert_eq!(named("zig", zig), [pair("main", "fn"), pair("helper", "fn"), pair("Point", "type")]);
+    assert_eq!(named("zig", zig), [pair("main", "fn"), pair("helper", "fn"), pair("Point", "type"), pair("Point::x", "field")]);
     let sol = "contract Token {\n    function transfer(address to, uint v) public returns (bool) {\n        return true;\n    }\n    event Sent(address to);\n}\n";
     assert_eq!(named("solidity", sol), [pair("Token", "type"), pair("Token::transfer", "fn"), pair("Token::Sent", "fn")]);
     let gleam = "pub fn main() {\n  helper()\n}\nfn helper() {\n  1\n}\npub type Shape {\n  Circle\n}\n";
@@ -76,7 +76,7 @@ fn comments_and_strings_hide_declarations_and_keep_offsets() {
     let masked = mask(text, &brace::syntax_of("scala").expect("scala"));
     assert_eq!(masked.len(), text.len());
     assert_eq!(masked.matches('\n').count(), text.matches('\n').count());
-    assert_eq!(named("scala", text), [pair("shown", "fn")]);
+    assert_eq!(named("scala", text), [pair("s", "const"), pair("shown", "fn")]);
     let multibyte = "// ünïcode \"quote\ndef ok() = 'é'\n";
     assert_eq!(mask(multibyte, &brace::syntax_of("scala").expect("scala")).len(), multibyte.len());
     assert_eq!(named("scala", multibyte), [pair("ok", "fn")]);
