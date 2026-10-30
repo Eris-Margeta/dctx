@@ -99,8 +99,7 @@ fn lang(tag: &str) -> Option<&'static Lang> {
     }
 }
 
-/// Comment and string syntax of a tag, for the masking tests.
-#[cfg(test)]
+/// Comment and string syntax of a tag, for the masking tests and the call scan.
 pub(super) fn syntax_of(tag: &str) -> Option<Syntax> {
     lang(tag).map(|lang| lang.syntax)
 }

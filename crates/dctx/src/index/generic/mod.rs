@@ -6,6 +6,7 @@
 
 mod block;
 mod brace;
+mod calls_brace;
 mod infra;
 #[cfg(test)]
 mod tests;
@@ -42,6 +43,14 @@ pub(super) fn symbols(language: &str, text: &str) -> Vec<Symbol> {
     }
     if infra::handles(language) {
         return infra::symbols(language, text);
+    }
+    Vec::new()
+}
+
+/// Raw call references of `text` for a language that [`handles`]. Families without call support yield none.
+pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symbol]) -> Vec<super::refs::RawRef> {
+    if brace::handles(language) {
+        return calls_brace::references(language, path, text, symbols);
     }
     Vec::new()
 }

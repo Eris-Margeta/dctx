@@ -56,7 +56,11 @@ pub(super) fn lexed(language: &str, path: &str, text: &str) -> (Vec<Symbol>, Vec
         "php" => complete_symbols!(dctx_lex_php, PhpLexer),
         "swift" => complete_symbols!(dctx_lex_swift, SwiftLexer),
         // Heuristic families without a first-party lexer: records carry confidence `guess`, no references.
-        guessed if super::generic::handles(guessed) => (super::generic::symbols(guessed, text), Vec::new()),
+        guessed if super::generic::handles(guessed) => {
+            let symbols = super::generic::symbols(guessed, text);
+            let refs = super::generic::references(guessed, path, text, &symbols);
+            (symbols, refs)
+        }
         _ => (Vec::new(), Vec::new()),
     }
 }
