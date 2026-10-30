@@ -25,7 +25,19 @@ the work is [`GAP-MATRIX-20261030.md`](GAP-MATRIX-20261030.md). Where another to
 | Plain-text docs (.md/.rst/.txt/.adoc corpus) | dctx indexes the corpus into headed sections (0.18 s). graphify's code-only mode produced no index, and Trail-Code indexes no doc nodes. |
 | Privacy canary (git-tracked `.env` files) | **dctx still leaks on one path.** `pack`, `find` and `grep` are clean now; before tonight `pack` printed the canary. But an explicit `dctx map read m:.env` returns the file. Trail-Code and graphify leaked nothing. The fix is card DCX-30, which has not landed. |
 
-## Tables (final run)
+## Run 2: call edges for the outline tier (main `99da638`, 30 October, 07:24 UTC)
+
+Same harness, corpora and tool versions. The dctx binary's sha256 is `81b35b3eb5112921c4f773b2682c247ec667bfc3487ce0670aa5e3ec5a372d14`. The new commits are DCX-31a (`8859210`, brace family) and DCX-31c (`99da638`, infra family). Raw results are in `research/bench-3way-20261030/results/run2-99da638/`.
+
+| Mixed corpus, ≥1 call edge | Run 1 | Run 2 |
+|---|---|---|
+| dctx | 0 of 10 | **6 of 10** (Dart, Zig, Solidity, Terraform, SQL, shell) |
+| Trail-Code | 7 of 10 | 7 of 10 (no Terraform, SQL or shell) |
+| graphify | 5 of 10 | 5 of 10 |
+
+dctx is the only tool with call edges for Terraform and SQL. Scala still has none on real code, although the fixture passes; that is a follow-up. Lua, Elixir and OCaml call edges are card DCX-31b, still in flight. Cold index (0.13–1.06 s), callers precision and recall, and the canary result are unchanged from run 1. The `map read m:.env` leak remains until DCX-30 lands.
+
+## Tables (run 1)
 
 ### Cold index (median wall s, peak RSS of the largest process, index size)
 
