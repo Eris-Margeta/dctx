@@ -21,9 +21,32 @@ the work is [`GAP-MATRIX-20261030.md`](GAP-MATRIX-20261030.md). Where another to
 | Answer size | dctx `map hubs` gives the smallest overview on 4 of 6 corpora (Trail-Code on trailcode and docs) (30–652 tokens; Trail-Code 18–2,538; graphify 3,827–11,591). graphify gives the smallest callers and skeleton answers. dctx's skeleton is the largest of the three on ripgrep (1,784 tokens). Before tonight dctx's only overview was a 0.45–2.6 M-token `pack`. |
 | Cache-friendliness | dctx and Trail-Code tie. Both are byte-identical across runs, and after an unrelated edit only the overview changes. graphify changed find, skeleton and overview after `update`, and 1 of 6 ripgrep queries was not deterministic. |
 | Network | dctx and graphify made 0 socket attempts in every variant. Trail-Code made 49 blocked connect attempts when `DO_NOT_TRACK` is unset, and 0 with it set. |
-| Language coverage, mixed corpus (10 languages) | **Symbols: dctx 10 of 10, Trail-Code 7, graphify 5.** **Call edges: Trail-Code 7, graphify 5, dctx 0.** dctx's new outline tier is symbols only, labelled `guess`. Terraform and SQL get symbols only from dctx. |
+| Language coverage, mixed corpus (10 languages) | **Symbols: dctx 10 of 10, Trail-Code 7, graphify 5.** **Call edges, run 3: dctx 10 of 10, Trail-Code 7, graphify 5** (run 1: dctx 0). dctx's new outline tier is symbols only, labelled `guess`. Terraform and SQL get symbols only from dctx. |
 | Plain-text docs (.md/.rst/.txt/.adoc corpus) | dctx indexes the corpus into headed sections (0.18 s). graphify's code-only mode produced no index, and Trail-Code indexes no doc nodes. |
-| Privacy canary (git-tracked `.env` files) | **dctx still leaks on one path.** `pack`, `find` and `grep` are clean now; before tonight `pack` printed the canary. But an explicit `dctx map read m:.env` returns the file. Trail-Code and graphify leaked nothing. The fix is card DCX-30, which has not landed. |
+| Privacy canary (git-tracked `.env` files) | Run 3: **clean for all three tools** (DCX-30). Run 1: **dctx still leaked on one path.** `pack`, `find` and `grep` are clean now; before tonight `pack` printed the canary. But an explicit `dctx map read m:.env` returns the file. Trail-Code and graphify leaked nothing. The fix is card DCX-30, which has not landed. |
+
+## Run 3: all outline families with call edges, `.env` leak closed (main `9c578fa`, 30 October, 08:02 UTC)
+
+The dctx binary's sha256 is `72c6a31f0ee807ddd8840c7d8b85c9d1652dcb1001b948fec9de8eabaf277d6d`. New since run 2:
+- DCX-30 `45a2c06`: map mode never reads env-shaped files.
+- DCX-31b `df6ab96`: Lua, Elixir, Julia, R, OCaml and Haskell calls.
+- DCX-31d `9c578fa`: Scala spans and calls.
+- DCX-29 `8ac04e4`: parser id bump, so caches from before call edges are rebuilt.
+
+All 20 card checks passed together on build-host before the run. Raw results are in `research/bench-3way-20261030/results/run3-9c578fa/`.
+
+| | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| dctx: languages with ≥1 call edge (mixed corpus of 10) | 0 | 6 | **10** |
+| Trail-Code | 7 | 7 | 7 |
+| graphify | 5 | 5 | 5 |
+| dctx: canary from a git-tracked `.env` in any output | yes (`map read`) | yes (`map read`) | **no** |
+
+Callers precision and recall on the gold corpora are unchanged (0.993 / 0.461). Cold index stays at 0.13–1.31 s.
+
+**Still behind:**
+- **Symbol depth in the outline tier:** on the mixed corpus's 6 largest files per language, dctx finds 5–25 symbols per language. Trail-Code finds 83–2,559, because its tree-sitter grammars see every member.
+- **Callers recall on ripgrep and trailcode:** 0.25 and 0.33 against Trail-Code's 0.33 and 0.90.
 
 ## Run 2: call edges for the outline tier (main `99da638`, 30 October, 07:24 UTC)
 
