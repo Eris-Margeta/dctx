@@ -49,6 +49,8 @@ pub enum Language {
     Gleam,
     /// Groovy source (`.groovy`) and Gradle build scripts (`.gradle`).
     Groovy,
+    /// Plain-text documents (`.txt`, `.rst`, `.adoc`, `.asciidoc`, `.org`, `.tex`). Headings live in the facade.
+    Text,
     /// No grammar; only a module node is emitted.
     Unknown,
 }
@@ -108,6 +110,12 @@ const EXTENSIONS: &[(&str, Language)] = &[
     ("gleam", Language::Gleam),
     ("groovy", Language::Groovy),
     ("gradle", Language::Groovy),
+    ("txt", Language::Text),
+    ("rst", Language::Text),
+    ("adoc", Language::Text),
+    ("asciidoc", Language::Text),
+    ("org", Language::Text),
+    ("tex", Language::Text),
 ];
 
 /// Ruby basenames accepted by `dctx-lex-rb` (`Dialect::for_path`).
@@ -251,7 +259,8 @@ mod tests {
         assert_eq!(Language::for_path("pkg/app.pyw"), Language::Unknown);
         assert_eq!(Language::for_path("Sources/App.swift"), Language::Swift);
         assert_eq!(Language::for_path("Sources/App.SWIFT"), Language::Swift);
-        assert_eq!(Language::for_path("rs/file.txt"), Language::Unknown);
+        assert_eq!(Language::for_path("rs/file.txt"), Language::Text);
+        assert_eq!(Language::for_path("rs/file.log"), Language::Unknown);
     }
 
     #[test]
@@ -263,7 +272,7 @@ mod tests {
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
             "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy",
-            "gradle",
+            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex",
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
         let extensions: Vec<&str> = EXTENSIONS.iter().map(|(extension, _)| *extension).collect();

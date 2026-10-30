@@ -205,7 +205,7 @@ fn selection_excludes_or_omits_new_languages_before_content_reads() {
 const SHARED_EXTENSIONS: &[&str] = &[
     "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java", "c", "h",
     "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts", "rb", "rake", "gemspec",
-    "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy", "gradle",
+    "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy", "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex",
 ];
 const SHARED_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
 
@@ -221,7 +221,7 @@ fn extension_case_and_ruby_basenames_match_the_shared_literal() {
     // Rust, JavaScript and Markdown have no row in `FIXTURES`. The facade unit
     // test covers those extensions. Every other shared extension must.
     const WITHOUT_SESSION_FIXTURE: &[&str] = &[
-        "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown",
+        "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "txt", "rst", "adoc", "asciidoc", "org", "tex",
     ];
     let root = tempfile::tempdir().expect("temp");
     std::fs::create_dir_all(root.path().join("lower")).expect("dir");
@@ -295,4 +295,36 @@ fn extension_case_and_ruby_basenames_match_the_shared_literal() {
         let found = session.find(&handle, hidden, &mut VecSink::new()).expect("opaque find");
         assert!(found.records.is_empty(), "{hidden}");
     }
+}
+
+#[test]
+fn text_documents_become_doc_sections_found_by_kind_doc_and_readable() {
+    let root = tempfile::tempdir().expect("temp");
+    let files: &[(&str, &str, &str)] = &[
+        ("notes.txt", "PROJECT NOTES\n=============\n\nDeploy Steps\n------------\n\nRun the thing.\n", "Deploy"),
+        ("guide.rst", "Getting Started\n===============\n\nConfiguration\n-------------\n\nMore.\n", "Configuration"),
+        ("manual.adoc", "= Manual Title\n\n== Installation\n\ntext\n", "Installation"),
+        ("todo.org", "* Inbox\n** Buy milk\n* Projects\n", "milk"),
+        ("paper.tex", "\\section{Introduction}\nText.\n\\subsection{Related Work}\nMore.\n", "Related"),
+    ];
+    for (path, source, _) in files {
+        std::fs::write(root.path().join(path), source).expect("source");
+    }
+    let mut session = open(root.path(), SelectionPolicy::from_texts(&RuleTexts::default()));
+    let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
+    for (path, _, word) in files {
+        let mut request = MapRequest::new(Verb::Find);
+        request.query = (*word).to_string();
+        request.kinds = vec!["doc".to_string()];
+        let found = session.query(&handle, &request, &mut VecSink::new()).expect("find");
+        assert!(found.records.iter().any(|record| record.path == *path && record.id.starts_with("d:")), "{path}: {:?}", found.records);
+    }
+    let mut find = MapRequest::new(Verb::Find);
+    find.query = "Deploy".to_string();
+    find.kinds = vec!["doc".to_string()];
+    let id = session.query(&handle, &find, &mut VecSink::new()).expect("find").records[0].id.clone();
+    let mut read = MapRequest::new(Verb::Read);
+    read.target = id;
+    let page = session.query(&handle, &read, &mut VecSink::new()).expect("read");
+    assert!(page.records[0].source_utf8.as_deref().is_some_and(|text| text.contains("Run the thing.")));
 }

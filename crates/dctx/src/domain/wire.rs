@@ -84,6 +84,15 @@ pub fn encode_text(place: &str, answer: &Answer, meta: bool) -> String {
         if answer.verb == Verb::Grep {
             super::append_rows(&mut out, record);
         }
+        // A read carries the node text; the text form prints it after the record line, as the JSON form does.
+        if answer.verb == Verb::Read
+            && let Some(source) = record.source_utf8.as_deref()
+        {
+            out.push_str(source);
+            if !source.ends_with('\n') {
+                out.push('\n');
+            }
+        }
     }
     if answer.verb == Verb::Grep {
         super::append_summary(&mut out, &answer.records);

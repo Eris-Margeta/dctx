@@ -16,6 +16,7 @@ mod refs_names;
 mod refs_tests;
 mod segment;
 mod span_index;
+mod text_docs;
 #[cfg(feature = "syntax-rust")]
 mod syn_extract;
 mod walk;

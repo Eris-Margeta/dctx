@@ -89,6 +89,12 @@ const EXTENSIONS: &[(&str, &str)] = &[
     ("gleam", "gleam"),
     ("groovy", "groovy"),
     ("gradle", "groovy"),
+    ("txt", "text"),
+    ("rst", "rst"),
+    ("adoc", "asciidoc"),
+    ("asciidoc", "asciidoc"),
+    ("org", "org"),
+    ("tex", "tex"),
 ];
 
 /// Duplicate of `dctx-map-parse` `domain::facts::RUBY_BASENAMES`.
@@ -237,6 +243,7 @@ pub(crate) fn extract_structural_refs(path: &str, bytes: &[u8]) -> (Vec<Symbol>,
     match language_of(path) {
         "rust" => (rust_symbols(text), Vec::new()),
         "markdown" => (markdown_symbols(bytes), Vec::new()),
+        document if super::text_docs::handles(document) => (super::text_docs::symbols(document, text), Vec::new()),
         language => super::lex_dispatch::lexed(language, path, text),
     }
 }
@@ -574,7 +581,7 @@ mod tests {
         assert_eq!(script[0].kind, "fn");
         assert_eq!(script[0].summary_source, "sig");
         assert_eq!(extract_structural("blob.bin", b"fn ping() {}\0"), [] as [crate::index::extract::Symbol; 0]);
-        assert_eq!(extract_structural("notes.txt", b"# Fixture\n"), [] as [crate::index::extract::Symbol; 0]);
+        assert_eq!(extract_structural("notes.log", b"# Fixture\n"), [] as [crate::index::extract::Symbol; 0]);
     }
 
     #[test]
@@ -627,6 +634,12 @@ mod tests {
             ("gleam", "gleam"),
             ("groovy", "groovy"),
             ("gradle", "groovy"),
+            ("txt", "text"),
+            ("rst", "rst"),
+            ("adoc", "asciidoc"),
+            ("asciidoc", "asciidoc"),
+            ("org", "org"),
+            ("tex", "tex"),
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
         assert_eq!(EXTENSIONS, LITERAL_EXTENSIONS);

@@ -199,7 +199,7 @@ fn missing(target: &str) -> Collected {
 }
 
 fn admit(text: &TextBlob, node: &IndexedNode, request: &MapRequest) -> bool {
-    if !request.kinds.is_empty() && !request.kinds.iter().any(|kind| kind == &node.kind) {
+    if !request.kinds.is_empty() && !request.kinds.iter().any(|kind| kind == &node.kind || (kind == "doc" && node.letter == b'd')) {
         return false;
     }
     match &request.within {
