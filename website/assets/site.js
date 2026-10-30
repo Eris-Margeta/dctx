@@ -15,6 +15,10 @@
   var lerp = function (a, b, t) { return a + (b - a) * t; };
   var fmt = function (n) { return Math.round(n).toLocaleString('en-US'); };
   var now = function () { return performance.now(); };
+  var mqDark = window.matchMedia('(prefers-color-scheme: dark)');
+  var isDark = function () { var t = root.getAttribute('data-theme'); return t ? t === 'dark' : mqDark.matches; };
+  var INK = function () { return isDark() ? [228, 230, 238] : [17, 19, 24]; };
+  var INKS = function () { return isDark() ? '228,230,238' : '17,19,24'; };
 
   /* ---------- Header: border, progress, mobile menu, nav pill ---------- */
   var header = $('.site-header'), progress = $('.progress');
@@ -268,7 +272,7 @@
       for (k = 0; k < keys.length; k++) {
         var kk = keys[k], arr2 = segs[kk]; if (!arr2.length) continue;
         var eh = (kk >> 5) / 10, ah = (kk & 31) / 24;
-        ctx.strokeStyle = 'rgba(' + Math.round(lerp(17, 106, eh)) + ',' + Math.round(lerp(19, 68, eh)) + ',' + Math.round(lerp(24, 240, eh)) + ',' + ah.toFixed(3) + ')';
+        var ink = INK(); ctx.strokeStyle = 'rgba(' + Math.round(lerp(ink[0], 106, eh)) + ',' + Math.round(lerp(ink[1], 68, eh)) + ',' + Math.round(lerp(ink[2], 240, eh)) + ',' + ah.toFixed(3) + ')';
         ctx.lineWidth = 1 + eh * .8;
         ctx.beginPath();
         for (var j = 0; j < arr2.length; j += 10) { ctx.moveTo(arr2[j], arr2[j + 1]); ctx.lineTo(arr2[j + 2], arr2[j + 3]); ctx.lineTo(arr2[j + 4], arr2[j + 5]); ctx.lineTo(arr2[j + 6], arr2[j + 7]); ctx.lineTo(arr2[j + 8], arr2[j + 9]); }
@@ -397,17 +401,17 @@
       }
       for (var i = 0; i < parts.length; i++) {
         var q = parts[i], wob = Math.sin(time * 0.0006 * q.sp + q.ph) * 4 * idle, wob2 = Math.cos(time * 0.0005 * q.sp + q.ph) * 3 * idle;
-        var x = q.x0 + wob, y = q.y0 + wob2, w = q.w, alpha, col;
+        var x = q.x0 + wob, y = q.y0 + wob2, w = q.w, alpha, col, inkc = INKS();
         if (q.kind === 0) {
           x += Math.cos(q.ang) * 90 * s1; y += Math.sin(q.ang) * 90 * s1;
-          alpha = (1 - s1) * 0.55 * q.shade; col = '17,19,24';
+          alpha = (1 - s1) * 0.55 * q.shade; col = inkc;
         } else if (q.kind === 1) {
-          alpha = lerp(0.42 * q.shade, 0.12, s2) * (1 - 0.5 * s3); col = '17,19,24';
+          alpha = lerp(0.42 * q.shade, 0.12, s2) * (1 - 0.5 * s3); col = inkc;
           w = lerp(q.w, q.w * 0.7, s2);
         } else {
           var stagger = clamp(s3 * 1.35 - (q.idx % 17) * 0.02, 0, 1), e = 1 - Math.pow(1 - stagger, 3);
           x = lerp(x, q.tx, e); y = lerp(y, q.ty, e); w = lerp(q.w, q.tw, e);
-          alpha = lerp(0.42 * q.shade, 1, smooth(0.0, 0.6, s2)); col = s2 > 0.05 ? '106,68,240' : '17,19,24';
+          alpha = lerp(0.42 * q.shade, 1, smooth(0.0, 0.6, s2)); col = s2 > 0.05 ? '106,68,240' : inkc;
           if (s2 > 0.05 && s3 < 0.98) { ctx.fillStyle = 'rgba(106,68,240,' + (0.12 * s2 * (1 - e)) + ')'; ctx.fillRect(x - 3, y - 3, w + 6, 9); }
         }
         if (alpha <= 0.004) continue;
@@ -418,7 +422,7 @@
       if (f && fa > 0) {
         ctx.save(); ctx.globalAlpha = fa; ctx.strokeStyle = '#6a44f0'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
         ctx.strokeRect(f.x + 0.5, f.y + 0.5, f.w, f.h); ctx.setLineDash([]);
-        ctx.fillStyle = '#4e2fc9'; ctx.font = '600 11px ui-monospace, SFMono-Regular, Menlo, monospace';
+        ctx.fillStyle = isDark() ? '#b8a8ff' : '#4e2fc9'; ctx.font = '600 11px ui-monospace, SFMono-Regular, Menlo, monospace';
         ctx.fillText('≤ BUDGET · STABLE ORDER', f.x, f.y - 8);
         ctx.restore();
       }
@@ -556,5 +560,14 @@
       navigator.clipboard.writeText(url).then(function () { say('Copied link to “' + name + '”'); }, fallback);
     });
     tools.appendChild(a); tools.appendChild(b); h.parentNode.appendChild(tools);
+  });
+  /* Theme switch: follows the system until chosen, then remembered on this device. */
+  var tt = document.getElementById('theme-toggle');
+  if (tt) tt.addEventListener('click', function () {
+    var r = document.documentElement, cur = r.getAttribute('data-theme');
+    if (!cur) cur = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    var next = cur === 'dark' ? 'light' : 'dark';
+    r.setAttribute('data-theme', next);
+    try { localStorage.setItem('dctx-theme', next); } catch (e) {}
   });
 })();

@@ -13,7 +13,7 @@
   }
   var mt = document.getElementById('motion-toggle');
   if (mt) {
-    var off = false; try { off = localStorage.getItem('dctx-motion') === 'off'; } catch (e) {}
+    var off = !document.documentElement.classList.contains('motion');
     mt.setAttribute('aria-pressed', String(off));
     mt.addEventListener('click', function () {
       off = !off; mt.setAttribute('aria-pressed', String(off));
@@ -21,4 +21,13 @@
       document.documentElement.classList.toggle('motion', !off);
     });
   }
+  /* Theme switch: follows the system until chosen, then remembered on this device. */
+  var tt = document.getElementById('theme-toggle');
+  if (tt) tt.addEventListener('click', function () {
+    var r = document.documentElement, cur = r.getAttribute('data-theme');
+    if (!cur) cur = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    var next = cur === 'dark' ? 'light' : 'dark';
+    r.setAttribute('data-theme', next);
+    try { localStorage.setItem('dctx-theme', next); } catch (e) {}
+  });
 })();
