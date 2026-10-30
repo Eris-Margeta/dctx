@@ -11,6 +11,7 @@ mod grep_op;
 mod hooks;
 mod hubs_op;
 mod import_op;
+mod path_op;
 mod ledger;
 mod pack_op;
 mod query_op;

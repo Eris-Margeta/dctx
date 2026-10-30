@@ -25,10 +25,14 @@ pub(super) struct Options {
     pub ignore_case: bool,
     /// True for `skeleton`: parsed as a map request, sent to the facade as the skeleton verb.
     pub skeleton: bool,
+    /// Second end of `dctx map path <FROM> <TO>`; the first end is `request.target`. See `path_verb`.
+    pub to: Option<String>,
 }
 pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read|skeleton|grep> <TARGET> [OPTIONS]
        dctx map hubs [--limit N] [--json] [--place PATH] [--budget TOKENS] [--meta]
          Most-called symbols (incoming calls and imports, 1..60 lines, default 20) and per-directory file and symbol counts. No TARGET.
+       dctx map path <FROM> <TO> [--json] [--place PATH] [--budget TOKENS] [--meta]
+         Shortest edge path (calls, imports, contains; either direction; at most 8 hops), one `edge:out|in<TAB>id<TAB>kind<TAB>path` line per hop, or `no path`.
   TARGET                  Required. map accepts a stable id or a place-relative file.
                           skeleton takes a file (or m:<path>) and prints its declaration signatures, no bodies,
                           in source order: id, kind, L<start>-<end>, signature.
@@ -68,6 +72,9 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         return super::hubs::parse(args);
     }
     let skeleton = args.first().map(String::as_str) == Some("skeleton");
+    if args.first().map(String::as_str) == Some("path") {
+        return super::path_verb::parse(args);
+    }
     let verb = match args.first().map(String::as_str) {
         Some("map" | "skeleton") => Verb::Map,
         Some("find") => Verb::Find,
@@ -78,7 +85,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         Some("grep") => Verb::Find,
         _ => {
             return Err(
-                "expected map, find, neighbors, explain, read, skeleton, grep or hubs; try: dctx map --help".into(),
+                "expected map, find, neighbors, explain, read, skeleton, grep, hubs or path; try: dctx map --help".into(),
             )
         }
     };
@@ -224,6 +231,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         grep,
         ignore_case,
         skeleton,
+        to: None,
     })
 }
 fn number<T: std::str::FromStr>(value: &str) -> Result<T, String> {

@@ -178,7 +178,7 @@ fn encode_json(head: &PageHead<'_>, hubs: &[Hub], dirs: &[DirCount]) -> String {
 }
 
 /// Appends `text` as a JSON string.
-fn quote(out: &mut String, text: &str) {
+pub(crate) fn quote(out: &mut String, text: &str) {
     out.push('"');
     for ch in text.chars() {
         match ch {

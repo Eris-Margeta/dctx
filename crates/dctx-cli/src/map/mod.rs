@@ -7,6 +7,7 @@
 mod args;
 mod hubs;
 mod skeleton;
+mod path_verb;
 
 use dctx::{Direction, MapRequest, SnapshotRequest, VecSink, Verb};
 use dctx_map_query::{Direction as QueryDirection, Format, Request, Verb as QueryVerb};
@@ -50,6 +51,9 @@ fn execute_with(
     }
     if !options.hubs {
         options.request.target = prepare_target(options.request.verb, &options.request.target, &options.place)?;
+        if let Some(to) = options.to.take() {
+            options.to = Some(prepare_target(options.request.verb, &to, &options.place)?);
+        }
     }
     let profiling = profile_requested(options.profile);
     let (mut session, key) = open(&options.place)?;
@@ -79,6 +83,9 @@ fn execute_with(
     }
     if options.hubs {
         return hubs::answer(&mut session, &handle, &options);
+    }
+    if options.to.is_some() {
+        return path_verb::answer(&mut session, &handle, &options);
     }
     let mut request = facade_request(&options.request, options.format, options.continuation, options.budget_set);
     request.meta = options.meta;

@@ -6,6 +6,7 @@
 mod extract;
 mod generic;
 pub(crate) mod hubs;
+pub(crate) mod path;
 mod grep;
 mod lex_dispatch;
 pub(crate) mod profile;
