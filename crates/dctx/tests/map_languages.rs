@@ -119,6 +119,36 @@ const FIXTURES: &[Fixture] = &[
         source: "class GroovyMain {\n  def run() {}\n}\n",
         symbol: "GroovyMain",
     },
+    Fixture {
+        extensions: &["ex", "exs"],
+        source: "defmodule ElixirMain do\n  def run(x) do\n    x\n  end\nend\n",
+        symbol: "ElixirMain",
+    },
+    Fixture {
+        extensions: &["lua"],
+        source: "function LuaMain()\n  return 1\nend\n",
+        symbol: "LuaMain",
+    },
+    Fixture {
+        extensions: &["ml", "mli"],
+        source: "let ocaml_main x = x + 1\n",
+        symbol: "ocaml_main",
+    },
+    Fixture {
+        extensions: &["r"],
+        source: "r_main <- function(x) {\n  x\n}\n",
+        symbol: "r_main",
+    },
+    Fixture {
+        extensions: &["jl"],
+        source: "function JuliaMain(x)\n  x\nend\n",
+        symbol: "JuliaMain",
+    },
+    Fixture {
+        extensions: &["hs"],
+        source: "hsMain :: Int -> Int\nhsMain x = x\n",
+        symbol: "hsMain",
+    },
 ];
 
 fn write_sources(root: &Path) -> Vec<(String, &'static str)> {
@@ -205,7 +235,7 @@ fn selection_excludes_or_omits_new_languages_before_content_reads() {
 const SHARED_EXTENSIONS: &[&str] = &[
     "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java", "c", "h",
     "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts", "rb", "rake", "gemspec",
-    "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy", "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex",
+    "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy", "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs",
 ];
 const SHARED_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
 

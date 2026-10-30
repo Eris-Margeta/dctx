@@ -4,6 +4,7 @@
 //! `handles` and a `symbols` function and one dispatch line in [`handles`] and [`symbols`] below.
 //! Consumes authorized UTF-8 from extract; never reads source, never panics on malformed input.
 
+mod block;
 mod brace;
 #[cfg(test)]
 mod tests;
@@ -27,13 +28,16 @@ const SIGNATURE_MAX: usize = 160;
 
 /// True when `language` (a tag of `extract::language_of`) is extracted by a generic family.
 pub(super) fn handles(language: &str) -> bool {
-    brace::handles(language)
+    brace::handles(language) || block::handles(language)
 }
 
 /// Symbols of `text` for a language that [`handles`]. Anything else, and any malformed input, yields none.
 pub(super) fn symbols(language: &str, text: &str) -> Vec<Symbol> {
     if brace::handles(language) {
         return brace::symbols(language, text);
+    }
+    if block::handles(language) {
+        return block::symbols(language, text);
     }
     Vec::new()
 }

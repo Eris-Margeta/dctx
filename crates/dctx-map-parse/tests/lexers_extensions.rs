@@ -60,6 +60,14 @@ const SHARED_EXTENSIONS: &[(&str, Language)] = &[
     ("asciidoc", Language::Text),
     ("org", Language::Text),
     ("tex", Language::Text),
+    ("ex", Language::Elixir),
+    ("exs", Language::Elixir),
+    ("lua", Language::Lua),
+    ("ml", Language::OCaml),
+    ("mli", Language::OCaml),
+    ("r", Language::R),
+    ("jl", Language::Julia),
+    ("hs", Language::Haskell),
 ];
 
 /// Basenames `dctx-lex-rb` accepts. Same order as `facts::RUBY_BASENAMES`.
@@ -86,7 +94,7 @@ fn for_path_matches_the_shared_literal() {
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
             "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy",
-            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex",
+            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs",
         ]
     );
     for basename in SHARED_RUBY_BASENAMES {

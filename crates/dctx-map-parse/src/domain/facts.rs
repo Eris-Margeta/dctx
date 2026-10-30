@@ -51,6 +51,18 @@ pub enum Language {
     Groovy,
     /// Plain-text documents (`.txt`, `.rst`, `.adoc`, `.asciidoc`, `.org`, `.tex`). Headings live in the facade.
     Text,
+    /// Elixir source (`.ex`, `.exs`). Heuristic symbols live in the facade.
+    Elixir,
+    /// Lua source.
+    Lua,
+    /// OCaml source (`.ml`) and interfaces (`.mli`).
+    OCaml,
+    /// R source (`.r`, `.R`).
+    R,
+    /// Julia source.
+    Julia,
+    /// Haskell source.
+    Haskell,
     /// No grammar; only a module node is emitted.
     Unknown,
 }
@@ -116,6 +128,14 @@ const EXTENSIONS: &[(&str, Language)] = &[
     ("asciidoc", Language::Text),
     ("org", Language::Text),
     ("tex", Language::Text),
+    ("ex", Language::Elixir),
+    ("exs", Language::Elixir),
+    ("lua", Language::Lua),
+    ("ml", Language::OCaml),
+    ("mli", Language::OCaml),
+    ("r", Language::R),
+    ("jl", Language::Julia),
+    ("hs", Language::Haskell),
 ];
 
 /// Ruby basenames accepted by `dctx-lex-rb` (`Dialect::for_path`).
@@ -272,7 +292,7 @@ mod tests {
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
             "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy",
-            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex",
+            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs",
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
         let extensions: Vec<&str> = EXTENSIONS.iter().map(|(extension, _)| *extension).collect();
