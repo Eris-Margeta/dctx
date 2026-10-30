@@ -7,6 +7,7 @@
 mod block;
 mod brace;
 mod calls_brace;
+mod calls_infra;
 mod infra;
 #[cfg(test)]
 mod tests;
@@ -51,6 +52,9 @@ pub(super) fn symbols(language: &str, text: &str) -> Vec<Symbol> {
 pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symbol]) -> Vec<super::refs::RawRef> {
     if brace::handles(language) {
         return calls_brace::references(language, path, text, symbols);
+    }
+    if infra::handles(language) {
+        return calls_infra::references(language, path, text, symbols);
     }
     Vec::new()
 }
