@@ -10,7 +10,9 @@ mod generic;
 pub(crate) mod hubs;
 pub(crate) mod path;
 mod grep;
+mod key_rank;
 mod lex_dispatch;
+mod outline_order;
 pub(crate) mod profile;
 mod query;
 mod refs;
@@ -27,6 +29,7 @@ mod syn_extract;
 mod walk;
 
 pub(crate) use grep::{grep_records, text_records};
+pub(crate) use key_rank::{key_shaped, rank as rank_key};
 pub(crate) use query::{collect, Collected};
 pub(crate) use segment::canonical_bytes;
 pub(crate) use walk::{walk_source, WalkArgs};

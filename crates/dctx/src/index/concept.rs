@@ -97,6 +97,17 @@ pub(crate) fn score(terms: &[String], name: &str, summary: &str, path: &str) -> 
     (matched * 2 >= terms.len()).then_some(points * POINT)
 }
 
+/// Score of a name that spells the whole query: below an exact name (3000), above any overlap score.
+pub(crate) const PHRASE: i64 = 2900;
+
+/// True when the words of the query, stop words included, are exactly the words of the name's last segment:
+/// `wsgi app` spells `Flask::wsgi_app`, `check to fields composite pk` spells `_check_to_fields_composite_pk`.
+pub(crate) fn phrase(query: &str, name: &str) -> bool {
+    let leaf = name.rsplit("::").next().unwrap_or(name);
+    let asked = words(query);
+    asked.len() >= 2 && asked == words(leaf)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -120,5 +131,16 @@ mod tests {
         assert_eq!(half, Some(6 * POINT));
         assert_eq!(score(&terms("parse config"), "unrelated", "", ""), None);
         assert_eq!(score(&terms("retry backoff"), "retry-policy", "Requests are retried.", "docs/guide.md"), Some(3 * POINT));
+    }
+
+    #[test]
+    fn a_name_that_spells_the_whole_query_is_a_phrase_match() {
+        assert!(phrase("wsgi app", "Flask::wsgi_app"));
+        assert!(phrase("check to fields composite pk", "Model::_check_to_fields_composite_pk"));
+        assert!(phrase("baseline order", "baselineOrder"));
+        assert!(phrase("prepare internal action", "prepareInternalAction"));
+        assert!(!phrase("wsgi app", "Flask::wsgi_app_factory"));
+        assert!(!phrase("wsgi", "wsgi"));
+        assert!(!phrase("app wsgi", "wsgi_app"));
     }
 }

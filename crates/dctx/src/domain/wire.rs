@@ -83,7 +83,11 @@ pub fn encode_text(place: &str, answer: &Answer, meta: bool) -> String {
         out.push('\t');
         out.push_str(&record.kind);
         out.push('\t');
-        out.push_str(&record.path);
+        if matches!(answer.verb, Verb::Map | Verb::Find) && id_names_path(&record.id, &record.path) {
+            push_lines_text(&mut out, record.lines);
+        } else {
+            out.push_str(&record.path);
+        }
         push_sites_text(&mut out, &record.sites);
         out.push('\n');
         if answer.verb == Verb::Grep {
@@ -109,6 +113,23 @@ pub fn encode_text(place: &str, answer: &Answer, meta: bool) -> String {
         out.push('\n');
     }
     out
+}
+
+/// True when `id` already spells `path` (`s:<path>#…`, `text:<path>:<line>`, `m:<path>`), so a text line can show lines instead.
+fn id_names_path(id: &str, path: &str) -> bool {
+    let Some((_, rest)) = id.split_once(':') else {
+        return false;
+    };
+    !path.is_empty() && rest.strip_prefix(path).is_some_and(|tail| tail.is_empty() || tail.starts_with('#') || tail.starts_with(':'))
+}
+
+/// Appends a record's lines as `L<a>-<b>`, or `L<a>` for one line. A map or find text line carries them in place of the path its id holds.
+fn push_lines_text(out: &mut String, lines: [u32; 2]) {
+    if lines[0] == lines[1] {
+        let _ = write!(out, "L{}", lines[0]);
+    } else {
+        let _ = write!(out, "L{}-{}", lines[0], lines[1]);
+    }
 }
 
 /// Appends the call-site lines of a record as `\tL<a>,L<b>`; nothing when there are none.
@@ -292,6 +313,23 @@ mod tests {
         assert!(encode_answer_with("fixture", &first, true).contains("\"snapshot\":\"v1:sha256:ab:1\",\"generation\":1"));
         assert!(encode_answer_with("fixture", &first, true).contains("\"age_s\":0"));
         assert!(encode_text("fixture", &first, true).starts_with("# fixture find v1:sha256:ab:1 g=1\n"));
+    }
+
+    #[test]
+    fn map_and_find_text_lines_show_lines_where_the_id_holds_the_path() {
+        let mut answer = sample();
+        answer.outcome = None;
+        let mut symbol = AnswerRecord::basic("s:src/a.py#Repo::get", "method", "src/a.py");
+        symbol.lines = [12, 30];
+        let mut hit = AnswerRecord::basic("text:src/a.py:7", "text", "src/a.py");
+        hit.lines = [7, 7];
+        let odd = AnswerRecord::basic("x", "fn", "src/a.py");
+        answer.records = vec![symbol, hit, odd];
+        let text = encode_text("fixture", &answer, false);
+        assert_eq!(text, "# fixture find\ns:src/a.py#Repo::get\tmethod\tL12-30\ntext:src/a.py:7\ttext\tL7\nx\tfn\tsrc/a.py\n");
+        answer.verb = Verb::Neighbors;
+        assert!(encode_text("fixture", &answer, false).contains("s:src/a.py#Repo::get\tmethod\tsrc/a.py\n"));
+        assert!(!id_names_path("s:src/a.pyc#x", "src/a.py"));
     }
 
     #[test]

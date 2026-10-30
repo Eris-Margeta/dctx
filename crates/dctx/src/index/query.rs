@@ -4,6 +4,7 @@
 //! A missing id is [`Collected::Outcome`], not an empty success.
 
 use super::concept;
+use super::outline_order;
 use super::extract::language_of;
 use super::{generic, id_matches, write_node_id, Generation, IndexedNode, TextBlob};
 use crate::domain::{AnswerRecord, Direction, IdentityOutcome, MapRequest, Verb, DctxError};
@@ -54,7 +55,7 @@ fn map_children(generation: &Generation, request: &MapRequest, depth: u32) -> Re
     };
     let mut frontier = vec![root];
     let mut children = Vec::new();
-    for _ in 0..depth {
+    for level in 1..=depth {
         let mut next = Vec::new();
         for id in &frontier {
             for edge in &generation.edges {
@@ -63,19 +64,26 @@ fn map_children(generation: &Generation, request: &MapRequest, depth: u32) -> Re
                 }
             }
         }
-        children.extend_from_slice(&next);
+        children.extend(next.iter().map(|id| (*id, level)));
         frontier = next;
     }
-    let mut records = Vec::new();
-    for id in children {
+    // A file root lists its outline by tier and source line (see `outline_order`); any other root keeps the id order.
+    let file_root = node_at(&generation.nodes, root).is_some_and(|node| node.kind == "module");
+    let mut ranked = Vec::new();
+    for (id, level) in children {
         if let Some(node) = node_at(&generation.nodes, id)
             && admit(text, node, request)
         {
-            records.push(record_of(text, node));
+            let tier = if file_root { outline_order::tier(node, text.get(node.path), level) } else { 0 };
+            ranked.push((tier, record_of(text, node)));
         }
     }
-    records.sort_by(|left, right| left.id.cmp(&right.id));
-    Ok(Collected::Records(records))
+    if file_root {
+        ranked.sort_by(|left, right| left.0.cmp(&right.0).then(left.1.lines[0].cmp(&right.1.lines[0])).then(left.1.id.cmp(&right.1.id)));
+    } else {
+        ranked.sort_by(|left, right| left.1.id.cmp(&right.1.id));
+    }
+    Ok(Collected::Records(ranked.into_iter().map(|(_, record)| record).collect()))
 }
 
 fn find(generation: &Generation, request: &MapRequest) -> Vec<AnswerRecord> {
@@ -86,7 +94,10 @@ fn find(generation: &Generation, request: &MapRequest) -> Vec<AnswerRecord> {
         if node.kind == "module" || !admit(text, node, request) {
             continue;
         }
-        let score = score_of(text, node, &request.query).max(concept::score(&terms, &node.name, &node.summary, text.get(node.path)).unwrap_or(0));
+        let mut score = score_of(text, node, &request.query).max(concept::score(&terms, &node.name, &node.summary, text.get(node.path)).unwrap_or(0));
+        if !terms.is_empty() && concept::phrase(&request.query, &node.name) {
+            score = score.max(concept::PHRASE);
+        }
         if score == 0 {
             continue;
         }

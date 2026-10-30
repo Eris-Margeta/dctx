@@ -4,7 +4,7 @@
 
 use super::Session;
 use crate::domain::{AnswerRecord, DctxError, MapRequest};
-use crate::index::{grep_records, text_records, Generation};
+use crate::index::{grep_records, key_shaped, rank_key, text_records, Generation};
 
 impl Session {
     /// Hit groups for `request`, one per enclosing symbol, from verified bytes only.
@@ -25,6 +25,20 @@ impl Session {
             }
             self.read_verified(path, digest).map(Some)
         })
+    }
+}
+
+impl Session {
+    /// Find records with literal hits added: all of them when no symbol matched (the `bool` is then true, `text`
+    /// coverage), and for a SCREAMING_CASE key the read sites ranked in by [`rank_key`], matched symbols or not.
+    pub(super) fn find_with_text(&mut self, generation: &Generation, request: &MapRequest, records: Vec<AnswerRecord>) -> Result<(Vec<AnswerRecord>, bool), DctxError> {
+        let key = key_shaped(&request.query);
+        if !(records.is_empty() || key) || !text_fallback_applies(request) {
+            return Ok((records, false));
+        }
+        let texts = self.text_hits(generation, request)?;
+        let text_only = records.is_empty() && !texts.is_empty();
+        Ok((if key { rank_key(&request.query, records, texts) } else { texts }, text_only))
     }
 }
 

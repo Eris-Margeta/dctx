@@ -86,10 +86,9 @@ impl Session {
                 {
                     self.authorize(&path)?;
                 }
-                // A find that matched no symbol or key falls back to the literal search of grep, labelled `text`.
-                if records.is_empty() && request.verb == Verb::Find && super::grep_op::text_fallback_applies(request) {
-                    records = self.text_hits(&generation, request)?;
-                    text_match = !records.is_empty();
+                // A find that matched no symbol falls back to the literal search of grep; a key also lists its read sites.
+                if request.verb == Verb::Find {
+                    (records, text_match) = self.find_with_text(&generation, request, records)?;
                 }
                 records
             }

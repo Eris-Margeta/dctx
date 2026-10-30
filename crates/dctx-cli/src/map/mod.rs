@@ -6,6 +6,7 @@
 
 mod args;
 mod export_verb;
+mod file_page;
 mod hubs;
 mod skeleton;
 mod path_verb;
@@ -56,6 +57,7 @@ fn execute_with(
             options.to = Some(prepare_target(options.request.verb, &to, &options.place)?);
         }
     }
+    file_page::widen(&mut options)?;
     let profiling = profile_requested(options.profile);
     let (mut session, key) = open(&options.place)?;
     if profiling {

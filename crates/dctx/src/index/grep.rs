@@ -87,6 +87,7 @@ const TEXT_HIT_CAP: usize = 1000;
 ///
 /// This is the fallback of a `find` that matched no symbol: kind `text`, `lines` set to the hit line and the
 /// summary the trimmed line. It reads files through the same gate as [`grep_records`] and is case-sensitive.
+/// A SCREAMING_CASE key keeps at most [`super::key_rank::KEY_HITS_PER_FILE`] hits per file.
 pub(crate) fn text_records(
     generation: &Generation,
     request: &MapRequest,
@@ -97,11 +98,18 @@ pub(crate) fn text_records(
     if needle.is_empty() {
         return Ok(records);
     }
+    // A key query keeps a few hits per file, so the cap reaches every file that reads the key.
+    let per_file = if super::key_rank::key_shaped(needle) { super::key_rank::KEY_HITS_PER_FILE } else { usize::MAX };
     each_source(generation, request.within.as_deref(), &mut read, |path, source| {
+        let mut kept = 0;
         for (index, line) in source.split('\n').enumerate() {
             if !line.contains(needle) {
                 continue;
             }
+            if kept == per_file {
+                break;
+            }
+            kept += 1;
             let number = u32::try_from(index + 1).unwrap_or(u32::MAX);
             let mut record = AnswerRecord::basic(format!("text:{path}:{number}"), "text", path);
             record.lines = [number, number];
