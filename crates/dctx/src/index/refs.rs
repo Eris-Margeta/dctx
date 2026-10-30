@@ -124,6 +124,10 @@ impl<'a> Tables<'a> {
             let Some(node) = self.nodes.get(index as usize) else { break };
             let mut id = String::new();
             write_node_id(&mut id, self.text, node);
+            // Lexers number every copy of a duplicated name from `~1`; the index leaves the first copy bare and numbers the rest from `~2`.
+            if node.ordinal == 0 && node.letter != b'm' {
+                ids.entry(format!("{id}~1")).or_insert(index);
+            }
             ids.insert(id, index);
         }
         let mut bindings: Vec<Binding> = Vec::new();

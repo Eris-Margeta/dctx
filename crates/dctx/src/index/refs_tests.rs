@@ -88,3 +88,12 @@ fn a_receiver_call_prefers_the_single_method_candidate() {
     ]);
     assert!(two.iter().all(|edge| !edge.starts_with("calls ")), "{two:?}");
 }
+
+/// The first of several same-named object-literal members keeps its calls although the lexer numbers it `~1` and the index leaves it bare.
+#[test]
+fn the_first_duplicate_member_keeps_its_calls() {
+    let source = "export function has(x: string): boolean { return !!x }\nexport const H = [\n  { detect: (p) =>\n      has('a') ||\n      has('b') },\n  { detect: (p) => has('c') },\n];\n";
+    let edges = linked(&[("a.ts", source)]);
+    assert!(edges.contains(&"calls s:a.ts#detect>s:a.ts#has name".to_string()), "{edges:?}");
+    assert!(edges.contains(&"calls s:a.ts#detect~2>s:a.ts#has name".to_string()), "{edges:?}");
+}
