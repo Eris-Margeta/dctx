@@ -19,6 +19,21 @@ CLI/core metadata and the lockfile, date this section and check the release matr
 before any separately authorized release.
 
 ### Added
+- **Call and import edges** in the map index: `dctx map neighbors --edge calls|imports`
+  now answers who calls what, resolved by lexical scope, imports and module paths, with
+  `name`/`guess` confidence; ambiguous references are dropped.
+- **New map verbs**: `skeleton <file>` (declaration signatures, no bodies), `grep <literal>`
+  (hits grouped by enclosing symbol), `hubs` (most-called symbols and per-directory counts),
+  `path <FROM> <TO>` (shortest edge path) and `export --format json|mermaid` (the whole graph).
+  `neighbors --depth` goes up to 4 (breadth-first, each node once).
+- **`dctx mcp`**: a stdio MCP server exposing the map verbs as tools.
+- **Outline symbols (`guess` confidence) for 26 more formats**: Scala, Dart, Zig, Solidity,
+  Gleam, Groovy; Elixir, Lua, OCaml, R, Julia, Haskell; Terraform/HCL, SQL, shell, Makefile,
+  Dockerfile, protobuf, Pascal, GraphQL; and headed sections for `.txt`, `.rst`, `.adoc`,
+  `.org` and `.tex` documents.
+- **A three-way benchmark against graphify and Trail-Code** (`docs/BENCHMARK-20261030.md`)
+  and the gap matrix behind it (`docs/GAP-MATRIX-20261030.md`).
+
 - **dctx Desktop is free, forever** for individuals, teams and companies
   ([announcement](https://dctx.app/news/desktop-free-forever/)).
 - **The dctx Context Management Specification** (`docs/SPEC.md`): prompt-processing
@@ -49,6 +64,12 @@ before any separately authorized release.
   (`presentation/video/`).
 
 ### Changed
+- **Byte-stable map answers**: the text header is `# <place> <verb>` and JSON no longer
+  carries `snapshot`, `generation` or `freshness.age_s`, so answers stay identical across
+  unrelated edits (prompt-cache friendly). `--meta` restores the old fields.
+- **`dctx pack` never prints env-shaped files** (`.env`, `.env.*`, `*.env`, `.envrc`); they
+  stay in the tree by name with their content omitted.
+- **Total-source ceiling raised from 64 MiB to 1 GiB**; `DCTX_MAX_SOURCE_BYTES` overrides it.
 - The core never reads `.git/`, never spawns `git` and never uses VCS object ids;
   content identity is dctx's own SHA-256 (`crates/dctx-hash`).
 - Repository ignore rules are applied before any read on the map path, and
@@ -62,15 +83,14 @@ before any separately authorized release.
   30 % on the same repository).
 
 ### Known issues
-Measured in the Trail-Code benchmark and scheduled in the specification's roadmap:
-- The map CLI exposes `contains` edges only; call and import edges are not yet
-  emitted.
+Measured in the benchmarks and scheduled in the specification's roadmap:
 - No incremental indexing: the first query after an edit re-indexes, and each
   edit adds a full generation to the cache.
-- Answer headers change after unrelated edits, which defeats prompt caching;
-  JSON answers carry a per-second `age_s`.
-- `dctx pack` includes `.env` files unless they are ignored. Add `.env*` to
-  `.dctxignore` until the default changes.
+- The 26 outline formats carry symbols and `contains` edges only (`guess`); call
+  edges exist for the first-party lexers (Rust, JS/TS, Python, Go, Java, C/C++,
+  C#, Kotlin, Ruby, PHP, Swift).
+- Task-level answer ranking (`find`/`explain` against a 70-question gold set) is
+  not re-measured since October.
 
 ## [0.25.0] — 2026-05-29
 
