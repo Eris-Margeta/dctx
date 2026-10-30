@@ -3,6 +3,7 @@
 //! Depends on the domain types and dctx-map-model ids. The session owns each [`Generation`].
 //! Callers see an [`crate::domain::Answer`], never this module.
 
+mod concept;
 mod extract;
 pub(crate) mod export;
 mod generic;

@@ -3,6 +3,7 @@
 //! Depends on the in-memory generation. Map, find and neighbors do not read the source.
 //! A missing id is [`Collected::Outcome`], not an empty success.
 
+use super::concept;
 use super::extract::language_of;
 use super::{generic, id_matches, write_node_id, Generation, IndexedNode, TextBlob};
 use crate::domain::{AnswerRecord, Direction, IdentityOutcome, MapRequest, Verb, DctxError};
@@ -80,11 +81,12 @@ fn map_children(generation: &Generation, request: &MapRequest, depth: u32) -> Re
 fn find(generation: &Generation, request: &MapRequest) -> Vec<AnswerRecord> {
     let text = &generation.text;
     let mut records = Vec::new();
+    let terms = concept::terms(&request.query);
     for node in &generation.nodes {
         if node.kind == "module" || !admit(text, node, request) {
             continue;
         }
-        let score = score_of(text, node, &request.query);
+        let score = score_of(text, node, &request.query).max(concept::score(&terms, &node.name, &node.summary, text.get(node.path)).unwrap_or(0));
         if score == 0 {
             continue;
         }
