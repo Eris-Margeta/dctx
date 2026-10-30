@@ -1,0 +1,3954 @@
+{
+ "meta": {
+  "date_utc": "2026-10-30T09:17:03Z",
+  "host_kernel": "Linux 6.12.113+deb13-cloud-amd64",
+  "cpu_model": "x86_64 CPU",
+  "cpus_pinned": "24-31",
+  "nice": 10,
+  "unshare_Urn_net_isolation": true,
+  "load1_at_start": 3.42,
+  "node": "v24.22.0",
+  "python": "Python 3.13.5",
+  "dctx_binary": "/path/to/workdir/bench/dctx3/bin/dctx-de06a3d",
+  "dctx_sha256": "0a41481ffc6f9ecd5713be5af561bef9f1c13f980bfa69748d84540520b4086e",
+  "dctx_caps": {
+   "version": "dctx-cli v0.25.0",
+   "find_rc": 0,
+   "skeleton": true,
+   "grep": true,
+   "hubs": true,
+   "depth3": true,
+   "depth4": false,
+   "neighbors_depth2": true,
+   "neighbors_depth3": true,
+   "neighbors_depth4": true
+  },
+  "trail_version": "0.28.0",
+  "graphify_version": "graphify 0.9.97",
+  "graphify_mode": "extract . --code-only --max-workers 8; cluster-only . --no-viz --no-label; GRAPHIFY_BACKEND=none; LLM doc/semantic pass NOT run (no key supplied)",
+  "trail_mode": "build . (no --deep, no --lsp), DO_NOT_TRACK=1",
+  "env_vars_set_for_tools": [
+   "DO_NOT_TRACK",
+   "GRAPHIFY_BACKEND",
+   "HOME",
+   "LANG",
+   "LC_ALL",
+   "NO_COLOR",
+   "PATH",
+   "TMPDIR",
+   "XDG_CACHE_HOME",
+   "npm_config_cache",
+   "npm_config_update_notifier"
+  ],
+  "token_estimator": "ceil(stdout_bytes/3.5)",
+  "corpora_shas": {
+   "canary-ignored": "4af5ad06ff4b37723beaf5937e36ad1317514f60",
+   "canary-tracked": "eaececaca3116384200713fd6e4e4192e0e6c690",
+   "docs": "76309cee32b75174f0f04176d7f458604e4030af",
+   "flask": "22d924701a6ae2e4cd01e9a15bbaf3946094af65",
+   "mixed": "7a00e38e9a186b69994acb027c3697f16aa64c12",
+   "pocketbase": "6f370ea741f33adf889eef02e3c1b884a47aa522",
+   "ripgrep": "e89fff89ac9af12e8d4ce9d5fd07beb408ca730f",
+   "trailcode": "25ea4c7488b6f931f39ec8b95de0070ef954f5a8"
+  },
+  "pip_freeze": [
+   "graphifyy==0.9.97",
+   "networkx==3.7",
+   "numpy==2.5.4",
+   "PyYAML==6.0.3",
+   "RapidFuzz==3.14.6",
+   "tree-sitter==0.25.2",
+   "tree-sitter-bash==0.25.1",
+   "tree-sitter-c==0.24.2",
+   "tree-sitter-c-sharp==0.23.5",
+   "tree-sitter-cpp==0.23.4",
+   "tree-sitter-elixir==0.3.5",
+   "tree-sitter-fortran==0.6.0",
+   "tree-sitter-go==0.25.0",
+   "tree-sitter-groovy==0.1.2",
+   "tree-sitter-java==0.23.5",
+   "tree-sitter-javascript==0.25.0",
+   "tree-sitter-json==0.24.8",
+   "tree-sitter-julia==0.23.1",
+   "tree-sitter-kotlin==1.1.0",
+   "tree-sitter-lua==0.5.0",
+   "tree-sitter-objc==3.0.2",
+   "tree-sitter-php==0.24.1",
+   "tree-sitter-powershell==0.26.4",
+   "tree-sitter-python==0.25.0",
+   "tree-sitter-ruby==0.23.1",
+   "tree-sitter-rust==0.24.2",
+   "tree-sitter-scala==0.26.3",
+   "tree-sitter-swift==0.7.4",
+   "tree-sitter-typescript==0.23.2",
+   "tree-sitter-verilog==1.0.3",
+   "tree-sitter-zig==1.1.2"
+  ],
+  "npm_trail_pkg_version": "0.28.0",
+  "wrapper_overhead_s_median": 0.00697
+ },
+ "index": {
+  "flask": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 0.1281,
+    "cold_wall_s_all": [
+     0.1426,
+     0.1276,
+     0.1281
+    ],
+    "peak_rss_mb_largest_process": 19.5,
+    "peak_pss_mb_process_tree_sampled": 6.2,
+    "peak_rss_mb_process_tree_sampled": 8.1,
+    "index_mb": 1.15,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.12814
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 3.8524,
+    "cold_wall_s_all": [
+     3.8615,
+     3.8524,
+     3.7461
+    ],
+    "peak_rss_mb_largest_process": 224.4,
+    "peak_pss_mb_process_tree_sampled": 223.3,
+    "peak_rss_mb_process_tree_sampled": 226.3,
+    "index_mb": 4.39,
+    "index_files": 88,
+    "nodes": 1657,
+    "edges": 2466,
+    "step_walls_last_rep": {
+     "cold_index": 3.74609
+    },
+    "repo_touched": {
+     "modified_tracked": [
+      ".gitignore"
+     ],
+     "untracked_top": [
+      ".ignore"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 7.5031,
+    "cold_wall_s_all": [
+     8.8982,
+     7.5031,
+     7.4112
+    ],
+    "peak_rss_mb_largest_process": 102.1,
+    "peak_pss_mb_process_tree_sampled": 134.7,
+    "peak_rss_mb_process_tree_sampled": 391.5,
+    "index_mb": 4.46,
+    "index_files": 103,
+    "nodes": 2229,
+    "edges": 3589,
+    "step_walls_last_rep": {
+     "cold_extract": 5.2826,
+     "cold_report": 2.12858
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  },
+  "ripgrep": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 0.6399,
+    "cold_wall_s_all": [
+     0.5339,
+     1.0399,
+     0.6399
+    ],
+    "peak_rss_mb_largest_process": 27.0,
+    "peak_pss_mb_process_tree_sampled": 24.6,
+    "peak_rss_mb_process_tree_sampled": 26.7,
+    "index_mb": 2.13,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.63994
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 2.8569,
+    "cold_wall_s_all": [
+     3.5187,
+     2.8569,
+     2.8498
+    ],
+    "peak_rss_mb_largest_process": 301.4,
+    "peak_pss_mb_process_tree_sampled": 299.9,
+    "peak_rss_mb_process_tree_sampled": 303.2,
+    "index_mb": 8.36,
+    "index_files": 106,
+    "nodes": 3550,
+    "edges": 2958,
+    "step_walls_last_rep": {
+     "cold_index": 2.84983
+    },
+    "repo_touched": {
+     "modified_tracked": [
+      ".gitignore",
+      ".ignore"
+     ],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 10.2242,
+    "cold_wall_s_all": [
+     10.2242,
+     10.1595,
+     10.9385
+    ],
+    "peak_rss_mb_largest_process": 93.2,
+    "peak_pss_mb_process_tree_sampled": 196.6,
+    "peak_rss_mb_process_tree_sampled": 465.3,
+    "index_mb": 8.63,
+    "index_files": 130,
+    "nodes": 4271,
+    "edges": 9158,
+    "step_walls_last_rep": {
+     "cold_extract": 6.5921,
+     "cold_report": 4.34637
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  },
+  "pocketbase": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 0.9596,
+    "cold_wall_s_all": [
+     1.0074,
+     0.9596,
+     0.9528
+    ],
+    "peak_rss_mb_largest_process": 62.1,
+    "peak_pss_mb_process_tree_sampled": 52.7,
+    "peak_rss_mb_process_tree_sampled": 54.6,
+    "index_mb": 10.08,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.95281
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 50.794,
+    "cold_wall_s_all": [
+     50.794
+    ],
+    "peak_rss_mb_largest_process": 985.7,
+    "peak_pss_mb_process_tree_sampled": 963.1,
+    "peak_rss_mb_process_tree_sampled": 966.1,
+    "index_mb": 41.83,
+    "index_files": 669,
+    "nodes": 12003,
+    "edges": 26087,
+    "step_walls_last_rep": {
+     "cold_index": 50.79404
+    },
+    "repo_touched": {
+     "modified_tracked": [
+      ".gitignore"
+     ],
+     "untracked_top": [
+      ".ignore"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 61.7514,
+    "cold_wall_s_all": [
+     61.7514
+    ],
+    "peak_rss_mb_largest_process": 243.2,
+    "peak_pss_mb_process_tree_sampled": 494.4,
+    "peak_rss_mb_process_tree_sampled": 667.8,
+    "index_mb": 26.26,
+    "index_files": 469,
+    "nodes": 8801,
+    "edges": 43007,
+    "step_walls_last_rep": {
+     "cold_extract": 50.473,
+     "cold_report": 11.27839
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  },
+  "trailcode": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 1.0912,
+    "cold_wall_s_all": [
+     1.0986,
+     1.0912,
+     1.0874
+    ],
+    "peak_rss_mb_largest_process": 87.9,
+    "peak_pss_mb_process_tree_sampled": 76.2,
+    "peak_rss_mb_process_tree_sampled": 78.2,
+    "index_mb": 14.96,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 1.08735
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 56.5639,
+    "cold_wall_s_all": [
+     56.5639
+    ],
+    "peak_rss_mb_largest_process": 1015.4,
+    "peak_pss_mb_process_tree_sampled": 1013.5,
+    "peak_rss_mb_process_tree_sampled": 1016.8,
+    "index_mb": 41.08,
+    "index_files": 880,
+    "nodes": 7639,
+    "edges": 28037,
+    "step_walls_last_rep": {
+     "cold_index": 56.56391
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      ".trail/"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 49.5497,
+    "cold_wall_s_all": [
+     49.5497
+    ],
+    "peak_rss_mb_largest_process": 391.8,
+    "peak_pss_mb_process_tree_sampled": 383.0,
+    "peak_rss_mb_process_tree_sampled": 556.1,
+    "index_mb": 11.86,
+    "index_files": 19,
+    "nodes": 8663,
+    "edges": 33627,
+    "step_walls_last_rep": {
+     "cold_extract": 37.08538,
+     "cold_report": 12.46428
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  },
+  "mixed": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 0.2917,
+    "cold_wall_s_all": [
+     0.2917,
+     0.3407,
+     0.2885
+    ],
+    "peak_rss_mb_largest_process": 73.4,
+    "peak_pss_mb_process_tree_sampled": 17.1,
+    "peak_rss_mb_process_tree_sampled": 19.1,
+    "index_mb": 3.75,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.28853
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 3.6318,
+    "cold_wall_s_all": [
+     4.269,
+     3.5967,
+     3.6318
+    ],
+    "peak_rss_mb_largest_process": 449.9,
+    "peak_pss_mb_process_tree_sampled": 420.4,
+    "peak_rss_mb_process_tree_sampled": 423.6,
+    "index_mb": 12.76,
+    "index_files": 146,
+    "nodes": 8155,
+    "edges": 1139,
+    "step_walls_last_rep": {
+     "cold_index": 3.63178
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      ".gitignore",
+      ".ignore"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 4.4332,
+    "cold_wall_s_all": [
+     4.8941,
+     4.4185,
+     4.4332
+    ],
+    "peak_rss_mb_largest_process": 73.4,
+    "peak_pss_mb_process_tree_sampled": 123.8,
+    "peak_rss_mb_process_tree_sampled": 404.1,
+    "index_mb": 2.17,
+    "index_files": 145,
+    "nodes": 1267,
+    "edges": 1655,
+    "step_walls_last_rep": {
+     "cold_extract": 3.34416,
+     "cold_report": 1.08904
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  },
+  "docs": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 0.1765,
+    "cold_wall_s_all": [
+     0.1765,
+     0.1767,
+     0.176
+    ],
+    "peak_rss_mb_largest_process": 73.4,
+    "peak_pss_mb_process_tree_sampled": 5.0,
+    "peak_rss_mb_process_tree_sampled": 7.0,
+    "index_mb": 1.44,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.176
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 1.0369,
+    "cold_wall_s_all": [
+     1.0099,
+     1.0538,
+     1.0369
+    ],
+    "peak_rss_mb_largest_process": 121.2,
+    "peak_pss_mb_process_tree_sampled": 119.6,
+    "peak_rss_mb_process_tree_sampled": 122.6,
+    "index_mb": 0.0,
+    "index_files": 5,
+    "nodes": 0,
+    "edges": 0,
+    "step_walls_last_rep": {
+     "cold_index": 1.03693
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      ".gitignore",
+      ".ignore"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": false,
+    "n_reps": 1,
+    "cold_wall_s_median": null,
+    "cold_wall_s_all": [
+     1.9494
+    ],
+    "peak_rss_mb_largest_process": null,
+    "peak_pss_mb_process_tree_sampled": null,
+    "peak_rss_mb_process_tree_sampled": null,
+    "index_mb": 0.21,
+    "index_files": 1,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_extract": 1.9494
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": "[graphify extract] graph is empty \u2014 extraction produced no nodes. Possible causes: all files skipped, binary-only corpus, or LLM returned no edges.\n"
+   }
+  },
+  "canary-tracked": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 0.0265,
+    "cold_wall_s_all": [
+     0.0265
+    ],
+    "peak_rss_mb_largest_process": 73.4,
+    "peak_pss_mb_process_tree_sampled": 0.0,
+    "peak_rss_mb_process_tree_sampled": 0.0,
+    "index_mb": 0.0,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.02647
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 2.0311,
+    "cold_wall_s_all": [
+     2.0311
+    ],
+    "peak_rss_mb_largest_process": 111.3,
+    "peak_pss_mb_process_tree_sampled": 109.9,
+    "peak_rss_mb_process_tree_sampled": 112.9,
+    "index_mb": 0.0,
+    "index_files": 6,
+    "nodes": 3,
+    "edges": 3,
+    "step_walls_last_rep": {
+     "cold_index": 2.0311
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      ".gitignore",
+      ".ignore"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 1.127,
+    "cold_wall_s_all": [
+     1.127
+    ],
+    "peak_rss_mb_largest_process": 73.4,
+    "peak_pss_mb_process_tree_sampled": 47.8,
+    "peak_rss_mb_process_tree_sampled": 57.9,
+    "index_mb": 0.0,
+    "index_files": 7,
+    "nodes": 3,
+    "edges": 3,
+    "step_walls_last_rep": {
+     "cold_extract": 0.64654,
+     "cold_report": 0.48049
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  },
+  "canary-ignored": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 0.0262,
+    "cold_wall_s_all": [
+     0.0262
+    ],
+    "peak_rss_mb_largest_process": 73.4,
+    "peak_pss_mb_process_tree_sampled": 0.0,
+    "peak_rss_mb_process_tree_sampled": 0.0,
+    "index_mb": 0.0,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.02618
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 0.9869,
+    "cold_wall_s_all": [
+     0.9869
+    ],
+    "peak_rss_mb_largest_process": 109.5,
+    "peak_pss_mb_process_tree_sampled": 107.9,
+    "peak_rss_mb_process_tree_sampled": 110.9,
+    "index_mb": 0.0,
+    "index_files": 6,
+    "nodes": 3,
+    "edges": 3,
+    "step_walls_last_rep": {
+     "cold_index": 0.98692
+    },
+    "repo_touched": {
+     "modified_tracked": [
+      ".gitignore"
+     ],
+     "untracked_top": [
+      ".ignore"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 1.1223,
+    "cold_wall_s_all": [
+     1.1223
+    ],
+    "peak_rss_mb_largest_process": 73.4,
+    "peak_pss_mb_process_tree_sampled": 47.8,
+    "peak_rss_mb_process_tree_sampled": 58.0,
+    "index_mb": 0.0,
+    "index_files": 7,
+    "nodes": 3,
+    "edges": 3,
+    "step_walls_last_rep": {
+     "cold_extract": 0.64152,
+     "cold_report": 0.48076
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  }
+ },
+ "query": {
+  "flask": {
+   "dctx": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.04367,
+     "stdout_bytes": 762,
+     "est_tokens": 218,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 25880,
+     "walls": [
+      0.04264,
+      0.04368,
+      0.04264,
+      0.04367,
+      0.04375
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.04483,
+     "stdout_bytes": 1676,
+     "est_tokens": 479,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 25880,
+     "walls": [
+      0.05017,
+      0.04371,
+      0.04483,
+      0.04418,
+      0.04629
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.04374,
+     "stdout_bytes": 1676,
+     "est_tokens": 479,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 25880,
+     "walls": [
+      0.04576,
+      0.04374,
+      0.04577,
+      0.04366,
+      0.04258
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.0475,
+     "stdout_bytes": 3031,
+     "est_tokens": 866,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 25880,
+     "walls": [
+      0.0437,
+      0.0475,
+      0.20718,
+      0.61591,
+      0.04619
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "dctx map hubs (bounded overview: most-called symbols + per-directory counts)",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.04367,
+     "stdout_bytes": 1723,
+     "est_tokens": 493,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 25880,
+     "walls": [
+      0.04969,
+      0.0459,
+      0.04367,
+      0.04366,
+      0.04366
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.07095,
+     "stdout_bytes": 1637,
+     "est_tokens": 468,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 25880,
+     "walls": [
+      0.0724,
+      0.07132,
+      0.06885,
+      0.07095,
+      0.06645
+     ]
+    }
+   },
+   "trail": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.06644,
+     "stdout_bytes": 917,
+     "est_tokens": 262,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 128596,
+     "walls": [
+      1.10364,
+      1.06644,
+      1.06439,
+      1.06093,
+      1.09395
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.97955,
+     "stdout_bytes": 476,
+     "est_tokens": 136,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 118940,
+     "walls": [
+      1.00927,
+      0.97955,
+      0.96709,
+      0.96927,
+      0.99944
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.97056,
+     "stdout_bytes": 633,
+     "est_tokens": 181,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 118812,
+     "walls": [
+      0.95996,
+      0.96037,
+      1.04834,
+      1.05556,
+      0.97056
+     ]
+    },
+    "callers1_norefresh": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.96348,
+     "stdout_bytes": 476,
+     "est_tokens": 136,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 115700,
+     "walls": [
+      0.9693,
+      0.94729,
+      0.96852,
+      0.96348,
+      0.95867
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.96941,
+     "stdout_bytes": 2980,
+     "est_tokens": 852,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 118380,
+     "walls": [
+      0.99255,
+      1.01752,
+      0.93989,
+      0.9488,
+      0.96941
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.97461,
+     "stdout_bytes": 3925,
+     "est_tokens": 1122,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 129764,
+     "walls": [
+      1.15231,
+      0.98323,
+      0.95362,
+      0.95988,
+      0.97461
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.98484,
+     "stdout_bytes": 6638,
+     "est_tokens": 1897,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 123324,
+     "walls": [
+      0.99406,
+      0.99746,
+      0.9697,
+      0.98484,
+      0.9676
+     ]
+    }
+   },
+   "graphify": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.55186,
+     "stdout_bytes": 6455,
+     "est_tokens": 1845,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 50112,
+     "walls": [
+      0.55026,
+      0.54847,
+      0.55378,
+      0.55186,
+      0.56802
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.34524,
+     "stdout_bytes": 111,
+     "est_tokens": 32,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 41920,
+     "walls": [
+      0.34524,
+      0.34617,
+      0.35646,
+      0.34198,
+      0.345
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.34849,
+     "stdout_bytes": 224,
+     "est_tokens": 64,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 41984,
+     "walls": [
+      0.35056,
+      0.34387,
+      0.34312,
+      0.35149,
+      0.34849
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": "approximate: explain <file node> lists its connections, not signatures",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.49049,
+     "stdout_bytes": 1658,
+     "est_tokens": 474,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 47256,
+     "walls": [
+      0.50104,
+      0.49049,
+      0.48367,
+      0.49456,
+      0.48283
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "reads GRAPH_REPORT.md written by cluster-only",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.00694,
+     "stdout_bytes": 20753,
+     "est_tokens": 5930,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 25880,
+     "walls": [
+      0.0069,
+      0.008,
+      0.00699,
+      0.00694,
+      0.00693
+     ]
+    },
+    "grep": {
+     "supported": false,
+     "via": null,
+     "why": "no literal-search verb",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "god_nodes": {
+     "supported": true,
+     "via": "extra: hubs list",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.3756,
+     "stdout_bytes": 286,
+     "est_tokens": 82,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 44584,
+     "walls": [
+      0.37507,
+      0.37897,
+      0.3691,
+      0.37783,
+      0.3756
+     ]
+    }
+   }
+  },
+  "ripgrep": {
+   "dctx": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.05697,
+     "stdout_bytes": 130,
+     "est_tokens": 38,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 33796,
+     "walls": [
+      0.05683,
+      0.05784,
+      0.05658,
+      0.05697,
+      0.05703
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.05558,
+     "stdout_bytes": 1693,
+     "est_tokens": 484,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 33796,
+     "walls": [
+      0.05558,
+      0.05665,
+      0.05672,
+      0.05553,
+      0.0555
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.05581,
+     "stdout_bytes": 1693,
+     "est_tokens": 484,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 33796,
+     "walls": [
+      0.05671,
+      0.05581,
+      0.05565,
+      0.05668,
+      0.05458
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.05785,
+     "stdout_bytes": 5092,
+     "est_tokens": 1455,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 33796,
+     "walls": [
+      0.05451,
+      0.05669,
+      0.05785,
+      0.05792,
+      0.06551
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "dctx map hubs (bounded overview: most-called symbols + per-directory counts)",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.05949,
+     "stdout_bytes": 2014,
+     "est_tokens": 576,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 33796,
+     "walls": [
+      0.06106,
+      0.0609,
+      0.05942,
+      0.05949,
+      0.05836
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.08765,
+     "stdout_bytes": 1495,
+     "est_tokens": 428,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 33796,
+     "walls": [
+      0.08806,
+      0.08846,
+      0.08765,
+      0.08662,
+      0.08728
+     ]
+    }
+   },
+   "trail": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.16949,
+     "stdout_bytes": 1371,
+     "est_tokens": 392,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 182876,
+     "walls": [
+      1.15768,
+      1.14084,
+      1.16949,
+      1.30286,
+      1.21488
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.98364,
+     "stdout_bytes": 2801,
+     "est_tokens": 801,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 117892,
+     "walls": [
+      0.98658,
+      0.97311,
+      0.98508,
+      0.98364,
+      0.97315
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.97762,
+     "stdout_bytes": 2991,
+     "est_tokens": 855,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 118532,
+     "walls": [
+      0.96935,
+      1.01128,
+      0.97762,
+      0.97017,
+      0.98424
+     ]
+    },
+    "callers1_norefresh": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.95426,
+     "stdout_bytes": 2801,
+     "est_tokens": 801,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 119160,
+     "walls": [
+      0.96906,
+      0.93214,
+      0.95563,
+      0.95426,
+      0.94974
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.96568,
+     "stdout_bytes": 3935,
+     "est_tokens": 1125,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 119296,
+     "walls": [
+      0.98161,
+      0.9542,
+      0.9709,
+      0.95922,
+      0.96568
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.02138,
+     "stdout_bytes": 8883,
+     "est_tokens": 2538,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 132888,
+     "walls": [
+      1.0447,
+      1.00916,
+      1.02138,
+      1.0276,
+      1.01422
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.01878,
+     "stdout_bytes": 4009,
+     "est_tokens": 1146,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 133716,
+     "walls": [
+      1.04225,
+      1.01001,
+      1.04781,
+      1.0164,
+      1.01878
+     ]
+    }
+   },
+   "graphify": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.71659,
+     "stdout_bytes": 13578,
+     "est_tokens": 3880,
+     "identical_across_runs": false,
+     "maxrss_kb_median": 61096,
+     "walls": [
+      0.71565,
+      0.71984,
+      0.71659,
+      0.71074,
+      0.71913
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.40807,
+     "stdout_bytes": 99,
+     "est_tokens": 29,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 50996,
+     "walls": [
+      0.40561,
+      0.40461,
+      0.41566,
+      0.40807,
+      0.40928
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.41052,
+     "stdout_bytes": 99,
+     "est_tokens": 29,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 50960,
+     "walls": [
+      0.40456,
+      0.41416,
+      0.4058,
+      0.41905,
+      0.41052
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": "approximate: explain <file node> lists its connections, not signatures",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.64731,
+     "stdout_bytes": 1863,
+     "est_tokens": 533,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 59676,
+     "walls": [
+      0.64311,
+      0.65622,
+      0.64731,
+      0.64268,
+      0.64883
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "reads GRAPH_REPORT.md written by cluster-only",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.00706,
+     "stdout_bytes": 27860,
+     "est_tokens": 7960,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 33796,
+     "walls": [
+      0.00797,
+      0.00692,
+      0.00706,
+      0.00701,
+      0.00706
+     ]
+    },
+    "grep": {
+     "supported": false,
+     "via": null,
+     "why": "no literal-search verb",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "god_nodes": {
+     "supported": true,
+     "via": "extra: hubs list",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.43691,
+     "stdout_bytes": 295,
+     "est_tokens": 85,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 53876,
+     "walls": [
+      0.4445,
+      0.44545,
+      0.43399,
+      0.43691,
+      0.4369
+     ]
+    }
+   }
+  },
+  "pocketbase": {
+   "dctx": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.19621,
+     "stdout_bytes": 906,
+     "est_tokens": 259,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.20169,
+      0.19487,
+      0.19498,
+      0.19621,
+      0.20288
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.19384,
+     "stdout_bytes": 1623,
+     "est_tokens": 464,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.19146,
+      0.19384,
+      0.18908,
+      0.1945,
+      0.21297
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.28599,
+     "stdout_bytes": 1724,
+     "est_tokens": 493,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.22855,
+      0.46636,
+      0.23582,
+      0.31331,
+      0.28599
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.22562,
+     "stdout_bytes": 1338,
+     "est_tokens": 383,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.21426,
+      0.27201,
+      0.8027,
+      0.22562,
+      0.20772
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "dctx map hubs (bounded overview: most-called symbols + per-directory counts)",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.21518,
+     "stdout_bytes": 2348,
+     "est_tokens": 671,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.21841,
+      0.21518,
+      0.21115,
+      0.20545,
+      0.23797
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.34306,
+     "stdout_bytes": 1714,
+     "est_tokens": 490,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.33978,
+      0.34523,
+      0.34306,
+      0.33501,
+      0.38097
+     ]
+    }
+   },
+   "trail": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.4985,
+     "stdout_bytes": 1252,
+     "est_tokens": 358,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 252624,
+     "walls": [
+      1.4985,
+      1.52984,
+      1.4546,
+      1.41974,
+      1.50625
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.10296,
+     "stdout_bytes": 611,
+     "est_tokens": 175,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 134708,
+     "walls": [
+      1.07436,
+      1.06545,
+      1.12695,
+      1.11417,
+      1.10296
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.11683,
+     "stdout_bytes": 611,
+     "est_tokens": 175,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 134960,
+     "walls": [
+      1.15368,
+      1.11145,
+      1.08784,
+      1.11683,
+      1.12993
+     ]
+    },
+    "callers1_norefresh": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.0673,
+     "stdout_bytes": 611,
+     "est_tokens": 175,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 139492,
+     "walls": [
+      1.0673,
+      1.13955,
+      1.07349,
+      1.04348,
+      1.03426
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.05658,
+     "stdout_bytes": 1226,
+     "est_tokens": 351,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 139160,
+     "walls": [
+      1.24366,
+      1.05039,
+      1.06663,
+      1.05658,
+      1.04672
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.10858,
+     "stdout_bytes": 5297,
+     "est_tokens": 1514,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 143584,
+     "walls": [
+      1.1365,
+      1.10356,
+      1.10254,
+      1.17658,
+      1.10858
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.31842,
+     "stdout_bytes": 10926,
+     "est_tokens": 3122,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 175332,
+     "walls": [
+      1.2805,
+      1.31842,
+      1.51348,
+      1.33234,
+      1.29566
+     ]
+    }
+   },
+   "graphify": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 3,
+     "wall_s_median": 1.37194,
+     "stdout_bytes": 337,
+     "est_tokens": 97,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 113448,
+     "walls": [
+      1.36538,
+      1.37194,
+      1.37496,
+      1.35978,
+      1.382
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.77531,
+     "stdout_bytes": 82,
+     "est_tokens": 24,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 95664,
+     "walls": [
+      0.76759,
+      0.76766,
+      0.77531,
+      0.78039,
+      0.82725
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.77273,
+     "stdout_bytes": 82,
+     "est_tokens": 24,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 95600,
+     "walls": [
+      0.77984,
+      0.76514,
+      0.77273,
+      0.77348,
+      0.77015
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": "approximate: explain <file node> lists its connections, not signatures",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.26602,
+     "stdout_bytes": 2845,
+     "est_tokens": 813,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 105204,
+     "walls": [
+      1.25871,
+      1.32008,
+      1.25817,
+      1.26602,
+      1.27143
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "reads GRAPH_REPORT.md written by cluster-only",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.00697,
+     "stdout_bytes": 40567,
+     "est_tokens": 11591,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.00697,
+      0.00696,
+      0.00695,
+      0.00705,
+      0.00913
+     ]
+    },
+    "grep": {
+     "supported": false,
+     "via": null,
+     "why": "no literal-search verb",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "god_nodes": {
+     "supported": true,
+     "via": "extra: hubs list",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.79808,
+     "stdout_bytes": 286,
+     "est_tokens": 82,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 98380,
+     "walls": [
+      0.80018,
+      0.79554,
+      0.82364,
+      0.79808,
+      0.79553
+     ]
+    }
+   }
+  },
+  "trailcode": {
+   "dctx": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.193,
+     "stdout_bytes": 1413,
+     "est_tokens": 404,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.19065,
+      0.19383,
+      0.1894,
+      0.2229,
+      0.193
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.1875,
+     "stdout_bytes": 1651,
+     "est_tokens": 472,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.18967,
+      0.18533,
+      0.18782,
+      0.18309,
+      0.1875
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.18815,
+     "stdout_bytes": 1651,
+     "est_tokens": 472,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.18648,
+      0.1907,
+      0.18512,
+      0.20659,
+      0.18815
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.18898,
+     "stdout_bytes": 2742,
+     "est_tokens": 784,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.18717,
+      0.18802,
+      0.18898,
+      0.20259,
+      0.20872
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "dctx map hubs (bounded overview: most-called symbols + per-directory counts)",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.19887,
+     "stdout_bytes": 1807,
+     "est_tokens": 517,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.19792,
+      0.19888,
+      0.19871,
+      0.22892,
+      0.19887
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.32179,
+     "stdout_bytes": 1382,
+     "est_tokens": 395,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.30439,
+      0.32179,
+      0.3343,
+      0.74723,
+      0.31541
+     ]
+    }
+   },
+   "trail": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.80676,
+     "stdout_bytes": 2183,
+     "est_tokens": 624,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 314764,
+     "walls": [
+      1.82006,
+      1.85808,
+      1.76723,
+      1.75789,
+      1.80676
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.12444,
+     "stdout_bytes": 3724,
+     "est_tokens": 1064,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 146892,
+     "walls": [
+      1.12444,
+      1.21188,
+      1.0962,
+      1.14671,
+      1.12187
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.12749,
+     "stdout_bytes": 5278,
+     "est_tokens": 1508,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 146696,
+     "walls": [
+      1.09584,
+      1.11973,
+      1.134,
+      1.16472,
+      1.12749
+     ]
+    },
+    "callers1_norefresh": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.08356,
+     "stdout_bytes": 3724,
+     "est_tokens": 1064,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 142524,
+     "walls": [
+      1.03494,
+      1.04202,
+      1.12068,
+      1.14601,
+      1.08356
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.1128,
+     "stdout_bytes": 2695,
+     "est_tokens": 770,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 146776,
+     "walls": [
+      1.22408,
+      1.13702,
+      1.09599,
+      1.09025,
+      1.1128
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.12947,
+     "stdout_bytes": 1745,
+     "est_tokens": 499,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 149216,
+     "walls": [
+      1.13739,
+      1.10513,
+      1.12888,
+      1.12947,
+      1.20119
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.41571,
+     "stdout_bytes": 8235,
+     "est_tokens": 2353,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 182456,
+     "walls": [
+      1.41571,
+      1.3947,
+      1.39409,
+      1.49453,
+      1.44434
+     ]
+    }
+   },
+   "graphify": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.25157,
+     "stdout_bytes": 6526,
+     "est_tokens": 1865,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 100852,
+     "walls": [
+      1.26484,
+      1.25157,
+      1.232,
+      1.23825,
+      1.25479
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.71281,
+     "stdout_bytes": 685,
+     "est_tokens": 196,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 84180,
+     "walls": [
+      0.77139,
+      0.75164,
+      0.68374,
+      0.69784,
+      0.71281
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.69125,
+     "stdout_bytes": 1569,
+     "est_tokens": 449,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 84184,
+     "walls": [
+      0.69125,
+      0.68587,
+      0.70384,
+      0.69017,
+      0.69677
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": "approximate: explain <file node> lists its connections, not signatures",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.11596,
+     "stdout_bytes": 2655,
+     "est_tokens": 759,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 93740,
+     "walls": [
+      1.16949,
+      1.15072,
+      1.08024,
+      1.09008,
+      1.11596
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "reads GRAPH_REPORT.md written by cluster-only",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.00696,
+     "stdout_bytes": 35264,
+     "est_tokens": 10076,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.00693,
+      0.00697,
+      0.00692,
+      0.00698,
+      0.00696
+     ]
+    },
+    "grep": {
+     "supported": false,
+     "via": null,
+     "why": "no literal-search verb",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "god_nodes": {
+     "supported": true,
+     "via": "extra: hubs list",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.72733,
+     "stdout_bytes": 285,
+     "est_tokens": 82,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 87180,
+     "walls": [
+      0.71793,
+      0.72733,
+      0.71798,
+      0.74392,
+      0.7385
+     ]
+    }
+   }
+  },
+  "mixed": {
+   "dctx": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.11595,
+     "stdout_bytes": 660,
+     "est_tokens": 189,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.11384,
+      0.11592,
+      0.11595,
+      0.11693,
+      0.12081
+     ]
+    },
+    "callers1": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers2": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.13897,
+     "stdout_bytes": 4031,
+     "est_tokens": 1152,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.13883,
+      0.14008,
+      0.14201,
+      0.13897,
+      0.13886
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "dctx map hubs (bounded overview: most-called symbols + per-directory counts)",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.14773,
+     "stdout_bytes": 2138,
+     "est_tokens": 611,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.14356,
+      0.14092,
+      0.14773,
+      0.16231,
+      0.1677
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.27204,
+     "stdout_bytes": 1081,
+     "est_tokens": 309,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.2571,
+      0.2784,
+      0.27204,
+      0.26848,
+      0.28114
+     ]
+    }
+   },
+   "trail": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.29506,
+     "stdout_bytes": 985,
+     "est_tokens": 282,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 199444,
+     "walls": [
+      1.90349,
+      2.35121,
+      1.29506,
+      1.23332,
+      1.23423
+     ]
+    },
+    "callers1": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers2": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.00832,
+     "stdout_bytes": 4876,
+     "est_tokens": 1394,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 133580,
+     "walls": [
+      1.00832,
+      1.00884,
+      1.00034,
+      1.00812,
+      1.02827
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.02324,
+     "stdout_bytes": 2197,
+     "est_tokens": 628,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 134408,
+     "walls": [
+      1.00908,
+      1.02324,
+      1.03599,
+      1.01234,
+      1.02916
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.06814,
+     "stdout_bytes": 1161,
+     "est_tokens": 332,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 137536,
+     "walls": [
+      1.08699,
+      1.06814,
+      1.06762,
+      1.05753,
+      1.08337
+     ]
+    }
+   },
+   "graphify": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.46791,
+     "stdout_bytes": 721,
+     "est_tokens": 206,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.46721,
+      0.46791,
+      0.47244,
+      0.47596,
+      0.46727
+     ]
+    },
+    "callers1": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers2": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "skeleton": {
+     "supported": true,
+     "via": "approximate: explain <file node> lists its connections, not signatures",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.40535,
+     "stdout_bytes": 1449,
+     "est_tokens": 414,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.40352,
+      0.40887,
+      0.40431,
+      0.40651,
+      0.40535
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "reads GRAPH_REPORT.md written by cluster-only",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.00692,
+     "stdout_bytes": 13394,
+     "est_tokens": 3827,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.008,
+      0.00699,
+      0.00689,
+      0.00692,
+      0.00692
+     ]
+    },
+    "grep": {
+     "supported": false,
+     "via": null,
+     "why": "no literal-search verb",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "god_nodes": {
+     "supported": true,
+     "via": "extra: hubs list",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.34549,
+     "stdout_bytes": 308,
+     "est_tokens": 88,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.34673,
+      0.34863,
+      0.3433,
+      0.33896,
+      0.34549
+     ]
+    }
+   }
+  },
+  "docs": {
+   "dctx": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.08565,
+     "stdout_bytes": 1256,
+     "est_tokens": 359,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.08564,
+      0.08782,
+      0.08671,
+      0.08456,
+      0.08565
+     ]
+    },
+    "callers1": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers2": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.08569,
+     "stdout_bytes": 3263,
+     "est_tokens": 933,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.08563,
+      0.0868,
+      0.08564,
+      0.0954,
+      0.08569
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "dctx map hubs (bounded overview: most-called symbols + per-directory counts)",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.08565,
+     "stdout_bytes": 105,
+     "est_tokens": 30,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.08565,
+      0.08685,
+      0.08558,
+      0.08662,
+      0.08561
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.14059,
+     "stdout_bytes": 1642,
+     "est_tokens": 470,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75148,
+     "walls": [
+      0.14059,
+      0.1396,
+      0.14159,
+      0.1449,
+      0.13956
+     ]
+    }
+   },
+   "trail": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.95183,
+     "stdout_bytes": 321,
+     "est_tokens": 92,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 113840,
+     "walls": [
+      0.94719,
+      0.95183,
+      0.96026,
+      0.94749,
+      0.96542
+     ]
+    },
+    "callers1": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers2": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.94201,
+     "stdout_bytes": 101,
+     "est_tokens": 29,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 113020,
+     "walls": [
+      0.93942,
+      0.95715,
+      0.99639,
+      0.94201,
+      0.94082
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.94303,
+     "stdout_bytes": 62,
+     "est_tokens": 18,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 114180,
+     "walls": [
+      0.97221,
+      0.93034,
+      0.94204,
+      0.94303,
+      0.94583
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.95201,
+     "stdout_bytes": 0,
+     "est_tokens": 0,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 112956,
+     "walls": [
+      0.95978,
+      0.95201,
+      0.96304,
+      0.93552,
+      0.94516
+     ]
+    }
+   },
+   "graphify": {
+    "find": {
+     "supported": false,
+     "via": null,
+     "why": "no graph.json (nothing extracted in code-only mode)",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers1": {
+     "supported": false,
+     "via": null,
+     "why": "no graph.json (nothing extracted in code-only mode)",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers2": {
+     "supported": false,
+     "via": null,
+     "why": "no graph.json (nothing extracted in code-only mode)",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "skeleton": {
+     "supported": false,
+     "via": null,
+     "why": "no graph.json (nothing extracted in code-only mode)",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "overview": {
+     "supported": false,
+     "via": null,
+     "why": "no graph.json (nothing extracted in code-only mode)",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "grep": {
+     "supported": false,
+     "via": null,
+     "why": "no graph.json (nothing extracted in code-only mode)",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    }
+   }
+  }
+ },
+ "accuracy": {
+  "flask": {
+   "dctx": {
+    "targets_scored": 20,
+    "gold_sites": 128,
+    "hits": 89,
+    "tp": 89,
+    "fp": 0,
+    "found": 125,
+    "precision_micro": 1.0,
+    "recall_micro": 0.977,
+    "precision_macro": 1.0,
+    "recall_macro": 0.967,
+    "unresolved_targets": 0,
+    "tokens_total": 7299,
+    "precision_micro_allpages": 1.0,
+    "recall_micro_allpages": 0.977
+   },
+   "trail": {
+    "targets_scored": 20,
+    "gold_sites": 128,
+    "hits": 35,
+    "tp": 25,
+    "fp": 1,
+    "found": 42,
+    "precision_micro": 0.962,
+    "recall_micro": 0.328,
+    "precision_macro": 0.981,
+    "recall_macro": 0.75,
+    "unresolved_targets": 0,
+    "tokens_total": 9263
+   },
+   "graphify": {
+    "targets_scored": 20,
+    "gold_sites": 128,
+    "hits": 33,
+    "tp": 28,
+    "fp": 2,
+    "found": 25,
+    "precision_micro": 0.933,
+    "recall_micro": 0.195,
+    "precision_macro": 0.961,
+    "recall_macro": 0.737,
+    "unresolved_targets": 0,
+    "tokens_total": 1171
+   }
+  },
+  "ripgrep": {
+   "dctx": {
+    "targets_scored": 20,
+    "gold_sites": 281,
+    "hits": 105,
+    "tp": 100,
+    "fp": 1,
+    "found": 148,
+    "precision_micro": 0.99,
+    "recall_micro": 0.527,
+    "precision_macro": 0.969,
+    "recall_macro": 0.813,
+    "unresolved_targets": 0,
+    "tokens_total": 11800,
+    "precision_micro_allpages": 0.993,
+    "recall_micro_allpages": 0.979
+   },
+   "trail": {
+    "targets_scored": 20,
+    "gold_sites": 281,
+    "hits": 81,
+    "tp": 76,
+    "fp": 1,
+    "found": 92,
+    "precision_micro": 0.987,
+    "recall_micro": 0.327,
+    "precision_macro": 0.964,
+    "recall_macro": 0.641,
+    "unresolved_targets": 0,
+    "tokens_total": 13119
+   },
+   "graphify": {
+    "targets_scored": 20,
+    "gold_sites": 281,
+    "hits": 16,
+    "tp": 9,
+    "fp": 0,
+    "found": 9,
+    "precision_micro": 1.0,
+    "recall_micro": 0.032,
+    "precision_macro": 1.0,
+    "recall_macro": 0.319,
+    "unresolved_targets": 0,
+    "tokens_total": 1022
+   }
+  },
+  "pocketbase": {
+   "dctx": {
+    "targets_scored": 20,
+    "gold_sites": 222,
+    "hits": 112,
+    "tp": 112,
+    "fp": 0,
+    "found": 181,
+    "precision_micro": 1.0,
+    "recall_micro": 0.815,
+    "precision_macro": 1.0,
+    "recall_macro": 0.951,
+    "unresolved_targets": 0,
+    "tokens_total": 11458,
+    "precision_micro_allpages": 1.0,
+    "recall_micro_allpages": 0.995
+   },
+   "trail": {
+    "targets_scored": 20,
+    "gold_sites": 222,
+    "hits": 23,
+    "tp": 18,
+    "fp": 0,
+    "found": 22,
+    "precision_micro": 1.0,
+    "recall_micro": 0.099,
+    "precision_macro": 1.0,
+    "recall_macro": 0.507,
+    "unresolved_targets": 0,
+    "tokens_total": 6214
+   },
+   "graphify": {
+    "targets_scored": 20,
+    "gold_sites": 222,
+    "hits": 91,
+    "tp": 84,
+    "fp": 0,
+    "found": 85,
+    "precision_micro": 1.0,
+    "recall_micro": 0.383,
+    "precision_macro": 1.0,
+    "recall_macro": 0.519,
+    "unresolved_targets": 0,
+    "tokens_total": 2003
+   }
+  },
+  "trailcode": {
+   "dctx": {
+    "targets_scored": 20,
+    "gold_sites": 256,
+    "hits": 116,
+    "tp": 115,
+    "fp": 1,
+    "found": 189,
+    "precision_micro": 0.991,
+    "recall_micro": 0.738,
+    "precision_macro": 0.975,
+    "recall_macro": 0.921,
+    "unresolved_targets": 0,
+    "tokens_total": 14651,
+    "precision_micro_allpages": 0.994,
+    "recall_micro_allpages": 0.977
+   },
+   "trail": {
+    "targets_scored": 20,
+    "gold_sites": 256,
+    "hits": 90,
+    "tp": 89,
+    "fp": 1,
+    "found": 231,
+    "precision_micro": 0.989,
+    "recall_micro": 0.902,
+    "precision_macro": 0.969,
+    "recall_macro": 0.758,
+    "unresolved_targets": 0,
+    "tokens_total": 11061
+   },
+   "graphify": {
+    "targets_scored": 19,
+    "gold_sites": 256,
+    "hits": 52,
+    "tp": 52,
+    "fp": 0,
+    "found": 55,
+    "precision_micro": 1.0,
+    "recall_micro": 0.215,
+    "precision_macro": 1.0,
+    "recall_macro": 0.55,
+    "unresolved_targets": 1,
+    "tokens_total": 1163
+   }
+  },
+  "ALL_GOLD_CORPORA": {
+   "dctx": {
+    "tp": 416,
+    "fp": 2,
+    "found": 643,
+    "gold_sites": 887,
+    "precision_micro": 0.995,
+    "recall_micro": 0.725,
+    "precision_micro_allpages": 0.996,
+    "recall_micro_allpages": 0.982
+   },
+   "trail": {
+    "tp": 208,
+    "fp": 3,
+    "found": 387,
+    "gold_sites": 887,
+    "precision_micro": 0.986,
+    "recall_micro": 0.436
+   },
+   "graphify": {
+    "tp": 173,
+    "fp": 2,
+    "found": 174,
+    "gold_sites": 887,
+    "precision_micro": 0.989,
+    "recall_micro": 0.196
+   }
+  }
+ },
+ "determinism": {
+  "flask": {
+   "dctx": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "flask",
+    "edit_file": "docs/conf.py",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 0.12309,
+    "tool": "dctx"
+   },
+   "trail": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "flask",
+    "edit_file": "docs/conf.py",
+    "identical_after_edit": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 1.32657,
+    "tool": "trail"
+   },
+   "graphify": {
+    "changed_after_edit": [
+     "find",
+     "overview",
+     "skeleton"
+    ],
+    "corpus": "flask",
+    "edit_file": "docs/conf.py",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "god_nodes"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "god_nodes"
+    ],
+    "post_edit_first_find_s": 0.54959,
+    "post_edit_update_rc": 0,
+    "post_edit_update_s": 5.3085,
+    "tool": "graphify"
+   }
+  },
+  "ripgrep": {
+   "dctx": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "ripgrep",
+    "edit_file": "crates/cli/src/decompress.rs",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 0.5311,
+    "tool": "dctx"
+   },
+   "trail": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "ripgrep",
+    "edit_file": "crates/cli/src/decompress.rs",
+    "identical_after_edit": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 1.78528,
+    "tool": "trail"
+   },
+   "graphify": {
+    "changed_after_edit": [
+     "find",
+     "overview",
+     "skeleton"
+    ],
+    "corpus": "ripgrep",
+    "edit_file": "crates/cli/src/decompress.rs",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "god_nodes"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "god_nodes"
+    ],
+    "post_edit_first_find_s": 0.77731,
+    "post_edit_update_rc": 0,
+    "post_edit_update_s": 8.11471,
+    "tool": "graphify"
+   }
+  },
+  "pocketbase": {
+   "dctx": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "pocketbase",
+    "edit_file": "apis/api_error_aliases.go",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 1.09567,
+    "tool": "dctx"
+   },
+   "trail": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "pocketbase",
+    "edit_file": "apis/api_error_aliases.go",
+    "identical_after_edit": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 3.66096,
+    "tool": "trail"
+   },
+   "graphify": {
+    "changed_after_edit": [
+     "god_nodes",
+     "overview",
+     "skeleton"
+    ],
+    "corpus": "pocketbase",
+    "edit_file": "apis/api_error_aliases.go",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "find"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "find"
+    ],
+    "post_edit_first_find_s": 1.41192,
+    "post_edit_update_rc": 0,
+    "post_edit_update_s": 57.63573,
+    "tool": "graphify"
+   }
+  },
+  "trailcode": {
+   "dctx": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "trailcode",
+    "edit_file": "src/ai/crux.ts",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 1.11678,
+    "tool": "dctx"
+   },
+   "trail": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "trailcode",
+    "edit_file": "src/ai/crux.ts",
+    "identical_after_edit": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 3.90979,
+    "tool": "trail"
+   },
+   "graphify": {
+    "changed_after_edit": [
+     "find",
+     "god_nodes",
+     "overview",
+     "skeleton"
+    ],
+    "corpus": "trailcode",
+    "edit_file": "src/ai/crux.ts",
+    "identical_after_edit": [
+     "callers1",
+     "callers2"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2"
+    ],
+    "post_edit_first_find_s": 1.369,
+    "post_edit_update_rc": 0,
+    "post_edit_update_s": 40.9429,
+    "tool": "graphify"
+   }
+  },
+  "mixed": {
+   "dctx": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "mixed",
+    "edit_file": "shell/install.sh",
+    "identical_after_edit": [
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 0.30213,
+    "tool": "dctx"
+   },
+   "trail": {
+    "changed_after_edit": [],
+    "corpus": "mixed",
+    "edit_file": "shell/install.sh",
+    "identical_after_edit": [
+     "find",
+     "grep",
+     "overview",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "find",
+     "grep",
+     "overview",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 1.22352,
+    "tool": "trail"
+   },
+   "graphify": {
+    "changed_after_edit": [
+     "find",
+     "god_nodes",
+     "overview",
+     "skeleton"
+    ],
+    "corpus": "mixed",
+    "edit_file": "shell/install.sh",
+    "identical_after_edit": [],
+    "identical_after_edit_ignoring_header_line": [],
+    "post_edit_first_find_s": 0.56189,
+    "post_edit_update_rc": 0,
+    "post_edit_update_s": 4.50094,
+    "tool": "graphify"
+   }
+  },
+  "docs": {
+   "dctx": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "docs",
+    "edit_file": "rust-book/nostarch/chapter20.md",
+    "identical_after_edit": [
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 0.16644,
+    "tool": "dctx"
+   },
+   "trail": {
+    "changed_after_edit": [],
+    "corpus": "docs",
+    "edit_file": "rust-book/nostarch/chapter20.md",
+    "identical_after_edit": [
+     "find",
+     "grep",
+     "overview",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "find",
+     "grep",
+     "overview",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 0.93476,
+    "tool": "trail"
+   },
+   "graphify": {
+    "changed_after_edit": [],
+    "corpus": "docs",
+    "edit_file": "rust-book/nostarch/chapter20.md",
+    "identical_after_edit": [],
+    "identical_after_edit_ignoring_header_line": [],
+    "tool": "graphify"
+   }
+  }
+ },
+ "canary": [
+  {
+   "env_file_names_in_outputs": [
+    "pack"
+   ],
+   "fixture": "canary-tracked",
+   "index_artifacts_with_canary": {},
+   "index_ok": true,
+   "leak_in_index": false,
+   "leak_in_output": false,
+   "leaks_by_query": {},
+   "queries": [
+    "find_canary",
+    "find_apikey",
+    "find_secret",
+    "find_helper",
+    "outline_a",
+    "pack",
+    "read_env",
+    "read_settings"
+   ],
+   "tool": "dctx"
+  },
+  {
+   "env_file_names_in_outputs": [],
+   "fixture": "canary-tracked",
+   "index_artifacts_with_canary": {},
+   "index_ok": true,
+   "leak_in_index": false,
+   "leak_in_output": false,
+   "leaks_by_query": {},
+   "queries": [
+    "ask_canary",
+    "ask_apikey",
+    "ask_secret",
+    "grep_canary",
+    "map",
+    "skeleton_a",
+    "callers_helper"
+   ],
+   "tool": "trail"
+  },
+  {
+   "env_file_names_in_outputs": [],
+   "fixture": "canary-tracked",
+   "index_artifacts_with_canary": {},
+   "index_ok": true,
+   "leak_in_index": false,
+   "leak_in_output": false,
+   "leaks_by_query": {},
+   "queries": [
+    "query_canary",
+    "query_apikey",
+    "query_secret",
+    "god_nodes",
+    "report"
+   ],
+   "tool": "graphify"
+  },
+  {
+   "env_file_names_in_outputs": [
+    "pack"
+   ],
+   "fixture": "canary-ignored",
+   "index_artifacts_with_canary": {},
+   "index_ok": true,
+   "leak_in_index": false,
+   "leak_in_output": false,
+   "leaks_by_query": {},
+   "queries": [
+    "find_canary",
+    "find_apikey",
+    "find_secret",
+    "find_helper",
+    "outline_a",
+    "pack",
+    "read_env",
+    "read_settings"
+   ],
+   "tool": "dctx"
+  },
+  {
+   "env_file_names_in_outputs": [],
+   "fixture": "canary-ignored",
+   "index_artifacts_with_canary": {},
+   "index_ok": true,
+   "leak_in_index": false,
+   "leak_in_output": false,
+   "leaks_by_query": {},
+   "queries": [
+    "ask_canary",
+    "ask_apikey",
+    "ask_secret",
+    "grep_canary",
+    "map",
+    "skeleton_a",
+    "callers_helper"
+   ],
+   "tool": "trail"
+  },
+  {
+   "env_file_names_in_outputs": [],
+   "fixture": "canary-ignored",
+   "index_artifacts_with_canary": {},
+   "index_ok": true,
+   "leak_in_index": false,
+   "leak_in_output": false,
+   "leaks_by_query": {},
+   "queries": [
+    "query_canary",
+    "query_apikey",
+    "query_secret",
+    "god_nodes",
+    "report"
+   ],
+   "tool": "graphify"
+  }
+ ],
+ "network": [
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "index_find",
+   "tool": "dctx",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "pack",
+   "tool": "dctx",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "build",
+   "tool": "trail",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "callers",
+   "tool": "trail",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "ask",
+   "tool": "trail",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "extract",
+   "tool": "graphify",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "query",
+   "tool": "graphify",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "index_find",
+   "tool": "dctx",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "default_env"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "pack",
+   "tool": "dctx",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "default_env"
+  },
+  {
+   "families": [
+    "AF_INET",
+    "AF_INET6",
+    "AF_NETLINK",
+    "AF_UNIX"
+   ],
+   "inet_attempt_count": 49,
+   "inet_connect_attempts": [
+    "connect 104.16.0.34:0 -> -Network is unreachable",
+    "connect 104.16.0.34:443 -> -Network is unreachable",
+    "connect 104.16.1.34:0 -> -Network is unreachable",
+    "connect 104.16.1.34:443 -> -Network is unreachable",
+    "connect 104.16.10.34:0 -> -Network is unreachable",
+    "connect 104.16.10.34:443 -> -Network is unreachable",
+    "connect 104.16.11.34:0 -> -Network is unreachable",
+    "connect 104.16.11.34:443 -> -Network is unreachable",
+    "connect 104.16.2.34:0 -> -Network is unreachable",
+    "connect 104.16.2.34:443 -> -Network is unreachable",
+    "connect 104.16.3.34:0 -> -Network is unreachable",
+    "connect 104.16.3.34:443 -> -Network is unreachable",
+    "connect 104.16.4.34:0 -> -Network is unreachable",
+    "connect 104.16.4.34:443 -> -Network is unreachable",
+    "connect 104.16.5.34:0 -> -Network is unreachable",
+    "connect 104.16.5.34:443 -> -Network is unreachable",
+    "connect 104.16.6.34:0 -> -Network is unreachable",
+    "connect 104.16.6.34:443 -> -Network is unreachable",
+    "connect 104.16.7.34:0 -> -Network is unreachable",
+    "connect 104.16.7.34:443 -> -Network is unreachable",
+    "connect 104.16.8.34:0 -> -Network is unreachable",
+    "connect 104.16.8.34:443 -> -Network is unreachable",
+    "connect 104.16.9.34:0 -> -Network is unreachable",
+    "connect 104.16.9.34:443 -> -Network is unreachable",
+    "connect 26064700000000000000000068100022:0 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100022:443 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100122:0 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100122:443 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100222:0 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100222:443 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100322:0 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100322:443 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100422:0 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100422:443 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100522:0 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100522:443 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100622:0 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100622:443 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100722:0 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100722:443 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100822:0 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100822:443 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100922:0 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100922:443 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100a22:0 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100a22:443 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100b22:0 -> -Cannot assign requested address",
+    "connect 26064700000000000000000068100b22:443 -> -Cannot assign requested address",
+    "connect 54.185.153.58:443 -> -Network is unreachable"
+   ],
+   "rc_traced": 0,
+   "socket_calls": 36,
+   "step": "build",
+   "tool": "trail",
+   "unix_connects": [
+    "/run/systemd/resolve/io.systemd.Resolve",
+    "/var/run/nscd/socket"
+   ],
+   "unshare_netns": true,
+   "variant": "default_env"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "callers",
+   "tool": "trail",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "default_env"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "ask",
+   "tool": "trail",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "default_env"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "extract",
+   "tool": "graphify",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "default_env"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "query",
+   "tool": "graphify",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "default_env"
+  }
+ ],
+ "coverage": {
+  "scala": {
+   "dctx": {
+    "files": 2,
+    "symbols": 8,
+    "call_edges": 1,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "files": 2,
+    "symbols": 312,
+    "call_edges": 1,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "files": 2,
+    "symbols": 76,
+    "call_edges": 32,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   }
+  },
+  "dart": {
+   "dctx": {
+    "files": 25,
+    "symbols": 17,
+    "call_edges": 2,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "files": 25,
+    "symbols": 83,
+    "call_edges": 10,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "files": 25,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   }
+  },
+  "lua": {
+   "dctx": {
+    "files": 3,
+    "symbols": 12,
+    "call_edges": 1,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "files": 3,
+    "symbols": 106,
+    "call_edges": 1,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "files": 3,
+    "symbols": 76,
+    "call_edges": 34,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   }
+  },
+  "elixir": {
+   "dctx": {
+    "files": 9,
+    "symbols": 18,
+    "call_edges": 1,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "files": 9,
+    "symbols": 142,
+    "call_edges": 4,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "files": 9,
+    "symbols": 45,
+    "call_edges": 44,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   }
+  },
+  "zig": {
+   "dctx": {
+    "files": 4,
+    "symbols": 16,
+    "call_edges": 0,
+    "symbol_ok": true,
+    "call_edge_ok": false
+   },
+   "trail": {
+    "files": 4,
+    "symbols": 284,
+    "call_edges": 5,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "files": 4,
+    "symbols": 27,
+    "call_edges": 29,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   }
+  },
+  "ocaml": {
+   "dctx": {
+    "files": 51,
+    "symbols": 25,
+    "call_edges": 2,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "files": 51,
+    "symbols": 2559,
+    "call_edges": 7,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "files": 51,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   }
+  },
+  "solidity": {
+   "dctx": {
+    "files": 59,
+    "symbols": 24,
+    "call_edges": 5,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "files": 59,
+    "symbols": 419,
+    "call_edges": 2,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "files": 59,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   }
+  },
+  "terraform": {
+   "dctx": {
+    "files": 77,
+    "symbols": 22,
+    "call_edges": 4,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "files": 77,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   },
+   "graphify": {
+    "files": 77,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   }
+  },
+  "sql": {
+   "dctx": {
+    "files": 62,
+    "symbols": 22,
+    "call_edges": 5,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "files": 62,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   },
+   "graphify": {
+    "files": 62,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   }
+  },
+  "shell": {
+   "dctx": {
+    "files": 287,
+    "symbols": 8,
+    "call_edges": 2,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "files": 287,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   },
+   "graphify": {
+    "files": 287,
+    "symbols": 42,
+    "call_edges": 23,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   }
+  }
+ }
+}

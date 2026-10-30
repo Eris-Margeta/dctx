@@ -25,6 +25,31 @@ the work is [`GAP-MATRIX-20261030.md`](GAP-MATRIX-20261030.md). Where another to
 | Plain-text docs (.md/.rst/.txt/.adoc corpus) | dctx indexes the corpus into headed sections (0.18 s). graphify's code-only mode produced no index, and Trail-Code indexes no doc nodes. |
 | Privacy canary (git-tracked `.env` files) | Run 3: **clean for all three tools** (DCX-30). Run 1: **dctx still leaked on one path.** `pack`, `find` and `grep` are clean now; before tonight `pack` printed the canary. But an explicit `dctx map read m:.env` returns the file. Trail-Code and graphify leaked nothing. The fix is card DCX-30, which has not landed. |
 
+## Run 4: callers recall wave (main `de06a3d`, 30 October, 09:17 UTC)
+
+The dctx binary's sha256 is `0a41481ffc6f9ecd5713be5af561bef9f1c13f980bfa69748d84540520b4086e`. New since run 3:
+- DCX-35 `42a3364`: compact neighbor records, so a page carries about 40 callers.
+- DCX-36 `2812e28`: Rust calls inside macro arguments.
+- DCX-37 `baebc3a`: receiver calls resolve to a lone method, and self-edges are listed in both directions.
+- DCX-34a/b/c `fff4f82`, `37db6a0`, `aa681ea`: deeper outline symbols.
+- DCX-38 `de06a3d`: per-root cache ceilings of 768 MiB.
+
+All 28 checks passed together before the run. Raw results are in `research/bench-3way-20261030/results/run4-de06a3d/`.
+
+| Callers P / R (first page) | Run 3 | Run 4 | Trail-Code | graphify |
+|---|---|---|---|---|
+| flask | 1.000 / 0.836 | 1.000 / 0.977 | 0.962 / 0.328 | 0.933 / 0.195 |
+| ripgrep | 0.981 / 0.246 | 0.990 / 0.527 | 0.987 / 0.327 | 1.000 / 0.032 |
+| pocketbase | 1.000 / 0.667 | 1.000 / 0.815 | 1.000 / 0.099 | 1.000 / 0.383 |
+| trailcode | 0.983 / 0.332 | 0.991 / 0.738 | **0.989 / 0.902** | 1.000 / 0.215 |
+| all | 0.993 / 0.461 | **0.995 / 0.725** | 0.986 / 0.436 | 0.989 / 0.196 |
+
+Following up to 5 pages, dctx reaches P 0.996 / R 0.982.
+
+Call-edge coverage on the mixed corpus is **9 of 10** in this run. The DCX-34a brace rewrite cost Zig its call edges on real code (the fixture still passes), which DCX-39 is fixing. Trail-Code has 7 of 10 and graphify 5 of 10.
+
+The coverage table's symbol counts come from bounded `map map` pages. They are therefore not comparable with Trail-Code's full graph counts.
+
 ## Run 3: all outline families with call edges, `.env` leak closed (main `9c578fa`, 30 October, 08:02 UTC)
 
 The dctx binary's sha256 is `72c6a31f0ee807ddd8840c7d8b85c9d1652dcb1001b948fec9de8eabaf277d6d`. New since run 2:
