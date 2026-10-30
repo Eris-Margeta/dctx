@@ -123,6 +123,8 @@ fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Resul
     let Some(root) = require_index(&generation.nodes, text, &request.target)? else {
         return Ok(missing(&request.target));
     };
+    // A declaration-only symbol answers with its paired definition's records, exactly as if asked for the definition.
+    let root = super::decl_pair::paired_definition(generation, root).unwrap_or(root);
     let mut frontier = vec![root];
     let mut seen: std::collections::HashSet<u32> = std::collections::HashSet::new();
     let mut records = Vec::new();

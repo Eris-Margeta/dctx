@@ -9,6 +9,7 @@ use dctx_map_model::EdgeKind;
 
 use super::extract::language_of;
 use super::refs_names::{call_segments, import_segments, last_segment, module_keys};
+use super::decl_pair::is_declaration_only_path;
 use super::{write_node_id, IndexedEdge, IndexedNode, TextBlob};
 
 /// One unresolved call or import exactly as a lexer reported it.
@@ -112,6 +113,11 @@ impl<'a> Tables<'a> {
             for index in file.first.saturating_add(1)..file.end {
                 let Some(node) = nodes.get(index as usize) else { break };
                 if node.letter != b's' || node.name.is_empty() {
+                    continue;
+                }
+                let path = text.get(node.path);
+                // A declaration-only symbol is not callable: its paired definition is the real implementation.
+                if is_declaration_only_path(path, node) {
                     continue;
                 }
                 names.entry((file.first, node.name.as_str())).or_default().push(index);

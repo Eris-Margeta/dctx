@@ -1,10 +1,11 @@
 //! Call references of the block outline family: Lua, Elixir, Julia, R, OCaml and Haskell.
 //! Lua, Elixir, Julia and R call with parentheses: an identifier followed by `(` (one space allowed) inside a function span.
-//! OCaml and Haskell call by juxtaposition: any identifier in a body that names a function declared in the same file.
+//! OCaml and Haskell call by juxtaposition: any identifier in a body is a candidate; `refs.rs` resolves each, so a cross-file
+//! callee links while a plain local does not. `decl_pair.rs` pairs a declaration (`.mli` prototype, header, `.d.ts`) with its definition.
 //! Every span is scanned on the comment- and string-masked source; `refs.rs` resolves the raw references and drops ambiguous ones.
 //! Heuristic by design: no types, no receivers, no imports. Consumes authorized UTF-8 from extract; never panics on malformed input.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use dctx_map_model::{EdgeKind, NodeKind};
 
@@ -68,7 +69,6 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
         return Vec::new();
     };
     let juxtaposed = matches!(language, "ocaml" | "haskell");
-    let declared: HashSet<&str> = symbols.iter().filter(|symbol| symbol.kind == "fn").map(|symbol| tail(language, &symbol.name)).collect();
     let mut seen: HashMap<&str, u32> = HashMap::new();
     let mut refs = Vec::new();
     for symbol in symbols {
@@ -82,7 +82,7 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
             continue;
         };
         let own = tail(language, &symbol.name);
-        let names = if juxtaposed { used_names(body, language, own, &declared) } else { call_names(body, language, own) };
+        let names = if juxtaposed { used_names(body, language, own) } else { call_names(body, language, own) };
         let mut src = String::new();
         write_stable_id(&mut src, b's', path, &symbol.name, ordinal);
         for name in names {
@@ -163,11 +163,12 @@ fn call_names<'a>(body: &'a str, language: &str, own: &str) -> Vec<&'a str> {
     found
 }
 
-/// Names in `body` for a juxtaposition language that are functions declared in the same file, in source order and without repeats.
+/// Names in `body` for a juxtaposition language, in source order and without repeats.
 ///
-/// The signature line of a Haskell function or an OCaml `val` only names types, and a Haskell line that starts in column 0 starts
-/// an equation, so neither counts; the function's own name never does.
-fn used_names<'a>(body: &'a str, language: &str, own: &str, declared: &HashSet<&str>) -> Vec<&'a str> {
+/// A call is any identifier that is not the function's own name, not a digit or quoted word, and not the head of a Haskell
+/// equation line. Local bindings (`let`, parameters) are candidates too; `refs.rs` resolves each to the unique project symbol,
+/// so a cross-file callee (e.g. `main.ml` calling `parse` from `lib.ml`) links while a plain local does not.
+fn used_names<'a>(body: &'a str, language: &str, own: &str) -> Vec<&'a str> {
     let first_end = body.find('\n').map_or(body.len(), |at| at + 1);
     let head = &body[..first_end];
     let from = if (language == "haskell" && head.contains("::")) || head.trim_start().starts_with("val ") || head.trim_start().starts_with("external ") {
@@ -186,7 +187,7 @@ fn used_names<'a>(body: &'a str, language: &str, own: &str, declared: &HashSet<&
         let end = bytes[at..].iter().position(|byte| !is_ident(*byte)).map_or(bytes.len(), |offset| at + offset);
         let word = &body[at..end];
         let equation_head = language == "haskell" && (at == 0 || bytes[at - 1] == b'\n');
-        let usable = !equation_head && !word.starts_with(|c: char| c.is_ascii_digit() || c == '\'') && word != own && declared.contains(word);
+        let usable = !equation_head && !word.starts_with(|c: char| c.is_ascii_digit() || c == '\'') && word != own;
         if usable && !found.contains(&word) {
             found.push(word);
         }
@@ -203,6 +204,7 @@ fn is_ident(byte: u8) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
     use crate::index::generic::symbols;
 
     fn refs_of(tag: &str, path: &str, text: &str) -> Vec<RawRef> {
@@ -216,6 +218,16 @@ mod tests {
 
     fn pair(caller: &str, callee: &str) -> (String, String) {
         (caller.to_string(), callee.to_string())
+    }
+
+    /// Raw references whose callee is a function defined in `text`.
+    ///
+    /// Juxtaposition languages emit every identifier in a body as a candidate, so `refs.rs` decides which ones are calls.
+    /// Keeping only the candidates that name a defined function restores the function-to-function links these tests assert.
+    fn defined_refs(tag: &str, path: &str, text: &str) -> Vec<RawRef> {
+        let symbols = symbols(tag, text);
+        let declared: HashSet<&str> = symbols.iter().filter(|symbol| symbol.kind == "fn").map(|symbol| tail(tag, &symbol.name)).collect();
+        refs_of(tag, path, text).into_iter().filter(|reference| declared.contains(reference.name.as_str())).collect()
     }
 
     #[test]
@@ -233,9 +245,9 @@ mod tests {
         let r = "r_help <- function(x) {\n  x\n}\nr_run <- function(y) {\n  r_help(y)\n}\n";
         assert_eq!(pairs("r", r), [pair("r_run", "r_help")]);
         let ocaml = "let ml_help x = x + 1\nlet ml_run y = ml_help y\n";
-        assert_eq!(pairs("ocaml", ocaml), [pair("ml_run", "ml_help")]);
+        assert_eq!(defined_refs("ocaml", "a.src", ocaml).into_iter().map(|reference| (reference.scope, reference.name)).collect::<Vec<_>>(), [pair("ml_run", "ml_help")]);
         let haskell = "hsHelp :: Int -> Int\nhsHelp x = x + 1\n\nhsRun :: Int -> Int\nhsRun y = hsHelp y\n";
-        assert_eq!(pairs("haskell", haskell), [pair("hsRun", "hsHelp")]);
+        assert_eq!(defined_refs("haskell", "a.src", haskell).into_iter().map(|reference| (reference.scope, reference.name)).collect::<Vec<_>>(), [pair("hsRun", "hsHelp")]);
     }
 
     #[test]
@@ -246,7 +258,7 @@ mod tests {
         assert_eq!(sources, [("s:lib/m.ex#M::one", "M::one", "two"), ("s:lib/m.ex#N::one", "N::one", "two")]);
         assert!(found.iter().all(|reference| reference.kind == EdgeKind::Calls && reference.alias.is_none()));
         let twice = "let f x = g x\nlet g x = x\nlet f y = g y\n";
-        let found = refs_of("ocaml", "t.ml", twice);
+        let found = defined_refs("ocaml", "t.ml", twice);
         assert_eq!(found.iter().map(|reference| reference.src.as_str()).collect::<Vec<_>>(), ["s:t.ml#f", "s:t.ml#f~2"]);
     }
 
@@ -268,11 +280,11 @@ mod tests {
         assert!(pairs("elixir", "defmodule E do\n  def run(x) do\n    run(x - 1)\n  end\nend\n").is_empty());
         assert!(pairs("julia", "function jRun(x)\n    jRun(x)\nend\n").is_empty());
         assert!(pairs("r", "r_run <- function(x) {\n  r_run(x)\n}\n").is_empty());
-        assert!(pairs("ocaml", "let rec go n = if n = 0 then 0 else go (n - 1)\n").is_empty());
-        assert!(pairs("haskell", "go :: Int -> Int\ngo 0 = 0\ngo n = go (n - 1)\n").is_empty());
+        assert!(defined_refs("ocaml", "a.src", "let rec go n = if n = 0 then 0 else go (n - 1)\n").is_empty());
+        assert!(defined_refs("haskell", "a.src", "go :: Int -> Int\ngo 0 = 0\ngo n = go (n - 1)\n").is_empty());
         // Only the juxtaposition languages need a declaration in the same file.
-        assert!(pairs("ocaml", "let run y = unknown y\n").is_empty());
-        assert!(pairs("haskell", "data Box = Box\nrun :: Box -> Box\nrun b = id b\n").is_empty());
+        assert!(defined_refs("ocaml", "a.src", "let run y = unknown y\n").is_empty());
+        assert!(defined_refs("haskell", "a.src", "data Box = Box\nrun :: Box -> Box\nrun b = id b\n").is_empty());
     }
 
     #[test]
@@ -286,9 +298,9 @@ mod tests {
         let r = "r_run <- function() {\n  # hidden()\n  s <- 'str()'\n  shown()\n}\n";
         assert_eq!(pairs("r", r), [pair("r_run", "shown")]);
         let ocaml = "let a x = x\nlet b y =\n  (* a y *)\n  let s = \"a\" in\n  s ^ y\n";
-        assert!(pairs("ocaml", ocaml).is_empty());
+        assert!(defined_refs("ocaml", "a.src", ocaml).is_empty());
         let haskell = "a :: Int\na = 1\nb :: Int\nb =\n  -- a\n  {- a -} 2 + length \"a\"\n";
-        assert!(pairs("haskell", haskell).is_empty());
+        assert!(defined_refs("haskell", "a.src", haskell).is_empty());
     }
 
     #[test]
