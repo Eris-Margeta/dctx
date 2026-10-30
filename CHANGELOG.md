@@ -27,7 +27,7 @@ before any separately authorized release.
   `path <FROM> <TO>` (shortest edge path) and `export --format json|mermaid` (the whole graph).
   `neighbors --depth` goes up to 4 (breadth-first, each node once).
 - **`dctx mcp`**: a stdio MCP server exposing the map verbs as tools.
-- **Outline symbols (`guess` confidence) for 26 more formats**: Scala, Dart, Zig, Solidity,
+- **Outline symbols (`guess` confidence) for 25 more formats**: Scala, Dart, Zig, Solidity,
   Gleam, Groovy; Elixir, Lua, OCaml, R, Julia, Haskell; Terraform/HCL, SQL, shell, Makefile,
   Dockerfile, protobuf, Pascal, GraphQL; and headed sections for `.txt`, `.rst`, `.adoc`,
   `.org` and `.tex` documents.

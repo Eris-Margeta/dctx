@@ -124,12 +124,12 @@ All corpora and the edit-stability, network and coverage tables are in
   October Trail-Code led it, 122 to 69 points.
 - Anything about graphify's LLM semantic graph, or Trail-Code's learnings and LSP edges.
 - SWE-bench or agent-run numbers.
-- Equal language depth. dctx's 26 new formats are outline tier: symbols, not call edges.
+- Equal language depth. dctx's 25 new formats are outline tier: symbols, not call edges.
 
 ## What changed in dctx tonight (all on `main`, not pushed)
 
 Call and import edges (`19e90a1`), byte-stable answers (`ce18608`), `.env` omission in pack (`6d4deec`),
-outline symbols for 26 formats and plain-text sections (`9c61ac9`, `e0821e3`, `839bd45`, `a32dad3`),
+outline symbols for 25 formats and plain-text sections (`9c61ac9`, `e0821e3`, `839bd45`, `a32dad3`),
 neighbors depth 4 (`0de5ce1`), `hubs` (`6bc0cbc`), `grep` (`5691234`), `skeleton` (`2243c38`), `path` (`670e9e3`),
 `export` (`ac8408c`), `dctx mcp` (`50bbce4`) and a 1 GiB source ceiling (`5d26781`). Every card's own check, and
 then all 15 checks together on `ac8408c`, passed on build-host before the benchmark ran.
