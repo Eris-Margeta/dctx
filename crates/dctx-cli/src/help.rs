@@ -89,7 +89,7 @@ pub fn text() -> String {
         "\
 Usage: dctx [PATH] [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json]
-       dctx map <map|find|neighbors|explain|read> [--json]
+       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]
        dctx mcp [PATH]
        dctx cache status [--json] [--root PATH]
        dctx cache gc [--dry-run] [--root PATH] [--max-bytes N] [--legacy]

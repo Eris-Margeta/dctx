@@ -15,6 +15,7 @@ mod refs_names;
 #[cfg(test)]
 mod refs_tests;
 mod segment;
+mod skeleton;
 mod span_index;
 mod text_docs;
 #[cfg(feature = "syntax-rust")]

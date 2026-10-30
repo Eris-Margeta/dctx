@@ -79,7 +79,7 @@ impl Session {
             }
             Collected::Records(records) => {
                 let explain_path = records.first().map(|record| record.path.clone());
-                if request.verb == Verb::Explain
+                if matches!(request.verb, Verb::Explain | Verb::Skeleton)
                     && let Some(path) = explain_path
                 {
                     self.authorize(&path)?;

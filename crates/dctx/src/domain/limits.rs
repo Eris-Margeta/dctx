@@ -186,6 +186,16 @@ fn verb_cap(verb: Verb) -> VerbCap {
             default_lines: 0,
             hard_lines: 0,
         },
+        Verb::Skeleton => VerbCap {
+            default_tokens: 2_000,
+            hard_tokens: 2_000,
+            default_records: 60,
+            hard_records: 60,
+            default_depth: 0,
+            hard_depth: 0,
+            default_lines: 0,
+            hard_lines: 0,
+        },
         Verb::Read => VerbCap {
             default_tokens: READ_DEFAULT_TOKENS,
             hard_tokens: READ_DEFAULT_TOKENS,

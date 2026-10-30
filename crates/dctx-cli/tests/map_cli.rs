@@ -102,7 +102,7 @@ impl Drop for Repository {
 fn map_binary_finds_and_outlines_new_languages_without_git() {
     let repo = Repository::new();
     let help = repo.run(&["map", "--help"]);
-    assert!(help.contains("dctx map <map|find|neighbors|explain|read>"), "{help}");
+    assert!(help.contains("dctx map <map|find|neighbors|explain|read|skeleton|grep>"), "{help}");
     assert!(help.contains("--in PATH"), "{help}");
     assert!(help.contains("--depth N"), "{help}");
 

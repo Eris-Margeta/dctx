@@ -28,6 +28,7 @@ pub(crate) fn collect(generation: &Generation, request: &MapRequest, depth: u32)
         Verb::Read => read(generation, request),
         // Grep reads file bytes, so the session answers it through `grep_records`.
         Verb::Grep => Ok(Collected::Records(Vec::new())),
+        Verb::Skeleton => super::skeleton::skeleton(generation, request),
     }
 }
 
@@ -177,7 +178,7 @@ fn read(generation: &Generation, request: &MapRequest) -> Result<Collected, Dctx
     Ok(Collected::Read(Box::new(record)))
 }
 
-fn require<'a>(nodes: &'a [IndexedNode], text: &TextBlob, target: &str) -> Result<Option<&'a IndexedNode>, DctxError> {
+pub(super) fn require<'a>(nodes: &'a [IndexedNode], text: &TextBlob, target: &str) -> Result<Option<&'a IndexedNode>, DctxError> {
     if target.is_empty() {
         return Err(DctxError::invalid("target is required"));
     }
@@ -194,7 +195,7 @@ fn require_index(nodes: &[IndexedNode], text: &TextBlob, target: &str) -> Result
     Ok(u32::try_from(index).ok())
 }
 
-fn missing(target: &str) -> Collected {
+pub(super) fn missing(target: &str) -> Collected {
     Collected::Outcome(IdentityOutcome::Gone { id: target.to_string() })
 }
 

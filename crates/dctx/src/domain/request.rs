@@ -10,7 +10,7 @@ use super::limits::OperationLimits;
 /// Request major this facade accepts.
 pub const REQUEST_VERSION: u32 = 1;
 
-/// One of the five read verbs. Cache administration is not a verb.
+/// One of the read verbs (the five graph verbs and `skeleton`). Cache administration is not a verb.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Verb {
     /// Children of a node, bounded by depth.
@@ -25,10 +25,12 @@ pub enum Verb {
     Read,
     /// Literal text search over the indexed files, hits grouped by enclosing symbol.
     Grep,
+    /// Every declaration signature of one file, in source order.
+    Skeleton,
 }
 
 impl Verb {
-    /// Wire name (`map`, `find`, `neighbors`, `explain`, `read`, `grep`).
+    /// Wire name (`map`, `find`, `neighbors`, `explain`, `read`, `grep`, `skeleton`).
     #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
     pub const fn as_str(self) -> &'static str {
         match self {
@@ -38,6 +40,7 @@ impl Verb {
             Self::Explain => "explain",
             Self::Read => "read",
             Self::Grep => "grep",
+            Self::Skeleton => "skeleton",
         }
     }
 
@@ -52,6 +55,7 @@ impl Verb {
             "explain" => Ok(Self::Explain),
             "read" => Ok(Self::Read),
             "grep" => Ok(Self::Grep),
+            "skeleton" => Ok(Self::Skeleton),
             _ => Err(DctxError::invalid("unknown verb")),
         }
     }
@@ -370,7 +374,7 @@ mod tests {
 
     #[test]
     fn verb_names_round_trip() {
-        for name in ["map", "find", "neighbors", "explain", "read", "grep"] {
+        for name in ["map", "find", "neighbors", "explain", "read", "grep", "skeleton"] {
             assert_eq!(Verb::parse(name).expect("verb").as_str(), name);
         }
         assert!(Verb::parse("pack").is_err());

@@ -23,11 +23,15 @@ pub(super) struct Options {
     pub grep: bool,
     /// True when the caller passed `-i` or `--ignore-case` to grep.
     pub ignore_case: bool,
+    /// True for `skeleton`: parsed as a map request, sent to the facade as the skeleton verb.
+    pub skeleton: bool,
 }
-pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read> <TARGET> [OPTIONS]
+pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read|skeleton|grep> <TARGET> [OPTIONS]
        dctx map hubs [--limit N] [--json] [--place PATH] [--budget TOKENS] [--meta]
          Most-called symbols (incoming calls and imports, 1..60 lines, default 20) and per-directory file and symbol counts. No TARGET.
   TARGET                  Required. map accepts a stable id or a place-relative file.
+                          skeleton takes a file (or m:<path>) and prints its declaration signatures, no bodies,
+                          in source order: id, kind, L<start>-<end>, signature.
                           A file path is read as m:<path>. Omitting TARGET does not scan.
   --json                  Facade JSON v2, including the precision label
   --place PATH            Place or worktree root (default: current directory)
@@ -62,8 +66,9 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     if args.first().map(String::as_str) == Some("hubs") {
         return super::hubs::parse(args);
     }
+    let skeleton = args.first().map(String::as_str) == Some("skeleton");
     let verb = match args.first().map(String::as_str) {
-        Some("map") => Verb::Map,
+        Some("map" | "skeleton") => Verb::Map,
         Some("find") => Verb::Find,
         Some("neighbors") => Verb::Neighbors,
         Some("explain") => Verb::Explain,
@@ -72,7 +77,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         Some("grep") => Verb::Find,
         _ => {
             return Err(
-                "expected map, find, neighbors, explain, read or grep; try: dctx map --help".into(),
+                "expected map, find, neighbors, explain, read, skeleton, grep or hubs; try: dctx map --help".into(),
             )
         }
     };
@@ -134,7 +139,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
                     return Err("--cursor was given twice".into());
                 }
             }
-            "--depth" if matches!(verb, Verb::Map | Verb::Neighbors) => {
+            "--depth" if !skeleton && matches!(verb, Verb::Map | Verb::Neighbors) => {
                 request.depth = number(value)?;
             }
             "--limit" if matches!(verb, Verb::Map | Verb::Find | Verb::Neighbors | Verb::Explain | Verb::Read) => {
@@ -200,9 +205,10 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
     }
     request.target = target.unwrap_or_default();
     if request.verb == Verb::Map && request.target.is_empty() {
-        return Err(
-            "map requires a target: a stable id (m:, s:, …) or a place-relative file path".into(),
-        );
+        let name = if skeleton { "skeleton" } else { "map" };
+        return Err(format!(
+            "{name} requires a target: a stable id (m:, s:, …) or a place-relative file path"
+        ));
     }
     request.validate().map_err(|e| e.to_string())?;
     Ok(Options {
@@ -216,6 +222,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         hubs: false,
         grep,
         ignore_case,
+        skeleton,
     })
 }
 fn number<T: std::str::FromStr>(value: &str) -> Result<T, String> {
@@ -274,6 +281,12 @@ mod tests {
         assert!(options(&["find", "NEEDLE", "-i"]).is_err());
         assert!(options(&["grep", "NEEDLE", "--kind", "fn"]).is_err());
         assert!(options(&["grep"]).is_err());
+        let skeleton = options(&["skeleton", "a.py", "--json"]).expect("skeleton");
+        assert!(skeleton.skeleton && skeleton.request.verb == Verb::Map);
+        assert!(!options(&["map", "a.py"]).expect("map").skeleton);
+        assert!(options(&["skeleton"]).err().expect("target").contains("skeleton requires a target"));
+        assert!(options(&["skeleton", "a.py", "--depth", "2"]).is_err());
+        assert!(HELP.contains("|skeleton|grep>"));
         assert_eq!(
             options(&["read", "s:a.rs#a", "--lines", "35-36"])
                 .expect("lines")

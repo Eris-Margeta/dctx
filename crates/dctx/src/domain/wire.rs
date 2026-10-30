@@ -75,6 +75,10 @@ pub fn encode_text(place: &str, answer: &Answer, meta: bool) -> String {
     }
     out.push('\n');
     for record in &answer.records {
+        if answer.verb == Verb::Skeleton {
+            push_skeleton_line(&mut out, record);
+            continue;
+        }
         out.push_str(&record.id);
         out.push('\t');
         out.push_str(&record.kind);
@@ -104,6 +108,17 @@ pub fn encode_text(place: &str, answer: &Answer, meta: bool) -> String {
         out.push('\n');
     }
     out
+}
+
+/// One skeleton line: `<id>\t<kind>\tL<start>-<end>\t<signature>`. The module line carries its path, and tabs or newlines inside a signature become spaces.
+fn push_skeleton_line(out: &mut String, record: &AnswerRecord) {
+    let _ = write!(out, "{}\t{}\tL{}-{}\t", record.id, record.kind, record.lines[0], record.lines[1]);
+    match record.signature.as_deref() {
+        Some(signature) => out.extend(signature.chars().map(|ch| if matches!(ch, '\t' | '\n' | '\r') { ' ' } else { ch })),
+        None if record.kind == "module" => out.push_str(&record.path),
+        None => {}
+    }
+    out.push('\n');
 }
 
 fn encode_record(out: &mut String, record: &AnswerRecord) {
@@ -248,6 +263,22 @@ mod tests {
         assert!(encode_answer_with("fixture", &first, true).contains("\"snapshot\":\"v1:sha256:ab:1\",\"generation\":1"));
         assert!(encode_answer_with("fixture", &first, true).contains("\"age_s\":0"));
         assert!(encode_text("fixture", &first, true).starts_with("# fixture find v1:sha256:ab:1 g=1\n"));
+    }
+
+    #[test]
+    fn skeleton_text_lines_carry_id_kind_lines_and_signature() {
+        let mut answer = sample();
+        answer.verb = Verb::Skeleton;
+        answer.outcome = None;
+        let mut method = AnswerRecord::basic("s:a.py#Repo::get", "fn", "a.py");
+        method.lines = [2, 3];
+        method.signature = Some("def get(self,\tkey):".to_string());
+        let mut module = AnswerRecord::basic("m:a.py", "module", "a.py");
+        module.lines = [1, 9];
+        answer.records = vec![module, method];
+        let text = encode_text("fixture", &answer, false);
+        assert_eq!(text, "# fixture skeleton\nm:a.py\tmodule\tL1-9\ta.py\ns:a.py#Repo::get\tfn\tL2-3\tdef get(self, key):\n");
+        assert!(encode_answer("fixture", &answer).contains("\"signature\":\"def get(self,\\tkey):\""));
     }
 
     fn sample() -> Answer {

@@ -6,6 +6,7 @@
 
 mod args;
 mod hubs;
+mod skeleton;
 
 use dctx::{Direction, MapRequest, SnapshotRequest, VecSink, Verb};
 use dctx_map_query::{Direction as QueryDirection, Format, Request, Verb as QueryVerb};
@@ -85,6 +86,9 @@ fn execute_with(
         // The CLI parses grep as a find-shaped request; the facade knows the real verb.
         request.verb = Verb::Grep;
         request.ignore_case = options.ignore_case;
+    }
+    if options.skeleton {
+        skeleton::retarget(&mut request, options.budget_set);
     }
     let mut sink = VecSink::new();
     let queried = if profiling {
