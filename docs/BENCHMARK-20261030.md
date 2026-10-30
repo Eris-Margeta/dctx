@@ -25,6 +25,21 @@ the work is [`GAP-MATRIX-20261030.md`](GAP-MATRIX-20261030.md). Where another to
 | Plain-text docs (.md/.rst/.txt/.adoc corpus) | dctx indexes the corpus into headed sections (0.18 s). graphify's code-only mode produced no index, and Trail-Code indexes no doc nodes. |
 | Privacy canary (git-tracked `.env` files) | Run 3: **clean for all three tools** (DCX-30). Run 1: **dctx still leaked on one path.** `pack`, `find` and `grep` are clean now; before tonight `pack` printed the canary. But an explicit `dctx map read m:.env` returns the file. Trail-Code and graphify leaked nothing. The fix is card DCX-30, which has not landed. |
 
+## Task-level questions: the October protocol, re-run on 30 October
+
+This is the same protocol as October: 70 questions over seven corpora, 354 gold facts, and October's generator and scorer. It uses no model, and an answer scores when the tool's raw output contains the gold facts. Commands, question mappings and deviations are in `research/bench-3way-20261030/tasks/README.md`.
+
+| Tool | Points /140 | Gold facts /354 | Tokens | Facts per 1k tokens |
+|---|---|---|---|---|
+| Trail-Code 0.28.0 | **122** (October: 122) | **312** (312) | 88,923 | 3.51 |
+| graphify 0.9.97, code-only | 96 | 238 | 197,203 | 1.21 |
+| dctx `de06a3d`, October mapping | 77 (October: 69) | 195 (169) | **25,929** (500,005) | **7.52** |
+
+**Trail-Code still wins the task-level test.** dctx gained 8 points and needs a fifth of October's tokens, because its overview question now uses `map hubs` instead of the unbounded legacy tree. dctx's answers are the densest: 7.5 facts per 1,000 tokens against Trail-Code's 3.5. Where dctx still loses:
+- Caller facts need the call line, and `neighbors` returns the calling function's span.
+- Config-key and concept questions score 0 under the October mapping.
+- A supplementary run that uses the verbs added since October reached 96 points (`map grep` for config keys, `map skeleton` for outlines). It is not the October protocol, so it is not counted above.
+
 ## Run 4: callers recall wave (main `de06a3d`, 30 October, 09:17 UTC)
 
 The dctx binary's sha256 is `0a41481ffc6f9ecd5713be5af561bef9f1c13f980bfa69748d84540520b4086e`. New since run 3:
@@ -145,8 +160,7 @@ All corpora and the edit-stability, network and coverage tables are in
 
 ## Not claimed
 
-- Task-level answer quality, meaning the 70-question protocol with a frozen model. It was not re-run, and in
-  October Trail-Code led it, 122 to 69 points.
+- Task-level answer quality with a frozen model. The fact-scoring protocol was re-run; Trail-Code leads it, 122 to 77.
 - Anything about graphify's LLM semantic graph, or Trail-Code's learnings and LSP edges.
 - SWE-bench or agent-run numbers.
 - Equal language depth. dctx's 25 new formats are outline tier: symbols, not call edges.

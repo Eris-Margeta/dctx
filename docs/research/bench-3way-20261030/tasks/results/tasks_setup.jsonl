@@ -1,0 +1,14 @@
+{"corpus": "flask", "graph_nodes": null, "setup_rc": 0, "setup_wall_s": 3.80533, "tool": "trail"}
+{"corpus": "flask", "graph_nodes": 2229, "setup_rc": [0, 0], "setup_wall_s": 8.02, "tool": "graphify"}
+{"corpus": "ripgrep", "graph_nodes": null, "setup_rc": 0, "setup_wall_s": 2.95994, "tool": "trail"}
+{"corpus": "ripgrep", "graph_nodes": 4271, "setup_rc": [0, 0], "setup_wall_s": 10.91, "tool": "graphify"}
+{"corpus": "pocketbase", "graph_nodes": null, "setup_rc": 0, "setup_wall_s": 50.36656, "tool": "trail"}
+{"corpus": "pocketbase", "graph_nodes": 8801, "setup_rc": [0, 0], "setup_wall_s": 60.75, "tool": "graphify"}
+{"corpus": "trailcode", "graph_nodes": null, "setup_rc": 0, "setup_wall_s": 18.97084, "tool": "trail"}
+{"corpus": "trailcode", "graph_nodes": 3407, "setup_rc": [0, 0], "setup_wall_s": 15.25, "tool": "graphify"}
+{"corpus": "dctx", "graph_nodes": null, "setup_rc": 0, "setup_wall_s": 12.10379, "tool": "trail"}
+{"corpus": "dctx", "graph_nodes": 15285, "setup_rc": [0, 0], "setup_wall_s": 54.59, "tool": "graphify"}
+{"corpus": "django", "graph_nodes": null, "setup_rc": 0, "setup_wall_s": 99.43522, "tool": "trail"}
+{"corpus": "django", "graph_nodes": 54150, "setup_rc": [0, 0], "setup_wall_s": 260.36, "tool": "graphify"}
+{"corpus": "core", "graph_nodes": null, "setup_rc": 0, "setup_wall_s": 19.75701, "tool": "trail"}
+{"corpus": "core", "graph_nodes": 24421, "setup_rc": [0, 0], "setup_wall_s": 87.73, "tool": "graphify"}
