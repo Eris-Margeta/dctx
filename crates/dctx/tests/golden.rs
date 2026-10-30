@@ -34,7 +34,8 @@ fn five_verbs_project_the_golden_symbol() {
     let mut session = open_session(common::repository());
     let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
     assert_eq!(handle.generation(), 1);
-    assert_eq!(session.content_reads(), 4);
+    // The env-shaped `secrets.env` is never read, so the fixture costs three reads, not four.
+    assert_eq!(session.content_reads(), 3);
     assert_eq!(session.cached_content_reads(), 0);
     assert!(handle.digest().starts_with("v1:sha256:"));
 
@@ -225,14 +226,14 @@ fn gitignore_text_is_not_applied_and_git_metadata_is_not_opened() {
     let log = shared.handle();
     let mut session = open_session(shared);
     let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
-    assert_eq!(session.content_reads(), 4);
+    assert_eq!(session.content_reads(), 3);
     let reads = log.lock().expect("log").reads();
-    assert!(reads.iter().any(|path| path == "secrets.env"));
+    assert!(!reads.iter().any(|path| path == "secrets.env"), "env-shaped files are never read");
     assert!(reads.iter().any(|path| path == ".gitignore"));
     assert!(!reads.iter().any(|path| path == ".git" || path.starts_with(".git/")));
     let mut sink = VecSink::new();
     let secret = session.explain(&handle, "m:secrets.env", &mut sink).expect("secret");
-    assert_eq!(secret.records[0].path, "secrets.env");
+    assert_eq!(secret.outcome.as_ref().map(IdentityOutcome::as_str), Some("gone"));
     let mut git = VecSink::new();
     let hidden = session.explain(&handle, "m:.git/config", &mut git).expect("gone");
     assert_eq!(hidden.outcome.as_ref().map(IdentityOutcome::as_str), Some("gone"));

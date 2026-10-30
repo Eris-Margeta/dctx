@@ -4,6 +4,7 @@
 //! Empty host grants exclude only when the caller chose [`HostGrants::Ceiling`]. [`HostGrants::PermitAll`] does not.
 
 use dctx_core::domain::{FileHandlingDecision, ItemContext};
+use dctx_core::filter::is_secret_shaped_name;
 use dctx_core::selection::{glob_match, SelectionPolicy};
 use dctx_template::{ContextPlan, HostCeiling, SelectRule};
 
@@ -58,7 +59,12 @@ impl PolicyView<'_> {
             debug_mode: false,
         });
         let planned = plan_decision(self.plan, self.view, path)?;
-        Ok(narrower(narrower(host, selected), planned))
+        let decided = narrower(narrower(host, selected), planned);
+        // Env-shaped files (`.env`, `.env.*`, `*.env`, `.envrc`) never give up their bytes, whatever the grants say.
+        if !is_dir && is_secret_shaped_name(name) {
+            return Ok(narrower(decided, FileHandlingDecision::OmitContent));
+        }
+        Ok(decided)
     }
 
     /// Parser named by the plan. No plan means the shipped Rust default (`syn`).
@@ -284,5 +290,20 @@ mod tests {
             let error = checked.expect_err("minimal build");
             assert!(matches!(error, DctxError::UnsupportedCapability { capability: "syntax-rust", .. }));
         }
+    }
+
+    /// Env-shaped files are content-omitted under permit-all grants and an empty selection; other files stay included.
+    #[test]
+    fn env_shaped_files_are_omitted_whatever_the_grants_say() {
+        use dctx_core::selection::RuleTexts;
+
+        let selection = SelectionPolicy::from_texts(&RuleTexts::default());
+        let ceiling = HostCeiling::base();
+        let view = PolicyView { selection: &selection, ceiling: &ceiling, grants: HostGrants::PermitAll, plan: None, view: "map" };
+        for path in [".env", "config/prod.env", ".env.local", "deploy/.envrc"] {
+            assert_eq!(view.decide(path, false).expect("decide"), FileHandlingDecision::OmitContent, "{path}");
+        }
+        assert_eq!(view.decide("src/lib.rs", false).expect("decide"), FileHandlingDecision::Include);
+        assert_eq!(view.decide("settings.env", true).expect("decide"), FileHandlingDecision::Include);
     }
 }

@@ -31,8 +31,9 @@ fn gitignore_is_not_automatic_and_git_config_is_not_rewritten() {
     let ignore_before = std::fs::read(&ignore_path).expect("ignore");
 
     let included = run(root.path(), SelectionPolicy::from_texts(&RuleTexts::default()));
-    assert_eq!(included.reads, 4);
-    assert_eq!(included.secret.as_deref(), Some("secrets.env"));
+    // The env-shaped `secrets.env` is never read or indexed, with or without a local omit rule.
+    assert_eq!(included.reads, 3);
+    assert!(included.secret.is_none());
     assert!(included.git_gone);
     assert_eq!(std::fs::read(&git_config).expect("config after"), config_bytes);
     assert_eq!(std::fs::read(&ignore_path).expect("ignore after"), ignore_before);
@@ -42,8 +43,7 @@ fn gitignore_is_not_automatic_and_git_config_is_not_rewritten() {
         root.path(),
         SelectionPolicy::from_texts(&RuleTexts { local_omit: Some("secrets.env\n"), ..RuleTexts::default() }),
     );
-    assert!(omitted.reads < included.reads);
-    assert_eq!(omitted.reads, 3);
+    assert_eq!(omitted.reads, included.reads);
     assert!(omitted.secret.is_none());
     assert!(omitted.git_gone);
     assert_eq!(std::fs::read(&git_config).expect("config still"), config_bytes);
