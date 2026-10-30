@@ -43,7 +43,7 @@ pub fn encode_answer_with(place: &str, answer: &Answer, meta: bool) -> String {
         if index > 0 {
             out.push(',');
         }
-        encode_record(&mut out, record);
+        encode_record(&mut out, record, answer.verb == Verb::Neighbors);
     }
     out.push(']');
     field_raw(&mut out, "more", &answer.more.to_string(), false);
@@ -121,7 +121,8 @@ fn push_skeleton_line(out: &mut String, record: &AnswerRecord) {
     out.push('\n');
 }
 
-fn encode_record(out: &mut String, record: &AnswerRecord) {
+/// One record object. A `compact` record (neighbors) leaves out null fields and a `target` that its id already ends with.
+fn encode_record(out: &mut String, record: &AnswerRecord, compact: bool) {
     out.push('{');
     field_str(out, "id", &record.id, true);
     field_str(out, "kind", &record.kind, false);
@@ -133,7 +134,7 @@ fn encode_record(out: &mut String, record: &AnswerRecord) {
     out.push(']');
     field_str(out, "summary", &record.summary, false);
     field_str(out, "summary_source", &record.summary_source, false);
-    field_opt(out, "signature", record.signature.as_deref());
+    field_opt_in(out, "signature", record.signature.as_deref(), compact);
     match record.span {
         Some([start, end]) => {
             out.push_str(",\"span\":[");
@@ -142,14 +143,23 @@ fn encode_record(out: &mut String, record: &AnswerRecord) {
             out.push_str(&end.to_string());
             out.push(']');
         }
+        None if compact => {}
         None => field_raw(out, "span", "null", false),
     }
-    field_opt(out, "source_utf8", record.source_utf8.as_deref());
-    field_opt(out, "edge", record.edge.as_deref());
-    field_opt(out, "direction", record.direction.as_deref());
-    field_opt(out, "target", record.target.as_deref());
-    field_opt(out, "confidence", record.confidence.as_deref());
+    field_opt_in(out, "source_utf8", record.source_utf8.as_deref(), compact);
+    field_opt_in(out, "edge", record.edge.as_deref(), compact);
+    field_opt_in(out, "direction", record.direction.as_deref(), compact);
+    let target = record.target.as_deref().filter(|target| !(compact && record.id.ends_with(target)));
+    field_opt_in(out, "target", target, compact);
+    field_opt_in(out, "confidence", record.confidence.as_deref(), compact);
     out.push('}');
+}
+
+/// Like [`field_opt`], and with `compact` a null value is left out.
+fn field_opt_in(out: &mut String, key: &str, value: Option<&str>, compact: bool) {
+    if value.is_some() || !compact {
+        field_opt(out, key, value);
+    }
 }
 
 fn field_opt(out: &mut String, key: &str, value: Option<&str>) {

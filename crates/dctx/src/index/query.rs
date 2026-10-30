@@ -133,6 +133,7 @@ fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Resul
                     continue;
                 }
                 let mut record = record_of(text, node);
+                clip_summary(&mut record);
                 let node_id = record.id.clone();
                 record.id = if level > 1 { format!("{edge_name}:{direction}:{level}:{node_id}") } else { format!("{edge_name}:{direction}:{node_id}") };
                 record.edge = Some(edge_name.to_string());
@@ -154,6 +155,18 @@ fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Resul
         frontier = next;
     }
     Ok(Collected::Records(records))
+}
+
+/// Longest summary kept on an edge record, in characters.
+const EDGE_SUMMARY_CAP: usize = 100;
+
+/// Keeps an edge record small: a summary taken from the signature is dropped, a doc summary is clipped on a char boundary.
+fn clip_summary(record: &mut AnswerRecord) {
+    if record.summary_source == "sig" {
+        record.summary.clear();
+    } else if let Some((cut, _)) = record.summary.char_indices().nth(EDGE_SUMMARY_CAP) {
+        record.summary.truncate(cut);
+    }
 }
 
 fn explain(generation: &Generation, request: &MapRequest) -> Result<Collected, DctxError> {

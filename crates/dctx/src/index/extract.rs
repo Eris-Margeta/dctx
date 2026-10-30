@@ -546,16 +546,53 @@ fn placed(name: String, kind: &str, graph: NodeKind, line_no: u32, offset: usize
     }
 }
 
-/// Signature ending at the matching parenthesis, or the text before a body brace.
+/// Longest signature kept, in characters. A signature is a label for a record page, never the body.
+const SIGNATURE_CAP: usize = 160;
+
+/// Signature ending at the matching parenthesis, or the text before a body brace. The result is one line of at most
+/// [`SIGNATURE_CAP`] characters cut on a char boundary; a call-style declaration `test('name', () => ...)` stops after its first argument.
 pub(crate) fn signature_text(text: &str) -> String {
     let trimmed = text.trim();
-    if let Some(start) = trimmed.find('(')
+    let whole = if let Some(head) = call_head(trimmed) {
+        head
+    } else if let Some(start) = trimmed.find('(')
         && let Some(end) = matching_paren(trimmed, start)
     {
-        return trimmed[..=end].trim().to_string();
+        trimmed[..=end].trim().to_string()
+    } else {
+        let cut = trimmed.find('{').unwrap_or(trimmed.len());
+        trimmed[..cut].trim().trim_end_matches(';').trim().to_string()
+    };
+    let line = whole.lines().next().unwrap_or_default().trim_end();
+    match line.char_indices().nth(SIGNATURE_CAP) {
+        Some((cut, _)) => line[..cut].trim_end().to_string(),
+        None => line.to_string(),
     }
-    let cut = trimmed.find('{').unwrap_or(trimmed.len());
-    trimmed[..cut].trim().trim_end_matches(';').trim().to_string()
+}
+
+/// `callee('literal', ...)` for a call whose first argument is a string literal followed by more arguments, else `None`.
+fn call_head(text: &str) -> Option<String> {
+    let open = text.find('(')?;
+    let callee = &text[..open];
+    if callee.is_empty() || !callee.bytes().all(|byte| is_ident(byte) || byte == b'.') {
+        return None;
+    }
+    let rest = &text[open + 1..];
+    let quote = rest.chars().next().filter(|ch| matches!(ch, '\'' | '"' | '`'))?;
+    let mut escaped = false;
+    let mut close = None;
+    for (index, ch) in rest.char_indices().skip(1) {
+        if escaped {
+            escaped = false;
+        } else if ch == '\\' {
+            escaped = true;
+        } else if ch == quote {
+            close = Some(index);
+            break;
+        }
+    }
+    let literal_end = close? + quote.len_utf8();
+    rest[literal_end..].trim_start().starts_with(',').then(|| format!("{callee}({}, ...)", &rest[..literal_end]))
 }
 
 fn matching_paren(text: &str, open: usize) -> Option<usize> {
@@ -594,6 +631,24 @@ mod tests {
         assert_eq!(symbol.summary_source, "doc");
         assert_eq!(symbol.signature, "pub fn ping()");
         assert_eq!(&bytes[13..29], b"pub fn ping() {}");
+    }
+
+    #[test]
+    fn signature_text_is_one_short_line_and_call_style_stops_at_the_first_argument() {
+        let long = format!("pub fn big({}) {{}}", "a".repeat(400));
+        let clipped = signature_text(&long);
+        assert_eq!(clipped.chars().count(), SIGNATURE_CAP);
+        assert!(clipped.starts_with("pub fn big(aaa"));
+        let wide = format!("fn w(\n    x: u8,\n) {{}}{}", "\u{e9}".repeat(300));
+        assert_eq!(signature_text(&wide), "fn w(");
+        let accents = format!("fn {}() {{}}", "\u{e9}".repeat(300));
+        assert_eq!(signature_text(&accents).chars().count(), SIGNATURE_CAP);
+        let call = format!("test(\"case 1 {}\", () => {{\n  target();\n}});", "x".repeat(2000));
+        let head = signature_text(&call);
+        assert!(head.starts_with("test(\"case 1 xxx") && head.chars().count() <= SIGNATURE_CAP);
+        assert_eq!(signature_text("it('works', () => { run(); });"), "it('works', ...)");
+        assert_eq!(signature_text("it('lonely')"), "it('lonely')");
+        assert_eq!(signature_text("pub fn ping() {}"), "pub fn ping()");
     }
 
     #[test]

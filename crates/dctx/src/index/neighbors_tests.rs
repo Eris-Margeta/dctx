@@ -80,3 +80,66 @@ fn a_self_edge_is_listed_inbound() {
         assert_eq!(records.into_iter().map(|record| record.id).collect::<Vec<_>>(), [want]);
     }
 }
+
+/// A generation with `s:big.ts#target` and `count` callers named `caller<n>`, each with a 2 KB signature summary.
+fn big_callers(count: u32) -> Generation {
+    let mut generation = chain();
+    generation.nodes.clear();
+    generation.edges.clear();
+    let path = generation.text.push("big.ts");
+    let calls = generation.text.push("calls");
+    let name = generation.text.push("name");
+    for n in 0..=count {
+        let label = if n == 0 { "target".to_string() } else { format!("caller{n}") };
+        let sig = format!("export function {label}(): number {{ return {} }}", "x".repeat(2000));
+        generation.nodes.push(IndexedNode {
+            letter: b's',
+            ordinal: 0,
+            kind: "fn".to_string(),
+            name: label,
+            path,
+            lines: [n + 1, n + 1],
+            span: [0, 0],
+            summary: sig,
+            summary_source: "sig".to_string(),
+            signature: String::new(),
+        });
+        if n > 0 {
+            generation.edges.push(IndexedEdge { src: n, dst: 0, edge: calls, confidence: name });
+        }
+    }
+    generation
+}
+
+#[test]
+fn a_2000_token_page_carries_at_least_36_callers_with_2kb_summaries() {
+    use crate::domain::{encode_answer, Answer, Freshness, Precision};
+    let mut request = MapRequest::new(Verb::Neighbors);
+    request.target = "s:big.ts#target".to_string();
+    request.direction = Direction::In;
+    let Collected::Records(records) = collect(&big_callers(60), &request, 1).expect("collect") else {
+        panic!("records expected");
+    };
+    assert_eq!(records.len(), 60);
+    assert!(records.iter().all(|record| record.summary.is_empty()), "a signature summary is dropped from an edge record");
+    let page = |count: usize| -> String {
+        let answer = Answer {
+            generation: 1,
+            snapshot: String::new(),
+            verb: Verb::Neighbors,
+            records: records[..count].to_vec(),
+            more: 0,
+            next: None,
+            freshness: Freshness { mode: "immutable_snapshot".to_string(), state: "verified".to_string(), age_s: 0 },
+            precision: Precision { coverage: "structural".to_string(), completion: "complete".to_string(), parser: "dctx-structural/2".to_string() },
+            outcome: None,
+        };
+        encode_answer("fixture", &answer)
+    };
+    // 2000 tokens at 3.5 bytes each.
+    let fitting = (1..=records.len()).take_while(|count| page(*count).len() <= 7000).count();
+    assert!(fitting >= 36, "only {fitting} callers fit in 2000 tokens");
+    let json = page(1);
+    assert!(!json.contains("\"span\"") && !json.contains("\"signature\"") && !json.contains("\"target\""), "{json}");
+    assert!(json.contains("\"edge\":\"calls\",\"direction\":\"in\",\"confidence\":\"name\""), "{json}");
+}
