@@ -1,0 +1,34 @@
+{
+  "tools": {
+    "trail": {"package": "@trailhq/trail-code", "version": "0.28.0", "registry": "npm"},
+    "graphify": {"package": "graphifyy", "version": "0.9.97", "registry": "PyPI", "cli": "graphify"}
+  },
+  "gold_corpora": {
+    "flask":      {"url": "https://github.com/pallets/flask.git",          "ref": "3.1.3",   "sha": "22d924701a6ae2e4cd01e9a15bbaf3946094af65", "lang": "Python"},
+    "ripgrep":    {"url": "https://github.com/BurntSushi/ripgrep.git",     "ref": "15.2.0",  "sha": "e89fff89ac9af12e8d4ce9d5fd07beb408ca730f", "lang": "Rust"},
+    "pocketbase": {"url": "https://github.com/pocketbase/pocketbase.git",  "ref": "v0.40.5", "sha": "6f370ea741f33adf889eef02e3c1b884a47aa522", "lang": "Go+JS"},
+    "trailcode":  {"url": "https://github.com/trailhq/Trail-Code.git",     "ref": "release commit of 0.28.0 (no tag exists)", "sha": "25ea4c7488b6f931f39ec8b95de0070ef954f5a8", "lang": "TypeScript"}
+  },
+  "mixed_parts": {
+    "scala":     {"url": "https://github.com/lihaoyi/fansi.git",                          "sha": "c8d4e5b56c46f2b360a441ca6d35620819a1ee52"},
+    "dart":      {"url": "https://github.com/dart-lang/path.git",                         "sha": "7e3d5d87220133ad9cc99f82e85a826011a62859"},
+    "lua":       {"url": "https://github.com/rxi/lume.git",                               "sha": "98847e7812cf28d3d64b289b03fad71dc704547d"},
+    "elixir":    {"url": "https://github.com/dashbitco/nimble_options.git",               "sha": "825c05837f236c612c6ac2855735ec6cf7f2be69"},
+    "zig":       {"url": "https://github.com/MasterQ32/zig-args.git",                     "sha": "ad3c89ecdb2979b8b5d52b43b78e79bf51293235"},
+    "ocaml":     {"url": "https://github.com/dbuenzli/cmdliner.git",                      "sha": "6b21decea3a0ade87fd9855f60b8fd54baa53c07"},
+    "solidity":  {"url": "https://github.com/transmissions11/solmate.git",                "sha": "89365b880c4f3c786bdd453d4b8e8fe410344a69"},
+    "terraform": {"url": "https://github.com/terraform-aws-modules/terraform-aws-vpc.git","sha": "b3abd6df2ecf052451a361ed55b8f06f8742a795"},
+    "sql":       {"url": "https://github.com/theory/pgtap.git",                          "sha": "21ceed193bf370892d530c5115680839ee322851"},
+    "shell":     {"url": "https://github.com/bats-core/bats-core.git",                    "sha": "5b61d8f22b46abf001e218cdd63f2938c356fa93"}
+  },
+  "mixed_exts": {
+    "scala": [".scala", ".sc"], "dart": [".dart"], "lua": [".lua"], "elixir": [".ex", ".exs"], "zig": [".zig"],
+    "ocaml": [".ml", ".mli"], "solidity": [".sol"], "terraform": [".tf"], "sql": [".sql", ".sql.in"], "shell": [".sh", ".bash", ".bats"]
+  },
+  "docs_parts": {
+    "devguide":    {"url": "https://github.com/python/devguide.git",          "sha": "dabfefbda8598c592723a82bc0630c7533eb1fe3"},
+    "rust-book":   {"url": "https://github.com/rust-lang/book.git",           "sha": "2771df165f092a4fbb9f46b5b2e7450f19010adb"},
+    "asciidoctor": {"url": "https://github.com/asciidoctor/asciidoctor.git",  "sha": "a67d6129399a4fe5dec9ec0a744e265664966975"}
+  },
+  "docs_exts": [".md", ".rst", ".txt", ".adoc"]
+}

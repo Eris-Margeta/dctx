@@ -291,8 +291,17 @@
     </div>
     <p class="bench-note">Benchmark of dctx 0.25 against Trail-Code 0.23.1, October 2026. Every gap above is a numbered item on the <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">roadmap</a>. <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/trail-code-2026-10/REPORT.md">Read the full report</a>.</p>
     <div class="bench-pending" role="note">
-      <span class="pill part">In progress</span>
-      <p><b>Next benchmark run: results pending.</b> A new run on a much larger workspace is under way. Its numbers will appear here once the report is published in the repository, not before.</p>
+      <span class="pill live">New run</span>
+      <p><b>Three-way run, 30 October 2026: dctx (development line), Trail-Code 0.28.0, graphify 0.9.97 (code path, no LLM).</b> Same host, six pinned corpora, no network.</p>
+      <ul>
+        <li><b>Call graph:</b> dctx now emits call edges. Callers recall is 0.461 at precision 0.993, against 0.436 / 0.986 for Trail-Code and 0.196 / 0.989 for graphify (80 targets, tool-independent gold). Trail-Code still leads on two of the four corpora.</li>
+        <li><b>Cold index:</b> 0.16&ndash;1.16 s against 1.17&ndash;58.3 s (Trail-Code) and 4.5&ndash;59 s (graphify), at 19&ndash;90 MB peak memory.</li>
+        <li><b>Warm queries:</b> 44&ndash;226 ms against 0.98&ndash;1.9 s and 0.38&ndash;1.4 s.</li>
+        <li><b>Byte-stable answers:</b> dctx and Trail-Code tie. Only the overview changed after an unrelated edit.</li>
+        <li><b>Languages:</b> dctx found symbols in 10 of 10 languages of a mixed corpus (Trail-Code 7, graphify 5). Call edges in those languages: Trail-Code 7, graphify 5, dctx 0.</li>
+        <li><b>Still open:</b> an explicit <code>dctx map read</code> of a git-tracked <code>.env</code> file returns its content. Trail-Code and graphify leaked nothing.</li>
+      </ul>
+      <p><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md">Read the three-way report</a>, including the rows we lost.</p>
     </div>
   </div>
 </section>
