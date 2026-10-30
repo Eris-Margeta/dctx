@@ -516,11 +516,18 @@ def coverage_phase(ctxs):
                     # Same probe shape as Trail's `trail skeleton FILE`: every declaration of the file when the build has `map skeleton`.
                     argv = ([L.DCTX, "map", "skeleton", f, "--json"] if CAPS.get("skeleton")
                             else [L.DCTX, "map", "map", f, "--depth", "2", "--limit", "40", "--json"])
-                    r = c.r(argv, "cov_outline", keep=False, log="cov_runs.jsonl")
-                    try:
-                        recs = json.loads(r["_out"]).get("records", [])
-                    except ValueError:
-                        recs = []
+                    # Trail's skeleton answers in one complete listing; dctx pages at its 2,000-token cap, so follow `next` (max 20 pages).
+                    recs = []
+                    for _page in range(20):
+                        r = c.r(argv, "cov_outline", keep=False, log="cov_runs.jsonl")
+                        try:
+                            js = json.loads(r["_out"])
+                        except ValueError:
+                            break
+                        recs.extend(js.get("records", []))
+                        if not (CAPS.get("skeleton") and js.get("next") and js.get("more")):
+                            break
+                        argv = [L.DCTX, "map", "skeleton", f, "--json", "--cursor", js["next"]]
                     for rec in recs:
                         if rec.get("kind") not in ("module", "doc") and rec.get("id", "").startswith("s:"):
                             syms.append((rec["id"].split("#", 1)[-1], rec["id"]))
