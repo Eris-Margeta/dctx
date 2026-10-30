@@ -74,9 +74,20 @@ def blank(m):
     return " " * len(m.group(0))
 
 
-def _clean_c_like(text, lang):
+# Rust block comments nest (`/* /* */ */`); Go and JS/TS do not. October's numbers were made with a
+# scanner that closed a Rust block comment at the first `*/`. Set GOLDLIB_FLAT_BLOCK_COMMENTS=1 (or
+# pass flat_block_comments=True to clean_lines) to get that old behaviour back.
+FLAT_BLOCK_COMMENTS = os.environ.get("GOLDLIB_FLAT_BLOCK_COMMENTS", "") not in ("", "0")
+
+
+def _clean_c_like(text, lang, flat_block_comments=None):
     """Blank comments and string/char literals for Rust, Go and JS/TS with a state machine that
-    carries state across lines (multi-line strings, raw strings, block comments)."""
+    carries state across lines (multi-line strings, raw strings, block comments). Rust block
+    comments nest unless `flat_block_comments` (default: GOLDLIB_FLAT_BLOCK_COMMENTS) is set."""
+    if flat_block_comments is None:
+        flat_block_comments = FLAT_BLOCK_COMMENTS
+    nest = lang == "rs" and not flat_block_comments
+    depth = 0
     out = []
     i, n = 0, len(text)
     state, close = "code", None
@@ -98,6 +109,7 @@ def _clean_c_like(text, lang):
                 continue
             if two == "/*":
                 state = "block"
+                depth = 1
                 out.append("  ")
                 i += 2
                 continue
@@ -137,8 +149,14 @@ def _clean_c_like(text, lang):
             i += 1
             continue
         if state == "block":
-            if text[i:i + 2] == "*/":
-                state = "code"
+            if nest and text[i:i + 2] == "/*":
+                depth += 1
+                out.append("  ")
+                i += 2
+            elif text[i:i + 2] == "*/":
+                depth -= 1
+                if not nest or depth <= 0:
+                    state = "code"
                 out.append("  ")
                 i += 2
             else:
@@ -199,11 +217,11 @@ def _clean_ts_per_line(text):
     return out
 
 
-def clean_lines(text, lang):
+def clean_lines(text, lang, flat_block_comments=None):
     """Return lines with strings and comments blanked (same length, same line count)."""
     text = text.replace("\r", "")
     if lang in ("rs", "go"):
-        return _clean_c_like(text, lang)
+        return _clean_c_like(text, lang, flat_block_comments)
     if lang == "ts":
         return _clean_ts_per_line(text)
     lines = text.split("\n")

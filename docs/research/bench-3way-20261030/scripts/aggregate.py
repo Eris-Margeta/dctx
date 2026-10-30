@@ -46,6 +46,7 @@ for r in rows("determinism.jsonl"):
 # ---------------- accuracy
 acc = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
 per_t = defaultdict(lambda: defaultdict(list))
+macro_all = defaultdict(lambda: defaultdict(list))  # per tool, every scored target of every corpus
 for r in rows("accuracy.jsonl"):
     for t in TOOLS:
         e = r.get(t)
@@ -63,6 +64,8 @@ for r in rows("accuracy.jsonl"):
         a["fp"] += e["fp"]
         a["found"] += e["found"]
         a["tokens"] += e.get("tokens", 0)
+        # Trail and graphify have no paging: all-pages == page-1 for them.
+        a["found_allpages_any"] += e.get("found_allpages", e["found"])
         if t == "dctx":
             a["tp_allpages"] += e.get("tp_allpages", 0)
             a["fp_allpages"] += e.get("fp_allpages", 0)
@@ -71,6 +74,14 @@ for r in rows("accuracy.jsonl"):
             per_t[(r["corpus"], t)]["p"].append(e["tp"] / (e["tp"] + e["fp"]))
         if r["gold_n"]:
             per_t[(r["corpus"], t)]["r"].append(e["found"] / r["gold_n"])
+            # Trail and graphify answer in one complete listing, so their all-pages figure is the page-1 figure.
+            per_t[(r["corpus"], t)]["ra"].append(e.get("found_allpages", e["found"]) / r["gold_n"])
+            macro_all[t]["r"].append(e["found"] / r["gold_n"])
+            macro_all[t]["ra"].append(e.get("found_allpages", e["found"]) / r["gold_n"])
+
+
+def mean(xs):
+    return round(sum(xs) / len(xs), 3) if xs else None
 
 
 def prf(a, tp="tp", fp="fp", found="found"):
@@ -87,17 +98,22 @@ for c, tt in acc.items():
                "found": a["found"], "precision_micro": p, "recall_micro": rc,
                "precision_macro": round(sum(per_t[(c, t)]["p"]) / len(per_t[(c, t)]["p"]), 3) if per_t[(c, t)]["p"] else None,
                "recall_macro": round(sum(per_t[(c, t)]["r"]) / len(per_t[(c, t)]["r"]), 3) if per_t[(c, t)]["r"] else None,
-               "unresolved_targets": a["unresolved"], "tokens_total": a["tokens"]}
+               "unresolved_targets": a["unresolved"], "tokens_total": a["tokens"],
+               "recall_page1_micro": rc, "recall_allpages_micro": prf(a, found="found_allpages_any")[1],
+               "recall_macro_page1": mean(per_t[(c, t)]["r"]), "recall_macro_allpages": mean(per_t[(c, t)]["ra"])}
         if t == "dctx":
             out["precision_micro_allpages"], out["recall_micro_allpages"] = prf(a, "tp_allpages", "fp_allpages", "found_allpages")
         agg["accuracy"].setdefault(c, {})[t] = out
-        for k in ("tp", "fp", "found", "gold_all", "tp_allpages", "fp_allpages", "found_allpages", "tokens"):
+        for k in ("tp", "fp", "found", "gold_all", "tp_allpages", "fp_allpages", "found_allpages", "found_allpages_any", "tokens"):
             tot[t][k] += a[k]
 agg["accuracy"]["ALL_GOLD_CORPORA"] = {}
 for t in TOOLS:
     a = tot[t]
     p, rc = prf(a)
-    e = {"tp": a["tp"], "fp": a["fp"], "found": a["found"], "gold_sites": a["gold_all"], "precision_micro": p, "recall_micro": rc}
+    e = {"tp": a["tp"], "fp": a["fp"], "found": a["found"], "gold_sites": a["gold_all"], "precision_micro": p, "recall_micro": rc,
+         "recall_page1_micro": rc, "recall_allpages_micro": prf(a, found="found_allpages_any")[1],
+         "recall_macro_page1": mean(macro_all[t]["r"]), "recall_macro_allpages": mean(macro_all[t]["ra"]),
+         "macro_over_targets": len(macro_all[t]["r"])}
     if t == "dctx":
         e["precision_micro_allpages"], e["recall_micro_allpages"] = prf(a, "tp_allpages", "fp_allpages", "found_allpages")
     agg["accuracy"]["ALL_GOLD_CORPORA"][t] = e
@@ -107,7 +123,7 @@ agg["canary"] = [{k: v for k, v in r.items()} for r in rows("canary.jsonl")]
 agg["network"] = rows("network.jsonl")
 cov = defaultdict(dict)
 for r in rows("coverage.jsonl"):
-    cov[r["lang"]][r["tool"]] = {"files": r["files_total"], "symbols": r["symbols"], "call_edges": r["call_edges"],
+    cov[r["lang"]][r["tool"]] = {"probe": r.get("probe"), "files": r["files_total"], "symbols": r["symbols"], "call_edges": r["call_edges"],
                                  "symbol_ok": r["symbols"] >= 1, "call_edge_ok": r["call_edges"] >= 1}
 agg["coverage"] = cov
 json.dump(agg, open(os.path.join(RD, "aggregate.json"), "w"), indent=1, sort_keys=False, default=str)
@@ -183,6 +199,22 @@ for c in CORP_ORDER + ["ALL_GOLD_CORPORA"]:
 dd = agg["accuracy"].get("ALL_GOLD_CORPORA", {}).get("dctx", {})
 if dd:
     w(f"\ndctx following all result pages (<=5): P {fmt(dd.get('precision_micro_allpages'),3)} / R {fmt(dd.get('recall_micro_allpages'),3)}.")
+w("\n### Callers recall three ways: page-1 micro | all-pages micro | macro (mean of per-target recall, page-1 / all-pages)\n")
+w("Page 1 is one `neighbors --limit 40 --budget 2000` call (Trail and graphify answer in one complete listing, so for them all-pages equals page-1). "
+  "Micro pools every gold site (a target with 137 sites outweighs one with 3); macro gives every target the same weight. dctx all-pages follows the cursor for at most 5 pages.\n")
+w("| corpus | gold sites | dctx p1 / all / macro | Trail p1 / all / macro | graphify p1 / all / macro |")
+w("|---|---|---|---|---|")
+for c in CORP_ORDER + ["ALL_GOLD_CORPORA"]:
+    a = agg["accuracy"].get(c)
+    if not a:
+        continue
+    cells = []
+    for t in TOOLS:
+        e = a.get(t)
+        cells.append("n/a" if not e else f"{fmt(e['recall_page1_micro'],3)} / {fmt(e['recall_allpages_micro'],3)} / "
+                                          f"{fmt(e['recall_macro_page1'],3)} ({fmt(e['recall_macro_allpages'],3)})")
+    gs = next((e.get("gold_sites") for e in a.values() if e), None)
+    w(f"| {c} | {gs} | " + " | ".join(cells) + " |")
 w("\n## Determinism / cache-friendliness\n")
 w("| corpus | tool | identical across 5 runs (queries) | identical after unrelated edit | ... ignoring dctx snapshot header line | changed after edit | first query after edit (s) | graphify `update` (s) |")
 w("|---|---|---|---|---|---|---|---|")
@@ -214,7 +246,18 @@ for (t, v), rs in byk.items():
     ux = sorted({x for r in rs for x in r.get("unix_connects", []) if x})[:2]
     w(f"| {t} | {v} | {', '.join(r['step'] for r in rs)} | {att} | {'; '.join(tg) or '-'} | {', '.join(ux) or '-'} |")
 w("\n## Language coverage on the mixed corpus (>=1 symbol / >=1 call edge from the 6 largest files per language)\n")
-w("| language | files | dctx sym/edge | Trail sym/edge | graphify sym/edge |")
+SKEL = (env.get("dctx_caps") or {}).get("skeleton", True)
+DEF_PROBE = {"dctx": "map skeleton FILE --json" if SKEL else "map map FILE --depth 2 --limit 40 --json (fallback, no `map skeleton`)",
+             "trail": "skeleton FILE --json", "graphify": "graph.json read directly"}
+SHORT = {"dctx": "dctx `map skeleton`" if SKEL else "dctx `map map` (fallback)", "trail": "Trail `skeleton`", "graphify": "graphify graph.json"}
+probes = {}
+for d in cov.values():
+    for t, e in d.items():
+        probes.setdefault(t, e.get("probe") or DEF_PROBE[t])
+w("Symbol probe per tool: " + "; ".join(f"{t} `{probes[t]}`" for t in TOOLS if t in probes)
+  + ". Call-edge probe: dctx `map neighbors ID --dir both --edge calls` (first of 25 symbols with an edge), Trail `callers NAME --direction in|out`, "
+  "graphify `calls` links in graph.json.\n")
+w("| language | files | " + " | ".join(f"{SHORT[t]} sym/edge" for t in TOOLS) + " |")
 w("|---|---|---|---|---|")
 for lang, d in cov.items():
     cells = []

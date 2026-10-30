@@ -95,6 +95,10 @@ def probe_for(corpus):
 
 
 # ------------------------------------------------------------------ dctx capability probe
+# Capability probe result, shared with phases that do not receive caps.
+CAPS = {}
+
+
 def dctx_caps():
     d = fresh_copy("dctx", "canary-tracked", "-caps")
     ctx = Ctx("dctx", "canary-tracked-caps", d)
@@ -505,9 +509,14 @@ def coverage_phase(ctxs):
                 out.append(ent)
                 continue
             syms = []  # (name, id)
+            ent["probe"] = {"dctx": "map skeleton FILE --json" if CAPS.get("skeleton") else "map map FILE --depth 2 --limit 40 --json (fallback, no `map skeleton`)",
+                            "trail": "skeleton FILE --json", "graphify": "graph.json read directly"}.get(tool)
             if tool == "dctx":
                 for f in files:
-                    r = c.r([L.DCTX, "map", "map", f, "--depth", "2", "--limit", "40", "--json"], "cov_outline", keep=False, log="cov_runs.jsonl")
+                    # Same probe shape as Trail's `trail skeleton FILE`: every declaration of the file when the build has `map skeleton`.
+                    argv = ([L.DCTX, "map", "skeleton", f, "--json"] if CAPS.get("skeleton")
+                            else [L.DCTX, "map", "map", f, "--depth", "2", "--limit", "40", "--json"])
+                    r = c.r(argv, "cov_outline", keep=False, log="cov_runs.jsonl")
                     try:
                         recs = json.loads(r["_out"]).get("records", [])
                     except ValueError:
@@ -736,6 +745,7 @@ def main():
     L.detect_unshare()
     print("unshare -Urn usable:", L.UNSHARE, flush=True)
     caps = dctx_caps()
+    CAPS.update(caps)
     print("dctx caps:", caps, flush=True)
     collect_env(caps)
     phases = a.phases.split(",")
