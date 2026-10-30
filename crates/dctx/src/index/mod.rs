@@ -5,6 +5,7 @@
 
 mod extract;
 mod generic;
+pub(crate) mod hubs;
 mod lex_dispatch;
 pub(crate) mod profile;
 mod query;

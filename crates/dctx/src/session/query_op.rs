@@ -179,7 +179,7 @@ impl Session {
         self.query(handle, &request, sink)
     }
 
-    fn reject_transport(&self, request: &MapRequest) -> Result<(), DctxError> {
+    pub(super) fn reject_transport(&self, request: &MapRequest) -> Result<(), DctxError> {
         if request.request_version != REQUEST_VERSION {
             return Err(DctxError::UnsupportedVersion { found: request.request_version });
         }
@@ -189,7 +189,7 @@ impl Session {
         Ok(())
     }
 
-    fn query_limits(&self, request: &MapRequest) -> Result<ResolvedLimits, DctxError> {
+    pub(super) fn query_limits(&self, request: &MapRequest) -> Result<ResolvedLimits, DctxError> {
         let policy = self.limits.intersect(OperationLimits::from_ceiling(&self.ceiling)).intersect(self.plan_limits()?);
         crate::domain::resolve_query(request.verb, request, policy)
     }

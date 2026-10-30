@@ -17,8 +17,12 @@ pub(super) struct Options {
     pub profile: bool,
     /// True when the caller passed `--meta`: the snapshot digest, generation and age come back in the answer.
     pub meta: bool,
+    /// True for `dctx map hubs`, which has no target and its own flags (see `hubs`).
+    pub hubs: bool,
 }
 pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read> <TARGET> [OPTIONS]
+       dctx map hubs [--limit N] [--json] [--place PATH] [--budget TOKENS] [--meta]
+         Most-called symbols (incoming calls and imports, 1..60 lines, default 20) and per-directory file and symbol counts. No TARGET.
   TARGET                  Required. map accepts a stable id or a place-relative file.
                           A file path is read as m:<path>. Omitting TARGET does not scan.
   --json                  Facade JSON v2, including the precision label
@@ -49,6 +53,9 @@ Examples:
 
 #[allow(clippy::too_many_lines, reason = "Keep this ordered command transaction or flag dispatch with its shared validation state and existing error ordering.")]
 pub(super) fn parse(args: &[String]) -> Result<Options, String> {
+    if args.first().map(String::as_str) == Some("hubs") {
+        return super::hubs::parse(args);
+    }
     let verb = match args.first().map(String::as_str) {
         Some("map") => Verb::Map,
         Some("find") => Verb::Find,
@@ -192,6 +199,7 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
         budget_set,
         profile,
         meta,
+        hubs: false,
     })
 }
 fn number<T: std::str::FromStr>(value: &str) -> Result<T, String> {

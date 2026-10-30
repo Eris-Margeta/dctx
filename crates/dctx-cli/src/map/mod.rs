@@ -5,6 +5,7 @@
 //! It does not write inside the scanned project. A bad target is refused before the scan.
 
 mod args;
+mod hubs;
 
 use dctx::{Direction, MapRequest, SnapshotRequest, VecSink, Verb};
 use dctx_map_query::{Direction as QueryDirection, Format, Request, Verb as QueryVerb};
@@ -46,7 +47,9 @@ fn execute_with(
     if options.request.offset > 0 {
         return Err("the facade pages with the next cursor, not --offset".to_string());
     }
-    options.request.target = prepare_target(options.request.verb, &options.request.target, &options.place)?;
+    if !options.hubs {
+        options.request.target = prepare_target(options.request.verb, &options.request.target, &options.place)?;
+    }
     let profiling = profile_requested(options.profile);
     let (mut session, key) = open(&options.place)?;
     if profiling {
@@ -72,6 +75,9 @@ fn execute_with(
         eprintln!("{status}");
         eprintln!("content_reads {}", session.content_reads());
         eprintln!("cached_content_reads {}", session.cached_content_reads());
+    }
+    if options.hubs {
+        return hubs::answer(&mut session, &handle, &options);
     }
     let mut request = facade_request(&options.request, options.format, options.continuation, options.budget_set);
     request.meta = options.meta;

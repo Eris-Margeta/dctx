@@ -8,6 +8,7 @@
 mod build;
 mod cache_op;
 mod hooks;
+mod hubs_op;
 mod import_op;
 mod ledger;
 mod pack_op;
