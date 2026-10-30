@@ -4,6 +4,7 @@
 #![forbid(unsafe_code)]
 
 mod map;
+mod mcp;
 mod plugin;
 
 use dctx_cli::{cache, help, host, pack, run_headless_mode, template, tui, SnapshotConfig};
@@ -33,6 +34,8 @@ fn main() {
             maybe_auto_clean(allow_auto_clean);
             map::run(&args[2..]).map_err(|error| format!("map: {error}"))
         }
+        // The MCP server answers on stdout in JSON-RPC lines only, so it never auto-cleans.
+        Some("mcp") => mcp::run(&args[2..]).map_err(|error| format!("mcp: {error}")),
         Some("pack") => {
             maybe_auto_clean(allow_auto_clean);
             pack::run(&args[1..]).map_err(|error| format!("pack: {error}"))

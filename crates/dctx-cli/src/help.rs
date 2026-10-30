@@ -90,6 +90,7 @@ pub fn text() -> String {
 Usage: dctx [PATH] [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json]
        dctx map <map|find|neighbors|explain|read> [--json]
+       dctx mcp [PATH]
        dctx cache status [--json] [--root PATH]
        dctx cache gc [--dry-run] [--root PATH] [--max-bytes N] [--legacy]
        dctx cache purge --root PATH [--dry-run] [--yes]
@@ -101,6 +102,7 @@ Usage: dctx [PATH] [OPTIONS]
        dctx plugin search|install|list|info|enable|disable|remove|update|verify
        dctx git <status|protect>
 
+`dctx mcp` serves the map verbs as MCP tools over stdio (JSON-RPC 2.0, one message per line) for Claude Code, Cursor and Codex.
 Explicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not create a project text file.
 `dctx .` remains the legacy snapshot alias and still writes its documented project text.
 `dctx plugin list` and `dctx --help` do not create a project `.dctx/` directory or start a plugin.
