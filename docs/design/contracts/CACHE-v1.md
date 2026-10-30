@@ -38,8 +38,8 @@ template sources and user-selected exports are not disposable cache state.
 | Global hard cap H | 2 GiB = 2,147,483,648 bytes |
 | Soft watermark S | 1.5 GiB = 1,610,612,736 bytes |
 | Eviction target T | floor(1.2 GiB) = 1,288,490,188 bytes |
-| Root map view/overlay ceiling | 256 MiB = 268,435,456 bytes |
-| Root pack history ceiling | 256 MiB, within H |
+| Root map view/overlay ceiling | 768 MiB = 805,306,368 bytes |
+| Root pack history ceiling | 768 MiB, within H |
 | Retained committed views | Latest three per root, subject to TTL/quota and pins |
 | Idle overlays | Expire after 7 days without use |
 | Root registration | Retire unpinned views after 30 days without use; compact tombstoned registry records later |

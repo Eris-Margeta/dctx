@@ -11,10 +11,10 @@ pub const HARD_CAP_BYTES: u64 = 2 * 1024 * 1024 * 1024;
 pub const SOFT_WATERMARK_BYTES: u64 = 3 * 1024 * 1024 * 1024 / 2;
 /// Eviction target: floor(1.2 GiB).
 pub const EVICTION_TARGET_BYTES: u64 = 1_288_490_188;
-/// Per-root map view and overlay ceiling: 256 MiB, inside the global cap.
-pub const ROOT_VIEW_CEILING_BYTES: u64 = 256 * 1024 * 1024;
-/// Per-root pack history ceiling: 256 MiB, inside the global cap.
-pub const ROOT_PACK_CEILING_BYTES: u64 = 256 * 1024 * 1024;
+/// Per-root map view and overlay ceiling: 768 MiB, inside the global cap.
+pub const ROOT_VIEW_CEILING_BYTES: u64 = 768 * 1024 * 1024;
+/// Per-root pack history ceiling: 768 MiB, inside the global cap.
+pub const ROOT_PACK_CEILING_BYTES: u64 = 768 * 1024 * 1024;
 /// Per-root managed preview ceiling: 64 MiB, inside the global cap.
 pub const ROOT_PREVIEW_CEILING_BYTES: u64 = 64 * 1024 * 1024;
 /// Ledger room held back inside the hard cap so a full payload cannot block metadata.
@@ -192,7 +192,9 @@ mod tests {
         assert_eq!(HARD_CAP_BYTES, 2_147_483_648);
         assert_eq!(SOFT_WATERMARK_BYTES, 1_610_612_736);
         assert_eq!(EVICTION_TARGET_BYTES, u64::try_from(12 * (1024u128 * 1024 * 1024) / 10).expect("fixture cap fits u64"));
-        assert_eq!(ROOT_VIEW_CEILING_BYTES, 268_435_456);
+        assert_eq!(ROOT_VIEW_CEILING_BYTES, 805_306_368);
+        assert_eq!(ROOT_PACK_CEILING_BYTES, 805_306_368);
+        assert!(ROOT_VIEW_CEILING_BYTES < HARD_CAP_BYTES && ROOT_PACK_CEILING_BYTES < HARD_CAP_BYTES);
         assert_eq!(ROOT_PREVIEW_CEILING_BYTES, 67_108_864);
         let quota = Quota::product_default();
         assert!(quota.check().is_ok());
