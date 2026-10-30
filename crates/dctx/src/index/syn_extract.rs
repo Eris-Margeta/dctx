@@ -3,14 +3,18 @@
 //! Depends on that crate's [`extract`](dctx_lex_rust::extract). The walk calls it for Rust files.
 //! Other languages stay on the structural extractor. Coverage is `syntax` only when syn succeeded.
 
-use dctx_lex_rust::{extract as lex_extract, Completion, Coverage, DeclarationKind, Limits, Refusal};
-use dctx_map_model::NodeKind;
+use std::collections::HashMap;
+
+use dctx_lex_rust::{extract as lex_extract, Completion, Confidence, Coverage, DeclarationKind, Limits, Refusal, UnresolvedReason};
+use dctx_map_model::{EdgeKind, NodeKind};
 
 use super::extract::{signature_text, Symbol};
+use super::refs::RawRef;
+use super::write_stable_id;
 use crate::domain::{DctxError, Resource};
 
-/// Syn facts for one Rust file. The bool is true when coverage is syntax.
-pub(crate) fn extract(bytes: &[u8], max_file: u64) -> Result<(Vec<Symbol>, bool), DctxError> {
+/// Syn facts and raw call and import references for the Rust file at `path`. The bool is true when coverage is syntax.
+pub(crate) fn extract(path: &str, bytes: &[u8], max_file: u64) -> Result<(Vec<Symbol>, Vec<RawRef>, bool), DctxError> {
     let max_bytes = usize::try_from(max_file).unwrap_or(usize::MAX);
     let limits = Limits::narrowed(max_bytes, 256, 10_000);
     let extracted = match lex_extract(bytes, &limits) {
@@ -28,10 +32,19 @@ pub(crate) fn extract(bytes: &[u8], max_file: u64) -> Result<(Vec<Symbol>, bool)
     };
     let syntax = extracted.coverage == Coverage::Syntax && matches!(extracted.completion, Completion::Complete);
     let mut symbols = Vec::new();
+    // Stable id text of each kept declaration, in declaration order. Repeated names take `~2`, `~3` as the graph does.
+    let mut owners: Vec<Option<String>> = Vec::with_capacity(extracted.declarations.len());
+    let mut seen: HashMap<&str, u32> = HashMap::new();
     for declaration in &extracted.declarations {
         let Some(kind) = kind_of(declaration.kind) else {
+            owners.push(None);
             continue;
         };
+        let count = seen.entry(declaration.name.as_str()).or_insert(0);
+        *count += 1;
+        let mut id = String::new();
+        write_stable_id(&mut id, b's', path, &declaration.name, if *count > 1 { *count } else { 0 });
+        owners.push(Some(id));
         let start = declaration.span.start;
         let end = declaration.span.end;
         let signature = std::str::from_utf8(bytes)
@@ -54,7 +67,28 @@ pub(crate) fn extract(bytes: &[u8], max_file: u64) -> Result<(Vec<Symbol>, bool)
             signature,
         });
     }
-    Ok((symbols, syntax))
+    let mut module = String::new();
+    write_stable_id(&mut module, b'm', path, "", 0);
+    let mut refs = Vec::new();
+    for import in &extracted.imports {
+        refs.extend(RawRef::new(&module, EdgeKind::Imports, &import.path, &import.scope, import.alias.as_deref()));
+    }
+    for call in &extracted.references {
+        if call.confidence == Confidence::Unresolved(UnresolvedReason::QualifiedSelf) {
+            continue;
+        }
+        // A call inside a skipped declaration (a module) belongs to the nearest kept one, else to the file.
+        let mut owner = call.from;
+        let src = loop {
+            let Some(index) = owner else { break &module };
+            if let Some(Some(id)) = owners.get(index) {
+                break id;
+            }
+            owner = extracted.declarations.get(index).and_then(|declaration| declaration.parent);
+        };
+        refs.extend(RawRef::new(src, EdgeKind::Calls, &call.target, &call.scope, None));
+    }
+    Ok((symbols, refs, syntax))
 }
 
 fn kind_of(kind: DeclarationKind) -> Option<&'static str> {
@@ -81,7 +115,7 @@ mod tests {
 
     #[test]
     fn bounded_input_refuses_before_a_parse() {
-        let error = extract(b"fn Real() {}\n", 4).expect_err("bound");
+        let error = extract("a.rs", b"fn Real() {}\n", 4).expect_err("bound");
         match error {
             DctxError::ResourceLimit { resource: Resource::FileBytes, limit } => assert_eq!(limit, 4),
             other => panic!("file bound, got {other:?}"),
@@ -90,10 +124,22 @@ mod tests {
 
     #[test]
     fn comment_and_string_decoys_are_not_declarations() {
-        let (symbols, syntax) = extract(DECOYS, 8 * 1024).expect("syn");
+        let (symbols, _, syntax) = extract("a.rs", DECOYS, 8 * 1024).expect("syn");
         assert!(syntax);
         assert_eq!(symbols.len(), 1);
         assert_eq!(symbols[0].name, "Real");
         assert_eq!(symbols[0].kind, "fn");
+    }
+
+    #[test]
+    fn calls_and_imports_keep_their_owner_and_scope() {
+        let source = b"use crate::util::tool;\npub fn eta() -> u32 { theta() }\nfn theta() -> u32 { 4 }\nmod inner { pub fn run() { super::theta(); } }\n";
+        let (_, refs, syntax) = extract("r.rs", source, 8 * 1024).expect("syn");
+        assert!(syntax);
+        let import = refs.iter().find(|item| item.kind == EdgeKind::Imports).expect("import");
+        assert_eq!((import.src.as_str(), import.name.as_str()), ("m:r.rs", "crate::util::tool"));
+        let call = refs.iter().find(|item| item.name == "theta").expect("call");
+        assert_eq!((call.src.as_str(), call.kind), ("s:r.rs#eta", EdgeKind::Calls));
+        assert!(refs.iter().any(|item| item.src == "s:r.rs#inner::run" && item.name.ends_with("theta")), "{refs:?}");
     }
 }

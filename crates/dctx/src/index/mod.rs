@@ -7,6 +7,10 @@ mod extract;
 mod lex_dispatch;
 pub(crate) mod profile;
 mod query;
+mod refs;
+mod refs_names;
+#[cfg(test)]
+mod refs_tests;
 mod segment;
 mod span_index;
 #[cfg(feature = "syntax-rust")]
@@ -221,7 +225,7 @@ pub(crate) struct IndexedNode {
     pub signature: String,
 }
 
-/// One contains edge. Calls are not recorded as `exact`.
+/// One edge: `contains` from the walk, `calls` and `imports` from [`refs::link`]. Calls are never `exact`.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct IndexedEdge {
     /// Index of the source node in the generation.
@@ -247,7 +251,7 @@ pub(crate) struct Generation {
     pub files: Vec<IndexedFile>,
     /// Modules, symbols and headings.
     pub nodes: Vec<IndexedNode>,
-    /// Contains edges.
+    /// Contains edges, then calls and imports edges.
     pub edges: Vec<IndexedEdge>,
     /// Ids, paths and edge labels addressed by the spans above.
     pub text: TextBlob,

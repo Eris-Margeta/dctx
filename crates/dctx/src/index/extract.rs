@@ -1,10 +1,11 @@
 //! Structural extractor for the facade's supported source and configuration languages.
 //! Implements the strict parser profile: coverage `structural`.
 //! Uses `lex_dispatch` and dctx-lex-md. Explicit structural Rust stays line-oriented; the default walk uses syn.
-//! The snapshot walk calls [`extract_structural`]. Answer ids and the structural precision label stay put.
+//! The snapshot walk calls [`prepare_structural`]. Answer ids and the structural precision label stay put.
 
 use dctx_map_model::{NodeKind, StableId};
 
+use super::refs::RawRef;
 use super::span_index::SpanIndex;
 use super::{IndexedNode, TextBlob, TextSpan};
 
@@ -105,18 +106,19 @@ pub(crate) fn language_of(path: &str) -> &'static str {
         .map_or("opaque", |(_, tag)| *tag)
 }
 
-/// Lexer output for one included file. Config keeps the lex so the graph can move it once.
-pub(crate) fn prepare_structural(path: &str, bytes: &[u8]) -> Prepared {
+/// Lexer output for one included file and its raw call and import references. Config keeps the lex so the graph can move it once.
+pub(crate) fn prepare_structural(path: &str, bytes: &[u8]) -> (Prepared, Vec<RawRef>) {
     if bytes.contains(&0) || std::str::from_utf8(bytes).is_err() {
-        return Prepared::Symbols(Vec::new());
+        return (Prepared::Symbols(Vec::new()), Vec::new());
     }
     if language_of(path) == "config" {
         return match dctx_lex_cfg::CfgLexer::default().extract(path, bytes) {
-            Ok(lexed) if lexed.completion == dctx_lex_cfg::Completion::Complete => Prepared::Config(lexed),
-            _ => Prepared::Symbols(Vec::new()),
+            Ok(lexed) if lexed.completion == dctx_lex_cfg::Completion::Complete => (Prepared::Config(lexed), Vec::new()),
+            _ => (Prepared::Symbols(Vec::new()), Vec::new()),
         };
     }
-    Prepared::Symbols(extract_structural(path, bytes))
+    let (symbols, refs) = extract_structural_refs(path, bytes);
+    (Prepared::Symbols(symbols), refs)
 }
 
 /// Projects `prepared` into `nodes` and `edges`. Returns the symbol count charged to the file.
@@ -211,17 +213,23 @@ fn reuse_label(mut slot: String, label: &str) -> String {
 }
 
 /// Structural facts. NUL bytes yield no symbols; the caller still hashes the file.
+#[cfg(test)]
 pub(crate) fn extract_structural(path: &str, bytes: &[u8]) -> Vec<Symbol> {
+    extract_structural_refs(path, bytes).0
+}
+
+/// Structural facts and the lexer's raw call and import references. Rust and Markdown carry none here.
+pub(crate) fn extract_structural_refs(path: &str, bytes: &[u8]) -> (Vec<Symbol>, Vec<RawRef>) {
     if bytes.contains(&0) {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     }
     let Ok(text) = std::str::from_utf8(bytes) else {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     };
     match language_of(path) {
-        "rust" => rust_symbols(text),
-        "markdown" => markdown_symbols(bytes),
-        language => super::lex_dispatch::symbols(language, path, text),
+        "rust" => (rust_symbols(text), Vec::new()),
+        "markdown" => (markdown_symbols(bytes), Vec::new()),
+        language => super::lex_dispatch::lexed(language, path, text),
     }
 }
 

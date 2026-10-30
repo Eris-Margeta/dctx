@@ -1,0 +1,79 @@
+//! Tests for call and import linking over lexed fixtures.
+//! Runs the lexers through `prepare_structural` and the graph assembly the walk uses, then [`link`].
+//! Each fixture mirrors one language of the DCX-12 card check.
+
+use super::extract::{index_prepared, prepare_structural};
+use super::refs::{link, FileRefs};
+use super::{write_endpoint, IndexedEdge, IndexedNode, TextBlob};
+
+/// Edges of `files` after linking, as `edge src>dst confidence` lines.
+fn linked(files: &[(&str, &str)]) -> Vec<String> {
+    let mut text = TextBlob::default();
+    let mut nodes: Vec<IndexedNode> = Vec::new();
+    let mut edges: Vec<IndexedEdge> = Vec::new();
+    let mut spans = Vec::new();
+    for (path, source) in files {
+        let first = u32::try_from(nodes.len()).expect("small");
+        let path_span = text.push(path);
+        nodes.push(IndexedNode {
+            letter: b'm',
+            ordinal: 0,
+            kind: "module".to_string(),
+            name: String::new(),
+            path: path_span,
+            lines: [1, 1],
+            span: [0, 0],
+            summary: String::new(),
+            summary_source: String::new(),
+            signature: String::new(),
+        });
+        let (prepared, raw) = prepare_structural(path, source.as_bytes());
+        index_prepared(path, source.as_bytes(), path_span, first, prepared, &mut nodes, &mut edges, &mut text);
+        spans.push(FileRefs { first, end: u32::try_from(nodes.len()).expect("small"), refs: raw });
+    }
+    link(&nodes, &mut edges, &mut text, &spans);
+    edges
+        .iter()
+        .map(|edge| {
+            let (mut src, mut dst) = (String::new(), String::new());
+            write_endpoint(&mut src, &nodes, &text, edge.src);
+            write_endpoint(&mut dst, &nodes, &text, edge.dst);
+            format!("{} {src}>{dst} {}", text.get(edge.edge), text.get(edge.confidence))
+        })
+        .collect()
+}
+
+#[test]
+fn python_calls_resolve_in_file_and_through_an_import() {
+    let edges = linked(&[
+        ("a.py", "def alpha():\n    return beta()\n\ndef beta():\n    return 1\n"),
+        ("b.py", "from a import beta\n\ndef iota():\n    return beta()\n"),
+    ]);
+    assert!(edges.contains(&"calls s:a.py#alpha>s:a.py#beta name".to_string()), "{edges:?}");
+    assert!(edges.contains(&"calls s:b.py#iota>s:a.py#beta name".to_string()), "{edges:?}");
+    assert!(edges.contains(&"imports m:b.py>s:a.py#beta exact".to_string()), "{edges:?}");
+}
+
+#[test]
+fn other_languages_link_plain_calls() {
+    let edges = linked(&[
+        ("m.ts", "export function gamma(): number { return delta(); }\nfunction delta(): number { return 2; }\n"),
+        ("g.go", "package main\n\nfunc Eps() int { return zeta() }\n\nfunc zeta() int { return 3 }\n"),
+        ("J.java", "class J {\n  int kappa() { return lam(); }\n  int lam() { return 5; }\n}\n"),
+    ]);
+    for want in ["s:m.ts#gamma>s:m.ts#delta", "s:g.go#Eps>s:g.go#zeta", "s:J.java#J::kappa>s:J.java#J::lam"] {
+        assert!(edges.iter().any(|edge| edge.starts_with("calls ") && edge.contains(want)), "{want} in {edges:?}");
+    }
+}
+
+#[test]
+fn an_ambiguous_bare_name_gets_no_edge_and_a_unique_one_is_a_guess() {
+    let two = linked(&[
+        ("x/a.py", "def work():\n    return 1\n"),
+        ("y/b.py", "def work():\n    return 2\n"),
+        ("z/c.py", "def run():\n    return work()\n"),
+    ]);
+    assert!(two.iter().all(|edge| !edge.starts_with("calls ")), "{two:?}");
+    let one = linked(&[("x/a.py", "def work():\n    return 1\n"), ("z/c.py", "def run():\n    return work()\n")]);
+    assert!(one.contains(&"calls s:z/c.py#run>s:x/a.py#work guess".to_string()), "{one:?}");
+}

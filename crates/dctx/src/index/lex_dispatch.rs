@@ -6,18 +6,32 @@
 use dctx_map_model::{Node, NodeKind};
 
 use super::extract::Symbol;
+use super::refs::RawRef;
 use super::span_index::SpanIndex;
 
-/// Converts the selected lexer's facts, abstaining on failed or unsupported input.
-pub(super) fn symbols(language: &str, path: &str, text: &str) -> Vec<Symbol> {
+/// Converts the selected lexer's facts and keeps its call and import references, abstaining on failed or unsupported input.
+pub(super) fn lexed(language: &str, path: &str, text: &str) -> (Vec<Symbol>, Vec<RawRef>) {
     // LexedFile and Completion are crate-local types; the underlying Node is shared.
+    macro_rules! raw_refs {
+        ($lexed:expr) => {
+            $lexed
+                .references
+                .iter()
+                .filter_map(|labeled| {
+                    let fact = &labeled.fact;
+                    RawRef::new(fact.src.as_str(), fact.kind, &fact.name, &fact.scope, fact.alias.as_deref())
+                })
+                .collect()
+        };
+    }
     macro_rules! complete_symbols {
         ($lexer_crate:ident, $lexer:ident) => {
             match $lexer_crate::$lexer::default().extract(path, text.as_bytes()) {
                 Ok(lexed) if lexed.completion == $lexer_crate::Completion::Complete => {
-                    from_nodes(text, lexed.nodes.into_iter().map(|labeled| labeled.fact))
+                    let refs = raw_refs!(lexed);
+                    (from_nodes(text, lexed.nodes.into_iter().map(|labeled| labeled.fact)), refs)
                 }
-                _ => Vec::new(),
+                _ => (Vec::new(), Vec::new()),
             }
         };
     }
@@ -25,8 +39,11 @@ pub(super) fn symbols(language: &str, path: &str, text: &str) -> Vec<Symbol> {
     match language {
         // Preserve the existing JS/TS projection, including accepted partial facts.
         "javascript" | "typescript" => match dctx_lex_js::JsLexer::default().extract(path, text.as_bytes()) {
-            Ok(lexed) => from_nodes(text, lexed.nodes.into_iter().map(|labeled| labeled.fact)),
-            Err(_) => Vec::new(),
+            Ok(lexed) => {
+                let refs = raw_refs!(lexed);
+                (from_nodes(text, lexed.nodes.into_iter().map(|labeled| labeled.fact)), refs)
+            }
+            Err(_) => (Vec::new(), Vec::new()),
         },
         "python" => complete_symbols!(dctx_lex_py, PyLexer),
         "go" => complete_symbols!(dctx_lex_go, GoLexer),
@@ -38,8 +55,14 @@ pub(super) fn symbols(language: &str, path: &str, text: &str) -> Vec<Symbol> {
         "ruby" => complete_symbols!(dctx_lex_rb, RubyLexer),
         "php" => complete_symbols!(dctx_lex_php, PhpLexer),
         "swift" => complete_symbols!(dctx_lex_swift, SwiftLexer),
-        _ => Vec::new(),
+        _ => (Vec::new(), Vec::new()),
     }
+}
+
+/// The symbols of [`lexed`] alone.
+#[cfg(test)]
+pub(super) fn symbols(language: &str, path: &str, text: &str) -> Vec<Symbol> {
+    lexed(language, path, text).0
 }
 
 fn from_nodes(text: &str, nodes: impl IntoIterator<Item = Node>) -> Vec<Symbol> {

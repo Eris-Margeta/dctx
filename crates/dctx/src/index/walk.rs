@@ -11,6 +11,7 @@ use dctx_ports::{Cancellation, Source};
 
 use super::extract::{index_prepared, language_of, prepare_structural, Prepared, Symbol};
 use super::profile::{self, FileWatch, Stage, WalkSpan};
+use super::refs::{self, FileRefs, RawRef};
 use super::{IndexedEdge, IndexedFile, IndexedNode, TextBlob, TextSpan};
 use crate::domain::{
     ancestors_include, check_deadline, digest_text, FreshnessMode, ParserChoice, PolicyView, ScanLimits, DctxError,
@@ -24,7 +25,7 @@ pub(crate) struct Walked {
     pub files: Vec<IndexedFile>,
     /// Graph nodes.
     pub nodes: Vec<IndexedNode>,
-    /// Contains edges.
+    /// Contains edges, then the resolved calls and imports edges.
     pub edges: Vec<IndexedEdge>,
     /// Ids, paths and edge labels addressed by the node and edge spans.
     pub text: TextBlob,
@@ -64,6 +65,8 @@ struct State {
     files: Vec<IndexedFile>,
     nodes: Vec<IndexedNode>,
     edges: Vec<IndexedEdge>,
+    /// Node range and raw references of each indexed file, for [`refs::link`].
+    file_refs: Vec<FileRefs>,
     text: TextBlob,
     entries: u64,
     source_bytes: u64,
@@ -84,6 +87,7 @@ pub(crate) fn walk_source(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
         files: Vec::new(),
         nodes: Vec::new(),
         edges: Vec::new(),
+        file_refs: Vec::new(),
         text: TextBlob::default(),
         entries: 1,
         source_bytes: 0,
@@ -96,6 +100,7 @@ pub(crate) fn walk_source(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
         return Err(limit(Resource::Entries, args.limits.entries));
     }
     visit_dir(args, languages.as_deref(), &RelativePath::root(), &mut state)?;
+    refs::link(&state.nodes, &mut state.edges, &mut state.text, &state.file_refs);
     Ok(finish(args, state))
 }
 
@@ -191,7 +196,7 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
         let parse_mark = profile::start();
         let parsed = prepare_file(args, path.as_str(), &bytes);
         watch.charge(Stage::ParseLex, parse_mark);
-        let (prepared, syntax) = parsed?;
+        let (prepared, syntax, raw_refs) = parsed?;
         if syntax {
             state.syntax_files += 1;
         } else if args.parser != ParserChoice::Opaque {
@@ -209,6 +214,10 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
             &mut state.text,
         );
         watch.set_symbols(u64::try_from(count).unwrap_or(u64::MAX));
+        // Files without references stay in the list: a call elsewhere may resolve to their symbols.
+        if let Some(end) = u32::try_from(state.nodes.len()).ok().filter(|end| !raw_refs.is_empty() || *end > module_id.saturating_add(1)) {
+            state.file_refs.push(FileRefs { first: module_id, end, refs: raw_refs });
+        }
         watch.charge(Stage::GraphAssembly, graph_mark);
     }
     state.files.push(file_row(path.as_str(), decision, Some(digest), meta.size, meta.modified.millis()));
@@ -222,25 +231,26 @@ fn read_file(args: &WalkArgs<'_>, path: &RelativePath, state: &mut State) -> Res
     args.source.read(&grant, args.limits.file_bytes).map_err(DctxError::from_core)
 }
 
-fn prepare_file(args: &WalkArgs<'_>, path: &str, bytes: &[u8]) -> Result<(Prepared, bool), DctxError> {
+fn prepare_file(args: &WalkArgs<'_>, path: &str, bytes: &[u8]) -> Result<(Prepared, bool, Vec<RawRef>), DctxError> {
     if bytes.contains(&0) || args.parser == ParserChoice::Opaque || language_of(path) == "opaque" {
-        return Ok((Prepared::Symbols(Vec::new()), false));
+        return Ok((Prepared::Symbols(Vec::new()), false, Vec::new()));
     }
     if args.parser == ParserChoice::Syn && language_of(path) == "rust" {
-        let (symbols, syntax) = extract_syn(bytes, args.limits.file_bytes)?;
-        return Ok((Prepared::Symbols(symbols), syntax));
+        let (symbols, raw_refs, syntax) = extract_syn(path, bytes, args.limits.file_bytes)?;
+        return Ok((Prepared::Symbols(symbols), syntax, raw_refs));
     }
-    Ok((prepare_structural(path, bytes), false))
+    let (prepared, raw_refs) = prepare_structural(path, bytes);
+    Ok((prepared, false, raw_refs))
 }
 
-fn extract_syn(bytes: &[u8], max_file: u64) -> Result<(Vec<Symbol>, bool), DctxError> {
+fn extract_syn(path: &str, bytes: &[u8], max_file: u64) -> Result<(Vec<Symbol>, Vec<RawRef>, bool), DctxError> {
     #[cfg(feature = "syntax-rust")]
     {
-        super::syn_extract::extract(bytes, max_file)
+        super::syn_extract::extract(path, bytes, max_file)
     }
     #[cfg(not(feature = "syntax-rust"))]
     {
-        let _ = (bytes, max_file);
+        let _ = (path, bytes, max_file);
         Err(DctxError::unsupported("syntax-rust"))
     }
 }
