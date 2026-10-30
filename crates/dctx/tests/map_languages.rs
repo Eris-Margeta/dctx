@@ -189,6 +189,31 @@ const FIXTURES: &[Fixture] = &[
         source: "<script>\nfunction WebMain() {\n  return 1\n}\n</script>\n<h1>Web heading</h1>\n",
         symbol: "WebMain",
     },
+    Fixture {
+        extensions: &["clj", "cljs", "cljc", "edn"],
+        source: "(defn CljMain [x]\n  x)\n",
+        symbol: "CljMain",
+    },
+    Fixture {
+        extensions: &["lisp", "lsp", "cl"],
+        source: "(defun LispMain (x)\n  x)\n",
+        symbol: "LispMain",
+    },
+    Fixture {
+        extensions: &["scm", "ss"],
+        source: "(define (SchemeMain x)\n  x)\n",
+        symbol: "SchemeMain",
+    },
+    Fixture {
+        extensions: &["el"],
+        source: "(defun ElispMain (x)\n  x)\n",
+        symbol: "ElispMain",
+    },
+    Fixture {
+        extensions: &["nix"],
+        source: "{\n  NixMain = 1;\n}\n",
+        symbol: "NixMain",
+    },
 ];
 
 fn write_sources(root: &Path) -> Vec<(String, &'static str)> {
@@ -282,6 +307,7 @@ const SHARED_EXTENSIONS: &[&str] = &[
     "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts", "rb", "rake", "gemspec",
     "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy", "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs",
     "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
+    "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl", "scm", "ss", "el", "nix",
 ];
 const SHARED_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
 

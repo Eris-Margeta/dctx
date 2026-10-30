@@ -72,7 +72,9 @@ impl Parser for PureParser {
             | Language::Proto
             | Language::Pascal
             | Language::Graphql
-            | Language::Web => fallback(path, source),
+            | Language::Web
+            | Language::Lisp
+            | Language::Nix => fallback(path, source),
             Language::Unknown => fallback(path, source),
         }
     }
@@ -118,7 +120,9 @@ impl Parser for TreeSitterParser {
             | Language::Proto
             | Language::Pascal
             | Language::Graphql
-            | Language::Web => return fallback(path, source),
+            | Language::Web
+            | Language::Lisp
+            | Language::Nix => return fallback(path, source),
             Language::Unknown => return fallback(path, source),
             Language::Rust
             | Language::JavaScript
@@ -166,6 +170,8 @@ impl Parser for TreeSitterParser {
             | Language::Pascal
             | Language::Graphql
             | Language::Web
+            | Language::Lisp
+            | Language::Nix
             | Language::Unknown => {}
         }
         facts.finish()

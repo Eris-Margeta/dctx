@@ -122,6 +122,17 @@ const EXTENSIONS: &[(&str, &str)] = &[
     ("astro", "web"),
     ("html", "web"),
     ("htm", "web"),
+    ("clj", "clojure"),
+    ("cljs", "clojure"),
+    ("cljc", "clojure"),
+    ("edn", "clojure"),
+    ("lisp", "lisp"),
+    ("lsp", "lisp"),
+    ("cl", "lisp"),
+    ("scm", "scheme"),
+    ("ss", "scheme"),
+    ("el", "elisp"),
+    ("nix", "nix"),
 ];
 
 /// Duplicate of `dctx-map-parse` `domain::facts::RUBY_BASENAMES`.
@@ -758,6 +769,17 @@ mod tests {
             ("astro", "web"),
             ("html", "web"),
             ("htm", "web"),
+            ("clj", "clojure"),
+            ("cljs", "clojure"),
+            ("cljc", "clojure"),
+            ("edn", "clojure"),
+            ("lisp", "lisp"),
+            ("lsp", "lisp"),
+            ("cl", "lisp"),
+            ("scm", "scheme"),
+            ("ss", "scheme"),
+            ("el", "elisp"),
+            ("nix", "nix"),
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
         assert_eq!(EXTENSIONS, LITERAL_EXTENSIONS);
