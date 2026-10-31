@@ -158,10 +158,12 @@ impl<'a> Tables<'a> {
                 }
             }
         }
-        let receiver_only = self.nodes.get(file.first as usize).is_some_and(|module| RECEIVER_ONLY.contains(&language_of(self.text.get(module.path))));
+        let module_node = self.nodes.get(file.first as usize);
+        let language = module_node.map(|module| language_of(self.text.get(module.path)));
+        let receiver_only = module_node.is_some_and(|module| RECEIVER_ONLY.contains(&language_of(self.text.get(module.path))));
         for reference in file.refs.iter().filter(|reference| reference.kind == EdgeKind::Calls) {
             let Some(&src) = ids.get(&reference.src) else { continue };
-            let segments = call_segments(&reference.name);
+            let segments = call_segments(&reference.name, language);
             let Some((callee, qualifier)) = segments.split_last() else { continue };
             // `interpolate(..)` inside the method `Captures::interpolate` is the imported free function, not the method itself.
             let free = receiver_only && reference.name.chars().all(|ch| ch.is_alphanumeric() || ch == '_' || ch == '$');

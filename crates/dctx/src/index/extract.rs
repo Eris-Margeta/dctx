@@ -91,6 +91,9 @@ const EXTENSIONS: &[(&str, &str)] = &[
     ("hrl", "erlang"),
     ("groovy", "groovy"),
     ("gradle", "groovy"),
+    ("ps1", "powershell"),
+    ("psm1", "powershell"),
+    ("psd1", "powershell"),
     ("txt", "text"),
     ("rst", "rst"),
     ("adoc", "asciidoc"),
@@ -543,8 +546,8 @@ fn keyword_name(line: &str, keyword: &str) -> Option<String> {
 fn ident_of(text: &str) -> Option<String> {
     let mut name = String::new();
     for (index, ch) in text.chars().enumerate() {
-        let ok = ch == '_' || ch.is_ascii_alphanumeric();
-        let start_ok = index != 0 || ch == '_' || ch.is_ascii_alphabetic();
+        let ok = ch == '_' || ch.is_ascii_alphanumeric() || ch == '-';
+        let start_ok = index != 0 || ch == '_' || ch.is_ascii_alphabetic() || ch == '-';
         if index == 0 && !start_ok {
             return None;
         }
@@ -557,7 +560,7 @@ fn ident_of(text: &str) -> Option<String> {
 }
 
 fn is_ident(byte: u8) -> bool {
-    byte == b'_' || byte.is_ascii_alphanumeric()
+    byte == b'_' || byte.is_ascii_alphanumeric() || byte == b'-'
 }
 
 fn placed(name: String, kind: &str, graph: NodeKind, line_no: u32, offset: usize, body_len: usize) -> Symbol {
@@ -749,6 +752,9 @@ mod tests {
             ("hrl", "erlang"),
             ("groovy", "groovy"),
             ("gradle", "groovy"),
+            ("ps1", "powershell"),
+            ("psm1", "powershell"),
+            ("psd1", "powershell"),
             ("txt", "text"),
             ("rst", "rst"),
             ("adoc", "asciidoc"),

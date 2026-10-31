@@ -125,6 +125,11 @@ const FIXTURES: &[Fixture] = &[
         symbol: "erlang_main",
     },
     Fixture {
+        extensions: &["ps1", "psm1", "psd1"],
+        source: "function PsMain {\n  return 1\n}\n",
+        symbol: "PsMain",
+    },
+    Fixture {
         extensions: &["ex", "exs"],
         source: "defmodule ElixirMain do\n  def run(x) do\n    x\n  end\nend\n",
         symbol: "ElixirMain",
@@ -310,7 +315,7 @@ fn selection_excludes_or_omits_new_languages_before_content_reads() {
 const SHARED_EXTENSIONS: &[&str] = &[
     "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java", "c", "h",
     "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts", "rb", "rake", "gemspec",
-    "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "erl", "hrl", "groovy", "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs",
+    "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "erl", "hrl", "groovy", "gradle", "ps1", "psm1", "psd1", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs",
     "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
     "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl", "scm", "ss", "el", "nix",
 ];
