@@ -5,6 +5,7 @@
 
 mod concept;
 mod decl_pair;
+mod export_list;
 mod extract;
 pub(crate) mod export;
 mod generic;
