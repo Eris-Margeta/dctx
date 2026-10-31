@@ -19,6 +19,7 @@ use dctx_core::selection::{parse_ignore_pattern_line, rule_matches};
 use dctx_core::version::Version;
 
 use crate::compat;
+use crate::exit::Failure;
 use crate::host;
 
 /// Where the encoded pack page goes.
@@ -89,6 +90,8 @@ pub struct PackOutcome {
     pub clipboard: bool,
     /// Byte count and retention class.
     pub report_line: String,
+    /// Files in the page; 0 makes a plain `dctx pack` exit 1.
+    pub files: u64,
 }
 
 /// Flag names `dctx pack --help` prints after the shared help page.
@@ -108,23 +111,37 @@ Pack filters (ADR-011, ADR-009):
   --output, -o <path>   Write the page to one file
   --clipboard, -c       Copy the page to the clipboard
   --json                Summary report instead of the source page
+Example: dctx pack src --ext rs,toml --output context.txt
+Exit codes: 0 ok, 1 nothing to pack (no view filter), 2 usage, 3 source or output error; see docs/CLI-EXIT-CODES.md.
 "
 }
 
 /// Parses `pack` arguments, runs the facade, and emits only the requested destination.
+/// Exit codes follow docs/CLI-EXIT-CODES.md. With no view filter, a place with no packable file prints its page, then fails with exit 1.
 /// # Errors
-/// Returns argument parsing, snapshot/rendering, or output failures.
-pub fn run(args: &[String]) -> Result<(), String> {
+/// Argument refusals (exit 2), source, scan, render or output failures (exit 3), and a pack of no file (exit 1).
+pub fn run(args: &[String]) -> Result<(), Failure> {
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
         print!("{}", crate::help::text());
         print!("{}", flag_help());
         return Ok(());
     }
-    let outcome = execute(args)?;
+    let usage = |message: String| Failure::usage(message, "run `dctx pack --help` for the flags and an example").within("pack");
+    let plan = parse(args).map_err(usage)?;
+    if let Some(message) = summary_refusal(&plan) {
+        return Err(usage(message.to_string()));
+    }
+    let outcome = execute_plan(&plan).map_err(|message| {
+        Failure::index(message, "check that PATH is an existing, readable directory and that --output names a writable file").within("pack")
+    })?;
     if outcome.wrote.is_none() && !outcome.clipboard {
         print!("{}", String::from_utf8_lossy(&outcome.body));
     }
     println!("{}", outcome.report_line);
+    if outcome.files == 0 && !plan.filters.affects_view() && !plan.filters.debug_ignored {
+        let message = format!("nothing to pack in {}: no file passed the ignore and sensitive-file rules", plan.path.display());
+        return Err(Failure::no_result(message, "add files to the directory, or check its .gitignore and .dctxignore rules").within("pack"));
+    }
     Ok(())
 }
 
@@ -132,21 +149,33 @@ pub fn run(args: &[String]) -> Result<(), String> {
 /// # Errors
 /// Returns argument parsing, source/session, snapshot/rendering, or requested-format failures.
 pub fn execute(args: &[String]) -> Result<PackOutcome, String> {
-    let plan = parse(args)?;
+    execute_plan(&parse(args)?)
+}
+
+/// Runs one parsed pack: the facade summary for `--json`, else the source page.
+fn execute_plan(plan: &Plan) -> Result<PackOutcome, String> {
     if plan.report_format.is_some() {
-        return facade_summary(&plan);
+        return facade_summary(plan);
     }
-    let (body, files, version) = source_page(&plan)?;
+    let (body, files, version) = source_page(plan)?;
     emit(&plan.destination, &body, files, &version)
+}
+
+/// Why `--json` refuses this plan: the summary has no file list, so debug and view filters do not apply.
+fn summary_refusal(plan: &Plan) -> Option<&'static str> {
+    if plan.report_format.is_none() {
+        return None;
+    }
+    if plan.filters.debug_ignored {
+        return Some("pack --debug-ignored applies to the source page; drop --json");
+    }
+    plan.filters.affects_view().then_some("pack view filters apply to the source page; drop --json")
 }
 
 /// `--json` summary. The facade report has no file list, so view filters are refused.
 fn facade_summary(plan: &Plan) -> Result<PackOutcome, String> {
-    if plan.filters.debug_ignored {
-        return Err("pack --debug-ignored applies to the source page; drop --json".to_string());
-    }
-    if plan.filters.affects_view() {
-        return Err("pack view filters apply to the source page; drop --json".to_string());
+    if let Some(message) = summary_refusal(plan) {
+        return Err(message.to_string());
     }
     let format = plan.report_format.ok_or_else(|| "pack summary requires --json".to_string())?;
     let mut session = host::open_dir(&plan.path)?;
@@ -305,6 +334,7 @@ fn emit(destination: &Destination, body: &[u8], files: u64, version: &str) -> Re
             wrote: None,
             clipboard: false,
             report_line: format!("pack bytes={bytes} files={files} retention=stdout version={version}"),
+            files,
         }),
         Destination::File(path) => {
             write_output(path, body)?;
@@ -316,6 +346,7 @@ fn emit(destination: &Destination, body: &[u8], files: u64, version: &str) -> Re
                     "pack bytes={bytes} files={files} retention=explicit path={} version={version}",
                     path.display()
                 ),
+                files,
             })
         }
         Destination::Clipboard => {
@@ -325,6 +356,7 @@ fn emit(destination: &Destination, body: &[u8], files: u64, version: &str) -> Re
                 wrote: None,
                 clipboard: true,
                 report_line: format!("pack bytes={bytes} files={files} retention=clipboard version={version}"),
+                files,
             })
         }
         Destination::FileAndClipboard(path) => {
@@ -340,6 +372,7 @@ fn emit(destination: &Destination, body: &[u8], files: u64, version: &str) -> Re
                     "pack bytes={bytes} files={files} retention=explicit path={} version={version}",
                     path.display()
                 ),
+                files,
             })
         }
     }

@@ -30,6 +30,11 @@ before any separately authorized release.
 - **`dctx languages`** (`--json`, `--markdown`): every supported language with its tag, file names, tier
   (full: symbols and lexical call edges; outline: symbols only; docs: sections) and confidence, from one facade
   registry (`dctx::LANGUAGES`) that also feeds `--version --verbose` and the README table, which a test diffs.
+- **A CLI exit-code contract** (`docs/CLI-EXIT-CODES.md`) for `map`, `pack`, `mcp`, `languages` and unknown
+  commands: 0 ok, 1 no result (an id not in the index, a binary file target, nothing to pack), 2 usage, 3 index
+  error. Every failure prints a `hint:` line. Previously every failure exited 1. A non-UTF-8 argument is now a
+  usage error instead of a panic, an unknown flag is named as unknown, and `dctx map <verb> --help` prints a page
+  with an `Example:` line for each map verb.
 - **Outline symbols (`guess` confidence) for 25 more formats**: Scala, Dart, Zig, Solidity,
   Gleam, Groovy; Elixir, Lua, OCaml, R, Julia, Haskell; Terraform/HCL, SQL, shell, Makefile,
   Dockerfile, protobuf, Pascal, GraphQL; and headed sections for `.txt`, `.rst`, `.adoc`,
