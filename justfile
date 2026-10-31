@@ -20,6 +20,12 @@ lint:
 build:
     cargo build --release -p dctx-cli
 
+# v1 release gate on Linux: cargo build/test/clippy, shipped-code scan, determinism, unrelated edit, zero network,
+# then the committed bench floors. `just release-check --quick path/to/dctx-cli` skips cargo.
+release-check *ARGS:
+    ./scripts/release-check.sh {{ARGS}}
+    python3 scripts/bench_floors.py
+
 # Render Mermaid diagrams from docs/diagrams/*.mmd into docs/assets/*.svg
 diagrams:
     #!/usr/bin/env bash
