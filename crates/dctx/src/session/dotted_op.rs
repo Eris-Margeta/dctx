@@ -82,7 +82,7 @@ fn read_sites(hits: Vec<AnswerRecord>, segments: &[&str]) -> Vec<AnswerRecord> {
 
 /// True when `record` passes the kind filter and the `--in` path prefix of `request`, as `find` applies them to symbols.
 fn admits(request: &MapRequest, record: &AnswerRecord) -> bool {
-    let kind = request.kinds.is_empty() || request.kinds.iter().any(|kind| *kind == record.kind);
+    let kind = request.kinds.is_empty() || request.kinds.contains(&record.kind);
     let place = request.within.as_deref().is_none_or(|prefix| {
         let prefix = prefix.trim_end_matches('/');
         prefix == "." || record.path == prefix || record.path.strip_prefix(prefix).is_some_and(|rest| rest.starts_with('/'))
