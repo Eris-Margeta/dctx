@@ -194,7 +194,9 @@ mod tests {
         assert_eq!(EVICTION_TARGET_BYTES, u64::try_from(12 * (1024u128 * 1024 * 1024) / 10).expect("fixture cap fits u64"));
         assert_eq!(ROOT_VIEW_CEILING_BYTES, 805_306_368);
         assert_eq!(ROOT_PACK_CEILING_BYTES, 805_306_368);
-        assert!(ROOT_VIEW_CEILING_BYTES < HARD_CAP_BYTES && ROOT_PACK_CEILING_BYTES < HARD_CAP_BYTES);
+        const {
+            assert!(ROOT_VIEW_CEILING_BYTES < HARD_CAP_BYTES && ROOT_PACK_CEILING_BYTES < HARD_CAP_BYTES);
+        };
         assert_eq!(ROOT_PREVIEW_CEILING_BYTES, 67_108_864);
         let quota = Quota::product_default();
         assert!(quota.check().is_ok());
