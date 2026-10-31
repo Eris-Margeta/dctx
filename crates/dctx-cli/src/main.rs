@@ -55,7 +55,8 @@ fn main() {
         _ => parse_command(&args).map(|command| match command {
             CliCommand::Help => print!("{}", help::text()),
             CliCommand::Version => {
-                println!("dctx-cli v{}", env!("CARGO_PKG_VERSION"));
+                // DCTX_GIT_SHA comes from build.rs: the short commit of the built tree, or `unknown`.
+                println!("dctx {} ({})", env!("CARGO_PKG_VERSION"), env!("DCTX_GIT_SHA"));
                 if args.iter().any(|arg| arg == "--verbose") {
                     print!("{}", help::limits());
                 }

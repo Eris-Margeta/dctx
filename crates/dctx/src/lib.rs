@@ -19,8 +19,8 @@ mod plugins;
 mod ports;
 mod session;
 
-/// Facade crate version.
-pub const FACADE_VERSION: &str = "0.1.0";
+/// Facade crate version: the package version, so it moves with the workspace release.
+pub const FACADE_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// JSON protocol emitted by query and pack.
 pub const WIRE_VERSION: u32 = 2;
 
