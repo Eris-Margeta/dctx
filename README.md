@@ -131,9 +131,7 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 - **Bounded**: output uses an estimated token budget (up to 2,000; explain up to 1,000), not a model tokenizer guarantee, and never splits a record.
 - **Deterministic**: the same tree and question give the same bytes, so prompt caches hit.
 - **Precision and freshness**: use `--json` for the structured metadata. Structural declarations and conservative call edges do not imply exact semantic resolution.
-- **Structural language coverage**: Rust, JavaScript, TypeScript/TSX, Python, Go, Java, C/C++, C#, Kotlin, Ruby, PHP, Swift, Markdown, and JSON/JSONC/TOML/YAML configuration. The [extension dispatch](crates/dctx/src/index/extract.rs) and [language tests](crates/dctx/tests/map_languages.rs) cover more languages than the current `--version --verbose` capability list reports; this is not full compiler semantics.
-- **Outline symbols** (`guess` confidence): Scala, Dart, Zig, Solidity, Gleam, Groovy, Elixir, Lua, OCaml, R, Julia, Haskell, Terraform/HCL, SQL, shell, Makefile, Dockerfile, protobuf, Pascal and GraphQL. Headed sections for `.txt`, `.rst`, `.adoc`, `.org` and `.tex` documents.
-- **Outline symbols and calls**: Clojure, Common Lisp, Scheme, Emacs Lisp and Nix. The script blocks of Vue, Svelte, Astro and HTML.
+- **Languages**: every supported language is in one of three tiers (full, outline, docs); see [Language tiers](#language-tiers) below or run `dctx languages`.
 - **No Git, no network for map queries**: identity comes from dctx's own content digest; map does not need Git history or embeddings.
 - **Skeleton and grep**: `dctx map skeleton <file>` prints the declaration signatures of one file, with no bodies, in source order. `dctx map grep <literal>` is an exhaustive literal search of indexed files, with hits grouped by enclosing symbol; `-i` makes it ASCII case-insensitive.
 - **Hubs**: `dctx map hubs` lists the most-called symbols and the file and symbol counts per directory (`--limit` 1 to 60, default 20).
@@ -146,7 +144,70 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 - **Byte-stable answers**: the text header is `# <place> <verb>`, and JSON leaves out the snapshot digest, generation and age. `--meta` restores them.
 - **Source limit**: `DCTX_MAX_SOURCE_BYTES` sets the total source bytes one scan may read (1 to 17179869184; default 1 GiB).
 
+
 Details: [Map mode guide](docs/guides/MAP-MODE.md). The three-way benchmark against graphify and Trail-Code is in [docs/BENCHMARK-20261030.md](docs/BENCHMARK-20261030.md). Planned next — agent hooks, blast radius for a diff, delta answers and prefix-stable context tiers — is specified in [docs/SPEC.md](docs/SPEC.md#31-roadmap-and-acceptance-gates).
+
+### Language tiers
+
+`dctx languages` prints this table (`--json` for tools, `--markdown` for this block) from the one registry that also drives `dctx --version --verbose`; a test fails when the block below differs from it.
+
+- **full**: symbols and call edges. Call edges are lexical, not type-resolved: they come from names, scopes and imports, never from a type checker, and ambiguous references are dropped.
+- **outline**: symbols only; no call edges are promised. Shell function bodies can yield same-file call guesses, but v1 does not promise shell call edges.
+- **docs**: headed sections.
+- **Confidence**: `guess` marks the heuristic outline families, and every record from those files carries confidence `guess`; `structural` means a dedicated lexer or deterministic document rules.
+- **Not in v1**: Perl, Fortran and Verilog.
+
+<!-- languages:begin -->
+| Language | Tag | Files | Tier | Confidence |
+|---|---|---|---|---|
+| Rust | `rust` | `.rs` | full | structural |
+| JavaScript | `javascript` | `.js`, `.mjs`, `.cjs`, `.jsx` | full | structural |
+| TypeScript/TSX | `typescript` | `.ts`, `.mts`, `.cts`, `.tsx` | full | structural |
+| Python | `python` | `.py`, `.pyi` | full | structural |
+| Go | `go` | `.go` | full | structural |
+| Java | `java` | `.java` | full | structural |
+| C/C++ | `c` | `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hpp`, `.hh` | full | structural |
+| C# | `csharp` | `.cs` | full | structural |
+| Kotlin | `kotlin` | `.kt`, `.kts` | full | structural |
+| Ruby | `ruby` | `.rb`, `.rake`, `.gemspec`, `Rakefile`, `Gemfile` | full | structural |
+| PHP | `php` | `.php`, `.phtml`, `.inc` | full | structural |
+| Swift | `swift` | `.swift` | full | structural |
+| Vue/Svelte/Astro/HTML script blocks | `web` | `.vue`, `.svelte`, `.astro`, `.html`, `.htm` | full | structural |
+| Scala | `scala` | `.scala`, `.sc` | full | guess |
+| Dart | `dart` | `.dart` | full | guess |
+| Zig | `zig` | `.zig` | full | guess |
+| Solidity | `solidity` | `.sol` | full | guess |
+| Gleam | `gleam` | `.gleam` | full | guess |
+| Groovy | `groovy` | `.groovy`, `.gradle` | full | guess |
+| PowerShell | `powershell` | `.ps1`, `.psm1`, `.psd1` | full | guess |
+| Elixir | `elixir` | `.ex`, `.exs` | full | guess |
+| Lua | `lua` | `.lua` | full | guess |
+| OCaml | `ocaml` | `.ml`, `.mli` | full | guess |
+| R | `r` | `.r` | full | guess |
+| Julia | `julia` | `.jl` | full | guess |
+| Haskell | `haskell` | `.hs` | full | guess |
+| Erlang | `erlang` | `.erl`, `.hrl` | full | guess |
+| Terraform/HCL | `hcl` | `.tf`, `.tfvars`, `.hcl` | full | guess |
+| SQL | `sql` | `.sql`, `*.sql.in` | full | guess |
+| Clojure | `clojure` | `.clj`, `.cljs`, `.cljc`, `.edn` | full | guess |
+| Common Lisp | `lisp` | `.lisp`, `.lsp`, `.cl` | full | guess |
+| Scheme | `scheme` | `.scm`, `.ss` | full | guess |
+| Emacs Lisp | `elisp` | `.el` | full | guess |
+| JSON/JSONC/TOML/YAML | `config` | `.json`, `.jsonc`, `.toml`, `.yaml`, `.yml` | outline | structural |
+| Shell | `shell` | `.sh`, `.bash`, `.zsh`, `.bats` | outline | guess |
+| Makefile | `make` | `.mk`, `Makefile`, `GNUmakefile` | outline | guess |
+| Dockerfile | `docker` | `Dockerfile`, `Containerfile` | outline | guess |
+| Protobuf | `proto` | `.proto` | outline | guess |
+| Pascal | `pascal` | `.pas`, `.pp`, `.dpr` | outline | guess |
+| GraphQL | `graphql` | `.graphql`, `.gql` | outline | guess |
+| Nix | `nix` | `.nix` | outline | guess |
+| Markdown | `markdown` | `.md`, `.markdown` | docs | structural |
+| Plain text | `text` | `.txt` | docs | structural |
+| reStructuredText | `rst` | `.rst` | docs | structural |
+| AsciiDoc | `asciidoc` | `.adoc`, `.asciidoc` | docs | structural |
+| Org | `org` | `.org` | docs | structural |
+| LaTeX | `tex` | `.tex` | docs | structural |
+<!-- languages:end -->
 
 ---
 

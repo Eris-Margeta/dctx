@@ -27,6 +27,9 @@ before any separately authorized release.
   `path <FROM> <TO>` (shortest edge path) and `export --format json|mermaid` (the whole graph).
   `neighbors --depth` goes up to 4 (breadth-first, each node once).
 - **`dctx mcp`**: a stdio MCP server exposing the map verbs as tools.
+- **`dctx languages`** (`--json`, `--markdown`): every supported language with its tag, file names, tier
+  (full: symbols and lexical call edges; outline: symbols only; docs: sections) and confidence, from one facade
+  registry (`dctx::LANGUAGES`) that also feeds `--version --verbose` and the README table, which a test diffs.
 - **Outline symbols (`guess` confidence) for 25 more formats**: Scala, Dart, Zig, Solidity,
   Gleam, Groovy; Elixir, Lua, OCaml, R, Julia, Haskell; Terraform/HCL, SQL, shell, Makefile,
   Dockerfile, protobuf, Pascal, GraphQL; and headed sections for `.txt`, `.rst`, `.adoc`,

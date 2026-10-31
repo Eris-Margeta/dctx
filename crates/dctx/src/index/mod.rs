@@ -15,6 +15,8 @@ pub(crate) mod hubs;
 pub(crate) mod path;
 mod grep;
 mod key_rank;
+#[cfg(test)]
+mod languages_tests;
 mod lex_dispatch;
 mod outline_order;
 pub(crate) mod profile;
