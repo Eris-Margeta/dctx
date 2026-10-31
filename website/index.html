@@ -292,13 +292,13 @@
     <p class="bench-note">Benchmark of dctx 0.25 against Trail-Code 0.23.1, October 2026. Every gap above is a numbered item on the <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">roadmap</a>. <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/trail-code-2026-10/REPORT.md">Read the full report</a>.</p>
     <div class="bench-pending" role="note">
       <span class="pill live">New run</span>
-      <p><b>Three-way run 6, 31 October 2026: dctx (development line), Trail-Code 0.28.0, graphify 0.9.97 (code path, no LLM).</b> Same host, six pinned corpora, no network.</p>
+      <p><b>Three-way run 7, 31 October 2026: dctx (development line), Trail-Code 0.28.0, graphify 0.9.97 (code path, no LLM).</b> Same host, six pinned corpora, no network.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th scope="col">Measured</th><th scope="col">dctx</th><th scope="col">Trail-Code 0.28.0</th><th scope="col">graphify 0.9.97</th></tr></thead>
           <tbody>
             <tr><td>Callers precision / recall (80 targets, tool-independent gold)</td><td><b>0.995 / 0.851</b></td><td>0.986 / 0.436</td><td>0.989 / 0.196</td></tr>
-            <tr><td>Agent questions, October protocol (70 questions)</td><td><b>136 / 140</b>, 12.0 facts per 1k tokens</td><td>122 / 140, 3.5 per 1k</td><td>96 / 140, 1.2 per 1k</td></tr>
+            <tr><td>Agent questions, October protocol (70 questions)</td><td><b>140 / 140</b>, 12.0 facts per 1k tokens</td><td>122 / 140, 3.5 per 1k</td><td>96 / 140, 1.2 per 1k</td></tr>
             <tr><td>Cold index, six corpora</td><td><b>0.13 &ndash; 1.09 s</b></td><td>1.42 &ndash; 55.5 s</td><td>4.3 &ndash; 61.5 s</td></tr>
             <tr><td>Peak memory while indexing</td><td><b>19 &ndash; 90 MB</b></td><td>121 &ndash; 1,015 MB</td><td>74 &ndash; 393 MB</td></tr>
             <tr><td>Warm search, callers and skeleton</td><td><b>43 &ndash; 195 ms</b></td><td>0.97 &ndash; 2.0 s</td><td>0.41 &ndash; 2.1 s</td></tr>

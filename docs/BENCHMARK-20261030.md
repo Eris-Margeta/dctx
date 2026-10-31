@@ -15,7 +15,7 @@ the work is [`GAP-MATRIX-20261030.md`](GAP-MATRIX-20261030.md). Where another to
 
 | Area | Result |
 |---|---|
-| Task-level questions, October protocol (70 questions) | **Run 5: dctx 136 of 140, Trail-Code 122, graphify 96**, with dctx using 28.5k tokens against Trail-Code's 88.9k. See "Latest" below. |
+| Task-level questions, October protocol (70 questions) | **Run 7: dctx 140 of 140, Trail-Code 122, graphify 96**, with dctx using 29.3k tokens against Trail-Code's 88.9k and graphify's 197k. See "Run 7" below. |
 | Callers (depth 1) against a tool-independent gold set, 80 targets on 4 corpora | **Run 5: dctx P 0.995 / R 0.851 (first page), R 0.968 following 5 pages.** Run 1 below: dctx P 0.993 / R 0.461 (first page), P 0.995 / R 0.706 following up to 5 pages. Trail-Code P 0.986 / R 0.436, graphify P 0.989 / R 0.196. Per corpus, Trail-Code wins ripgrep and trailcode, and dctx wins flask and pocketbase. Before tonight dctx recall was 0. |
 | Cold index | **dctx fastest on all 6 corpora**: 0.16–1.16 s against 1.17–58.3 s for Trail-Code and 4.5–59 s for graphify. Peak RSS 19–90 MB against 121–1,020 MB and 74–394 MB. |
 | Warm queries (median of 5, including process start) | **dctx fastest** on search, callers and skeleton everywhere: 44–226 ms against 0.98–1.9 s for Trail-Code and 0.38–1.4 s for graphify. graphify's overview is a 7 ms read of a pre-written file. |
@@ -25,6 +25,27 @@ the work is [`GAP-MATRIX-20261030.md`](GAP-MATRIX-20261030.md). Where another to
 | Language coverage, mixed corpus (10 languages) | **Symbols: dctx 10 of 10, Trail-Code 7, graphify 5.** **Call edges, run 3: dctx 10 of 10, Trail-Code 7, graphify 5** (run 1: dctx 0). dctx's new outline tier is symbols only, labelled `guess`. Terraform and SQL get symbols only from dctx. |
 | Plain-text docs (.md/.rst/.txt/.adoc corpus) | dctx indexes the corpus into headed sections (0.18 s). graphify's code-only mode produced no index, and Trail-Code indexes no doc nodes. |
 | Privacy canary (git-tracked `.env` files) | Run 3: **clean for all three tools** (DCX-30). Run 1: **dctx still leaked on one path.** `pack`, `find` and `grep` are clean now; before tonight `pack` printed the canary. But an explicit `dctx map read m:.env` returns the file. Trail-Code and graphify leaked nothing. The fix is card DCX-30, which has not landed. |
+
+## Run 7: 140 of 140 (main `53f8b6b`, 31 October, 06:20 UTC)
+
+New since run 6:
+- DCX-54c: `neighbors --dir out` also lists the calls the index cannot resolve, as `calls:out:?<name>` records after the resolved callees. These are receiver methods, builtins and external package calls.
+- DCX-56b: dotted config key matching (`dotted_key`), not yet wired into `find`.
+- DCX-61: PowerShell symbols and command-position call edges.
+
+All landed checks passed together on build-host before the run. Raw results are in `research/bench-3way-20261030/tasks/results/run5-53f8b6b/` and `research/bench-3way-20261030/results/run7-53f8b6b/`.
+
+**Task-level protocol** (70 questions, 354 gold facts; generator, mapping and scorer unchanged):
+
+| Tool | Points /140 | Gold facts /354 | Tokens | Facts per 1k tokens |
+|---|---|---|---|---|
+| dctx `53f8b6b` | **140** (run 6: 136) | **353** (342) | **29,340** | **12.0** |
+| Trail-Code 0.28.0 | 122 | 312 | 88,923 | 3.51 |
+| graphify 0.9.97, code-only | 96 | 238 | 197,203 | 1.21 |
+
+dctx scores every point on all ten question types. Callees went from 10 to 14 of 14 (37 of 38 facts). It uses a third of Trail-Code's tokens and a seventh of graphify's.
+
+**Three-way run 7**: callers P / R on the first page 0.995 / 0.851 (all pages 0.968), the same as run 6. The language coverage table is unchanged at 10 of 10 with symbols and 9 of 10 with call edges; shell is still `n`. Its per-language edge counts rise (for example Scala 1 to 8) because the probe counts every `calls` record, and since DCX-54c that includes the `calls:out:?` names. A count above zero says nothing new about resolved edges, so this run does not claim more resolved edges.
 
 ## Run 6 (main `82ec474`, 31 October, 02:04 UTC)
 
