@@ -96,8 +96,8 @@ impl FsSource {
 fn open_no_follow(path: &Path) -> Result<std::fs::File, CoreError> {
     #[cfg(unix)]
     let opened = {
-        use std::os::unix::fs::OpenOptionsExt;
-        std::fs::OpenOptions::new().read(true).custom_flags(O_NOFOLLOW).open(path)
+        use std::os::unix::fs::*;
+        std::fs::File::options().read(true).custom_flags(O_NOFOLLOW).open(path)
     };
     #[cfg(not(unix))]
     let opened = std::fs::File::open(path);
@@ -192,6 +192,7 @@ fn map_io(error: std::io::Error) -> CoreError {
 mod tests {
     use super::*;
     use dctx_core::FileHandlingDecision;
+    use std::fs;
 
     #[test]
     fn empty_path_and_missing_root_are_refused() {
@@ -236,9 +237,9 @@ mod tests {
     #[test]
     fn symlinks_out_of_the_root_are_refused() {
         let outside = tempfile::tempdir().expect("outside");
-        std::fs::write(outside.path().join("secret.txt"), b"OUTSIDE_SENTINEL").expect("secret");
+        fs::write(outside.path().join("secret.txt"), b"OUTSIDE_SENTINEL").expect("secret");
         let dir = tempfile::tempdir().expect("temp");
-        std::fs::write(dir.path().join("kept.txt"), b"kept").expect("kept");
+        fs::write(dir.path().join("kept.txt"), b"kept").expect("kept");
         std::os::unix::fs::symlink(outside.path().join("secret.txt"), dir.path().join("link.txt")).expect("file link");
         std::os::unix::fs::symlink(outside.path(), dir.path().join("linkdir")).expect("dir link");
         let source = FsSource::open(dir.path()).expect("open");
@@ -262,12 +263,12 @@ mod tests {
     #[test]
     fn the_no_follow_open_refuses_a_symlink() {
         let outside = tempfile::tempdir().expect("outside");
-        std::fs::write(outside.path().join("secret.txt"), b"OUTSIDE_SENTINEL").expect("secret");
+        fs::write(outside.path().join("secret.txt"), b"OUTSIDE_SENTINEL").expect("secret");
         let dir = tempfile::tempdir().expect("temp");
         let link = dir.path().join("swapped.txt");
         std::os::unix::fs::symlink(outside.path().join("secret.txt"), &link).expect("link");
         assert_eq!(open_no_follow(&link).expect_err("symlink"), CoreError::PolicyDenied);
-        std::fs::write(dir.path().join("plain.txt"), b"plain").expect("plain");
+        fs::write(dir.path().join("plain.txt"), b"plain").expect("plain");
         assert!(open_no_follow(&dir.path().join("plain.txt")).is_ok());
         assert_eq!(open_no_follow(dir.path()).expect_err("directory"), CoreError::PolicyDenied);
     }
