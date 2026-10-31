@@ -5,7 +5,8 @@
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-#![allow(dead_code)]
+#![cfg_attr(not(test), deny(clippy::unwrap_used))]
+#![cfg_attr(not(test), deny(clippy::expect_used))]
 
 pub mod cache;
 pub mod compat;

@@ -4,6 +4,7 @@
 //! `Lifecycle` (decision 080 disposition, decision 077 liveness, cancel and reap) and `Hooks` (order and truth).
 //! Services drive them over audit, file, recipe and process ports; `fakes` supplies deterministic spies.
 //! Depends on dctx-plugin-protocol and dctx-hash only; contains no Git behaviour (decision 078/decision 079).
+//! **Unstable**: this crate has no API or ABI stability promise in dctx v1 and may change in any release.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]

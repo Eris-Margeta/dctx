@@ -104,6 +104,7 @@ impl IgnoreEngine {
     }
 
     /// Explains matching rules and sources.
+    #[allow(clippy::expect_used, reason = "writing to a String cannot fail")]
     pub fn explain(&self, context: &ItemContext) -> String {
         let decision = self.decide(context);
         let mut output = String::new();

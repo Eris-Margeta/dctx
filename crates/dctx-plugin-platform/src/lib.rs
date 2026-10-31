@@ -2,6 +2,7 @@
 //! The Linux primitives enforce restrictions but do not constitute a qualified launcher.
 //! All general native launches fail closed until one-shot exec and lifecycle gates are met.
 //! Depends on approved safe adapters; used by facade brokers and platform qualification.
+//! **Unstable**: this crate has no API or ABI stability promise in dctx v1 and may change in any release.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]

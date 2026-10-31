@@ -84,6 +84,7 @@ pub trait Source {
     ///
     /// # Errors
     /// Propagates source-read or hash-length failures while validating the selected file.
+    #[allow(clippy::expect_used, reason = "writing to a String cannot fail")]
     fn unchanged(&self, path: &str, file: &SourceFile) -> Result<bool> {
         let hashed = dctx_hash::Sha256::digest(&self.read(path)?)
             .map_err(|error| crate::Error::Request(error.to_string()))?;

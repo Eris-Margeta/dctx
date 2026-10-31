@@ -2,7 +2,7 @@
 name = "dctx-plugin-host"
 version = "0.1.0"
 edition = "2024"
-description = "dctx plugin host domain and brokers: grants, receipts, budgets, liveness and lifecycle over ports"
+description = "**Unstable** (no stability promise in v1). dctx plugin host domain and brokers: grants, receipts, budgets, liveness and lifecycle over ports"
 license.workspace = true
 repository.workspace = true
 

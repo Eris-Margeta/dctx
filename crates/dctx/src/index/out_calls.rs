@@ -61,7 +61,6 @@ fn call_candidates(line: &str) -> Vec<&str> {
 /// each with up to [`MAX_LINES`] ascending absolute lines. `own` is the symbol's last name segment: its occurrence on line 1
 /// is the declaration, not a call. `language` picks the comment syntax (`#` for python, ruby, shell; `//` and
 /// `/* */` otherwise). At most [`MAX_NAMES`] names.
-#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn calls_in(language: &str, text: &str, first_line: u32, own: &str) -> Vec<(String, Vec<u32>)> {
     let syntax = if matches!(language, "python" | "ruby" | "shell") {
         Syntax { line: &["#"], block: None, nested: false, quotes: b"\"'", triple: false }

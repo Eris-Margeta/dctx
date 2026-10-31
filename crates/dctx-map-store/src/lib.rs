@@ -3,6 +3,8 @@
 //! Depends on map-model, dctx-hash and the `FactStore` port. Used by indexing, query and pack rollback.
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
+#![cfg_attr(not(test), deny(clippy::unwrap_used))]
+#![cfg_attr(not(test), deny(clippy::expect_used))]
 
 pub mod adapters;
 pub mod domain;

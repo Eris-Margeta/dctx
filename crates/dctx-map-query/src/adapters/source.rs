@@ -177,6 +177,7 @@ impl Source for FileSource {
     }
 }
 
+#[allow(clippy::expect_used, reason = "writing to a String cannot fail")]
 pub(crate) fn hex(hash: [u8; 32]) -> String {
     hash.iter().fold(String::new(), |mut text, byte| { write!(text, "{byte:02x}").expect("writing to a String cannot fail"); text })
 }
