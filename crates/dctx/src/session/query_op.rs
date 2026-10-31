@@ -118,6 +118,7 @@ impl Session {
             if !ranked {
                 self.attach_sites(&generation, request, &mut records);
             }
+            self.attach_out_calls(&generation, request, &mut records);
             let fits = |page: &[AnswerRecord], more: u64| {
                 let next = if more > 0 { page.last().map(|record| cursor(generation.id, request.verb, &record.id)) } else { None };
                 within_budget(&encode_page(request, &self.place, &self.answer_of(&generation, request.verb, page.to_vec(), more, next, None)), &resolved)

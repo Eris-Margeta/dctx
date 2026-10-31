@@ -7,7 +7,7 @@ mod concept;
 mod decl_pair;
 mod dotted_key;
 mod export_list;
-mod out_calls;
+pub(crate) mod out_calls;
 mod extract;
 pub(crate) mod export;
 mod generic;

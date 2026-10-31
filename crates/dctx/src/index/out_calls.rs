@@ -93,3 +93,66 @@ pub(crate) fn calls_in(language: &str, text: &str, first_line: u32, own: &str) -
     }
     found
 }
+
+/// What to scan for the unresolved outbound calls of one neighbors answer (DCX-54c).
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct OutPlan {
+    /// Root-relative path of the requested node's file.
+    pub path: String,
+    /// Byte span `[start, end)` of the requested node in that file.
+    pub span: [u64; 2],
+    /// Absolute line of the node's first line.
+    pub first: u32,
+    /// The node's last name segment (after the last `::`, `.` or `#`).
+    pub own: String,
+    /// Language tag of the file, from `extract::language_of`.
+    pub language: &'static str,
+    /// Last name segments of the targets of the page's resolved outbound `calls` records; these names are not repeated.
+    pub known: Vec<String>,
+}
+
+/// The scan plan for a neighbors `request` whose direction includes out (out or both) and whose `edges` is empty or contains
+/// `calls`, when its target is a symbol (`s:` id) of `generation`; `None` otherwise. `records` is the page before the budget fit.
+pub(crate) fn plan(generation: &super::Generation, request: &crate::domain::MapRequest, records: &[crate::domain::AnswerRecord]) -> Option<OutPlan> {
+    if request.verb != crate::domain::Verb::Neighbors || !matches!(request.direction, crate::domain::Direction::Out | crate::domain::Direction::Both) {
+        return None;
+    }
+    if !(request.edges.is_empty() || request.edges.iter().any(|edge| edge.as_str() == "calls")) {
+        return None;
+    }
+    let node = super::query::lookup(&generation.nodes, &generation.text, &request.target)?;
+    if node.letter != b's' {
+        return None;
+    }
+    let path = generation.text.get(node.path).to_string();
+    let own = node.name.rsplit(['.', ':', '#']).next().unwrap_or("").to_string();
+    let language = super::extract::language_of(&path);
+    let known: Vec<String> = records
+        .iter()
+        .filter(|record| record.edge.as_deref() == Some("calls") && record.direction.as_deref() == Some("out"))
+        .filter_map(|record| record.target.as_deref())
+        .map(|target| target.rsplit(['.', ':', '#']).next().unwrap_or(target).to_string())
+        .collect();
+    Some(OutPlan { path, span: node.span, first: node.lines[0], own, language, known })
+}
+
+/// One `calls:out:?<name>` record per entry of `found` (from [`calls_in`]), in order: kind `unresolved`, edge `calls`, direction
+/// `out`, no target, `path` the node's file, `lines` both set to the first occurrence line, `sites` the occurrence lines, empty
+/// summary, summary_source `"sig"`, no signature, no span, confidence `name`, score 0.
+pub(crate) fn records(path: &str, found: Vec<(String, Vec<u32>)>) -> Vec<crate::domain::AnswerRecord> {
+    found
+        .into_iter()
+        .map(|(name, sites)| {
+            let first = sites.first().copied().unwrap_or(0);
+            let mut record = crate::domain::AnswerRecord::basic(format!("calls:out:?{name}"), "unresolved", path);
+            record.lines = [first, first];
+            record.sites = sites;
+            record.edge = Some("calls".to_string());
+            record.direction = Some("out".to_string());
+            record.target = None;
+            record.summary_source = "sig".to_string();
+            record.confidence = Some("name".to_string());
+            record
+        })
+        .collect()
+}
