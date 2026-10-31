@@ -163,9 +163,7 @@ fn execute_plan(plan: &Plan) -> Result<PackOutcome, String> {
 
 /// Why `--json` refuses this plan: the summary has no file list, so debug and view filters do not apply.
 fn summary_refusal(plan: &Plan) -> Option<&'static str> {
-    if plan.report_format.is_none() {
-        return None;
-    }
+    plan.report_format?;
     if plan.filters.debug_ignored {
         return Some("pack --debug-ignored applies to the source page; drop --json");
     }
