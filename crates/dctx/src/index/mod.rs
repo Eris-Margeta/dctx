@@ -5,6 +5,7 @@
 
 mod concept;
 mod decl_pair;
+mod dotted_key;
 mod export_list;
 mod out_calls;
 mod extract;
