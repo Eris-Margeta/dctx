@@ -1,4 +1,4 @@
-//! Brace-family declarations: Scala, Dart, Zig, Solidity, Gleam and Groovy.
+//! Brace-family declarations: Scala, Dart, Zig, Solidity, Gleam, Groovy and PowerShell.
 //! A small keyword table per language picks `type` and `fn` declarations from lines the masked source shows at file level
 //! or directly inside a type body; [`decl`] reads one line, [`data`] adds constants, variables, fields and enum values.
 //! Nesting follows brace depth, so a function in a class is `Class::name`, an enum value `Enum::value`, and (Scala only) a
@@ -101,6 +101,17 @@ const GROOVY: Lang = Lang {
     const_type: false,
 };
 
+const POWERSHELL: Lang = Lang {
+    tag: "powershell",
+    syntax: Syntax { line: &["#"], block: Some(("<#", "#>")), nested: false, quotes: b"\"'", triple: false },
+    modifiers: &[],
+    types: &["class", "enum"],
+    fns: &["function", "filter"],
+    paren: false,
+    typed: false,
+    const_type: false,
+};
+
 /// The table for a language tag.
 fn lang(tag: &str) -> Option<&'static Lang> {
     match tag {
@@ -110,6 +121,7 @@ fn lang(tag: &str) -> Option<&'static Lang> {
         "solidity" => Some(&SOLIDITY),
         "gleam" => Some(&GLEAM),
         "groovy" => Some(&GROOVY),
+        "powershell" => Some(&POWERSHELL),
         _ => None,
     }
 }
