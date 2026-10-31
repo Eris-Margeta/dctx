@@ -26,6 +26,19 @@ the work is [`GAP-MATRIX-20261030.md`](GAP-MATRIX-20261030.md). Where another to
 | Plain-text docs (.md/.rst/.txt/.adoc corpus) | dctx indexes the corpus into headed sections (0.18 s). graphify's code-only mode produced no index, and Trail-Code indexes no doc nodes. |
 | Privacy canary (git-tracked `.env` files) | Run 3: **clean for all three tools** (DCX-30). Run 1: **dctx still leaked on one path.** `pack`, `find` and `grep` are clean now; before tonight `pack` printed the canary. But an explicit `dctx map read m:.env` returns the file. Trail-Code and graphify leaked nothing. The fix is card DCX-30, which has not landed. |
 
+## Run 6 (main `82ec474`, 31 October, 02:04 UTC)
+
+New since run 5:
+- DCX-57: a declaration-only symbol (`.mli`, C/C++ header, `.d.ts`) answers neighbors for its paired definition.
+- DCX-64: Erlang (not in the mixed corpus).
+- DCX-55b and DCX-54b: `export_list` and `out_calls`, which are not yet wired into answers.
+
+All landed checks plus these four passed together on build-host before the run. Raw results are in `research/bench-3way-20261030/results/run6-82ec474/` and `research/bench-3way-20261030/tasks/results/run4-82ec474/`.
+
+- Call-edge coverage on the mixed corpus: **9 of 10** (run 5: 8). OCaml now has edges through the `.mli` pairing. Shell still has none, because the probe samples bats `@test` blocks that call only external commands. Trail-Code has 7 and graphify 5.
+- Callers P / R, first page: 0.995 / 0.851, unchanged (all pages 0.968).
+- Task protocol: **136 / 140**, unchanged. Trail-Code has 122 and graphify 96. The 4 lost points are still callees questions; card DCX-54c wires `out_calls` into neighbors.
+
 ## Latest: run 5 and task-level re-run 3 (main `a906884`, 30 October, 16:39 and 17:05 UTC)
 
 dctx `a906884` adds four cards on top of run 4. DCX-50 spreads callers over files, makes bare calls skip methods, and ranks data-file keys below code. DCX-51 puts exported declarations first in outlines, gives read sites for config keys, adds line numbers to find, and ranks exact-word concepts first. DCX-52 orders callers by call-site count and fits pages to the budget. DCX-53 adds deeper Scala, Zig, Lua, Elixir and OCaml symbols. All 36 landed checks passed together on build-host before the run. The binary's sha256 starts with `76d8e9b59821`. Raw results are in `research/bench-3way-20261030/results/run5-a906884/` and `research/bench-3way-20261030/tasks/results/run3-a906884/`.
