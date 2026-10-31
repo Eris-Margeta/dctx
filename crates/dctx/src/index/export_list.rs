@@ -1,5 +1,5 @@
 //! A file's explicit export list (DCX-55b): Python `__all__`, CommonJS `module.exports` / `exports.x`, ES `export { .. }`.
-//! Pure text scan; using the list to order a file's outline is DCX-55c.
+//! Pure text scan; `session::export_order_op` uses the list to order a file's outline (DCX-55c).
 
 use std::collections::BTreeSet;
 
@@ -12,7 +12,6 @@ mod tests;
 /// `__all__ += [..]`. JavaScript/TypeScript ("javascript", "typescript"): the key names of `module.exports = { a, b: c }`,
 /// every `exports.x =` and `module.exports.x =`, and the local names of `export { a, b as c }` (`a`, `b`); an
 /// `export { .. } from ".."` re-export is skipped. Any other language: `None`.
-#[cfg_attr(not(test), allow(dead_code))]
 pub(crate) fn names(language: &str, text: &str) -> Option<BTreeSet<String>> {
     let lang = language.trim().to_ascii_lowercase();
     let mut found = BTreeSet::new();
@@ -28,13 +27,11 @@ pub(crate) fn names(language: &str, text: &str) -> Option<BTreeSet<String>> {
 }
 
 /// True for the bytes that can make up an identifier in Python/JavaScript (`_`, `$`, letters, digits).
-#[cfg_attr(not(test), allow(dead_code))]
 fn is_word_byte(b: u8) -> bool {
     b.is_ascii_alphanumeric() || b == b'_' || b == b'$'
 }
 
 /// Index of the first byte at or after `at` that is not space/tab/CR/LF.
-#[cfg_attr(not(test), allow(dead_code))]
 fn skip_ws(bytes: &[u8], mut at: usize) -> usize {
     while bytes.get(at).is_some_and(|b| b.is_ascii_whitespace()) {
         at += 1;
@@ -43,7 +40,6 @@ fn skip_ws(bytes: &[u8], mut at: usize) -> usize {
 }
 
 /// Index one past an identifier run starting at `at` (so `at` itself when there is none).
-#[cfg_attr(not(test), allow(dead_code))]
 fn word_end(bytes: &[u8], mut at: usize) -> usize {
     while bytes.get(at).is_some_and(|b| is_word_byte(*b)) {
         at += 1;
@@ -52,7 +48,6 @@ fn word_end(bytes: &[u8], mut at: usize) -> usize {
 }
 
 /// The word formed by the identifier run starting at `at`, or `None`.
-#[cfg_attr(not(test), allow(dead_code))]
 fn word_at(text: &str, at: usize) -> Option<String> {
     let bytes = text.as_bytes();
     let end = word_end(bytes, at);
@@ -60,7 +55,6 @@ fn word_at(text: &str, at: usize) -> Option<String> {
 }
 
 /// The identifier right after `at`, which must be at whitespace before a word.
-#[cfg_attr(not(test), allow(dead_code))]
 fn word_after(text: &str, at: usize) -> Option<String> {
     word_at(text, skip_ws(text.as_bytes(), at))
 }
@@ -68,7 +62,6 @@ fn word_after(text: &str, at: usize) -> Option<String> {
 /// Scans the single quoted Python/JS string literal starting at `at` (which must hold `'` or `"` or a template
 /// backtick); returns the unescaped content and the index just past the closing quote. An unterminated literal
 /// runs to the end of `text`.
-#[cfg_attr(not(test), allow(dead_code))]
 fn scan_string(text: &str, at: usize) -> (Option<String>, usize) {
     let bytes = text.as_bytes();
     let quote = bytes[at];
@@ -99,7 +92,6 @@ fn scan_string(text: &str, at: usize) -> (Option<String>, usize) {
 
 /// Adds the string items of every Python `__all__` list in `text` (only lines starting with `__all__ =`
 /// or `__all__ +=`) to `names`.
-#[cfg_attr(not(test), allow(dead_code))]
 fn python_all_names(text: &str, names: &mut BTreeSet<String>) {
     let mut offset = 0usize;
     for line in text.split('\n') {
@@ -127,7 +119,6 @@ fn python_all_names(text: &str, names: &mut BTreeSet<String>) {
 
 /// The quoted-string items of the Python list whose opening `(` / `[` is searched from `start` (right after
 /// the `=` / `+=` of an `__all__` assignment); items may span lines, and `# ..` comments are skipped.
-#[cfg_attr(not(test), allow(dead_code))]
 fn all_list_items(text: &str, start: usize) -> BTreeSet<String> {
     let bytes = text.as_bytes();
     let mut i = start;
@@ -174,7 +165,6 @@ fn all_list_items(text: &str, start: usize) -> BTreeSet<String> {
 
 /// The leading key of one `{`-list entry: the entry's first identifier (the word before `:` /
 /// ` as `, or the shorthand name), or the content when it starts with a string literal.
-#[cfg_attr(not(test), allow(dead_code))]
 fn entry_head_word(entry: &str) -> Option<String> {
     let bytes = entry.as_bytes();
     let start = skip_ws(bytes, 0);
@@ -187,7 +177,6 @@ fn entry_head_word(entry: &str) -> Option<String> {
 /// Reads the `{`-delimited list starting at `at` (which must hold `{`) up to its matching `}`; returns
 /// the index just past that `}` plus one key per comma-separated entry (see `entry_head_word`) — for
 /// `{ a, b }` the entries are `a` and `b`, for `{ a: c, "d": e }` they are `a` and `"d"`.
-#[cfg_attr(not(test), allow(dead_code))]
 fn brace_entries(text: &str, at: usize) -> Option<(usize, Vec<String>)> {
     let bytes = text.as_bytes();
     let mut entries = Vec::new();
@@ -226,7 +215,6 @@ fn brace_entries(text: &str, at: usize) -> Option<(usize, Vec<String>)> {
 
 /// Adds the key names of every `module.exports = { .. }` object and the property names of every
 /// `exports.<name> =` / `module.exports.<name> =` assignment in JS/TS `text` to `names`.
-#[cfg_attr(not(test), allow(dead_code))]
 fn commonjs_export_names(text: &str, names: &mut BTreeSet<String>) {
     let bytes = text.as_bytes();
 
@@ -274,7 +262,6 @@ fn commonjs_export_names(text: &str, names: &mut BTreeSet<String>) {
 
 /// Adds the local names of every ES `export { .. }` list in JS/TS `text` to `names`, skipping
 /// `export { .. } from ..` re-exports.
-#[cfg_attr(not(test), allow(dead_code))]
 fn export_list_names(text: &str, names: &mut BTreeSet<String>) {
     let bytes = text.as_bytes();
     let mut from = 0usize;

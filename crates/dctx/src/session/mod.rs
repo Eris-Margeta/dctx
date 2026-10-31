@@ -19,6 +19,8 @@ mod query_op;
 mod reuse;
 mod sites_op;
 mod out_calls_op;
+mod export_order_op;
+mod dotted_op;
 mod template_op;
 
 use std::collections::BTreeMap;

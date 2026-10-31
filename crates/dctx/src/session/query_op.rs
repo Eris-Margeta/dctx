@@ -90,6 +90,9 @@ impl Session {
                 if request.verb == Verb::Find {
                     (records, text_match) = self.find_with_text(&generation, request, records)?;
                 }
+                if request.verb == Verb::Map {
+                    self.order_by_exports(&generation, request, &mut records);
+                }
                 records
             }
         };
