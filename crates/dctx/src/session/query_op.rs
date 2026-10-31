@@ -95,6 +95,13 @@ impl Session {
         };
         // Callers are ranked over the whole answer, before the cursor and the page cut, so every page sees one order.
         let ranked = request.verb == Verb::Neighbors && self.rank_sites(&generation, request, &mut records);
+        // A neighbors probe on a declaration-only symbol names its paired definition once, as its first record.
+        if request.verb == Verb::Neighbors
+            && cursor_id.is_none()
+            && let Some(pair) = crate::index::pair_record(&generation, &request.target)
+        {
+            records.insert(0, pair);
+        }
         if request.verb != Verb::Read
             && let Some(last) = cursor_id
         {

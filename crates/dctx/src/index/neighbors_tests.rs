@@ -81,6 +81,69 @@ fn a_self_edge_is_listed_inbound() {
     }
 }
 
+/// A header prototype `add` in `c/util.h`, its definition in `c/util.c`, and a caller `main` in `main.c`.
+fn decl_pair_fixture() -> Generation {
+    let mut text = TextBlob::default();
+    let header = text.push("c/util.h");
+    let source = text.push("c/util.c");
+    let caller = text.push("main.c");
+    let calls = text.push("calls");
+    let name = text.push("name");
+    let node = |path, name: &str| IndexedNode {
+        letter: b's',
+        ordinal: 0,
+        kind: "fn".to_string(),
+        name: name.to_string(),
+        path,
+        lines: [1, 1],
+        span: [0, 0],
+        summary: String::new(),
+        summary_source: "sig".to_string(),
+        signature: String::new(),
+    };
+    let nodes = vec![node(header, "add"), node(source, "add"), node(caller, "main")];
+    let edges = vec![IndexedEdge { src: 2, dst: 1, edge: calls, confidence: name }];
+    Generation {
+        id: 1,
+        digest: String::new(),
+        encoded_len: 0,
+        files: Vec::new(),
+        nodes,
+        edges,
+        text,
+        freshness: FreshnessMode::ImmutableSnapshot,
+        taken_at: 0,
+        epoch: 0,
+        coverage: "structural".to_string(),
+        completion: "complete".to_string(),
+        parser: String::new(),
+    }
+}
+
+#[test]
+fn a_header_prototype_answers_with_its_definition_and_names_it() {
+    let generation = decl_pair_fixture();
+    let mut request = MapRequest::new(Verb::Neighbors);
+    request.target = "s:c/util.h#add".to_string();
+    request.direction = Direction::In;
+    let Collected::Records(records) = collect(&generation, &request, 1).expect("collect") else {
+        panic!("records expected");
+    };
+    assert_eq!(records.into_iter().map(|record| record.id).collect::<Vec<_>>(), ["calls:in:s:main.c#main"]);
+    let pair = super::super::decl_pair::pair_record(&generation, "s:c/util.h#add").expect("pair");
+    assert_eq!(pair.id, "pair:s:c/util.c#add");
+    assert_eq!(pair.kind, "definition");
+    assert_eq!(pair.lines, [1, 1]);
+    // A definition asked directly is unchanged: no pair and the same caller.
+    let mut direct = MapRequest::new(Verb::Neighbors);
+    direct.target = "s:c/util.c#add".to_string();
+    direct.direction = Direction::In;
+    let Collected::Records(records) = collect(&generation, &direct, 1).expect("collect") else {
+        panic!("records expected");
+    };
+    assert_eq!(records.into_iter().map(|record| record.id).collect::<Vec<_>>(), ["calls:in:s:main.c#main"]);
+}
+
 /// A generation with `s:big.ts#target` and `count` callers named `caller<n>`, each with a 2 KB signature summary.
 fn big_callers(count: u32) -> Generation {
     let mut generation = chain();

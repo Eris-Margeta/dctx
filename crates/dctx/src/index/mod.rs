@@ -4,6 +4,7 @@
 //! Callers see an [`crate::domain::Answer`], never this module.
 
 mod concept;
+mod decl_pair;
 mod extract;
 pub(crate) mod export;
 mod generic;
@@ -28,6 +29,7 @@ mod text_docs;
 mod syn_extract;
 mod walk;
 
+pub(crate) use decl_pair::pair_record;
 pub(crate) use grep::{grep_records, text_records};
 pub(crate) use key_rank::{key_shaped, rank as rank_key};
 pub(crate) use query::{collect, Collected};
