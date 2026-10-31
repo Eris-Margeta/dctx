@@ -10,6 +10,7 @@
 
 pub mod cache;
 pub mod compat;
+pub mod exit;
 pub mod help;
 pub mod host;
 pub mod languages;

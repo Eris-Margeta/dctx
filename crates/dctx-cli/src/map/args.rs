@@ -64,11 +64,15 @@ pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read|
 Precision: structural declarations, imports, headings and conservative calls.
 Not exact semantic calls, type resolution or macro expansion.
 Token estimate ceil(2 * UTF-8 bytes / 7) is not a tokenizer guarantee.
-Examples:
-  dctx map find 'ignore rules' --json
-  dctx map map crates/dctx-cli/src/lib.rs --depth 2
-  dctx map map m:crates/dctx-cli/src/lib.rs --cursor '<next from the previous page>'
+Example: dctx map find 'ignore rules' --json
+Example: dctx map map crates/dctx-cli/src/lib.rs --depth 2
+Example: dctx map map m:crates/dctx-cli/src/lib.rs --cursor '<next from the previous page>'
+Each verb's own page and example: dctx map <verb> --help
+Exit codes: 0 ok, 1 no result (an id not in the index, a binary file), 2 usage, 3 index error; see docs/CLI-EXIT-CODES.md.
 ";
+
+/// Flags of the five verbs, grep and skeleton that take a value. Any other `-` word is unknown.
+const VALUE_FLAGS: &[&str] = &["--place", "--budget", "--cursor", "--depth", "--limit", "--offset", "--kind", "--in", "--edge", "--dir", "--lines", "--rev"];
 
 #[allow(clippy::too_many_lines, reason = "Keep this ordered command transaction or flag dispatch with its shared validation state and existing error ordering.")]
 pub(super) fn parse(args: &[String]) -> Result<Options, String> {
@@ -135,6 +139,10 @@ pub(super) fn parse(args: &[String]) -> Result<Options, String> {
                 return Err("quote a multi-word target as one argument".into());
             }
             continue;
+        }
+        // An unknown flag is named as unknown, not as one missing its value.
+        if !VALUE_FLAGS.contains(&flag.as_str()) {
+            return Err(format!("unknown or inapplicable option {flag}; try: dctx map --help"));
         }
         let value = args
             .get(index)
