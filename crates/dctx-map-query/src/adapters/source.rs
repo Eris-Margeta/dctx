@@ -201,6 +201,7 @@ pub(super) fn forbidden(name: &str) -> bool {
         || name.ends_with(".key")
         || name.starts_with("id_rsa")
         || name.starts_with("id_ed25519")
+        || dctx_core::filter::is_secret_shaped_name(name)
 }
 
 #[derive(Clone)]

@@ -60,7 +60,7 @@ impl PolicyView<'_> {
         });
         let planned = plan_decision(self.plan, self.view, path)?;
         let decided = narrower(narrower(host, selected), planned);
-        // Env-shaped files (`.env`, `.env.*`, `*.env`, `.envrc`) never give up their bytes, whatever the grants say.
+        // Sensitive files (`is_secret_shaped_name`: env, key, credential and token files) never give up their bytes, whatever the grants say.
         if !is_dir && is_secret_shaped_name(name) {
             return Ok(narrower(decided, FileHandlingDecision::OmitContent));
         }
@@ -305,5 +305,19 @@ mod tests {
         }
         assert_eq!(view.decide("src/lib.rs", false).expect("decide"), FileHandlingDecision::Include);
         assert_eq!(view.decide("settings.env", true).expect("decide"), FileHandlingDecision::Include);
+    }
+
+    /// v1 card 1: key, credential and token files are content-omitted too; a look-alike source file is not.
+    #[test]
+    fn key_and_credential_files_are_omitted_whatever_the_grants_say() {
+        use dctx_core::selection::RuleTexts;
+
+        let selection = SelectionPolicy::from_texts(&RuleTexts::default());
+        let ceiling = HostCeiling::base();
+        let view = PolicyView { selection: &selection, ceiling: &ceiling, grants: HostGrants::PermitAll, plan: None, view: "map" };
+        for path in ["certs/server.pem", "id_rsa", "keys/id_ed25519", "credentials", "config/credentials.json", ".npmrc", "deploy/secrets.yaml"] {
+            assert_eq!(view.decide(path, false).expect("decide"), FileHandlingDecision::OmitContent, "{path}");
+        }
+        assert_eq!(view.decide("src/credentials.py", false).expect("decide"), FileHandlingDecision::Include);
     }
 }

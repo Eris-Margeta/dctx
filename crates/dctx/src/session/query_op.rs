@@ -361,7 +361,7 @@ impl Session {
 
     pub(super) fn read_verified(&mut self, path: &str, expected: ContentDigest) -> Result<Vec<u8>, DctxError> {
         let relative = RelativePath::parse(path).map_err(DctxError::from_core)?;
-        // Last line of defence: an env-shaped name is never read, even from an older cached generation.
+        // Last line of defence: a sensitive name is never read, even from an older cached generation.
         if is_secret_shaped_name(path.rsplit('/').next().unwrap_or(path)) {
             return Err(DctxError::PolicyDenied);
         }

@@ -137,7 +137,7 @@ runs (§28). A build that fails any row MUST NOT call itself dctx-conformant.
 | R3 | Staleness | Index built from old bytes, served as current | `read` verifies exact bytes against the content digest before emitting; every answer carries freshness mode and a stale flag | landed |
 | R4 | Positional identity | Chunk ids that shift when a file is added | Path + qualified-name ids with ordinals; explicit `moved`, `gone`, `ambiguous` outcomes | landed |
 | R5 | Semantic drift | "Similar" but wrong code | Lexical ranking over split identifiers, exact-name boost, kind filters, then graph edges with explicit confidence | contract — lexical ranking landed; graph edges are **not emitted by the shipped CLI** (TC-F01); the resolver is landed in `crates/dctx-map-resolve` but not wired (§7); `typed` rung target |
-| R6 | Authority leak | Secrets, ignored and generated files reach the prompt | Selection precedes content: excluded files are never opened; policy rechecked at emission; plugins never receive excluded bytes | landed for map; **`pack` prints non-ignored secret-shaped files such as `.env`** (TC-F08) until §4 item 3 lands |
+| R6 | Authority leak | Secrets, ignored and generated files reach the prompt | Selection precedes content: excluded files are never opened; policy rechecked at emission; plugins never receive excluded bytes | landed for map, pack and MCP: the strict secret-shaped deny of §4 item 3 has no override |
 | R7 | Unbounded context | Top-k chunks of unknown size crowd out instructions | Hard per-verb caps; byte ceiling derived from tokens; envelope reserved first | landed for map verbs; the legacy tree (`dctx . -t`) and `pack` are unbounded (974 KB and 8.7 MB measured) and are not conformant surfaces |
 | R8 | Opaque provenance | The model cannot tell a fact from an inference | Every record carries parser and coverage; every edge carries confidence and source | landed for records; vacuous for edges until §7 lands |
 | R9 | Hidden tool cost | The retrieval tool's own output is not counted | M5 inside M2; `dctx bench tokens` (§28) | target |
@@ -157,15 +157,18 @@ public corpus, ranked candidates MAY arrive as a plugin overlay with provenance
 2. **Rules.** Built-in defaults, repository `.gitignore` files (read as plain text),
    `.dctxignore`, `.dctxomitcontent` and policy (`privacy.ignore`) combine. Landed for
    pack and map.
-3. **Secret-shaped files (target, P0).** The built-in omit layer MUST include `.env`,
-   `.env.*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`, `id_rsa*`,
-   `id_ed25519*`, `id_ecdsa*`, `.netrc`, `.npmrc`, `.pypirc`, `credentials*`,
-   `*.credentials.json` and `.htpasswd`. Such files appear in trees with content
-   omitted and are never read, hashed or indexed; a local rule may negate a pattern
-   explicitly. Policy MAY add named classes (`aws`, `gcp`, `ssh`, `jwt`). dctx never
-   scans contents to decide. **Gate:** the adversarial corpus's planted `.env` value is
-   absent from `pack` output and from the map cache; the path is listed. Today `pack .`
-   prints it (TC-F08); map answers and the map cache did not contain it.
+3. **Secret-shaped files (landed for v1).** A strict, built-in deny covers `.env`,
+   `.env.*`, `*.env`, `.envrc`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`,
+   `id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519` (and `_`/`-` suffixed variants), `.netrc`,
+   `_netrc`, `.npmrc`, `.pypirc`, `.pgpass`, `.htpasswd`, `.git-credentials`, `credentials`,
+   `credentials.<data>`, `*.credentials.json` and `secrets.<data>` (data = json, yaml, yml,
+   toml, ini, xml); ADR-014 "SENSITIVE" is the normative list. Such files appear in trees with
+   content omitted and are never read, hashed or indexed by pack, any map verb or the MCP tools.
+   v1 has no override: no `--allow-sensitive` flag, and no local rule can negate the deny.
+   Policy MAY later add named classes (`aws`, `gcp`, `ssh`, `jwt`). dctx never scans contents
+   to decide. **Gate:** the adversarial corpus's planted `.env` value is
+   absent from `pack` output and from the map cache; the path is listed. Checked for every
+   shape and every command by `lanes/DCX/checks/V1-1.zsh` (TC-F08 is closed).
 4. **No VCS in the core.** The core never reads `.git/`, never spawns `git`, never uses
    VCS object ids. Identity is dctx's own digest (§5). VCS-aware behaviour is a plugin.
    Landed (`crates/dctx-map-query/tests/no_git.rs`).

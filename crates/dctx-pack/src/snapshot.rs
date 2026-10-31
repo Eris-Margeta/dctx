@@ -197,7 +197,7 @@ impl Walk<'_> {
     }
 }
 
-/// Env-shaped files (`.env`, `.env.*`, `*.env`, `.envrc`) stay in the tree by name but are never read.
+/// Sensitive files ([`is_secret_shaped_name`]: env, key, credential and token files) stay in the tree by name but are never read.
 /// Only an `Include` verdict is downgraded; `Exclude` and `DebugVisible` already read nothing.
 fn withhold_secret_shaped(decision: FileHandlingDecision, name: &str, is_dir: bool) -> FileHandlingDecision {
     if decision == FileHandlingDecision::Include && !is_dir && is_secret_shaped_name(name) {
@@ -265,6 +265,27 @@ mod tests {
         assert_eq!(env.handling_decision, FileHandlingDecision::OmitContent);
         assert!(env.file_content.is_none());
         assert!(!format!("{:?}", out.tree).contains("CANARYSECRET"));
+    }
+
+    /// v1 card 1: key, credential and token files are withheld like env files; a look-alike source file is still read.
+    #[test]
+    fn sensitive_key_and_credential_files_are_listed_but_never_read() {
+        let mut source = MemorySource::new();
+        source.insert_file("app.py", b"def f(): pass\n", 1).unwrap();
+        source.insert_file("src/credentials.py", b"def g(): pass\n", 1).unwrap();
+        let sensitive = ["certs/server.pem", "id_rsa", "keys/id_ed25519", "credentials", "config/credentials.json", ".npmrc", "deploy/secrets.yaml"];
+        for path in sensitive {
+            source.insert_file(path, b"K=CANARYSECRET\n", 2).unwrap();
+        }
+        let policy = SelectionPolicy::from_texts(&RuleTexts::default());
+        let options = ScanOptions { policy: &policy, debug_ignored: false, limits: PackLimits::unbounded() };
+        let out = scan(&source, &CancelFlag::new(), options).unwrap();
+        let mut reads = source.reads();
+        reads.sort();
+        assert_eq!(reads, ["app.py", "src/credentials.py"]);
+        assert!(!format!("{:?}", out.tree).contains("CANARYSECRET"));
+        let npmrc = out.tree.children.iter().find(|c| c.relative_path == ".npmrc").unwrap();
+        assert_eq!(npmrc.handling_decision, FileHandlingDecision::OmitContent);
     }
 
     #[test]

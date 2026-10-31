@@ -69,6 +69,12 @@ before any separately authorized release.
   unrelated edits (prompt-cache friendly). `--meta` restores the old fields.
 - **`dctx pack` never prints env-shaped files** (`.env`, `.env.*`, `*.env`, `.envrc`); they
   stay in the tree by name with their content omitted.
+- **Strict sensitive-file deny for every command**: besides env files, `*.pem`, `*.key`,
+  `*.p12`, `*.pfx`, `*.jks`, `*.keystore`, SSH private keys (`id_rsa`, `id_ed25519`, ...),
+  `credentials`, `credentials.json`, `secrets.yaml` (and other data extensions), `.npmrc`,
+  `.netrc`, `.pypirc`, `.pgpass`, `.htpasswd` and `.git-credentials` are never read or printed
+  by `pack`, any `dctx map` verb (by id or raw path, with or without `--in`) or `dctx mcp`.
+  There is no override flag (see ADR-014).
 - **Total-source ceiling raised from 64 MiB to 1 GiB**; `DCTX_MAX_SOURCE_BYTES` overrides it.
 - The core never reads `.git/`, never spawns `git` and never uses VCS object ids;
   content identity is dctx's own SHA-256 (`crates/dctx-hash`).

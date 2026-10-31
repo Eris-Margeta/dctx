@@ -121,6 +121,35 @@ We will implement a three-tier rule system with formal privacy guarantees:
 - Grayed-out metadata: SIZE from `stat()` only, never from content reading
 - No LINES count (would require reading file)
 
+### SENSITIVE (strict deny, v1)
+**Meaning:** "This file holds credentials. No dctx command ever reads, hashes, indexes or prints its bytes."
+
+**Shapes** (final path component, ASCII case-insensitive; the single list is
+`dctx_core::filter::is_secret_shaped_name`):
+- env files: `.env`, `.env.*`, `*.env`, `.envrc`
+- keys, certificates and keystores: `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`
+- SSH private keys: `id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519`, and those names with a `_`/`-` suffix
+  without a dot (`id_rsa_deploy`); `id_rsa.pub` is not matched
+- credentials: `credentials`, `credentials.<data>`, `*.credentials.json`, `secrets.<data>`
+  (data = `json`, `yaml`, `yml`, `toml`, `ini`, `xml`); `credentials.py` and `secrets.rs` stay ordinary source
+- token files: `.netrc`, `_netrc`, `.npmrc`, `.pypirc`, `.pgpass`, `.htpasswd`, `.git-credentials`
+
+**Behavior:**
+- The file stays listed by name (pack tree, map inventory) with its content omitted, and is never read.
+- Applies whether or not the file is git-tracked, to every surface: `pack` (all view filters, including
+  `--include`, `--ext`, `--hidden` and `--debug-ignored`), every `dctx map` verb (map, find, read, explain,
+  skeleton, grep, neighbors, hubs, path, export; by stable id or by raw path; with or without `--in`) and the
+  `dctx mcp` tools, which run the same code path.
+- Enforced in the map policy (`PolicyView::decide`), again before any map read (`Session::read_verified`),
+  in map grep, in the pack scan (`dctx-pack` snapshot) and in the `dctx-map-query` source adapter.
+- **No override.** v1 has no `--allow-sensitive` flag, and repository or global rule files cannot
+  re-include these shapes. dctx decides by name only; it does not scan contents, so a secret pasted into an
+  ordinary source file is not detected.
+
+**Verification:** `crates/dctx/tests/map_sensitive_files.rs`, the unit tests next to
+`is_secret_shaped_name`, `PolicyView::decide` and the pack scan, and the end-to-end check
+`lanes/DCX/checks/V1-1.zsh` (a git-tracked fixture with one canary per shape, run against every command).
+
 ---
 
 ## Privacy Guarantees (Formal)
