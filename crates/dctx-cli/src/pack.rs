@@ -111,7 +111,11 @@ Pack filters (ADR-011, ADR-009):
   --output, -o <path>   Write the page to one file
   --clipboard, -c       Copy the page to the clipboard
   --json                Summary report instead of the source page
+Task context (agent cards):
+  --for <text>          Instead of the source page: map find on the names in <text>, then neighbors and read of the best hits
+  --budget <tokens>     With --for: cap in estimated tokens, ceil(2 * UTF-8 bytes / 7), 100..100000 (default 3000); whole lines only
 Example: dctx pack src --ext rs,toml --output context.txt
+Example: dctx pack --for \"fix alpha_body in BetaStore\" --budget 3000
 Exit codes: 0 ok, 1 nothing to pack (no view filter), 2 usage, 3 source or output error; see docs/CLI-EXIT-CODES.md.
 "
 }
@@ -727,6 +731,8 @@ mod tests {
             "--clipboard",
             "-c",
             "--json",
+            "--for",
+            "--budget",
         ] {
             assert!(help.contains(flag), "missing {flag}");
         }

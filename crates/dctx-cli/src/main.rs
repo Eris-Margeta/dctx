@@ -5,6 +5,7 @@
 
 mod map;
 mod mcp;
+mod pack_for;
 mod plugin;
 
 use dctx_cli::{cache, exit, help, host, languages, pack, run_headless_mode, template, tui, SnapshotConfig};
@@ -43,7 +44,12 @@ fn main() {
         Some("mcp") => mcp::run(&args[2..]).map_err(|failure| failure.within("mcp")),
         Some("pack") => {
             maybe_auto_clean(allow_auto_clean);
-            pack::run(&args[1..])
+            // `--for`/`--budget` select the task-context page (map find, neighbors, read); everything else is the source page.
+            if pack_for::requested(&args[2..]) {
+                pack_for::run(&args[1..])
+            } else {
+                pack::run(&args[1..])
+            }
         }
         Some("cache") => cache::run(&args[1..]).map_err(|error| legacy(format!("cache: {error}"))),
         // Reads only the facade registry: no source, no cache, so no auto-clean either.

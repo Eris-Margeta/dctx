@@ -35,6 +35,11 @@ pub(crate) fn execute(arguments: &[String]) -> Result<String, String> {
     execute_with(arguments, host::open_mapped)
 }
 
+/// Same as [`execute`] for `dctx pack --for`: the page, or the failure with its exit code. A `gone` page is a page here.
+pub(crate) fn answer(arguments: &[String]) -> Result<String, Failure> {
+    answer_with(arguments, host::open_mapped).map(|answered| answered.page)
+}
+
 fn execute_with(
     arguments: &[String],
     open: impl FnOnce(&std::path::Path) -> Result<(dctx::Session, String), String>,

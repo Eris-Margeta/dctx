@@ -322,6 +322,7 @@ The dependency policy retains the **Ed25519 signature verifier** (`ed25519-dalek
 ```
 Usage: dctx [PATH] [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json]
+       dctx pack [PATH] --for <TEXT> [--budget TOKENS]
        dctx map <map|find|neighbors|explain|read> <TARGET> [--json]
        dctx cache status|gc|purge|config|auto
        dctx template build <PATH> | template list
