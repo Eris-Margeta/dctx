@@ -32,6 +32,9 @@ impl Session {
     /// Find records with literal hits added: all of them when no symbol matched (the `bool` is then true, `text`
     /// coverage), and for a SCREAMING_CASE key the read sites ranked in by [`rank_key`], matched symbols or not.
     pub(super) fn find_with_text(&mut self, generation: &Generation, request: &MapRequest, records: Vec<AnswerRecord>) -> Result<(Vec<AnswerRecord>, bool), DctxError> {
+        if let Some(segments) = crate::index::dotted_key::segments(&request.query) {
+            return self.find_dotted(generation, request, records, &segments);
+        }
         let key = key_shaped(&request.query);
         if !(records.is_empty() || key) || !text_fallback_applies(request) {
             return Ok((records, false));

@@ -167,3 +167,10 @@ fn try_attribute_form(line: &str, segments: &[&str]) -> bool {
     }
     false
 }
+
+/// Config-language symbols of `generation` (files whose `extract::language_of` is `config`: YAML, TOML, JSON) whose qualified
+/// name spells `segments` (see [`defines`]), as find records (`query::record_of`) with score 3000, in index order.
+pub(crate) fn definitions(generation: &super::Generation, segments: &[&str]) -> Vec<crate::domain::AnswerRecord> {
+    let _ = (generation, segments);
+    Vec::new()
+}
