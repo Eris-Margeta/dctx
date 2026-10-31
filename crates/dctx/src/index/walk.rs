@@ -110,7 +110,12 @@ fn visit_dir(args: &WalkArgs<'_>, languages: Option<&[String]>, dir: &RelativePa
     entries.sort_by(|left, right| left.name.cmp(&right.name));
     for entry in entries {
         checkpoint(args)?;
-        let path = dir.child(&entry.name).map_err(DctxError::from_core)?;
+        // A name the confined path cannot carry (a backslash, or a path over the byte cap) is skipped, as the pack
+        // scan does, and marks the snapshot partial. One such file never fails the whole walk.
+        let Ok(path) = dir.child(&entry.name) else {
+            state.partial = true;
+            continue;
+        };
         let mut decision = args.policy.decide(path.as_str(), entry.is_dir())?;
         if !entry.is_dir() && decision == FileHandlingDecision::Include && !language_ok(languages, path.as_str()) {
             decision = FileHandlingDecision::OmitContent;

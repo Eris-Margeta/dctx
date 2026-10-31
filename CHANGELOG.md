@@ -125,6 +125,10 @@ desktop app keeps its own version line (0.11.0) and its own release workflow.
   source for every symbol (cold `find` on a 3,000-file repository: 141 s → about 6 s).
 - Queries share one generation instead of cloning it (peak memory down by about
   30 % on the same repository).
+- One hostile file no longer fails every map verb for the whole repository: a Rust
+  file that is not UTF-8 is indexed as a module with no symbols (like every other
+  language), and a file name the confined path cannot carry (a backslash) is skipped
+  and marks the snapshot `partial`, as `pack` already did.
 
 ### Known issues
 Measured in the benchmarks and scheduled in the specification's roadmap:

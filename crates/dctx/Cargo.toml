@@ -81,6 +81,10 @@ name = "rust_default"
 required-features = ["map", "syntax-rust"]
 
 [[test]]
+name = "hostile_walk"
+required-features = ["fs", "map", "syntax-rust"]
+
+[[test]]
 name = "session"
 required-features = ["pack", "map", "templates", "cache", "segments"]
 
