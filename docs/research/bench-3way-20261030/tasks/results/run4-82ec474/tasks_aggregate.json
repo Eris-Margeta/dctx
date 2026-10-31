@@ -1,0 +1,614 @@
+{
+ "tools": [
+  "dctx",
+  "trail",
+  "graphify",
+  "dctx-ext"
+ ],
+ "by_corpus": {
+  "flask": {
+   "dctx": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 3604,
+    "score": 20,
+    "max_score": 20,
+    "facts_found": 47,
+    "facts_total": 48
+   },
+   "trail": {
+    "questions": 10,
+    "calls": 10,
+    "tokens": 5511,
+    "score": 16,
+    "max_score": 20,
+    "facts_found": 39,
+    "facts_total": 48
+   },
+   "graphify": {
+    "questions": 10,
+    "calls": 13,
+    "tokens": 10447,
+    "score": 14,
+    "max_score": 20,
+    "facts_found": 34,
+    "facts_total": 48
+   },
+   "dctx-ext": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 5338,
+    "score": 20,
+    "max_score": 20,
+    "facts_found": 47,
+    "facts_total": 48
+   }
+  },
+  "ripgrep": {
+   "dctx": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 3563,
+    "score": 19,
+    "max_score": 20,
+    "facts_found": 30,
+    "facts_total": 32
+   },
+   "trail": {
+    "questions": 10,
+    "calls": 10,
+    "tokens": 25974,
+    "score": 13,
+    "max_score": 20,
+    "facts_found": 23,
+    "facts_total": 32
+   },
+   "graphify": {
+    "questions": 10,
+    "calls": 13,
+    "tokens": 18709,
+    "score": 12,
+    "max_score": 20,
+    "facts_found": 22,
+    "facts_total": 32
+   },
+   "dctx-ext": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 5407,
+    "score": 17,
+    "max_score": 20,
+    "facts_found": 24,
+    "facts_total": 32
+   }
+  },
+  "pocketbase": {
+   "dctx": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 3533,
+    "score": 19,
+    "max_score": 20,
+    "facts_found": 35,
+    "facts_total": 36
+   },
+   "trail": {
+    "questions": 10,
+    "calls": 10,
+    "tokens": 4026,
+    "score": 18,
+    "max_score": 20,
+    "facts_found": 33,
+    "facts_total": 36
+   },
+   "graphify": {
+    "questions": 10,
+    "calls": 13,
+    "tokens": 18240,
+    "score": 13,
+    "max_score": 20,
+    "facts_found": 21,
+    "facts_total": 36
+   },
+   "dctx-ext": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 4523,
+    "score": 19,
+    "max_score": 20,
+    "facts_found": 35,
+    "facts_total": 36
+   }
+  },
+  "trailcode": {
+   "dctx": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 3578,
+    "score": 20,
+    "max_score": 20,
+    "facts_found": 64,
+    "facts_total": 64
+   },
+   "trail": {
+    "questions": 10,
+    "calls": 10,
+    "tokens": 7779,
+    "score": 19,
+    "max_score": 20,
+    "facts_found": 59,
+    "facts_total": 64
+   },
+   "graphify": {
+    "questions": 10,
+    "calls": 13,
+    "tokens": 17789,
+    "score": 15,
+    "max_score": 20,
+    "facts_found": 49,
+    "facts_total": 64
+   },
+   "dctx-ext": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 5359,
+    "score": 19,
+    "max_score": 20,
+    "facts_found": 62,
+    "facts_total": 64
+   }
+  },
+  "dctx": {
+   "dctx": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 4298,
+    "score": 20,
+    "max_score": 20,
+    "facts_found": 47,
+    "facts_total": 48
+   },
+   "trail": {
+    "questions": 10,
+    "calls": 10,
+    "tokens": 15396,
+    "score": 19,
+    "max_score": 20,
+    "facts_found": 44,
+    "facts_total": 48
+   },
+   "graphify": {
+    "questions": 10,
+    "calls": 13,
+    "tokens": 29479,
+    "score": 14,
+    "max_score": 20,
+    "facts_found": 33,
+    "facts_total": 48
+   },
+   "dctx-ext": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 5862,
+    "score": 18,
+    "max_score": 20,
+    "facts_found": 41,
+    "facts_total": 48
+   }
+  },
+  "django": {
+   "dctx": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 4987,
+    "score": 19,
+    "max_score": 20,
+    "facts_found": 67,
+    "facts_total": 70
+   },
+   "trail": {
+    "questions": 10,
+    "calls": 10,
+    "tokens": 7006,
+    "score": 18,
+    "max_score": 20,
+    "facts_found": 63,
+    "facts_total": 70
+   },
+   "graphify": {
+    "questions": 10,
+    "calls": 13,
+    "tokens": 50123,
+    "score": 12,
+    "max_score": 20,
+    "facts_found": 34,
+    "facts_total": 70
+   },
+   "dctx-ext": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 6983,
+    "score": 18,
+    "max_score": 20,
+    "facts_found": 64,
+    "facts_total": 70
+   }
+  },
+  "core": {
+   "dctx": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 4909,
+    "score": 19,
+    "max_score": 20,
+    "facts_found": 52,
+    "facts_total": 56
+   },
+   "trail": {
+    "questions": 10,
+    "calls": 10,
+    "tokens": 23231,
+    "score": 19,
+    "max_score": 20,
+    "facts_found": 51,
+    "facts_total": 56
+   },
+   "graphify": {
+    "questions": 10,
+    "calls": 13,
+    "tokens": 52416,
+    "score": 16,
+    "max_score": 20,
+    "facts_found": 45,
+    "facts_total": 56
+   },
+   "dctx-ext": {
+    "questions": 10,
+    "calls": 15,
+    "tokens": 7444,
+    "score": 19,
+    "max_score": 20,
+    "facts_found": 52,
+    "facts_total": 56
+   }
+  }
+ },
+ "overall": {
+  "dctx": {
+   "questions": 70,
+   "calls": 105,
+   "tokens": 28472,
+   "score": 136,
+   "max_score": 140,
+   "facts_found": 342,
+   "facts_total": 354
+  },
+  "trail": {
+   "questions": 70,
+   "calls": 70,
+   "tokens": 88923,
+   "score": 122,
+   "max_score": 140,
+   "facts_found": 312,
+   "facts_total": 354
+  },
+  "graphify": {
+   "questions": 70,
+   "calls": 91,
+   "tokens": 197203,
+   "score": 96,
+   "max_score": 140,
+   "facts_found": 238,
+   "facts_total": 354
+  },
+  "dctx-ext": {
+   "questions": 70,
+   "calls": 105,
+   "tokens": 40916,
+   "score": 130,
+   "max_score": 140,
+   "facts_found": 325,
+   "facts_total": 354
+  }
+ },
+ "overall_ex_overview": {
+  "dctx": {
+   "questions": 63,
+   "calls": 98,
+   "tokens": 24264,
+   "score": 122,
+   "max_score": 126,
+   "facts_found": 310,
+   "facts_total": 322
+  },
+  "trail": {
+   "questions": 63,
+   "calls": 63,
+   "tokens": 57221,
+   "score": 109,
+   "max_score": 126,
+   "facts_found": 284,
+   "facts_total": 322
+  },
+  "graphify": {
+   "questions": 63,
+   "calls": 84,
+   "tokens": 50648,
+   "score": 85,
+   "max_score": 126,
+   "facts_found": 218,
+   "facts_total": 322
+  },
+  "dctx-ext": {
+   "questions": 63,
+   "calls": 98,
+   "tokens": 36708,
+   "score": 116,
+   "max_score": 126,
+   "facts_found": 293,
+   "facts_total": 322
+  }
+ },
+ "by_kind": {
+  "def_and_callers": {
+   "dctx": {
+    "score": 14,
+    "max": 14,
+    "tokens": 4550,
+    "facts": "40/40"
+   },
+   "trail": {
+    "score": 10,
+    "max": 14,
+    "tokens": 3379,
+    "facts": "29/40"
+   },
+   "graphify": {
+    "score": 10,
+    "max": 14,
+    "tokens": 5127,
+    "facts": "23/40"
+   },
+   "dctx-ext": {
+    "score": 12,
+    "max": 14,
+    "tokens": 4671,
+    "facts": "34/40"
+   }
+  },
+  "impact": {
+   "dctx": {
+    "score": 14,
+    "max": 14,
+    "tokens": 1685,
+    "facts": "17/17"
+   },
+   "trail": {
+    "score": 13,
+    "max": 14,
+    "tokens": 1730,
+    "facts": "16/17"
+   },
+   "graphify": {
+    "score": 12,
+    "max": 14,
+    "tokens": 1856,
+    "facts": "15/17"
+   },
+   "dctx-ext": {
+    "score": 14,
+    "max": 14,
+    "tokens": 2844,
+    "facts": "17/17"
+   }
+  },
+  "outline": {
+   "dctx": {
+    "score": 14,
+    "max": 14,
+    "tokens": 2943,
+    "facts": "115/115"
+   },
+   "trail": {
+    "score": 14,
+    "max": 14,
+    "tokens": 5676,
+    "facts": "114/115"
+   },
+   "graphify": {
+    "score": 12,
+    "max": 14,
+    "tokens": 7830,
+    "facts": "85/115"
+   },
+   "dctx-ext": {
+    "score": 14,
+    "max": 14,
+    "tokens": 6089,
+    "facts": "115/115"
+   }
+  },
+  "config": {
+   "dctx": {
+    "score": 14,
+    "max": 14,
+    "tokens": 907,
+    "facts": "20/20"
+   },
+   "trail": {
+    "score": 14,
+    "max": 14,
+    "tokens": 5512,
+    "facts": "19/20"
+   },
+   "graphify": {
+    "score": 6,
+    "max": 14,
+    "tokens": 7914,
+    "facts": "6/20"
+   },
+   "dctx-ext": {
+    "score": 12,
+    "max": 14,
+    "tokens": 2582,
+    "facts": "15/20"
+   }
+  },
+  "exports": {
+   "dctx": {
+    "score": 14,
+    "max": 14,
+    "tokens": 3613,
+    "facts": "50/50"
+   },
+   "trail": {
+    "score": 14,
+    "max": 14,
+    "tokens": 24902,
+    "facts": "50/50"
+   },
+   "graphify": {
+    "score": 14,
+    "max": 14,
+    "tokens": 11582,
+    "facts": "49/50"
+   },
+   "dctx-ext": {
+    "score": 12,
+    "max": 14,
+    "tokens": 7391,
+    "facts": "44/50"
+   }
+  },
+  "source": {
+   "dctx": {
+    "score": 14,
+    "max": 14,
+    "tokens": 2831,
+    "facts": "20/20"
+   },
+   "trail": {
+    "score": 12,
+    "max": 14,
+    "tokens": 7539,
+    "facts": "17/20"
+   },
+   "graphify": {
+    "score": 0,
+    "max": 14,
+    "tokens": 865,
+    "facts": "0/20"
+   },
+   "dctx-ext": {
+    "score": 14,
+    "max": 14,
+    "tokens": 2831,
+    "facts": "20/20"
+   }
+  },
+  "callees": {
+   "dctx": {
+    "score": 10,
+    "max": 14,
+    "tokens": 2568,
+    "facts": "26/38"
+   },
+   "trail": {
+    "score": 8,
+    "max": 14,
+    "tokens": 1238,
+    "facts": "20/38"
+   },
+   "graphify": {
+    "score": 8,
+    "max": 14,
+    "tokens": 1658,
+    "facts": "21/38"
+   },
+   "dctx-ext": {
+    "score": 10,
+    "max": 14,
+    "tokens": 4242,
+    "facts": "26/38"
+   }
+  },
+  "overview": {
+   "dctx": {
+    "score": 14,
+    "max": 14,
+    "tokens": 4208,
+    "facts": "32/32"
+   },
+   "trail": {
+    "score": 13,
+    "max": 14,
+    "tokens": 31702,
+    "facts": "28/32"
+   },
+   "graphify": {
+    "score": 11,
+    "max": 14,
+    "tokens": 146555,
+    "facts": "20/32"
+   },
+   "dctx-ext": {
+    "score": 14,
+    "max": 14,
+    "tokens": 4208,
+    "facts": "32/32"
+   }
+  },
+  "collision": {
+   "dctx": {
+    "score": 14,
+    "max": 14,
+    "tokens": 3395,
+    "facts": "15/15"
+   },
+   "trail": {
+    "score": 12,
+    "max": 14,
+    "tokens": 3613,
+    "facts": "13/15"
+   },
+   "graphify": {
+    "score": 13,
+    "max": 14,
+    "tokens": 1371,
+    "facts": "14/15"
+   },
+   "dctx-ext": {
+    "score": 14,
+    "max": 14,
+    "tokens": 4286,
+    "facts": "15/15"
+   }
+  },
+  "concept": {
+   "dctx": {
+    "score": 14,
+    "max": 14,
+    "tokens": 1772,
+    "facts": "7/7"
+   },
+   "trail": {
+    "score": 12,
+    "max": 14,
+    "tokens": 3632,
+    "facts": "6/7"
+   },
+   "graphify": {
+    "score": 10,
+    "max": 14,
+    "tokens": 12445,
+    "facts": "5/7"
+   },
+   "dctx-ext": {
+    "score": 14,
+    "max": 14,
+    "tokens": 1772,
+    "facts": "7/7"
+   }
+  }
+ }
+}

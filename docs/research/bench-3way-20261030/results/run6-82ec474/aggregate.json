@@ -1,0 +1,3998 @@
+{
+ "meta": {
+  "date_utc": "2026-10-31T02:04:32Z",
+  "host_kernel": "Linux 6.12.113+deb13-cloud-amd64",
+  "cpu_model": "x86_64 CPU",
+  "cpus_pinned": "24-31",
+  "nice": 10,
+  "unshare_Urn_net_isolation": true,
+  "load1_at_start": 1.49,
+  "node": "v24.22.0",
+  "python": "Python 3.13.5",
+  "dctx_binary": "/path/to/workdir/bench/dctx3/bin/dctx-82ec474",
+  "dctx_sha256": "bea5055d9878fe0c4eb9ea0703b1e300f5703fbba468c3106e7fc417e8cc97fa",
+  "dctx_caps": {
+   "version": "dctx-cli v0.25.0",
+   "find_rc": 0,
+   "skeleton": true,
+   "grep": true,
+   "hubs": true,
+   "depth3": true,
+   "depth4": false,
+   "neighbors_depth2": true,
+   "neighbors_depth3": true,
+   "neighbors_depth4": true
+  },
+  "trail_version": "0.28.0",
+  "graphify_version": "graphify 0.9.97",
+  "graphify_mode": "extract . --code-only --max-workers 8; cluster-only . --no-viz --no-label; GRAPHIFY_BACKEND=none; LLM doc/semantic pass NOT run (no key supplied)",
+  "trail_mode": "build . (no --deep, no --lsp), DO_NOT_TRACK=1",
+  "env_vars_set_for_tools": [
+   "DO_NOT_TRACK",
+   "GRAPHIFY_BACKEND",
+   "HOME",
+   "LANG",
+   "LC_ALL",
+   "NO_COLOR",
+   "PATH",
+   "TMPDIR",
+   "XDG_CACHE_HOME",
+   "npm_config_cache",
+   "npm_config_update_notifier"
+  ],
+  "token_estimator": "ceil(stdout_bytes/3.5)",
+  "corpora_shas": {
+   "canary-ignored": "4af5ad06ff4b37723beaf5937e36ad1317514f60",
+   "canary-tracked": "eaececaca3116384200713fd6e4e4192e0e6c690",
+   "docs": "76309cee32b75174f0f04176d7f458604e4030af",
+   "flask": "22d924701a6ae2e4cd01e9a15bbaf3946094af65",
+   "mixed": "7a00e38e9a186b69994acb027c3697f16aa64c12",
+   "pocketbase": "6f370ea741f33adf889eef02e3c1b884a47aa522",
+   "ripgrep": "e89fff89ac9af12e8d4ce9d5fd07beb408ca730f",
+   "trailcode": "25ea4c7488b6f931f39ec8b95de0070ef954f5a8"
+  },
+  "pip_freeze": [
+   "graphifyy==0.9.97",
+   "networkx==3.7",
+   "numpy==2.5.4",
+   "PyYAML==6.0.3",
+   "RapidFuzz==3.14.6",
+   "tree-sitter==0.25.2",
+   "tree-sitter-bash==0.25.1",
+   "tree-sitter-c==0.24.2",
+   "tree-sitter-c-sharp==0.23.5",
+   "tree-sitter-cpp==0.23.4",
+   "tree-sitter-elixir==0.3.5",
+   "tree-sitter-fortran==0.6.0",
+   "tree-sitter-go==0.25.0",
+   "tree-sitter-groovy==0.1.2",
+   "tree-sitter-java==0.23.5",
+   "tree-sitter-javascript==0.25.0",
+   "tree-sitter-json==0.24.8",
+   "tree-sitter-julia==0.23.1",
+   "tree-sitter-kotlin==1.1.0",
+   "tree-sitter-lua==0.5.0",
+   "tree-sitter-objc==3.0.2",
+   "tree-sitter-php==0.24.1",
+   "tree-sitter-powershell==0.26.4",
+   "tree-sitter-python==0.25.0",
+   "tree-sitter-ruby==0.23.1",
+   "tree-sitter-rust==0.24.2",
+   "tree-sitter-scala==0.26.3",
+   "tree-sitter-swift==0.7.4",
+   "tree-sitter-typescript==0.23.2",
+   "tree-sitter-verilog==1.0.3",
+   "tree-sitter-zig==1.1.2"
+  ],
+  "npm_trail_pkg_version": "0.28.0",
+  "wrapper_overhead_s_median": 0.00694
+ },
+ "index": {
+  "flask": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 0.1765,
+    "cold_wall_s_all": [
+     0.1765,
+     0.1762,
+     0.1767
+    ],
+    "peak_rss_mb_largest_process": 19.7,
+    "peak_pss_mb_process_tree_sampled": 6.5,
+    "peak_rss_mb_process_tree_sampled": 8.4,
+    "index_mb": 1.16,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.17666
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 3.7348,
+    "cold_wall_s_all": [
+     4.1995,
+     3.7348,
+     3.5992
+    ],
+    "peak_rss_mb_largest_process": 224.2,
+    "peak_pss_mb_process_tree_sampled": 222.4,
+    "peak_rss_mb_process_tree_sampled": 225.8,
+    "index_mb": 4.39,
+    "index_files": 88,
+    "nodes": 1657,
+    "edges": 2466,
+    "step_walls_last_rep": {
+     "cold_index": 3.59918
+    },
+    "repo_touched": {
+     "modified_tracked": [
+      ".gitignore"
+     ],
+     "untracked_top": [
+      ".ignore"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 7.8251,
+    "cold_wall_s_all": [
+     10.4237,
+     7.8251,
+     7.4626
+    ],
+    "peak_rss_mb_largest_process": 102.1,
+    "peak_pss_mb_process_tree_sampled": 135.3,
+    "peak_rss_mb_process_tree_sampled": 391.2,
+    "index_mb": 4.46,
+    "index_files": 103,
+    "nodes": 2229,
+    "edges": 3589,
+    "step_walls_last_rep": {
+     "cold_extract": 5.38562,
+     "cold_report": 2.07694
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  },
+  "ripgrep": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 0.6072,
+    "cold_wall_s_all": [
+     0.6072,
+     0.6895,
+     0.5839
+    ],
+    "peak_rss_mb_largest_process": 27.6,
+    "peak_pss_mb_process_tree_sampled": 22.6,
+    "peak_rss_mb_process_tree_sampled": 24.7,
+    "index_mb": 2.13,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.58386
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 3.2468,
+    "cold_wall_s_all": [
+     3.4998,
+     3.2468,
+     3.21
+    ],
+    "peak_rss_mb_largest_process": 300.4,
+    "peak_pss_mb_process_tree_sampled": 298.5,
+    "peak_rss_mb_process_tree_sampled": 302.1,
+    "index_mb": 8.36,
+    "index_files": 106,
+    "nodes": 3550,
+    "edges": 2958,
+    "step_walls_last_rep": {
+     "cold_index": 3.21005
+    },
+    "repo_touched": {
+     "modified_tracked": [
+      ".gitignore",
+      ".ignore"
+     ],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 12.8592,
+    "cold_wall_s_all": [
+     12.4356,
+     12.8592,
+     14.828
+    ],
+    "peak_rss_mb_largest_process": 92.9,
+    "peak_pss_mb_process_tree_sampled": 197.6,
+    "peak_rss_mb_process_tree_sampled": 466.9,
+    "index_mb": 8.63,
+    "index_files": 130,
+    "nodes": 4271,
+    "edges": 9158,
+    "step_walls_last_rep": {
+     "cold_extract": 9.32125,
+     "cold_report": 5.50679
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  },
+  "pocketbase": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 0.9601,
+    "cold_wall_s_all": [
+     0.9906,
+     0.9385,
+     0.9601
+    ],
+    "peak_rss_mb_largest_process": 62.7,
+    "peak_pss_mb_process_tree_sampled": 51.2,
+    "peak_rss_mb_process_tree_sampled": 53.2,
+    "index_mb": 10.06,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.96014
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 52.4517,
+    "cold_wall_s_all": [
+     52.4517
+    ],
+    "peak_rss_mb_largest_process": 987.4,
+    "peak_pss_mb_process_tree_sampled": 963.0,
+    "peak_rss_mb_process_tree_sampled": 966.3,
+    "index_mb": 41.83,
+    "index_files": 669,
+    "nodes": 12003,
+    "edges": 26087,
+    "step_walls_last_rep": {
+     "cold_index": 52.45168
+    },
+    "repo_touched": {
+     "modified_tracked": [
+      ".gitignore"
+     ],
+     "untracked_top": [
+      ".ignore"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 59.0162,
+    "cold_wall_s_all": [
+     59.0162
+    ],
+    "peak_rss_mb_largest_process": 242.9,
+    "peak_pss_mb_process_tree_sampled": 475.6,
+    "peak_rss_mb_process_tree_sampled": 649.7,
+    "index_mb": 26.26,
+    "index_files": 469,
+    "nodes": 8801,
+    "edges": 43007,
+    "step_walls_last_rep": {
+     "cold_extract": 47.97463,
+     "cold_report": 11.04156
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  },
+  "trailcode": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 1.2107,
+    "cold_wall_s_all": [
+     1.1056,
+     1.2107,
+     1.2376
+    ],
+    "peak_rss_mb_largest_process": 87.7,
+    "peak_pss_mb_process_tree_sampled": 72.6,
+    "peak_rss_mb_process_tree_sampled": 74.5,
+    "index_mb": 14.98,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 1.23764
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 57.6814,
+    "cold_wall_s_all": [
+     57.6814
+    ],
+    "peak_rss_mb_largest_process": 1021.2,
+    "peak_pss_mb_process_tree_sampled": 1013.9,
+    "peak_rss_mb_process_tree_sampled": 1017.2,
+    "index_mb": 41.08,
+    "index_files": 880,
+    "nodes": 7639,
+    "edges": 28037,
+    "step_walls_last_rep": {
+     "cold_index": 57.68135
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      ".trail/"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 45.5032,
+    "cold_wall_s_all": [
+     45.5032
+    ],
+    "peak_rss_mb_largest_process": 391.9,
+    "peak_pss_mb_process_tree_sampled": 384.7,
+    "peak_rss_mb_process_tree_sampled": 559.2,
+    "index_mb": 11.86,
+    "index_files": 19,
+    "nodes": 8663,
+    "edges": 33627,
+    "step_walls_last_rep": {
+     "cold_extract": 33.44264,
+     "cold_report": 12.06057
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  },
+  "mixed": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 0.4025,
+    "cold_wall_s_all": [
+     0.4025,
+     0.4013,
+     0.43
+    ],
+    "peak_rss_mb_largest_process": 74.2,
+    "peak_pss_mb_process_tree_sampled": 22.6,
+    "peak_rss_mb_process_tree_sampled": 24.5,
+    "index_mb": 5.55,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.42996
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 3.7191,
+    "cold_wall_s_all": [
+     3.975,
+     3.7191,
+     3.6433
+    ],
+    "peak_rss_mb_largest_process": 477.1,
+    "peak_pss_mb_process_tree_sampled": 449.4,
+    "peak_rss_mb_process_tree_sampled": 453.0,
+    "index_mb": 12.76,
+    "index_files": 146,
+    "nodes": 8155,
+    "edges": 1139,
+    "step_walls_last_rep": {
+     "cold_index": 3.64326
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      ".gitignore",
+      ".ignore"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 4.8413,
+    "cold_wall_s_all": [
+     4.8413,
+     4.6265,
+     4.9818
+    ],
+    "peak_rss_mb_largest_process": 74.2,
+    "peak_pss_mb_process_tree_sampled": 122.7,
+    "peak_rss_mb_process_tree_sampled": 403.3,
+    "index_mb": 2.17,
+    "index_files": 145,
+    "nodes": 1267,
+    "edges": 1655,
+    "step_walls_last_rep": {
+     "cold_extract": 3.8257,
+     "cold_report": 1.15615
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  },
+  "docs": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 0.2039,
+    "cold_wall_s_all": [
+     0.1821,
+     0.2039,
+     0.2042
+    ],
+    "peak_rss_mb_largest_process": 74.2,
+    "peak_pss_mb_process_tree_sampled": 6.5,
+    "peak_rss_mb_process_tree_sampled": 8.4,
+    "index_mb": 1.44,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.20416
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 3,
+    "cold_wall_s_median": 1.1621,
+    "cold_wall_s_all": [
+     1.169,
+     1.143,
+     1.1621
+    ],
+    "peak_rss_mb_largest_process": 120.7,
+    "peak_pss_mb_process_tree_sampled": 119.1,
+    "peak_rss_mb_process_tree_sampled": 122.4,
+    "index_mb": 0.0,
+    "index_files": 5,
+    "nodes": 0,
+    "edges": 0,
+    "step_walls_last_rep": {
+     "cold_index": 1.16207
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      ".gitignore",
+      ".ignore"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": false,
+    "n_reps": 1,
+    "cold_wall_s_median": null,
+    "cold_wall_s_all": [
+     2.1895
+    ],
+    "peak_rss_mb_largest_process": null,
+    "peak_pss_mb_process_tree_sampled": null,
+    "peak_rss_mb_process_tree_sampled": null,
+    "index_mb": 0.21,
+    "index_files": 1,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_extract": 2.18946
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": "[graphify extract] graph is empty \u2014 extraction produced no nodes. Possible causes: all files skipped, binary-only corpus, or LLM returned no edges.\n"
+   }
+  },
+  "canary-tracked": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 0.0343,
+    "cold_wall_s_all": [
+     0.0343
+    ],
+    "peak_rss_mb_largest_process": 74.2,
+    "peak_pss_mb_process_tree_sampled": 0.0,
+    "peak_rss_mb_process_tree_sampled": 0.0,
+    "index_mb": 0.0,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.03427
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 1.0563,
+    "cold_wall_s_all": [
+     1.0563
+    ],
+    "peak_rss_mb_largest_process": 112.2,
+    "peak_pss_mb_process_tree_sampled": 109.9,
+    "peak_rss_mb_process_tree_sampled": 113.2,
+    "index_mb": 0.0,
+    "index_files": 6,
+    "nodes": 3,
+    "edges": 3,
+    "step_walls_last_rep": {
+     "cold_index": 1.05634
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      ".gitignore",
+      ".ignore"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 1.1472,
+    "cold_wall_s_all": [
+     1.1472
+    ],
+    "peak_rss_mb_largest_process": 74.2,
+    "peak_pss_mb_process_tree_sampled": 48.1,
+    "peak_rss_mb_process_tree_sampled": 57.7,
+    "index_mb": 0.0,
+    "index_files": 7,
+    "nodes": 3,
+    "edges": 3,
+    "step_walls_last_rep": {
+     "cold_extract": 0.66354,
+     "cold_report": 0.48366
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  },
+  "canary-ignored": {
+   "dctx": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 0.0304,
+    "cold_wall_s_all": [
+     0.0304
+    ],
+    "peak_rss_mb_largest_process": 74.2,
+    "peak_pss_mb_process_tree_sampled": 0.0,
+    "peak_rss_mb_process_tree_sampled": 0.0,
+    "index_mb": 0.0,
+    "index_files": 5,
+    "nodes": null,
+    "edges": null,
+    "step_walls_last_rep": {
+     "cold_index": 0.03041
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": []
+    },
+    "stderr_tail": ""
+   },
+   "trail": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 0.9981,
+    "cold_wall_s_all": [
+     0.9981
+    ],
+    "peak_rss_mb_largest_process": 108.6,
+    "peak_pss_mb_process_tree_sampled": 104.7,
+    "peak_rss_mb_process_tree_sampled": 108.0,
+    "index_mb": 0.0,
+    "index_files": 6,
+    "nodes": 3,
+    "edges": 3,
+    "step_walls_last_rep": {
+     "cold_index": 0.99809
+    },
+    "repo_touched": {
+     "modified_tracked": [
+      ".gitignore"
+     ],
+     "untracked_top": [
+      ".ignore"
+     ]
+    },
+    "stderr_tail": ""
+   },
+   "graphify": {
+    "ok": true,
+    "n_reps": 1,
+    "cold_wall_s_median": 1.2246,
+    "cold_wall_s_all": [
+     1.2246
+    ],
+    "peak_rss_mb_largest_process": 74.2,
+    "peak_pss_mb_process_tree_sampled": 48.2,
+    "peak_rss_mb_process_tree_sampled": 57.8,
+    "index_mb": 0.0,
+    "index_files": 7,
+    "nodes": 3,
+    "edges": 3,
+    "step_walls_last_rep": {
+     "cold_extract": 0.68881,
+     "cold_report": 0.53576
+    },
+    "repo_touched": {
+     "modified_tracked": [],
+     "untracked_top": [
+      "graphify-out/"
+     ]
+    },
+    "stderr_tail": ""
+   }
+  }
+ },
+ "query": {
+  "flask": {
+   "dctx": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.05108,
+     "stdout_bytes": 629,
+     "est_tokens": 180,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 26108,
+     "walls": [
+      0.05109,
+      0.05108,
+      0.0522,
+      0.04645,
+      0.04377
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.04611,
+     "stdout_bytes": 1686,
+     "est_tokens": 482,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 26108,
+     "walls": [
+      0.05023,
+      0.05594,
+      0.04611,
+      0.04513,
+      0.04583
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.05542,
+     "stdout_bytes": 1686,
+     "est_tokens": 482,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 26108,
+     "walls": [
+      0.04569,
+      0.05223,
+      0.06942,
+      0.05542,
+      0.05754
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.04683,
+     "stdout_bytes": 3031,
+     "est_tokens": 866,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 26108,
+     "walls": [
+      0.04363,
+      0.05645,
+      0.04464,
+      0.05761,
+      0.04683
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "dctx map hubs (bounded overview: most-called symbols + per-directory counts)",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.04572,
+     "stdout_bytes": 1727,
+     "est_tokens": 494,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 26108,
+     "walls": [
+      0.05754,
+      0.04572,
+      0.04468,
+      0.04465,
+      0.0576
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.06748,
+     "stdout_bytes": 1637,
+     "est_tokens": 468,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 26108,
+     "walls": [
+      0.08334,
+      0.06626,
+      0.07378,
+      0.0652,
+      0.06748
+     ]
+    }
+   },
+   "trail": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.08011,
+     "stdout_bytes": 917,
+     "est_tokens": 262,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 129104,
+     "walls": [
+      1.03265,
+      1.14215,
+      1.13214,
+      1.08011,
+      0.99733
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.98329,
+     "stdout_bytes": 476,
+     "est_tokens": 136,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 118584,
+     "walls": [
+      0.97896,
+      0.98329,
+      0.97625,
+      0.98638,
+      1.11505
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.05963,
+     "stdout_bytes": 633,
+     "est_tokens": 181,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 118948,
+     "walls": [
+      1.08634,
+      0.97152,
+      1.11045,
+      1.05963,
+      0.95668
+     ]
+    },
+    "callers1_norefresh": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.94941,
+     "stdout_bytes": 476,
+     "est_tokens": 136,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 117496,
+     "walls": [
+      0.94237,
+      0.94941,
+      1.08374,
+      0.93167,
+      1.03732
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.96182,
+     "stdout_bytes": 2980,
+     "est_tokens": 852,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 117764,
+     "walls": [
+      0.95842,
+      0.93871,
+      0.96938,
+      0.96308,
+      0.96182
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.00797,
+     "stdout_bytes": 3925,
+     "est_tokens": 1122,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 121124,
+     "walls": [
+      1.13191,
+      1.07148,
+      0.96681,
+      0.99748,
+      1.00797
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.13985,
+     "stdout_bytes": 6638,
+     "est_tokens": 1897,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 121772,
+     "walls": [
+      1.13985,
+      1.11632,
+      1.15269,
+      1.16645,
+      1.1311
+     ]
+    }
+   },
+   "graphify": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.65595,
+     "stdout_bytes": 6455,
+     "est_tokens": 1845,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 50040,
+     "walls": [
+      0.68401,
+      0.63185,
+      0.65393,
+      0.65595,
+      0.72271
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.41274,
+     "stdout_bytes": 111,
+     "est_tokens": 32,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 41876,
+     "walls": [
+      0.39709,
+      0.41274,
+      0.42354,
+      0.40139,
+      0.47428
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.50155,
+     "stdout_bytes": 224,
+     "est_tokens": 64,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 41928,
+     "walls": [
+      0.50155,
+      0.47377,
+      0.51934,
+      0.47831,
+      0.54406
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": "approximate: explain <file node> lists its connections, not signatures",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.63648,
+     "stdout_bytes": 1658,
+     "est_tokens": 474,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 47208,
+     "walls": [
+      0.62782,
+      0.63144,
+      0.63648,
+      0.65241,
+      0.65934
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "reads GRAPH_REPORT.md written by cluster-only",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.01564,
+     "stdout_bytes": 20753,
+     "est_tokens": 5930,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 26108,
+     "walls": [
+      0.01751,
+      0.01564,
+      0.0137,
+      0.01777,
+      0.01434
+     ]
+    },
+    "grep": {
+     "supported": false,
+     "via": null,
+     "why": "no literal-search verb",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "god_nodes": {
+     "supported": true,
+     "via": "extra: hubs list",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.4927,
+     "stdout_bytes": 286,
+     "est_tokens": 82,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 44624,
+     "walls": [
+      0.48669,
+      0.46123,
+      0.4927,
+      0.53675,
+      0.51421
+     ]
+    }
+   }
+  },
+  "ripgrep": {
+   "dctx": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.08147,
+     "stdout_bytes": 107,
+     "est_tokens": 31,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 34288,
+     "walls": [
+      0.08252,
+      0.08014,
+      0.0769,
+      0.10472,
+      0.08147
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.08068,
+     "stdout_bytes": 1749,
+     "est_tokens": 500,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 34288,
+     "walls": [
+      0.08662,
+      0.07696,
+      0.07711,
+      0.08307,
+      0.08068
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.07888,
+     "stdout_bytes": 1749,
+     "est_tokens": 500,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 34288,
+     "walls": [
+      0.09,
+      0.07888,
+      0.08428,
+      0.06195,
+      0.05917
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.06221,
+     "stdout_bytes": 5092,
+     "est_tokens": 1455,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 34288,
+     "walls": [
+      0.06231,
+      0.06228,
+      0.06008,
+      0.06221,
+      0.06118
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "dctx map hubs (bounded overview: most-called symbols + per-directory counts)",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.06441,
+     "stdout_bytes": 2014,
+     "est_tokens": 576,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 34288,
+     "walls": [
+      0.06338,
+      0.06437,
+      0.0786,
+      0.06441,
+      0.06453
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.09918,
+     "stdout_bytes": 1495,
+     "est_tokens": 428,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 34288,
+     "walls": [
+      0.09918,
+      0.10666,
+      0.09575,
+      0.09911,
+      0.10989
+     ]
+    }
+   },
+   "trail": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.33796,
+     "stdout_bytes": 1371,
+     "est_tokens": 392,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 179792,
+     "walls": [
+      1.34673,
+      1.31147,
+      1.33796,
+      1.37562,
+      1.30566
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.13782,
+     "stdout_bytes": 2801,
+     "est_tokens": 801,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 118092,
+     "walls": [
+      1.14848,
+      1.17296,
+      1.12733,
+      1.13782,
+      1.12769
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.15987,
+     "stdout_bytes": 2991,
+     "est_tokens": 855,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 119344,
+     "walls": [
+      1.22698,
+      1.24578,
+      1.15987,
+      1.11788,
+      1.12723
+     ]
+    },
+    "callers1_norefresh": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.06366,
+     "stdout_bytes": 2801,
+     "est_tokens": 801,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 117548,
+     "walls": [
+      1.0597,
+      1.07555,
+      1.06366,
+      0.99237,
+      1.12648
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.10262,
+     "stdout_bytes": 3935,
+     "est_tokens": 1125,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 119988,
+     "walls": [
+      1.09273,
+      1.10832,
+      1.00908,
+      1.10574,
+      1.10262
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.16432,
+     "stdout_bytes": 8883,
+     "est_tokens": 2538,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 133052,
+     "walls": [
+      1.16784,
+      1.15738,
+      1.14218,
+      1.16432,
+      1.17796
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.14627,
+     "stdout_bytes": 4009,
+     "est_tokens": 1146,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 135196,
+     "walls": [
+      1.08672,
+      1.14957,
+      1.142,
+      1.14627,
+      1.16197
+     ]
+    }
+   },
+   "graphify": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.71805,
+     "stdout_bytes": 13578,
+     "est_tokens": 3880,
+     "identical_across_runs": false,
+     "maxrss_kb_median": 60976,
+     "walls": [
+      0.79239,
+      0.71273,
+      0.71203,
+      0.71901,
+      0.71805
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.42724,
+     "stdout_bytes": 99,
+     "est_tokens": 29,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 50924,
+     "walls": [
+      0.41678,
+      0.41886,
+      0.42724,
+      0.42928,
+      0.43647
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.42461,
+     "stdout_bytes": 99,
+     "est_tokens": 29,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 50880,
+     "walls": [
+      0.45314,
+      0.42034,
+      0.42461,
+      0.42865,
+      0.42107
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": "approximate: explain <file node> lists its connections, not signatures",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.65066,
+     "stdout_bytes": 1863,
+     "est_tokens": 533,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 59660,
+     "walls": [
+      0.68257,
+      0.66572,
+      0.65066,
+      0.6277,
+      0.63533
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "reads GRAPH_REPORT.md written by cluster-only",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.00805,
+     "stdout_bytes": 27860,
+     "est_tokens": 7960,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 34288,
+     "walls": [
+      0.00806,
+      0.00696,
+      0.00696,
+      0.00805,
+      0.00807
+     ]
+    },
+    "grep": {
+     "supported": false,
+     "via": null,
+     "why": "no literal-search verb",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "god_nodes": {
+     "supported": true,
+     "via": "extra: hubs list",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.43639,
+     "stdout_bytes": 295,
+     "est_tokens": 85,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 53820,
+     "walls": [
+      0.43639,
+      0.43079,
+      0.43464,
+      0.44163,
+      0.43711
+     ]
+    }
+   }
+  },
+  "pocketbase": {
+   "dctx": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.19242,
+     "stdout_bytes": 724,
+     "est_tokens": 207,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.19242,
+      0.19461,
+      0.19461,
+      0.1912,
+      0.19133
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.19349,
+     "stdout_bytes": 1651,
+     "est_tokens": 472,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.19349,
+      0.19151,
+      0.19347,
+      0.19661,
+      0.19461
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.19563,
+     "stdout_bytes": 1651,
+     "est_tokens": 472,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.21074,
+      0.19563,
+      0.19675,
+      0.1934,
+      0.1956
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.19256,
+     "stdout_bytes": 1338,
+     "est_tokens": 383,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.19256,
+      0.19245,
+      0.19454,
+      0.19231,
+      0.26028
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "dctx map hubs (bounded overview: most-called symbols + per-directory counts)",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.20414,
+     "stdout_bytes": 2341,
+     "est_tokens": 669,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.20313,
+      0.20525,
+      0.20412,
+      0.20628,
+      0.20414
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.32503,
+     "stdout_bytes": 1714,
+     "est_tokens": 490,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.32676,
+      0.32624,
+      0.32284,
+      0.32159,
+      0.32503
+     ]
+    }
+   },
+   "trail": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.44349,
+     "stdout_bytes": 1252,
+     "est_tokens": 358,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 253096,
+     "walls": [
+      1.4789,
+      1.44349,
+      1.4377,
+      1.47049,
+      1.43534
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.19673,
+     "stdout_bytes": 611,
+     "est_tokens": 175,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 134884,
+     "walls": [
+      1.05265,
+      1.21773,
+      1.2442,
+      1.19673,
+      1.11509
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.12667,
+     "stdout_bytes": 611,
+     "est_tokens": 175,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 134800,
+     "walls": [
+      1.12667,
+      1.0705,
+      1.12213,
+      1.12762,
+      1.13758
+     ]
+    },
+    "callers1_norefresh": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.04366,
+     "stdout_bytes": 611,
+     "est_tokens": 175,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 140756,
+     "walls": [
+      1.0139,
+      1.04366,
+      1.0505,
+      1.05207,
+      1.01256
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.08829,
+     "stdout_bytes": 1226,
+     "est_tokens": 351,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 140004,
+     "walls": [
+      1.07108,
+      1.09704,
+      1.0732,
+      1.10134,
+      1.08829
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.15732,
+     "stdout_bytes": 5297,
+     "est_tokens": 1514,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 143784,
+     "walls": [
+      1.15732,
+      1.16529,
+      1.12773,
+      1.18345,
+      1.11045
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.3316,
+     "stdout_bytes": 10926,
+     "est_tokens": 3122,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 169532,
+     "walls": [
+      1.48514,
+      1.31049,
+      1.3316,
+      1.4646,
+      1.31761
+     ]
+    }
+   },
+   "graphify": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 3,
+     "wall_s_median": 1.46736,
+     "stdout_bytes": 337,
+     "est_tokens": 97,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 113304,
+     "walls": [
+      1.46736,
+      1.6521,
+      1.42163,
+      1.50251,
+      1.38612
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.82078,
+     "stdout_bytes": 82,
+     "est_tokens": 24,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 95568,
+     "walls": [
+      0.8152,
+      0.82078,
+      0.8101,
+      0.82087,
+      0.8247
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.80311,
+     "stdout_bytes": 82,
+     "est_tokens": 24,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 95604,
+     "walls": [
+      0.83153,
+      0.77538,
+      0.76424,
+      0.80311,
+      0.80989
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": "approximate: explain <file node> lists its connections, not signatures",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.28591,
+     "stdout_bytes": 2845,
+     "est_tokens": 813,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 105252,
+     "walls": [
+      1.26674,
+      1.25749,
+      1.28725,
+      1.28591,
+      1.33753
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "reads GRAPH_REPORT.md written by cluster-only",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.00809,
+     "stdout_bytes": 40567,
+     "est_tokens": 11591,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.00809,
+      0.00814,
+      0.00712,
+      0.00709,
+      0.00819
+     ]
+    },
+    "grep": {
+     "supported": false,
+     "via": null,
+     "why": "no literal-search verb",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "god_nodes": {
+     "supported": true,
+     "via": "extra: hubs list",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.84465,
+     "stdout_bytes": 286,
+     "est_tokens": 82,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 98416,
+     "walls": [
+      0.84701,
+      0.80379,
+      0.81022,
+      0.84465,
+      0.85707
+     ]
+    }
+   }
+  },
+  "trailcode": {
+   "dctx": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.20603,
+     "stdout_bytes": 1208,
+     "est_tokens": 346,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.20817,
+      0.1876,
+      0.18465,
+      0.20724,
+      0.20603
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.21251,
+     "stdout_bytes": 1672,
+     "est_tokens": 478,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.21352,
+      0.21251,
+      0.21251,
+      0.19068,
+      0.21244
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.21326,
+     "stdout_bytes": 1672,
+     "est_tokens": 478,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.21356,
+      0.19477,
+      0.21506,
+      0.196,
+      0.21326
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.2068,
+     "stdout_bytes": 2742,
+     "est_tokens": 784,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.18616,
+      0.20726,
+      0.2068,
+      0.18851,
+      0.21599
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "dctx map hubs (bounded overview: most-called symbols + per-directory counts)",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.19743,
+     "stdout_bytes": 1807,
+     "est_tokens": 517,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.22247,
+      0.19743,
+      0.21671,
+      0.19538,
+      0.19524
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.3094,
+     "stdout_bytes": 1382,
+     "est_tokens": 395,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.3094,
+      0.34901,
+      0.30585,
+      0.30808,
+      0.3543
+     ]
+    }
+   },
+   "trail": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.96636,
+     "stdout_bytes": 2183,
+     "est_tokens": 624,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 316240,
+     "walls": [
+      1.98342,
+      1.96636,
+      1.98831,
+      1.82562,
+      1.85815
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.14915,
+     "stdout_bytes": 3724,
+     "est_tokens": 1064,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 147372,
+     "walls": [
+      1.15624,
+      1.13803,
+      1.23266,
+      1.14879,
+      1.14915
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.24071,
+     "stdout_bytes": 5278,
+     "est_tokens": 1508,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 147964,
+     "walls": [
+      1.26323,
+      1.24691,
+      1.12008,
+      1.24071,
+      1.10416
+     ]
+    },
+    "callers1_norefresh": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.15873,
+     "stdout_bytes": 3724,
+     "est_tokens": 1064,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 143020,
+     "walls": [
+      1.17148,
+      1.15873,
+      1.37313,
+      1.10026,
+      1.07185
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.20585,
+     "stdout_bytes": 2695,
+     "est_tokens": 770,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 147124,
+     "walls": [
+      1.20951,
+      1.0716,
+      1.09059,
+      1.23415,
+      1.20585
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.15707,
+     "stdout_bytes": 1745,
+     "est_tokens": 499,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 149748,
+     "walls": [
+      1.24339,
+      1.15183,
+      1.14974,
+      1.26282,
+      1.15707
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.51172,
+     "stdout_bytes": 8235,
+     "est_tokens": 2353,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 181652,
+     "walls": [
+      1.53488,
+      1.51172,
+      1.54153,
+      1.41132,
+      1.39465
+     ]
+    }
+   },
+   "graphify": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.23425,
+     "stdout_bytes": 6526,
+     "est_tokens": 1865,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 100924,
+     "walls": [
+      1.23091,
+      1.22424,
+      1.23425,
+      1.23893,
+      1.39299
+     ]
+    },
+    "callers1": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.70848,
+     "stdout_bytes": 685,
+     "est_tokens": 196,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 84220,
+     "walls": [
+      0.78116,
+      0.68894,
+      0.69841,
+      0.70848,
+      0.82358
+     ]
+    },
+    "callers2": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.75561,
+     "stdout_bytes": 1569,
+     "est_tokens": 449,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 84144,
+     "walls": [
+      0.86501,
+      0.77971,
+      0.72442,
+      0.69073,
+      0.75561
+     ]
+    },
+    "skeleton": {
+     "supported": true,
+     "via": "approximate: explain <file node> lists its connections, not signatures",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.0969,
+     "stdout_bytes": 2655,
+     "est_tokens": 759,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 93728,
+     "walls": [
+      1.10649,
+      1.10381,
+      1.09295,
+      1.08554,
+      1.0969
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "reads GRAPH_REPORT.md written by cluster-only",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.00694,
+     "stdout_bytes": 35264,
+     "est_tokens": 10076,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.00699,
+      0.00694,
+      0.00693,
+      0.00694,
+      0.00804
+     ]
+    },
+    "grep": {
+     "supported": false,
+     "via": null,
+     "why": "no literal-search verb",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "god_nodes": {
+     "supported": true,
+     "via": "extra: hubs list",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.74599,
+     "stdout_bytes": 285,
+     "est_tokens": 82,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 87248,
+     "walls": [
+      0.71819,
+      0.74599,
+      0.74602,
+      0.75565,
+      0.71116
+     ]
+    }
+   }
+  },
+  "mixed": {
+   "dctx": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.13784,
+     "stdout_bytes": 881,
+     "est_tokens": 252,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.14105,
+      0.1379,
+      0.13784,
+      0.12592,
+      0.12625
+     ]
+    },
+    "callers1": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers2": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.1261,
+     "stdout_bytes": 4031,
+     "est_tokens": 1152,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.12382,
+      0.12392,
+      0.1261,
+      0.13797,
+      0.13576
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "dctx map hubs (bounded overview: most-called symbols + per-directory counts)",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.15363,
+     "stdout_bytes": 2048,
+     "est_tokens": 586,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.1388,
+      0.15363,
+      0.15858,
+      0.14258,
+      0.16344
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.23381,
+     "stdout_bytes": 1142,
+     "est_tokens": 327,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.23724,
+      0.24439,
+      0.23373,
+      0.2221,
+      0.23381
+     ]
+    }
+   },
+   "trail": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.37068,
+     "stdout_bytes": 985,
+     "est_tokens": 282,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 194516,
+     "walls": [
+      1.41258,
+      1.41347,
+      1.30765,
+      1.36513,
+      1.37068
+     ]
+    },
+    "callers1": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers2": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.10698,
+     "stdout_bytes": 4876,
+     "est_tokens": 1394,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 133424,
+     "walls": [
+      1.04422,
+      1.13255,
+      1.05741,
+      1.10698,
+      1.11976
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.10773,
+     "stdout_bytes": 2197,
+     "est_tokens": 628,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 133340,
+     "walls": [
+      1.10648,
+      1.13278,
+      1.10773,
+      1.18574,
+      1.03969
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 1.13002,
+     "stdout_bytes": 1161,
+     "est_tokens": 332,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 137752,
+     "walls": [
+      1.12467,
+      1.11924,
+      1.13002,
+      1.19337,
+      1.14554
+     ]
+    }
+   },
+   "graphify": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.48012,
+     "stdout_bytes": 721,
+     "est_tokens": 206,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.53172,
+      0.47897,
+      0.47454,
+      0.48543,
+      0.48012
+     ]
+    },
+    "callers1": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers2": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "skeleton": {
+     "supported": true,
+     "via": "approximate: explain <file node> lists its connections, not signatures",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.42078,
+     "stdout_bytes": 1449,
+     "est_tokens": 414,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.46392,
+      0.42191,
+      0.41106,
+      0.42078,
+      0.42068
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "reads GRAPH_REPORT.md written by cluster-only",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.00895,
+     "stdout_bytes": 13394,
+     "est_tokens": 3827,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.00805,
+      0.00917,
+      0.00915,
+      0.00895,
+      0.00817
+     ]
+    },
+    "grep": {
+     "supported": false,
+     "via": null,
+     "why": "no literal-search verb",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "god_nodes": {
+     "supported": true,
+     "via": "extra: hubs list",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.36041,
+     "stdout_bytes": 308,
+     "est_tokens": 88,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.36041,
+      0.36195,
+      0.42023,
+      0.35842,
+      0.35877
+     ]
+    }
+   }
+  },
+  "docs": {
+   "dctx": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.09688,
+     "stdout_bytes": 912,
+     "est_tokens": 261,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.09688,
+      0.10243,
+      0.10919,
+      0.09582,
+      0.09562
+     ]
+    },
+    "callers1": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers2": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.10113,
+     "stdout_bytes": 3263,
+     "est_tokens": 933,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.11253,
+      0.11823,
+      0.10113,
+      0.08801,
+      0.09445
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": "dctx map hubs (bounded overview: most-called symbols + per-directory counts)",
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.09562,
+     "stdout_bytes": 105,
+     "est_tokens": 30,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.09562,
+      0.09446,
+      0.10567,
+      0.09897,
+      0.0956
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.15617,
+     "stdout_bytes": 1642,
+     "est_tokens": 470,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 75980,
+     "walls": [
+      0.1422,
+      0.14099,
+      0.15827,
+      0.15617,
+      0.15725
+     ]
+    }
+   },
+   "trail": {
+    "find": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.97983,
+     "stdout_bytes": 321,
+     "est_tokens": 92,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 114296,
+     "walls": [
+      0.99517,
+      0.97983,
+      0.96376,
+      0.96386,
+      0.98095
+     ]
+    },
+    "callers1": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers2": {
+     "supported": false,
+     "via": null,
+     "why": "no callers target for this corpus",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "skeleton": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.97,
+     "stdout_bytes": 101,
+     "est_tokens": 29,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 122384,
+     "walls": [
+      0.95179,
+      1.05654,
+      0.95793,
+      0.97,
+      0.97787
+     ]
+    },
+    "overview": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.96317,
+     "stdout_bytes": 62,
+     "est_tokens": 18,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 122368,
+     "walls": [
+      0.98932,
+      0.96317,
+      0.95808,
+      1.10443,
+      0.95951
+     ]
+    },
+    "grep": {
+     "supported": true,
+     "via": null,
+     "why": null,
+     "rc": 0,
+     "wall_s_median": 0.97582,
+     "stdout_bytes": 0,
+     "est_tokens": 0,
+     "identical_across_runs": true,
+     "maxrss_kb_median": 114252,
+     "walls": [
+      1.0195,
+      0.96262,
+      0.95783,
+      0.97582,
+      0.98253
+     ]
+    }
+   },
+   "graphify": {
+    "find": {
+     "supported": false,
+     "via": null,
+     "why": "no graph.json (nothing extracted in code-only mode)",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers1": {
+     "supported": false,
+     "via": null,
+     "why": "no graph.json (nothing extracted in code-only mode)",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "callers2": {
+     "supported": false,
+     "via": null,
+     "why": "no graph.json (nothing extracted in code-only mode)",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "skeleton": {
+     "supported": false,
+     "via": null,
+     "why": "no graph.json (nothing extracted in code-only mode)",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "overview": {
+     "supported": false,
+     "via": null,
+     "why": "no graph.json (nothing extracted in code-only mode)",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    },
+    "grep": {
+     "supported": false,
+     "via": null,
+     "why": "no graph.json (nothing extracted in code-only mode)",
+     "rc": null,
+     "wall_s_median": null,
+     "stdout_bytes": null,
+     "est_tokens": null,
+     "identical_across_runs": null,
+     "maxrss_kb_median": null,
+     "walls": null
+    }
+   }
+  }
+ },
+ "accuracy": {
+  "flask": {
+   "dctx": {
+    "targets_scored": 20,
+    "gold_sites": 128,
+    "hits": 89,
+    "tp": 89,
+    "fp": 0,
+    "found": 125,
+    "precision_micro": 1.0,
+    "recall_micro": 0.977,
+    "precision_macro": 1.0,
+    "recall_macro": 0.967,
+    "unresolved_targets": 0,
+    "tokens_total": 6960,
+    "recall_page1_micro": 0.977,
+    "recall_allpages_micro": 0.977,
+    "recall_macro_page1": 0.967,
+    "recall_macro_allpages": 0.967,
+    "precision_micro_allpages": 1.0,
+    "recall_micro_allpages": 0.977
+   },
+   "trail": {
+    "targets_scored": 20,
+    "gold_sites": 128,
+    "hits": 35,
+    "tp": 25,
+    "fp": 1,
+    "found": 42,
+    "precision_micro": 0.962,
+    "recall_micro": 0.328,
+    "precision_macro": 0.981,
+    "recall_macro": 0.75,
+    "unresolved_targets": 0,
+    "tokens_total": 9263,
+    "recall_page1_micro": 0.328,
+    "recall_allpages_micro": 0.328,
+    "recall_macro_page1": 0.75,
+    "recall_macro_allpages": 0.75
+   },
+   "graphify": {
+    "targets_scored": 20,
+    "gold_sites": 128,
+    "hits": 33,
+    "tp": 28,
+    "fp": 2,
+    "found": 25,
+    "precision_micro": 0.933,
+    "recall_micro": 0.195,
+    "precision_macro": 0.961,
+    "recall_macro": 0.737,
+    "unresolved_targets": 0,
+    "tokens_total": 1171,
+    "recall_page1_micro": 0.195,
+    "recall_allpages_micro": 0.195,
+    "recall_macro_page1": 0.737,
+    "recall_macro_allpages": 0.737
+   }
+  },
+  "ripgrep": {
+   "dctx": {
+    "targets_scored": 20,
+    "gold_sites": 281,
+    "hits": 103,
+    "tp": 97,
+    "fp": 1,
+    "found": 225,
+    "precision_micro": 0.99,
+    "recall_micro": 0.801,
+    "precision_macro": 0.967,
+    "recall_macro": 0.756,
+    "unresolved_targets": 0,
+    "tokens_total": 10355,
+    "recall_page1_micro": 0.801,
+    "recall_allpages_micro": 0.94,
+    "recall_macro_page1": 0.756,
+    "recall_macro_allpages": 0.787,
+    "precision_micro_allpages": 0.993,
+    "recall_micro_allpages": 0.94
+   },
+   "trail": {
+    "targets_scored": 20,
+    "gold_sites": 281,
+    "hits": 81,
+    "tp": 76,
+    "fp": 1,
+    "found": 92,
+    "precision_micro": 0.987,
+    "recall_micro": 0.327,
+    "precision_macro": 0.964,
+    "recall_macro": 0.641,
+    "unresolved_targets": 0,
+    "tokens_total": 13119,
+    "recall_page1_micro": 0.327,
+    "recall_allpages_micro": 0.327,
+    "recall_macro_page1": 0.641,
+    "recall_macro_allpages": 0.641
+   },
+   "graphify": {
+    "targets_scored": 20,
+    "gold_sites": 281,
+    "hits": 16,
+    "tp": 9,
+    "fp": 0,
+    "found": 9,
+    "precision_micro": 1.0,
+    "recall_micro": 0.032,
+    "precision_macro": 1.0,
+    "recall_macro": 0.319,
+    "unresolved_targets": 0,
+    "tokens_total": 1022,
+    "recall_page1_micro": 0.032,
+    "recall_allpages_micro": 0.032,
+    "recall_macro_page1": 0.319,
+    "recall_macro_allpages": 0.319
+   }
+  },
+  "pocketbase": {
+   "dctx": {
+    "targets_scored": 20,
+    "gold_sites": 222,
+    "hits": 117,
+    "tp": 117,
+    "fp": 0,
+    "found": 187,
+    "precision_micro": 1.0,
+    "recall_micro": 0.842,
+    "precision_macro": 1.0,
+    "recall_macro": 0.897,
+    "unresolved_targets": 0,
+    "tokens_total": 10255,
+    "recall_page1_micro": 0.842,
+    "recall_allpages_micro": 0.977,
+    "recall_macro_page1": 0.897,
+    "recall_macro_allpages": 0.925,
+    "precision_micro_allpages": 1.0,
+    "recall_micro_allpages": 0.977
+   },
+   "trail": {
+    "targets_scored": 20,
+    "gold_sites": 222,
+    "hits": 23,
+    "tp": 18,
+    "fp": 0,
+    "found": 22,
+    "precision_micro": 1.0,
+    "recall_micro": 0.099,
+    "precision_macro": 1.0,
+    "recall_macro": 0.507,
+    "unresolved_targets": 0,
+    "tokens_total": 6214,
+    "recall_page1_micro": 0.099,
+    "recall_allpages_micro": 0.099,
+    "recall_macro_page1": 0.507,
+    "recall_macro_allpages": 0.507
+   },
+   "graphify": {
+    "targets_scored": 20,
+    "gold_sites": 222,
+    "hits": 91,
+    "tp": 84,
+    "fp": 0,
+    "found": 85,
+    "precision_micro": 1.0,
+    "recall_micro": 0.383,
+    "precision_macro": 1.0,
+    "recall_macro": 0.519,
+    "unresolved_targets": 0,
+    "tokens_total": 2003,
+    "recall_page1_micro": 0.383,
+    "recall_allpages_micro": 0.383,
+    "recall_macro_page1": 0.519,
+    "recall_macro_allpages": 0.519
+   }
+  },
+  "trailcode": {
+   "dctx": {
+    "targets_scored": 20,
+    "gold_sites": 256,
+    "hits": 129,
+    "tp": 128,
+    "fp": 1,
+    "found": 218,
+    "precision_micro": 0.992,
+    "recall_micro": 0.852,
+    "precision_macro": 0.975,
+    "recall_macro": 0.956,
+    "unresolved_targets": 0,
+    "tokens_total": 13377,
+    "recall_page1_micro": 0.852,
+    "recall_allpages_micro": 0.988,
+    "recall_macro_page1": 0.956,
+    "recall_macro_allpages": 0.992,
+    "precision_micro_allpages": 0.994,
+    "recall_micro_allpages": 0.988
+   },
+   "trail": {
+    "targets_scored": 20,
+    "gold_sites": 256,
+    "hits": 90,
+    "tp": 89,
+    "fp": 1,
+    "found": 231,
+    "precision_micro": 0.989,
+    "recall_micro": 0.902,
+    "precision_macro": 0.969,
+    "recall_macro": 0.758,
+    "unresolved_targets": 0,
+    "tokens_total": 11061,
+    "recall_page1_micro": 0.902,
+    "recall_allpages_micro": 0.902,
+    "recall_macro_page1": 0.758,
+    "recall_macro_allpages": 0.758
+   },
+   "graphify": {
+    "targets_scored": 19,
+    "gold_sites": 256,
+    "hits": 52,
+    "tp": 52,
+    "fp": 0,
+    "found": 55,
+    "precision_micro": 1.0,
+    "recall_micro": 0.215,
+    "precision_macro": 1.0,
+    "recall_macro": 0.55,
+    "unresolved_targets": 1,
+    "tokens_total": 1163,
+    "recall_page1_micro": 0.215,
+    "recall_allpages_micro": 0.215,
+    "recall_macro_page1": 0.55,
+    "recall_macro_allpages": 0.55
+   }
+  },
+  "ALL_GOLD_CORPORA": {
+   "dctx": {
+    "tp": 431,
+    "fp": 2,
+    "found": 755,
+    "gold_sites": 887,
+    "precision_micro": 0.995,
+    "recall_micro": 0.851,
+    "recall_page1_micro": 0.851,
+    "recall_allpages_micro": 0.968,
+    "recall_macro_page1": 0.897,
+    "recall_macro_allpages": 0.92,
+    "macro_over_targets": 73,
+    "precision_micro_allpages": 0.996,
+    "recall_micro_allpages": 0.968
+   },
+   "trail": {
+    "tp": 208,
+    "fp": 3,
+    "found": 387,
+    "gold_sites": 887,
+    "precision_micro": 0.986,
+    "recall_micro": 0.436,
+    "recall_page1_micro": 0.436,
+    "recall_allpages_micro": 0.436,
+    "recall_macro_page1": 0.672,
+    "recall_macro_allpages": 0.672,
+    "macro_over_targets": 73
+   },
+   "graphify": {
+    "tp": 173,
+    "fp": 2,
+    "found": 174,
+    "gold_sites": 887,
+    "precision_micro": 0.989,
+    "recall_micro": 0.196,
+    "recall_page1_micro": 0.196,
+    "recall_allpages_micro": 0.196,
+    "recall_macro_page1": 0.534,
+    "recall_macro_allpages": 0.534,
+    "macro_over_targets": 72
+   }
+  }
+ },
+ "determinism": {
+  "flask": {
+   "dctx": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "flask",
+    "edit_file": "docs/conf.py",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 0.15739,
+    "tool": "dctx"
+   },
+   "trail": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "flask",
+    "edit_file": "docs/conf.py",
+    "identical_after_edit": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 1.61804,
+    "tool": "trail"
+   },
+   "graphify": {
+    "changed_after_edit": [
+     "find",
+     "overview",
+     "skeleton"
+    ],
+    "corpus": "flask",
+    "edit_file": "docs/conf.py",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "god_nodes"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "god_nodes"
+    ],
+    "post_edit_first_find_s": 0.58794,
+    "post_edit_update_rc": 0,
+    "post_edit_update_s": 6.18462,
+    "tool": "graphify"
+   }
+  },
+  "ripgrep": {
+   "dctx": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "ripgrep",
+    "edit_file": "crates/cli/src/decompress.rs",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 0.79366,
+    "tool": "dctx"
+   },
+   "trail": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "ripgrep",
+    "edit_file": "crates/cli/src/decompress.rs",
+    "identical_after_edit": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 2.04058,
+    "tool": "trail"
+   },
+   "graphify": {
+    "changed_after_edit": [
+     "find",
+     "overview",
+     "skeleton"
+    ],
+    "corpus": "ripgrep",
+    "edit_file": "crates/cli/src/decompress.rs",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "god_nodes"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "god_nodes"
+    ],
+    "post_edit_first_find_s": 0.74787,
+    "post_edit_update_rc": 0,
+    "post_edit_update_s": 8.19976,
+    "tool": "graphify"
+   }
+  },
+  "pocketbase": {
+   "dctx": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "pocketbase",
+    "edit_file": "apis/api_error_aliases.go",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 1.08997,
+    "tool": "dctx"
+   },
+   "trail": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "pocketbase",
+    "edit_file": "apis/api_error_aliases.go",
+    "identical_after_edit": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 3.73483,
+    "tool": "trail"
+   },
+   "graphify": {
+    "changed_after_edit": [
+     "god_nodes",
+     "overview",
+     "skeleton"
+    ],
+    "corpus": "pocketbase",
+    "edit_file": "apis/api_error_aliases.go",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "find"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "find"
+    ],
+    "post_edit_first_find_s": 1.50573,
+    "post_edit_update_rc": 0,
+    "post_edit_update_s": 55.76135,
+    "tool": "graphify"
+   }
+  },
+  "trailcode": {
+   "dctx": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "trailcode",
+    "edit_file": "src/ai/crux.ts",
+    "identical_after_edit": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 1.14796,
+    "tool": "dctx"
+   },
+   "trail": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "trailcode",
+    "edit_file": "src/ai/crux.ts",
+    "identical_after_edit": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers1_norefresh",
+     "callers2",
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 4.42051,
+    "tool": "trail"
+   },
+   "graphify": {
+    "changed_after_edit": [
+     "find",
+     "god_nodes",
+     "overview",
+     "skeleton"
+    ],
+    "corpus": "trailcode",
+    "edit_file": "src/ai/crux.ts",
+    "identical_after_edit": [
+     "callers1",
+     "callers2"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "callers1",
+     "callers2"
+    ],
+    "post_edit_first_find_s": 1.30542,
+    "post_edit_update_rc": 0,
+    "post_edit_update_s": 37.73634,
+    "tool": "graphify"
+   }
+  },
+  "mixed": {
+   "dctx": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "mixed",
+    "edit_file": "shell/install.sh",
+    "identical_after_edit": [
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 0.43843,
+    "tool": "dctx"
+   },
+   "trail": {
+    "changed_after_edit": [],
+    "corpus": "mixed",
+    "edit_file": "shell/install.sh",
+    "identical_after_edit": [
+     "find",
+     "grep",
+     "overview",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "find",
+     "grep",
+     "overview",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 1.3628,
+    "tool": "trail"
+   },
+   "graphify": {
+    "changed_after_edit": [
+     "find",
+     "god_nodes",
+     "overview",
+     "skeleton"
+    ],
+    "corpus": "mixed",
+    "edit_file": "shell/install.sh",
+    "identical_after_edit": [],
+    "identical_after_edit_ignoring_header_line": [],
+    "post_edit_first_find_s": 0.6377,
+    "post_edit_update_rc": 0,
+    "post_edit_update_s": 4.60106,
+    "tool": "graphify"
+   }
+  },
+  "docs": {
+   "dctx": {
+    "changed_after_edit": [
+     "overview"
+    ],
+    "corpus": "docs",
+    "edit_file": "rust-book/nostarch/chapter20.md",
+    "identical_after_edit": [
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "find",
+     "grep",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 0.19067,
+    "tool": "dctx"
+   },
+   "trail": {
+    "changed_after_edit": [],
+    "corpus": "docs",
+    "edit_file": "rust-book/nostarch/chapter20.md",
+    "identical_after_edit": [
+     "find",
+     "grep",
+     "overview",
+     "skeleton"
+    ],
+    "identical_after_edit_ignoring_header_line": [
+     "find",
+     "grep",
+     "overview",
+     "skeleton"
+    ],
+    "post_edit_first_find_s": 0.94833,
+    "tool": "trail"
+   },
+   "graphify": {
+    "changed_after_edit": [],
+    "corpus": "docs",
+    "edit_file": "rust-book/nostarch/chapter20.md",
+    "identical_after_edit": [],
+    "identical_after_edit_ignoring_header_line": [],
+    "tool": "graphify"
+   }
+  }
+ },
+ "canary": [
+  {
+   "env_file_names_in_outputs": [
+    "pack"
+   ],
+   "fixture": "canary-tracked",
+   "index_artifacts_with_canary": {},
+   "index_ok": true,
+   "leak_in_index": false,
+   "leak_in_output": false,
+   "leaks_by_query": {},
+   "queries": [
+    "find_canary",
+    "find_apikey",
+    "find_secret",
+    "find_helper",
+    "outline_a",
+    "pack",
+    "read_env",
+    "read_settings"
+   ],
+   "tool": "dctx"
+  },
+  {
+   "env_file_names_in_outputs": [],
+   "fixture": "canary-tracked",
+   "index_artifacts_with_canary": {},
+   "index_ok": true,
+   "leak_in_index": false,
+   "leak_in_output": false,
+   "leaks_by_query": {},
+   "queries": [
+    "ask_canary",
+    "ask_apikey",
+    "ask_secret",
+    "grep_canary",
+    "map",
+    "skeleton_a",
+    "callers_helper"
+   ],
+   "tool": "trail"
+  },
+  {
+   "env_file_names_in_outputs": [],
+   "fixture": "canary-tracked",
+   "index_artifacts_with_canary": {},
+   "index_ok": true,
+   "leak_in_index": false,
+   "leak_in_output": false,
+   "leaks_by_query": {},
+   "queries": [
+    "query_canary",
+    "query_apikey",
+    "query_secret",
+    "god_nodes",
+    "report"
+   ],
+   "tool": "graphify"
+  },
+  {
+   "env_file_names_in_outputs": [
+    "pack"
+   ],
+   "fixture": "canary-ignored",
+   "index_artifacts_with_canary": {},
+   "index_ok": true,
+   "leak_in_index": false,
+   "leak_in_output": false,
+   "leaks_by_query": {},
+   "queries": [
+    "find_canary",
+    "find_apikey",
+    "find_secret",
+    "find_helper",
+    "outline_a",
+    "pack",
+    "read_env",
+    "read_settings"
+   ],
+   "tool": "dctx"
+  },
+  {
+   "env_file_names_in_outputs": [],
+   "fixture": "canary-ignored",
+   "index_artifacts_with_canary": {},
+   "index_ok": true,
+   "leak_in_index": false,
+   "leak_in_output": false,
+   "leaks_by_query": {},
+   "queries": [
+    "ask_canary",
+    "ask_apikey",
+    "ask_secret",
+    "grep_canary",
+    "map",
+    "skeleton_a",
+    "callers_helper"
+   ],
+   "tool": "trail"
+  },
+  {
+   "env_file_names_in_outputs": [],
+   "fixture": "canary-ignored",
+   "index_artifacts_with_canary": {},
+   "index_ok": true,
+   "leak_in_index": false,
+   "leak_in_output": false,
+   "leaks_by_query": {},
+   "queries": [
+    "query_canary",
+    "query_apikey",
+    "query_secret",
+    "god_nodes",
+    "report"
+   ],
+   "tool": "graphify"
+  }
+ ],
+ "network": [
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "index_find",
+   "tool": "dctx",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "pack",
+   "tool": "dctx",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "build",
+   "tool": "trail",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "callers",
+   "tool": "trail",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "ask",
+   "tool": "trail",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "extract",
+   "tool": "graphify",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "query",
+   "tool": "graphify",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "dnt1"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "index_find",
+   "tool": "dctx",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "default_env"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "pack",
+   "tool": "dctx",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "default_env"
+  },
+  {
+   "families": [
+    "AF_INET",
+    "AF_NETLINK",
+    "AF_UNIX"
+   ],
+   "inet_attempt_count": 1,
+   "inet_connect_attempts": [
+    "connect 54.185.153.58:443 -> -Network is unreachable"
+   ],
+   "rc_traced": 0,
+   "socket_calls": 9,
+   "step": "build",
+   "tool": "trail",
+   "unix_connects": [
+    "/run/systemd/resolve/io.systemd.Resolve",
+    "/var/run/nscd/socket"
+   ],
+   "unshare_netns": true,
+   "variant": "default_env"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "callers",
+   "tool": "trail",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "default_env"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "ask",
+   "tool": "trail",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "default_env"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "extract",
+   "tool": "graphify",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "default_env"
+  },
+  {
+   "families": [],
+   "inet_attempt_count": 0,
+   "inet_connect_attempts": [],
+   "rc_traced": 0,
+   "socket_calls": 0,
+   "step": "query",
+   "tool": "graphify",
+   "unix_connects": [],
+   "unshare_netns": true,
+   "variant": "default_env"
+  }
+ ],
+ "coverage": {
+  "scala": {
+   "dctx": {
+    "probe": "map skeleton FILE --json",
+    "files": 2,
+    "symbols": 169,
+    "call_edges": 1,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "probe": "skeleton FILE --json",
+    "files": 2,
+    "symbols": 312,
+    "call_edges": 1,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "probe": "graph.json read directly",
+    "files": 2,
+    "symbols": 76,
+    "call_edges": 32,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   }
+  },
+  "dart": {
+   "dctx": {
+    "probe": "map skeleton FILE --json",
+    "files": 25,
+    "symbols": 110,
+    "call_edges": 3,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "probe": "skeleton FILE --json",
+    "files": 25,
+    "symbols": 83,
+    "call_edges": 10,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "probe": "graph.json read directly",
+    "files": 25,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   }
+  },
+  "lua": {
+   "dctx": {
+    "probe": "map skeleton FILE --json",
+    "files": 3,
+    "symbols": 171,
+    "call_edges": 1,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "probe": "skeleton FILE --json",
+    "files": 3,
+    "symbols": 106,
+    "call_edges": 1,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "probe": "graph.json read directly",
+    "files": 3,
+    "symbols": 76,
+    "call_edges": 34,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   }
+  },
+  "elixir": {
+   "dctx": {
+    "probe": "map skeleton FILE --json",
+    "files": 9,
+    "symbols": 194,
+    "call_edges": 1,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "probe": "skeleton FILE --json",
+    "files": 9,
+    "symbols": 142,
+    "call_edges": 4,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "probe": "graph.json read directly",
+    "files": 9,
+    "symbols": 45,
+    "call_edges": 44,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   }
+  },
+  "zig": {
+   "dctx": {
+    "probe": "map skeleton FILE --json",
+    "files": 4,
+    "symbols": 156,
+    "call_edges": 5,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "probe": "skeleton FILE --json",
+    "files": 4,
+    "symbols": 284,
+    "call_edges": 5,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "probe": "graph.json read directly",
+    "files": 4,
+    "symbols": 27,
+    "call_edges": 29,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   }
+  },
+  "ocaml": {
+   "dctx": {
+    "probe": "map skeleton FILE --json",
+    "files": 51,
+    "symbols": 802,
+    "call_edges": 4,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "probe": "skeleton FILE --json",
+    "files": 51,
+    "symbols": 2559,
+    "call_edges": 7,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "probe": "graph.json read directly",
+    "files": 51,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   }
+  },
+  "solidity": {
+   "dctx": {
+    "probe": "map skeleton FILE --json",
+    "files": 59,
+    "symbols": 453,
+    "call_edges": 5,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "probe": "skeleton FILE --json",
+    "files": 59,
+    "symbols": 419,
+    "call_edges": 2,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "graphify": {
+    "probe": "graph.json read directly",
+    "files": 59,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   }
+  },
+  "terraform": {
+   "dctx": {
+    "probe": "map skeleton FILE --json",
+    "files": 77,
+    "symbols": 679,
+    "call_edges": 2,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "probe": "skeleton FILE --json",
+    "files": 77,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   },
+   "graphify": {
+    "probe": "graph.json read directly",
+    "files": 77,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   }
+  },
+  "sql": {
+   "dctx": {
+    "probe": "map skeleton FILE --json",
+    "files": 62,
+    "symbols": 533,
+    "call_edges": 5,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   },
+   "trail": {
+    "probe": "skeleton FILE --json",
+    "files": 62,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   },
+   "graphify": {
+    "probe": "graph.json read directly",
+    "files": 62,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   }
+  },
+  "shell": {
+   "dctx": {
+    "probe": "map skeleton FILE --json",
+    "files": 287,
+    "symbols": 374,
+    "call_edges": 0,
+    "symbol_ok": true,
+    "call_edge_ok": false
+   },
+   "trail": {
+    "probe": "skeleton FILE --json",
+    "files": 287,
+    "symbols": 0,
+    "call_edges": 0,
+    "symbol_ok": false,
+    "call_edge_ok": false
+   },
+   "graphify": {
+    "probe": "graph.json read directly",
+    "files": 287,
+    "symbols": 42,
+    "call_edges": 23,
+    "symbol_ok": true,
+    "call_edge_ok": true
+   }
+  }
+ }
+}
