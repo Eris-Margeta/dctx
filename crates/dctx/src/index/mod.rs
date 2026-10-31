@@ -4,6 +4,7 @@
 //! Callers see an [`crate::domain::Answer`], never this module.
 
 mod concept;
+mod dotted_key;
 mod extract;
 pub(crate) mod export;
 mod generic;
