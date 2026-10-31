@@ -51,6 +51,13 @@ pub fn is_secret_shaped_name(name: &str) -> bool {
     })
 }
 
+/// True when any `/`-separated segment of `path` is exactly `.git`. Such paths are never listed or read,
+/// whatever the ignore rules say: `!.git/` in `.gitignore` or `.dctxignore` cannot re-include them.
+#[must_use]
+pub fn has_git_segment(path: &str) -> bool {
+    path.split('/').any(|segment| segment == ".git")
+}
+
 /// Extract file extension from filename
 /// For files like ".gitignore", returns "gitignore"
 /// For files like "file.txt", returns "txt"
@@ -109,6 +116,16 @@ mod tests {
             ".key", "npmrc", "app.yaml", "config.json", "README.md", "key.txt", "my_id_rsa", "credentialsx",
         ] {
             assert!(!is_secret_shaped_name(name), "{name}");
+        }
+    }
+
+    #[test]
+    fn git_segments_are_found_at_any_depth_and_only_exactly() {
+        for path in [".git", ".git/config", "nested/.git", "nested/.git/objects/ab"] {
+            assert!(has_git_segment(path), "{path}");
+        }
+        for path in ["", "src/lib.rs", ".github/workflows/ci.yml", ".gitignore", "a.git/config", "git/config", ".gitmodules"] {
+            assert!(!has_git_segment(path), "{path}");
         }
     }
 

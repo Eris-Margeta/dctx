@@ -150,6 +150,25 @@ We will implement a three-tier rule system with formal privacy guarantees:
 `is_secret_shaped_name`, `PolicyView::decide` and the pack scan, and the end-to-end check
 `lanes/DCX/checks/V1-1.zsh` (a git-tracked fixture with one canary per shape, run against every command).
 
+### `.git` (hard guard, v1)
+Any path with a `.git` segment, at any depth, is excluded by `PolicyView::decide` before the rule layers are
+consulted, so `!.git/`, `!.g*/` or `!nested/.git/**` in `.gitignore` or `.dctxignore` cannot re-include it: the
+map verbs never list or read it, and `Session::read_verified` refuses it too. `pack` excludes it as well
+(`dctx-pack` snapshot); only `--debug-ignored` still lists it by name, never reading it. Tests:
+`git_negations_never_list_or_read_git` in `crates/dctx/tests/git_and_symlink_privacy.rs` and in the pack snapshot.
+
+### Symlinks (v1)
+`dctx::FsSource` never follows a symlink: a symlinked final component is refused before the open, and the open
+itself uses `O_NOFOLLOW` (raw platform values; crates/dctx has no `libc` dependency), so a symlink swapped in after
+the stat is refused by the kernel; the opened handle must be a regular file. A symlinked intermediate directory is
+refused for listings and reads. Tests: `crates/dctx/src/adapters/fs.rs` and `crates/dctx/tests/git_and_symlink_privacy.rs`.
+
+### `DCTX_INDEX_IGNORED=1`
+This environment switch (dctx-cli `host::project_rules`) makes `pack` and the map verbs ignore every ignore file
+(global ignore, `.gitignore`, nested `.gitignore`, `.dctxignore`); omit files and the built-in rules still load.
+It does not touch the SENSITIVE deny, the `.git` guard or the symlink rules above: those do not come from rule
+files. `lanes/DCX/checks/V1-1.zsh` reruns its canary checks with the switch set.
+
 ---
 
 ## Privacy Guarantees (Formal)

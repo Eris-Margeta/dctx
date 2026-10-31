@@ -75,6 +75,13 @@ before any separately authorized release.
   `.netrc`, `.pypirc`, `.pgpass`, `.htpasswd` and `.git-credentials` are never read or printed
   by `pack`, any `dctx map` verb (by id or raw path, with or without `--in`) or `dctx mcp`.
   There is no override flag (see ADR-014).
+- **`.git` is closed for good**: a `.git` segment at any depth is never listed or read by the map
+  verbs and never read by `pack`, even when `.gitignore` or `.dctxignore` says `!.git/`.
+- **No symlink escapes**: `FsSource` opens files with `O_NOFOLLOW`, requires a regular file
+  handle, and refuses symlinked directories, so a symlink swapped in after the stat cannot leak
+  bytes from outside the root.
+- `DCTX_INDEX_IGNORED=1` (ignore files are not applied) is now documented in ADR-014; the
+  sensitive-file deny, the `.git` guard and the symlink rules still apply when it is set.
 - **Total-source ceiling raised from 64 MiB to 1 GiB**; `DCTX_MAX_SOURCE_BYTES` overrides it.
 - The core never reads `.git/`, never spawns `git` and never uses VCS object ids;
   content identity is dctx's own SHA-256 (`crates/dctx-hash`).

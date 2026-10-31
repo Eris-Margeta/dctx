@@ -7,7 +7,7 @@
 mod include;
 mod names;
 
-pub use names::is_secret_shaped_name;
+pub use names::{has_git_segment, is_secret_shaped_name};
 
 /// Configuration for file filtering
 #[derive(Debug, Clone, Default)]

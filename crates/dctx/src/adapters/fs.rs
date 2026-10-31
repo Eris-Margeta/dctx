@@ -2,6 +2,8 @@
 //! Implements contracts/API-PORTS-v1.md `Source`: confined paths, metadata before content.
 //! Depends on [`crate::ports::Source`] and the standard library. The session does not open a path itself.
 //! Symlinks are not followed. A symlink read is [`dctx_core::DctxError::PolicyDenied`].
+//! The final component is opened with `O_NOFOLLOW`, so a symlink swapped in after the stat is refused by the kernel.
+//! A symlinked intermediate directory is refused too, for listings and reads.
 
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -13,6 +15,29 @@ use dctx_core::ids::{RelativePath, Timestamp};
 use dctx_ports::Source;
 
 use crate::domain::DctxError;
+
+/// `O_NOFOLLOW` from the platform headers. crates/dctx has no `libc` dependency, so the raw values are kept here:
+/// Linux and Android use `0o100000` on aarch64, arm and powerpc and `0o400000` elsewhere; macOS, iOS and the BSDs use `0x0100`.
+/// Another Unix gets `0` (no kernel guard); the pre-open and post-open checks below still apply there.
+#[cfg(unix)]
+const O_NOFOLLOW: i32 = if cfg!(any(target_os = "linux", target_os = "android")) {
+    if cfg!(any(target_arch = "aarch64", target_arch = "arm", target_arch = "powerpc", target_arch = "powerpc64")) {
+        0o100_000
+    } else {
+        0o400_000
+    }
+} else if cfg!(any(
+    target_os = "macos",
+    target_os = "ios",
+    target_os = "freebsd",
+    target_os = "openbsd",
+    target_os = "netbsd",
+    target_os = "dragonfly"
+)) {
+    0x0100
+} else {
+    0
+};
 
 /// A directory tree the caller opened by path. Nothing outside `root` is reachable.
 #[derive(Debug, Clone)]
@@ -48,6 +73,48 @@ impl FsSource {
         }
         Ok(full)
     }
+
+    /// Refuses `path` when an intermediate directory (and, with `last`, the final component) is a symlink.
+    fn reject_links(&self, path: &RelativePath, last: bool) -> Result<(), CoreError> {
+        if path.is_root() {
+            return Ok(());
+        }
+        let segments: Vec<&str> = path.as_str().split('/').collect();
+        let checked = if last { segments.len() } else { segments.len().saturating_sub(1) };
+        let mut full = self.root.clone();
+        for segment in segments.iter().take(checked) {
+            full.push(segment);
+            if std::fs::symlink_metadata(&full).map_err(map_io)?.file_type().is_symlink() {
+                return Err(CoreError::PolicyDenied);
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Opens `path` for reading without following a final symlink. A symlink there is [`CoreError::PolicyDenied`].
+fn open_no_follow(path: &Path) -> Result<std::fs::File, CoreError> {
+    #[cfg(unix)]
+    let opened = {
+        use std::os::unix::fs::OpenOptionsExt;
+        std::fs::OpenOptions::new().read(true).custom_flags(O_NOFOLLOW).open(path)
+    };
+    #[cfg(not(unix))]
+    let opened = std::fs::File::open(path);
+    let file = match opened {
+        Ok(file) => file,
+        Err(error) => {
+            if std::fs::symlink_metadata(path).is_ok_and(|meta| meta.file_type().is_symlink()) {
+                return Err(CoreError::PolicyDenied);
+            }
+            return Err(map_io(error));
+        }
+    };
+    // The handle, not the path, decides: a directory or device swapped in after the stat is refused.
+    if !file.metadata().map_err(map_io)?.is_file() {
+        return Err(CoreError::PolicyDenied);
+    }
+    Ok(file)
 }
 
 impl Source for FsSource {
@@ -58,6 +125,7 @@ impl Source for FsSource {
 
     fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, CoreError> {
         let full = self.confined(dir)?;
+        self.reject_links(dir, true)?;
         let read = std::fs::read_dir(&full).map_err(map_io)?;
         let mut entries = Vec::new();
         for item in read {
@@ -86,6 +154,7 @@ impl Source for FsSource {
 
     fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
         let full = self.confined(grant.path())?;
+        self.reject_links(grant.path(), false)?;
         let meta = std::fs::symlink_metadata(&full).map_err(map_io)?;
         if meta.file_type().is_symlink() {
             return Err(CoreError::PolicyDenied);
@@ -94,7 +163,7 @@ impl Source for FsSource {
             return Err(CoreError::ResourceLimit { resource: dctx_core::error::Resource::FileBytes, limit: max_bytes });
         }
         // Stop one byte past the cap so a file that grows after the stat cannot buffer an unbounded body.
-        let file = std::fs::File::open(&full).map_err(map_io)?;
+        let file = open_no_follow(&full)?;
         let mut bytes = Vec::new();
         file.take(max_bytes.saturating_add(1)).read_to_end(&mut bytes).map_err(map_io)?;
         if u64::try_from(bytes.len()).unwrap_or(u64::MAX) > max_bytes {
@@ -160,5 +229,46 @@ mod tests {
             CoreError::ResourceLimit { resource: dctx_core::error::Resource::FileBytes, limit: 4 }
         ));
         assert_eq!(source.read(&grant, 8).expect("within cap"), b"01234567");
+    }
+
+    /// A symlink to a file outside the root, or a symlinked directory, never yields outside bytes.
+    #[cfg(unix)]
+    #[test]
+    fn symlinks_out_of_the_root_are_refused() {
+        let outside = tempfile::tempdir().expect("outside");
+        std::fs::write(outside.path().join("secret.txt"), b"OUTSIDE_SENTINEL").expect("secret");
+        let dir = tempfile::tempdir().expect("temp");
+        std::fs::write(dir.path().join("kept.txt"), b"kept").expect("kept");
+        std::os::unix::fs::symlink(outside.path().join("secret.txt"), dir.path().join("link.txt")).expect("file link");
+        std::os::unix::fs::symlink(outside.path(), dir.path().join("linkdir")).expect("dir link");
+        let source = FsSource::open(dir.path()).expect("open");
+        let mut names: Vec<_> = source.entries(&RelativePath::root()).expect("entries").into_iter().map(|entry| (entry.name.clone(), entry.is_dir())).collect();
+        names.sort();
+        assert_eq!(names, [("kept.txt".to_string(), false), ("link.txt".to_string(), false), ("linkdir".to_string(), false)]);
+        for target in ["link.txt", "linkdir/secret.txt"] {
+            let path = RelativePath::parse(target).expect("path");
+            let grant = ReadGrant::authorize(&path, FileHandlingDecision::Include, true).expect("grant");
+            assert_eq!(source.read(&grant, 64).expect_err(target), CoreError::PolicyDenied, "{target}");
+        }
+        let linked = RelativePath::parse("linkdir").expect("dir");
+        assert_eq!(source.entries(&linked).expect_err("dir link"), CoreError::PolicyDenied);
+        let kept = RelativePath::parse("kept.txt").expect("kept");
+        let grant = ReadGrant::authorize(&kept, FileHandlingDecision::Include, true).expect("grant");
+        assert_eq!(source.read(&grant, 64).expect("kept"), b"kept");
+    }
+
+    /// The no-follow open itself refuses a symlink, which covers a swap between the stat and the open.
+    #[cfg(unix)]
+    #[test]
+    fn the_no_follow_open_refuses_a_symlink() {
+        let outside = tempfile::tempdir().expect("outside");
+        std::fs::write(outside.path().join("secret.txt"), b"OUTSIDE_SENTINEL").expect("secret");
+        let dir = tempfile::tempdir().expect("temp");
+        let link = dir.path().join("swapped.txt");
+        std::os::unix::fs::symlink(outside.path().join("secret.txt"), &link).expect("link");
+        assert_eq!(open_no_follow(&link).expect_err("symlink"), CoreError::PolicyDenied);
+        std::fs::write(dir.path().join("plain.txt"), b"plain").expect("plain");
+        assert!(open_no_follow(&dir.path().join("plain.txt")).is_ok());
+        assert_eq!(open_no_follow(dir.path()).expect_err("directory"), CoreError::PolicyDenied);
     }
 }

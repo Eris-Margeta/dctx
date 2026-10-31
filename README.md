@@ -176,7 +176,15 @@ dctx plugin info dctx/git
 | `.gitignore`, `.dctxignore`, global ignore | Excluded from normal selection; `--debug-ignored` can show ignored path metadata without reading content |
 | `.dctxomitcontent` | Listed in the tree; content replaced with `[Content omitted]` and never read |
 
-Selection happens before any byte is read, hashed, parsed or cached, and is checked again before output leaves the engine. Read-spy tests enforce it (`crates/dctx-adapter-fs/tests/privacy.rs`, `crates/dctx-map-query/tests/source_privacy.rs`).
+Selection happens before any byte is read, hashed, parsed or cached, and is checked again before output leaves the engine.
+
+On top of the rule files there is a strict built-in deny with no override (no flag, no `!` negation, not even `DCTX_INDEX_IGNORED=1`):
+
+- **Sensitive files** are listed by name but never read: `.env`, `.env.*`, `*.env`, `.envrc`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`, SSH private keys (`id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519`), `credentials`, `credentials.json` and other data extensions, `*.credentials.json`, `secrets.yaml`/`.yml`/`.json`/`.toml`, `.npmrc`, `.netrc`, `.pypirc`, `.pgpass`, `.htpasswd`, `.git-credentials`. The full list is in [ADR-014](docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md).
+- **`.git`** at any depth is never listed or read by the map verbs, and never read by `pack`, even when a rule says `!.git/`.
+- **Symlinks** are never followed: the final component is opened with `O_NOFOLLOW`, and a symlinked directory is listed by name only, never entered or read through.
+
+dctx decides by file name only; a secret pasted into an ordinary source file is not detected. The shipped `pack`, `dctx map` and `dctx mcp` path is guarded by `crates/dctx/tests/map_sensitive_files.rs`, `crates/dctx/tests/git_and_symlink_privacy.rs`, `crates/dctx/tests/map_env_files.rs`, the unit tests in `crates/dctx/src/adapters/fs.rs`, `crates/dctx/src/domain/policy.rs` and `crates/dctx-pack/src/snapshot.rs`, and an end-to-end check that runs every command against a git-tracked canary fixture (`lanes/DCX/checks/V1-1.zsh` in the project workspace).
 
 ```zsh
 dctx . --debug-ignored     # see ignored paths in the tree without reading them

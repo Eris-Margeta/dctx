@@ -6,7 +6,7 @@
 //! An over-budget read keeps a marked prefix and a continuation; a signature that does not fit is refused.
 
 use dctx_core::facts::ReadGrant;
-use dctx_core::filter::is_secret_shaped_name;
+use dctx_core::filter::{has_git_segment, is_secret_shaped_name};
 use dctx_core::ids::RelativePath;
 use dctx_core::FileHandlingDecision;
 use dctx_hash::ContentDigest;
@@ -362,7 +362,7 @@ impl Session {
     pub(super) fn read_verified(&mut self, path: &str, expected: ContentDigest) -> Result<Vec<u8>, DctxError> {
         let relative = RelativePath::parse(path).map_err(DctxError::from_core)?;
         // Last line of defence: a sensitive name is never read, even from an older cached generation.
-        if is_secret_shaped_name(path.rsplit('/').next().unwrap_or(path)) {
+        if has_git_segment(path) || is_secret_shaped_name(path.rsplit('/').next().unwrap_or(path)) {
             return Err(DctxError::PolicyDenied);
         }
         let grant = ReadGrant::authorize(&relative, FileHandlingDecision::Include, true).ok_or(DctxError::PolicyDenied)?;
