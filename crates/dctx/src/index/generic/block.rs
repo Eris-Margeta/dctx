@@ -1,10 +1,12 @@
-//! Block-structured declarations: Elixir, Lua and Julia (blocks closed by `end`), R (braces), and through [`layout`] OCaml and Haskell.
+//! Block-structured declarations: Elixir, Lua and Julia (blocks closed by `end`), R and Erlang (their own scanner), and
+//! through [`layout`] OCaml and Haskell.
 //! The `end` languages share one scanner: a table says which words open or close a block and how a declaration line reads.
 //! A declaration's frame is the first block opened on its line, so its end line is where that block closes; bodies are never entered.
 //! Heuristic by design: one declaration per line, nesting as `Parent::child` inside a module or struct.
 //! Each language lives in a sibling file: its comment mask, its block words and how a line declares a type, a function or a member.
 
 mod elixir;
+mod erlang;
 mod haskell;
 mod julia;
 mod layout;
@@ -16,6 +18,9 @@ mod tests;
 
 use super::{signature_of, to_symbols, Decl};
 use crate::index::extract::Symbol;
+
+/// The Erlang source with `%` comments, quoted strings and `$c` char literals blanked, shared with the call side.
+pub(super) use erlang::masked;
 
 /// What one word does to the stack of open blocks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -43,9 +48,9 @@ struct Block {
     nested: bool,
 }
 
-/// True for the six tags of this family.
+/// True for the seven tags of this family.
 pub(super) fn handles(language: &str) -> bool {
-    matches!(language, "elixir" | "lua" | "ocaml" | "r" | "julia" | "haskell")
+    matches!(language, "elixir" | "lua" | "ocaml" | "r" | "julia" | "haskell" | "erlang")
 }
 
 /// Symbols of `text`, or none for an unknown tag.
@@ -57,6 +62,7 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
         "r" => r::decls(text),
         "ocaml" => layout::ocaml(text),
         "haskell" => haskell::haskell(text),
+        "erlang" => erlang::decls(text),
         _ => return Vec::new(),
     };
     to_symbols(text, decls)

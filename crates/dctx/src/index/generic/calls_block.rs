@@ -2,6 +2,8 @@
 //! Lua, Elixir, Julia and R call with parentheses: an identifier followed by `(` (one space allowed) inside a function span.
 //! OCaml and Haskell call by juxtaposition: any identifier in a body is a candidate; `refs.rs` resolves each, so a cross-file
 //! callee links while a plain local does not. `decl_pair.rs` pairs a declaration (`.mli` prototype, header, `.d.ts`) with its definition.
+//! Erlang calls like Lua: `name(` inside a function span, or `module:name(` for a call that keeps the module, so the
+//! resolver looks it up in that module's file.
 //! Every span is scanned on the comment- and string-masked source; `refs.rs` resolves the raw references and drops ambiguous ones.
 //! Heuristic by design: no types, no receivers, no imports. Consumes authorized UTF-8 from extract; never panics on malformed input.
 
@@ -46,6 +48,11 @@ const R: Syntax = Syntax { line: &["#"], block: None, nested: false, quotes: b"\
 const OCAML: Syntax = Syntax { line: &[], block: Some(("(*", "*)")), nested: true, quotes: b"\"", triple: false };
 /// Haskell: `--` comments, nested `{- -}` comments and double-quoted strings.
 const HASKELL: Syntax = Syntax { line: &["--"], block: Some(("{-", "-}")), nested: true, quotes: b"\"", triple: false };
+/// Erlang words that look like a call but are keywords, operators or guards.
+const ERLANG_NOT_CALLS: &[&str] = &[
+    "after", "and", "andalso", "band", "begin", "bnot", "bor", "bsl", "bsr", "bxor", "case", "catch", "cond", "div", "end", "fun", "if",
+    "let", "maybe", "not", "of", "orelse", "receive", "rem", "try", "when", "xor",
+];
 
 /// The source with comments and strings blanked, or `None` for a tag of another family.
 fn masked_of(language: &str, text: &str) -> Option<String> {
@@ -55,6 +62,8 @@ fn masked_of(language: &str, text: &str) -> Option<String> {
         "julia" => mask(&mask(text, &JULIA_BLOCK), &JULIA_LINE),
         "r" => mask(text, &R),
         "ocaml" => mask(text, &OCAML),
+        // Erlang: `%` comments, quoted strings and single-quoted atoms, plus `$c` char literals as pairs.
+        "erlang" => super::block::masked(text),
         "haskell" => mask(text, &HASKELL),
         _ => return None,
     })
@@ -82,7 +91,13 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
             continue;
         };
         let own = tail(language, &symbol.name);
-        let names = if juxtaposed { used_names(body, language, own) } else { call_names(body, language, own) };
+        let names = if language == "erlang" {
+            erlang_call_names(body, own)
+        } else if juxtaposed {
+            used_names(body, language, own)
+        } else {
+            call_names(body, language, own)
+        };
         let mut src = String::new();
         write_stable_id(&mut src, b's', path, &symbol.name, ordinal);
         for name in names {
@@ -201,6 +216,60 @@ fn is_ident(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'\'' || byte >= 0x80
 }
 
+/// Called names in `body` of an Erlang function, in source order and without repeats.
+///
+/// A call is an identifier followed by `(` (one space or tab allowed): a bare `name(`, or a qualified
+/// `module:name(` that is spelled with its module so the resolver looks through the project's modules
+/// and drops calls to modules outside the project. Erlang variables are uppercase-initial, keywords
+/// and guards are never calls, and `?MACRO(` is not a call. The function never calls itself.
+fn erlang_call_names<'a>(body: &'a str, own: &str) -> Vec<&'a str> {
+    let bytes = body.as_bytes();
+    let mut found: Vec<&str> = Vec::new();
+    let mut at = 0usize;
+    while at < bytes.len() {
+        if !is_word(bytes[at], false) {
+            at += 1;
+            continue;
+        }
+        let start = at;
+        let end = word_end(bytes, at, false);
+        at = end;
+        let word = &body[start..end];
+        // Variables start uppercase or `_`, macros start `?`; only lowercase atoms call.
+        let guarded = start > 0 && bytes[start - 1] == b'?';
+        let variable = word.starts_with(|c: char| c.is_ascii_uppercase() || c == '_') || guards_word(word);
+        if guarded || variable || word == own {
+            continue;
+        }
+        if bytes.get(end) == Some(&b':') {
+            // `module:name(`: the callee keeps its module, so `refs.rs` resolves it through the module's file.
+            let callee_start = end + 1;
+            let line_end = word_end(bytes, callee_start, false);
+            let callee = &body[callee_start..line_end];
+            if callee.is_empty() || callee.starts_with(|c: char| c.is_ascii_uppercase() || c == '_') {
+                continue;
+            }
+            at = line_end;
+            let gap = bytes[line_end..].iter().position(|byte| !matches!(byte, b' ' | b'\t')).unwrap_or(bytes.len());
+            let spelled = &body[start..line_end];
+            if gap <= 1 && bytes.get(line_end + gap) == Some(&b'(') && callee != own && !found.contains(&spelled) {
+                found.push(spelled);
+            }
+            continue;
+        }
+        let gap = bytes[end..].iter().position(|byte| !matches!(byte, b' ' | b'\t')).unwrap_or(bytes.len());
+        if gap <= 1 && bytes.get(end + gap) == Some(&b'(') && !found.contains(&word) {
+            found.push(word);
+        }
+    }
+    found
+}
+
+/// True when `word` is an Erlang keyword or guard word that may never name a call.
+fn guards_word(word: &str) -> bool {
+    ERLANG_NOT_CALLS.contains(&word)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -244,6 +313,8 @@ mod tests {
         assert_eq!(pairs("julia", julia), [pair("jRun", "jHelp")]);
         let r = "r_help <- function(x) {\n  x\n}\nr_run <- function(y) {\n  r_help(y)\n}\n";
         assert_eq!(pairs("r", r), [pair("r_run", "r_help")]);
+        let erlang = "-module(shop).\n\nshop_run(X) ->\n    shop_help(X).\n\nshop_help(Y) ->\n    lists:sum(Y).\n";
+        assert_eq!(pairs("erlang", erlang), [pair("shop_run", "shop_help"), pair("shop_help", "lists:sum")]);
         let ocaml = "let ml_help x = x + 1\nlet ml_run y = ml_help y\n";
         assert_eq!(defined_refs("ocaml", "a.src", ocaml).into_iter().map(|reference| (reference.scope, reference.name)).collect::<Vec<_>>(), [pair("ml_run", "ml_help")]);
         let haskell = "hsHelp :: Int -> Int\nhsHelp x = x + 1\n\nhsRun :: Int -> Int\nhsRun y = hsHelp y\n";
@@ -280,6 +351,7 @@ mod tests {
         assert!(pairs("elixir", "defmodule E do\n  def run(x) do\n    run(x - 1)\n  end\nend\n").is_empty());
         assert!(pairs("julia", "function jRun(x)\n    jRun(x)\nend\n").is_empty());
         assert!(pairs("r", "r_run <- function(x) {\n  r_run(x)\n}\n").is_empty());
+        assert!(pairs("erlang", "-module(s).\n\ns_gen(X) ->\n    s_gen(X).\n").is_empty());
         assert!(defined_refs("ocaml", "a.src", "let rec go n = if n = 0 then 0 else go (n - 1)\n").is_empty());
         assert!(defined_refs("haskell", "a.src", "go :: Int -> Int\ngo 0 = 0\ngo n = go (n - 1)\n").is_empty());
         // Only the juxtaposition languages need a declaration in the same file.
@@ -297,6 +369,8 @@ mod tests {
         assert_eq!(pairs("julia", julia), [pair("jRun", "shown")]);
         let r = "r_run <- function() {\n  # hidden()\n  s <- 'str()'\n  shown()\n}\n";
         assert_eq!(pairs("r", r), [pair("r_run", "shown")]);
+        let erlang = "-module(s).\n\ns_run(X) ->\n    %% hidden()\n    io:format(\"~p~n\", [str()]),\n    shown(X),\n    T = $X.\n";
+        assert_eq!(pairs("erlang", erlang), [pair("s_run", "io:format"), pair("s_run", "str"), pair("s_run", "shown")]);
         let ocaml = "let a x = x\nlet b y =\n  (* a y *)\n  let s = \"a\" in\n  s ^ y\n";
         assert!(defined_refs("ocaml", "a.src", ocaml).is_empty());
         let haskell = "a :: Int\na = 1\nb :: Int\nb =\n  -- a\n  {- a -} 2 + length \"a\"\n";
@@ -307,7 +381,7 @@ mod tests {
     fn odd_input_stays_quiet() {
         assert!(refs_of("unknown", "a.src", "function f() g() end").is_empty());
         for sample in ["", "function f(", "let f x =", "f <- function(", "def f() = \u{e9}\u{1F600}(1)\n", "\u{0}\r\n\r\nlet g = h ()\r\n"] {
-            for tag in ["lua", "elixir", "julia", "r", "ocaml", "haskell"] {
+            for tag in ["lua", "elixir", "julia", "r", "erlang", "ocaml", "haskell"] {
                 let _ = refs_of(tag, "a.src", sample);
             }
         }

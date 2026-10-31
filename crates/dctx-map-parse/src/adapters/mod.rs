@@ -61,6 +61,7 @@ impl Parser for PureParser {
             Language::Scala | Language::Dart | Language::Zig | Language::Solidity | Language::Gleam | Language::Groovy | Language::Text => {
                 fallback(path, source)
             }
+            Language::Erlang => fallback(path, source),
             Language::Elixir | Language::Lua | Language::OCaml | Language::R | Language::Julia | Language::Haskell => {
                 fallback(path, source)
             }
@@ -109,6 +110,7 @@ impl Parser for TreeSitterParser {
             Language::Scala | Language::Dart | Language::Zig | Language::Solidity | Language::Gleam | Language::Groovy | Language::Text => {
                 return fallback(path, source);
             }
+            Language::Erlang => return fallback(path, source),
             Language::Elixir | Language::Lua | Language::OCaml | Language::R | Language::Julia | Language::Haskell => {
                 return fallback(path, source);
             }
@@ -172,6 +174,7 @@ impl Parser for TreeSitterParser {
             | Language::Web
             | Language::Lisp
             | Language::Nix
+            | Language::Erlang
             | Language::Unknown => {}
         }
         facts.finish()

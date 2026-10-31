@@ -52,6 +52,8 @@ const SHARED_EXTENSIONS: &[(&str, Language)] = &[
     ("zig", Language::Zig),
     ("sol", Language::Solidity),
     ("gleam", Language::Gleam),
+    ("erl", Language::Erlang),
+    ("hrl", Language::Erlang),
     ("groovy", Language::Groovy),
     ("gradle", Language::Groovy),
     ("txt", Language::Text),
@@ -124,7 +126,7 @@ fn for_path_matches_the_shared_literal() {
         [
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
-            "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy",
+            "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "erl", "hrl", "groovy",
             "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
             "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl", "scm", "ss", "el", "nix",
         ]
