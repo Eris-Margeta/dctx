@@ -35,6 +35,12 @@ impl Session {
         if let Some(segments) = crate::index::dotted_key::segments(&request.query) {
             return self.find_dotted(generation, request, records, &segments);
         }
+        self.find_literal(generation, request, records)
+    }
+
+    /// The plain find fallback of [`Self::find_with_text`]: literal hits when no symbol matched, and the ranked read sites of a
+    /// SCREAMING_CASE key. Also used by a dotted key that no config symbol defines.
+    pub(super) fn find_literal(&mut self, generation: &Generation, request: &MapRequest, records: Vec<AnswerRecord>) -> Result<(Vec<AnswerRecord>, bool), DctxError> {
         let key = key_shaped(&request.query);
         if !(records.is_empty() || key) || !text_fallback_applies(request) {
             return Ok((records, false));
