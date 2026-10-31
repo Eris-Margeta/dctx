@@ -89,6 +89,7 @@ pub fn text() -> String {
         "\
 Usage: dctx [PATH] [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json]
+       dctx pack [PATH] --for <TEXT> [--budget TOKENS]
        dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]
        dctx mcp [PATH]
        dctx languages [--json|--markdown]
@@ -106,6 +107,7 @@ Usage: dctx [PATH] [OPTIONS]
 `dctx languages` lists every supported language with its tier: full (symbols and call edges), outline (symbols only) or docs (sections).
 `dctx mcp` serves the map verbs as MCP tools over stdio (JSON-RPC 2.0, one message per line) for Claude Code, Cursor and Codex.
 Explicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not create a project text file.
+`dctx pack --for <TEXT>` prints task context for an agent card instead: map find, neighbors and read of the names in TEXT, cut to `--budget` estimated tokens (default 3000).
 `dctx .` remains the legacy snapshot alias and still writes its documented project text.
 `dctx plugin list` and `dctx --help` do not create a project `.dctx/` directory or start a plugin.
 `dctx git` routes to the bundled dctx/git plugin. It is not a Git passthrough.

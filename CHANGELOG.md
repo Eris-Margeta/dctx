@@ -20,6 +20,10 @@ desktop app keeps its own version line (0.11.0) and its own release workflow.
   with hard token budgets, stable ids, cursor paging and precision labels; call and import edges are lexical.
 - **`dctx mcp`**: a stdio MCP server exposing the map verbs as tools.
 - **`dctx pack`**: the whole project as one structured block to stdout, the clipboard or `--output`.
+- **`dctx pack --for "<text>" --budget N`**: task context for an agent card: `map find` on the names the text mentions,
+  then neighbors and read of the best hits, whole lines only, within N estimated tokens (ceil(2 × UTF-8 bytes / 7),
+  default 3000). `tools/cardgen/context.sh` prepends it to a card; `docs/guides/AGENTS-SNIPPET.md` is the `AGENTS.md` section that tells agents to run it first;
+  `tools/cardgen/dogfood.py` records before/after prompt tokens for the ten v1 cards.
 - **`dctx languages`**: one registry with three tiers (full, outline, docs) that also renders the README table.
 - **Privacy deny**: sensitive files (env files, keys, credentials, ...), `.git` at any depth and symlinks are
   never read or printed by `pack`, any map verb or `mcp`; there is no override flag. Detection is by file name only.
