@@ -43,7 +43,7 @@ pub(crate) struct Symbol {
 /// This crate does not depend on `dctx-map-parse`, so the table cannot be
 /// shared by a dependency. `tsx` is tagged `typescript` (the JS lexer owns it).
 /// Tests lock this copy to the same literal list as map-parse.
-const EXTENSIONS: &[(&str, &str)] = &[
+pub(super) const EXTENSIONS: &[(&str, &str)] = &[
     ("rs", "rust"),
     ("js", "javascript"),
     ("mjs", "javascript"),
@@ -145,12 +145,12 @@ const EXTENSIONS: &[(&str, &str)] = &[
 ///
 /// `dctx-lex-rb` accepts these final segments case-insensitively, and rejects
 /// `Guardfile` and `config.ru`. A basename wins over the extension.
-const RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
+pub(super) const RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
 
 /// Duplicate of `dctx-map-parse` `domain::facts::INFRA_BASENAMES`: files with no extension that are still a known format.
 ///
 /// Compared case-insensitively on the final path segment, like [`RUBY_BASENAMES`].
-const INFRA_BASENAMES: &[(&str, &str)] =
+pub(super) const INFRA_BASENAMES: &[(&str, &str)] =
     &[("Makefile", "make"), ("GNUmakefile", "make"), ("Dockerfile", "docker"), ("Containerfile", "docker")];
 
 /// Language tag from the final path segment. Anything else is `opaque`.

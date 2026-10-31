@@ -7,7 +7,7 @@ mod map;
 mod mcp;
 mod plugin;
 
-use dctx_cli::{cache, help, host, pack, run_headless_mode, template, tui, SnapshotConfig};
+use dctx_cli::{cache, help, host, languages, pack, run_headless_mode, template, tui, SnapshotConfig};
 use std::{env, path::PathBuf};
 
 #[derive(Debug)]
@@ -41,6 +41,8 @@ fn main() {
             pack::run(&args[1..]).map_err(|error| format!("pack: {error}"))
         }
         Some("cache") => cache::run(&args[1..]).map_err(|error| format!("cache: {error}")),
+        // Reads only the facade registry: no source, no cache, so no auto-clean either.
+        Some("languages") => languages::run(&args[2..]).map_err(|error| format!("languages: {error}")),
         Some("template") => {
             maybe_auto_clean(allow_auto_clean);
             template::run(&args[1..]).map_err(|error| format!("template: {error}"))

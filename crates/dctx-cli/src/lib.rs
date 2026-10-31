@@ -11,6 +11,7 @@ pub mod cache;
 pub mod compat;
 pub mod help;
 pub mod host;
+pub mod languages;
 pub mod pack;
 pub mod template;
 pub mod tui;

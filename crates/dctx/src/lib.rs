@@ -14,6 +14,7 @@
 mod adapters;
 mod domain;
 mod index;
+pub mod languages;
 mod plugins;
 mod ports;
 mod session;
@@ -30,6 +31,7 @@ pub use domain::{
     OperationLimits, PackReport, PackRequest, Precision, PurgeRequest, PurgeScope, Resource, RuleSources, SegmentInfo,
     SnapshotRequest, VecSink, Verb, parse_source_ceiling, source_ceiling, REQUEST_VERSION, SOURCE_ENV, STRUCTURAL_PARSER,
 };
+pub use languages::{Confidence, Language, Tier, LANGUAGES};
 pub use plugins::{Boundary, HookEffect, HookWarning, PluginHost};
 pub use ports::{Cache, Cancellation, Clock, FactStore, Source};
 pub use session::{Session, SessionBuilder, SnapshotHandle, StoragePolicy};
@@ -66,6 +68,7 @@ mod isolation_scan {
             ("index/segment.rs", include_str!("index/segment.rs")),
             ("index/syn_extract.rs", include_str!("index/syn_extract.rs")),
             ("index/walk.rs", include_str!("index/walk.rs")),
+            ("languages.rs", include_str!("languages.rs")),
             ("session/mod.rs", include_str!("session/mod.rs")),
             ("session/build.rs", include_str!("session/build.rs")),
             ("session/cache_op.rs", include_str!("session/cache_op.rs")),
