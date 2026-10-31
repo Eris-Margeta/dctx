@@ -1,7 +1,7 @@
 //! Opt-in, read-only robustness sweep over real source trees.
 //! Checks SPEC-MAP-MODE sections 5 and 6.2 through all `PureParser` adapters.
 //! Uses public parser records, std threads, and `common_sweep`'s store checks.
-//! Run with `DCTX_SWEEP_ROOTS` and --ignored --nocapture; ordinary tests skip it.
+//! Opt-in by environment: without `DCTX_SWEEP_ROOTS` the test prints `no roots` and returns. Run with it and --nocapture.
 //! `DCTX_SWEEP_LANGS` limits parsing to report language names. `DCTX_SWEEP_REFUSAL_BUDGET`
 //! fails the run when a listed language refuses more files than its budget.
 #![forbid(unsafe_code)]
@@ -326,7 +326,6 @@ fn print_table(reports: &BTreeMap<String, LanguageReport>, budgets: &BTreeMap<St
 }
 
 #[test]
-#[ignore = "needs DCTX_SWEEP_ROOTS"]
 #[allow(clippy::too_many_lines, reason = "Keep the corpus traversal, refusal budgets and final report in one test so the acceptance sequence is visible together.")]
 fn corpus_sweep() {
     let Some(value) = std::env::var_os("DCTX_SWEEP_ROOTS").filter(|value| !value.is_empty()) else {

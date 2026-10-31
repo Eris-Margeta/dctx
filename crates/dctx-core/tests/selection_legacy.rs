@@ -10,8 +10,8 @@
 //! | `cache_only_caches_glob_patterns` | retired: no pure cache or cache classification |
 //! | `cache_memory_usage_reasonable` | retired: no pure cache allocation/statistics |
 //! | `cache_stats_accuracy` | retired: no pure cache capacity or statistics |
-//! | `turbo_pattern_loaded` | ignored: pure built-ins lack `.turbo/` |
-//! | `pnpm_store_pattern_loaded` | ignored: pure built-ins lack `.pnpm-store/` |
+//! | `turbo_pattern_loaded` | retained: pure built-ins include `.turbo/` (ADR-015) |
+//! | `pnpm_store_pattern_loaded` | retained: pure built-ins include `.pnpm-store/` (ADR-015) |
 //! Cache negation/collision tests below retain their decisions; cache hit/key assertions
 //! are retired because `SelectionPolicy` has no cache. File loading is in adapter tests;
 //! engine layer-count tests here use explicit texts rather than ambient home discovery.
@@ -247,7 +247,6 @@ fn test_explain_produces_output() {
 }
 
 #[test]
-#[ignore = "behaviour differs: pure built-ins lack .turbo/; legacy expects Exclude, pure returns Include"]
 fn test_turbo_pattern_loaded() {
     let p = builtin();
     assert!(p.ignore_rules().iter().any(|r| r.pattern == ".turbo"));
@@ -257,7 +256,6 @@ fn test_turbo_pattern_loaded() {
 }
 
 #[test]
-#[ignore = "behaviour differs: pure built-ins lack .pnpm-store/; legacy expects Exclude, pure returns Include"]
 fn test_pnpm_store_pattern_loaded() {
     let p = builtin();
     let context = ItemContext { name: ".pnpm-store", ..item(".pnpm-store/v3", true, false) };

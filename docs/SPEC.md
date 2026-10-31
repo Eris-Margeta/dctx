@@ -134,7 +134,7 @@ runs (§28). A build that fails any row MUST NOT call itself dctx-conformant.
 |---|---|---|---|---|
 | R1 | Fragmentation | Chunks cut through declarations; signature without body | Records are syntax-owned spans; `read` returns the whole node or a marked prefix with a continuation; records are never split | landed |
 | R2 | Non-determinism | Same question, different chunks (approximate search, insertion-order ties) | Integer scores, order (score desc, id asc), frozen ranking revision, canonical payload | landed |
-| R3 | Staleness | Index built from old bytes, served as current | `read` verifies exact bytes against the content digest before emitting; every answer carries freshness mode and a stale flag | landed |
+| R3 | Staleness | Index built from old bytes, served as current | There is no incremental index and no stale flag. Every CLI process re-walks the tree and re-hashes the selected files; a persisted generation is reused only when every content digest still matches, and any change rebuilds the whole generation. Inside one session `read` re-hashes the bytes against the snapshot digest and refuses with `SourceChanged` when they differ. The CLI always takes strict snapshots, so `freshness.state` is always `"verified"` (the library reports `"metadata"` only for a `FreshnessMode::Metadata` request) | landed (re-verify on every process; no stale flag) |
 | R4 | Positional identity | Chunk ids that shift when a file is added | Path + qualified-name ids with ordinals; explicit `moved`, `gone`, `ambiguous` outcomes | landed |
 | R5 | Semantic drift | "Similar" but wrong code | Lexical ranking over split identifiers, exact-name boost, kind filters, then graph edges with explicit confidence | contract — lexical ranking landed; graph edges are **not emitted by the shipped CLI** (TC-F01); the resolver is landed in `crates/dctx-map-resolve` but not wired (§7); `typed` rung target |
 | R6 | Authority leak | Secrets, ignored and generated files reach the prompt | Selection precedes content: excluded files are never opened; policy rechecked at emission; plugins never receive excluded bytes | landed for map, pack and MCP: the strict secret-shaped deny of §4 item 3 has no override |
@@ -299,6 +299,8 @@ prefix caching (PPE-3). **Status:** target; today both are in every default answ
 Measured: both compared tools saw unstaged, untracked and staged edits and dropped
 reverted symbols; dctx's first query after a one-line edit costs a full re-index (core
 7.48 s against 1.45 s warm; django 2.70 s against 0.82 s) until §19 lands.
+**Shipped behaviour (v1):** the modes above are a target. The CLI always takes a strict
+snapshot, so `freshness.state` is always `"verified"`; there is no stale flag (R3, §3).
 
 ---
 
@@ -592,6 +594,9 @@ no daemon.
   `cache gc --dry-run` reclaimed 0 bytes, TC-F02).
 
 ## 19. Freshness check and incremental rebuild
+
+**Status: target, not implemented.** The shipped engine has no stamp-only pass, overlay or
+per-file rebuild: each process re-walks and re-hashes, and any change rebuilds fully (R3, §3).
 
 1. **Stamp pass.** Walk the inventory (names, sizes, mtimes; excluded directories are
    never entered) and compare with the manifest's sorted path table.

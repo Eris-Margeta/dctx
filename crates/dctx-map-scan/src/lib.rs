@@ -3,6 +3,8 @@
 //! Uses the standard library and serves map indexers.
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
+#![cfg_attr(not(test), deny(clippy::unwrap_used))]
+#![cfg_attr(not(test), deny(clippy::expect_used))]
 
 /// Filesystem rule loaders.
 pub mod adapters;

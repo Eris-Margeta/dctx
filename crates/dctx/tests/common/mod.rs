@@ -102,6 +102,44 @@ impl Source for SharedSource {
     }
 }
 
+/// Any source that records the path of every granted content read, in order.
+/// Lets filesystem tests prove from a read log, as `MemorySource::reads` does, that excluded files stay unopened.
+pub struct LoggedSource<S> {
+    inner: S,
+    reads: Arc<Mutex<Vec<String>>>,
+}
+
+impl<S: Source> LoggedSource<S> {
+    /// Wraps `inner` with an empty read log.
+    pub fn new(inner: S) -> Self {
+        Self { inner, reads: Arc::new(Mutex::new(Vec::new())) }
+    }
+
+    /// Clone of the read log. Call this before moving the source into a session.
+    pub fn log(&self) -> Arc<Mutex<Vec<String>>> {
+        Arc::clone(&self.reads)
+    }
+}
+
+impl<S: Source> Source for LoggedSource<S> {
+    fn root_kind(&self) -> Result<NodeType, CoreError> {
+        self.inner.root_kind()
+    }
+
+    fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, CoreError> {
+        self.inner.entries(dir)
+    }
+
+    fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
+        self.inner.metadata(path)
+    }
+
+    fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
+        self.reads.lock().expect("read log").push(grant.path().as_str().to_string());
+        self.inner.read(grant, max_bytes)
+    }
+}
+
 /// Lets `allow` checkpoints succeed, then reports cancellation.
 pub struct CancelAfter {
     allow: u64,

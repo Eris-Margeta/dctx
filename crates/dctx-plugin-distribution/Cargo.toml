@@ -2,7 +2,7 @@
 name = "dctx-plugin-distribution"
 version = "1.0.0"
 edition = "2024"
-description = "dctx plugin installer, trust and discovery client: signed manifests, offline bundles and atomic activation over ports"
+description = "**Unstable** (no stability promise in v1). dctx plugin installer, trust and discovery client: signed manifests, offline bundles and atomic activation over ports"
 license.workspace = true
 repository.workspace = true
 

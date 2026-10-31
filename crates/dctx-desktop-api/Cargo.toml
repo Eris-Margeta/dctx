@@ -4,7 +4,7 @@ version = "1.0.0"
 edition = "2021"
 license.workspace = true
 repository.workspace = true
-description = "Pure desktop engine seam for snapshot, settings and recent projects"
+description = "**Unstable** (no stability promise in v1). Pure desktop engine seam for snapshot, settings and recent projects"
 
 [dependencies]
 dctx = { path = "../dctx" }

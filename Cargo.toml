@@ -1,8 +1,8 @@
 [workspace]
 members = [
   "crates/*",
-  # Plugin crates (PL-W). Membership only: dctx-cli does not depend on them,
-  # so its strict default build contains no plugin worker until a CLI feature opts in.
+  # Plugin crates (PL-W). dctx-cli's default `git-worker` feature depends on dctx-plugin-git;
+  # only the strict build (--no-default-features --features strict) contains no plugin worker.
   "plugins/*",
   "apps/dctx-desktop/src-tauri",
   # Bindings (future)

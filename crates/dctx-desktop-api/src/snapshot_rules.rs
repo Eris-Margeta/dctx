@@ -98,8 +98,8 @@ pub(crate) fn excluded_by_builtin(name: &str, is_dir: bool) -> bool {
     if is_dir {
         return matches!(
             name,
-            ".git" | ".svn" | ".hg" | "node_modules" | "bower_components" | "dist" | "build" | "target" | "bin"
-                | "obj" | ".venv" | "venv" | "__pycache__" | ".dctx" | ".cursor" | ".aider" | ".eris-code"
+            ".git" | ".svn" | ".hg" | "node_modules" | "bower_components" | ".turbo" | ".pnpm-store" | ".localstack"
+                | "dist" | "build" | "target" | "bin" | "obj" | ".venv" | "venv" | "__pycache__" | ".dctx" | ".cursor" | ".aider" | ".eris-code"
                 | ".continue"
         );
     }

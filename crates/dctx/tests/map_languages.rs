@@ -239,8 +239,13 @@ fn write_sources(root: &Path) -> Vec<(String, &'static str)> {
 }
 
 fn open(root: &Path, selection: SelectionPolicy) -> Session {
+    open_source(FsSource::open(root).expect("open"), selection)
+}
+
+/// [`open`] over any source, such as a [`common::LoggedSource`] read log.
+fn open_source(source: impl dctx::Source + Send + 'static, selection: SelectionPolicy) -> Session {
     common::session_parts(
-        FsSource::open(root).expect("open"),
+        source,
         Arc::new(CancelFlag::new()),
         HostGrants::PermitAll,
         StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 },
@@ -292,7 +297,9 @@ fn selection_excludes_or_omits_new_languages_before_content_reads() {
         RuleTexts { local_ignore: Some("sample.*\n"), ..RuleTexts::default() },
         RuleTexts { local_omit: Some("sample.*\n"), ..RuleTexts::default() },
     ] {
-        let mut session = open(root.path(), SelectionPolicy::from_texts(&rules));
+        let source = common::LoggedSource::new(FsSource::open(root.path()).expect("open"));
+        let log = source.log();
+        let mut session = open_source(source, SelectionPolicy::from_texts(&rules));
         let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
         assert_eq!(session.content_reads(), 1, "only the visible control may be read");
         let control = session.find(&handle, "VisibleControl", &mut VecSink::new()).expect("control");
@@ -307,6 +314,12 @@ fn selection_excludes_or_omits_new_languages_before_content_reads() {
         }
         // Each empty find falls back to the literal search, which may reread only the visible control.
         assert!(session.content_reads() <= 1 + files.len() as u64, "excluded files stay unread");
+        let reads = log.lock().expect("log").clone();
+        assert!(reads.iter().any(|path| path == "visible.py"), "the control is read: {reads:?}");
+        assert!(reads.iter().all(|path| path == "visible.py"), "an excluded path was read: {reads:?}");
+        for (path, _) in &files {
+            assert!(!reads.iter().any(|read| read == path), "excluded {path} was read");
+        }
     }
 }
 
@@ -406,6 +419,9 @@ fn extension_case_and_ruby_basenames_match_the_shared_literal() {
     for hidden in ["GuardHidden", "ConfigHidden"] {
         let found = session.find(&handle, hidden, &mut VecSink::new()).expect("opaque find");
         assert!(found.records.iter().all(|record| record.kind == "text"), "{hidden} is no symbol: {:?}", found.records);
+        if !found.records.is_empty() {
+            assert_eq!(found.precision.coverage, "text", "{hidden} coverage");
+        }
     }
 }
 
@@ -470,4 +486,7 @@ fn infra_basenames_are_outlined_and_labelled_guess() {
     }
     let hidden = session.find(&handle, "BakHidden", &mut VecSink::new()).expect("opaque find");
     assert!(hidden.records.iter().all(|record| record.kind == "text"), "BakHidden is no symbol: {:?}", hidden.records);
+    if !hidden.records.is_empty() {
+        assert_eq!(hidden.precision.coverage, "text", "BakHidden coverage");
+    }
 }
