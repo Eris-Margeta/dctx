@@ -18,7 +18,8 @@ use crate::index::{
 
 const REUSE_ATTEMPTS: u32 = 32;
 const MAGIC: &[u8] = b"dctxgen1";
-const VERSION: u32 = 1;
+// 2: module nodes carry the export list in `signature` (DCX-55c); a version-1 cache lacks it and is rebuilt.
+const VERSION: u32 = 2;
 const MAX_STRING: usize = 1_048_576;
 const MAX_COUNT: usize = 1_000_000;
 const SYNTAX_PARSER: &str = "dctx-lex-rust/syn-3.0.9";

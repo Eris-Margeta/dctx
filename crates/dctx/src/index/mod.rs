@@ -241,7 +241,7 @@ pub(crate) struct IndexedNode {
     pub summary: String,
     /// `doc`, `heading`, `sig` or empty.
     pub summary_source: String,
-    /// Signature without the body.
+    /// Signature without the body. On a module node: the file's explicit export list, space-separated, never emitted.
     pub signature: String,
 }
 

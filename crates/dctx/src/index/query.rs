@@ -207,7 +207,7 @@ fn explain(generation: &Generation, request: &MapRequest) -> Result<Collected, D
         return Ok(missing(&request.target));
     };
     let mut record = record_of(text, node);
-    if !node.signature.is_empty() {
+    if node.letter != b'm' && !node.signature.is_empty() {
         record.signature = Some(node.signature.clone());
     }
     Ok(Collected::Records(vec![record]))

@@ -198,6 +198,8 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
     watch.charge(Stage::SpanConversion, span_mark);
     let module = push_module(&mut state.nodes, &mut state.text, path.as_str(), len, [1, lines]);
     if let Some((module_id, path_span)) = module {
+        // The export list rides on the module node, so `map` orders an outline without a second read (DCX-55c).
+        state.nodes[module_id as usize].signature = super::outline_order::export_signature(path.as_str(), &bytes);
         let parse_mark = profile::start();
         let parsed = prepare_file(args, path.as_str(), &bytes);
         watch.charge(Stage::ParseLex, parse_mark);
