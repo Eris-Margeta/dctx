@@ -26,8 +26,10 @@ pub(crate) fn extract(path: &str, bytes: &[u8], max_file: u64) -> Result<(Vec<Sy
             return Err(DctxError::ResourceLimit { resource: Resource::Depth, limit: u64::from(limit) });
         }
         Err(Refusal::Worker) => return Err(DctxError::ResourceLimit { resource: Resource::Work, limit: 1 }),
+        // A Rust file that is not UTF-8 has no symbols, like every other language in the structural extractor.
+        // It stays a module in the graph; one such file never fails the whole walk.
         Err(Refusal::InvalidUtf8 { .. } | Refusal::Lex { .. } | Refusal::Syntax { .. }) => {
-            return Err(DctxError::invalid("rust source is not valid UTF-8"));
+            return Ok((Vec::new(), Vec::new(), false));
         }
     };
     let syntax = extracted.coverage == Coverage::Syntax && matches!(extracted.completion, Completion::Complete);
@@ -120,6 +122,14 @@ mod tests {
             DctxError::ResourceLimit { resource: Resource::FileBytes, limit } => assert_eq!(limit, 4),
             other => panic!("file bound, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn rust_that_is_not_utf8_has_no_symbols_and_no_error() {
+        let (symbols, refs, syntax) = extract("latin1.rs", b"pub fn caf\xe9() { tool(); }\n", 8 * 1024).expect("undecodable rust is an empty file, not an error");
+        assert!(symbols.is_empty(), "{symbols:?}");
+        assert!(refs.is_empty(), "{refs:?}");
+        assert!(!syntax);
     }
 
     #[test]
