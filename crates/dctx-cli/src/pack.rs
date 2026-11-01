@@ -13,14 +13,16 @@ use dctx_core::datatypes::{DirContextTreeNode, IgnoreRule, NodeType};
 use dctx_core::error::DctxError as CoreError;
 use dctx_core::facts::{EntryMeta, ReadGrant, SourceEntry};
 use dctx_core::file_classifier::{classify_file, FileContentHandling};
-use dctx_core::filter::FilterConfig;
 use dctx_core::ids::RelativePath;
-use dctx_core::selection::{parse_ignore_pattern_line, rule_matches};
+use dctx_core::selection::rule_matches;
 use dctx_core::version::Version;
 
 use crate::compat;
 use crate::exit::Failure;
 use crate::host;
+
+mod filter;
+use filter::{parse_extensions, parse_megabytes, parse_pattern, Filters};
 
 /// Where the encoded pack page goes.
 #[derive(Debug, PartialEq, Eq)]
@@ -33,42 +35,6 @@ enum Destination {
     Clipboard,
     /// The caller-chosen file and the clipboard.
     FileAndClipboard(PathBuf),
-}
-
-/// ADR-011 view plus include/exclude globs. Binary omission is the default.
-struct Filters {
-    config: FilterConfig,
-    include: Vec<IgnoreRule>,
-    exclude: Vec<IgnoreRule>,
-    include_patterns: Vec<String>,
-    exclude_patterns: Vec<String>,
-    debug_ignored: bool,
-}
-
-impl Filters {
-    fn new() -> Self {
-        Self {
-            config: FilterConfig::default(),
-            include: Vec::new(),
-            exclude: Vec::new(),
-            include_patterns: Vec::new(),
-            exclude_patterns: Vec::new(),
-            debug_ignored: false,
-        }
-    }
-
-    /// True when the caller asked for a view the JSON summary cannot show.
-    fn affects_view(&self) -> bool {
-        !self.config.extensions.is_empty()
-            || self.config.include_binary
-            || self.config.only_empty
-            || self.config.only_non_empty
-            || self.config.min_size_bytes.is_some()
-            || self.config.max_size_bytes.is_some()
-            || self.config.only_hidden
-            || !self.include.is_empty()
-            || !self.exclude.is_empty()
-    }
 }
 
 struct Plan {
@@ -484,34 +450,6 @@ fn parse(args: &[String]) -> Result<Plan, String> {
         (Some(path), true) => Destination::FileAndClipboard(path),
     };
     Ok(Plan { path, destination, report_format: if json { Some(2) } else { None }, filters })
-}
-
-fn parse_extensions(value: &str) -> Result<Vec<String>, String> {
-    let extensions: Vec<_> =
-        value.split(',').map(str::trim).filter(|part| !part.is_empty()).map(str::to_string).collect();
-    if extensions.is_empty() {
-        return Err("--ext requires at least one extension".to_string());
-    }
-    Ok(extensions)
-}
-
-fn parse_megabytes(flag: &str, value: &str) -> Result<f64, String> {
-    let size = value.parse::<f64>().map_err(|_| format!("Invalid size for {flag}: {value}"))?;
-    if !size.is_finite() || size < 0.0 {
-        return Err(format!("Invalid size for {flag}: {value}"));
-    }
-    Ok(size)
-}
-
-fn parse_pattern(flag: &str, value: &str) -> Result<IgnoreRule, String> {
-    let rule = parse_ignore_pattern_line(value).ok_or_else(|| format!("{flag} requires a pattern"))?;
-    if rule.pattern.is_empty() {
-        return Err(format!("{flag} requires a pattern"));
-    }
-    if rule.is_negation {
-        return Err(format!("{flag} does not take a negated pattern"));
-    }
-    Ok(rule)
 }
 
 /// Keeps the root. Drops files the ADR filters reject and prunes empty directories.
