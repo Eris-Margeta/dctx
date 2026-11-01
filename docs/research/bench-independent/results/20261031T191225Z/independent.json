@@ -1,0 +1,355 @@
+{
+ "tasks": {
+  "dctx": {
+   "questions": 14,
+   "score": 22,
+   "max_score": 28,
+   "facts_found": 31,
+   "facts_n": 36,
+   "tokens": 4526,
+   "facts_per_1k_tokens": 6.85
+  },
+  "trail": {
+   "questions": 14,
+   "score": 19,
+   "max_score": 28,
+   "facts_found": 17,
+   "facts_n": 36,
+   "tokens": 5834,
+   "facts_per_1k_tokens": 2.91
+  },
+  "graphify": {
+   "questions": 14,
+   "score": 14,
+   "max_score": 28,
+   "facts_found": 13,
+   "facts_n": 36,
+   "tokens": 8926,
+   "facts_per_1k_tokens": 1.46
+  }
+ },
+ "callers": {
+  "dctx": {
+   "hits": 74,
+   "tp_hits": 54,
+   "found": 62,
+   "gold": 182,
+   "tokens": 20126,
+   "targets": 40,
+   "resolved": 40,
+   "precision": 0.73,
+   "recall": 0.341,
+   "recall_all_pages": 0.341
+  },
+  "trail": {
+   "hits": 67,
+   "tp_hits": 49,
+   "found": 57,
+   "gold": 182,
+   "tokens": 10469,
+   "targets": 40,
+   "resolved": 40,
+   "precision": 0.731,
+   "recall": 0.313
+  },
+  "graphify": {
+   "hits": 50,
+   "tp_hits": 46,
+   "found": 48,
+   "gold": 182,
+   "tokens": 1387,
+   "targets": 40,
+   "resolved": 38,
+   "precision": 0.92,
+   "recall": 0.264
+  }
+ },
+ "per_repo": {
+  "gin": {
+   "tasks": {
+    "dctx": {
+     "questions": 6,
+     "score": 10,
+     "max_score": 12,
+     "facts_found": 17,
+     "facts_n": 19,
+     "tokens": 3056,
+     "facts_per_1k_tokens": 5.56
+    },
+    "trail": {
+     "questions": 6,
+     "score": 7,
+     "max_score": 12,
+     "facts_found": 4,
+     "facts_n": 19,
+     "tokens": 4127,
+     "facts_per_1k_tokens": 0.97
+    },
+    "graphify": {
+     "questions": 6,
+     "score": 9,
+     "max_score": 12,
+     "facts_found": 6,
+     "facts_n": 19,
+     "tokens": 3635,
+     "facts_per_1k_tokens": 1.65
+    }
+   },
+   "callers": {
+    "dctx": {
+     "hits": 31,
+     "tp_hits": 29,
+     "found": 35,
+     "gold": 152,
+     "tokens": 13673,
+     "targets": 20,
+     "resolved": 20,
+     "precision": 0.935,
+     "recall": 0.23,
+     "recall_all_pages": 0.23
+    },
+    "trail": {
+     "hits": 23,
+     "tp_hits": 23,
+     "found": 29,
+     "gold": 152,
+     "tokens": 5503,
+     "targets": 20,
+     "resolved": 20,
+     "precision": 1.0,
+     "recall": 0.191
+    },
+    "graphify": {
+     "hits": 37,
+     "tp_hits": 37,
+     "found": 39,
+     "gold": 152,
+     "tokens": 891,
+     "targets": 20,
+     "resolved": 20,
+     "precision": 1.0,
+     "recall": 0.257
+    }
+   }
+  },
+  "requests": {
+   "tasks": {
+    "dctx": {
+     "questions": 1,
+     "score": 0,
+     "max_score": 2,
+     "facts_found": 0,
+     "facts_n": 1,
+     "tokens": 4,
+     "facts_per_1k_tokens": 0.0
+    },
+    "trail": {
+     "questions": 1,
+     "score": 0,
+     "max_score": 2,
+     "facts_found": 0,
+     "facts_n": 1,
+     "tokens": 327,
+     "facts_per_1k_tokens": 0.0
+    },
+    "graphify": {
+     "questions": 1,
+     "score": 0,
+     "max_score": 2,
+     "facts_found": 0,
+     "facts_n": 1,
+     "tokens": 4397,
+     "facts_per_1k_tokens": 0.0
+    }
+   },
+   "callers": {
+    "dctx": {
+     "hits": 0,
+     "tp_hits": 0,
+     "found": 0,
+     "gold": 0,
+     "tokens": 0,
+     "targets": 0,
+     "resolved": 0,
+     "precision": null,
+     "recall": null
+    },
+    "trail": {
+     "hits": 0,
+     "tp_hits": 0,
+     "found": 0,
+     "gold": 0,
+     "tokens": 0,
+     "targets": 0,
+     "resolved": 0,
+     "precision": null,
+     "recall": null
+    },
+    "graphify": {
+     "hits": 0,
+     "tp_hits": 0,
+     "found": 0,
+     "gold": 0,
+     "tokens": 0,
+     "targets": 0,
+     "resolved": 0,
+     "precision": null,
+     "recall": null
+    }
+   }
+  },
+  "zoxide": {
+   "tasks": {
+    "dctx": {
+     "questions": 7,
+     "score": 12,
+     "max_score": 14,
+     "facts_found": 14,
+     "facts_n": 16,
+     "tokens": 1466,
+     "facts_per_1k_tokens": 9.55
+    },
+    "trail": {
+     "questions": 7,
+     "score": 12,
+     "max_score": 14,
+     "facts_found": 13,
+     "facts_n": 16,
+     "tokens": 1380,
+     "facts_per_1k_tokens": 9.42
+    },
+    "graphify": {
+     "questions": 7,
+     "score": 5,
+     "max_score": 14,
+     "facts_found": 7,
+     "facts_n": 16,
+     "tokens": 894,
+     "facts_per_1k_tokens": 7.83
+    }
+   },
+   "callers": {
+    "dctx": {
+     "hits": 43,
+     "tp_hits": 25,
+     "found": 27,
+     "gold": 30,
+     "tokens": 6453,
+     "targets": 20,
+     "resolved": 20,
+     "precision": 0.581,
+     "recall": 0.9,
+     "recall_all_pages": 0.9
+    },
+    "trail": {
+     "hits": 44,
+     "tp_hits": 26,
+     "found": 28,
+     "gold": 30,
+     "tokens": 4966,
+     "targets": 20,
+     "resolved": 20,
+     "precision": 0.591,
+     "recall": 0.933
+    },
+    "graphify": {
+     "hits": 13,
+     "tp_hits": 9,
+     "found": 9,
+     "gold": 30,
+     "tokens": 496,
+     "targets": 20,
+     "resolved": 18,
+     "precision": 0.692,
+     "recall": 0.3
+    }
+   }
+  }
+ },
+ "meta": {
+  "seed": "f77f86ac255ad5c35645dab2242ed1a56804cc1f",
+  "seed_source": "explicit --seed",
+  "selection": [
+   {
+    "lang": "rust",
+    "index": 3,
+    "name": "zoxide",
+    "url": "https://github.com/ajeetdsouza/zoxide.git",
+    "tag": "v0.9.6",
+    "sha": "3d3267b4fd73e6292d317f96d60ef69ea035912d"
+   },
+   {
+    "lang": "python",
+    "index": 0,
+    "name": "requests",
+    "url": "https://github.com/psf/requests.git",
+    "tag": "v2.32.3",
+    "sha": "0e322af87745eff34caffe4df68456ebc20d9068"
+   },
+   {
+    "lang": "go",
+    "index": 3,
+    "name": "gin",
+    "url": "https://github.com/gin-gonic/gin.git",
+    "tag": "v1.10.0",
+    "sha": "75ccf94d605a05fe24817fc2f166f6f2959d5cea"
+   }
+  ],
+  "tokenizer": "cl100k_base",
+  "tokenizer_info": {
+   "tokenizer": "cl100k_base",
+   "tiktoken": "0.8.0",
+   "bpe_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7"
+  },
+  "versions": {
+   "dctx": "dctx 1.0.0 (unknown)",
+   "trail": "0.28.0",
+   "graphify": "graphify 0.9.97",
+   "dctx_sha256": "8ed82fb68981353969e03710fa995e49dea6afa1bebefff0a0438d016dadf83c"
+  },
+  "unshare": true,
+  "cpus": "24-31",
+  "gold_servers": {
+   "zoxide": {
+    "argv": [
+     "unshare",
+     "-Urn",
+     "/path/to/workdir/bench/dctx3/lsp/bin/rust-analyzer"
+    ],
+    "version": "rust-analyzer 0.3.2162-standalone",
+    "info": {
+     "name": "rust-analyzer",
+     "version": "0.3.2162-standalone"
+    },
+    "network_isolated": true,
+    "ready": true
+   },
+   "requests": {
+    "argv": [
+     "unshare",
+     "-Urn",
+     "/path/to/workdir/bench/dctx3/lsp/node_modules/.bin/pyright-langserver",
+     "--stdio"
+    ],
+    "version": "pyright 1.1.386",
+    "info": null,
+    "network_isolated": true,
+    "ready": true
+   },
+   "gin": {
+    "argv": [
+     "unshare",
+     "-Urn",
+     "/path/to/workdir/bench/dctx3/lsp/bin/gopls"
+    ],
+    "version": "golang.org/x/tools/gopls v0.16.2",
+    "info": {
+     "name": "gopls",
+     "version": "{\"GoVersion\":\"go1.24.4\",\"Path\":\"golang.org/x/tools/gopls\",\"Main\":{\"Path\":\"golang.org/x/tools/gopls\",\"Version\":\"v0.16.2\",\"Sum\":\"h1:K1z03MlikHfaMTtG01cUeL5FAOTJnITuNe0TWOcg8tM=\",\"Replace\":null},\"Deps\":[{\"Path\":\"github.com/BurntSushi/toml\",\"Version\":\"v1.2.1\",\"Sum\":\"h1:9F2/+DoOYIOksmaJFPw1tGFy1eDnIJXg+UHjuD8lTak=\",\"Replace\":null},{\"Path\":\"github.com/google/go-cmp\",\"Version\":\"v0.6.0\",\"Sum\":\"h1:ofyhxvXcZhMsU5ulbFiLKl/XBFqE1GSq7atu8tAmTRI=\",\"Replace\":null},{\"Path\":\"golang.org/x/exp/typeparams\",\"Version\":\"v0.0.0-20221212164502-fae10dda9338\",\"Sum\":\"h1:2O2DON6y3XMJiQRAS1UWU+54aec2uopH3x7MAiqGW6Y=\",\"Replace\":null},{\"Path\":\"golang.org/x/mod\",\"Version\":\"v0.20.0\",\"Sum\":\"h1:utOm6MM3R3dnawAiJgn0y+xvuYRsm1RKM/4giyfDgV0=\",\"Replace\":null},{\"Path\":\"golang.org/x/sync\",\"Version\":\"v0.8.0\",\"Sum\":\"h1:3NFvSEYkUoMifnESzZl15y791HH1qU2xm6eCJU5ZPXQ=\",\"Replace\":null},{\"Path\":\"golang.org/x/telemetry\",\"Version\":\"v0.0.0-20240829154258-f29ab539cc98\",\"Sum\":\"h1:Wm3cG5X6sZ0RSVRc/H1/sciC4AT6HAKgLCSH2lbpR/c=\",\"Replace\":null},{\"Path\":\"golang.org/x/text\",\"Version\":\"v0.16.0\",\"Sum\":\"h1:a94ExnEXNtEwYLGJSIUxnWoxoRz/ZcCsV63ROupILh4=\",\"Replace\":null},{\"Path\":\"golang.org/x/tools\",\"Version\":\"v0.22.1-0.20240829175637-39126e24d653\",\"Sum\":\"h1:6bJEg2w2kUHWlfdJaESYsmNfI1LKAZQi6zCa7LUn7eI=\",\"Replace\":null},{\"Path\":\"golang.org/x/vuln\",\"Version\":\"v1.0.4\",\"Sum\":\"h1:SP0mPeg2PmGCu03V+61EcQiOjmpri2XijexKdzv8Z1I=\",\"Replace\":null},{\"Path\":\"honnef.co/go/tools\",\"Version\":\"v0.4.7\",\"Sum\":\"h1:9MDAWxMoSnB6QoSqiVr7P5mtkT9pOc1kSxchzPCnqJs=\",\"Replace\":null},{\"Path\":\"mvdan.cc/gofumpt\",\"Version\":\"v0.6.0\",\"Sum\":\"h1:G3QvahNDmpD+Aek/bNOLrFR2XC6ZAdo62dZu65gmwGo=\",\"Replace\":null},{\"Path\":\"mvdan.cc/xurls/v2\",\"Version\":\"v2.5.0\",\"Sum\":\"h1:lyBNOm8Wo71UknhUs4QTFUNNMyxy2JEIaKKo0RWOh+8=\",\"Replace\":null}],\"Settings\":[{\"Key\":\"-buildmode\",\"Value\":\"exe\"},{\"Key\":\"-compiler\",\"Value\":\"gc\"},{\"Key\":\"DefaultGODEBUG\",\"Value\":\"asynctimerchan=1,gotestjsonbuildtext=1,gotypesalias=0,httplaxcontentlength=1,httpmuxgo121=1,httpservecontentkeepheaders=1,multipathtcp=0,panicnil=1,randseednop=0,rsa1024min=0,tls10server=1,tls3des=1,tlsmlkem=0,tlsrsakex=1,tlsunsafeekm=1,winreadlinkvolume=0,winsymlink=0,x509keypairleaf=0,x509negativeserial=1,x509rsacrt=0,x509usepolicies=0\"},{\"Key\":\"CGO_ENABLED\",\"Value\":\"1\"},{\"Key\":\"CGO_CFLAGS\",\"Value\":\"\"},{\"Key\":\"CGO_CPPFLAGS\",\"Value\":\"\"},{\"Key\":\"CGO_CXXFLAGS\",\"Value\":\"\"},{\"Key\":\"CGO_LDFLAGS\",\"Value\":\"\"},{\"Key\":\"GOARCH\",\"Value\":\"amd64\"},{\"Key\":\"GOOS\",\"Value\":\"linux\"},{\"Key\":\"GOAMD64\",\"Value\":\"v1\"}],\"Version\":\"v0.16.2\"}"
+    },
+    "network_isolated": true,
+    "ready": true
+   }
+  }
+ }
+}
