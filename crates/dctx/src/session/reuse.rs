@@ -4,17 +4,28 @@
 //! The CLI calls `Session::snapshot_reusable`. Isolation without a cache root does not.
 //! Size and mtime are a prefilter. A same-stamp byte change still rebuilds.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
-use dctx_core::FileHandlingDecision;
 use dctx_hash::ContentDigest;
 
 use super::Session;
-use crate::domain::{FreshnessMode, ParserChoice, RuleSources, ScanLimits, SnapshotRequest, DctxError, STRUCTURAL_PARSER};
+use crate::domain::{DctxError, FreshnessMode, SnapshotRequest};
 use crate::index::{
-    ordinal_suffix, walk_source, write_endpoint, write_node_id, Generation, IndexedEdge, IndexedFile, IndexedNode, TextBlob,
-    WalkArgs,
+    Generation, IndexedEdge, IndexedFile, IndexedNode, TextBlob, WalkArgs, ordinal_suffix,
+    walk_source,
 };
+
+mod bytes;
+mod encode;
+mod entry;
+mod keys;
+mod reader;
+
+use bytes::{decision_of, freshness_of};
+use keys::{file_inventory, limits_match, parser_compatible};
+use reader::Reader;
+
+pub(super) use encode::encode_generation;
 
 const REUSE_ATTEMPTS: u32 = 32;
 const MAGIC: &[u8] = b"dctxgen1";
@@ -25,52 +36,6 @@ const MAX_COUNT: usize = 1_000_000;
 const SYNTAX_PARSER: &str = "dctx-lex-rust/syn-3.0.9";
 
 impl Session {
-    /// Takes a snapshot, reusing a persisted generation when every stored content digest still matches.
-    ///
-    /// The check is `digest_text` equality on the source bytes, the same comparison `read_verified`
-    /// uses before it returns `SourceChanged`. Size and modification time only skip that read when
-    /// the inventory already differs. An empty `source_key`, or a session with no cache root, walks
-    /// the source the same way as [`Self::snapshot`].
-    /// # Errors
-    /// Propagates request/capability validation, source/store/cache failures, cancellation, deadlines, and snapshot resource-limit errors.
-    pub fn snapshot_reusable(
-        &mut self,
-        request: &SnapshotRequest,
-        source_key: &str,
-    ) -> Result<super::SnapshotHandle, DctxError> {
-        if self.managed.is_none() || source_key.is_empty() {
-            return self.snapshot(request);
-        }
-        let key = scoped_source_key(source_key, self.rules.as_ref());
-        let mut last = DctxError::Busy;
-        for _ in 0..REUSE_ATTEMPTS {
-            match self.snapshot_reusable_once(request, &key) {
-                Err(error) if retryable(&error) => {
-                    last = error;
-                    std::thread::yield_now();
-                }
-                other => return other,
-            }
-        }
-        Err(last)
-    }
-
-    fn snapshot_reusable_once(
-        &mut self,
-        request: &SnapshotRequest,
-        source_key: &str,
-    ) -> Result<super::SnapshotHandle, DctxError> {
-        self.reject_snapshot(request)?;
-        self.hooks_before_index()?;
-        match self.try_reuse(request, source_key)? {
-            Some(handle) => {
-                self.hooks_after_index()?;
-                Ok(handle)
-            }
-            None => self.snapshot_inner(request, Some(source_key), false),
-        }
-    }
-
     fn try_reuse(
         &mut self,
         request: &SnapshotRequest,
@@ -80,7 +45,9 @@ impl Session {
         let Some(bytes) = self.load_retained()? else {
             return Ok(None);
         };
-        let Ok(decoded) = decode_generation(&bytes) else { return Ok(None) };
+        let Ok(decoded) = decode_generation(&bytes) else {
+            return Ok(None);
+        };
         if decoded.source_key != source_key
             || decoded.view != self.view
             || decoded.generation.freshness != request.freshness
@@ -121,7 +88,11 @@ impl Session {
             verified += 1;
             match self.digest_matches_source(&file.path, digest, limits.file_bytes) {
                 Ok(true) => confirmed += 1,
-                Err(error @ (DctxError::Cancelled | DctxError::ResourceLimit { .. } | DctxError::PolicyDenied)) => {
+                Err(
+                    error @ (DctxError::Cancelled
+                    | DctxError::ResourceLimit { .. }
+                    | DctxError::PolicyDenied),
+                ) => {
                     return Err(error);
                 }
                 Ok(false) | Err(_) => {
@@ -159,83 +130,6 @@ impl Session {
         };
         Ok(Some(self.pin_generation(generation, ticket, true)))
     }
-
-    fn load_retained(&mut self) -> Result<Option<Vec<u8>>, DctxError> {
-        let Some(cache) = self.managed.as_mut() else {
-            return Ok(None);
-        };
-        cache.load_current_segment()
-    }
-
-    fn pin_retained(&mut self, now_ms: u64) -> Result<Option<super::ledger::SnapshotLease>, DctxError> {
-        let Some(cache) = self.managed.as_mut() else {
-            return Ok(None);
-        };
-        cache.pin_current(now_ms)
-    }
-}
-
-/// Sessions with no rule texts keep `source_key`, so a cache written before rules were loaded still matches.
-/// Loaded texts, including a comment that does not change the file inventory, change the key.
-fn scoped_source_key(source_key: &str, rules: Option<&RuleSources>) -> String {
-    let Some(rules) = rules else {
-        return source_key.to_string();
-    };
-    format!("{source_key}\0{}", rule_stamp(rules))
-}
-
-fn rule_stamp(rules: &RuleSources) -> String {
-    let mut bytes = Vec::new();
-    push_rule(&mut bytes, rules.global_ignore.as_deref());
-    push_rule(&mut bytes, rules.global_omit.as_deref());
-    push_rule(&mut bytes, rules.local_ignore.as_deref());
-    push_rule(&mut bytes, rules.local_omit.as_deref());
-    match crate::domain::digest_text(&bytes) {
-        Ok(digest) => digest.to_string(),
-        Err(_) => format!("rules-unavailable:{}", bytes.len()),
-    }
-}
-
-fn push_rule(out: &mut Vec<u8>, text: Option<&str>) {
-    match text {
-        None => out.push(0),
-        Some(text) => {
-            out.push(1);
-            out.extend_from_slice(text.as_bytes());
-            out.push(0xff);
-        }
-    }
-}
-
-fn retryable(error: &DctxError) -> bool {
-    match error {
-        DctxError::Busy => true,
-        DctxError::InvalidRequest { reason, .. } if *reason == "stale ledger" => true,
-        _ => false,
-    }
-}
-
-fn parser_compatible(stored: &str, choice: ParserChoice) -> bool {
-    match choice {
-        ParserChoice::Opaque => stored == "opaque/1",
-        ParserChoice::Structural => stored == STRUCTURAL_PARSER,
-        ParserChoice::Syn => stored == STRUCTURAL_PARSER || stored == SYNTAX_PARSER,
-        ParserChoice::TreeSitter => false,
-    }
-}
-
-fn limits_match(stored: &[u64; 4], live: &ScanLimits) -> bool {
-    stored[0] == live.entries && stored[1] == live.depth && stored[2] == live.file_bytes && stored[3] == live.source_bytes
-}
-
-fn file_inventory(files: &[IndexedFile]) -> Option<BTreeMap<&str, (FileHandlingDecision, u64, u64)>> {
-    let mut map = BTreeMap::new();
-    for file in files {
-        if map.insert(file.path.as_str(), (file.decision, file.size, file.modified)).is_some() {
-            return None;
-        }
-    }
-    Some(map)
 }
 
 struct PersistedGeneration {
@@ -245,83 +139,17 @@ struct PersistedGeneration {
     generation: Generation,
 }
 
-pub(super) fn encode_generation(
-    source_key: &str,
-    view: &str,
-    limits: &ScanLimits,
-    generation: &Generation,
-) -> Result<Vec<u8>, DctxError> {
-    let mut out = Vec::new();
-    out.extend_from_slice(MAGIC);
-    out.extend_from_slice(&VERSION.to_le_bytes());
-    push_str(&mut out, source_key)?;
-    push_str(&mut out, view)?;
-    out.push(freshness_byte(generation.freshness));
-    push_u64(&mut out, generation.epoch);
-    push_str(&mut out, &generation.digest)?;
-    push_str(&mut out, &generation.coverage)?;
-    push_str(&mut out, &generation.completion)?;
-    push_str(&mut out, &generation.parser)?;
-    push_u64(&mut out, generation.taken_at);
-    push_u64(&mut out, generation.id);
-    push_u64(&mut out, limits.entries);
-    push_u64(&mut out, limits.depth);
-    push_u64(&mut out, limits.file_bytes);
-    push_u64(&mut out, limits.source_bytes);
-    push_count(&mut out, generation.files.len())?;
-    for file in &generation.files {
-        push_str(&mut out, &file.path)?;
-        out.push(decision_byte(file.decision));
-        match file.digest {
-            Some(digest) => {
-                out.push(1);
-                out.extend_from_slice(digest.as_bytes());
-                push_u64(&mut out, digest.byte_length());
-            }
-            None => out.push(0),
-        }
-        push_u64(&mut out, file.size);
-        push_u64(&mut out, file.modified);
-    }
-    push_count(&mut out, generation.nodes.len())?;
-    let mut id = String::new();
-    for node in &generation.nodes {
-        id.clear();
-        write_node_id(&mut id, &generation.text, node);
-        push_str(&mut out, &id)?;
-        push_str(&mut out, &node.kind)?;
-        push_str(&mut out, &node.name)?;
-        push_str(&mut out, generation.text.get(node.path))?;
-        push_str(&mut out, &node.summary)?;
-        push_str(&mut out, &node.summary_source)?;
-        push_str(&mut out, &node.signature)?;
-        push_u32(&mut out, node.lines[0]);
-        push_u32(&mut out, node.lines[1]);
-        push_u64(&mut out, node.span[0]);
-        push_u64(&mut out, node.span[1]);
-    }
-    push_count(&mut out, generation.edges.len())?;
-    let mut src = String::new();
-    let mut dst = String::new();
-    for edge in &generation.edges {
-        src.clear();
-        dst.clear();
-        write_endpoint(&mut src, &generation.nodes, &generation.text, edge.src);
-        write_endpoint(&mut dst, &generation.nodes, &generation.text, edge.dst);
-        push_str(&mut out, &src)?;
-        push_str(&mut out, &dst)?;
-        push_str(&mut out, generation.text.get(edge.edge))?;
-        push_str(&mut out, generation.text.get(edge.confidence))?;
-    }
-    Ok(out)
-}
-
-#[allow(clippy::too_many_lines, reason = "Keep the reusable-generation acceptance fixture and its sequential pointer/lease assertions together.")]
+#[allow(
+    clippy::too_many_lines,
+    reason = "Keep the reusable-generation acceptance fixture and its sequential pointer/lease assertions together."
+)]
 fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
     let mut reader = Reader { rest: bytes };
     let magic = reader.take(MAGIC.len())?;
     if magic != MAGIC {
-        return Err(DctxError::CorruptIndex { reason: "generation magic" });
+        return Err(DctxError::CorruptIndex {
+            reason: "generation magic",
+        });
     }
     let version = reader.u32()?;
     if version != VERSION {
@@ -346,15 +174,28 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
         let digest = match reader.u8()? {
             0 => None,
             1 => {
-                let raw: [u8; 32] = reader
-                    .take(32)?
-                    .try_into()
-                    .map_err(|_| DctxError::CorruptIndex { reason: "generation digest" })?;
+                let raw: [u8; 32] =
+                    reader
+                        .take(32)?
+                        .try_into()
+                        .map_err(|_| DctxError::CorruptIndex {
+                            reason: "generation digest",
+                        })?;
                 Some(ContentDigest::sha256(raw, reader.u64()?))
             }
-            _ => return Err(DctxError::CorruptIndex { reason: "generation digest" }),
+            _ => {
+                return Err(DctxError::CorruptIndex {
+                    reason: "generation digest",
+                });
+            }
         };
-        files.push(IndexedFile { path, decision, digest, size: reader.u64()?, modified: reader.u64()? });
+        files.push(IndexedFile {
+            path,
+            decision,
+            digest,
+            size: reader.u64()?,
+            modified: reader.u64()?,
+        });
     }
     let mut text = TextBlob::default();
     let node_count = reader.count()?;
@@ -368,7 +209,9 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
         let letter = id.bytes().next().unwrap_or(b'm');
         let ordinal = ordinal_suffix(&id, &name);
         let Some(index) = u32::try_from(nodes.len()).ok() else {
-            return Err(DctxError::CorruptIndex { reason: "generation count" });
+            return Err(DctxError::CorruptIndex {
+                reason: "generation count",
+            });
         };
         if let std::collections::hash_map::Entry::Vacant(slot) = by_id.entry(id) {
             slot.insert(index);
@@ -394,10 +237,14 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
         let edge = reader.string()?;
         let confidence = reader.string()?;
         let Some(&src) = by_id.get(&src) else {
-            return Err(DctxError::CorruptIndex { reason: "generation edge" });
+            return Err(DctxError::CorruptIndex {
+                reason: "generation edge",
+            });
         };
         let Some(&dst) = by_id.get(&dst) else {
-            return Err(DctxError::CorruptIndex { reason: "generation edge" });
+            return Err(DctxError::CorruptIndex {
+                reason: "generation edge",
+            });
         };
         edges.push(IndexedEdge {
             src,
@@ -407,7 +254,9 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
         });
     }
     if !reader.rest.is_empty() {
-        return Err(DctxError::CorruptIndex { reason: "generation trailing" });
+        return Err(DctxError::CorruptIndex {
+            reason: "generation trailing",
+        });
     }
     Ok(PersistedGeneration {
         source_key,
@@ -429,127 +278,6 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
             parser,
         },
     })
-}
-
-struct Reader<'a> {
-    rest: &'a [u8],
-}
-
-impl<'a> Reader<'a> {
-    fn take(&mut self, len: usize) -> Result<&'a [u8], DctxError> {
-        if self.rest.len() < len {
-            return Err(DctxError::CorruptIndex { reason: "generation truncated" });
-        }
-        let (head, tail) = self.rest.split_at(len);
-        self.rest = tail;
-        Ok(head)
-    }
-
-    fn u8(&mut self) -> Result<u8, DctxError> {
-        Ok(self.take(1)?[0])
-    }
-
-    fn u32(&mut self) -> Result<u32, DctxError> {
-        let bytes = self.take(4)?;
-        let raw: [u8; 4] = bytes.try_into().map_err(|_| DctxError::CorruptIndex { reason: "generation truncated" })?;
-        Ok(u32::from_le_bytes(raw))
-    }
-
-    fn u64(&mut self) -> Result<u64, DctxError> {
-        let bytes = self.take(8)?;
-        let raw: [u8; 8] = bytes.try_into().map_err(|_| DctxError::CorruptIndex { reason: "generation truncated" })?;
-        Ok(u64::from_le_bytes(raw))
-    }
-
-    fn string(&mut self) -> Result<String, DctxError> {
-        let len = usize::try_from(self.u32()?).map_err(|_| DctxError::CorruptIndex { reason: "generation string" })?;
-        if len > MAX_STRING {
-            return Err(DctxError::CorruptIndex { reason: "generation string" });
-        }
-        let bytes = self.take(len)?;
-        let text = std::str::from_utf8(bytes).map_err(|_| DctxError::CorruptIndex { reason: "generation string" })?;
-        Ok(text.to_string())
-    }
-
-    fn count(&mut self) -> Result<usize, DctxError> {
-        let count = usize::try_from(self.u64()?).map_err(|_| DctxError::CorruptIndex { reason: "generation count" })?;
-        if count > MAX_COUNT {
-            return Err(DctxError::CorruptIndex { reason: "generation count" });
-        }
-        Ok(count)
-    }
-}
-
-fn push_u32(out: &mut Vec<u8>, value: u32) {
-    out.extend_from_slice(&value.to_le_bytes());
-}
-
-fn push_u64(out: &mut Vec<u8>, value: u64) {
-    out.extend_from_slice(&value.to_le_bytes());
-}
-
-fn push_count(out: &mut Vec<u8>, count: usize) -> Result<(), DctxError> {
-    if count > MAX_COUNT {
-        return Err(DctxError::ResourceLimit { resource: crate::domain::Resource::Records, limit: MAX_COUNT as u64 });
-    }
-    let raw = u64::try_from(count).map_err(|_| DctxError::ResourceLimit {
-        resource: crate::domain::Resource::Records,
-        limit: MAX_COUNT as u64,
-    })?;
-    push_u64(out, raw);
-    Ok(())
-}
-
-fn push_str(out: &mut Vec<u8>, text: &str) -> Result<(), DctxError> {
-    if text.len() > MAX_STRING {
-        return Err(DctxError::ResourceLimit {
-            resource: crate::domain::Resource::PathBytes,
-            limit: MAX_STRING as u64,
-        });
-    }
-    let len = u32::try_from(text.len()).map_err(|_| DctxError::ResourceLimit {
-        resource: crate::domain::Resource::PathBytes,
-        limit: MAX_STRING as u64,
-    })?;
-    push_u32(out, len);
-    out.extend_from_slice(text.as_bytes());
-    Ok(())
-}
-
-fn freshness_byte(mode: FreshnessMode) -> u8 {
-    match mode {
-        FreshnessMode::ImmutableSnapshot => 0,
-        FreshnessMode::Strict => 1,
-        FreshnessMode::Metadata => 2,
-    }
-}
-
-fn freshness_of(byte: u8) -> Result<FreshnessMode, DctxError> {
-    match byte {
-        0 => Ok(FreshnessMode::ImmutableSnapshot),
-        1 => Ok(FreshnessMode::Strict),
-        2 => Ok(FreshnessMode::Metadata),
-        _ => Err(DctxError::CorruptIndex { reason: "generation freshness" }),
-    }
-}
-
-fn decision_byte(decision: FileHandlingDecision) -> u8 {
-    match decision {
-        FileHandlingDecision::Include => 0,
-        FileHandlingDecision::Exclude => 1,
-        FileHandlingDecision::OmitContent => 2,
-        FileHandlingDecision::DebugVisible => 3,
-    }
-}
-
-fn decision_of(byte: u8) -> Result<FileHandlingDecision, DctxError> {
-    match byte {
-        0 => Ok(FileHandlingDecision::Include),
-        1 => Ok(FileHandlingDecision::Exclude),
-        2 => Ok(FileHandlingDecision::OmitContent),
-        3 => Ok(FileHandlingDecision::DebugVisible),
-        _ => Err(DctxError::CorruptIndex { reason: "generation decision" }),
-    }
 }
 
 #[cfg(test)]
