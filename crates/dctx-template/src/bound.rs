@@ -7,12 +7,14 @@ use std::fmt::Write as _;
 use std::collections::HashMap;
 
 use dctx_core::budget::estimate_tokens;
-use dctx_core::selection::glob_match;
 use dctx_core::FileHandlingDecision;
 
 use crate::error::TemplateError;
 use crate::model::{BudgetPlan, ContextPlan, HostCeiling, Inst, NamedCode, RenderProgram, Selection};
 use crate::opcode::execute;
+
+mod policy;
+use policy::{host_decision, template_decision};
 
 const CONTINUED: &str = "[DCTX_CONTINUED]\n";
 const MAX_WALK: usize = 100_000;
@@ -438,54 +440,6 @@ fn named<'a>(items: &'a [NamedCode], name: &str) -> Option<&'a [Inst]> {
 
 fn variable<'a>(program: &'a RenderProgram, key: &str) -> Option<&'a str> {
     program.variables.iter().find(|(name, _)| name == key).map(|(_, value)| value.as_str())
-}
-
-fn host_decision(host: &HostCeiling, path: &str) -> FileHandlingDecision {
-    let mut decision = FileHandlingDecision::Exclude;
-    for grant in &host.grants {
-        if pattern_usable(&grant.pattern) && path_matches(&grant.pattern, path) {
-            decision = grant.decision;
-        }
-    }
-    decision
-}
-
-fn template_decision(selection: &Selection, path: &str) -> FileHandlingDecision {
-    if !selection.roots.is_empty() && !selection.roots.iter().any(|root| under_root(path, root)) {
-        return FileHandlingDecision::Exclude;
-    }
-    let mut decision = FileHandlingDecision::Include;
-    for rule in &selection.rules {
-        if pattern_usable(&rule.pattern) && path_matches(&rule.pattern, path) {
-            decision = rule.decision;
-        }
-    }
-    decision
-}
-
-fn under_root(path: &str, root: &str) -> bool {
-    path == root || path.strip_prefix(root).is_some_and(|rest| rest.starts_with('/'))
-}
-
-fn pattern_usable(pattern: &str) -> bool {
-    if pattern.is_empty() || pattern.len() > 4096 || pattern.contains('\0') || pattern.contains('\\') {
-        return false;
-    }
-    !pattern.split('/').any(|segment| segment == "..")
-}
-
-fn path_matches(pattern: &str, path: &str) -> bool {
-    let pattern_bytes = pattern.as_bytes();
-    let path_bytes = path.as_bytes();
-    if pattern.contains('/') {
-        glob_match(pattern_bytes, path_bytes)
-    } else {
-        let base = match path.rfind('/') {
-            Some(index) => &path[index + 1..],
-            None => path,
-        };
-        glob_match(pattern_bytes, base.as_bytes()) || glob_match(pattern_bytes, path_bytes)
-    }
 }
 
 fn content_rank(decision: FileHandlingDecision) -> u8 {
