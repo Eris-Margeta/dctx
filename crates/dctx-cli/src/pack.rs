@@ -7,12 +7,8 @@
 
 use std::path::PathBuf;
 
-use dctx::{PackRequest, Source, VecSink};
+use dctx::{PackRequest, VecSink};
 use dctx_core::budget::PackLimits;
-use dctx_core::datatypes::NodeType;
-use dctx_core::error::DctxError as CoreError;
-use dctx_core::facts::{EntryMeta, ReadGrant, SourceEntry};
-use dctx_core::ids::RelativePath;
 use dctx_core::version::Version;
 
 use crate::exit::Failure;
@@ -24,6 +20,8 @@ mod emit;
 use emit::emit;
 mod narrow;
 use narrow::{file_count, narrow};
+mod narrowed;
+use narrowed::NarrowedSource;
 mod markers;
 pub use markers::legacy_markers;
 use markers::source_document;
@@ -237,87 +235,6 @@ fn view_request(filters: &Filters) -> PackRequest {
     request.max_size_bytes = filters.config.max_size_bytes;
     request.only_hidden = filters.config.only_hidden;
     request
-}
-
-/// Drops files the view filters reject before `dctx-pack` can open them.
-/// `DCTX_READ_REPORT=1` prints each content read. The facade wrapper stays quiet.
-struct NarrowedSource<'a, S> {
-    inner: S,
-    request: &'a PackRequest,
-    report_reads: bool,
-}
-
-impl<S: Source> Source for NarrowedSource<'_, S> {
-    fn root_kind(&self) -> Result<NodeType, CoreError> {
-        self.inner.root_kind()
-    }
-
-    fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, CoreError> {
-        let entries = self.inner.entries(dir)?;
-        if !self.request.apply_filters {
-            return Ok(entries);
-        }
-        let mut kept = Vec::with_capacity(entries.len());
-        for entry in entries {
-            let Ok(path) = dir.child(&entry.name) else {
-                kept.push(entry);
-                continue;
-            };
-            if entry.is_dir() {
-                if self.request.admits_directory(path.as_str(), &entry.name) {
-                    kept.push(entry);
-                }
-                continue;
-            }
-            let size = if self.request.filters_need_size() {
-                match self.inner.metadata(&path) {
-                    Ok(meta) => meta.size,
-                    Err(CoreError::Cancelled) => return Err(CoreError::Cancelled),
-                    Err(_) => {
-                        kept.push(entry);
-                        continue;
-                    }
-                }
-            } else {
-                0
-            };
-            if self.request.admits_file(path.as_str(), &entry.name, size) {
-                kept.push(entry);
-            }
-        }
-        Ok(kept)
-    }
-
-    fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
-        self.inner.metadata(path)
-    }
-
-    fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
-        if self.request.apply_filters {
-            let path = grant.path();
-            let size = if self.request.filters_need_size() {
-                match self.inner.metadata(path) {
-                    Ok(meta) => meta.size,
-                    Err(CoreError::Cancelled) => return Err(CoreError::Cancelled),
-                    Err(_) => {
-                        if self.report_reads {
-                            eprintln!("read {}", path.as_str());
-                        }
-                        return self.inner.read(grant, max_bytes);
-                    }
-                }
-            } else {
-                0
-            };
-            if !self.request.admits_file(path.as_str(), path.name(), size) {
-                return Err(CoreError::PolicyDenied);
-            }
-        }
-        if self.report_reads {
-            eprintln!("read {}", grant.path().as_str());
-        }
-        self.inner.read(grant, max_bytes)
-    }
 }
 
 /// Safety caps from `crates/dctx/src/domain/limits.rs`. `resolve_scan` is crate-private; the source cap follows `DCTX_MAX_SOURCE_BYTES`.
