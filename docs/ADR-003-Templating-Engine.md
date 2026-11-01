@@ -48,7 +48,7 @@ These variables are populated by the Rust core:
 *   `{{{node.id}}}`: Optimized incremental ID (e.g., 1, 2, 10).
 *   `{{{node.path}}}`: Relative path.
 *   `{{{node.type_char}}}`: `[D]` or `[F]`.
-*   `{{{node.mod}}}`: Unix timestamp.
+*   `{{{node.mod}}}`: Unix timestamp in milliseconds. Available to custom templates. The built-in default template does not print it since 1.0.1, because a timestamp changes on a bare `touch` and breaks the byte-stable prefix of the page; `--tree-stamps=on` selects the built-in stamped template (the 1.0.0 text, `MOD:` on every tree line and in the instructions).
 *   `{{{node.size}}}`: File size in bytes.
 *   `{{{file.lines}}}`: Line count of the file.
 *   `{{{file.content}}}`: Actual file content.
@@ -98,7 +98,7 @@ attr_mod   = "MOD"
 # This text explains the format to the LLM. It references the variables above
 # to ensure the instructions always match the actual format used.
 # Use '\n' for new lines.
-instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}{{start_marker_close}} section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH ({{attr_id}}:UNIQUE_ID, {{attr_mod}}:TIMESTAMP)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: {{start_marker_open}}{{file_start_marker}} {{attr_id}}=\"UNIQUE_ID\"{{start_marker_close}}\n   - The content is between this marker and {{end_marker_open}}{{file_end_marker}} {{attr_id}}=\"UNIQUE_ID\"{{end_marker_close}}"
+instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}{{start_marker_close}} section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH ({{attr_id}}:UNIQUE_ID)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: {{start_marker_open}}{{file_start_marker}} {{attr_id}}=\"UNIQUE_ID\"{{start_marker_close}}\n   - The content is between this marker and {{end_marker_open}}{{file_end_marker}} {{attr_id}}=\"UNIQUE_ID\"{{end_marker_close}}"
 
 # ==============================================================================
 # [PARTIALS]
@@ -108,8 +108,9 @@ instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}
 # --- Tree Entry Partial ---
 # Context: 'node' object
 # Available Data: {{{node.type_char}}}, {{{node.path}}}, {{{node.id}}}, {{{node.mod}}}, {{{node.size}}}
+# The default entry leaves {{{node.mod}}} out (1.0.1); a custom template may add `, {{attr_mod}}:{{{node.mod}}}`.
 [PARTIAL:TREE_ENTRY]
-{{{node.type_char}}} {{{node.path}}} ({{attr_id}}:{{{node.id}}}, {{attr_mod}}:{{{node.mod}}}{{{node.size_part}}})
+{{{node.type_char}}} {{{node.path}}} ({{attr_id}}:{{{node.id}}}{{{node.size_part}}})
 
 # --- File Block Partial ---
 # Context: 'file' object

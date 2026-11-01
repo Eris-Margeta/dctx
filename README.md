@@ -113,7 +113,7 @@ dctx . -t -c           # tree only, no file contents
 dctx                   # interactive menu
 ```
 
-`dctx pack` writes to stdout, the clipboard or `--output`; it creates a text export only when you request a file. The legacy `dctx .` snapshot commands still write project text exports and cache state. Running without arguments opens an interactive terminal menu.
+`dctx pack` writes to stdout, the clipboard or `--output`; it creates a text export only when you request a file. Its tree lines carry `ID` and `SIZE` but no modification time, so the page stays byte-identical across a bare `touch` and an edit keeps everything before the edited file as a shared prefix (what a prompt cache reuses); `--tree-stamps=on` adds the 1.0.0 `MOD:` timestamps back. The legacy `dctx .` snapshot commands still write project text exports and cache state. Running without arguments opens an interactive terminal menu.
 
 ---
 
@@ -323,7 +323,7 @@ The dependency policy retains the **Ed25519 signature verifier** (`ed25519-dalek
 
 ```
 Usage: dctx [PATH] [OPTIONS]
-       dctx pack [PATH] [--output PATH] [--clipboard] [--json]
+       dctx pack [PATH] [--output PATH] [--clipboard] [--json] [--tree-stamps=on|off]
        dctx pack [PATH] --for <TEXT> [--budget TOKENS]
        dctx map <map|find|neighbors|explain|read> <TARGET> [--json]
        dctx cache status|gc|purge|config|auto
@@ -336,6 +336,7 @@ Snapshot options:
   -d, --diff            Output the diff only (if available)
   -t, --tree            Tree only (skips file content)
   -r, --reset           Force V1 reset
+  --tree-stamps=on|off  MOD: timestamps on tree lines (default off; on = the 1.0.0 text)
 
 Filter options:
   --ext <list>          Only these extensions, e.g. rs,toml
