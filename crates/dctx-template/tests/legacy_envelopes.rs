@@ -220,11 +220,11 @@ fn diff_fixture_pins_the_legacy_diff_envelope() {
     assert!(DIFF.contains("Version Change: V1 -> V1.1\n"));
     assert!(DIFF.contains("[ADDED] added.txt\n[MODIFIED] changed.txt\n"));
     assert!(DIFF.contains("[REMOVED] deleted_file.txt\n[ADDED] new_dir/\n[MODIFIED] icon.svg\n"));
-    let glued = "  [F] unchanged.txt (ID:F005, SIZE:11)</UPDATED_DIRECTORY_TREE>\n";
+    let glued = "  [F] unchanged.txt (ID:F005)</UPDATED_DIRECTORY_TREE>\n";
     assert!(DIFF.contains(glued), "legacy diff glues the closing tag to the last tree line");
     let stamped = "  [F] unchanged.txt (ID:F005, MOD:2400, SIZE:11)</UPDATED_DIRECTORY_TREE>\n";
     assert!(DIFF_STAMPED.contains(stamped), "the stamped diff keeps the 1.0.0 line");
-    assert!(!DIFF.contains("MOD:"));
+    assert!(!DIFF.contains("MOD:") && !DIFF.contains("SIZE:"));
     assert!(DIFF.contains("[SVG file, content omitted (omit_svg_content=true)]"));
     assert!(DIFF.contains("NEW!"));
     assert!(DIFF.contains("New content"));

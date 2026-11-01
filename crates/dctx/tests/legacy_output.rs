@@ -128,6 +128,10 @@ fn diff_case(stamps: TreeStamps) {
         TreeStamps::Off => ("", "", "", ""),
         TreeStamps::On => (", MOD:0", ", MOD:1", ", MOD:2", ", MOD:2"),
     };
+    let (size_a, size_changed, size_icon) = match stamps {
+        TreeStamps::Off => ("", "", ""),
+        TreeStamps::On => (", SIZE:9", ", SIZE:4", ", SIZE:6"),
+    };
     let expected = format!(
         "[DCTX_LLM_CONTEXT_DIFF_V1.1]\nVersion Change: V1 -> V1.1\n\n\
 <CHANGES_SUMMARY>\n\
@@ -135,7 +139,7 @@ fn diff_case(stamps: TreeStamps) {
 [MODIFIED] icon.svg\n\
 </CHANGES_SUMMARY>\n\n\
 <UPDATED_DIRECTORY_TREE>\n\
-[D]  (ID:ROOT{root})\n  [F] a.txt (ID:F001{a}, SIZE:9)\n  [F] changed.txt (ID:F002{changed}, SIZE:4)\n  [F] icon.svg (ID:F003{icon}, SIZE:6)</UPDATED_DIRECTORY_TREE>\n\n\
+[D]  (ID:ROOT{root})\n  [F] a.txt (ID:F001{a}{size_a})\n  [F] changed.txt (ID:F002{changed}{size_changed})\n  [F] icon.svg (ID:F003{icon}{size_icon})</UPDATED_DIRECTORY_TREE>\n\n\
 <FILE_CONTENT_START ID=\"F002\" PATH=\"changed.txt\" LINES=\"2\">\n\
 new\n\n\
 </FILE_CONTENT_END ID=\"F002\">\n\

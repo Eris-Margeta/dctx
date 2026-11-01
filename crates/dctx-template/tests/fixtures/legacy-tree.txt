@@ -12,10 +12,10 @@
 <DIRECTORY_TREE>
 [D]  (ID:ROOT)
   [D] .git [IGNORED] (ID:D001)
-    [F] .git/config [IGNORED] (ID:F002, SIZE:9)
-  [F] Cargo.lock (ID:F003, SIZE:7)
-  [F] logo.png (ID:F004, SIZE:7)
-  [F] secret.env [IGNORED] (ID:F005, SIZE:9)
+    [F] .git/config [IGNORED] (ID:F002)
+  [F] Cargo.lock (ID:F003)
+  [F] logo.png (ID:F004)
+  [F] secret.env [IGNORED] (ID:F005)
   [D] src (ID:D006)
-    [F] src/main.rs (ID:F007, SIZE:13)
+    [F] src/main.rs (ID:F007)
 </DIRECTORY_TREE>

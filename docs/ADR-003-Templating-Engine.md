@@ -48,7 +48,7 @@ These variables are populated by the Rust core:
 *   `{{{node.id}}}`: Optimized incremental ID (e.g., 1, 2, 10).
 *   `{{{node.path}}}`: Relative path.
 *   `{{{node.type_char}}}`: `[D]` or `[F]`.
-*   `{{{node.mod}}}`: Unix timestamp in milliseconds. Available to custom templates. The built-in default template does not print it since 1.0.1, because a timestamp changes on a bare `touch` and breaks the byte-stable prefix of the page; `--tree-stamps=on` selects the built-in stamped template (the 1.0.0 text, `MOD:` on every tree line and in the instructions).
+*   `{{{node.mod}}}`: Unix timestamp in milliseconds. Available to custom templates. The built-in default template does not print it since 1.0.1, because a timestamp changes on a bare `touch` and breaks the byte-stable prefix of the page; `--tree-stamps=on` selects the built-in stamped template (the 1.0.0 text, `MOD:` and `SIZE:` on every tree line, `MOD` in the instructions). The default entry also leaves out `{{{node.size_part}}}`, since a size changes on every ordinary edit; `{{{node.size}}}` and `{{{node.size_part}}}` stay available to custom templates.
 *   `{{{node.size}}}`: File size in bytes.
 *   `{{{file.lines}}}`: Line count of the file.
 *   `{{{file.content}}}`: Actual file content.
@@ -108,9 +108,9 @@ instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}
 # --- Tree Entry Partial ---
 # Context: 'node' object
 # Available Data: {{{node.type_char}}}, {{{node.path}}}, {{{node.id}}}, {{{node.mod}}}, {{{node.size}}}
-# The default entry leaves {{{node.mod}}} out (1.0.1); a custom template may add `, {{attr_mod}}:{{{node.mod}}}`.
+# The default entry leaves {{{node.mod}}} and {{{node.size_part}}} out (1.0.1); a custom template may add `, {{attr_mod}}:{{{node.mod}}}{{{node.size_part}}}`.
 [PARTIAL:TREE_ENTRY]
-{{{node.type_char}}} {{{node.path}}} ({{attr_id}}:{{{node.id}}}{{{node.size_part}}})
+{{{node.type_char}}} {{{node.path}}} ({{attr_id}}:{{{node.id}}})
 
 # --- File Block Partial ---
 # Context: 'file' object

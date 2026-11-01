@@ -52,10 +52,11 @@ instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}
 # --- Tree Entry Partial ---
 # Context: 'node' object
 # Available Data: {{{node.type_char}}}, {{{node.path}}}, {{{node.id}}}, {{{node.mod}}}, {{{node.size}}}
-# The default entry leaves {{{node.mod}}} out: a timestamp changes on a bare touch and breaks the byte-stable prefix.
-# Custom templates may still use {{attr_mod}} and {{{node.mod}}}; `--tree-stamps=on` selects the stamped built-in.
+# The default entry leaves {{{node.mod}}} and {{{node.size_part}}} out: a timestamp or a size changes on an edit or a touch
+# and would break the byte-stable prefix of the page. Custom templates may still use {{attr_mod}}, {{{node.mod}}},
+# {{{node.size}}} and {{{node.size_part}}}; `--tree-stamps=on` selects the stamped built-in (the 1.0.0 text).
 [PARTIAL:TREE_ENTRY]
-{{{node.type_char}}} {{{node.path}}} ({{attr_id}}:{{{node.id}}}{{{node.size_part}}})
+{{{node.type_char}}} {{{node.path}}} ({{attr_id}}:{{{node.id}}})
 
 # --- File Block Partial ---
 # Context: 'file' object

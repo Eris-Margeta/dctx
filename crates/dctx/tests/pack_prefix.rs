@@ -22,14 +22,20 @@ fn path(number: usize) -> String {
 }
 
 /// A 522-byte body that depends on `number` and `revision`, so edits keep the size.
-fn body(number: usize, revision: u8) -> Vec<u8> {
+/// `appended` adds one line at the end, as an ordinary edit does, and changes the size.
+fn body(number: usize, revision: u8, appended: bool) -> Vec<u8> {
     let line =
         format!("file {number:02} revision {revision} lorem ipsum dolor sit amet consectetur\n");
-    line.repeat(9).into_bytes()
+    let mut bytes = line.repeat(9).into_bytes();
+    if appended {
+        bytes.extend_from_slice(b"one more line\n");
+    }
+    bytes
 }
 
 struct Fixture {
     revisions: [u8; FILES],
+    appended: [bool; FILES],
     mtimes: [u64; FILES],
 }
 
@@ -37,6 +43,7 @@ impl Fixture {
     fn new() -> Self {
         Self {
             revisions: [0; FILES],
+            appended: [false; FILES],
             mtimes: [1_000; FILES],
         }
     }
@@ -48,7 +55,7 @@ impl Fixture {
             source
                 .insert_file(
                     &path(number),
-                    &body(number, self.revisions[index]),
+                    &body(number, self.revisions[index], self.appended[index]),
                     self.mtimes[index],
                 )
                 .expect("file");
@@ -91,6 +98,7 @@ fn off_page_survives_a_touch_and_keeps_the_prefix_across_an_edit() {
         0,
         "the default page carries no timestamp"
     );
+    assert_eq!(base.matches("SIZE:").count(), 0, "nor a size");
     assert!(base.contains("PATH=\"src/f15.txt\"") && base.contains("PATH=\"src/f20.txt\""));
 
     // Touch file 3: the mtime moves, the bytes do not.
@@ -124,6 +132,37 @@ fn off_page_survives_a_touch_and_keeps_the_prefix_across_an_edit() {
         base.len(),
         "an equal-size edit keeps the length"
     );
+}
+
+#[test]
+fn off_page_keeps_the_prefix_across_a_size_changing_edit() {
+    let mut fixture = Fixture::new();
+    let base = fixture.page(TreeStamps::Off);
+    // Append a line to file 15: its size changes, which an ordinary edit does.
+    fixture.appended[14] = true;
+    fixture.mtimes[14] += 5_000;
+    let edited = fixture.page(TreeStamps::Off);
+    assert_ne!(edited, base);
+    assert_eq!(edited.len(), base.len() + "one more line\n".len());
+    let shared = common_prefix(&base, &edited);
+    let percent = shared * 100 / base.len();
+    assert!(
+        percent >= 70,
+        "common prefix {shared} of {} bytes is {percent} %, wanted >= 70 %",
+        base.len()
+    );
+    // The first difference is in file 15's content block (its LINES attribute at the earliest), not in the tree.
+    let block = base.find("PATH=\"src/f15.txt\"").expect("block 15");
+    assert!(
+        shared > block,
+        "shared prefix ends at {shared}, before block 15 at {block}"
+    );
+    // With stamps on the same edit changes the tree line of file 15 and leaves almost nothing shared.
+    let mut stamped = Fixture::new();
+    let stamped_base = stamped.page(TreeStamps::On);
+    stamped.appended[14] = true;
+    let stamped_edit = stamped.page(TreeStamps::On);
+    assert!(common_prefix(&stamped_base, &stamped_edit) * 100 / stamped_base.len() < 20);
 }
 
 #[test]

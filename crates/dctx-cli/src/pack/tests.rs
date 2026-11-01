@@ -163,7 +163,7 @@ fn tree_stamps_flag_selects_the_template_and_off_survives_a_touch() {
     assert_eq!(off, spaced);
     assert_eq!(off.matches("MOD").count(), 0, "{off}");
     assert!(
-        off.contains("(ID:ROOT)") && off.contains("kept.rs (ID:F001, SIZE:13)"),
+        off.contains("(ID:ROOT)") && off.contains("kept.rs (ID:F001)"),
         "{off}"
     );
     assert!(

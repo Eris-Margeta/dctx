@@ -11,11 +11,11 @@ Version Change: V1 -> V1.1
 
 <UPDATED_DIRECTORY_TREE>
 [D]  (ID:ROOT)
-  [F] added.txt (ID:F001, SIZE:4)
-  [F] changed.txt (ID:F002, SIZE:11)
-  [F] icon.svg (ID:F003, SIZE:6)
+  [F] added.txt (ID:F001)
+  [F] changed.txt (ID:F002)
+  [F] icon.svg (ID:F003)
   [D] new_dir (ID:D004)
-  [F] unchanged.txt (ID:F005, SIZE:11)</UPDATED_DIRECTORY_TREE>
+  [F] unchanged.txt (ID:F005)</UPDATED_DIRECTORY_TREE>
 
 <FILE_CONTENT_START ID="F001" PATH="added.txt" LINES="1">
 NEW!

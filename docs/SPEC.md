@@ -354,7 +354,7 @@ Two formats: the **text page** (default; one record per line; ids first) and **J
 - paths are root-relative with `/` separators on every OS;
 - the same request through CLI, library and MCP yields the same canonical page bytes.
 
-**Note (1.0.1, legacy source page).** The `dctx pack` / `dctx .` text page (the `[DCTX_LLM_CONTEXT_SNAPSHOT_V1]` envelope) follows the same no-timestamp rule by default: its tree and root lines carry `ID` and `SIZE` (content-derived) and no `MOD:`, so a bare `touch` leaves the page byte-identical and an edit keeps the bytes before the edited file as a common prefix. `--tree-stamps=on` reproduces the 1.0.0 page with `MOD:<ms>` on every tree line; `{{{node.mod}}}` remains available to custom templates.
+**Note (1.0.1, legacy source page).** The `dctx pack` / `dctx .` text page (the `[DCTX_LLM_CONTEXT_SNAPSHOT_V1]` envelope) follows the same no-timestamp rule by default: its tree and root lines carry the `ID` only, with no `MOD:` and no `SIZE:` (a size changes on every ordinary edit, and the tree precedes the file blocks), so a bare `touch` leaves the page byte-identical and an edit keeps the bytes before the edited file as a common prefix. `--tree-stamps=on` reproduces the 1.0.0 page with `MOD:<ms>` and `SIZE:` on every tree line; `{{{node.mod}}}` and `{{{node.size_part}}}` remain available to custom templates.
 
 **Gates.** (P0) ≥ 95 % of text answers byte-identical after an unrelated edit (0 of 63
 today; comparison tool 59 of 70); JSON identical over 5 runs. (P1) The map page for a
