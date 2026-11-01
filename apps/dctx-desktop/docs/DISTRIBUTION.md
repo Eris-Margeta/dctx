@@ -47,7 +47,7 @@ Users must: More info → Run anyway
 **Strategy**: Desktop app is 100% free and open source. Monetize the cloud infrastructure.
 
 #### Free Tier (Open Source Desktop)
-- ✅ Full desktop app (MIT licensed)
+- ✅ Full desktop app (Apache-2.0 licensed)
 - ✅ Build from source or download unsigned binaries
 - ✅ All local features
 - ✅ No restrictions
@@ -155,7 +155,7 @@ const snapshot = await fetch('https://api.dctx.app/v1/snapshot', {
 **Strategy**: Only distribute signed/supported binaries for Linux (no cert needed). macOS/Windows users build from source.
 
 #### Free (Build from Source)
-- ✅ Full source code (MIT)
+- ✅ Full source code (Apache-2.0)
 - ✅ Build instructions
 - ✅ Community support
 - ✅ macOS/Windows users compile themselves
@@ -306,7 +306,7 @@ const snapshot = await fetch('https://api.dctx.app/v1/snapshot', {
 **Why this is best without certificates:**
 
 ### Phase 1: Launch Open Source (Now)
-- Release desktop app as MIT license
+- Release desktop app as Apache-2.0 license
 - Provide build instructions
 - Distribute unsigned binaries (with warning disclaimer)
 - Focus on Linux users initially
@@ -516,7 +516,7 @@ jobs:
 
 **Best path forward (zero certificate cost):**
 
-1. **Release as Open Source** (MIT license)
+1. **Release as Open Source** (Apache-2.0 license)
 2. **Distribute unsigned binaries** with clear warnings
 3. **Focus on Linux** for frictionless installs
 4. **Build community** (GitHub stars, Discord)
@@ -549,7 +549,7 @@ jobs:
 ## Next Steps
 
 1. **Decide on model**: Cloud service vs Sponsorware vs Build-from-source
-2. **Update LICENSE**: Change from PROPRIETARY to MIT
+2. **Update LICENSE**: Change from PROPRIETARY to Apache-2.0
 3. **Set up GitHub Actions**: Automated unsigned releases
 4. **Write BUILDING.md**: Clear build-from-source instructions
 5. **Launch**: Product Hunt, Hacker News, Reddit

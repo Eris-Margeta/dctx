@@ -165,8 +165,8 @@ apps/dctx-desktop/
 - **TypeScript**: https://www.typescriptlang.org/docs/
 
 ### Related Projects
-- **dctx-core** (MIT): `../../crates/dctx-core/`
-- **dctx CLI** (MIT): `../../crates/dctx-cli/`
+- **dctx-core** (Apache-2.0): `../../crates/dctx-core/`
+- **dctx CLI** (Apache-2.0): `../../crates/dctx-cli/`
 
 ---
 

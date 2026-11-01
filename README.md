@@ -18,7 +18,9 @@
     <img src="https://img.shields.io/badge/license-Apache--2.0-blue.svg" alt="License">
   </a>
   <img src="https://img.shields.io/badge/rust-100%25-orange" alt="Rust">
-  <img src="https://img.shields.io/badge/enterprise-licenses%20available-8b5cf6" alt="Enterprise licenses available">
+  <a href="https://github.com/Eris-Margeta/dctx/blob/main/MAINTENANCE.md">
+    <img src="https://img.shields.io/badge/commercial-maintenance%20available-8b5cf6" alt="Commercial maintenance available">
+  </a>
   <img src="https://img.shields.io/badge/telemetry-none-brightgreen" alt="No telemetry">
 </p>
 
@@ -307,13 +309,9 @@ An earlier two-way study against Trail-Code (October 2026, dctx `17dff0b`, befor
 
 ---
 
-## Open source and Enterprise
+## Open source and maintenance
 
-Project code is open source (Apache-2.0) and **ongoing work**; third-party dependencies retain their own licenses. Parts of the current development line use third-party crates; anything with third-party dependencies is not considered enterprise-ready.
-
-The dependency policy retains the **Ed25519 signature verifier** (`ed25519-dalek`) for plugin/index verification. Signed organization policy bundles are planned; their presence in the specification does not mean the CLI can enroll or verify them today. See the [dependency policy](docs/SPEC.md#27-dependencies-and-enterprise-readiness).
-
-**dctx Enterprise** — enterprise-ready builds, organization and tenant policy control, and direct support — is licensed per company, **from €45,000 per year**.
+dctx is open source under the [Apache-2.0](LICENSE) license, which makes it free for any use, including commercial use. The core (`pack`) and every modality stay open, and no feature is held back behind a paid edition. Companies that depend on dctx can fund its upkeep through a [maintenance agreement](MAINTENANCE.md), which covers security response times, long-term support and a written commitment for procurement, or through [GitHub Sponsors](https://github.com/sponsors/Eris-Margeta). Paying never changes the license and never closes a feature. The "dctx" name and logo are trademarks of Eris Margeta; see [TRADEMARK.md](TRADEMARK.md) for what forks may call themselves.
 
 ---
 
@@ -379,7 +377,7 @@ Start with [docs/SPEC.md](docs/SPEC.md), then [docs/CRATE-MAP.md](docs/CRATE-MAP
 
 ## License
 
-Apache License 2.0. Copyright Eris Margeta. Project code is licensed under Apache-2.0; third-party dependencies retain their own licenses. The desktop app is free, forever. dctx Enterprise is licensed per company (from €45,000 per year) and funds the project. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache License 2.0. Copyright Eris Margeta. Project code is licensed under Apache-2.0; third-party dependencies retain their own licenses. The desktop app is free, forever. Paid maintenance agreements fund the project; see [MAINTENANCE.md](MAINTENANCE.md). See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ## Contributing
 

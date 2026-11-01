@@ -35,4 +35,4 @@ tags:
 # Data used by GitHub actions to sync repo data
 repo: "https://github.com/Eris-Margeta/dctx"
 homepage: "https://dctx.app"
-license: "MIT"
+license: "Apache-2.0"

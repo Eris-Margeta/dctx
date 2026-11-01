@@ -18,7 +18,7 @@ Welcome to the dctx Desktop documentation!
 
 - **[Main README](../README.md)** - Project overview
 - **[Changelog](../CHANGELOG.md)** - Version history
-- **[License](../LICENSE)** - MIT License
+- **[License](../LICENSE)** - Apache-2.0 License
 
 ## Getting Help
 
@@ -27,6 +27,6 @@ Welcome to the dctx Desktop documentation!
 
 ## Contributing
 
-dctx Desktop is open source (MIT License). Contributions are welcome!
+dctx Desktop is open source (Apache-2.0 License). Contributions are welcome!
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for development setup and guidelines.

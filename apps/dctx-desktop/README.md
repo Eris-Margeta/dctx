@@ -177,7 +177,7 @@ apps/dctx-desktop/
 |-------|------------|
 | **Frontend** | TypeScript, Vite |
 | **Backend** | Rust, Tauri 2.0 |
-| **Core Logic** | dctx-core (MIT) |
+| **Core Logic** | dctx-core (Apache-2.0) |
 | **UI** | Custom CSS (no framework) |
 | **Package Manager** | Bun (10-100x faster than npm) |
 | **Runtime** | System WebView (no Electron bloat) |
@@ -205,7 +205,7 @@ Frontend (TypeScript/Vite)
   ↓ invoke("generate_snapshot")
 Backend (Rust/Tauri)
   ↓ calls
-dctx-core (MIT library)
+dctx-core (Apache-2.0 library)
   ↓ walks filesystem
 Returns snapshot
 ```
@@ -363,15 +363,15 @@ Organizations that need enterprise-ready builds, organization and tenant policy 
 ## Credits
 
 **Built by**: Eris Margeta
-**Core Library**: dctx-core (MIT) - See [crates/dctx-core](../../crates/dctx-core/)
+**Core Library**: dctx-core (Apache-2.0) - See [crates/dctx-core](../../crates/dctx-core/)
 **Powered by**: Tauri, Rust, Bun
 
 ---
 
 ## Related Projects
 
-- **dctx CLI** - Free command-line tool (MIT)
-- **dctx-core** - Core library for Rust (MIT)
+- **dctx CLI** - Free command-line tool (Apache-2.0)
+- **dctx-core** - Core library for Rust (Apache-2.0)
 - **dctx-py** - Python bindings (planned)
 - **dctx-node** - Node.js bindings (planned)
 
