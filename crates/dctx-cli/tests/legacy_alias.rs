@@ -116,8 +116,10 @@ fn stamp(path: &Path, millis: u64) {
 
 #[test]
 fn alias_snapshot_and_tree_are_the_pinned_bytes() {
-    // Every mode is pinned: `--tree-stamps=off` is the MOD-free text, `--tree-stamps=on` the 1.0.0 bytes.
+    // Every mode is pinned: no flag and `--tree-stamps=off` give the MOD-free text, `--tree-stamps=on` the 1.0.0 bytes.
     for (flag, tree, expected) in [
+        ("", false, include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot.txt").as_slice()),
+        ("", true, include_bytes!("../../dctx-template/tests/fixtures/legacy-tree.txt").as_slice()),
         ("--tree-stamps=off", false, include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot.txt").as_slice()),
         ("--tree-stamps=off", true, include_bytes!("../../dctx-template/tests/fixtures/legacy-tree.txt").as_slice()),
         ("--tree-stamps=on", false, include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot-stamped.txt").as_slice()),
@@ -125,7 +127,10 @@ fn alias_snapshot_and_tree_are_the_pinned_bytes() {
     ] {
         let case = Case::new();
         case.corpus();
-        let mut args = vec![".", "--debug-ignored", "--non-empty", "--binary", flag];
+        let mut args = vec![".", "--debug-ignored", "--non-empty", "--binary"];
+        if !flag.is_empty() {
+            args.push(flag);
+        }
         if tree {
             args.push("--tree");
         }
@@ -159,6 +164,9 @@ fn second_run_diffs_unchanged_stays_put_and_resets_retain_exports() {
     assert!(text.contains("[MODIFIED] change.rs"));
     assert!(text.contains("after: a different size"));
     assert!(!text.contains("fn kept()"));
+    assert!(text.contains("<UPDATED_DIRECTORY_TREE>\n[D]  (ID:ROOT)\n"), "default diff tree has no timestamp: {text}");
+    assert!(!text.contains("MOD:"), "default diff carries no MOD: {text}");
+    assert!(!String::from_utf8(case.text()).unwrap().contains("MOD:"), "default snapshot carries no MOD");
     case.write("change.rs", b"next version\n");
     case.run(&["."]);
     assert_eq!(case.version(), "V2");
@@ -172,6 +180,21 @@ fn second_run_diffs_unchanged_stays_put_and_resets_retain_exports() {
     assert_eq!(fs::read(&diff).unwrap(), bytes);
     assert_eq!(fs::read(case.base.join("cache/dctx/projects.db")).unwrap(), registry);
     assert_eq!(fs::read(case.root.join(".gitignore")).unwrap(), b"do-not-edit\n");
+}
+
+#[test]
+fn tree_stamps_on_keeps_mod_in_the_snapshot_and_the_diff_tree() {
+    let case = Case::new();
+    case.config("text_output_mode_generates_diff_files = true\nmax_diff_files = 1\n");
+    case.write("kept.rs", b"fn kept() {}\n");
+    case.write("change.rs", b"before\n");
+    case.run(&[".", "--tree-stamps=on"]);
+    assert!(String::from_utf8(case.text()).unwrap().contains("(ID:ROOT, MOD:"));
+    case.write("change.rs", b"after: a different size\n");
+    case.run(&[".", "--tree-stamps=on"]);
+    let diff = fs::read_to_string(case.root.join(".dctx/Corpus.llmcontext-V1.1-diff.txt")).unwrap();
+    assert!(diff.contains("<UPDATED_DIRECTORY_TREE>\n[D]  (ID:ROOT, MOD:"), "{diff}");
+    assert!(diff.contains("change.rs (ID:F001, MOD:") || diff.contains("(ID:F002, MOD:"), "{diff}");
 }
 
 #[test]

@@ -191,6 +191,16 @@ fn default_output_has_no_timestamps_and_ignores_them() {
 }
 
 #[test]
+fn the_two_default_template_copies_are_identical_and_mod_free() {
+    let template_copy = include_str!("../templates/default.dctx_template");
+    let core_copy = include_str!("../../dctx-core/templates/default.dctx_template");
+    assert_eq!(template_copy, core_copy, "dctx-template and dctx-core ship one default template");
+    assert!(!template_copy.contains("MOD:TIMESTAMP") && !template_copy.contains(", {{attr_mod}}:"));
+    let stamped = include_str!("../templates/stamped.dctx_template");
+    assert!(stamped.contains("{{attr_mod}}:TIMESTAMP") && stamped.contains("{{attr_mod}}:{{{node.mod}}}"));
+}
+
+#[test]
 fn tree_stamps_values_parse_strictly() {
     assert_eq!(TreeStamps::parse("on"), Ok(TreeStamps::On));
     assert_eq!(TreeStamps::parse("off"), Ok(TreeStamps::Off));

@@ -54,7 +54,7 @@ pub struct SnapshotConfig {
     pub debug_ignored: bool,
     /// Report selection diagnostics.
     pub debug_verbose: bool,
-    /// `MOD:` timestamps on the tree lines of the built-in default template.
+    /// `MOD:` timestamps on the tree lines of the built-in default template (off unless `--tree-stamps=on`).
     pub tree_stamps: dctx_template::TreeStamps,
 }
 

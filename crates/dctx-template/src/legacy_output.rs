@@ -31,10 +31,10 @@ pub enum LegacyLayout {
 /// 1.0.0 text byte for byte. Custom and compiled templates are never rewritten by this switch.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum TreeStamps {
-    /// Tree and root lines carry no modification timestamp.
+    /// Tree and root lines carry no modification timestamp. The default since 1.0.1.
+    #[default]
     Off,
     /// Tree and root lines carry `MOD:<ms>` as in 1.0.0.
-    #[default]
     On,
 }
 

@@ -193,6 +193,11 @@ fn tree_stamps_default_is_the_documented_one_and_bad_values_are_refused() {
     let path = project("stamps-default");
     let default = page(&path, &[]).expect("default");
     assert_eq!(
+        default.matches("MOD").count(),
+        0,
+        "the default page carries no timestamp: {default}"
+    );
+    assert_eq!(
         default,
         page(&path, &[&format!("--tree-stamps={}", DOCUMENTED_DEFAULT)]).expect("explicit")
     );
@@ -207,4 +212,4 @@ fn tree_stamps_default_is_the_documented_one_and_bad_values_are_refused() {
 }
 
 /// The value of `--tree-stamps` when the flag is absent.
-const DOCUMENTED_DEFAULT: &str = "on";
+const DOCUMENTED_DEFAULT: &str = "off";

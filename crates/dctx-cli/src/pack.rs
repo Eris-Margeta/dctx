@@ -81,7 +81,7 @@ Pack filters (ADR-011, ADR-009):
   --output, -o <path>   Write the page to one file
   --clipboard, -c       Copy the page to the clipboard
   --json                Summary report instead of the source page
-  --tree-stamps=on|off  MOD: timestamp on every tree line (on = 1.0.0 text; off keeps the page prefix stable across a touch)
+  --tree-stamps=on|off  MOD: timestamp on tree lines: off (default) keeps the page prefix stable across a touch, on = the 1.0.0 text
 Task context (agent cards):
   --for <text>          Instead of the source page: map find on the names in <text>, then neighbors and read of the best hits
   --budget <tokens>     With --for: cap in estimated tokens, ceil(2 * UTF-8 bytes / 7), 100..100000 (default 3000); whole lines only
