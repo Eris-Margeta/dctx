@@ -1,3 +1,5 @@
+> **Superseded (November 2026).** The desktop app is Apache-2.0 open source with no paid edition, and dctx is maintained through agreements described in MAINTENANCE.md at the repository root. The prices, tiers and revenue figures below are historical planning notes and are not current.
+
 # Distribution Strategy - dctx Desktop (No Certificate Cost)
 
 ## Overview

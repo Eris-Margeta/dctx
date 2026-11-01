@@ -113,7 +113,7 @@ Current version number.
 ---
 
 ### 📄 LICENSE
-Proprietary software license. Source available for audit, commercial use requires paid license ($29 one-time).
+Apache-2.0 open source license. Free for any use, including commercial use. Paid support is available through a maintenance agreement; see MAINTENANCE.md in the repository root.
 
 ---
 

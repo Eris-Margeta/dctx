@@ -294,7 +294,7 @@ bun run tauri:build
 
 dctx Desktop is **free, forever** — for individuals, teams and companies — and licensed under Apache-2.0 like the rest of this repository. See the root [LICENSE](../../LICENSE) and the announcement on [dctx.app](https://dctx.app/news/desktop-free-forever/).
 
-Organizations that need enterprise-ready builds, organization and tenant policy control and direct support can license **dctx Enterprise** (per company, from €45,000 per year).
+There is no proprietary edition. Organizations that want support or long-term maintenance can sign a maintenance agreement; see [MAINTENANCE.md](../../MAINTENANCE.md).
 
 ---
 

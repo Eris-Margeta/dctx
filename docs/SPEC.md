@@ -786,7 +786,7 @@ the code, without becoming a memory product.
 ## 27. Dependencies and enterprise readiness
 
 **Rule: anything with third-party dependencies is not enterprise-ready.** The open
-repository is ongoing work; enterprise-ready builds are a licensed product (§27.3).
+repository is ongoing work; enterprise-ready builds are an engineering target, not a separate product (§27.3).
 
 | Line | Third-party crates in the default `dctx` closure (`cargo tree -e normal`) | Status |
 |---|---|---|
@@ -828,12 +828,9 @@ repository is ongoing work; enterprise-ready builds are a licensed product (§27
 The desktop app is a separate surface over the facade and is never part of the CLI or
 library closure.
 
-### 27.3 Enterprise
+### 27.3 Maintenance
 
-dctx Enterprise is licensed per company, from €45,000 per year: the enterprise-ready
-build (§27 table), organization and tenant policy control (§14–17), signed policy
-bundles, and direct support. The open-source repository remains Apache-2.0 and is where
-the work happens; the desktop app is free.
+dctx is Apache-2.0 open source, including the desktop app. There is no proprietary edition and no license fee. Organizations that depend on dctx can sign a maintenance agreement for security response targets, long-term support and priority work; see [MAINTENANCE.md](../MAINTENANCE.md). The build-closure targets in the table above are engineering goals, not a separate product.
 
 ## 28. Conformance suite
 
