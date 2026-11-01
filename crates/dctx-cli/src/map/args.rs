@@ -47,6 +47,8 @@ pub(super) const HELP: &str = "Usage: dctx map <map|find|neighbors|explain|read|
                           Without it the answer bytes do not change across unrelated edits or time.
   --profile               Stderr stage timings and the five slowest files. DCTX_PROFILE=1 is the same switch.
   DCTX_MAX_SOURCE_BYTES   Env: total source bytes one scan may read, 1..17179869184 (default 1073741824 = 1 GiB).
+  DCTX_MAX_RECORDS        Env: files, symbols and edges one index may hold, 1..100000000 (default 1000000). A bigger place is refused while it is scanned.
+  DCTX_MAX_ENTRIES        Env: files and directories one scan may visit, 1..100000000 (default 100000).
   DCTX_FRESHNESS          Env: strict_live hashes every file on a warm start; the default (stamp) trusts a file whose size, mtime and inode are unchanged and older than 2 s.
   --budget TOKENS         Output tokens, 1..2000 (explain max: 1000).
                           Read with no --budget uses the 2,000-token hard cap.

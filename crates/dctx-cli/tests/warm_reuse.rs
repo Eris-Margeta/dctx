@@ -186,3 +186,30 @@ fn a_settled_file_is_trusted_by_its_stamp_until_strict_live_asks_for_the_bytes()
     assert!(!typo.status.success());
     assert!(String::from_utf8_lossy(&typo.stderr).contains("DCTX_FRESHNESS"), "{}", String::from_utf8_lossy(&typo.stderr));
 }
+
+#[test]
+fn caps_early_refusal_names_the_cap_and_the_override_passes() {
+    let repo = Repository::new();
+    for name in ["a.rs", "b.rs", "c.rs", "d.rs"] {
+        fs::write(repo.repo().join(name), format!("fn f_{}() {{}}\n", &name[..1])).expect("source");
+    }
+    let place = repo.repo().to_string_lossy().into_owned();
+    let args = ["map", "find", "f_a", "--place", place.as_str()];
+
+    for (variable, resource) in [("DCTX_MAX_RECORDS", "records"), ("DCTX_MAX_ENTRIES", "entries")] {
+        let refused = repo.output_env(&args, &[(variable, "2")]);
+        let stderr = String::from_utf8_lossy(&refused.stderr).into_owned();
+        assert_eq!(refused.status.code(), Some(3), "{variable}: {stderr}");
+        assert!(stderr.contains(&format!("{resource} > 2")), "{variable}: {stderr}");
+        assert!(stderr.contains(variable), "{variable} is named in the hint: {stderr}");
+        assert!(refused.stdout.is_empty(), "{variable}: no partial answer");
+
+        let passed = repo.output_env(&args, &[(variable, "1000")]);
+        assert!(passed.status.success(), "{variable}: {}", String::from_utf8_lossy(&passed.stderr));
+        assert!(String::from_utf8_lossy(&passed.stdout).contains("f_a"), "{variable}");
+
+        let bad = repo.output_env(&args, &[(variable, "0")]);
+        assert_eq!(bad.status.code(), Some(3), "{variable}: {}", String::from_utf8_lossy(&bad.stderr));
+        assert!(String::from_utf8_lossy(&bad.stderr).contains(variable), "{variable} is named when its value is invalid");
+    }
+}

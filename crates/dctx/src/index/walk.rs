@@ -101,6 +101,7 @@ pub(crate) fn walk_source(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
     }
     visit_dir(args, languages.as_deref(), &RelativePath::root(), &mut state)?;
     refs::link(&state.nodes, &mut state.edges, &mut state.text, &state.file_refs);
+    check_records(args, &state)?;
     Ok(finish(args, state))
 }
 
@@ -159,7 +160,7 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
             push_module(&mut state.nodes, &mut state.text, path.as_str(), 0, [1, 1]);
         }
         state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis(), stamp));
-        return Ok(());
+        return check_records(args, state);
     }
     if meta.size > args.limits.file_bytes {
         state.partial = true;
@@ -229,6 +230,16 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
         watch.charge(Stage::GraphAssembly, graph_mark);
     }
     state.files.push(file_row(path.as_str(), decision, Some(digest), meta.size, meta.modified.millis(), stamp));
+    check_records(args, state)
+}
+
+/// Refuses as soon as a record table passes the cap, instead of after the whole tree was parsed.
+fn check_records(args: &WalkArgs<'_>, state: &State) -> Result<(), DctxError> {
+    let cap = args.limits.records;
+    let over = |len: usize| u64::try_from(len).map_or(true, |len| len > cap);
+    if over(state.nodes.len()) || over(state.edges.len()) || over(state.files.len()) {
+        return Err(limit(Resource::Records, cap));
+    }
     Ok(())
 }
 

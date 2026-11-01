@@ -41,6 +41,14 @@ const SYNTAX_PARSER: &str = "dctx-lex-rust/syn-3.0.9";
 /// Environment variable that picks the freshness rule of a warm start.
 pub const FRESHNESS_ENV: &str = "DCTX_FRESHNESS";
 
+/// Records one generation may carry: `DCTX_MAX_RECORDS` when valid, otherwise 1,000,000.
+fn records_cap() -> usize {
+    crate::domain::records_ceiling()
+        .ok()
+        .and_then(|cap| usize::try_from(cap).ok())
+        .unwrap_or(MAX_COUNT)
+}
+
 /// True when a warm start may trust an equal stat stamp. `DCTX_FRESHNESS=strict_live` hashes every file instead.
 fn stamp_pass_enabled() -> Result<bool, DctxError> {
     match std::env::var(FRESHNESS_ENV) {

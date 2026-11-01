@@ -1,4 +1,4 @@
-use super::{MAX_COUNT, MAX_STRING};
+use super::{MAX_STRING, records_cap};
 use crate::domain::DctxError;
 
 pub(super) struct Reader<'a> {
@@ -65,7 +65,7 @@ impl<'a> Reader<'a> {
         let count = usize::try_from(self.u64()?).map_err(|_| DctxError::CorruptIndex {
             reason: "generation count",
         })?;
-        if count > MAX_COUNT {
+        if count > records_cap() {
             return Err(DctxError::CorruptIndex {
                 reason: "generation count",
             });

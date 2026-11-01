@@ -1,4 +1,4 @@
-use super::{MAX_COUNT, MAX_STRING};
+use super::{MAX_STRING, records_cap};
 use crate::domain::{DctxError, FreshnessMode};
 use dctx_core::FileHandlingDecision;
 
@@ -11,15 +11,16 @@ pub(super) fn push_u64(out: &mut Vec<u8>, value: u64) {
 }
 
 pub(super) fn push_count(out: &mut Vec<u8>, count: usize) -> Result<(), DctxError> {
-    if count > MAX_COUNT {
+    let cap = records_cap();
+    if count > cap {
         return Err(DctxError::ResourceLimit {
             resource: crate::domain::Resource::Records,
-            limit: MAX_COUNT as u64,
+            limit: cap as u64,
         });
     }
     let raw = u64::try_from(count).map_err(|_| DctxError::ResourceLimit {
         resource: crate::domain::Resource::Records,
-        limit: MAX_COUNT as u64,
+        limit: cap as u64,
     })?;
     push_u64(out, raw);
     Ok(())
