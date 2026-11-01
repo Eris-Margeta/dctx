@@ -11,6 +11,7 @@ mod layout;
 mod ocaml_body;
 mod lua;
 mod r;
+mod verilog;
 #[cfg(test)]
 mod tests;
 
@@ -45,7 +46,7 @@ struct Block {
 
 /// True for the six tags of this family.
 pub(super) fn handles(language: &str) -> bool {
-    matches!(language, "elixir" | "lua" | "ocaml" | "r" | "julia" | "haskell")
+    matches!(language, "elixir" | "lua" | "ocaml" | "r" | "julia" | "haskell" | "verilog")
 }
 
 /// Symbols of `text`, or none for an unknown tag.
@@ -57,6 +58,7 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
         "r" => r::decls(text),
         "ocaml" => layout::ocaml(text),
         "haskell" => haskell::haskell(text),
+        "verilog" => scan(&verilog::SCAN, text),
         _ => return Vec::new(),
     };
     to_symbols(text, decls)

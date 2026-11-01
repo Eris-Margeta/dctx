@@ -1,6 +1,7 @@
-//! Call references of the block outline family: Lua, Elixir, Julia, R, OCaml and Haskell.
+//! Call references of the block outline family: Lua, Elixir, Julia, R, OCaml, Haskell and Verilog.
 //! Lua, Elixir, Julia and R call with parentheses: an identifier followed by `(` (one space allowed) inside a function span.
 //! OCaml and Haskell call by juxtaposition: any identifier in a body that names a function declared in the same file.
+//! Verilog adds module-scope calls and module instantiation lines in [`calls_verilog`].
 //! Every span is scanned on the comment- and string-masked source; `refs.rs` resolves the raw references and drops ambiguous ones.
 //! Heuristic by design: no types, no receivers, no imports. Consumes authorized UTF-8 from extract; never panics on malformed input.
 
@@ -45,6 +46,12 @@ const R: Syntax = Syntax { line: &["#"], block: None, nested: false, quotes: b"\
 const OCAML: Syntax = Syntax { line: &[], block: Some(("(*", "*)")), nested: true, quotes: b"\"", triple: false };
 /// Haskell: `--` comments, nested `{- -}` comments and double-quoted strings.
 const HASKELL: Syntax = Syntax { line: &["--"], block: Some(("{-", "-}")), nested: true, quotes: b"\"", triple: false };
+/// Verilog: `//` comments.
+const VERILOG_LINE: Syntax = Syntax { line: &["//"], block: None, nested: false, quotes: b"\"" , triple: false };
+/// Verilog: `/* */` comments.
+const VERILOG_BLOCK: Syntax = Syntax { line: &[], block: Some(("/*", "*/")), nested: false, quotes: b"", triple: false };
+/// Verilog: `"` strings.
+const VERILOG_STRING: Syntax = Syntax { line: &[], block: None, nested: false, quotes: b"\"" , triple: false };
 
 /// The source with comments and strings blanked, or `None` for a tag of another family.
 fn masked_of(language: &str, text: &str) -> Option<String> {
@@ -55,6 +62,7 @@ fn masked_of(language: &str, text: &str) -> Option<String> {
         "r" => mask(text, &R),
         "ocaml" => mask(text, &OCAML),
         "haskell" => mask(text, &HASKELL),
+        "verilog" => mask(&mask(&mask(text, &VERILOG_LINE), &VERILOG_BLOCK), &VERILOG_STRING),
         _ => return None,
     })
 }
@@ -68,6 +76,8 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
         return Vec::new();
     };
     let juxtaposed = matches!(language, "ocaml" | "haskell");
+    // In Verilog the enclosing module is a caller too, so module-scope `type` spans are scanned like function bodies.
+    let verilog = language == "verilog";
     let declared: HashSet<&str> = symbols.iter().filter(|symbol| symbol.kind == "fn").map(|symbol| tail(language, &symbol.name)).collect();
     let mut seen: HashMap<&str, u32> = HashMap::new();
     let mut refs = Vec::new();
@@ -75,14 +85,21 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
         let count = seen.entry(symbol.name.as_str()).or_insert(0);
         *count += 1;
         let ordinal = if *count == 1 { 0 } else { *count };
-        if symbol.kind != "fn" || symbol.graph != NodeKind::Symbol {
+        let scan = if verilog { matches!(symbol.kind.as_str(), "fn" | "type") } else { symbol.kind == "fn" };
+        if !scan || symbol.graph != NodeKind::Symbol {
             continue;
         }
         let Some(body) = body_of(&masked, symbol.span) else {
             continue;
         };
         let own = tail(language, &symbol.name);
-        let names = if juxtaposed { used_names(body, language, own, &declared) } else { call_names(body, language, own) };
+        let names = if verilog {
+            super::calls_verilog::call_names(body, own)
+        } else if juxtaposed {
+            used_names(body, language, own, &declared)
+        } else {
+            call_names(body, language, own)
+        };
         let mut src = String::new();
         write_stable_id(&mut src, b's', path, &symbol.name, ordinal);
         for name in names {
@@ -236,6 +253,8 @@ mod tests {
         assert_eq!(pairs("ocaml", ocaml), [pair("ml_run", "ml_help")]);
         let haskell = "hsHelp :: Int -> Int\nhsHelp x = x + 1\n\nhsRun :: Int -> Int\nhsRun y = hsHelp y\n";
         assert_eq!(pairs("haskell", haskell), [pair("hsRun", "hsHelp")]);
+        let verilog = "module alu\n  function add(input int x)\n    return x\n  endfunction\n  task run(input v)\n    add(v)\n  endtask\nendmodule\nmodule top\n  alu #(.W(1)) u_alu (.a(p));\nendmodule\n";
+        assert_eq!(pairs("verilog", verilog), [pair("alu", "add"), pair("alu::run", "add"), pair("top", "alu")]);
     }
 
     #[test]
@@ -289,13 +308,15 @@ mod tests {
         assert!(pairs("ocaml", ocaml).is_empty());
         let haskell = "a :: Int\na = 1\nb :: Int\nb =\n  -- a\n  {- a -} 2 + length \"a\"\n";
         assert!(pairs("haskell", haskell).is_empty());
+        let verilog = "module alu\n  // hidden(x)\n  string s = \"str(x)\";\n  /* block(1) */\n  shown()\nendmodule\n";
+        assert_eq!(pairs("verilog", verilog), [pair("alu", "shown")]);
     }
 
     #[test]
     fn odd_input_stays_quiet() {
         assert!(refs_of("unknown", "a.src", "function f() g() end").is_empty());
         for sample in ["", "function f(", "let f x =", "f <- function(", "def f() = \u{e9}\u{1F600}(1)\n", "\u{0}\r\n\r\nlet g = h ()\r\n"] {
-            for tag in ["lua", "elixir", "julia", "r", "ocaml", "haskell"] {
+            for tag in ["lua", "elixir", "julia", "r", "ocaml", "haskell", "verilog"] {
                 let _ = refs_of(tag, "a.src", sample);
             }
         }

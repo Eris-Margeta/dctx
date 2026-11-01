@@ -3,7 +3,7 @@
 use super::super::{handles, symbols};
 use crate::index::extract::{extract_structural_refs, language_of};
 
-const TAGS: &[&str] = &["elixir", "lua", "ocaml", "r", "julia", "haskell"];
+const TAGS: &[&str] = &["elixir", "lua", "ocaml", "r", "julia", "haskell", "verilog"];
 
 fn named(tag: &str, text: &str) -> Vec<(String, String)> {
     symbols(tag, text).into_iter().map(|symbol| (symbol.name, symbol.kind)).collect()
@@ -30,6 +30,8 @@ fn every_block_language_finds_its_types_and_functions() {
     assert_eq!(named("julia", julia), [pair("solve", "fn"), pair("Point", "type"), pair("Point::x", "field"), pair("Box", "type")]);
     let haskell = "module Main where\n\nadd :: Int -> Int -> Int\nadd x y = x + y\n\ndata Shape = Circle | Square\n";
     assert_eq!(named("haskell", haskell), [pair("add", "fn"), pair("Shape", "type")]);
+    let verilog = "module test\n  function test_fn\nendmodule\n";
+    assert_eq!(named("verilog", verilog), [pair("test", "type"), pair("test::test_fn", "fn")]);
 }
 
 #[test]
@@ -64,6 +66,9 @@ fn comments_strings_and_locals_hide_declarations() {
     assert_eq!(named("r", "# f <- function() 1\ng <- function() {\n  inner <- function() 2\n}\nx <- list(\n  k = function() 3\n)\n"), [pair("g", "fn")]);
     assert_eq!(named("julia", "#= function hidden() end =#\n# function nope() end\ns = \"function fake() end\"\nfunction shown() end\n"), [pair("shown", "fn")]);
     assert_eq!(named("haskell", "-- hidden :: Int\n{- data Hidden = H -}\nf :: Int\nf = 1\n  where g :: Int\n        g = 2\n"), [pair("f", "fn")]);
+    // Verilog: a commented-out declaration and one inside a string are never symbols.
+    let verilog = "// function hidden(input int x);\nmodule m\n  string s = \"function fake(x);\";\n  function shown(input int y);\n  endfunction\nendmodule\n";
+    assert_eq!(named("verilog", verilog), [pair("m", "type"), pair("m::shown", "fn")]);
 }
 
 #[test]
@@ -76,6 +81,7 @@ fn denylisted_keywords_are_never_symbols() {
             ("r", format!("{word} <- function(x) x\n{word} = function(x) x\n")),
             ("julia", format!("function {word}(x)\nend\nstruct {word}\nend\n")),
             ("haskell", format!("{word} :: Int\ndata {word} = A\n")),
+            ("verilog", format!("module {word};\nendmodule\nfunction {word}();\nendfunction\n")),
         ] {
             let found = named(tag, &text);
             assert!(found.iter().all(|(name, _)| name != word && !name.ends_with(&format!("::{word}"))), "{tag} {word}: {found:?}");
@@ -99,6 +105,8 @@ fn malformed_input_never_panics_and_stays_bounded() {
         "(* never closed let x = 1",
         "module M = struct\n  let a = 1\n",
         "struct\nend end end\n",
+        "module\nmodule name\nmodule name #(\nmodule name #(\nmodule (\nendmodule endmodule endmodule\nend\nendmodule\n",
+        "function automatic logic\nfunction automatic logic [W\nfunction automatic logic [W-1:0] add(\ntask\ntask automatic\nendfunction endtask endmodule\n",
         ":: Int\n,, :: Int\na, :: Int\nclass\ndata\nnewtype =>\ndata Eq a =>\n",
         "{- never closed f :: Int",
         "abstract type\nabstract\nprimitive type\nfunction \u{1F600}(x)\n",
@@ -136,6 +144,10 @@ fn extensions_dispatch_to_the_block_family() {
         ("a.R", "r"),
         ("a.jl", "julia"),
         ("a.hs", "haskell"),
+        ("a.v", "verilog"),
+        ("a.vh", "verilog"),
+        ("a.sv", "verilog"),
+        ("a.svh", "verilog"),
     ] {
         assert_eq!(language_of(path), tag, "{path}");
         assert!(handles(tag));

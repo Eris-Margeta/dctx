@@ -10,6 +10,7 @@ mod calls_block;
 mod calls_brace;
 mod calls_infra;
 mod calls_lisp;
+mod calls_verilog;
 mod infra;
 pub(super) mod web;
 mod lisp;

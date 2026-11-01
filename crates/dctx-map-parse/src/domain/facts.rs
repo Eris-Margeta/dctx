@@ -49,6 +49,8 @@ pub enum Language {
     Gleam,
     /// Groovy source (`.groovy`) and Gradle build scripts (`.gradle`).
     Groovy,
+    /// Verilog/SystemVerilog source (`.v`, `.vh`, `.sv`, `.svh`).
+    Verilog,
     /// Plain-text documents (`.txt`, `.rst`, `.adoc`, `.asciidoc`, `.org`, `.tex`). Headings live in the facade.
     Text,
     /// Elixir source (`.ex`, `.exs`). Heuristic symbols live in the facade.
@@ -144,6 +146,10 @@ const EXTENSIONS: &[(&str, Language)] = &[
     ("gleam", Language::Gleam),
     ("groovy", Language::Groovy),
     ("gradle", Language::Groovy),
+    ("v", Language::Verilog),
+    ("vh", Language::Verilog),
+    ("sv", Language::Verilog),
+    ("svh", Language::Verilog),
     ("txt", Language::Text),
     ("rst", Language::Text),
     ("adoc", Language::Text),
@@ -360,8 +366,8 @@ mod tests {
         const LITERAL_EXTENSIONS: &[&str] = &[
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
-            "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy",
-            "gradle", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
+            "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy", "gradle", "v", "vh", "sv", "svh",
+            "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
             "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl", "scm", "ss", "el", "nix",
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];
