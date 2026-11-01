@@ -24,6 +24,43 @@ pub enum LegacyLayout {
     Diff,
 }
 
+/// Whether the built-in legacy tree lines carry `MOD:` timestamps.
+///
+/// `Off` selects the default template, whose tree lines are content-derived (`ID`, `SIZE`) and
+/// therefore byte-stable across a bare `touch`. `On` selects the stamped template, which is the
+/// 1.0.0 text byte for byte. Custom and compiled templates are never rewritten by this switch.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum TreeStamps {
+    /// Tree and root lines carry no modification timestamp.
+    Off,
+    /// Tree and root lines carry `MOD:<ms>` as in 1.0.0.
+    #[default]
+    On,
+}
+
+impl TreeStamps {
+    /// Parses the value of `--tree-stamps`: `on` or `off`.
+    ///
+    /// # Errors
+    /// Returns a message naming the accepted values for any other text.
+    pub fn parse(value: &str) -> Result<Self, String> {
+        match value {
+            "on" => Ok(Self::On),
+            "off" => Ok(Self::Off),
+            other => Err(format!("--tree-stamps takes on or off, not `{other}`")),
+        }
+    }
+
+    /// The built-in default template for this setting, without runtime variables.
+    #[must_use]
+    pub fn template(self) -> Template {
+        Template::parse(match self {
+            Self::Off => include_str!("../templates/default.dctx_template"),
+            Self::On => include_str!("../templates/stamped.dctx_template"),
+        })
+    }
+}
+
 /// Injected settings for the facade's optional legacy document output.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LegacyOutput {

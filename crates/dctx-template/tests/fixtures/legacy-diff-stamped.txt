@@ -1,0 +1,28 @@
+[DCTX_LLM_CONTEXT_DIFF_V1.1]
+Version Change: V1 -> V1.1
+
+<CHANGES_SUMMARY>
+[ADDED] added.txt
+[MODIFIED] changed.txt
+[REMOVED] deleted_file.txt
+[ADDED] new_dir/
+[MODIFIED] icon.svg
+</CHANGES_SUMMARY>
+
+<UPDATED_DIRECTORY_TREE>
+[D]  (ID:ROOT, MOD:1000)
+  [F] added.txt (ID:F001, MOD:2000, SIZE:4)
+  [F] changed.txt (ID:F002, MOD:2100, SIZE:11)
+  [F] icon.svg (ID:F003, MOD:2200, SIZE:6)
+  [D] new_dir (ID:D004, MOD:2300)
+  [F] unchanged.txt (ID:F005, MOD:2400, SIZE:11)</UPDATED_DIRECTORY_TREE>
+
+<FILE_CONTENT_START ID="F001" PATH="added.txt" LINES="1">
+NEW!
+</FILE_CONTENT_END ID="F001">
+<FILE_CONTENT_START ID="F002" PATH="changed.txt" LINES="1">
+New content
+</FILE_CONTENT_END ID="F002">
+<FILE_CONTENT_START ID="F003" PATH="icon.svg" LINES="0">
+[SVG file, content omitted (omit_svg_content=true)]
+</FILE_CONTENT_END ID="F003">

@@ -161,6 +161,14 @@ fn parse_snapshot_args(args: &[String]) -> Result<CliCommand, String> {
                 config.filter_config = config.filter_config.with_collect_ignored(true);
             }
             "--debug-verbose" | "-V" => config.debug_verbose = true,
+            "--tree-stamps" => {
+                index += 1;
+                let value = args.get(index).ok_or("--tree-stamps requires on or off")?;
+                config.tree_stamps = dctx_template::TreeStamps::parse(value)?;
+            }
+            flag if flag.starts_with("--tree-stamps=") => {
+                config.tree_stamps = dctx_template::TreeStamps::parse(&flag["--tree-stamps=".len()..])?;
+            }
             "--ext" => {
                 index += 1;
                 let value = args.get(index).ok_or("--ext requires a comma-separated list of extensions")?;

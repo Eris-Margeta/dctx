@@ -136,3 +136,75 @@ fn default_omits_binary_and_ext_keeps_rust() {
     assert!(only.report_line.contains("files=1"));
     let _ = std::fs::remove_dir_all(&path);
 }
+
+fn page(path: &std::path::Path, extra: &[&str]) -> Result<String, String> {
+    let mut args = vec!["pack".to_string(), path.display().to_string()];
+    args.extend(extra.iter().map(|word| (*word).to_string()));
+    execute(&args).map(|outcome| String::from_utf8(outcome.body).expect("utf8"))
+}
+
+fn touch(file: &std::path::Path, seconds: u64) {
+    let when = std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds);
+    std::fs::File::options()
+        .write(true)
+        .open(file)
+        .expect("open")
+        .set_times(std::fs::FileTimes::new().set_modified(when))
+        .expect("touch");
+}
+
+#[test]
+fn tree_stamps_flag_selects_the_template_and_off_survives_a_touch() {
+    let path = project("stamps");
+    touch(&path.join("kept.rs"), 1_000_000);
+    let off = page(&path, &["--tree-stamps=off"]).expect("off");
+    let spaced = page(&path, &["--tree-stamps", "off"]).expect("off, two words");
+    let on = page(&path, &["--tree-stamps=on"]).expect("on");
+    assert_eq!(off, spaced);
+    assert_eq!(off.matches("MOD").count(), 0, "{off}");
+    assert!(
+        off.contains("(ID:ROOT)") && off.contains("kept.rs (ID:F001, SIZE:13)"),
+        "{off}"
+    );
+    assert!(
+        on.contains("(ID:ROOT, MOD:") && on.contains("kept.rs (ID:F001, MOD:1000000000, SIZE:13)"),
+        "{on}"
+    );
+    assert!(
+        on.contains("MOD:TIMESTAMP"),
+        "the stamped instructions explain MOD"
+    );
+    touch(&path.join("kept.rs"), 2_000_000);
+    assert_eq!(
+        page(&path, &["--tree-stamps=off"]).expect("off again"),
+        off,
+        "a bare touch changes nothing"
+    );
+    assert_ne!(
+        page(&path, &["--tree-stamps=on"]).expect("on again"),
+        on,
+        "the stamped page follows the mtime"
+    );
+    let _ = std::fs::remove_dir_all(&path);
+}
+
+#[test]
+fn tree_stamps_default_is_the_documented_one_and_bad_values_are_refused() {
+    let path = project("stamps-default");
+    let default = page(&path, &[]).expect("default");
+    assert_eq!(
+        default,
+        page(&path, &[&format!("--tree-stamps={}", DOCUMENTED_DEFAULT)]).expect("explicit")
+    );
+    for (words, wanted) in [
+        (&["--tree-stamps=maybe"][..], "on or off"),
+        (&["--tree-stamps"][..], "requires on or off"),
+    ] {
+        let message = page(&path, words).expect_err("refused");
+        assert!(message.contains(wanted), "{message}");
+    }
+    let _ = std::fs::remove_dir_all(&path);
+}
+
+/// The value of `--tree-stamps` when the flag is absent.
+const DOCUMENTED_DEFAULT: &str = "on";

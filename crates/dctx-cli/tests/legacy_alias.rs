@@ -116,18 +116,21 @@ fn stamp(path: &Path, millis: u64) {
 
 #[test]
 fn alias_snapshot_and_tree_are_the_pinned_bytes() {
-    for (tree, expected) in [
-        (false, include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot.txt").as_slice()),
-        (true, include_bytes!("../../dctx-template/tests/fixtures/legacy-tree.txt").as_slice()),
+    // Every mode is pinned: `--tree-stamps=off` is the MOD-free text, `--tree-stamps=on` the 1.0.0 bytes.
+    for (flag, tree, expected) in [
+        ("--tree-stamps=off", false, include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot.txt").as_slice()),
+        ("--tree-stamps=off", true, include_bytes!("../../dctx-template/tests/fixtures/legacy-tree.txt").as_slice()),
+        ("--tree-stamps=on", false, include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot-stamped.txt").as_slice()),
+        ("--tree-stamps=on", true, include_bytes!("../../dctx-template/tests/fixtures/legacy-tree-stamped.txt").as_slice()),
     ] {
         let case = Case::new();
         case.corpus();
-        let mut args = vec![".", "--debug-ignored", "--non-empty", "--binary"];
+        let mut args = vec![".", "--debug-ignored", "--non-empty", "--binary", flag];
         if tree {
             args.push("--tree");
         }
         case.run(&args);
-        assert_eq!(case.text(), expected);
+        assert_eq!(case.text(), expected, "{flag} tree={tree}");
         assert_eq!(case.version(), "V1");
         assert!(!case.root.join(".gitignore").exists());
         assert_eq!(fs::read(case.root.join(".git/config")).unwrap(), b"sensitive");
@@ -221,14 +224,15 @@ fn filters_do_not_change_state_and_local_omit_is_not_cached() {
 fn configured_template_binary_only_and_rule_read_errors_keep_legacy_behavior() {
     let case = Case::new();
     case.corpus();
-    let template = dctx_template::Template::parse(include_str!("../../dctx-template/templates/default.dctx_template"));
+    // A custom template keeps `{{{node.mod}}}`: the stamped text compiled as a user template renders the 1.0.0 bytes.
+    let template = dctx_template::TreeStamps::On.template();
     let compiled = template.compile("custom").unwrap();
     let directory = case.base.join("cache/dctx/templates");
     fs::create_dir_all(&directory).unwrap();
     compiled.serialize(&mut fs::File::create(directory.join("custom.bin")).unwrap()).unwrap();
     case.config("default_template = 'custom'\n");
     case.run(&[".", "--debug-ignored", "--non-empty", "--binary"]);
-    assert_eq!(case.text(), include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot.txt"));
+    assert_eq!(case.text(), include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot-stamped.txt"));
     let saved = case.text();
     case.config("output_mode = 'binary'\n");
     case.run(&[".", "--reset"]);

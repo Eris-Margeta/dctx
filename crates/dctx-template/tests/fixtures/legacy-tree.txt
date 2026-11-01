@@ -2,7 +2,7 @@
 [DIRECTORY:Corpus]
 <INSTRUCTIONS>
 1. Manifest: The <DIRECTORY_TREE> section lists all files.
-   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID, MOD:TIMESTAMP)
+   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID)
    - TYPE is [D] for directory, [F] for file.
 2. Content Access: To read a specific file:
    - Find its UNIQUE_ID from the directory tree.
@@ -10,12 +10,12 @@
    - The content is between this marker and </FILE_CONTENT_END ID=\"UNIQUE_ID\">
 </INSTRUCTIONS>
 <DIRECTORY_TREE>
-[D]  (ID:ROOT, MOD:1000)
-  [D] .git [IGNORED] (ID:D001, MOD:1600)
-    [F] .git/config [IGNORED] (ID:F002, MOD:1700, SIZE:9)
-  [F] Cargo.lock (ID:F003, MOD:1500, SIZE:7)
-  [F] logo.png (ID:F004, MOD:1400, SIZE:7)
-  [F] secret.env [IGNORED] (ID:F005, MOD:1300, SIZE:9)
-  [D] src (ID:D006, MOD:1100)
-    [F] src/main.rs (ID:F007, MOD:1200, SIZE:13)
+[D]  (ID:ROOT)
+  [D] .git [IGNORED] (ID:D001)
+    [F] .git/config [IGNORED] (ID:F002, SIZE:9)
+  [F] Cargo.lock (ID:F003, SIZE:7)
+  [F] logo.png (ID:F004, SIZE:7)
+  [F] secret.env [IGNORED] (ID:F005, SIZE:9)
+  [D] src (ID:D006)
+    [F] src/main.rs (ID:F007, SIZE:13)
 </DIRECTORY_TREE>
