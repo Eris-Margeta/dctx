@@ -218,6 +218,10 @@ pub(crate) struct IndexedFile {
     pub size: u64,
     /// Metadata modification time, in milliseconds.
     pub modified: u64,
+    /// Stat identity (size, mtime ns, inode) taken before the bytes were read, when the source could vouch for
+    /// it (settled mtime, inode known). Never part of the generation digest or any answer: only the warm
+    /// reuse check reads it, to skip hashing a file whose live stamp is equal.
+    pub stamp: Option<dctx_core::facts::EntryStamp>,
 }
 
 /// One graph node.

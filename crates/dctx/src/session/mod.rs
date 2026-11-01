@@ -142,6 +142,7 @@ pub struct Session {
     pins: BTreeMap<u64, Weak<Pin>>,
     content_reads: u64,
     cached_content_reads: u64,
+    stamp_skipped_reads: u64,
     managed: Option<PersistedCache>,
 }
 
@@ -165,6 +166,12 @@ impl Session {
     /// A cold snapshot leaves this at 0.
     pub fn cached_content_reads(&self) -> u64 {
         self.cached_content_reads
+    }
+
+    /// Files a warm start accepted from an equal stat stamp (size, mtime ns, inode) without reading their bytes.
+    /// 0 on a cold snapshot, on a file inside the racy window, and under `DCTX_FRESHNESS=strict_live`.
+    pub fn stamp_skipped_reads(&self) -> u64 {
+        self.stamp_skipped_reads
     }
 
     /// Generations still stored.

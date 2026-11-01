@@ -141,12 +141,13 @@ fn visit_dir(args: &WalkArgs<'_>, languages: Option<&[String]>, dir: &RelativePa
 }
 
 fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDecision, state: &mut State) -> Result<(), DctxError> {
-    let meta = match args.source.metadata(path).map_err(DctxError::from_core) {
-        Ok(meta) => meta,
+    // The stamp is taken with the stat, before any byte is read: an edit after the stat changes it.
+    let (meta, stamp) = match args.source.stat(path).map_err(DctxError::from_core) {
+        Ok(pair) => pair,
         Err(error @ (DctxError::Cancelled | DctxError::ResourceLimit { .. })) => return Err(error),
         Err(_) => {
             state.partial = true;
-            state.files.push(file_row(path.as_str(), decision, None, 0, 0));
+            state.files.push(file_row(path.as_str(), decision, None, 0, 0, None));
             return Ok(());
         }
     };
@@ -157,12 +158,12 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
         if args.freshness == FreshnessMode::Metadata {
             push_module(&mut state.nodes, &mut state.text, path.as_str(), 0, [1, 1]);
         }
-        state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis()));
+        state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis(), stamp));
         return Ok(());
     }
     if meta.size > args.limits.file_bytes {
         state.partial = true;
-        state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis()));
+        state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis(), stamp));
         return Ok(());
     }
     if state.source_bytes.saturating_add(meta.size) > args.limits.source_bytes {
@@ -179,7 +180,7 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
         Err(DctxError::ResourceLimit { resource, limit }) => return Err(DctxError::ResourceLimit { resource, limit }),
         Err(_) => {
             state.partial = true;
-            state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis()));
+            state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis(), stamp));
             return Ok(());
         }
     };
@@ -227,7 +228,7 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
         }
         watch.charge(Stage::GraphAssembly, graph_mark);
     }
-    state.files.push(file_row(path.as_str(), decision, Some(digest), meta.size, meta.modified.millis()));
+    state.files.push(file_row(path.as_str(), decision, Some(digest), meta.size, meta.modified.millis(), stamp));
     Ok(())
 }
 
@@ -287,8 +288,15 @@ fn push_module(
     Some((module_index, path_span))
 }
 
-fn file_row(path: &str, decision: FileHandlingDecision, digest: Option<dctx_hash::ContentDigest>, size: u64, modified: u64) -> IndexedFile {
-    IndexedFile { path: path.to_string(), decision, digest, size, modified }
+fn file_row(
+    path: &str,
+    decision: FileHandlingDecision,
+    digest: Option<dctx_hash::ContentDigest>,
+    size: u64,
+    modified: u64,
+    stamp: Option<dctx_core::facts::EntryStamp>,
+) -> IndexedFile {
+    IndexedFile { path: path.to_string(), decision, digest, size, modified, stamp }
 }
 
 fn finish(args: &WalkArgs<'_>, state: State) -> Walked {

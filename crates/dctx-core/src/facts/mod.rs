@@ -8,5 +8,5 @@ pub mod entry;
 pub mod snapshot;
 
 pub use content::{apply_content, mark_subtree_ignored};
-pub use entry::{EntryMeta, ReadGrant, SourceEntry};
+pub use entry::{EntryMeta, EntryStamp, ReadGrant, SourceEntry};
 pub use snapshot::{snapshot_digest, ContentDigests, Diagnostic, PackSnapshot};
