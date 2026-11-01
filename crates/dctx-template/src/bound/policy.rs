@@ -1,16 +1,23 @@
 //! Path policy functions for bound answer rendering.
 
-use dctx_core::selection::glob_match;
 use dctx_core::FileHandlingDecision;
+use dctx_core::selection::glob_match;
 
 use crate::model::{HostCeiling, Selection};
 
 fn under_root(path: &str, root: &str) -> bool {
-    path == root || path.strip_prefix(root).is_some_and(|rest| rest.starts_with('/'))
+    path == root
+        || path
+            .strip_prefix(root)
+            .is_some_and(|rest| rest.starts_with('/'))
 }
 
 fn pattern_usable(pattern: &str) -> bool {
-    if pattern.is_empty() || pattern.len() > 4096 || pattern.contains('\0') || pattern.contains('\\') {
+    if pattern.is_empty()
+        || pattern.len() > 4096
+        || pattern.contains('\0')
+        || pattern.contains('\\')
+    {
         return false;
     }
     !pattern.split('/').any(|segment| segment == "..")
