@@ -172,6 +172,25 @@ fn second_run_diffs_unchanged_stays_put_and_resets_retain_exports() {
 }
 
 #[test]
+fn a_bare_touch_is_no_change_and_a_same_size_edit_is_one() {
+    let case = Case::new();
+    case.write("kept.rs", b"fn kept() {}\n");
+    case.write("edit.rs", b"before\n");
+    stamp(&case.root.join("edit.rs"), 5_000);
+    case.run(&["."]);
+    assert_eq!(case.version(), "V1");
+    stamp(&case.root.join("edit.rs"), 6_000);
+    let touched = case.run(&["."]);
+    assert!(String::from_utf8_lossy(&touched.stdout).contains("No changes detected"));
+    assert_eq!(case.version(), "V1");
+    case.write("edit.rs", b"behind\n");
+    stamp(&case.root.join("edit.rs"), 7_000);
+    let edited = case.run(&["."]);
+    assert!(String::from_utf8_lossy(&edited.stdout).contains("~1"));
+    assert_eq!(case.version(), "V1.1");
+}
+
+#[test]
 fn registry_keeps_existing_mapping_and_known_fnv_vectors() {
     use dctx_cli::compat::{path_id, project_id};
     assert_eq!(path_id(""), "cbf29ce484222325");
