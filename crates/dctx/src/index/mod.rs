@@ -14,6 +14,7 @@ mod generic;
 pub(crate) mod hubs;
 pub(crate) mod path;
 mod grep;
+mod id_index;
 mod key_rank;
 #[cfg(test)]
 mod languages_tests;
@@ -36,6 +37,7 @@ mod walk;
 
 pub(crate) use decl_pair::pair_record;
 pub(crate) use grep::{grep_records, text_records};
+pub(crate) use id_index::IdIndex;
 pub(crate) use key_rank::{key_shaped, rank as rank_key};
 pub(crate) use query::{collect, Collected};
 pub(crate) use segment::canonical_bytes;
@@ -287,4 +289,6 @@ pub(crate) struct Generation {
     pub completion: String,
     /// Parser id.
     pub parser: String,
+    /// Lazy id lookup table over `nodes`. Derived data: never encoded, never compared.
+    pub ids: IdIndex,
 }

@@ -119,7 +119,7 @@ pub(crate) fn plan(generation: &super::Generation, request: &crate::domain::MapR
     if !(request.edges.is_empty() || request.edges.iter().any(|edge| edge.as_str() == "calls")) {
         return None;
     }
-    let node = super::query::lookup(&generation.nodes, &generation.text, &request.target)?;
+    let node = super::query::lookup(generation, &request.target)?;
     if node.letter != b's' {
         return None;
     }

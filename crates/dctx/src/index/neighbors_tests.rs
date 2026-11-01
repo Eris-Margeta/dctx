@@ -39,6 +39,7 @@ fn chain() -> Generation {
         coverage: "structural".to_string(),
         completion: "complete".to_string(),
         parser: String::new(),
+        ids: crate::index::IdIndex::default(),
     }
 }
 
@@ -117,6 +118,7 @@ fn decl_pair_fixture() -> Generation {
         coverage: "structural".to_string(),
         completion: "complete".to_string(),
         parser: String::new(),
+        ids: crate::index::IdIndex::default(),
     }
 }
 

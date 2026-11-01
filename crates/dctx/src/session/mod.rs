@@ -303,6 +303,7 @@ impl Session {
             coverage: walked.coverage,
             completion: walked.completion,
             parser: walked.parser,
+            ids: crate::index::IdIndex::default(),
         };
         let reuse_key = match source_key {
             Some(key) if self.managed.is_some() => Some(key),

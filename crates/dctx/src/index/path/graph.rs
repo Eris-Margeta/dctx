@@ -1,12 +1,9 @@
-use super::super::{Generation, id_matches};
+use super::super::Generation;
 use super::model::Incident;
 
 /// Index of the node whose stable id is `target`.
 pub(super) fn locate(generation: &Generation, target: &str) -> Option<u32> {
-    let index = generation
-        .nodes
-        .iter()
-        .position(|node| id_matches(&generation.text, node, target))?;
+    let index = generation.node_index(target)?;
     u32::try_from(index).ok()
 }
 

@@ -225,6 +225,7 @@ mod tests {
             coverage: "structural".to_string(),
             completion: "complete".to_string(),
             parser: "p".to_string(),
+            ids: crate::index::IdIndex::default(),
         }
     }
 

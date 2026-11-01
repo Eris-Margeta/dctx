@@ -6,8 +6,7 @@
 
 use crate::domain::AnswerRecord;
 
-use super::id_matches;
-use super::{write_node_id, Generation, IndexedNode, TextBlob};
+use super::{write_node_id, Generation, IndexedNode};
 
 /// The definition extensions of `path`'s language family, or `None` when `path` is not a declaration-only file.
 ///
@@ -96,18 +95,13 @@ pub(crate) fn paired_definition(generation: &Generation, node_index: u32) -> Opt
     None
 }
 
-/// The index of the node `target` names, or `None`.
-fn lookup_index(nodes: &[IndexedNode], text: &TextBlob, target: &str) -> Option<usize> {
-    nodes.iter().position(|node| id_matches(text, node, target))
-}
-
 /// The first record that names the paired definition of `target`, or `None` when `target` is not a declaration-only symbol
 /// or has no unique pairing.
 ///
 /// The record is `pair:<definition id>` of kind `definition`, so a `--json` page greps the definition id once.
 pub(crate) fn pair_record(generation: &Generation, target: &str) -> Option<AnswerRecord> {
     let text = &generation.text;
-    let root = lookup_index(&generation.nodes, text, target)?;
+    let root = generation.node_index(target)?;
     let definition = paired_definition(generation, u32::try_from(root).ok()?)?;
     let node = generation.nodes.get(usize::try_from(definition).ok()?)?;
     let mut id = String::new();
@@ -121,7 +115,7 @@ pub(crate) fn pair_record(generation: &Generation, target: &str) -> Option<Answe
 mod tests {
     use super::*;
     use crate::domain::FreshnessMode;
-    use crate::index::{IndexedEdge, IndexedNode};
+    use crate::index::{IndexedEdge, IndexedNode, TextBlob};
 
     /// A generation with a header prototype `add` and its definition in the sibling `util.c`.
     fn fixture() -> (Generation, u32, u32) {
@@ -167,6 +161,7 @@ mod tests {
             coverage: "structural".to_string(),
             completion: "complete".to_string(),
             parser: String::new(),
+            ids: crate::index::IdIndex::default(),
         };
         (generation, decl, def)
     }
