@@ -24,6 +24,7 @@ pub(super) fn member(lang: &Lang, rest: &str, mods: &str, scope: &Scope) -> Opti
         "solidity" => solidity(rest, scope),
         "gleam" => gleam(rest),
         "groovy" => groovy(rest, mods, scope),
+        "perl" => perl::perl_member(rest),
         _ => None,
     }
 }

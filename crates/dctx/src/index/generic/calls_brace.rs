@@ -1,7 +1,8 @@
-//! Call references of the brace family: Scala, Dart, Zig, Solidity, Gleam and Groovy.
+//! Call references of the brace family: Scala, Dart, Zig, Solidity, Gleam, Groovy and Perl.
 //! Each function symbol's span is scanned on the comment- and string-masked source for `name(` call sites.
 //! The references are raw: `refs.rs` resolves them (same file first, then a unique project name) and drops ambiguous ones.
-//! Heuristic by design: no types, no receivers; a call is a bare identifier followed by an opening parenthesis.
+//! Heuristic by design: no types, no receivers; a call is a bare identifier followed by an opening parenthesis, except in
+//! Perl, where a bareword with an argument and `&name` also count, never after `->`, `sub`, `$`, `@` or `%`.
 
 use std::collections::{HashMap, HashSet};
 
@@ -35,6 +36,8 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
     // Scala: `new X(..)` builds a value; it calls a def only when the file defines a def named `X`.
     let defined: HashSet<&str> = symbols.iter().filter(|symbol| symbol.kind == "fn").map(|symbol| symbol.name.rsplit("::").next().unwrap_or(&symbol.name)).collect();
     let skip_new = (language == "scala").then_some(&defined);
+    // Perl: only a name that is a sub defined in the file or the project is a call.
+    let is_perl = language == "perl";
     for symbol in symbols {
         let count = seen.entry(symbol.name.as_str()).or_insert(0);
         *count += 1;
@@ -48,7 +51,8 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
         let mut src = String::new();
         write_stable_id(&mut src, b's', path, &symbol.name, ordinal);
         let own = symbol.name.rsplit("::").next().unwrap_or(&symbol.name);
-        for name in call_names(body, own, skip_new) {
+        let skip_new = (language == "scala").then_some(&defined);
+        for name in call_names(body, own, skip_new, is_perl.then_some(&defined)) {
             refs.extend(RawRef::new(&src, EdgeKind::Calls, name, &symbol.name, None));
         }
     }
@@ -75,7 +79,17 @@ fn is_word(byte: u8) -> bool {
 /// A call is an identifier followed by `(`, with one space or tab allowed between. Keywords, declarations, `@builtin(`
 /// forms and the function's own name on its declaration line (the first line of `body`) are not calls. With `skip_new`
 /// (Scala) a type named right after `new`, dotted path included, is not a call unless it is one of the given def names.
-fn call_names<'a>(body: &'a str, own: &str, skip_new: Option<&HashSet<&str>>) -> Vec<&'a str> {
+/// With `perl` (Perl) a bareword `name` followed by whitespace and an argument and `&name` are calls too, each only when
+/// the name is one of the given sub names, and never after `->`, `sub`, `$`, `@` or `%`.
+fn call_names<'a>(body: &'a str, own: &str, skip_new: Option<&HashSet<&str>>, perl: Option<&HashSet<&str>>) -> Vec<&'a str> {
+    match perl {
+        Some(defined) => brace::perl_call_names(body, own, defined),
+        None => call_names_brace(body, own, skip_new),
+    }
+}
+
+/// Called names in `body` for the non-Perl brace languages: an identifier followed by `(`, with one space or tab allowed.
+fn call_names_brace<'a>(body: &'a str, own: &str, skip_new: Option<&HashSet<&str>>) -> Vec<&'a str> {
     let bytes = body.as_bytes();
     let first_line_end = body.find('\n').unwrap_or(body.len());
     let mut found: Vec<&str> = Vec::new();
@@ -140,7 +154,32 @@ mod tests {
         let gleam = "fn gHelp() {\n  1\n}\npub fn gRun() {\n  gHelp()\n}\n";
         assert_eq!(pairs("gleam", gleam), [pair("gRun", "gHelp")]);
         let groovy = "class G {\n  def gvHelp(a) {\n    return a\n  }\n  def gvRun(a) {\n    return gvHelp (a)\n  }\n}\n";
-        assert_eq!(pairs("groovy", groovy), [pair("G::gvRun", "gvHelp")]);
+        assert_eq!(pairs("groovy", groovy), [pair("G::gvRun", "G::gvHelp")]);
+    }
+
+    /// Perl: a `package` holds its `sub`s and a call is `name(..)`, a bareword with an argument, or `&name`.
+    #[test]
+    fn perl_packages_qualify_subs_and_calls_link_callers_to_callees() {
+        let text = "package Shop::Cart;\nsub total {\n    my ($self) = @_;\n    return add_tax($self->{sum}) + round_it $self->{sum};\n}\nsub add_tax {\n    return 0;\n}\nsub round_it { return int(shift) }\n";
+        let names: Vec<_> = symbols("perl", text).iter().map(|symbol| (symbol.name.as_str(), symbol.kind.as_str())).collect();
+        assert_eq!(
+            names,
+            [("Shop::Cart", "type"), ("Shop::Cart::total", "fn"), ("Shop::Cart::add_tax", "fn"), ("Shop::Cart::round_it", "fn")]
+        );
+        assert_eq!(
+            pairs("perl", text),
+            [pair("Shop::Cart::total", "add_tax"), pair("Shop::Cart::total", "round_it")]
+        );
+    }
+
+    /// Perl: `->` methods and variables are not calls, `&name` is, undefined names are dropped, and POD and comments mask.
+    #[test]
+    fn perl_methods_amps_and_pod_are_not_calls_and_sub_names_are_filtered() {
+        let text = "package P;\n# sub hidden(1)\nsub run {\n    my $c = P->new;\n    print $c->total;\n    &help;\n    my $x = helper(1);\n}\nsub help {\n    1\n}\n=pod\n\nsub in_pod { }\n\n=cut\n\n1;\n";
+        let names: Vec<_> = symbols("perl", text).iter().map(|symbol| symbol.name.as_str()).collect();
+        assert_eq!(names, ["P", "P::run", "P::help"]);
+        // `P->new` and `$c->total` are methods, `helper` is not a sub, so only `&help` is a call.
+        assert_eq!(pairs("perl", text), [pair("P::run", "help")]);
     }
 
     #[test]
@@ -158,7 +197,7 @@ mod tests {
     #[test]
     fn keywords_are_not_calls() {
         let body = "x = if (a) 1 else 2\nwhile (b) {}\nfor (i <- 1) {}\nswitch (c) {}\nmatch (d) {}\nreturn (e)\ncatch (f) {}\nfunction (g) {}\nfn (h) {}\ndef (i) {}\nnew (j)\nsizeof(k)\nrequire(l)\nemit (m)\nassert(n)\nreal (1)\nother(2)\n";
-        assert_eq!(call_names(body, "none", None), ["real", "other"]);
+        assert_eq!(call_names(body, "none", None, None), ["real", "other"]);
         let sol = "contract C {\n    function f() public returns (uint) {\n        emit Sent(1);\n        require(ok);\n        return g();\n    }\n}\n";
         // `emit Name(..)` names an event, which is a function symbol: the event is called, `emit` is not.
         assert_eq!(pairs("solidity", sol), [pair("C::f", "Sent"), pair("C::f", "g")]);
