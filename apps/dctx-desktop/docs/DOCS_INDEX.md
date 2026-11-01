@@ -113,7 +113,7 @@ Current version number.
 ---
 
 ### 📄 LICENSE
-Proprietary software license. Source available for audit, commercial use requires paid license ($29 one-time).
+Apache-2.0 open source license. Free for any use, including commercial use. Paid support is available through a maintenance agreement; see MAINTENANCE.md in the repository root.
 
 ---
 
@@ -165,8 +165,8 @@ apps/dctx-desktop/
 - **TypeScript**: https://www.typescriptlang.org/docs/
 
 ### Related Projects
-- **dctx-core** (MIT): `../../crates/dctx-core/`
-- **dctx CLI** (MIT): `../../crates/dctx-cli/`
+- **dctx-core** (Apache-2.0): `../../crates/dctx-core/`
+- **dctx CLI** (Apache-2.0): `../../crates/dctx-cli/`
 
 ---
 
