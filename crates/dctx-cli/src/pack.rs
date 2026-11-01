@@ -5,24 +5,28 @@
 //! Binaries are omitted unless `--binary`. Include and exclude globs are selection rules.
 //! View filters ride on [`PackRequest`] and hide non-matching files before a read.
 
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 
 use dctx::{PackRequest, Source, VecSink};
 use dctx_core::budget::PackLimits;
-use dctx_core::datatypes::{DirContextTreeNode, IgnoreRule, NodeType};
+use dctx_core::datatypes::NodeType;
 use dctx_core::error::DctxError as CoreError;
 use dctx_core::facts::{EntryMeta, ReadGrant, SourceEntry};
-use dctx_core::file_classifier::{classify_file, FileContentHandling};
 use dctx_core::ids::RelativePath;
-use dctx_core::selection::rule_matches;
 use dctx_core::version::Version;
 
-use crate::compat;
 use crate::exit::Failure;
 use crate::host;
 
 mod filter;
-use filter::{parse_extensions, parse_megabytes, parse_pattern, Filters};
+use filter::{Filters, parse_extensions, parse_megabytes, parse_pattern};
+mod emit;
+use emit::emit;
+mod narrow;
+use narrow::{file_count, narrow};
+mod markers;
+pub use markers::legacy_markers;
+use markers::source_document;
 
 /// Where the encoded pack page goes.
 #[derive(Debug, PartialEq, Eq)]
@@ -96,7 +100,13 @@ pub fn run(args: &[String]) -> Result<(), Failure> {
         print!("{}", flag_help());
         return Ok(());
     }
-    let usage = |message: String| Failure::usage(message, "run `dctx pack --help` for the flags and an example").within("pack");
+    let usage = |message: String| {
+        Failure::usage(
+            message,
+            "run `dctx pack --help` for the flags and an example",
+        )
+        .within("pack")
+    };
     let plan = parse(args).map_err(usage)?;
     if let Some(message) = summary_refusal(&plan) {
         return Err(usage(message.to_string()));
@@ -109,8 +119,15 @@ pub fn run(args: &[String]) -> Result<(), Failure> {
     }
     println!("{}", outcome.report_line);
     if outcome.files == 0 && !plan.filters.affects_view() && !plan.filters.debug_ignored {
-        let message = format!("nothing to pack in {}: no file passed the ignore and sensitive-file rules", plan.path.display());
-        return Err(Failure::no_result(message, "add files to the directory, or check its .gitignore and .dctxignore rules").within("pack"));
+        let message = format!(
+            "nothing to pack in {}: no file passed the ignore and sensitive-file rules",
+            plan.path.display()
+        );
+        return Err(Failure::no_result(
+            message,
+            "add files to the directory, or check its .gitignore and .dctxignore rules",
+        )
+        .within("pack"));
     }
     Ok(())
 }
@@ -137,7 +154,9 @@ fn summary_refusal(plan: &Plan) -> Option<&'static str> {
     if plan.filters.debug_ignored {
         return Some("pack --debug-ignored applies to the source page; drop --json");
     }
-    plan.filters.affects_view().then_some("pack view filters apply to the source page; drop --json")
+    plan.filters
+        .affects_view()
+        .then_some("pack view filters apply to the source page; drop --json")
 }
 
 /// `--json` summary. The facade report has no file list, so view filters are refused.
@@ -145,13 +164,22 @@ fn facade_summary(plan: &Plan) -> Result<PackOutcome, String> {
     if let Some(message) = summary_refusal(plan) {
         return Err(message.to_string());
     }
-    let format = plan.report_format.ok_or_else(|| "pack summary requires --json".to_string())?;
+    let format = plan
+        .report_format
+        .ok_or_else(|| "pack summary requires --json".to_string())?;
     let mut session = host::open_dir(&plan.path)?;
     let mut request = PackRequest::new();
     request.output_format = format;
     let mut sink = VecSink::new();
-    let report = session.pack(&request, &mut sink).map_err(|error| error.to_string())?;
-    emit(&plan.destination, sink.as_bytes(), report.files, &report.version)
+    let report = session
+        .pack(&request, &mut sink)
+        .map_err(|error| error.to_string())?;
+    emit(
+        &plan.destination,
+        sink.as_bytes(),
+        report.files,
+        &report.version,
+    )
 }
 
 /// Source page. Selection comes from the repository rules. View filters hide files first.
@@ -161,7 +189,11 @@ fn source_page(plan: &Plan) -> Result<(Vec<u8>, u64, String), String> {
     let request = view_request(&plan.filters);
     let inner = dctx::FsSource::open(&plan.path).map_err(|error| error.to_string())?;
     let report_reads = std::env::var("DCTX_READ_REPORT").ok().as_deref() == Some("1");
-    let source = NarrowedSource { inner, request: &request, report_reads };
+    let source = NarrowedSource {
+        inner,
+        request: &request,
+        report_reads,
+    };
     let cancel = dctx::memory::CancelFlag::new();
     let scanned = dctx_pack::scan(
         &source,
@@ -192,8 +224,12 @@ fn view_request(filters: &Filters) -> PackRequest {
     let mut request = PackRequest::new();
     request.apply_filters = true;
     request.extensions.clone_from(&filters.config.extensions);
-    request.include_patterns.clone_from(&filters.include_patterns);
-    request.exclude_patterns.clone_from(&filters.exclude_patterns);
+    request
+        .include_patterns
+        .clone_from(&filters.include_patterns);
+    request
+        .exclude_patterns
+        .clone_from(&filters.exclude_patterns);
     request.include_binary = filters.config.include_binary;
     request.only_empty = filters.config.only_empty;
     request.only_non_empty = filters.config.only_non_empty;
@@ -294,70 +330,6 @@ fn facade_scan_limits() -> Result<PackLimits, String> {
     })
 }
 
-fn emit(destination: &Destination, body: &[u8], files: u64, version: &str) -> Result<PackOutcome, String> {
-    let bytes = u64::try_from(body.len()).unwrap_or(u64::MAX);
-    match destination {
-        Destination::Stdout => Ok(PackOutcome {
-            body: body.to_vec(),
-            wrote: None,
-            clipboard: false,
-            report_line: format!("pack bytes={bytes} files={files} retention=stdout version={version}"),
-            files,
-        }),
-        Destination::File(path) => {
-            write_output(path, body)?;
-            Ok(PackOutcome {
-                body: body.to_vec(),
-                wrote: Some(path.clone()),
-                clipboard: false,
-                report_line: format!(
-                    "pack bytes={bytes} files={files} retention=explicit path={} version={version}",
-                    path.display()
-                ),
-                files,
-            })
-        }
-        Destination::Clipboard => {
-            copy(body)?;
-            Ok(PackOutcome {
-                body: body.to_vec(),
-                wrote: None,
-                clipboard: true,
-                report_line: format!("pack bytes={bytes} files={files} retention=clipboard version={version}"),
-                files,
-            })
-        }
-        Destination::FileAndClipboard(path) => {
-            write_output(path, body)?;
-            if let Err(error) = copy(body) {
-                return Err(format!("{error}; explicit file already written at {}", path.display()));
-            }
-            Ok(PackOutcome {
-                body: body.to_vec(),
-                wrote: Some(path.clone()),
-                clipboard: true,
-                report_line: format!(
-                    "pack bytes={bytes} files={files} retention=explicit path={} version={version}",
-                    path.display()
-                ),
-                files,
-            })
-        }
-    }
-}
-
-fn write_output(path: &Path, body: &[u8]) -> Result<(), String> {
-    if path.as_os_str().is_empty() {
-        return Err("--output path is empty".to_string());
-    }
-    std::fs::write(path, body).map_err(|error| format!("failed to write {}: {error}", path.display()))
-}
-
-fn copy(body: &[u8]) -> Result<(), String> {
-    let text = String::from_utf8_lossy(body);
-    compat::copy_to_clipboard(text.as_bytes())
-}
-
 fn parse(args: &[String]) -> Result<Plan, String> {
     if args.first().map(String::as_str) != Some("pack") {
         return Err("expected pack".to_string());
@@ -384,7 +356,9 @@ fn parse(args: &[String]) -> Result<Plan, String> {
             "--debug-ignored" => filters.debug_ignored = true,
             "--output" | "-o" => {
                 index += 1;
-                let value = args.get(index).ok_or_else(|| "--output requires a path".to_string())?;
+                let value = args
+                    .get(index)
+                    .ok_or_else(|| "--output requires a path".to_string())?;
                 if value.starts_with('-') {
                     return Err("--output requires a path".to_string());
                 }
@@ -395,7 +369,9 @@ fn parse(args: &[String]) -> Result<Plan, String> {
             }
             "--ext" => {
                 index += 1;
-                let value = args.get(index).ok_or_else(|| "--ext requires a comma-separated list of extensions".to_string())?;
+                let value = args.get(index).ok_or_else(|| {
+                    "--ext requires a comma-separated list of extensions".to_string()
+                })?;
                 if value.starts_with('-') {
                     return Err("--ext requires a comma-separated list of extensions".to_string());
                 }
@@ -403,7 +379,9 @@ fn parse(args: &[String]) -> Result<Plan, String> {
             }
             flag @ ("--large" | "--small") => {
                 index += 1;
-                let value = args.get(index).ok_or_else(|| format!("{flag} requires a size in megabytes"))?;
+                let value = args
+                    .get(index)
+                    .ok_or_else(|| format!("{flag} requires a size in megabytes"))?;
                 if value.starts_with('-') {
                     return Err(format!("{flag} requires a size in megabytes"));
                 }
@@ -416,7 +394,9 @@ fn parse(args: &[String]) -> Result<Plan, String> {
             }
             flag @ ("--include" | "--exclude") => {
                 index += 1;
-                let value = args.get(index).ok_or_else(|| format!("{flag} requires a pattern"))?;
+                let value = args
+                    .get(index)
+                    .ok_or_else(|| format!("{flag} requires a pattern"))?;
                 if value.starts_with('-') {
                     return Err(format!("{flag} requires a pattern"));
                 }
@@ -449,133 +429,18 @@ fn parse(args: &[String]) -> Result<Plan, String> {
         (None, true) => Destination::Clipboard,
         (Some(path), true) => Destination::FileAndClipboard(path),
     };
-    Ok(Plan { path, destination, report_format: if json { Some(2) } else { None }, filters })
-}
-
-/// Keeps the root. Drops files the ADR filters reject and prunes empty directories.
-fn narrow(node: &DirContextTreeNode, filters: &Filters) -> DirContextTreeNode {
-    let mut root = shell(node);
-    for child in &node.children {
-        if let Some(kept) = narrow_child(child, filters) {
-            root.children.push(kept);
-        }
-    }
-    root
-}
-
-fn narrow_child(node: &DirContextTreeNode, filters: &Filters) -> Option<DirContextTreeNode> {
-    let name = base_name(&node.relative_path);
-    if node.node_type == NodeType::Directory {
-        if !filters.config.should_include_directory(name) || pattern_hit(&filters.exclude, &node.relative_path, name, true)
-        {
-            return None;
-        }
-        let mut kept = shell(node);
-        for child in &node.children {
-            if let Some(next) = narrow_child(child, filters) {
-                kept.children.push(next);
-            }
-        }
-        return (!kept.children.is_empty()).then_some(kept);
-    }
-    let binary = treated_as_binary(node);
-    if !filters.config.should_include_file(name, node.content_size, binary, Path::new(&node.relative_path)) {
-        return None;
-    }
-    if !filters.include.is_empty() && !pattern_hit(&filters.include, &node.relative_path, name, false) {
-        return None;
-    }
-    if pattern_hit(&filters.exclude, &node.relative_path, name, false) {
-        return None;
-    }
-    Some(shell(node))
-}
-
-fn shell(node: &DirContextTreeNode) -> DirContextTreeNode {
-    DirContextTreeNode {
-        node_type: node.node_type,
-        relative_path: node.relative_path.clone(),
-        last_modified_timestamp: node.last_modified_timestamp,
-        content_offset_in_data_section: node.content_offset_in_data_section,
-        content_size: node.content_size,
-        disk_path: node.disk_path.clone(),
-        children: Vec::new(),
-        generated_id_for_llm: node.generated_id_for_llm.clone(),
-        file_content: node.file_content.clone(),
-        is_binary_file: node.is_binary_file,
-        binary_file_type: node.binary_file_type.clone(),
-        is_ignored: node.is_ignored,
-        handling_decision: node.handling_decision,
-    }
-}
-
-/// Extension binaries stay omitted when the scan withheld their bytes.
-fn treated_as_binary(node: &DirContextTreeNode) -> bool {
-    node.is_binary_file
-        || matches!(classify_file(Path::new(&node.relative_path), b""), FileContentHandling::OmitBinary { .. })
-}
-
-fn pattern_hit(rules: &[IgnoreRule], path: &str, name: &str, is_dir: bool) -> bool {
-    rules.iter().any(|rule| rule_matches(rule, path, name, is_dir))
+    Ok(Plan {
+        path,
+        destination,
+        report_format: if json { Some(2) } else { None },
+        filters,
+    })
 }
 
 fn base_name(path: &str) -> &str {
     match path.rsplit_once('/') {
         Some((_, name)) => name,
         None => path,
-    }
-}
-
-fn file_count(node: &DirContextTreeNode) -> u64 {
-    let own = u64::from(node.node_type == NodeType::File);
-    node.children.iter().fold(own, |sum, child| sum.saturating_add(file_count(child)))
-}
-
-/// Source-bearing page. Scan caps in the facade bound which files are packed.
-fn source_document(path: &Path) -> Result<dctx_template::LegacyOutput, String> {
-    let mut template = crate::template::legacy_template("default")?;
-    template.insert_variable("project", &project_name(path));
-    Ok(dctx_template::LegacyOutput::new(template, dctx_template::LegacyLayout::Snapshot))
-}
-
-fn project_name(path: &Path) -> String {
-    let canonical = std::fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
-    canonical
-        .file_name()
-        .and_then(|name| name.to_str())
-        .filter(|name| !name.is_empty() && *name != "." && *name != "..")
-        .unwrap_or("project")
-        .to_string()
-}
-
-/// Project the scanned facts into pure renderer input, preserving presentation-only omit rules.
-#[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-pub fn legacy_markers(
-    node: &dctx_core::datatypes::DirContextTreeNode,
-    policy: &dctx_core::selection::SelectionPolicy,
-) -> dctx_template::MarkerNode {
-    let name = base_name(&node.relative_path);
-    let is_dir = node.node_type == dctx_core::datatypes::NodeType::Directory;
-    let omit_content = if node.is_binary_file || node.binary_file_type.is_some() {
-        false
-    } else {
-        node.handling_decision == dctx_core::FileHandlingDecision::OmitContent
-            || dctx_core::selection::rule::last_match(policy.omit_rules(), &node.relative_path, name, is_dir)
-    };
-    dctx_template::MarkerNode {
-        relative_path: node.relative_path.clone(),
-        is_dir,
-        is_ignored: node.is_ignored,
-        omit_content,
-        binary_label: if node.is_binary_file {
-            Some(node.binary_file_type.clone().unwrap_or_else(|| "Unknown".into()))
-        } else {
-            node.binary_file_type.clone().filter(|label| label == "SVG file")
-        },
-        content: if node.is_ignored || omit_content || node.is_binary_file { None } else { node.file_content.clone() },
-        content_size: node.content_size,
-        modified: node.last_modified_timestamp,
-        children: node.children.iter().map(|child| legacy_markers(child, policy)).collect(),
     }
 }
 

@@ -19,7 +19,11 @@ fn explicit_pack_writes_no_project_text_file() {
     assert!(text.contains("PATH=\"kept.rs\""), "{text}");
     assert!(text.contains("fn kept() {}"), "{text}");
     assert!(outcome.report_line.contains("retention=stdout"));
-    assert!(outcome.report_line.contains(&format!("bytes={}", outcome.body.len())));
+    assert!(
+        outcome
+            .report_line
+            .contains(&format!("bytes={}", outcome.body.len()))
+    );
     let listed: Vec<_> = std::fs::read_dir(&path).expect("list").flatten().collect();
     assert_eq!(listed.len(), 1);
     let _ = std::fs::remove_dir_all(&path);
@@ -35,7 +39,8 @@ fn env_shaped_files_are_never_printed_by_default() {
     let text = std::str::from_utf8(&outcome.body).expect("utf8");
     assert!(!text.contains("CANARYSECRET"), "{text}");
     assert!(text.contains("fn kept() {}"), "{text}");
-    let json = execute(&["pack".into(), path.display().to_string(), "--json".into()]).expect("json");
+    let json =
+        execute(&["pack".into(), path.display().to_string(), "--json".into()]).expect("json");
     assert!(!String::from_utf8_lossy(&json.body).contains("CANARYSECRET"));
     let _ = std::fs::remove_dir_all(&path);
 }
@@ -56,7 +61,11 @@ fn output_flag_writes_only_the_requested_file() {
     assert!(!path.join(".dctx").exists());
     let saved = std::fs::read(&output).expect("saved");
     assert_eq!(saved, outcome.body);
-    assert!(std::str::from_utf8(&saved).expect("utf8").contains("\"files\""));
+    assert!(
+        std::str::from_utf8(&saved)
+            .expect("utf8")
+            .contains("\"files\"")
+    );
     assert!(outcome.report_line.contains("retention=explicit"));
     let _ = std::fs::remove_dir_all(&path);
 }
@@ -95,7 +104,8 @@ fn help_names_every_pack_flag() {
 
 #[test]
 fn empty_and_non_empty_are_refused() {
-    let error = execute(&["pack".into(), "--empty".into(), "--non-empty".into()]).expect_err("both");
+    let error =
+        execute(&["pack".into(), "--empty".into(), "--non-empty".into()]).expect_err("both");
     assert!(error.contains("--empty"));
 }
 
@@ -113,7 +123,13 @@ fn default_omits_binary_and_ext_keeps_rust() {
     assert!(text.contains("PATH=\"notes.md\""));
     assert!(!text.contains("logo.png"), "{text}");
     assert!(!text.contains("SENTINEL"));
-    let only = execute(&["pack".into(), path.display().to_string(), "--ext".into(), "rs".into()]).expect("ext");
+    let only = execute(&[
+        "pack".into(),
+        path.display().to_string(),
+        "--ext".into(),
+        "rs".into(),
+    ])
+    .expect("ext");
     let narrowed = std::str::from_utf8(&only.body).expect("utf8");
     assert!(narrowed.contains("PATH=\"kept.rs\""));
     assert!(!narrowed.contains("notes.md"));

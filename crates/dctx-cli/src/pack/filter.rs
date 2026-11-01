@@ -41,8 +41,12 @@ impl Filters {
 }
 
 pub(super) fn parse_extensions(value: &str) -> Result<Vec<String>, String> {
-    let extensions: Vec<_> =
-        value.split(',').map(str::trim).filter(|part| !part.is_empty()).map(str::to_string).collect();
+    let extensions: Vec<_> = value
+        .split(',')
+        .map(str::trim)
+        .filter(|part| !part.is_empty())
+        .map(str::to_string)
+        .collect();
     if extensions.is_empty() {
         return Err("--ext requires at least one extension".to_string());
     }
@@ -50,7 +54,9 @@ pub(super) fn parse_extensions(value: &str) -> Result<Vec<String>, String> {
 }
 
 pub(super) fn parse_megabytes(flag: &str, value: &str) -> Result<f64, String> {
-    let size = value.parse::<f64>().map_err(|_| format!("Invalid size for {flag}: {value}"))?;
+    let size = value
+        .parse::<f64>()
+        .map_err(|_| format!("Invalid size for {flag}: {value}"))?;
     if !size.is_finite() || size < 0.0 {
         return Err(format!("Invalid size for {flag}: {value}"));
     }
@@ -58,7 +64,8 @@ pub(super) fn parse_megabytes(flag: &str, value: &str) -> Result<f64, String> {
 }
 
 pub(super) fn parse_pattern(flag: &str, value: &str) -> Result<IgnoreRule, String> {
-    let rule = parse_ignore_pattern_line(value).ok_or_else(|| format!("{flag} requires a pattern"))?;
+    let rule =
+        parse_ignore_pattern_line(value).ok_or_else(|| format!("{flag} requires a pattern"))?;
     if rule.pattern.is_empty() {
         return Err(format!("{flag} requires a pattern"));
     }
