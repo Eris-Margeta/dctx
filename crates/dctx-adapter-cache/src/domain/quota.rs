@@ -21,7 +21,8 @@ pub const ROOT_PREVIEW_CEILING_BYTES: u64 = 64 * 1024 * 1024;
 pub const EMERGENCY_METADATA_BYTES: u64 = 64 * 1024;
 /// One cache accounting unit. Payload lengths are exact bytes.
 pub const ACCOUNTING_UNIT: u64 = 1;
-/// Retained committed view manifests per root.
+/// Upper bound on committed view manifests per root. A publish retires every unheld older view (P-C10),
+/// so only views a lease or pin holds stay beyond the current one.
 pub const MAX_VIEW_MANIFESTS: usize = 3;
 /// Latest pack snapshot plus one predecessor.
 pub const MAX_PACK_SNAPSHOTS: usize = 2;

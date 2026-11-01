@@ -120,6 +120,19 @@ impl Lifecycle {
         purpose: Purpose,
         bytes: u64,
     ) -> Result<Reservation, CacheError> {
+        self.reserve_protecting(root, purpose, bytes, &[])
+    }
+
+    /// [`Self::reserve_for`] that never evicts `protect`. A publication passes the objects it is about to reference.
+    /// When the cap or the root ceiling would refuse, reclaimable objects are evicted oldest first, across roots,
+    /// and the request is refused only if that does not make room.
+    pub(super) fn reserve_protecting(
+        &mut self,
+        root: Option<super::RootId>,
+        purpose: Purpose,
+        bytes: u64,
+        protect: &[super::ObjectId],
+    ) -> Result<Reservation, CacheError> {
         if bytes == 0 {
             return Err(CacheError::InvalidRequest { reason: "reservation is empty" });
         }
@@ -128,13 +141,11 @@ impl Lifecycle {
         }
         // Pending files stay charged. Dropping them here would free bytes the disk still holds.
         self.reclaim_safe();
-        if !self.admission_allows(bytes) {
-            return Err(self.limit(bytes));
-        }
         let class = purpose.class();
-        if let Some(root_id) = root
-            && !self.ceiling_allows(root_id, class, bytes)
-        {
+        let fits = |life: &Self| {
+            life.admission_allows(bytes) && root.is_none_or(|id| life.ceiling_allows(id, class, bytes))
+        };
+        if !self.evict_until(protect, fits) {
             return Err(self.limit(bytes));
         }
         let id = self.ids.reservation;
