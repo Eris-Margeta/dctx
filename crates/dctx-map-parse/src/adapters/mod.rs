@@ -61,6 +61,7 @@ impl Parser for PureParser {
             Language::Scala | Language::Dart | Language::Zig | Language::Solidity | Language::Gleam | Language::Perl | Language::Groovy | Language::Powershell | Language::Text => {
                 fallback(path, source)
             }
+            Language::Verilog => fallback(path, source),
             Language::Erlang => fallback(path, source),
             Language::Elixir | Language::Lua | Language::OCaml | Language::R | Language::Julia | Language::Haskell => {
                 fallback(path, source)
