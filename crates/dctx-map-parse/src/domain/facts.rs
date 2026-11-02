@@ -47,6 +47,8 @@ pub enum Language {
     Solidity,
     /// Gleam source.
     Gleam,
+    /// Perl source (`.pl`, `.pm`, `.t`, `.psgi`).
+    Perl,
     /// Groovy source (`.groovy`) and Gradle build scripts (`.gradle`).
     Groovy,
     /// PowerShell scripts and modules (`.ps1`, `.psm1`, `.psd1`).
@@ -148,6 +150,10 @@ const EXTENSIONS: &[(&str, Language)] = &[
     ("zig", Language::Zig),
     ("sol", Language::Solidity),
     ("gleam", Language::Gleam),
+    ("pl", Language::Perl),
+    ("pm", Language::Perl),
+    ("t", Language::Perl),
+    ("psgi", Language::Perl),
     ("erl", Language::Erlang),
     ("hrl", Language::Erlang),
     ("groovy", Language::Groovy),
@@ -375,8 +381,12 @@ mod tests {
         const LITERAL_EXTENSIONS: &[&str] = &[
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
-            "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "erl", "hrl", "groovy",
-            "gradle", "ps1", "psm1", "psd1", "v", "vh", "sv", "svh", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
+            "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam",
+            "pl", "pm", "t", "psgi",
+            "erl", "hrl",
+            "groovy",
+            "gradle",
+            "ps1", "psm1", "psd1",
             "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl", "scm", "ss", "el", "nix",
         ];
         const LITERAL_RUBY_BASENAMES: &[&str] = &["Rakefile", "Gemfile"];

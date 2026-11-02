@@ -109,6 +109,19 @@ fn gleam_constants_are_symbols() {
 }
 
 #[test]
+fn perl_packages_and_subs_are_symbols() {
+    let text = "package Shop::Cart;\nsub total {\n    my ($self) = @_;\n    return add_tax($self->{sum}) + round_it $self->{sum};\n}\nsub add_tax {\n    my ($x) = @_;\n    return $x * 1.2;\n}\nsub round_it { return int(shift) }\n";
+    expect(named("perl", text), &[("Shop::Cart", "type"), ("Shop::Cart::total", "fn"), ("Shop::Cart::add_tax", "fn"), ("Shop::Cart::round_it", "fn")]);
+}
+
+#[test]
+fn perl_pod_masked() {
+    let text = "package P;\n# sub hidden(1)\nsub run {\n    my $c = P->new;\n    print $c->total;\n    &help;\n    my $x = helper(1);\n}\nsub help {\n    1\n}\n=pod\n\nsub in_pod { }\n\n=cut\n\n1;\n";
+    let names: Vec<_> = symbols("perl", text).into_iter().map(|symbol| symbol.name).collect();
+    assert_eq!(names, ["P", "P::run", "P::help"]);
+}
+
+#[test]
 fn groovy_fields_in_a_class_are_symbols_and_script_variables_are_not() {
     let text = "class Svc {\n  static final String LIMIT = 'x'\n  private int count = 0\n  def label = 1\n  String title\n  def call(String a) {\n    return a\n  }\n}\ndef top = 1\n";
     expect(

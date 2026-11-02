@@ -157,7 +157,7 @@ Details: [Map mode guide](docs/guides/MAP-MODE.md). The three-way benchmark agai
 - **outline**: symbols only; no call edges are promised. Shell function bodies can yield same-file call guesses, but v1 does not promise shell call edges.
 - **docs**: headed sections.
 - **Confidence**: `guess` marks the heuristic outline families, and every record from those files carries confidence `guess`; `structural` means a dedicated lexer or deterministic document rules.
-- **Not in v1**: Perl and Fortran.
+- **Not in v1**: Fortran and Verilog.
 
 <!-- languages:begin -->
 | Language | Tag | Files | Tier | Confidence |
@@ -180,6 +180,7 @@ Details: [Map mode guide](docs/guides/MAP-MODE.md). The three-way benchmark agai
 | Zig | `zig` | `.zig` | full | guess |
 | Solidity | `solidity` | `.sol` | full | guess |
 | Gleam | `gleam` | `.gleam` | full | guess |
+| Perl | `perl` | `.pl`, `.pm`, `.t`, `.psgi` | full | guess |
 | Groovy | `groovy` | `.groovy`, `.gradle` | full | guess |
 | PowerShell | `powershell` | `.ps1`, `.psm1`, `.psd1` | full | guess |
 | Elixir | `elixir` | `.ex`, `.exs` | full | guess |
@@ -189,7 +190,6 @@ Details: [Map mode guide](docs/guides/MAP-MODE.md). The three-way benchmark agai
 | Julia | `julia` | `.jl` | full | guess |
 | Haskell | `haskell` | `.hs` | full | guess |
 | Erlang | `erlang` | `.erl`, `.hrl` | full | guess |
-| Verilog/SystemVerilog | `verilog` | `.v`, `.vh`, `.sv`, `.svh` | full | guess |
 | Terraform/HCL | `hcl` | `.tf`, `.tfvars`, `.hcl` | full | guess |
 | SQL | `sql` | `.sql`, `*.sql.in` | full | guess |
 | Clojure | `clojure` | `.clj`, `.cljs`, `.cljc`, `.edn` | full | guess |
@@ -300,7 +300,7 @@ An earlier two-way study against Trail-Code (October 2026, dctx `17dff0b`, befor
 - Any network or cloud feature.
 - macOS and Windows support claims: they are untested; Linux x86_64 is the only tested platform.
 - Watch or incremental mode beyond re-indexing.
-- Perl and Fortran.
+- Fortran and Verilog.
 - Shell call edges (shell is outline tier: symbols only).
 - Embeddings or semantic search.
 - LSP-grade type resolution: call edges are lexical.

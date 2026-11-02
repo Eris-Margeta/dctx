@@ -45,7 +45,7 @@ desktop app keeps its own version line (0.11.0) and its own release workflow.
 - Any network or cloud feature.
 - macOS and Windows support claims (untested); Linux x86_64 is the only tested platform.
 - Watch or incremental mode beyond re-indexing.
-- Perl, Fortran and Verilog.
+- Fortran and Verilog.
 - Shell call edges.
 - Embeddings and semantic search.
 - LSP-grade type resolution.

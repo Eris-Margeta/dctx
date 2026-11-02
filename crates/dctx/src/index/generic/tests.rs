@@ -3,7 +3,7 @@
 use super::{brace, handles, mask, symbols};
 use crate::index::extract::{extract_structural_refs, language_of};
 
-const TAGS: &[&str] = &["scala", "dart", "zig", "solidity", "gleam", "groovy", "powershell"];
+const TAGS: &[&str] = &["scala", "dart", "zig", "solidity", "gleam", "groovy", "perl", "powershell"];
 
 fn named(tag: &str, text: &str) -> Vec<(String, String)> {
     symbols(tag, text).into_iter().map(|symbol| (symbol.name, symbol.kind)).collect()
@@ -32,6 +32,8 @@ fn every_brace_language_finds_its_types_and_functions() {
     assert_eq!(named("powershell", powershell), [pair("Get-Config", "fn"), pair("Read-File", "fn"), pair("Deployer", "type"), pair("Deployer::Run", "fn")]);
     let groovy = "class Svc {\n  def call(String a) {\n    return a\n  }\n}\ndef x = 1\n";
     assert_eq!(named("groovy", groovy), [pair("Svc", "type"), pair("Svc::call", "fn")]);
+    let perl = "package Shop::Cart;\nsub total {\n    my ($self) = @_;\n    return add_tax($self->{sum}) + round_it $self->{sum};\n}\nsub add_tax {\n    my ($x) = @_;\n    return $x * 1.2;\n}\nsub round_it { return int(shift) }\n";
+    assert_eq!(named("perl", perl), [pair("Shop::Cart", "type"), pair("Shop::Cart::total", "fn"), pair("Shop::Cart::add_tax", "fn"), pair("Shop::Cart::round_it", "fn")]);
 }
 
 #[test]
@@ -127,6 +129,10 @@ fn extensions_dispatch_to_the_generic_extractor() {
         ("a.zig", "zig"),
         ("a.sol", "solidity"),
         ("a.gleam", "gleam"),
+        ("a.pl", "perl"),
+        ("a.pm", "perl"),
+        ("a.t", "perl"),
+        ("a.psgi", "perl"),
         ("a.groovy", "groovy"),
         ("a.ps1", "powershell"),
         ("build.gradle", "groovy"),

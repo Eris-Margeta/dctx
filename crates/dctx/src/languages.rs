@@ -112,6 +112,7 @@ registry! {
     "Zig", "zig", ["zig"], [], Full, Guess;
     "Solidity", "solidity", ["sol"], [], Full, Guess;
     "Gleam", "gleam", ["gleam"], [], Full, Guess;
+    "Perl", "perl", ["pl", "pm", "t", "psgi"], [], Full, Guess;
     "Groovy", "groovy", ["groovy", "gradle"], [], Full, Guess;
     "PowerShell", "powershell", ["ps1", "psm1", "psd1"], [], Full, Guess;
     "Elixir", "elixir", ["ex", "exs"], [], Full, Guess;

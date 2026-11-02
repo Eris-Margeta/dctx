@@ -1,11 +1,13 @@
-//! Brace-family declarations: Scala, Dart, Zig, Solidity, Gleam, Groovy and PowerShell.
+//! Brace-family declarations: Scala, Dart, Zig, Solidity, Gleam, Groovy, Perl and PowerShell.
 //! A small keyword table per language picks `type` and `fn` declarations from lines the masked source shows at file level
 //! or directly inside a type body; [`decl`] reads one line, [`data`] adds constants, variables, fields and enum values.
 //! Nesting follows brace depth, so a function in a class is `Class::name`, an enum value `Enum::value`, and (Scala only) a
-//! def inside a def `outer::inner`. Heuristic by design: one declaration per line, other bodies are never entered.
+//! def inside a def `outer::inner`. Perl is read by its own module, [`perl`]: a `package` is a type and a `sub` a
+//! function, with POD masked like a comment. Heuristic by design: one declaration per line, other bodies are never entered.
 
 mod data;
 mod decl;
+mod perl;
 #[cfg(test)]
 mod tests;
 
@@ -101,6 +103,19 @@ const GROOVY: Lang = Lang {
     const_type: false,
 };
 
+/// Perl is read by [`perl`] on its own (its `package`s are types and its `sub`s are functions); the table keeps the
+/// keywords and the comment-and-string syntax so `syntax_of` and `handles` answer for it.
+const PERL: Lang = Lang {
+    tag: "perl",
+    syntax: Syntax { line: &["#"], block: None, nested: false, quotes: b"\"'", triple: false },
+    modifiers: &[],
+    types: &["package"],
+    fns: &["sub"],
+    paren: false,
+    typed: false,
+    const_type: false,
+};
+
 const POWERSHELL: Lang = Lang {
     tag: "powershell",
     syntax: Syntax { line: &["#"], block: Some(("<#", "#>")), nested: false, quotes: b"\"'", triple: false },
@@ -121,6 +136,7 @@ fn lang(tag: &str) -> Option<&'static Lang> {
         "solidity" => Some(&SOLIDITY),
         "gleam" => Some(&GLEAM),
         "groovy" => Some(&GROOVY),
+        "perl" => Some(&PERL),
         "powershell" => Some(&POWERSHELL),
         _ => None,
     }
@@ -131,7 +147,12 @@ pub(super) fn syntax_of(tag: &str) -> Option<Syntax> {
     lang(tag).map(|lang| lang.syntax)
 }
 
-/// True for the six brace-family tags.
+/// Called names in one Perl function body; the scan and its `&name` and bareword rules live in [`perl::call_names`].
+pub(super) fn perl_call_names<'a>(body: &'a str, own: &str, defined: &std::collections::HashSet<&str>) -> Vec<&'a str> {
+    perl::call_names(body, own, defined)
+}
+
+/// True for the eight brace-family tags.
 pub(super) fn handles(language: &str) -> bool {
     lang(language).is_some()
 }
@@ -176,6 +197,9 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
     let Some(lang) = lang(tag) else {
         return Vec::new();
     };
+    if tag == PERL.tag {
+        return perl::symbols(tag, text);
+    }
     let scala = tag == "scala";
     let zig = tag == "zig";
     let solidity = tag == "solidity";

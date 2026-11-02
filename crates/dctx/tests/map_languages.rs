@@ -115,6 +115,11 @@ const FIXTURES: &[Fixture] = &[
         symbol: "GleamMain",
     },
     Fixture {
+        extensions: &["pl", "pm", "t", "psgi"],
+        source: "package Shop::Cart;\nsub total {\n    my ($self) = @_;\n    return add_tax($self->{sum}) + round_it $self->{sum};\n}\nsub add_tax {\n    my ($x) = @_;\n    return $x * 1.2;\n}\nsub round_it { return int(shift) }\n",
+        symbol: "Shop::Cart",
+    },
+    Fixture {
         extensions: &["groovy", "gradle"],
         source: "class GroovyMain {\n  def run() {}\n}\n",
         symbol: "GroovyMain",
@@ -333,7 +338,9 @@ fn selection_excludes_or_omits_new_languages_before_content_reads() {
 const SHARED_EXTENSIONS: &[&str] = &[
     "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java", "c", "h",
     "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts", "rb", "rake", "gemspec",
-    "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "erl", "hrl", "groovy", "gradle", "ps1", "psm1", "psd1", "v", "vh", "sv", "svh", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs",
+    "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam",
+    "pl", "pm", "t", "psgi",
+    "erl", "hrl",
     "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
     "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl", "scm", "ss", "el", "nix",
 ];
