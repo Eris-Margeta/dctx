@@ -312,12 +312,3 @@ fn dotdot_component_is_refused() {
     assert!(!fixture.0.join("plugins").join("registry.lock").exists());
     assert!(!fixture.0.join("registry.lock").exists());
 }
-
-#[test]
-#[ignore = "placeholder: Windows store semantics are not qualified and this test does not qualify them"]
-#[allow(clippy::assertions_on_constants, reason = "This ignored qualification placeholder asserts its required Windows executor; the sentinel does not qualify Windows semantics.")]
-fn windows_replace_and_acl_semantics() {
-    // TODO: qualify old/new complete replacement and inherited/explicit ACL refusal on Windows.
-    // This test must gain native assertions before Windows store operations are enabled.
-    assert!(cfg!(windows), "requires a Windows executor");
-}

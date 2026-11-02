@@ -4,6 +4,7 @@
 //! bundles, origin-checked bounded downloads, immutable versions and an atomic activation record.
 //! Depends on dctx-hash, dctx-ed25519 and dctx-plugin-protocol; used by PL-CLI and PL-APP.
 //! No code runs during install, verify, list or recovery: no port can execute a file.
+//! **Unstable**: this crate has no API or ABI stability promise in dctx v1 and may change in any release.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]

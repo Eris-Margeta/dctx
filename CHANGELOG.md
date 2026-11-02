@@ -8,15 +8,42 @@ The open repository is ongoing work. Anything that still depends on third-party
 crates is not considered enterprise-ready; enterprise-ready builds are part of
 dctx Enterprise.
 
-## [Unreleased] — 0.26 development line
+## [1.0.0] — 2026-10-31
 
-Planned next CLI/core release: **0.26.0**. No version is bumped here: `VERSION`,
-`project-meta.yaml`, `dctx-cli` and `dctx-core` remain at **0.25.0**. The other
-`crates/*` packages remain at **0.1.0**, the Git plugin at **1.0.0**, and the
-desktop package/configuration at **0.11.0**. These are separate version lines,
-not fields to bulk-replace. Follow [RELEASING.md](RELEASING.md) to synchronize
-CLI/core metadata and the lockfile, date this section and check the release matrix
-before any separately authorized release.
+The first v1 release, folded from the 0.26 development line. Every `crates/*` and
+`plugins/*` package, `VERSION`, `project-meta.yaml` and the README badge are at **1.0.0**
+(`tools/sync-version.sh --check` keeps them and their `Cargo.lock` entries together). The
+desktop app keeps its own version line (0.11.0) and its own release workflow.
+
+### Shipped surface
+- **Map verbs**: `dctx map map | find | neighbors | explain | read | skeleton | grep | hubs | path | export`,
+  with hard token budgets, stable ids, cursor paging and precision labels; call and import edges are lexical.
+- **`dctx mcp`**: a stdio MCP server exposing the map verbs as tools.
+- **`dctx pack`**: the whole project as one structured block to stdout, the clipboard or `--output`.
+- **`dctx pack --for "<text>" --budget N`**: task context for an agent card: `map find` on the names the text mentions,
+  then neighbors and read of the best hits, whole lines only, within N estimated tokens (ceil(2 × UTF-8 bytes / 7),
+  default 3000). `tools/cardgen/context.sh` prepends it to a card; `docs/guides/AGENTS-SNIPPET.md` is the `AGENTS.md` section that tells agents to run it first;
+  `tools/cardgen/dogfood.py` records before/after prompt tokens for the ten v1 cards.
+- **`dctx languages`**: one registry with three tiers (full, outline, docs) that also renders the README table.
+- **Privacy deny**: sensitive files (env files, keys, credentials, ...), `.git` at any depth and symlinks are
+  never read or printed by `pack`, any map verb or `mcp`; there is no override flag. Detection is by file name only.
+- **Determinism**: two fresh indexes give byte-identical answers, and an unrelated edit changes only `hubs`;
+  `scripts/release-check.sh` gates both, and counts network syscalls under `strace -f` (must be zero).
+- **`dctx --version`** prints `dctx 1.0.0 (<git sha>)`; the sha is embedded at build time, `unknown` without git.
+- **README benchmark section** rendered from the committed run 7 JSON by `scripts/render_readme.py`;
+  `just readme-check` fails when the README differs.
+
+### Out of scope for v1
+- Any network or cloud feature.
+- macOS and Windows support claims (untested); Linux x86_64 is the only tested platform.
+- Watch or incremental mode beyond re-indexing.
+- Fortran and Verilog.
+- Shell call edges.
+- Embeddings and semantic search.
+- LSP-grade type resolution.
+- A stable plugin ABI and desktop API (unstable, not a v1 contract).
+- Cross-repository queries.
+- Publishing to crates.io or GitHub (an owner decision).
 
 ### Added
 - **Call and import edges** in the map index: `dctx map neighbors --edge calls|imports`
@@ -27,6 +54,14 @@ before any separately authorized release.
   `path <FROM> <TO>` (shortest edge path) and `export --format json|mermaid` (the whole graph).
   `neighbors --depth` goes up to 4 (breadth-first, each node once).
 - **`dctx mcp`**: a stdio MCP server exposing the map verbs as tools.
+- **`dctx languages`** (`--json`, `--markdown`): every supported language with its tag, file names, tier
+  (full: symbols and lexical call edges; outline: symbols only; docs: sections) and confidence, from one facade
+  registry (`dctx::LANGUAGES`) that also feeds `--version --verbose` and the README table, which a test diffs.
+- **A CLI exit-code contract** (`docs/CLI-EXIT-CODES.md`) for `map`, `pack`, `mcp`, `languages` and unknown
+  commands: 0 ok, 1 no result (an id not in the index, a binary file target, nothing to pack), 2 usage, 3 index
+  error. Every failure prints a `hint:` line. Previously every failure exited 1. A non-UTF-8 argument is now a
+  usage error instead of a panic, an unknown flag is named as unknown, and `dctx map <verb> --help` prints a page
+  with an `Example:` line for each map verb.
 - **Outline symbols (`guess` confidence) for 25 more formats**: Scala, Dart, Zig, Solidity,
   Gleam, Groovy; Elixir, Lua, OCaml, R, Julia, Haskell; Terraform/HCL, SQL, shell, Makefile,
   Dockerfile, protobuf, Pascal, GraphQL; and headed sections for `.txt`, `.rst`, `.adoc`,
@@ -69,6 +104,19 @@ before any separately authorized release.
   unrelated edits (prompt-cache friendly). `--meta` restores the old fields.
 - **`dctx pack` never prints env-shaped files** (`.env`, `.env.*`, `*.env`, `.envrc`); they
   stay in the tree by name with their content omitted.
+- **Strict sensitive-file deny for every command**: besides env files, `*.pem`, `*.key`,
+  `*.p12`, `*.pfx`, `*.jks`, `*.keystore`, SSH private keys (`id_rsa`, `id_ed25519`, ...),
+  `credentials`, `credentials.json`, `secrets.yaml` (and other data extensions), `.npmrc`,
+  `.netrc`, `.pypirc`, `.pgpass`, `.htpasswd` and `.git-credentials` are never read or printed
+  by `pack`, any `dctx map` verb (by id or raw path, with or without `--in`) or `dctx mcp`.
+  There is no override flag (see ADR-014).
+- **`.git` is closed for good**: a `.git` segment at any depth is never listed or read by the map
+  verbs and never read by `pack`, even when `.gitignore` or `.dctxignore` says `!.git/`.
+- **No symlink escapes**: `FsSource` opens files with `O_NOFOLLOW`, requires a regular file
+  handle, and refuses symlinked directories, so a symlink swapped in after the stat cannot leak
+  bytes from outside the root.
+- `DCTX_INDEX_IGNORED=1` (ignore files are not applied) is now documented in ADR-014; the
+  sensitive-file deny, the `.git` guard and the symlink rules still apply when it is set.
 - **Total-source ceiling raised from 64 MiB to 1 GiB**; `DCTX_MAX_SOURCE_BYTES` overrides it.
 - The core never reads `.git/`, never spawns `git` and never uses VCS object ids;
   content identity is dctx's own SHA-256 (`crates/dctx-hash`).
@@ -81,16 +129,19 @@ before any separately authorized release.
   source for every symbol (cold `find` on a 3,000-file repository: 141 s → about 6 s).
 - Queries share one generation instead of cloning it (peak memory down by about
   30 % on the same repository).
+- One hostile file no longer fails every map verb for the whole repository: a Rust
+  file that is not UTF-8 is indexed as a module with no symbols (like every other
+  language), and a file name the confined path cannot carry (a backslash) is skipped
+  and marks the snapshot `partial`, as `pack` already did.
 
 ### Known issues
 Measured in the benchmarks and scheduled in the specification's roadmap:
 - No incremental indexing: the first query after an edit re-indexes, and each
   edit adds a full generation to the cache.
-- The 26 outline formats carry symbols and `contains` edges only (`guess`); call
-  edges exist for the first-party lexers (Rust, JS/TS, Python, Go, Java, C/C++,
-  C#, Kotlin, Ruby, PHP, Swift).
-- Task-level answer ranking (`find`/`explain` against a 70-question gold set) is
-  not re-measured since October.
+- Outline-tier formats carry symbols and `contains` edges only; heuristic families are
+  labelled `guess`. `dctx languages` lists the tier and confidence of every format.
+- The 70-question task protocol (run 7: 140/140) was designed by the dctx team; an
+  independently selected protocol (v1 card 6) is pending.
 
 ## [0.25.0] — 2026-05-29
 

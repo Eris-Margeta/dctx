@@ -156,12 +156,13 @@ pub fn list_default() -> Result<(), String> {
     Ok(())
 }
 
-/// Load the legacy default asset or a named compiled-v1 template from the legacy cache.
+/// Load the built-in default (chosen by `stamps`) or a named compiled-v1 template from the legacy cache.
+/// A named template is the user's own text: `stamps` does not change it.
 /// # Errors
 /// Returns cache-path discovery, compiled template reading, or template decoding failures.
-pub fn legacy_template(name: &str) -> Result<dctx_template::Template, String> {
+pub fn legacy_template(name: &str, stamps: dctx_template::TreeStamps) -> Result<dctx_template::Template, String> {
     if name == "default" {
-        return Ok(dctx_template::Template::parse(include_str!("../../dctx-template/templates/default.dctx_template")));
+        return Ok(stamps.template());
     }
     let cache = crate::compat::cache_dir().ok_or("Could not determine compiled template path")?;
     let path = cache.join("templates").join(format!("{name}.bin"));

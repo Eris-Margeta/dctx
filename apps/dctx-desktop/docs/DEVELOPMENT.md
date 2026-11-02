@@ -203,7 +203,7 @@ apps/dctx-desktop/
 │
 └── Metadata
     ├── VERSION                  # Current version
-    └── LICENSE                  # Proprietary license
+    └── LICENSE                  # Apache-2.0 license
 ```
 
 ---

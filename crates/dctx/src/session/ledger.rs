@@ -144,16 +144,23 @@ impl PersistedCache {
         policy.check().map_err(map_cache)?;
         let ledger = FsLedgerStore::open(path).map_err(map_cache)?;
         let objects = FsObjectStore::open(path).map_err(map_cache)?;
-        let loaded = ledger.load(Quota::product_default()).map_err(map_cache)?;
-        if let Some(fault) = loaded.fault {
-            return Err(map_cache(fault));
-        }
-        let mut life = loaded.lifecycle;
         let sample = clock_sample(now_ms);
-        let reclaimed = if config.enabled {
-            auto_clean(&ledger, &objects, &mut life, sample, policy).map_err(map_cache)?.reclaimed_bytes
-        } else {
-            0
+        // Another session may commit between this load and the clean slice's commit; reload and run the slice again.
+        let mut attempt = 0;
+        let (life, reclaimed) = loop {
+            let loaded = ledger.load(Quota::product_default()).map_err(map_cache)?;
+            if let Some(fault) = loaded.fault {
+                return Err(map_cache(fault));
+            }
+            let mut life = loaded.lifecycle;
+            if !config.enabled {
+                break (life, 0);
+            }
+            match auto_clean(&ledger, &objects, &mut life, sample, policy) {
+                Ok(report) => break (life, report.reclaimed_bytes),
+                Err(error) if cache_bind::is_conflict(&error) && attempt + 1 < cache_bind::COMMIT_ATTEMPTS => attempt += 1,
+                Err(error) => return Err(map_cache(error)),
+            }
         };
         let mut cache = Self {
             ledger,
@@ -197,21 +204,22 @@ impl PersistedCache {
     }
 
     /// Reloads, refreshes last use, and persists. A root that auto-clean removed is registered again.
+    /// The load, the edit and the commit happen under one exclusive lock, so a concurrent session cannot make it stale.
     pub(crate) fn register_and_touch(&mut self, now_ms: u64) -> Result<(), DctxError> {
-        for _ in 0..cache_bind::COMMIT_ATTEMPTS {
-            self.reload()?;
-            self.life.observe(clock_sample(now_ms));
-            if !self.life.status().roots.iter().any(|root| root.id == self.root_id) {
-                self.life.register_root(self.root_id).map_err(map_cache)?;
-            }
-            self.life.touch(self.root_id).map_err(map_cache)?;
-            match self.ledger.store(&self.life) {
-                Ok(()) => return Ok(()),
-                Err(error) if cache_bind::is_conflict(&error) => {},
-                Err(error) => return Err(map_cache(error)),
-            }
-        }
-        Err(DctxError::invalid("stale ledger"))
+        let root_id = self.root_id;
+        let (_, life) = self
+            .ledger
+            .update_reclaiming(Quota::product_default(), &self.objects, |life| {
+                life.observe(clock_sample(now_ms));
+                if !life.status().roots.iter().any(|root| root.id == root_id) {
+                    life.register_root(root_id).map_err(map_cache)?;
+                }
+                life.touch(root_id).map_err(map_cache)?;
+                Ok::<_, DctxError>(((), true))
+            })
+            .map_err(cache_bind::update_error)?;
+        self.life = life;
+        Ok(())
     }
 }
 

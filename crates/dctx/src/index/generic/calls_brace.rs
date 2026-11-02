@@ -15,8 +15,8 @@ use crate::index::write_stable_id;
 
 /// Words that look like a call (`word (`) but are control flow, a declaration keyword or a language operator.
 const NOT_CALLS: &[&str] = &[
-    "if", "while", "for", "switch", "match", "return", "catch", "function", "fn", "def", "new", "sizeof", "require", "emit", "assert",
-    "returns", "modifier", "event", "constructor", "import", "extends", "with", "this", "super",
+    "if", "while", "for", "switch", "match", "return", "catch", "function", "fn", "def", "new", "sizeof", "require", "emit", "assert", "filter",
+    "returns", "modifier", "event", "constructor", "import", "extends", "with", "this", "super", "param",
 ];
 
 /// Words after which the next identifier is a declared name, so `name(` there is a declaration, not a call.
@@ -35,6 +35,12 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
     let mut refs = Vec::new();
     // Scala: `new X(..)` builds a value; it calls a def only when the file defines a def named `X`.
     let defined: HashSet<&str> = symbols.iter().filter(|symbol| symbol.kind == "fn").map(|symbol| symbol.name.rsplit("::").next().unwrap_or(&symbol.name)).collect();
+    // For PowerShell: build a case-insensitive map from lowercase name to the declared spelling.
+    let defined_powershell: Option<HashMap<String, &str>> = if language == "powershell" {
+        Some(defined.iter().map(|name| (name.to_lowercase(), *name)).collect())
+    } else {
+        None
+    };
     let skip_new = (language == "scala").then_some(&defined);
     // Perl: only a name that is a sub defined in the file or the project is a call.
     let is_perl = language == "perl";
@@ -51,12 +57,27 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
         let mut src = String::new();
         write_stable_id(&mut src, b's', path, &symbol.name, ordinal);
         let own = symbol.name.rsplit("::").next().unwrap_or(&symbol.name);
-        let skip_new = (language == "scala").then_some(&defined);
-        for name in call_names(body, own, skip_new, is_perl.then_some(&defined)) {
-            refs.extend(RawRef::new(&src, EdgeKind::Calls, name, &symbol.name, None));
+        for name in call_names(body, own, skip_new, language, is_perl.then_some(&defined)) {
+            // For PowerShell: case-insensitive match against defined functions, keep declared spelling.
+            let callee = if language == "powershell" {
+                if let Some(map) = &defined_powershell {
+                    map.get(&name.to_lowercase()).copied().unwrap_or(name)
+                } else {
+                    name
+                }
+            } else {
+                name
+            };
+            refs.extend(RawRef::new(&src, EdgeKind::Calls, callee, &symbol.name, None));
         }
     }
-    refs
+    if language == "powershell" {
+        let mut refs_sorted = refs;
+        refs_sorted.sort_by(|a, b| a.scope.cmp(&b.scope));
+        refs_sorted
+    } else {
+        refs
+    }
 }
 
 /// The masked source of one symbol's byte span, or `None` when the span is empty or not on character boundaries.
@@ -70,8 +91,11 @@ fn body_of(masked: &str, span: [u64; 2]) -> Option<&str> {
 }
 
 /// True for a byte that can be part of an identifier. Non-ASCII bytes count, so words never split a character.
-fn is_word(byte: u8) -> bool {
-    byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'$' || byte >= 0x80
+/// For PowerShell, `-` is also allowed in names (e.g. `Get-Config`).
+fn is_word(byte: u8, language: &str) -> bool {
+    let is_base = byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'$' || byte >= 0x80;
+    let is_powershell = language == "powershell";
+    is_base || (is_powershell && byte == b'-')
 }
 
 /// Called names in `body`, in source order and without repeats.
@@ -81,15 +105,11 @@ fn is_word(byte: u8) -> bool {
 /// (Scala) a type named right after `new`, dotted path included, is not a call unless it is one of the given def names.
 /// With `perl` (Perl) a bareword `name` followed by whitespace and an argument and `&name` are calls too, each only when
 /// the name is one of the given sub names, and never after `->`, `sub`, `$`, `@` or `%`.
-fn call_names<'a>(body: &'a str, own: &str, skip_new: Option<&HashSet<&str>>, perl: Option<&HashSet<&str>>) -> Vec<&'a str> {
-    match perl {
-        Some(defined) => brace::perl_call_names(body, own, defined),
-        None => call_names_brace(body, own, skip_new),
+/// For PowerShell, calls are case-insensitive and can occur without parentheses at command position.
+fn call_names<'a>(body: &'a str, own: &str, skip_new: Option<&HashSet<&str>>, language: &str, perl: Option<&HashSet<&str>>) -> Vec<&'a str> {
+    if let Some(defined) = perl {
+        return brace::perl_call_names(body, own, defined);
     }
-}
-
-/// Called names in `body` for the non-Perl brace languages: an identifier followed by `(`, with one space or tab allowed.
-fn call_names_brace<'a>(body: &'a str, own: &str, skip_new: Option<&HashSet<&str>>) -> Vec<&'a str> {
     let bytes = body.as_bytes();
     let first_line_end = body.find('\n').unwrap_or(body.len());
     let mut found: Vec<&str> = Vec::new();
@@ -98,12 +118,13 @@ fn call_names_brace<'a>(body: &'a str, own: &str, skip_new: Option<&HashSet<&str
     let mut after_new: Option<usize> = None;
     let mut path_end: Option<usize> = None;
     let mut at = 0usize;
+    let is_powershell = language == "powershell";
     while at < bytes.len() {
-        if !is_word(bytes[at]) {
+        if !is_word(bytes[at], language) {
             at += 1;
             continue;
         }
-        let end = bytes[at..].iter().position(|byte| !is_word(*byte)).map_or(bytes.len(), |offset| at + offset);
+        let end = bytes[at..].iter().position(|byte| !is_word(*byte, language)).map_or(bytes.len(), |offset| at + offset);
         let word = &body[at..end];
         let declared = previous.is_some_and(|(prior, prior_end)| DECLARES.contains(&prior) && body[prior_end..at].trim().is_empty());
         previous = Some((word, end));
@@ -112,7 +133,33 @@ fn call_names_brace<'a>(body: &'a str, own: &str, skip_new: Option<&HashSet<&str
         path_end = in_new.then_some(end);
         let new_type = in_new && skip_new.is_some_and(|defs| !defs.contains(word));
         let open = end + usize::from(matches!(bytes.get(end), Some(b' ' | b'\t')));
-        let calls = bytes.get(open) == Some(&b'(') && !word.starts_with(|c: char| c.is_ascii_digit());
+        // A call is `(` after the word, OR for PowerShell a word at command position.
+        // PowerShell calls are often without parentheses; the callee name is at command position:
+        // after a newline (line start with optional indentation), or after `=`, `|`, `(`, `{`, `}`, `;`, `)`,
+        // or after an alphabetic word (control flow keyword like `return`, `if`, `else`).
+        // Exclude parameters (`-Name`) and variables (`$Name`) which are not calls.
+        let is_powershell_param_or_var = is_powershell && (word.starts_with('-') || word.starts_with('$'));
+        let calls = if is_powershell && !is_powershell_param_or_var {
+            let has_paren = bytes.get(open) == Some(&b'(');
+            let at_command_position = {
+                // Scan backwards from `at` to find the last non-whitespace character before this word.
+                let mut before = at;
+                while before > 0 && (bytes[before - 1] == b' ' || bytes[before - 1] == b'\t') {
+                    before -= 1;
+                }
+                if before == 0 {
+                    // Start of body: command position.
+                    true
+                } else {
+                    let last = bytes[before - 1];
+                    matches!(last, b'\n' | b'=' | b'|' | b'(' | b'{' | b'}' | b';' | b')')
+                        || last.is_ascii_alphabetic()
+                }
+            };
+            has_paren || at_command_position
+        } else {
+            bytes.get(open) == Some(&b'(') && !word.starts_with(|c: char| c.is_ascii_digit())
+        };
         let builtin = at > 0 && bytes[at - 1] == b'@';
         let own_declaration = at < first_line_end && word == own;
         if calls && !declared && !new_type && !builtin && !own_declaration && !NOT_CALLS.contains(&word) && !is_denied(word) && !found.contains(&word) {
@@ -153,15 +200,22 @@ mod tests {
         assert_eq!(pairs("solidity", sol), [pair("T::solRun", "solHelp")]);
         let gleam = "fn gHelp() {\n  1\n}\npub fn gRun() {\n  gHelp()\n}\n";
         assert_eq!(pairs("gleam", gleam), [pair("gRun", "gHelp")]);
+        let powershell = "function Get-Config {\n    param([string]$Path)\n    return Read-File -Path $Path\n}\n\nfunction Read-File {\n    param($Path)\n    Get-Content $Path\n}\n\nclass Deployer {\n    [string] Run() {\n        return Get-Config -Path \"x\"\n    }\n}\n";
+        // In PowerShell, calls without parentheses at command position are detected:
+        // - Deployer::Run calls Get-Config (at command position within the method body)
+        // - Get-Config calls Read-File (at command position within its body)
+        // - Read-File calls Get-Content (at command position within its body)
+        assert_eq!(pairs("powershell", powershell), [pair("Deployer::Run", "Get-Config"), pair("Get-Config", "Read-File"), pair("Read-File", "Get-Content")]);
         let groovy = "class G {\n  def gvHelp(a) {\n    return a\n  }\n  def gvRun(a) {\n    return gvHelp (a)\n  }\n}\n";
-        assert_eq!(pairs("groovy", groovy), [pair("G::gvRun", "G::gvHelp")]);
+        assert_eq!(pairs("groovy", groovy), [pair("G::gvRun", "gvHelp")]);
     }
 
     /// Perl: a `package` holds its `sub`s and a call is `name(..)`, a bareword with an argument, or `&name`.
     #[test]
     fn perl_packages_qualify_subs_and_calls_link_callers_to_callees() {
         let text = "package Shop::Cart;\nsub total {\n    my ($self) = @_;\n    return add_tax($self->{sum}) + round_it $self->{sum};\n}\nsub add_tax {\n    return 0;\n}\nsub round_it { return int(shift) }\n";
-        let names: Vec<_> = symbols("perl", text).iter().map(|symbol| (symbol.name.as_str(), symbol.kind.as_str())).collect();
+        let found = symbols("perl", text);
+        let names: Vec<_> = found.iter().map(|symbol| (symbol.name.as_str(), symbol.kind.as_str())).collect();
         assert_eq!(
             names,
             [("Shop::Cart", "type"), ("Shop::Cart::total", "fn"), ("Shop::Cart::add_tax", "fn"), ("Shop::Cart::round_it", "fn")]
@@ -176,7 +230,7 @@ mod tests {
     #[test]
     fn perl_methods_amps_and_pod_are_not_calls_and_sub_names_are_filtered() {
         let text = "package P;\n# sub hidden(1)\nsub run {\n    my $c = P->new;\n    print $c->total;\n    &help;\n    my $x = helper(1);\n}\nsub help {\n    1\n}\n=pod\n\nsub in_pod { }\n\n=cut\n\n1;\n";
-        let names: Vec<_> = symbols("perl", text).iter().map(|symbol| symbol.name.as_str()).collect();
+        let names: Vec<_> = symbols("perl", text).into_iter().map(|symbol| symbol.name).collect();
         assert_eq!(names, ["P", "P::run", "P::help"]);
         // `P->new` and `$c->total` are methods, `helper` is not a sub, so only `&help` is a call.
         assert_eq!(pairs("perl", text), [pair("P::run", "help")]);
@@ -197,7 +251,7 @@ mod tests {
     #[test]
     fn keywords_are_not_calls() {
         let body = "x = if (a) 1 else 2\nwhile (b) {}\nfor (i <- 1) {}\nswitch (c) {}\nmatch (d) {}\nreturn (e)\ncatch (f) {}\nfunction (g) {}\nfn (h) {}\ndef (i) {}\nnew (j)\nsizeof(k)\nrequire(l)\nemit (m)\nassert(n)\nreal (1)\nother(2)\n";
-        assert_eq!(call_names(body, "none", None, None), ["real", "other"]);
+        assert_eq!(call_names(body, "none", None, "none", None), ["real", "other"]);
         let sol = "contract C {\n    function f() public returns (uint) {\n        emit Sent(1);\n        require(ok);\n        return g();\n    }\n}\n";
         // `emit Name(..)` names an event, which is a function symbol: the event is called, `emit` is not.
         assert_eq!(pairs("solidity", sol), [pair("C::f", "Sent"), pair("C::f", "g")]);

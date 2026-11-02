@@ -1,5 +1,6 @@
 //! High-level publication of views, overlays, packs, previews and facts.
-//! Implements CACHE-v1 retention: three views, two pack snapshots, two previews.
+//! Implements CACHE-v1 retention: two pack snapshots, two previews, and (P-C10) one current view per root plus any
+//! older view a reader lease or pin still holds. A view a newer one replaced is retired at publish and is reclaimable.
 //! Depends on [`super::Lifecycle`] admission and reachability. Startup GC reclaims what retention retired.
 //! Publishing reserves the new bytes before the old generation is eligible to retire.
 
@@ -154,7 +155,7 @@ impl Lifecycle {
         if self.disk_full {
             return Err(CacheError::DiskFull);
         }
-        let reservation = self.reserve_for(Some(root), kind.purpose(), bytes)?;
+        let reservation = self.reserve_protecting(Some(root), kind.purpose(), bytes, refs)?;
         let class = kind.purpose().class();
         self.reservations.remove(&reservation.id());
         let generation = self.alloc_generation()?;
@@ -189,6 +190,7 @@ impl Lifecycle {
         if kind == ManifestKind::View {
             self.swap_pointer(root, generation);
             self.drop_previous(root);
+            self.retire_superseded_views(root);
         }
         self.note_use(root);
         self.enforce_retention(root);

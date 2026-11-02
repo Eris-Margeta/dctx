@@ -9,9 +9,12 @@ pub const HARDCODED_IGNORE_RULES: &[&str] = &[
     ".git/",
     ".svn/",
     ".hg/",
-    // Dependencies
+    // Dependencies and tool caches (ADR-015: matches the legacy and map-scan built-ins)
     "node_modules/",
     "bower_components/",
+    ".turbo/",
+    ".pnpm-store/",
+    ".localstack/",
     // System & IDE
     ".DS_Store",
     "Thumbs.db",

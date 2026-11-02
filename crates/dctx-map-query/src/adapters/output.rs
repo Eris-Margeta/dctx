@@ -59,6 +59,7 @@ pub fn render_answer_at(
     }
     Err(RenderError::BudgetTooSmall.into())
 }
+#[allow(clippy::expect_used, reason = "writing to a String cannot fail")]
 fn render(
     page: &Answer,
     budget: AnswerBudget,
@@ -122,6 +123,7 @@ fn explain_page(
     }
 }
 #[allow(clippy::cast_possible_truncation, reason = "Head, tail and maximum are derived from a page ceiling of 120 or 400 lines, so they fit u32.")]
+#[allow(clippy::expect_used, reason = "writing to a String cannot fail")]
 fn read_page(
     page: &mut Answer,
     request: &Request,

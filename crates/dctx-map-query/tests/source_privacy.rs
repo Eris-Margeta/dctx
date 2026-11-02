@@ -34,3 +34,22 @@ fn secrets_ignored_files_and_symlinks_never_enter_the_snapshot() {
         assert!(!source.snapshot().unwrap().files.contains_key("link.rs"));
     }
 }
+
+/// v1 card 1: the shared sensitive-name deny also keeps token and secrets files out of the map-query engine.
+#[test]
+fn token_and_secrets_files_never_enter_the_snapshot() {
+    let dir = tempfile::tempdir().unwrap();
+    fs::create_dir_all(dir.path().join("deploy")).unwrap();
+    fs::write(dir.path().join("credentials.py"), "def load(): pass\n").unwrap();
+    for name in [".npmrc", "deploy/secrets.yaml", "settings.env", ".envrc", "store.p12"] {
+        fs::write(dir.path().join(name), "SECRET").unwrap();
+    }
+    let source = FileSource::new(dir.path()).unwrap();
+    let snapshot = source.snapshot().unwrap();
+    assert!(snapshot.files.contains_key("credentials.py"));
+    for name in [".npmrc", "deploy/secrets.yaml", "settings.env", ".envrc", "store.p12"] {
+        assert!(!snapshot.files.contains_key(name), "{name}");
+        assert!(source.read(name).is_err(), "{name}");
+    }
+    assert!(source.read("credentials.py").is_ok());
+}

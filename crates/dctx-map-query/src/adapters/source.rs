@@ -177,6 +177,7 @@ impl Source for FileSource {
     }
 }
 
+#[allow(clippy::expect_used, reason = "writing to a String cannot fail")]
 pub(crate) fn hex(hash: [u8; 32]) -> String {
     hash.iter().fold(String::new(), |mut text, byte| { write!(text, "{byte:02x}").expect("writing to a String cannot fail"); text })
 }
@@ -201,6 +202,7 @@ pub(super) fn forbidden(name: &str) -> bool {
         || name.ends_with(".key")
         || name.starts_with("id_rsa")
         || name.starts_with("id_ed25519")
+        || dctx_core::filter::is_secret_shaped_name(name)
 }
 
 #[derive(Clone)]

@@ -103,7 +103,8 @@ fn render_metadata(session: &mut Session) -> Result<String, DesktopError> {
     let handle = session
         .snapshot(&SnapshotRequest::metadata())
         .map_err(|error| DesktopError::Walk { detail: error.to_string() })?;
-    Ok(format!("# snapshot generation={} digest={}\n", handle.generation(), handle.digest()))
+    // The digest hashes modification times, so it changes on a bare `touch`: it goes last, behind a lead line that never changes.
+    Ok(format!("# snapshot metadata\n# snapshot generation={} digest={}\n", handle.generation(), handle.digest()))
 }
 
 fn render_pack(session: &mut Session) -> Result<String, DesktopError> {
@@ -218,7 +219,11 @@ mod tests {
         config.tree_only = true;
         let response = generate_snapshot(&root, &config);
         assert!(response.success, "{:?}", response.error);
-        assert!(response.output.starts_with("# snapshot generation="));
+        assert!(response.output.starts_with("# snapshot metadata\n"));
+        let (lead, trailer) = response.output.split_once('\n').expect("two lines");
+        assert_eq!(lead, "# snapshot metadata");
+        assert!(trailer.starts_with("# snapshot generation=") && trailer.contains(" digest=") && trailer.ends_with('\n'));
+        assert_eq!(trailer.matches('\n').count(), 1, "the trailer is the last line");
         let _ = fs::remove_dir_all(&root);
     }
 

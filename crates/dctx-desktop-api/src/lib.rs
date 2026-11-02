@@ -2,6 +2,7 @@
 //! Implements ARCHITECTURE-PROPOSAL §7 DX-E4a and PLUGINS.md §7.3 PL-APP's backend.
 //! Depends on the dctx facade, distribution, bundled catalog and serde. Tauri glue stays in the app.
 //! Callers inject directories, timestamps and plugin ports. Git is never spawned (decision 078).
+//! **Unstable**: this crate has no API or ABI stability promise in dctx v1 and may change in any release.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]

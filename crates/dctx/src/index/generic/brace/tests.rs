@@ -117,7 +117,7 @@ fn perl_packages_and_subs_are_symbols() {
 #[test]
 fn perl_pod_masked() {
     let text = "package P;\n# sub hidden(1)\nsub run {\n    my $c = P->new;\n    print $c->total;\n    &help;\n    my $x = helper(1);\n}\nsub help {\n    1\n}\n=pod\n\nsub in_pod { }\n\n=cut\n\n1;\n";
-    let names: Vec<_> = symbols("perl", text).iter().map(|symbol| symbol.name.as_str()).collect();
+    let names: Vec<_> = symbols("perl", text).into_iter().map(|symbol| symbol.name).collect();
     assert_eq!(names, ["P", "P::run", "P::help"]);
 }
 
@@ -127,6 +127,15 @@ fn groovy_fields_in_a_class_are_symbols_and_script_variables_are_not() {
     expect(
         named("groovy", text),
         &[("Svc", "type"), ("Svc::LIMIT", "const"), ("Svc::count", "field"), ("Svc::label", "field"), ("Svc::title", "field"), ("Svc::call", "fn")],
+    );
+}
+
+#[test]
+fn powershell_symbols_and_methods_are_recognized() {
+    let text = "class Deployer {\n  [string] Run() {\n    return $null\n  }\n}\nfunction Get-Config {\n}\nfunction Read-File {\n}\nenum Status {\n  Good\n  Bad\n}\n";
+    expect(
+        named("powershell", text),
+        &[("Deployer", "type"), ("Deployer::Run", "fn"), ("Get-Config", "fn"), ("Read-File", "fn"), ("Status", "type"), ("Status::Good", "const"), ("Status::Bad", "const")]
     );
 }
 

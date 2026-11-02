@@ -1,6 +1,6 @@
 [package]
 name = "dctx"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
@@ -79,6 +79,10 @@ required-features = ["map", "segments"]
 [[test]]
 name = "rust_default"
 required-features = ["map", "syntax-rust"]
+
+[[test]]
+name = "hostile_walk"
+required-features = ["fs", "map", "syntax-rust"]
 
 [[test]]
 name = "session"

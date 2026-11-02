@@ -58,10 +58,10 @@ impl Parser for PureParser {
             Language::Php => php::parse_pure(path, bytes),
             Language::Swift => swift::parse_pure(path, bytes),
             // Heuristic families are extracted by the facade; here they stay module-only.
-            Language::Perl => perl::parse_pure(path, source, bytes),
-            Language::Scala | Language::Dart | Language::Zig | Language::Solidity | Language::Gleam | Language::Groovy | Language::Text => {
+            Language::Scala | Language::Dart | Language::Zig | Language::Solidity | Language::Gleam | Language::Perl | Language::Groovy | Language::Powershell | Language::Text => {
                 fallback(path, source)
             }
+            Language::Erlang => fallback(path, source),
             Language::Elixir | Language::Lua | Language::OCaml | Language::R | Language::Julia | Language::Haskell => {
                 fallback(path, source)
             }
@@ -107,10 +107,10 @@ impl Parser for TreeSitterParser {
             Language::Ruby => return ruby::parse_pure(path, bytes),
             Language::Php => return php::parse_pure(path, bytes),
             Language::Swift => return swift::parse_pure(path, bytes),
-            Language::Scala | Language::Dart | Language::Zig | Language::Solidity | Language::Gleam | Language::Groovy | Language::Text => {
+            Language::Scala | Language::Dart | Language::Zig | Language::Solidity | Language::Gleam | Language::Groovy | Language::Powershell | Language::Text => {
                 return fallback(path, source);
             }
-            Language::Perl => return perl::parse_pure(path, bytes),
+            Language::Perl | Language::Erlang => return fallback(path, source),
             Language::Elixir | Language::Lua | Language::OCaml | Language::R | Language::Julia | Language::Haskell => {
                 return fallback(path, source);
             }
@@ -155,6 +155,7 @@ impl Parser for TreeSitterParser {
             | Language::Zig
             | Language::Solidity
             | Language::Gleam
+            | Language::Perl
             | Language::Groovy
             | Language::Text
             | Language::Elixir
@@ -174,6 +175,7 @@ impl Parser for TreeSitterParser {
             | Language::Web
             | Language::Lisp
             | Language::Nix
+            | Language::Erlang
             | Language::Unknown => {}
         }
         facts.finish()

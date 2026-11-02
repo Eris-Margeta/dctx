@@ -14,12 +14,13 @@
 mod adapters;
 mod domain;
 mod index;
+pub mod languages;
 mod plugins;
 mod ports;
 mod session;
 
-/// Facade crate version.
-pub const FACADE_VERSION: &str = "0.1.0";
+/// Facade crate version: the package version, so it moves with the workspace release.
+pub const FACADE_VERSION: &str = env!("CARGO_PKG_VERSION");
 /// JSON protocol emitted by query and pack.
 pub const WIRE_VERSION: u32 = 2;
 
@@ -28,8 +29,9 @@ pub use domain::{
     CacheReport, Capabilities,
     Direction, DctxError, ErrorCode, Freshness, FreshnessMode, GcRequest, HostGrants, IdentityOutcome, MapRequest,
     OperationLimits, PackReport, PackRequest, Precision, PurgeRequest, PurgeScope, Resource, RuleSources, SegmentInfo,
-    SnapshotRequest, VecSink, Verb, parse_source_ceiling, source_ceiling, REQUEST_VERSION, SOURCE_ENV, STRUCTURAL_PARSER,
+    SnapshotRequest, VecSink, Verb, parse_source_ceiling, source_ceiling, ENTRIES_ENV, RECORDS_ENV, REQUEST_VERSION, SOURCE_ENV, STRUCTURAL_PARSER,
 };
+pub use languages::{Confidence, Language, Tier, LANGUAGES};
 pub use plugins::{Boundary, HookEffect, HookWarning, PluginHost};
 pub use ports::{Cache, Cancellation, Clock, FactStore, Source};
 pub use session::{Session, SessionBuilder, SnapshotHandle, StoragePolicy};
@@ -66,6 +68,7 @@ mod isolation_scan {
             ("index/segment.rs", include_str!("index/segment.rs")),
             ("index/syn_extract.rs", include_str!("index/syn_extract.rs")),
             ("index/walk.rs", include_str!("index/walk.rs")),
+            ("languages.rs", include_str!("languages.rs")),
             ("session/mod.rs", include_str!("session/mod.rs")),
             ("session/build.rs", include_str!("session/build.rs")),
             ("session/cache_op.rs", include_str!("session/cache_op.rs")),

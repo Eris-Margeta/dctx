@@ -101,6 +101,7 @@ pub(crate) fn walk_source(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
     }
     visit_dir(args, languages.as_deref(), &RelativePath::root(), &mut state)?;
     refs::link(&state.nodes, &mut state.edges, &mut state.text, &state.file_refs);
+    check_records(args, &state)?;
     Ok(finish(args, state))
 }
 
@@ -110,7 +111,12 @@ fn visit_dir(args: &WalkArgs<'_>, languages: Option<&[String]>, dir: &RelativePa
     entries.sort_by(|left, right| left.name.cmp(&right.name));
     for entry in entries {
         checkpoint(args)?;
-        let path = dir.child(&entry.name).map_err(DctxError::from_core)?;
+        // A name the confined path cannot carry (a backslash, or a path over the byte cap) is skipped, as the pack
+        // scan does, and marks the snapshot partial. One such file never fails the whole walk.
+        let Ok(path) = dir.child(&entry.name) else {
+            state.partial = true;
+            continue;
+        };
         let mut decision = args.policy.decide(path.as_str(), entry.is_dir())?;
         if !entry.is_dir() && decision == FileHandlingDecision::Include && !language_ok(languages, path.as_str()) {
             decision = FileHandlingDecision::OmitContent;
@@ -136,12 +142,13 @@ fn visit_dir(args: &WalkArgs<'_>, languages: Option<&[String]>, dir: &RelativePa
 }
 
 fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDecision, state: &mut State) -> Result<(), DctxError> {
-    let meta = match args.source.metadata(path).map_err(DctxError::from_core) {
-        Ok(meta) => meta,
+    // The stamp is taken with the stat, before any byte is read: an edit after the stat changes it.
+    let (meta, stamp) = match args.source.stat(path).map_err(DctxError::from_core) {
+        Ok(pair) => pair,
         Err(error @ (DctxError::Cancelled | DctxError::ResourceLimit { .. })) => return Err(error),
         Err(_) => {
             state.partial = true;
-            state.files.push(file_row(path.as_str(), decision, None, 0, 0));
+            state.files.push(file_row(path.as_str(), decision, None, 0, 0, None));
             return Ok(());
         }
     };
@@ -152,12 +159,12 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
         if args.freshness == FreshnessMode::Metadata {
             push_module(&mut state.nodes, &mut state.text, path.as_str(), 0, [1, 1]);
         }
-        state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis()));
-        return Ok(());
+        state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis(), stamp));
+        return check_records(args, state);
     }
     if meta.size > args.limits.file_bytes {
         state.partial = true;
-        state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis()));
+        state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis(), stamp));
         return Ok(());
     }
     if state.source_bytes.saturating_add(meta.size) > args.limits.source_bytes {
@@ -174,7 +181,7 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
         Err(DctxError::ResourceLimit { resource, limit }) => return Err(DctxError::ResourceLimit { resource, limit }),
         Err(_) => {
             state.partial = true;
-            state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis()));
+            state.files.push(file_row(path.as_str(), decision, None, meta.size, meta.modified.millis(), stamp));
             return Ok(());
         }
     };
@@ -193,6 +200,8 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
     watch.charge(Stage::SpanConversion, span_mark);
     let module = push_module(&mut state.nodes, &mut state.text, path.as_str(), len, [1, lines]);
     if let Some((module_id, path_span)) = module {
+        // The export list rides on the module node, so `map` orders an outline without a second read (DCX-55c).
+        state.nodes[module_id as usize].signature = super::outline_order::export_signature(path.as_str(), &bytes);
         let parse_mark = profile::start();
         let parsed = prepare_file(args, path.as_str(), &bytes);
         watch.charge(Stage::ParseLex, parse_mark);
@@ -220,7 +229,17 @@ fn visit_file(args: &WalkArgs<'_>, path: &RelativePath, decision: FileHandlingDe
         }
         watch.charge(Stage::GraphAssembly, graph_mark);
     }
-    state.files.push(file_row(path.as_str(), decision, Some(digest), meta.size, meta.modified.millis()));
+    state.files.push(file_row(path.as_str(), decision, Some(digest), meta.size, meta.modified.millis(), stamp));
+    check_records(args, state)
+}
+
+/// Refuses as soon as a record table passes the cap, instead of after the whole tree was parsed.
+fn check_records(args: &WalkArgs<'_>, state: &State) -> Result<(), DctxError> {
+    let cap = args.limits.records;
+    let over = |len: usize| u64::try_from(len).map_or(true, |len| len > cap);
+    if over(state.nodes.len()) || over(state.edges.len()) || over(state.files.len()) {
+        return Err(limit(Resource::Records, cap));
+    }
     Ok(())
 }
 
@@ -280,8 +299,15 @@ fn push_module(
     Some((module_index, path_span))
 }
 
-fn file_row(path: &str, decision: FileHandlingDecision, digest: Option<dctx_hash::ContentDigest>, size: u64, modified: u64) -> IndexedFile {
-    IndexedFile { path: path.to_string(), decision, digest, size, modified }
+fn file_row(
+    path: &str,
+    decision: FileHandlingDecision,
+    digest: Option<dctx_hash::ContentDigest>,
+    size: u64,
+    modified: u64,
+    stamp: Option<dctx_core::facts::EntryStamp>,
+) -> IndexedFile {
+    IndexedFile { path: path.to_string(), decision, digest, size, modified, stamp }
 }
 
 fn finish(args: &WalkArgs<'_>, state: State) -> Walked {
@@ -354,137 +380,4 @@ fn limit(resource: Resource, limit: u64) -> DctxError {
 }
 
 #[cfg(test)]
-mod tests {
-    use std::fmt::Write as _;
-    use super::*;
-    use crate::domain::{FreshnessMode, HostGrants, OperationLimits, ParserChoice, PolicyView};
-    use dctx_core::selection::{RuleTexts, SelectionPolicy};
-    use dctx_ports::memory::{CancelFlag, MemorySource};
-    use dctx_template::HostCeiling;
-
-    #[test]
-    fn excluded_git_is_not_read() {
-        let mut source = MemorySource::new();
-        source.insert_dir(".git", 0).expect("dir");
-        source.insert_file(".git/config", b"secret", 0).expect("git");
-        source.insert_file("src/lib.rs", b"fn ping() {}\n", 0).expect("src");
-        let selection = SelectionPolicy::from_texts(&RuleTexts::default());
-        let ceiling = HostCeiling::base();
-        let limits = crate::domain::resolve_scan(&OperationLimits::default()).expect("limits");
-        let walked = walk_source(&WalkArgs {
-            source: &source,
-            cancel: &CancelFlag::new(),
-            policy: PolicyView {
-                selection: &selection,
-                ceiling: &ceiling,
-                grants: HostGrants::PermitAll,
-                plan: None,
-                view: "map",
-            },
-            limits: &limits,
-            freshness: FreshnessMode::ImmutableSnapshot,
-            parser: ParserChoice::Structural,
-            deadline_ms: None,
-            started_ms: 0,
-            now_ms: 0,
-        })
-        .expect("walk");
-        assert!(walked.files.iter().all(|file| !file.path.starts_with(".git")));
-        assert_eq!(source.reads(), vec!["src/lib.rs".to_string()]);
-    }
-
-    #[test]
-    fn profiled_files_report_bytes_symbols_and_leave_finalization_out() {
-        struct Reset;
-        impl Drop for Reset {
-            fn drop(&mut self) {
-                profile::discard();
-            }
-        }
-        let _reset = Reset;
-        profile::enable();
-        let mut source = MemorySource::new();
-        let mut expected = Vec::new();
-        for count in 1..=5 {
-            let mut body = String::new();
-            for index in 0..count {
-                let _ = writeln!(body, "fn f{index}() {{}}");
-            }
-            let path = format!("f{count}.rs");
-            source.insert_file(&path, body.as_bytes(), 0).expect("file");
-            expected.push((path, body.len() as u64, u64::try_from(count).expect("nonnegative fixture count")));
-        }
-        let selection = SelectionPolicy::from_texts(&RuleTexts::default());
-        let ceiling = HostCeiling::base();
-        let limits = crate::domain::resolve_scan(&OperationLimits::default()).expect("limits");
-        let walked = walk_source(&WalkArgs {
-            source: &source,
-            cancel: &CancelFlag::new(),
-            policy: PolicyView {
-                selection: &selection,
-                ceiling: &ceiling,
-                grants: HostGrants::PermitAll,
-                plan: None,
-                view: "map",
-            },
-            limits: &limits,
-            freshness: FreshnessMode::ImmutableSnapshot,
-            parser: ParserChoice::Structural,
-            deadline_ms: None,
-            started_ms: 0,
-            now_ms: 0,
-        })
-        .expect("walk");
-        assert_eq!(walked.files.len(), 5);
-        profile::add_ns(Stage::CanonicalizeSeal, 1_000);
-        profile::add_ns(Stage::PersistReuse, 2_000);
-        profile::add_ns(Stage::Query, 4_000);
-        let report = profile::report().expect("report");
-        let mut files = Vec::new();
-        let mut stages = Vec::new();
-        for line in report.lines() {
-            if let Some(rest) = line.strip_prefix("file ") {
-                let mut parts = rest.splitn(4, ' ');
-                let nanos: u128 = parts.next().and_then(|value| value.parse().ok()).expect("file ns");
-                let bytes: u64 = parts.next().and_then(|value| value.parse().ok()).expect("bytes");
-                let symbols: u64 = parts.next().and_then(|value| value.parse().ok()).expect("symbols");
-                let path = parts.next().expect("path").to_string();
-                files.push((nanos, bytes, symbols, path));
-            } else if let Some(rest) = line.strip_prefix("stage ") {
-                let (name, value) = rest.rsplit_once(' ').expect("stage");
-                stages.push((name.to_string(), value.parse::<u128>().expect("stage ns")));
-            }
-        }
-        let names: Vec<_> = stages.iter().map(|(name, _)| name.as_str()).collect();
-        assert_eq!(
-            names,
-            [
-                "walk",
-                "read",
-                "hash",
-                "parse/lex",
-                "span conversion",
-                "graph assembly",
-                "canonicalize/seal",
-                "persist/reuse",
-                "query",
-            ]
-        );
-        assert!(files.windows(2).all(|pair| pair[0].0 >= pair[1].0), "{report}");
-        assert_eq!(files.len(), 5, "{report}");
-        let mut seen: Vec<_> = files.iter().map(|(_, bytes, symbols, path)| (path.clone(), *bytes, *symbols)).collect();
-        seen.sort();
-        expected.sort();
-        assert_eq!(seen, expected, "{report}");
-        let file_sum: u128 = files.iter().map(|row| row.0).sum();
-        let stage_sum: u128 = stages
-            .iter()
-            .filter(|(name, _)| matches!(name.as_str(), "read" | "hash" | "parse/lex" | "span conversion" | "graph assembly"))
-            .map(|(_, ns)| *ns)
-            .sum();
-        assert_eq!(file_sum, stage_sum, "{report}");
-        assert_eq!(stages.iter().find(|(name, _)| name == "canonicalize/seal").map(|(_, ns)| *ns), Some(1_000));
-        assert_eq!(stages.iter().find(|(name, _)| name == "persist/reuse").map(|(_, ns)| *ns), Some(2_000));
-        assert_eq!(stages.iter().find(|(name, _)| name == "query").map(|(_, ns)| *ns), Some(4_000));
-    }
-}
+mod tests;

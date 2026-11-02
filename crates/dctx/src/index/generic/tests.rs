@@ -3,7 +3,7 @@
 use super::{brace, handles, mask, symbols};
 use crate::index::extract::{extract_structural_refs, language_of};
 
-const TAGS: &[&str] = &["scala", "dart", "zig", "solidity", "gleam", "groovy", "perl"];
+const TAGS: &[&str] = &["scala", "dart", "zig", "solidity", "gleam", "groovy", "perl", "powershell"];
 
 fn named(tag: &str, text: &str) -> Vec<(String, String)> {
     symbols(tag, text).into_iter().map(|symbol| (symbol.name, symbol.kind)).collect()
@@ -28,6 +28,8 @@ fn every_brace_language_finds_its_types_and_functions() {
     assert_eq!(named("solidity", sol), [pair("Token", "type"), pair("Token::transfer", "fn"), pair("Token::Sent", "fn")]);
     let gleam = "pub fn main() {\n  helper()\n}\nfn helper() {\n  1\n}\npub type Shape {\n  Circle\n}\n";
     assert_eq!(named("gleam", gleam), [pair("main", "fn"), pair("helper", "fn"), pair("Shape", "type")]);
+    let powershell = "function Get-Config {\n    param([string]$Path)\n    return Read-File -Path $Path\n}\n\nfunction Read-File {\n    param($Path)\n    Get-Content $Path\n}\n\nclass Deployer {\n    [string] Run() {\n        return Get-Config -Path \"x\"\n    }\n}\n";
+    assert_eq!(named("powershell", powershell), [pair("Get-Config", "fn"), pair("Read-File", "fn"), pair("Deployer", "type"), pair("Deployer::Run", "fn")]);
     let groovy = "class Svc {\n  def call(String a) {\n    return a\n  }\n}\ndef x = 1\n";
     assert_eq!(named("groovy", groovy), [pair("Svc", "type"), pair("Svc::call", "fn")]);
     let perl = "package Shop::Cart;\nsub total {\n    my ($self) = @_;\n    return add_tax($self->{sum}) + round_it $self->{sum};\n}\nsub add_tax {\n    my ($x) = @_;\n    return $x * 1.2;\n}\nsub round_it { return int(shift) }\n";
@@ -65,6 +67,7 @@ fn denylisted_keywords_are_never_symbols() {
             ("zig", format!("fn {word}() void {{\n}}\n")),
             ("solidity", format!("contract {word} {{\n}}\nfunction {word}() public {{}}\n")),
             ("dart", format!("class {word} {{\n}}\nint {word}() {{}}\n{word} foo() {{}}\n")),
+            ("powershell", format!("function {word} {{\n}}\n")),
         ] {
             let found = named(tag, &text);
             assert!(found.iter().all(|(name, _)| !name.ends_with(word) || name == "K"), "{tag} {word}: {found:?}");
@@ -104,6 +107,7 @@ fn malformed_input_never_panics_and_stays_bounded() {
         "int a\u{e9}(",
         "\\\\ zig line\nfn z() void {\n",
         "\u{0}\u{1}\r\n\r\nclass R {\r\n  def s() = 1\r\n}\r\n",
+        "function Get-Config {",
     ];
     for tag in TAGS {
         for sample in samples {
@@ -125,7 +129,12 @@ fn extensions_dispatch_to_the_generic_extractor() {
         ("a.zig", "zig"),
         ("a.sol", "solidity"),
         ("a.gleam", "gleam"),
+        ("a.pl", "perl"),
+        ("a.pm", "perl"),
+        ("a.t", "perl"),
+        ("a.psgi", "perl"),
         ("a.groovy", "groovy"),
+        ("a.ps1", "powershell"),
         ("build.gradle", "groovy"),
         ("A.SCALA", "scala"),
     ] {

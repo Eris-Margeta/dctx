@@ -6,36 +6,77 @@
 
 mod args;
 mod export_verb;
+mod failure;
 mod file_page;
 mod hubs;
 mod skeleton;
 mod path_verb;
+mod target;
+mod verb_help;
 
-use dctx::{Direction, MapRequest, SnapshotRequest, VecSink, Verb};
+use dctx::{Direction, IdentityOutcome, MapRequest, SnapshotRequest, VecSink, Verb};
 use dctx_map_query::{Direction as QueryDirection, Format, Request, Verb as QueryVerb};
 
+use crate::exit::{self, Failure};
 use crate::host;
 
-/// Runs one map verb. Admin verbs are refused before a source is opened.
-pub(crate) fn run(arguments: &[String]) -> Result<(), String> {
-    let page = execute(arguments)?;
-    print!("{page}");
-    Ok(())
+/// Runs one map verb and prints its page. A `gone` page is printed, then the run fails with exit 1 (docs/CLI-EXIT-CODES.md).
+pub(crate) fn run(arguments: &[String]) -> Result<(), Failure> {
+    let answered = answer_with(arguments, host::open_mapped).map_err(|failure| failure.within("map"))?;
+    print!("{}", answered.page);
+    match answered.missing {
+        Some(failure) => Err(failure.within("map")),
+        None => Ok(()),
+    }
 }
 
-/// Same as [`run`], returning the page instead of printing it.
+/// Same as [`run`], returning the page instead of printing it. A `gone` page is a page here, not an error.
 pub(crate) fn execute(arguments: &[String]) -> Result<String, String> {
     execute_with(arguments, host::open_mapped)
+}
+
+/// Same as [`execute`] for `dctx pack --for`: the page, or the failure with its exit code. A `gone` page is a page here.
+pub(crate) fn answer(arguments: &[String]) -> Result<String, Failure> {
+    answer_with(arguments, host::open_mapped).map(|answered| answered.page)
 }
 
 fn execute_with(
     arguments: &[String],
     open: impl FnOnce(&std::path::Path) -> Result<(dctx::Session, String), String>,
 ) -> Result<String, String> {
-    if arguments.is_empty() || arguments == ["--help"] || arguments == ["-h"] {
-        return Ok(args::HELP.to_string());
+    answer_with(arguments, open).map(|answered| answered.page).map_err(|failure| failure.message)
+}
+
+/// One answered map verb: the page, and the exit-1 failure that follows a `gone` page.
+struct Answered {
+    /// The page for stdout.
+    page: String,
+    /// Set when the facade answered that the target is not in the index.
+    missing: Option<Failure>,
+}
+
+impl Answered {
+    /// A page with no failure after it.
+    fn page(page: String) -> Self {
+        Self { page, missing: None }
     }
-    let mut options = args::parse(arguments)?;
+}
+
+#[allow(clippy::too_many_lines, reason = "Keep the ordered parse, target, snapshot and query transaction with its existing error ordering.")]
+fn answer_with(
+    arguments: &[String],
+    open: impl FnOnce(&std::path::Path) -> Result<(dctx::Session, String), String>,
+) -> Result<Answered, Failure> {
+    if arguments.is_empty() || arguments == ["--help"] || arguments == ["-h"] {
+        return Ok(Answered::page(args::HELP.to_string()));
+    }
+    if arguments[1..].iter().any(|argument| argument == "--help" || argument == "-h") {
+        if let Some(help) = verb_help::text(&arguments[0]) {
+            return Ok(Answered::page(help));
+        }
+    }
+    let usage = |message: String| failure::usage(arguments, message);
+    let mut options = args::parse(arguments).map_err(usage)?;
     if let Ok(focus) = std::env::var("DCTX_MAP_FOCUS") {
         options.request.focus = focus
             .split([',', '\n'])
@@ -43,27 +84,29 @@ fn execute_with(
             .filter(|path| !path.is_empty())
             .map(str::to_owned)
             .collect();
-        options.request.validate().map_err(|error| error.to_string())?;
+        options.request.validate().map_err(|error| usage(error.to_string()))?;
     }
     if options.request.revision.is_some() {
-        return Err("git revisions are not available; this build has no git capability".to_string());
+        return Err(usage("git revisions are not available; this build has no git capability".to_string()));
     }
     if options.request.offset > 0 {
-        return Err("the facade pages with the next cursor, not --offset".to_string());
+        return Err(usage("the facade pages with the next cursor, not --offset".to_string()));
     }
     if !options.hubs && options.export.is_none() {
-        options.request.target = prepare_target(options.request.verb, &options.request.target, &options.place)?;
+        options.request.target = target::prepare(options.request.verb, &options.request.target, &options.place).map_err(usage)?;
         if let Some(to) = options.to.take() {
-            options.to = Some(prepare_target(options.request.verb, &to, &options.place)?);
+            options.to = Some(target::prepare(options.request.verb, &to, &options.place).map_err(usage)?);
         }
+        failure::targets(&options)?;
     }
-    file_page::widen(&mut options)?;
+    file_page::widen(&mut options).map_err(usage)?;
     let profiling = profile_requested(options.profile);
-    let (mut session, key) = open(&options.place)?;
+    let (mut session, key) = open(&options.place).map_err(|message| failure::place(&options.place, &message))?;
     if profiling {
         session.enable_profile();
     }
-    // Reuse checks content with digest_text, the same comparison as read_verified. Size and mtime are only a prefilter.
+    // Reuse checks content with digest_text, the same comparison as read_verified, except for a file whose size, mtime
+    // (older than 2 s) and inode are all unchanged: that stamp is trusted. DCTX_FRESHNESS=strict_live hashes every file.
     let built = if profiling {
         session.snapshot_reusable_for_profile(&SnapshotRequest::strict(), &key)
     } else {
@@ -75,7 +118,7 @@ fn execute_with(
             if profiling {
                 session.discard_profile();
             }
-            return Err(error.to_string());
+            return Err(failure::snapshot(&error));
         }
     };
     if host::reuse_report_enabled() {
@@ -83,15 +126,16 @@ fn execute_with(
         eprintln!("{status}");
         eprintln!("content_reads {}", session.content_reads());
         eprintln!("cached_content_reads {}", session.cached_content_reads());
+        eprintln!("stamp_skipped_reads {}", session.stamp_skipped_reads());
     }
     if options.hubs {
-        return hubs::answer(&mut session, &handle, &options);
+        return hubs::answer(&mut session, &handle, &options).map(Answered::page).map_err(failure::answer);
     }
     if options.export.is_some() {
-        return export_verb::answer(&mut session, &handle, &options);
+        return export_verb::answer(&mut session, &handle, &options).map(Answered::page).map_err(failure::answer);
     }
     if options.to.is_some() {
-        return path_verb::answer(&mut session, &handle, &options);
+        return path_verb::answer(&mut session, &handle, &options).map(Answered::page).map_err(failure::answer);
     }
     let mut request = facade_request(&options.request, options.format, options.continuation, options.budget_set);
     request.meta = options.meta;
@@ -109,18 +153,25 @@ fn execute_with(
     } else {
         session.query(&handle, &request, &mut sink)
     };
-    if let Err(error) = queried {
-        if profiling {
-            session.discard_profile();
+    let answer = match queried {
+        Ok(answer) => answer,
+        Err(error) => {
+            if profiling {
+                session.discard_profile();
+            }
+            return Err(exit::from_facade(&error, &failure::help_command(arguments)));
         }
-        return Err(error.to_string());
-    }
+    };
     if profiling {
         if let Some(report) = session.profile_report() {
             eprint!("{report}");
         }
     }
-    Ok(String::from_utf8_lossy(sink.as_bytes()).into_owned())
+    let missing = match &answer.outcome {
+        Some(IdentityOutcome::Gone { id }) => Some(failure::gone(id)),
+        _ => None,
+    };
+    Ok(Answered { page: String::from_utf8_lossy(sink.as_bytes()).into_owned(), missing })
 }
 
 /// `--profile` or `DCTX_PROFILE=1`. Map switches are flags; this env matches `DCTX_REUSE_REPORT`.
@@ -184,42 +235,6 @@ fn facade_request(
         mapped.limits.depth = Some(u32::from(request.depth));
     }
     mapped
-}
-
-/// Keeps a stable id, or turns an existing place-relative file into `m:<path>` before any scan.
-fn prepare_target(verb: QueryVerb, target: &str, place: &std::path::Path) -> Result<String, String> {
-    if verb == QueryVerb::Find || is_stable_target(target) {
-        return Ok(target.to_string());
-    }
-    let relative = target.strip_prefix("./").unwrap_or(target);
-    if !is_relative_file(relative) {
-        return Err("target must be a stable id or a place-relative file path".to_string());
-    }
-    match std::fs::metadata(place.join(relative)) {
-        Ok(meta) if meta.is_file() => Ok(format!("m:{relative}")),
-        Ok(_) => Err(format!("{relative} is a directory; pass a file path or a stable id")),
-        Err(_) => Err(format!(
-            "{relative} is not an existing file; pass a stable id or a place-relative file path"
-        )),
-    }
-}
-
-fn is_stable_target(target: &str) -> bool {
-    if let Some(hex) = target.strip_prefix('@') {
-        return hex.len() == 6 && hex.bytes().all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte));
-    }
-    let Some((prefix, rest)) = target.split_once(':') else {
-        return false;
-    };
-    matches!(prefix, "p" | "k" | "m" | "s" | "t" | "d") && !rest.is_empty()
-}
-
-fn is_relative_file(target: &str) -> bool {
-    !target.is_empty()
-        && !target.starts_with('/')
-        && !target.contains(['\\', ':'])
-        && !target.chars().any(char::is_control)
-        && target.split('/').all(|part| !part.is_empty() && part != "." && part != "..")
 }
 
 #[cfg(test)]

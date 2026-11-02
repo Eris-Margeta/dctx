@@ -1,0 +1,53 @@
+{
+ "seed": "f77f86ac255ad5c35645dab2242ed1a56804cc1f",
+ "seed_source": "explicit --seed",
+ "rule": "sha256('<seed>:<language>') as a big-endian integer modulo the list length; seed = full sha of the dctx commit the v1.0.0 tag points to",
+ "selection": [
+  {
+   "lang": "rust",
+   "index": 3,
+   "name": "zoxide",
+   "url": "https://github.com/ajeetdsouza/zoxide.git",
+   "tag": "v0.9.6",
+   "sha": "3d3267b4fd73e6292d317f96d60ef69ea035912d"
+  },
+  {
+   "lang": "python",
+   "index": 0,
+   "name": "requests",
+   "url": "https://github.com/psf/requests.git",
+   "tag": "v2.32.3",
+   "sha": "0e322af87745eff34caffe4df68456ebc20d9068"
+  },
+  {
+   "lang": "go",
+   "index": 3,
+   "name": "gin",
+   "url": "https://github.com/gin-gonic/gin.git",
+   "tag": "v1.10.0",
+   "sha": "75ccf94d605a05fe24817fc2f166f6f2959d5cea"
+  }
+ ],
+ "pins": {
+  "tokenizer": {
+   "name": "cl100k_base",
+   "package": "tiktoken",
+   "version": "0.8.0",
+   "bpe_url": "https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken",
+   "bpe_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7"
+  },
+  "rust-analyzer": {
+   "release": "2024-10-28",
+   "asset": "rust-analyzer-x86_64-unknown-linux-gnu.gz"
+  },
+  "pyright": {
+   "package": "pyright",
+   "version": "1.1.386",
+   "registry": "npm"
+  },
+  "gopls": {
+   "module": "golang.org/x/tools/gopls",
+   "version": "v0.16.2"
+  }
+ }
+}

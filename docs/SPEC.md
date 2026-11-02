@@ -134,10 +134,10 @@ runs (§28). A build that fails any row MUST NOT call itself dctx-conformant.
 |---|---|---|---|---|
 | R1 | Fragmentation | Chunks cut through declarations; signature without body | Records are syntax-owned spans; `read` returns the whole node or a marked prefix with a continuation; records are never split | landed |
 | R2 | Non-determinism | Same question, different chunks (approximate search, insertion-order ties) | Integer scores, order (score desc, id asc), frozen ranking revision, canonical payload | landed |
-| R3 | Staleness | Index built from old bytes, served as current | `read` verifies exact bytes against the content digest before emitting; every answer carries freshness mode and a stale flag | landed |
+| R3 | Staleness | Index built from old bytes, served as current | There is no incremental index and no stale flag. Every CLI process re-walks the tree and re-hashes the selected files; a persisted generation is reused only when every content digest still matches, and any change rebuilds the whole generation. Inside one session `read` re-hashes the bytes against the snapshot digest and refuses with `SourceChanged` when they differ. The CLI always takes strict snapshots, so `freshness.state` is always `"verified"` (the library reports `"metadata"` only for a `FreshnessMode::Metadata` request) | landed (re-verify on every process; no stale flag) |
 | R4 | Positional identity | Chunk ids that shift when a file is added | Path + qualified-name ids with ordinals; explicit `moved`, `gone`, `ambiguous` outcomes | landed |
 | R5 | Semantic drift | "Similar" but wrong code | Lexical ranking over split identifiers, exact-name boost, kind filters, then graph edges with explicit confidence | contract — lexical ranking landed; graph edges are **not emitted by the shipped CLI** (TC-F01); the resolver is landed in `crates/dctx-map-resolve` but not wired (§7); `typed` rung target |
-| R6 | Authority leak | Secrets, ignored and generated files reach the prompt | Selection precedes content: excluded files are never opened; policy rechecked at emission; plugins never receive excluded bytes | landed for map; **`pack` prints non-ignored secret-shaped files such as `.env`** (TC-F08) until §4 item 3 lands |
+| R6 | Authority leak | Secrets, ignored and generated files reach the prompt | Selection precedes content: excluded files are never opened; policy rechecked at emission; plugins never receive excluded bytes | landed for map, pack and MCP: the strict secret-shaped deny of §4 item 3 has no override |
 | R7 | Unbounded context | Top-k chunks of unknown size crowd out instructions | Hard per-verb caps; byte ceiling derived from tokens; envelope reserved first | landed for map verbs; the legacy tree (`dctx . -t`) and `pack` are unbounded (974 KB and 8.7 MB measured) and are not conformant surfaces |
 | R8 | Opaque provenance | The model cannot tell a fact from an inference | Every record carries parser and coverage; every edge carries confidence and source | landed for records; vacuous for edges until §7 lands |
 | R9 | Hidden tool cost | The retrieval tool's own output is not counted | M5 inside M2; `dctx bench tokens` (§28) | target |
@@ -157,15 +157,18 @@ public corpus, ranked candidates MAY arrive as a plugin overlay with provenance
 2. **Rules.** Built-in defaults, repository `.gitignore` files (read as plain text),
    `.dctxignore`, `.dctxomitcontent` and policy (`privacy.ignore`) combine. Landed for
    pack and map.
-3. **Secret-shaped files (target, P0).** The built-in omit layer MUST include `.env`,
-   `.env.*`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`, `id_rsa*`,
-   `id_ed25519*`, `id_ecdsa*`, `.netrc`, `.npmrc`, `.pypirc`, `credentials*`,
-   `*.credentials.json` and `.htpasswd`. Such files appear in trees with content
-   omitted and are never read, hashed or indexed; a local rule may negate a pattern
-   explicitly. Policy MAY add named classes (`aws`, `gcp`, `ssh`, `jwt`). dctx never
-   scans contents to decide. **Gate:** the adversarial corpus's planted `.env` value is
-   absent from `pack` output and from the map cache; the path is listed. Today `pack .`
-   prints it (TC-F08); map answers and the map cache did not contain it.
+3. **Secret-shaped files (landed for v1).** A strict, built-in deny covers `.env`,
+   `.env.*`, `*.env`, `.envrc`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`,
+   `id_rsa`, `id_dsa`, `id_ecdsa`, `id_ed25519` (and `_`/`-` suffixed variants), `.netrc`,
+   `_netrc`, `.npmrc`, `.pypirc`, `.pgpass`, `.htpasswd`, `.git-credentials`, `credentials`,
+   `credentials.<data>`, `*.credentials.json` and `secrets.<data>` (data = json, yaml, yml,
+   toml, ini, xml); ADR-014 "SENSITIVE" is the normative list. Such files appear in trees with
+   content omitted and are never read, hashed or indexed by pack, any map verb or the MCP tools.
+   v1 has no override: no `--allow-sensitive` flag, and no local rule can negate the deny.
+   Policy MAY later add named classes (`aws`, `gcp`, `ssh`, `jwt`). dctx never scans contents
+   to decide. **Gate:** the adversarial corpus's planted `.env` value is
+   absent from `pack` output and from the map cache; the path is listed. Checked for every
+   shape and every command by `lanes/DCX/checks/V1-1.zsh` (TC-F08 is closed).
 4. **No VCS in the core.** The core never reads `.git/`, never spawns `git`, never uses
    VCS object ids. Identity is dctx's own digest (§5). VCS-aware behaviour is a plugin.
    Landed (`crates/dctx-map-query/tests/no_git.rs`).
@@ -296,6 +299,8 @@ prefix caching (PPE-3). **Status:** target; today both are in every default answ
 Measured: both compared tools saw unstaged, untracked and staged edits and dropped
 reverted symbols; dctx's first query after a one-line edit costs a full re-index (core
 7.48 s against 1.45 s warm; django 2.70 s against 0.82 s) until §19 lands.
+**Shipped behaviour (v1):** the modes above are a target. The CLI always takes a strict
+snapshot, so `freshness.state` is always `"verified"`; there is no stale flag (R3, §3).
 
 ---
 
@@ -348,6 +353,8 @@ Two formats: the **text page** (default; one record per line; ids first) and **J
 - canonical order (score desc, id asc; adjacency grouped by edge kind);
 - paths are root-relative with `/` separators on every OS;
 - the same request through CLI, library and MCP yields the same canonical page bytes.
+
+**Note (1.0.1, legacy source page).** The `dctx pack` / `dctx .` text page (the `[DCTX_LLM_CONTEXT_SNAPSHOT_V1]` envelope) follows the same no-timestamp rule by default: its tree and root lines carry the `ID` only, with no `MOD:` and no `SIZE:` (a size changes on every ordinary edit, and the tree precedes the file blocks), so a bare `touch` leaves the page byte-identical and an edit keeps the bytes before the edited file as a common prefix. `--tree-stamps=on` reproduces the 1.0.0 page with `MOD:<ms>` and `SIZE:` on every tree line; `{{{node.mod}}}` and `{{{node.size_part}}}` remain available to custom templates.
 
 **Gates.** (P0) ≥ 95 % of text answers byte-identical after an unrelated edit (0 of 63
 today; comparison tool 59 of 70); JSON identical over 5 runs. (P1) The map page for a
@@ -590,6 +597,9 @@ no daemon.
 
 ## 19. Freshness check and incremental rebuild
 
+**Status: target, not implemented.** The shipped engine has no stamp-only pass, overlay or
+per-file rebuild: each process re-walks and re-hashes, and any change rebuilds fully (R3, §3).
+
 1. **Stamp pass.** Walk the inventory (names, sizes, mtimes; excluded directories are
    never entered) and compare with the manifest's sorted path table.
 2. **Digest pass** only for entries whose stamp differs, plus the query's dependency
@@ -778,7 +788,7 @@ the code, without becoming a memory product.
 ## 27. Dependencies and enterprise readiness
 
 **Rule: anything with third-party dependencies is not enterprise-ready.** The open
-repository is ongoing work; enterprise-ready builds are a licensed product (§27.3).
+repository is ongoing work; enterprise-ready builds are an engineering target, not a separate product (§27.3).
 
 | Line | Third-party crates in the default `dctx` closure (`cargo tree -e normal`) | Status |
 |---|---|---|
@@ -820,12 +830,9 @@ repository is ongoing work; enterprise-ready builds are a licensed product (§27
 The desktop app is a separate surface over the facade and is never part of the CLI or
 library closure.
 
-### 27.3 Enterprise
+### 27.3 Maintenance
 
-dctx Enterprise is licensed per company, from €45,000 per year: the enterprise-ready
-build (§27 table), organization and tenant policy control (§14–17), signed policy
-bundles, and direct support. The open-source repository remains Apache-2.0 and is where
-the work happens; the desktop app is free.
+dctx is Apache-2.0 open source, including the desktop app. There is no proprietary edition and no license fee. Organizations that depend on dctx can sign a maintenance agreement for security response targets, long-term support and priority work; see [MAINTENANCE.md](../MAINTENANCE.md). The build-closure targets in the table above are engineering goals, not a separate product.
 
 ## 28. Conformance suite
 

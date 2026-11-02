@@ -250,6 +250,7 @@ fn explain(r: &Record) -> String {
     )
 }
 
+#[allow(clippy::expect_used, reason = "writing to a String cannot fail")]
 fn text(answer: &Answer, records: &[&Record], more: usize, needs_next: bool) -> String {
     let dirty = if answer.dirty == 0 {
         String::new()

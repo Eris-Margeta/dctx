@@ -14,13 +14,17 @@ mod legacy;
 mod maintain;
 mod maintain_slice;
 mod maintain_types;
+mod objects;
 mod publish;
 mod purge;
+mod queries;
 mod quota;
 mod reach;
+mod reclaim;
 mod reserve;
 mod restart;
 mod retire;
+mod roots;
 mod status;
 mod writer;
 
@@ -47,7 +51,6 @@ pub use writer::WriterPhase;
 
 use dctx_core::ids::Timestamp;
 use ids::{ChargeClass, ManifestKind, ObjectKind};
-use quota::LAST_USE_COALESCE_MS as COALESCE_MS;
 use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Debug, Clone)]
@@ -172,6 +175,11 @@ pub struct Lifecycle {
     touches: u64,
     last_auto_clean: Option<Timestamp>,
     clean_ttl: Option<CleanTtl>,
+    /// Objects dropped from the ledger by admission eviction whose files still need unlinking. Not persisted.
+    evicted: Vec<ObjectId>,
+    /// View manifests retired because a newer view replaced them, not yet handed to the unlink step. Not persisted:
+    /// the same ledger section that retires them marks them pending and commits.
+    superseded: BTreeSet<ManifestId>,
 }
 
 /// TTLs used for one [`Lifecycle::auto_clean`] slice. Absent means the product constants.
@@ -225,6 +233,8 @@ impl Lifecycle {
             touches: 0,
             last_auto_clean: None,
             clean_ttl: None,
+            evicted: Vec::new(),
+            superseded: BTreeSet::new(),
         }
     }
 
@@ -251,269 +261,7 @@ impl Lifecycle {
         self.observe(clock.sample());
     }
 
-    /// Registers a caller-opened root. A second registration of the same id is refused.
-    /// # Errors
-    /// Refuses an already registered root ID.
-    pub fn register_root(&mut self, id: RootId) -> Result<(), crate::error::CacheError> {
-        if self.roots.contains_key(&id) {
-            return Err(crate::error::CacheError::InvalidRequest { reason: "root already registered" });
-        }
-        self.roots.insert(
-            id,
-            RootRecord {
-                last_use: self.wall,
-                persisted_use: self.wall,
-                persist_writes: 1,
-                unavailable_since: None,
-                missing: false,
-                offline: false,
-                pinned: false,
-                expired: false,
-                last_generation: None,
-            },
-        );
-        self.bump();
-        Ok(())
-    }
-
-    /// In-memory last use always moves. The persisted stamp moves at most once per five minutes.
-    /// # Errors
-    /// Refuses an unknown root ID.
-    pub fn touch(&mut self, root: RootId) -> Result<(), crate::error::CacheError> {
-        if !self.roots.contains_key(&root) {
-            return Err(crate::error::CacheError::InvalidRequest { reason: "unknown root" });
-        }
-        self.note_use(root);
-        let wall = self.wall;
-        for manifest in self.manifests.values_mut() {
-            if manifest.root == root {
-                manifest.last_use = wall;
-            }
-        }
-        self.bump();
-        Ok(())
-    }
-
-    /// Refreshes the root's in-memory last use and, at most once per five minutes, the persisted stamp.
-    pub(super) fn note_use(&mut self, root: RootId) {
-        let wall = self.wall;
-        let Some(record) = self.roots.get_mut(&root) else {
-            return;
-        };
-        record.last_use = wall;
-        if wall.0.saturating_sub(record.persisted_use.0) >= COALESCE_MS {
-            record.persisted_use = wall;
-            record.persist_writes = record.persist_writes.saturating_add(1);
-        }
-    }
-
-    /// An explicit pin opts out of expiry and LRU. It does not raise the hard cap.
-    /// # Errors
-    /// Refuses an unknown root ID.
-    pub fn pin_root(&mut self, root: RootId, pinned: bool) -> Result<(), crate::error::CacheError> {
-        let record = self.roots.get_mut(&root).ok_or(crate::error::CacheError::InvalidRequest {
-            reason: "unknown root",
-        })?;
-        record.pinned = pinned;
-        self.bump();
-        Ok(())
-    }
-
-    /// Records a missing root. A repeated probe does not restart the seven-day grace clock.
-    /// # Errors
-    /// Refuses an unknown root ID.
-    pub fn note_missing(&mut self, root: RootId) -> Result<(), crate::error::CacheError> {
-        self.mark_unavailable(root, false)
-    }
-
-    /// Records an offline or permission failure. Grace is shared with [`Self::note_missing`].
-    /// # Errors
-    /// Refuses an unknown root ID.
-    pub fn note_offline(&mut self, root: RootId) -> Result<(), crate::error::CacheError> {
-        self.mark_unavailable(root, true)
-    }
-
-    /// The root is reachable again. Grace ends.
-    /// # Errors
-    /// Refuses an unknown root ID.
-    pub fn note_online(&mut self, root: RootId) -> Result<(), crate::error::CacheError> {
-        let record = self.roots.get_mut(&root).ok_or(crate::error::CacheError::InvalidRequest {
-            reason: "unknown root",
-        })?;
-        record.missing = false;
-        record.offline = false;
-        record.unavailable_since = None;
-        self.bump();
-        Ok(())
-    }
-
-    fn mark_unavailable(
-        &mut self,
-        root: RootId,
-        offline: bool,
-    ) -> Result<(), crate::error::CacheError> {
-        let wall = self.wall;
-        let record = self.roots.get_mut(&root).ok_or(crate::error::CacheError::InvalidRequest {
-            reason: "unknown root",
-        })?;
-        record.missing = true;
-        if offline {
-            record.offline = true;
-        }
-        if record.unavailable_since.is_none() {
-            record.unavailable_since = Some(wall);
-        }
-        self.bump();
-        Ok(())
-    }
-
     pub(super) fn bump(&mut self) {
         self.logical_revision = self.logical_revision.saturating_add(1);
-    }
-
-    #[allow(clippy::needless_pass_by_value, reason = "Object creation consumes an assembled Spawn record at the ledger mutation boundary.")]
-    fn spawn(&mut self, spec: Spawn<'_>) -> Result<ObjectId, crate::error::CacheError> {
-        let id = ObjectId::new(self.ids.object);
-        self.ids.object = self.ids.object.checked_add(1).ok_or(
-            crate::error::CacheError::InvalidRequest { reason: "object id space exhausted" },
-        )?;
-        self.objects.insert(
-            id,
-            CacheObject {
-                bytes: spec.bytes,
-                born: spec.bytes,
-                kind: spec.kind,
-                state: spec.state,
-                roots: spec.roots.to_vec(),
-                refs: spec.refs.to_vec(),
-                class: spec.class,
-                charged_root: spec.charged_root,
-                validated: spec.validated,
-                complete: spec.complete,
-                created: self.wall,
-                retired_at: None,
-                unreachable_since: None,
-                deletion_requested: false,
-                corrupt: false,
-                reservation: spec.reservation,
-                dead_ppm: spec.dead_ppm,
-            },
-        );
-        self.bump();
-        Ok(id)
-    }
-
-    pub(super) fn remove_object(&mut self, id: ObjectId) {
-        if self.objects.remove(&id).is_none() {
-            return;
-        }
-        self.manifests.retain(|_, manifest| manifest.object != id);
-        for manifest in self.manifests.values_mut() {
-            manifest.refs.retain(|ref_id| *ref_id != id);
-        }
-        for object in self.objects.values_mut() {
-            object.refs.retain(|ref_id| *ref_id != id);
-        }
-        for writer in self.writers.values_mut() {
-            if writer.segment == Some(id) {
-                writer.segment = None;
-            }
-            if writer.manifest_object == Some(id) {
-                writer.manifest_object = None;
-            }
-        }
-        self.unlink_failures.remove(&id);
-        self.bump();
-        self.refresh_freeze();
-    }
-
-    pub(super) fn refresh_freeze(&mut self) {
-        if self.legacy_frozen
-            && self.admitted() <= self.payload_ceiling()
-            && self.staged_bytes() == 0
-            && self.reserved_bytes() == 0
-        {
-            self.legacy_frozen = false;
-        }
-    }
-
-    #[allow(clippy::unused_self, reason = "Keep saturating ledger accounting on Lifecycle beside the quota and reachability computations that use it.")]
-    pub(super) fn sum_iter(&self, values: impl Iterator<Item = u64>) -> u64 {
-        values.fold(0u64, u64::saturating_add)
-    }
-
-    /// Ledger revision. Dry-runs do not move it.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-    pub fn logical_revision(&self) -> u64 {
-        self.logical_revision
-    }
-
-    /// How many legacy apply removals have run.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-    pub fn touches(&self) -> u64 {
-        self.touches
-    }
-
-    /// Wall time the ledger is using. A rejected backward sample does not change this.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-    pub fn wall(&self) -> Timestamp {
-        self.wall
-    }
-
-    /// True after a backward wall sample.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-    pub fn clock_fault(&self) -> bool {
-        self.clock_fault
-    }
-
-    /// Boot identity last accepted by reconciliation.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-    pub fn boot_id(&self) -> u64 {
-        self.boot_id
-    }
-
-    /// True while a maintenance slice holds the non-blocking lock.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-    pub fn maintenance_held(&self) -> bool {
-        self.maintenance.is_some()
-    }
-
-    /// Cursor for the next startup sweep. Zero means the next pass starts at the first object.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-    pub fn cursor(&self) -> u64 {
-        self.cursor_mark
-    }
-
-    /// Objects currently in the ledger, in id order.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-    pub fn object_ids(&self) -> BTreeSet<ObjectId> {
-        self.objects.keys().copied().collect()
-    }
-
-    /// Wall time of the last auto-clean slice that ran. `None` until the first one.
-    #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
-    pub fn last_auto_clean(&self) -> Option<Timestamp> {
-        self.last_auto_clean
-    }
-
-    pub(super) fn overlay_ttl(&self) -> u64 {
-        self.clean_ttl.map_or(quota::OVERLAY_TTL_MS, |ttl| ttl.overlay)
-    }
-
-    pub(super) fn preview_ttl(&self) -> u64 {
-        self.clean_ttl.map_or(quota::PREVIEW_TTL_MS, |ttl| ttl.preview)
-    }
-
-    pub(super) fn root_ttl(&self) -> u64 {
-        self.clean_ttl.map_or(quota::ROOT_TTL_MS, |ttl| ttl.root)
-    }
-
-    pub(super) fn staging_ttl(&self) -> u64 {
-        self.clean_ttl.map_or(quota::STAGING_TTL_MS, |ttl| ttl.staging)
-    }
-
-    pub(super) fn debug_check(&self) {
-        debug_assert!(self.p4_holds(), "P4 admitted={} cap={}", self.admitted(), self.quota.hard_cap);
-        debug_assert!(self.p3_holds(), "P3");
     }
 }

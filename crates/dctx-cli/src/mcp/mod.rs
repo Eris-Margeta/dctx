@@ -8,25 +8,31 @@ mod tools;
 use json::Json;
 use std::io::{BufRead, Write};
 
+use crate::exit::Failure;
+
 /// Protocol version answered when the client names none.
 const DEFAULT_PROTOCOL: &str = "2025-06-18";
 /// Usage text for `dctx mcp --help`.
-const HELP: &str = "Usage: dctx mcp [PATH]\n  Serve the map verbs (map, find, neighbors, explain, read, hubs, grep, skeleton, path, export) as MCP tools over stdio.\n  One JSON-RPC 2.0 message per line. Tools run in PATH (default: the current directory).\n";
+const HELP: &str = "Usage: dctx mcp [PATH]\n  Serve the map verbs (map, find, neighbors, explain, read, hubs, grep, skeleton, path, export) as MCP tools over stdio.\n  One JSON-RPC 2.0 message per line. Tools run in PATH (default: the current directory).\nExample: dctx mcp ~/src/project   (the command an MCP client such as Claude Code, Cursor or Codex starts)\n";
 
 /// Entry point for `dctx mcp [PATH]`: serves stdin to stdout until end of input.
-pub(crate) fn run(args: &[String]) -> Result<(), String> {
+/// A bad argument is exit 2 and a PATH that cannot be entered exit 3 (docs/CLI-EXIT-CODES.md).
+pub(crate) fn run(args: &[String]) -> Result<(), Failure> {
     match args {
         [] => {}
         [flag] if flag == "--help" || flag == "-h" => {
             print!("{HELP}");
             return Ok(());
         }
-        [path] if !path.starts_with('-') => std::env::set_current_dir(path).map_err(|error| format!("cannot enter {path}: {error}"))?,
-        _ => return Err("usage: dctx mcp [PATH]".into()),
+        [path] if !path.starts_with('-') => std::env::set_current_dir(path).map_err(|error| {
+            Failure::index(format!("cannot enter {path}: {error}"), "pass an existing project directory: dctx mcp <PATH>")
+        })?,
+        _ => return Err(Failure::usage("usage: dctx mcp [PATH]", "run `dctx mcp --help` for the usage and an example")),
     }
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
-    serve(stdin.lock(), stdout.lock(), &crate::map::execute).map_err(|error| error.to_string())
+    serve(stdin.lock(), stdout.lock(), &crate::map::execute)
+        .map_err(|error| Failure::index(error.to_string(), "stdin or stdout failed; restart the server from the MCP client"))
 }
 
 /// Reads one message per line from `input` and writes replies to `output`, running tools through `exec`.

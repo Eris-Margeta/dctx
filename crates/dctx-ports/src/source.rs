@@ -5,7 +5,7 @@
 
 use dctx_core::datatypes::NodeType;
 use dctx_core::error::DctxError;
-use dctx_core::facts::{EntryMeta, ReadGrant, SourceEntry};
+use dctx_core::facts::{EntryMeta, EntryStamp, ReadGrant, SourceEntry};
 use dctx_core::ids::RelativePath;
 
 /// Read access to one source root. Paths are root-relative and can never escape the root.
@@ -31,6 +31,17 @@ pub trait Source {
     /// inspected, or violates the source confinement policy.
     fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, DctxError>;
 
+    /// Size and modification time of `path`, plus the stat identity a caller may use to skip hashing
+    /// an unchanged file. The stamp is `None` when the adapter cannot vouch for it: no inode or
+    /// nanosecond clock, or a file modified so recently (racy window) that an edit could keep the
+    /// same stamp. A caller that gets `None` must hash. The default says `None`.
+    ///
+    /// # Errors
+    /// Same as [`Source::metadata`].
+    fn stat(&self, path: &RelativePath) -> Result<(EntryMeta, Option<EntryStamp>), DctxError> {
+        Ok((self.metadata(path)?, None))
+    }
+
     /// At most `max_bytes` of the granted file's content. An adapter returns
     /// `ResourceLimit` rather than a silently truncated prefix.
     ///
@@ -51,6 +62,10 @@ impl<S: Source + ?Sized> Source for &S {
 
     fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, DctxError> {
         (**self).metadata(path)
+    }
+
+    fn stat(&self, path: &RelativePath) -> Result<(EntryMeta, Option<EntryStamp>), DctxError> {
+        (**self).stat(path)
     }
 
     fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, DctxError> {

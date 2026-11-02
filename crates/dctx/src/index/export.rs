@@ -185,6 +185,7 @@ mod tests {
             coverage: "structural".to_string(),
             completion: "complete".to_string(),
             parser: "dctx-structural/2".to_string(),
+            ids: crate::index::IdIndex::default(),
         }
     }
 

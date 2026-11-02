@@ -39,7 +39,7 @@ pub(crate) struct SitePlan {
 
 /// Plans the scans for `records`, or `None` when the page has no depth-one inbound `calls` record or the target has no plain name.
 pub(crate) fn plan(generation: &Generation, request: &MapRequest, records: &[AnswerRecord]) -> Option<SitePlan> {
-    let root = query::lookup(&generation.nodes, &generation.text, &request.target)?;
+    let root = query::lookup(generation, &request.target)?;
     let name = root.name.rsplit(['.', ':', '#']).next().unwrap_or("");
     if name.is_empty() || !name.chars().all(is_word) {
         return None;
@@ -53,7 +53,7 @@ pub(crate) fn plan(generation: &Generation, request: &MapRequest, records: &[Ans
         if record.id != format!("calls:in:{target}") {
             continue;
         }
-        let Some(caller) = query::lookup(&generation.nodes, &generation.text, target) else {
+        let Some(caller) = query::lookup(generation, target) else {
             continue;
         };
         let own = caller.name.rsplit(['.', ':', '#']).next() == Some(name);

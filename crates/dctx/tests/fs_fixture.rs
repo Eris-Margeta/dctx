@@ -27,12 +27,14 @@ fn gitignore_is_not_automatic_and_git_config_is_not_rewritten() {
     std::fs::write(&git_config, config_bytes).expect("config");
     // Named by the fixture `.gitignore`, so the checkout cannot contain this file.
     std::fs::write(root.path().join("secrets.env"), b"TOKEN=secret\n").expect("secret");
+    // An ordinary, non-env file: only a local omit rule keeps it unread.
+    std::fs::write(root.path().join("private.txt"), b"private notes\n").expect("private");
     let ignore_path = root.path().join(".gitignore");
     let ignore_before = std::fs::read(&ignore_path).expect("ignore");
 
     let included = run(root.path(), SelectionPolicy::from_texts(&RuleTexts::default()));
     // The env-shaped `secrets.env` is never read or indexed, with or without a local omit rule.
-    assert_eq!(included.reads, 3);
+    assert_eq!(included.reads, 4);
     assert!(included.secret.is_none());
     assert!(included.git_gone);
     assert_eq!(std::fs::read(&git_config).expect("config after"), config_bytes);
@@ -48,6 +50,15 @@ fn gitignore_is_not_automatic_and_git_config_is_not_rewritten() {
     assert!(omitted.git_gone);
     assert_eq!(std::fs::read(&git_config).expect("config still"), config_bytes);
     assert_eq!(std::fs::read(&ignore_path).expect("ignore still"), ignore_before);
+
+    // local_omit saves a read: the omitted non-env file is not opened.
+    let private = run(
+        root.path(),
+        SelectionPolicy::from_texts(&RuleTexts { local_omit: Some("private.txt\n"), ..RuleTexts::default() }),
+    );
+    assert!(private.reads < included.reads);
+    assert_eq!(private.reads, 3);
+    assert!(private.git_gone);
 }
 
 struct Probe {

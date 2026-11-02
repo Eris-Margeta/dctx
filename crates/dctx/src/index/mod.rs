@@ -4,13 +4,20 @@
 //! Callers see an [`crate::domain::Answer`], never this module.
 
 mod concept;
+mod decl_pair;
+pub(crate) mod dotted_key;
+pub(crate) mod export_list;
+pub(crate) mod out_calls;
 mod extract;
 pub(crate) mod export;
 mod generic;
 pub(crate) mod hubs;
 pub(crate) mod path;
 mod grep;
+mod id_index;
 mod key_rank;
+#[cfg(test)]
+mod languages_tests;
 mod lex_dispatch;
 mod outline_order;
 pub(crate) mod profile;
@@ -28,7 +35,9 @@ mod text_docs;
 mod syn_extract;
 mod walk;
 
+pub(crate) use decl_pair::pair_record;
 pub(crate) use grep::{grep_records, text_records};
+pub(crate) use id_index::IdIndex;
 pub(crate) use key_rank::{key_shaped, rank as rank_key};
 pub(crate) use query::{collect, Collected};
 pub(crate) use segment::canonical_bytes;
@@ -211,6 +220,10 @@ pub(crate) struct IndexedFile {
     pub size: u64,
     /// Metadata modification time, in milliseconds.
     pub modified: u64,
+    /// Stat identity (size, mtime ns, inode) taken before the bytes were read, when the source could vouch for
+    /// it (settled mtime, inode known). Never part of the generation digest or any answer: only the warm
+    /// reuse check reads it, to skip hashing a file whose live stamp is equal.
+    pub stamp: Option<dctx_core::facts::EntryStamp>,
 }
 
 /// One graph node.
@@ -234,7 +247,7 @@ pub(crate) struct IndexedNode {
     pub summary: String,
     /// `doc`, `heading`, `sig` or empty.
     pub summary_source: String,
-    /// Signature without the body.
+    /// Signature without the body. On a module node: the file's explicit export list, space-separated, never emitted.
     pub signature: String,
 }
 
@@ -280,4 +293,6 @@ pub(crate) struct Generation {
     pub completion: String,
     /// Parser id.
     pub parser: String,
+    /// Lazy id lookup table over `nodes`. Derived data: never encoded, never compared.
+    pub ids: IdIndex,
 }

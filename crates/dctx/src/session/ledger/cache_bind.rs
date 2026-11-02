@@ -6,7 +6,7 @@
 
 use std::path::Path;
 
-use dctx_adapter_cache::adapters::{FsLedgerStore, FsObjectStore};
+use dctx_adapter_cache::adapters::{FsLedgerStore, FsObjectStore, LeaseHold, LedgerUpdateError};
 use dctx_adapter_cache::ports::{LedgerStore, ObjectStore};
 use dctx_adapter_cache::{
     CacheError, GcRequest as AdapterGc, GenerationId, LeaseId, Lifecycle, ObjectId, PurgeRequest as AdapterPurge,
@@ -26,6 +26,9 @@ const OBJECT_READ_CAP: u64 = 512 * 1024 * 1024;
 pub(in crate::session) struct SnapshotLease {
     root: std::path::PathBuf,
     lease: LeaseId,
+    /// Proof of life: locked while this process holds the lease, so a killed reader's lease is recognised as orphaned.
+    /// Dropped after the ledger release in [`Drop`], because fields drop after the body.
+    _alive: Option<LeaseHold>,
 }
 
 impl Drop for SnapshotLease {
@@ -44,6 +47,9 @@ pub(in crate::session) struct DiskReclaim {
 
 impl PersistedCache {
     /// Publishes `bytes` under the shared cap and pins the new view with a persisted lease.
+    /// One exclusive section covers the fresh load, the eviction of reclaimable generations, the object writes,
+    /// the commit and the unlink of the view this one replaced. A reader holds the shared lock, so it never sees
+    /// an object file this section reclaims.
     pub(super) fn admit_snapshot(
         &mut self,
         now_ms: u64,
@@ -58,54 +64,60 @@ impl PersistedCache {
         let segment_len = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
         let manifest_len = u64::try_from(view_manifest(self.root_id, 0).len()).unwrap_or(u64::MAX);
         let need = segment_len.saturating_add(manifest_len);
-        for _ in 0..COMMIT_ATTEMPTS {
-            self.reload()?;
-            ensure_root(&mut self.life, self.root_id)?;
-            let available = room(capacity, self.life.admitted(), pack_committed, pack_reserved);
+        let (root_id, session) = (self.root_id, self.session);
+        let mut written: Vec<ObjectId> = Vec::new();
+        let outcome = self.ledger.update_reclaiming(Quota::product_default(), &self.objects, |working| {
+            ensure_root(working, root_id)?;
+            let budget = capacity.saturating_sub(pack_committed).saturating_sub(pack_reserved);
+            working.observe(clock_sample(now_ms));
+            // Reclaimable generations go before the request is refused, oldest first, across roots.
+            working.evict_to_fit(budget.saturating_sub(need));
+            let available = room(capacity, working.admitted(), pack_committed, pack_reserved);
             if need > available {
                 return Err(DctxError::CacheLimit { requested: need, available });
             }
-            let mut working = self.life.clone();
-            working.observe(clock_sample(now_ms));
-            let segment_id = working.insert_segment(segment_len, 0, &[self.root_id]).map_err(map_cache)?;
-            let generation = working
-                .publish_view(self.root_id, manifest_len, &[segment_id])
-                .map_err(map_cache)?;
-            let lease = working.reader_begin(self.root_id, self.session).map_err(map_cache)?;
+            let segment_id = working.insert_segment(segment_len, 0, &[root_id]).map_err(map_cache)?;
+            let generation = working.publish_view(root_id, manifest_len, &[segment_id]).map_err(map_cache)?;
+            let lease = working.reader_begin(root_id, session).map_err(map_cache)?;
             let pinned = working.reader_confirm(lease).map_err(map_cache)?;
             if pinned != generation {
                 return Err(DctxError::invalid("snapshot lease pinned a different generation"));
             }
-            let manifest = view_manifest(self.root_id, segment_id.raw());
-            let manifest_object = manifest_object(&working, self.root_id, generation)?;
-            let mut written = Vec::new();
-            if let Err(error) = write_new(
-                &self.objects,
-                &mut written,
-                segment_id,
-                bytes,
-                manifest_object,
-                &manifest,
-            ) {
-                discard(&self.objects, &written);
-                if is_conflict(&error) {
-                    continue;
-                }
-                return Err(map_cache(error));
+            let manifest = view_manifest(root_id, segment_id.raw());
+            let manifest_object = manifest_object(working, root_id, generation)?;
+            put_fresh(&self.objects, &mut written, segment_id, bytes).map_err(map_cache)?;
+            put_fresh(&self.objects, &mut written, manifest_object, &manifest).map_err(map_cache)?;
+            let alive = self.ledger.hold_lease(lease).map_err(map_cache)?;
+            Ok(((lease, alive), true))
+        });
+        match outcome {
+            Ok(((lease, alive), life)) => {
+                self.life = life;
+                Ok(Some(SnapshotLease { root: self.root_path.clone(), lease, _alive: Some(alive) }))
             }
-            match self.ledger.store(&working) {
-                Ok(()) => {
-                    self.life = working;
-                    return Ok(Some(SnapshotLease { root: self.root_path.clone(), lease }));
-                }
-                Err(error) if is_conflict(&error) => discard(&self.objects, &written),
-                Err(error) => {
-                    discard(&self.objects, &written);
-                    return Err(map_cache(error));
-                }
+            Err(error) => {
+                self.discard_unpublished(&written);
+                Err(update_error(error))
             }
         }
-        Err(DctxError::invalid("stale ledger"))
+    }
+
+    /// Unlinks files this section wrote when the ledger does not name them: the commit never happened.
+    fn discard_unpublished(&self, written: &[ObjectId]) {
+        if written.is_empty() {
+            return;
+        }
+        let named = self
+            .ledger
+            .read(Quota::product_default(), |life| {
+                Ok::<_, DctxError>(written.iter().map(|id| life.object_state(*id).is_some()).collect::<Vec<_>>())
+            })
+            .unwrap_or_else(|_| vec![true; written.len()]);
+        for (id, named) in written.iter().zip(named) {
+            if !named {
+                let _ = self.objects.unlink_object(*id);
+            }
+        }
     }
 
     /// Drops unleased retention, unlinks those bytes, and leaves an active lease untouched.
@@ -151,55 +163,87 @@ impl PersistedCache {
     }
 
     /// Bytes of the current view's segment. `Ok(None)` when the root has no readable generation.
+    /// The shared lock is held from the ledger load to the last object read, so a publish cannot reclaim
+    /// the generation in between and two readers never exclude each other.
     pub(in crate::session) fn load_current_segment(&mut self) -> Result<Option<Vec<u8>>, DctxError> {
-        self.reload()?;
-        let Some(generation) = self.life.current_generation(self.root_id) else {
-            return Ok(None);
-        };
-        let Ok(manifest_id) = manifest_object(&self.life, self.root_id, generation) else { return Ok(None) };
-        let Some(manifest) = read_object(&self.root_path, manifest_id.raw())? else {
-            return Ok(None);
-        };
-        let Some(segment_raw) = segment_id_of(&manifest) else {
-            return Ok(None);
-        };
-        read_object(&self.root_path, segment_raw)
+        let (root_id, root_path) = (self.root_id, self.root_path.clone());
+        let mut seen: Option<Lifecycle> = None;
+        let bytes = self
+            .ledger
+            .read(Quota::product_default(), |life| {
+                seen = Some(life.clone());
+                let Some(generation) = life.current_generation(root_id) else {
+                    return Ok(None);
+                };
+                let Ok(manifest_id) = manifest_object(life, root_id, generation) else { return Ok(None) };
+                let Some(manifest) = read_object(&root_path, manifest_id.raw())? else {
+                    return Ok(None);
+                };
+                let Some(segment_raw) = segment_id_of(&manifest) else {
+                    return Ok(None);
+                };
+                read_object(&root_path, segment_raw)
+            })
+            .map_err(update_error)?;
+        if let Some(life) = seen {
+            self.life = life;
+        }
+        Ok(bytes)
     }
 
     /// Pins the current view with a new reader lease. A miss is `Ok(None)` so the caller can rebuild.
     pub(in crate::session) fn pin_current(&mut self, now_ms: u64) -> Result<Option<SnapshotLease>, DctxError> {
-        for _ in 0..COMMIT_ATTEMPTS {
-            self.reload()?;
-            ensure_root(&mut self.life, self.root_id)?;
-            let Some(generation) = self.life.current_generation(self.root_id) else {
-                return Ok(None);
-            };
-            let mut working = self.life.clone();
-            working.observe(clock_sample(now_ms));
-            let lease = match working.reader_begin(self.root_id, self.session) {
-                Ok(lease) => lease,
-                Err(CacheError::InvalidRequest { .. }) => return Ok(None),
-                Err(error) => return Err(map_cache(error)),
-            };
-            let pinned = match working.reader_confirm(lease) {
-                Ok(pinned) => pinned,
-                Err(CacheError::InvalidRequest { .. }) => return Ok(None),
-                Err(error) => return Err(map_cache(error)),
-            };
-            if pinned != generation {
-                return Ok(None);
-            }
-            match self.ledger.store(&working) {
-                Ok(()) => {
-                    self.life = working;
-                    return Ok(Some(SnapshotLease { root: self.root_path.clone(), lease }));
+        let (root_id, session) = (self.root_id, self.session);
+        let (lease, life) = self
+            .ledger
+            .update_reclaiming(Quota::product_default(), &self.objects, |working| {
+                ensure_root(working, root_id)?;
+                let Some(generation) = working.current_generation(root_id) else {
+                    return Ok((None, false));
+                };
+                working.observe(clock_sample(now_ms));
+                let lease = match working.reader_begin(root_id, session) {
+                    Ok(lease) => lease,
+                    Err(CacheError::InvalidRequest { .. }) => return Ok((None, false)),
+                    Err(error) => return Err(map_cache(error)),
+                };
+                let pinned = match working.reader_confirm(lease) {
+                    Ok(pinned) => pinned,
+                    Err(CacheError::InvalidRequest { .. }) => return Ok((None, false)),
+                    Err(error) => return Err(map_cache(error)),
+                };
+                if pinned != generation {
+                    return Ok((None, false));
                 }
-                Err(error) if is_conflict(&error) => {},
-                Err(error) => return Err(map_cache(error)),
-            }
-        }
-        Ok(None)
+                let alive = self.ledger.hold_lease(lease).map_err(map_cache)?;
+                Ok((Some((lease, alive)), true))
+            })
+            .map_err(update_error)?;
+        self.life = life;
+        Ok(lease.map(|(lease, alive)| SnapshotLease { root: self.root_path.clone(), lease, _alive: Some(alive) }))
     }
+}
+
+/// Maps a section failure onto the facade error: the edit's own refusal, or the cache's.
+pub(super) fn update_error(error: LedgerUpdateError<DctxError>) -> DctxError {
+    match error {
+        LedgerUpdateError::Body(error) => error,
+        LedgerUpdateError::Cache(error) => map_cache(error),
+    }
+}
+
+/// Writes a new object file. A file left under this id by a crashed publish is not in the ledger
+/// (the section holds the exclusive lock and the ledger was just loaded), so it is replaced.
+fn put_fresh(objects: &FsObjectStore, written: &mut Vec<ObjectId>, id: ObjectId, bytes: &[u8]) -> Result<(), CacheError> {
+    match objects.put_object(id.raw(), bytes) {
+        Err(CacheError::InvalidRequest { reason: "object already published" }) => {
+            objects.unlink_object(id)?;
+            objects.put_object(id.raw(), bytes)?;
+        }
+        other => other?,
+    }
+    written.push(id);
+    Ok(())
 }
 
 pub(super) fn is_conflict(error: &CacheError) -> bool {
@@ -266,27 +310,6 @@ fn manifest_object(life: &Lifecycle, root: RootId, generation: GenerationId) -> 
     life.manifest_object(manifest_id).ok_or_else(|| DctxError::invalid("snapshot manifest object missing"))
 }
 
-fn write_new(
-    objects: &FsObjectStore,
-    written: &mut Vec<ObjectId>,
-    segment: ObjectId,
-    segment_bytes: &[u8],
-    manifest: ObjectId,
-    manifest_bytes: &[u8],
-) -> Result<(), CacheError> {
-    objects.put_object(segment.raw(), segment_bytes)?;
-    written.push(segment);
-    objects.put_object(manifest.raw(), manifest_bytes)?;
-    written.push(manifest);
-    Ok(())
-}
-
-fn discard(objects: &FsObjectStore, written: &[ObjectId]) {
-    for id in written {
-        let _ = objects.unlink_object(*id);
-    }
-}
-
 fn removed_ids(before: &Lifecycle, after: &Lifecycle) -> Vec<ObjectId> {
     before.object_ids().into_iter().filter(|id| after.object_state(*id).is_none()).collect()
 }
@@ -318,23 +341,18 @@ fn sweep(life: &mut Lifecycle, root: RootId) -> Result<(), CacheError> {
 }
 
 fn release_persisted(root: &Path, lease: LeaseId) -> Result<(), CacheError> {
-    for _ in 0..COMMIT_ATTEMPTS {
-        let ledger = FsLedgerStore::open(root)?;
-        let loaded = ledger.load(Quota::product_default())?;
-        if loaded.fault.is_some() {
-            return Ok(());
+    let ledger = FsLedgerStore::open(root)?;
+    let objects = FsObjectStore::open(root)?;
+    let released = ledger.update_reclaiming(Quota::product_default(), &objects, |life| {
+        // An unknown lease is already gone. A superseded view this lease held is retired by the release and unlinked here.
+        Ok::<_, CacheError>(((), life.reader_release(lease).is_ok()))
+    });
+    match released {
+        Ok(_) | Err(LedgerUpdateError::Cache(CacheError::CorruptLedger { .. } | CacheError::UnknownLedgerVersion { .. })) => {
+            Ok(())
         }
-        let mut life = loaded.lifecycle;
-        if life.reader_release(lease).is_err() {
-            return Ok(());
-        }
-        match ledger.store(&life) {
-            Ok(()) => return Ok(()),
-            Err(error) if is_conflict(&error) => {},
-            Err(error) => return Err(error),
-        }
+        Err(LedgerUpdateError::Cache(error) | LedgerUpdateError::Body(error)) => Err(error),
     }
-    Ok(())
 }
 
 #[cfg(test)]

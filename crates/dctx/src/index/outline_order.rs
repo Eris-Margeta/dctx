@@ -20,6 +20,20 @@ pub(super) fn tier(node: &IndexedNode, path: &str, level: u32) -> u8 {
     1
 }
 
+/// The `signature` stored on the module node of `path` (DCX-55c): the file's explicit export list from
+/// [`super::export_list::names`], space-separated, or empty when it has none. Computed from the bytes the walk already
+/// read, so `map m:<file>` orders by it without rereading the file.
+pub(super) fn export_signature(path: &str, bytes: &[u8]) -> String {
+    let language = language_of(path);
+    if !matches!(language, "python" | "javascript" | "typescript") {
+        return String::new();
+    }
+    let Some(names) = super::export_list::names(language, &String::from_utf8_lossy(bytes)) else {
+        return String::new();
+    };
+    names.into_iter().filter(|name| !name.is_empty() && !name.contains(char::is_whitespace)).collect::<Vec<_>>().join(" ")
+}
+
 /// Last segment of a qualified name: `Type::method` is `method`.
 fn leaf(name: &str) -> &str {
     name.rsplit("::").next().unwrap_or(name)
@@ -78,5 +92,16 @@ mod tests {
         let mut test = node("fn", "it_works", "fn it_works()");
         test.letter = b't';
         assert_eq!(tier(&test, "lib.rs", 1), 2);
+    }
+
+    #[test]
+    fn export_signature_holds_the_explicit_list_of_export_languages_only() {
+        assert_eq!(export_signature("pkg/mod.py", b"__all__ = ['beta', \"Gamma\"]\n"), "Gamma beta");
+        assert_eq!(export_signature("stubs/mod.PYI", b"__all__ = ['beta']\n"), "beta");
+        assert_eq!(export_signature("lib.cjs", b"module.exports = { run };\n"), "run");
+        assert_eq!(export_signature("src/api.tsx", b"export { a, b as c };\n"), "a b");
+        assert_eq!(export_signature("pkg/plain.py", b"def alpha():\n    pass\n"), "");
+        assert_eq!(export_signature("src/main.rs", b"__all__ = ['beta']\n"), "");
+        assert_eq!(export_signature("Makefile", b"__all__ = ['beta']\n"), "");
     }
 }

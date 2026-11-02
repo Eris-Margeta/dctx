@@ -5,12 +5,15 @@
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]
-#![allow(dead_code)]
+#![cfg_attr(not(test), deny(clippy::unwrap_used))]
+#![cfg_attr(not(test), deny(clippy::expect_used))]
 
 pub mod cache;
 pub mod compat;
+pub mod exit;
 pub mod help;
 pub mod host;
+pub mod languages;
 pub mod pack;
 pub mod template;
 pub mod tui;
@@ -51,6 +54,8 @@ pub struct SnapshotConfig {
     pub debug_ignored: bool,
     /// Report selection diagnostics.
     pub debug_verbose: bool,
+    /// `MOD:` timestamps on the tree lines of the built-in default template (off unless `--tree-stamps=on`).
+    pub tree_stamps: dctx_template::TreeStamps,
 }
 
 impl Default for SnapshotConfig {
@@ -64,6 +69,7 @@ impl Default for SnapshotConfig {
             filter_config: FilterConfig::default(),
             debug_ignored: false,
             debug_verbose: false,
+            tree_stamps: dctx_template::TreeStamps::default(),
         }
     }
 }
@@ -175,7 +181,7 @@ pub fn snapshot(config: &SnapshotConfig) -> Result<(), String> {
         if let Some(filtered) = &filtered {
             let markers = pack::legacy_markers(filtered, &compat::output_policy(&root));
             if !diff_only {
-                let mut template = template::legacy_template(&settings.default_template)
+                let mut template = template::legacy_template(&settings.default_template, config.tree_stamps)
                     .map_err(|error| format!("Generation error: {error}"))?;
                 template.insert_variable("project", &name);
                 snapshot_body = Some(
@@ -190,7 +196,7 @@ pub fn snapshot(config: &SnapshotConfig) -> Result<(), String> {
                 );
             }
             if generate_diff {
-                let template = template::legacy_template(&settings.default_template)
+                let template = template::legacy_template(&settings.default_template, config.tree_stamps)
                     .map_err(|error| format!("Diff generation error: {error}"))?;
                 diff_body = Some(
                     dctx_template::render_legacy_diff(

@@ -1,9 +1,9 @@
-//! Tests for the block family: Elixir, Lua, OCaml, R, Julia and Haskell.
+//! Tests for the block family: Elixir, Lua, OCaml, R, Julia, Haskell and Erlang.
 
 use super::super::{handles, symbols};
 use crate::index::extract::{extract_structural_refs, language_of};
 
-const TAGS: &[&str] = &["elixir", "lua", "ocaml", "r", "julia", "haskell"];
+const TAGS: &[&str] = &["elixir", "lua", "ocaml", "r", "julia", "haskell", "erlang"];
 
 fn named(tag: &str, text: &str) -> Vec<(String, String)> {
     symbols(tag, text).into_iter().map(|symbol| (symbol.name, symbol.kind)).collect()
@@ -76,6 +76,7 @@ fn denylisted_keywords_are_never_symbols() {
             ("r", format!("{word} <- function(x) x\n{word} = function(x) x\n")),
             ("julia", format!("function {word}(x)\nend\nstruct {word}\nend\n")),
             ("haskell", format!("{word} :: Int\ndata {word} = A\n")),
+            ("erlang", format!("{word}(X) -> X.\n")),
         ] {
             let found = named(tag, &text);
             assert!(found.iter().all(|(name, _)| name != word && !name.ends_with(&format!("::{word}"))), "{tag} {word}: {found:?}");
@@ -136,6 +137,8 @@ fn extensions_dispatch_to_the_block_family() {
         ("a.R", "r"),
         ("a.jl", "julia"),
         ("a.hs", "haskell"),
+        ("a.erl", "erlang"),
+        ("a.hrl", "erlang"),
     ] {
         assert_eq!(language_of(path), tag, "{path}");
         assert!(handles(tag));

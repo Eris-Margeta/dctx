@@ -1,7 +1,7 @@
 #!/bin/sh
 # Usage: zsh tools/sync-version.sh [--check|--write]
-# VERSION governs CLI/core, project metadata and the README badge only.
-# Other crates, desktop versions and Cargo.lock have separate release steps.
+# VERSION governs every crates/* and plugins/* package, their Cargo.lock entries,
+# project metadata and the README badge. The desktop app keeps its own version line.
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -30,15 +30,29 @@ patterns = {
     "project-meta.yaml": (r'(?m)^(version: ")[^"]+("[ \t]*)$', rf'\g<1>{version}\2'),
     "README.md": (r'(https://img.shields.io/badge/version-)\d+\.\d+\.\d+', rf'\g<1>{version}'),
 }
-for crate in ("dctx-core", "dctx-cli"):
+lock = []
+for manifest in sorted([*root.glob("crates/*/Cargo.toml"), *root.glob("plugins/*/Cargo.toml")]):
     # Stay inside [package]; never rewrite dependency version requirements.
-    patterns[f"crates/{crate}/Cargo.toml"] = (
+    patterns[manifest.relative_to(root).as_posix()] = (
         r'(?ms)(^\[package\]\n(?:(?!^\[).)*?^version = ")[^"]+("[ \t]*$)',
         rf'\g<1>{version}\2',
     )
+    name = re.search(r'(?ms)^\[package\]\n(?:(?!^\[).)*?^name = "([^"]+)"', manifest.read_text())
+    if not name:
+        sys.exit(f"No package name in {manifest.relative_to(root)}")
+    lock.append(name.group(1))
+# Workspace package names only; no registry crate shares a name with a workspace package.
+lock_pattern = r'(?m)(^\[\[package\]\]\nname = "(?:' + "|".join(map(re.escape, lock)) + r')"\nversion = ")[^"]+(")'
 
 # Validate every expected field before writing any file.
 updates = []
+lock_path = root / "Cargo.lock"
+before = lock_path.read_text()
+after, count = re.subn(lock_pattern, rf'\g<1>{version}\2', before)
+if count != len(lock):
+    sys.exit(f"Expected {len(lock)} workspace package entries in Cargo.lock; found {count}")
+if before != after:
+    updates.append((lock_path, "Cargo.lock", after))
 for relative, (pattern, replacement) in patterns.items():
     path = root / relative
     before = path.read_text()
@@ -56,5 +70,5 @@ for path, relative, after in updates:
         print(f"Version mismatch: {relative}", file=sys.stderr)
 if mode == "--check" and updates:
     sys.exit(1)
-print(f"CLI/core version fields match VERSION ({version}); Cargo.lock needs a separate locked check.")
+print(f"{len(lock)} crate versions, their Cargo.lock entries and the metadata match VERSION ({version}).")
 PYTHON

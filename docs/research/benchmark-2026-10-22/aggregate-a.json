@@ -1,0 +1,1028 @@
+{
+  "corpus-stats": {
+    "regular_files": 1975840,
+    "directories": 285562,
+    "symlinks": 14590,
+    "other_entries": 2,
+    "regular_logical_bytes": 152757321322,
+    "regular_allocated_bytes": 157741256704,
+    "env_shaped_regular_files": 66,
+    "stat_errors": 0,
+    "top_level_entries": 131,
+    "top_levels_with_regular_files": 128,
+    "inventory_wall_s": 344.836,
+    "definition": "lstat regular files, recursive os.walk, no symlink following; no content hashes"
+  },
+  "corpus-layout": {
+    "root_git_directory": false,
+    "root_git_file": false,
+    "top_level_git_directories": 57,
+    "root_dctxignore_exists": false,
+    "root_gitignore_exists": false,
+    "root_graft_exists": false,
+    "root_trail_cache_exists": false,
+    "root_trail_directory_exists": false
+  },
+  "versions": {
+    "dctx_commit": "4660f6deb1639cf9a3495989925eb075e7e44bc5",
+    "dctx_branch": "main",
+    "dctx_version": "0.25.0",
+    "trail_version": "0.23.1",
+    "node_version": "v24.22.0",
+    "pnpm_version": "12.15.0",
+    "zsh_version": "zsh 5.9 (x86_64-debian-linux-gnu)",
+    "isolation": "unshare -Urnm, env -i, taskset -c 24-31, read-only lower bind and per-tool overlay; unprivileged debian uid mapping",
+    "install_scripts_executed": false,
+    "dctx_binary": {
+      "bytes": 9236952,
+      "sha256": "db3d6739c9351224f1b72d8054ee5d6eaddd7ab19c2b06c2c718d0f04ec89eb1"
+    },
+    "cargo_lock": {
+      "bytes": 147196,
+      "sha256": "c40ce5727edcf651d85e468f131ff54c68253896981175eb8649865a83ef8b57"
+    },
+    "pnpm_lock": {
+      "bytes": 18111,
+      "sha256": "ce744bb3e3ea623b94702b7263547dc22878b4c568529303772f8b3036f9f860"
+    },
+    "host_kernel": "Linux 6.12.111+deb13-cloud-amd64",
+    "cpu_count": 32,
+    "mem_total_kib": 98974768,
+    "time_version": "time (GNU Time) UNKNOWN",
+    "trail_node_modules_footprint": {
+      "regular_files": 8523,
+      "regular_logical_bytes": 369775358,
+      "symlinks": 110
+    },
+    "cargo_version": "cargo 1.99.0 (5f94df478 2026-08-27)",
+    "rustc_version": "rustc 1.99.0 (b940084d7 2026-09-28)",
+    "node_default_heap_size_limit_bytes": 4496293888
+  },
+  "dctx-index-size-cold0": {
+    "files": 3,
+    "logical_bytes": 481
+  },
+  "dctx-index-size-cold1": {
+    "files": 3,
+    "logical_bytes": 481
+  },
+  "dctx-index-size-cold2": {
+    "files": 3,
+    "logical_bytes": 481
+  },
+  "dctx-blocked-metrics": {
+    "reason": "cold whole-corpus snapshot did not complete",
+    "not_measured": [
+      "warm-query medians",
+      "incremental update from complete index",
+      "whole-corpus oracle task correctness",
+      "exact successful scanned/excluded counts"
+    ]
+  },
+  "trail-upper-size": {
+    "files": 10049,
+    "logical_bytes": 692549577
+  },
+  "trail-index-size": {
+    "index_roots": 60,
+    "regular_files": 9927,
+    "logical_bytes": 692416225,
+    "graph_logical_bytes": 173631288,
+    "cache_logical_bytes": 494288827,
+    "preexisting_lower_index_roots": 0,
+    "preexisting_lower_wiring_files": 0,
+    "preexisting_lower_extraction_cache_files": 0
+  },
+  "trail-index-size-baseline": {
+    "index_roots": 60,
+    "regular_files": 9927,
+    "logical_bytes": 692416225,
+    "graph_logical_bytes": 173631288,
+    "cache_logical_bytes": 494288827,
+    "preexisting_lower_index_roots": 0,
+    "preexisting_lower_wiring_files": 0,
+    "preexisting_lower_extraction_cache_files": 0
+  },
+  "privacy-dctx": {
+    "synthetic_only": true,
+    "env_shaped_files": 3,
+    "regular_files": 4,
+    "steps": [
+      {
+        "step": "find",
+        "rc": 0,
+        "marker_in_stdout_by_env_shape": {
+          ".env": false,
+          ".env.local": false,
+          "settings.env": false
+        }
+      },
+      {
+        "step": "pack",
+        "rc": 0,
+        "marker_in_stdout_by_env_shape": {
+          ".env": true,
+          ".env.local": true,
+          "settings.env": true
+        }
+      }
+    ],
+    "marker_bearing_store_files_by_env_shape": {
+      ".env": 0,
+      ".env.local": 0,
+      "settings.env": 0
+    }
+  },
+  "privacy-trail": {
+    "synthetic_only": true,
+    "env_shaped_files": 3,
+    "regular_files": 4,
+    "steps": [
+      {
+        "step": "build",
+        "rc": 0,
+        "marker_in_stdout_by_env_shape": {
+          ".env": false,
+          ".env.local": false,
+          "settings.env": false
+        }
+      },
+      {
+        "step": "grep",
+        "rc": 0,
+        "marker_in_stdout_by_env_shape": {
+          ".env": false,
+          ".env.local": false,
+          "settings.env": false
+        }
+      }
+    ],
+    "marker_bearing_store_files_by_env_shape": {
+      ".env": 0,
+      ".env.local": 0,
+      "settings.env": 0
+    },
+    "synthetic_control_graph_counts": {
+      "graph_files": 1,
+      "nodes": 2,
+      "edges": 1,
+      "distinct_graph_path_pairs": 1,
+      "file_nodes": 1,
+      "function_nodes": 1,
+      "exact_policy_excluded_regular_files": null,
+      "note": "Graph node paths are not a complete scanned/omitted/excluded census.",
+      "extraction_cache_file_records": 1,
+      "fingerprint_file_records": 1
+    }
+  },
+  "dctx-open-counts": {
+    "unique_regular_paths_opened_before_failure": 2965,
+    "successful_regular_open_calls": 2978,
+    "unparsed_successful_open_paths": 0,
+    "matched_nonregular_or_unresolved_open_calls": 0,
+    "complete_indexed_regular_files": 0,
+    "exact_policy_excluded_regular_files": null,
+    "reason": "snapshot aborted; unopened files include unvisited, omitted, and excluded files; they cannot be called exclusions"
+  },
+  "trail-coverage-counts": {
+    "graph_files": 60,
+    "nodes": 236268,
+    "edges": 226164,
+    "distinct_graph_path_pairs": 9674,
+    "file_nodes": 9674,
+    "function_nodes": 72326,
+    "exact_policy_excluded_regular_files": null,
+    "note": "Graph node paths are not a complete scanned/omitted/excluded census.",
+    "extraction_cache_file_records": 9674,
+    "fingerprint_file_records": 9674
+  },
+  "corpus-postcheck": {
+    "regular_files": 1975840,
+    "directories": 285562,
+    "symlinks": 14590,
+    "other_entries": 2,
+    "regular_logical_bytes": 152757321322,
+    "metadata_changed_regular_files": 0,
+    "added_regular_files": 0,
+    "stat_errors": 0,
+    "removed_regular_files": 0,
+    "comparison": "all regular-file paths: size, mtime_ns, mode, inode, nlink; recursive counts; no content checksums; atime not compared",
+    "wall_s": 880.16
+  },
+  "isolation-check": {
+    "isolated_uid": 0,
+    "uid_map": [
+      "0",
+      "1000",
+      "1"
+    ],
+    "network_interfaces": [
+      "lo"
+    ],
+    "documentation_address_connect_errno": 101,
+    "lower_read_only_statvfs": true,
+    "lower_writable_access": false,
+    "overlay_writable_access": true,
+    "env_keys": [
+      "BENCH_VIEW",
+      "DCTX_CACHE_DIR",
+      "DO_NOT_TRACK",
+      "HOME",
+      "LANG",
+      "LOGNAME",
+      "OLDPWD",
+      "PATH",
+      "PWD",
+      "SHLVL",
+      "USER",
+      "XDG_CACHE_HOME",
+      "_"
+    ]
+  },
+  "incremental-trail": {
+    "probe": "one new untracked Python file beside a graph-covered source, followed by removal; writes only in retained overlay",
+    "steps": [
+      {
+        "step": "baseline",
+        "rc": 0,
+        "wall_s": 21.74,
+        "maxrss_kb": 1503656,
+        "source_body_marker_present": false
+      },
+      {
+        "step": "added",
+        "rc": 0,
+        "wall_s": 17.17,
+        "maxrss_kb": 1500332,
+        "source_body_marker_present": false
+      },
+      {
+        "step": "added_noop",
+        "rc": 0,
+        "wall_s": 16.43,
+        "maxrss_kb": 1490856,
+        "source_body_marker_present": false
+      },
+      {
+        "step": "removed",
+        "rc": 0,
+        "wall_s": 16.97,
+        "maxrss_kb": 1503564,
+        "source_body_marker_present": false
+      }
+    ]
+  },
+  "runs": [
+    {
+      "tool": "dctx",
+      "label": "cold_index",
+      "rep": 0,
+      "rc": 1,
+      "timed_out": false,
+      "outer_wall_s": 92.0509,
+      "wall_s": 91.62,
+      "user_s": 64.6,
+      "sys_s": 4.34,
+      "maxrss_kb": 40756,
+      "stdout_bytes": 0,
+      "stderr_bytes": 65,
+      "est_tokens": 0,
+      "load1_before": "24.44",
+      "load1_after": "36.10",
+      "source_bytes_limit_error": true,
+      "entry_limit_error": false
+    },
+    {
+      "tool": "dctx",
+      "label": "cold_index",
+      "rep": 1,
+      "rc": 1,
+      "timed_out": false,
+      "outer_wall_s": 74.9706,
+      "wall_s": 74.08,
+      "user_s": 62.75,
+      "sys_s": 3.85,
+      "maxrss_kb": 40276,
+      "stdout_bytes": 0,
+      "stderr_bytes": 65,
+      "est_tokens": 0,
+      "load1_before": "36.10",
+      "load1_after": "22.41",
+      "source_bytes_limit_error": true,
+      "entry_limit_error": false
+    },
+    {
+      "tool": "dctx",
+      "label": "cold_index",
+      "rep": 2,
+      "rc": 1,
+      "timed_out": false,
+      "outer_wall_s": 78.9198,
+      "wall_s": 77.89,
+      "user_s": 65.86,
+      "sys_s": 12.03,
+      "maxrss_kb": 41732,
+      "stdout_bytes": 0,
+      "stderr_bytes": 65,
+      "est_tokens": 0,
+      "load1_before": "22.41",
+      "load1_after": "20.82",
+      "source_bytes_limit_error": true,
+      "entry_limit_error": false
+    },
+    {
+      "tool": "dctx",
+      "label": "find",
+      "rep": 0,
+      "rc": 1,
+      "timed_out": false,
+      "outer_wall_s": 65.2613,
+      "wall_s": 65.11,
+      "user_s": 61.51,
+      "sys_s": 3.62,
+      "maxrss_kb": 40844,
+      "stdout_bytes": 0,
+      "stderr_bytes": 65,
+      "est_tokens": 0,
+      "load1_before": "20.82",
+      "load1_after": "16.97",
+      "source_bytes_limit_error": true,
+      "entry_limit_error": false
+    },
+    {
+      "tool": "dctx",
+      "label": "explain",
+      "rep": 0,
+      "rc": 1,
+      "timed_out": false,
+      "outer_wall_s": 60.1585,
+      "wall_s": 60.02,
+      "user_s": 58.36,
+      "sys_s": 1.67,
+      "maxrss_kb": 41772,
+      "stdout_bytes": 0,
+      "stderr_bytes": 65,
+      "est_tokens": 0,
+      "load1_before": "16.97",
+      "load1_after": "13.13",
+      "source_bytes_limit_error": true,
+      "entry_limit_error": false
+    },
+    {
+      "tool": "dctx",
+      "label": "map",
+      "rep": 0,
+      "rc": 1,
+      "timed_out": false,
+      "outer_wall_s": 67.1461,
+      "wall_s": 67.02,
+      "user_s": 61.67,
+      "sys_s": 5.37,
+      "maxrss_kb": 41604,
+      "stdout_bytes": 0,
+      "stderr_bytes": 65,
+      "est_tokens": 0,
+      "load1_before": "13.13",
+      "load1_after": "11.39",
+      "source_bytes_limit_error": true,
+      "entry_limit_error": false
+    },
+    {
+      "tool": "dctx",
+      "label": "edges_calls",
+      "rep": 0,
+      "rc": 1,
+      "timed_out": false,
+      "outer_wall_s": 63.6114,
+      "wall_s": 63.43,
+      "user_s": 60.48,
+      "sys_s": 2.95,
+      "maxrss_kb": 41312,
+      "stdout_bytes": 0,
+      "stderr_bytes": 65,
+      "est_tokens": 0,
+      "load1_before": "11.39",
+      "load1_after": "11.02",
+      "source_bytes_limit_error": true,
+      "entry_limit_error": false
+    },
+    {
+      "tool": "dctx",
+      "label": "pack",
+      "rep": 0,
+      "rc": 1,
+      "timed_out": false,
+      "outer_wall_s": 61.7063,
+      "wall_s": 60.52,
+      "user_s": 50.7,
+      "sys_s": 4.07,
+      "maxrss_kb": 71672,
+      "stdout_bytes": 0,
+      "stderr_bytes": 65,
+      "est_tokens": 0,
+      "load1_before": "11.02",
+      "load1_after": "15.99",
+      "source_bytes_limit_error": true,
+      "entry_limit_error": false
+    },
+    {
+      "tool": "dctx",
+      "label": "privacy_find",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 0.0672,
+      "wall_s": 0.02,
+      "user_s": 0.0,
+      "sys_s": 0.0,
+      "maxrss_kb": 4380,
+      "stdout_bytes": 97,
+      "stderr_bytes": 0,
+      "est_tokens": 28,
+      "load1_before": "15.99",
+      "load1_after": "15.99",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "dctx",
+      "label": "privacy_pack",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 0.0663,
+      "wall_s": 0.01,
+      "user_s": 0.0,
+      "sys_s": 0.0,
+      "maxrss_kb": 4880,
+      "stdout_bytes": 1346,
+      "stderr_bytes": 0,
+      "est_tokens": 385,
+      "load1_before": "15.99",
+      "load1_after": "15.99",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "dctx",
+      "label": "coverage_trace",
+      "rep": 0,
+      "rc": 1,
+      "timed_out": false,
+      "outer_wall_s": 91.4932,
+      "wall_s": 90.67,
+      "user_s": 65.77,
+      "sys_s": 18.3,
+      "maxrss_kb": 43068,
+      "stdout_bytes": 0,
+      "stderr_bytes": 65,
+      "est_tokens": 0,
+      "load1_before": "13.56",
+      "load1_after": "13.13",
+      "source_bytes_limit_error": true,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "trail",
+      "label": "privacy_build",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 2.944,
+      "wall_s": 2.84,
+      "user_s": 1.52,
+      "sys_s": 0.32,
+      "maxrss_kb": 101316,
+      "stdout_bytes": 308,
+      "stderr_bytes": 65,
+      "est_tokens": 88,
+      "load1_before": "13.13",
+      "load1_after": "16.00",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "trail",
+      "label": "privacy_grep",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 1.3293,
+      "wall_s": 1.22,
+      "user_s": 1.13,
+      "sys_s": 0.27,
+      "maxrss_kb": 98820,
+      "stdout_bytes": 0,
+      "stderr_bytes": 315,
+      "est_tokens": 0,
+      "load1_before": "16.00",
+      "load1_after": "16.00",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "trail",
+      "label": "cold_index",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 680.3674,
+      "wall_s": 680.17,
+      "user_s": 657.09,
+      "sys_s": 36.84,
+      "maxrss_kb": 7439632,
+      "stdout_bytes": 4708,
+      "stderr_bytes": 1230,
+      "est_tokens": 1346,
+      "load1_before": "16.00",
+      "load1_after": "11.59",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "trail",
+      "label": "find",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 25.7227,
+      "wall_s": 24.87,
+      "user_s": 17.93,
+      "sys_s": 5.51,
+      "maxrss_kb": 1482940,
+      "stdout_bytes": 1281,
+      "stderr_bytes": 0,
+      "est_tokens": 366,
+      "load1_before": "11.59",
+      "load1_after": "13.14",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "trail",
+      "label": "explain_source",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 14.8928,
+      "wall_s": 14.55,
+      "user_s": 16.22,
+      "sys_s": 4.2,
+      "maxrss_kb": 1649696,
+      "stdout_bytes": 3220,
+      "stderr_bytes": 0,
+      "est_tokens": 920,
+      "load1_before": "13.14",
+      "load1_after": "12.56",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "trail",
+      "label": "map",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 7.0806,
+      "wall_s": 6.8,
+      "user_s": 5.79,
+      "sys_s": 2.48,
+      "maxrss_kb": 438292,
+      "stdout_bytes": 136375,
+      "stderr_bytes": 0,
+      "est_tokens": 38965,
+      "load1_before": "12.56",
+      "load1_after": "12.10",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "trail",
+      "label": "edges_calls",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 13.3355,
+      "wall_s": 13.05,
+      "user_s": 11.14,
+      "sys_s": 3.57,
+      "maxrss_kb": 595744,
+      "stdout_bytes": 161200,
+      "stderr_bytes": 0,
+      "est_tokens": 46058,
+      "load1_before": "12.10",
+      "load1_after": "13.11",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "trail",
+      "label": "outline",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 4.1469,
+      "wall_s": 3.89,
+      "user_s": 2.88,
+      "sys_s": 1.63,
+      "maxrss_kb": 119760,
+      "stdout_bytes": 97,
+      "stderr_bytes": 0,
+      "est_tokens": 28,
+      "load1_before": "13.11",
+      "load1_after": "13.02",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "trail",
+      "label": "incremental_baseline",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 21.9954,
+      "wall_s": 21.74,
+      "user_s": 19.4,
+      "sys_s": 6.33,
+      "maxrss_kb": 1503656,
+      "stdout_bytes": 12482,
+      "stderr_bytes": 0,
+      "est_tokens": 3567,
+      "load1_before": "11.55",
+      "load1_after": "11.39",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "trail",
+      "label": "incremental_add_query",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 17.4446,
+      "wall_s": 17.17,
+      "user_s": 18.55,
+      "sys_s": 5.55,
+      "maxrss_kb": 1500332,
+      "stdout_bytes": 12482,
+      "stderr_bytes": 117,
+      "est_tokens": 3567,
+      "load1_before": "11.39",
+      "load1_after": "11.02",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "trail",
+      "label": "incremental_added_noop",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 16.6893,
+      "wall_s": 16.43,
+      "user_s": 17.08,
+      "sys_s": 5.71,
+      "maxrss_kb": 1490856,
+      "stdout_bytes": 12482,
+      "stderr_bytes": 0,
+      "est_tokens": 3567,
+      "load1_before": "11.02",
+      "load1_after": "10.98",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    },
+    {
+      "tool": "trail",
+      "label": "incremental_remove_query",
+      "rep": 0,
+      "rc": 0,
+      "timed_out": false,
+      "outer_wall_s": 17.2408,
+      "wall_s": 16.97,
+      "user_s": 18.19,
+      "sys_s": 5.6,
+      "maxrss_kb": 1503564,
+      "stdout_bytes": 12482,
+      "stderr_bytes": 117,
+      "est_tokens": 3567,
+      "load1_before": "10.98",
+      "load1_after": "10.76",
+      "source_bytes_limit_error": false,
+      "entry_limit_error": false,
+      "heap_oom_error": false,
+      "missing_runtime_module_error": false
+    }
+  ],
+  "raw_files": [
+    {
+      "path": "results/raw/dctx/cold_index.r0.err",
+      "bytes": 65
+    },
+    {
+      "path": "results/raw/dctx/cold_index.r0.out",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/dctx/cold_index.r0.time",
+      "bytes": 814
+    },
+    {
+      "path": "results/raw/dctx/cold_index.r1.err",
+      "bytes": 65
+    },
+    {
+      "path": "results/raw/dctx/cold_index.r1.out",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/dctx/cold_index.r1.time",
+      "bytes": 813
+    },
+    {
+      "path": "results/raw/dctx/cold_index.r2.err",
+      "bytes": 65
+    },
+    {
+      "path": "results/raw/dctx/cold_index.r2.out",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/dctx/cold_index.r2.time",
+      "bytes": 809
+    },
+    {
+      "path": "results/raw/dctx/coverage_trace.r0.err",
+      "bytes": 65
+    },
+    {
+      "path": "results/raw/dctx/coverage_trace.r0.out",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/dctx/coverage_trace.r0.time",
+      "bytes": 991
+    },
+    {
+      "path": "results/raw/dctx/edges_calls.r0.err",
+      "bytes": 65
+    },
+    {
+      "path": "results/raw/dctx/edges_calls.r0.out",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/dctx/edges_calls.r0.time",
+      "bytes": 853
+    },
+    {
+      "path": "results/raw/dctx/explain.r0.err",
+      "bytes": 65
+    },
+    {
+      "path": "results/raw/dctx/explain.r0.out",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/dctx/explain.r0.time",
+      "bytes": 836
+    },
+    {
+      "path": "results/raw/dctx/find.r0.err",
+      "bytes": 65
+    },
+    {
+      "path": "results/raw/dctx/find.r0.out",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/dctx/find.r0.time",
+      "bytes": 814
+    },
+    {
+      "path": "results/raw/dctx/map.r0.err",
+      "bytes": 65
+    },
+    {
+      "path": "results/raw/dctx/map.r0.out",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/dctx/map.r0.time",
+      "bytes": 844
+    },
+    {
+      "path": "results/raw/dctx/pack.r0.err",
+      "bytes": 65
+    },
+    {
+      "path": "results/raw/dctx/pack.r0.out",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/dctx/pack.r0.time",
+      "bytes": 795
+    },
+    {
+      "path": "results/raw/dctx/privacy_find.r0.err",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/dctx/privacy_find.r0.out",
+      "bytes": 97
+    },
+    {
+      "path": "results/raw/dctx/privacy_find.r0.time",
+      "bytes": 758
+    },
+    {
+      "path": "results/raw/dctx/privacy_pack.r0.err",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/dctx/privacy_pack.r0.out",
+      "bytes": 1346
+    },
+    {
+      "path": "results/raw/dctx/privacy_pack.r0.time",
+      "bytes": 742
+    },
+    {
+      "path": "results/raw/trail/cold_index.r0.err",
+      "bytes": 1230
+    },
+    {
+      "path": "results/raw/trail/cold_index.r0.out",
+      "bytes": 4708
+    },
+    {
+      "path": "results/raw/trail/cold_index.r0.time",
+      "bytes": 776
+    },
+    {
+      "path": "results/raw/trail/edges_calls.r0.err",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/trail/edges_calls.r0.out",
+      "bytes": 161200
+    },
+    {
+      "path": "results/raw/trail/edges_calls.r0.time",
+      "bytes": 761
+    },
+    {
+      "path": "results/raw/trail/explain_source.r0.err",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/trail/explain_source.r0.out",
+      "bytes": 3220
+    },
+    {
+      "path": "results/raw/trail/explain_source.r0.time",
+      "bytes": 782
+    },
+    {
+      "path": "results/raw/trail/find.r0.err",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/trail/find.r0.out",
+      "bytes": 1281
+    },
+    {
+      "path": "results/raw/trail/find.r0.time",
+      "bytes": 761
+    },
+    {
+      "path": "results/raw/trail/incremental_add_query.r0.err",
+      "bytes": 117
+    },
+    {
+      "path": "results/raw/trail/incremental_add_query.r0.out",
+      "bytes": 12482
+    },
+    {
+      "path": "results/raw/trail/incremental_add_query.r0.time",
+      "bytes": 806
+    },
+    {
+      "path": "results/raw/trail/incremental_added_noop.r0.err",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/trail/incremental_added_noop.r0.out",
+      "bytes": 12482
+    },
+    {
+      "path": "results/raw/trail/incremental_added_noop.r0.time",
+      "bytes": 801
+    },
+    {
+      "path": "results/raw/trail/incremental_baseline.r0.err",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/trail/incremental_baseline.r0.out",
+      "bytes": 12482
+    },
+    {
+      "path": "results/raw/trail/incremental_baseline.r0.time",
+      "bytes": 806
+    },
+    {
+      "path": "results/raw/trail/incremental_remove_query.r0.err",
+      "bytes": 117
+    },
+    {
+      "path": "results/raw/trail/incremental_remove_query.r0.out",
+      "bytes": 12482
+    },
+    {
+      "path": "results/raw/trail/incremental_remove_query.r0.time",
+      "bytes": 803
+    },
+    {
+      "path": "results/raw/trail/map.r0.err",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/trail/map.r0.out",
+      "bytes": 136375
+    },
+    {
+      "path": "results/raw/trail/map.r0.time",
+      "bytes": 753
+    },
+    {
+      "path": "results/raw/trail/outline.r0.err",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/trail/outline.r0.out",
+      "bytes": 97
+    },
+    {
+      "path": "results/raw/trail/outline.r0.time",
+      "bytes": 785
+    },
+    {
+      "path": "results/raw/trail/privacy_build.r0.err",
+      "bytes": 65
+    },
+    {
+      "path": "results/raw/trail/privacy_build.r0.out",
+      "bytes": 308
+    },
+    {
+      "path": "results/raw/trail/privacy_build.r0.time",
+      "bytes": 758
+    },
+    {
+      "path": "results/raw/trail/privacy_grep.r0.err",
+      "bytes": 315
+    },
+    {
+      "path": "results/raw/trail/privacy_grep.r0.out",
+      "bytes": 0
+    },
+    {
+      "path": "results/raw/trail/privacy_grep.r0.time",
+      "bytes": 761
+    }
+  ],
+  "package_deb_versions": [
+    "strace_6.13+ds-1_amd64.deb",
+    "time_1.9-0.2_amd64.deb",
+    "zsh_5.9-8+b24_amd64.deb"
+  ],
+  "evidence_nonprivate_files": 0
+}

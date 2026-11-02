@@ -95,9 +95,9 @@ checks empty records for `OpaqueBeacon` in `sample.unknown`.
 Each invocation opens a facade session, takes a strict snapshot and queries its
 ephemeral index. Repeated processes share the host cache root, not a persistent
 CLI graph database. Identity uses dctx's first-party SHA-256 and file metadata,
-without Git object IDs. The retired
-[`map/storage.rs`](../../crates/dctx-cli/src/map/storage.rs) is not a module:
-queries do not create `~/.cache/dctx/map`, and `DCTX_MAP_CACHE` is not used there.
+without Git object IDs. The retired per-worktree SQLite cache selector
+(`map/storage.rs`) has been deleted: queries do not create `~/.cache/dctx/map`,
+and the CLI does not read `DCTX_MAP_CACHE`.
 
 The shared cache stores `ledger.v1` and `policy.v1`. Set `DCTX_CACHE_DIR` to an
 absolute path to override its root. Otherwise it is:

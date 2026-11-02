@@ -233,6 +233,7 @@ impl SessionBuilder {
             pins: std::collections::BTreeMap::new(),
             content_reads: 0,
             cached_content_reads: 0,
+            stamp_skipped_reads: 0,
             managed,
         })
     }

@@ -1,10 +1,10 @@
 [package]
 name = "dctx-plugin-platform"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2024"
 license.workspace = true
 repository.workspace = true
-description = "Fail-closed native plugin admission and Linux confinement primitives"
+description = "**Unstable** (no stability promise in v1). Fail-closed native plugin admission and Linux confinement primitives"
 exclude = [".research/**"]
 
 [dependencies]

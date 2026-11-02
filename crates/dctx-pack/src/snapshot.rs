@@ -7,7 +7,7 @@ use dctx_core::budget::PackLimits;
 use dctx_core::datatypes::{DirContextTreeNode, NodeType};
 use dctx_core::domain::{FileHandlingDecision, ItemContext};
 use dctx_core::error::{DctxError, Resource};
-use dctx_core::filter::is_secret_shaped_name;
+use dctx_core::filter::{has_git_segment, is_secret_shaped_name};
 use dctx_core::facts::{apply_content, mark_subtree_ignored, ContentDigests, Diagnostic, ReadGrant};
 use dctx_core::ids::RelativePath;
 use dctx_core::selection::SelectionPolicy;
@@ -153,7 +153,8 @@ impl Walk<'_> {
                 is_directory: entry.is_dir(),
                 debug_mode: self.options.debug_ignored,
             };
-            let decision = withhold_secret_shaped(self.options.policy.decide(&context), &entry.name, entry.is_dir());
+            let listing_only = self.options.debug_ignored && !readable;
+            let decision = withhold_sensitive(self.options.policy.decide(&context), child_path.as_str(), &entry.name, entry.is_dir(), listing_only);
             if !decision.show_in_tree() {
                 continue;
             }
@@ -197,9 +198,15 @@ impl Walk<'_> {
     }
 }
 
-/// Env-shaped files (`.env`, `.env.*`, `*.env`, `.envrc`) stay in the tree by name but are never read.
+/// Sensitive files ([`is_secret_shaped_name`]: env, key, credential and token files) stay in the tree by name but are never read.
 /// Only an `Include` verdict is downgraded; `Exclude` and `DebugVisible` already read nothing.
-fn withhold_secret_shaped(decision: FileHandlingDecision, name: &str, is_dir: bool) -> FileHandlingDecision {
+/// A `.git` path ([`has_git_segment`]) is excluded even when a rule such as `!.git/` negates the built-in ignore.
+/// `--debug-ignored` still lists it by name: the `DebugVisible` directory and, with `listing_only` (inside an
+/// unreadable debug subtree), its children. Nothing there is ever read.
+fn withhold_sensitive(decision: FileHandlingDecision, path: &str, name: &str, is_dir: bool, listing_only: bool) -> FileHandlingDecision {
+    if has_git_segment(path) && decision != FileHandlingDecision::DebugVisible && !listing_only {
+        return FileHandlingDecision::Exclude;
+    }
     if decision == FileHandlingDecision::Include && !is_dir && is_secret_shaped_name(name) {
         FileHandlingDecision::OmitContent
     } else {
@@ -265,6 +272,45 @@ mod tests {
         assert_eq!(env.handling_decision, FileHandlingDecision::OmitContent);
         assert!(env.file_content.is_none());
         assert!(!format!("{:?}", out.tree).contains("CANARYSECRET"));
+    }
+
+    /// v1 card 1: key, credential and token files are withheld like env files; a look-alike source file is still read.
+    #[test]
+    fn sensitive_key_and_credential_files_are_listed_but_never_read() {
+        let mut source = MemorySource::new();
+        source.insert_file("app.py", b"def f(): pass\n", 1).unwrap();
+        source.insert_file("src/credentials.py", b"def g(): pass\n", 1).unwrap();
+        let sensitive = ["certs/server.pem", "id_rsa", "keys/id_ed25519", "credentials", "config/credentials.json", ".npmrc", "deploy/secrets.yaml"];
+        for path in sensitive {
+            source.insert_file(path, b"K=CANARYSECRET\n", 2).unwrap();
+        }
+        let policy = SelectionPolicy::from_texts(&RuleTexts::default());
+        let options = ScanOptions { policy: &policy, debug_ignored: false, limits: PackLimits::unbounded() };
+        let out = scan(&source, &CancelFlag::new(), options).unwrap();
+        let mut reads = source.reads();
+        reads.sort();
+        assert_eq!(reads, ["app.py", "src/credentials.py"]);
+        assert!(!format!("{:?}", out.tree).contains("CANARYSECRET"));
+        let npmrc = out.tree.children.iter().find(|c| c.relative_path == ".npmrc").unwrap();
+        assert_eq!(npmrc.handling_decision, FileHandlingDecision::OmitContent);
+    }
+
+    /// v1 card 1: a `!.git/` negation in the local rules cannot list or read `.git`.
+    #[test]
+    fn git_negations_never_list_or_read_git() {
+        for rules in ["!.git/\n", "!.g*/\n", "!nested/.git/\n!nested/.git/**\n"] {
+            let mut source = MemorySource::new();
+            source.insert_file("keep.txt", b"keep", 1).unwrap();
+            source.insert_file(".git/config", b"PRIVATE_SENTINEL", 2).unwrap();
+            source.insert_file("nested/.git/config", b"PRIVATE_SENTINEL", 3).unwrap();
+            let policy = SelectionPolicy::from_texts(&RuleTexts { local_ignore: Some(rules), ..RuleTexts::default() });
+            let options = ScanOptions { policy: &policy, debug_ignored: false, limits: PackLimits::unbounded() };
+            let out = scan(&source, &CancelFlag::new(), options).unwrap();
+            assert_eq!(source.reads(), ["keep.txt"], "{rules}");
+            assert!(!source.touched(".git/config") && !source.touched("nested/.git/config"), "{rules}");
+            let listed = format!("{:?}", out.tree);
+            assert!(!listed.contains(".git") && !listed.contains("PRIVATE_SENTINEL"), "{rules}: {listed}");
+        }
     }
 
     #[test]

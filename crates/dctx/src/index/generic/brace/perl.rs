@@ -8,22 +8,104 @@
 
 use std::collections::HashSet;
 
-use super::super::{ident_at, is_denied, mask, signature_of, to_symbols, Decl};
-use crate::index::generic::brace::decl::Found;
+use super::super::{Decl, ident_at, is_denied, mask, signature_of, to_symbols};
 use super::PERL;
 use crate::index::extract::Symbol;
 
 /// POD directive words that open a documentation block.
-const POD_OPEN: &[&str] = &["=pod", "=head1", "=head2", "=head3", "=head4", "=head5", "=item", "=begin", "=over", "=encoding"];
+const POD_OPEN: &[&str] = &[
+    "=pod",
+    "=head1",
+    "=head2",
+    "=head3",
+    "=head4",
+    "=head5",
+    "=item",
+    "=begin",
+    "=over",
+    "=encoding",
+];
 
 /// Perl builtins and keywords a bare `name argument` or `&name` must not report as a call.
 const PERL_BUILTINS: &[&str] = &[
-    "print", "printf", "say", "warn", "die", "return", "bless", "ref", "defined", "undef", "local", "our", "my", "push",
-    "pop", "shift", "unshift", "splice", "int", "rand", "srand", "sprintf", "join", "split", "chomp", "chop", "length",
-    "ord", "chr", "index", "rindex", "substr", "keys", "values", "each", "delete", "exists", "sort", "map", "grep",
-    "system", "exec", "fork", "open", "close", "read", "write", "seek", "tell", "binmode", "select", "lock", "caller",
-    "eval", "goto", "wantarray", "scalar", "prototype", "require", "do", "next", "last", "redo", "break", "continue",
-    "tie", "untie", "tied", "mkdir", "rmdir", "glob", "umask", "chmod", "chown", "unlink", "rename", "link", "truncate",
+    "print",
+    "printf",
+    "say",
+    "warn",
+    "die",
+    "return",
+    "bless",
+    "ref",
+    "defined",
+    "undef",
+    "local",
+    "our",
+    "my",
+    "push",
+    "pop",
+    "shift",
+    "unshift",
+    "splice",
+    "int",
+    "rand",
+    "srand",
+    "sprintf",
+    "join",
+    "split",
+    "chomp",
+    "chop",
+    "length",
+    "ord",
+    "chr",
+    "index",
+    "rindex",
+    "substr",
+    "keys",
+    "values",
+    "each",
+    "delete",
+    "exists",
+    "sort",
+    "map",
+    "grep",
+    "system",
+    "exec",
+    "fork",
+    "open",
+    "close",
+    "read",
+    "write",
+    "seek",
+    "tell",
+    "binmode",
+    "select",
+    "lock",
+    "caller",
+    "eval",
+    "goto",
+    "wantarray",
+    "scalar",
+    "prototype",
+    "require",
+    "do",
+    "next",
+    "last",
+    "redo",
+    "break",
+    "continue",
+    "tie",
+    "untie",
+    "tied",
+    "mkdir",
+    "rmdir",
+    "glob",
+    "umask",
+    "chmod",
+    "chown",
+    "unlink",
+    "rename",
+    "link",
+    "truncate",
 ];
 
 /// One `package` seen in the masked text: its line (1-based), qualified name, and the line on which a `{ .. }` block
@@ -55,12 +137,10 @@ pub(super) fn mask_pod(text: &str) -> String {
             out.push_str(" ".repeat(line.len()).as_str());
             continue;
         }
-        if let Some(directive) = word.strip_prefix('=') {
-            if POD_OPEN.contains(&directive) {
-                in_pod = true;
-                out.push_str(" ".repeat(line.len()).as_str());
-                continue;
-            }
+        if POD_OPEN.contains(&word) {
+            in_pod = true;
+            out.push_str(" ".repeat(line.len()).as_str());
+            continue;
         }
         out.push_str(line);
     }
@@ -76,34 +156,40 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
     let masked = mask(&mask_pod(text), &PERL.syntax);
     let packages = packages(&masked);
     let mut decls: Vec<Decl> = Vec::new();
-    let mut current: Option<String> = None;
-    let mut package = 0usize;
+    let mut current: Option<usize> = None;
+    let mut next_package = 0usize;
     for (index, line) in masked.split('\n').enumerate() {
         let number = u32::try_from(index + 1).unwrap_or(u32::MAX);
-        while package < packages.len() && packages[package].line <= number {
-            let open = &packages[package];
-            current = Some(open.name.clone());
-            if let Some(end) = open.end {
-                if number > end {
-                    current = None;
-                }
-            }
-            package += 1;
+        while next_package < packages.len() && packages[next_package].line <= number {
+            current = Some(next_package);
+            next_package += 1;
+        }
+        if current.is_some_and(|at| packages[at].end.is_some_and(|end| number > end)) {
+            current = None;
         }
         let trimmed = line.trim();
         if package_at(trimmed).is_some() {
-            let name = current.clone().unwrap_or_default();
-            if !name.is_empty() {
-                decls.push(Decl { name, kind: "type", lines: [number, number], signature: signature_of(trimmed) });
+            if let Some(name) = current.map(|at| packages[at].name.clone()) {
+                decls.push(Decl {
+                    name,
+                    kind: "type",
+                    lines: [number, number],
+                    signature: signature_of(trimmed),
+                });
             }
             continue;
         }
         if let Some(name) = sub_at(trimmed) {
-            let name = match &current {
+            let name = match current.map(|at| packages[at].name.as_str()) {
                 Some(owner) if !owner.is_empty() => format!("{owner}::{name}"),
                 _ => name,
             };
-            decls.push(Decl { name, kind: "fn", lines: [number, sub_end(&masked, index)], signature: signature_of(trimmed) });
+            decls.push(Decl {
+                name,
+                kind: "fn",
+                lines: [number, sub_end(&masked, index)],
+                signature: signature_of(trimmed),
+            });
         }
     }
     // A `package A::B;` (not a block) spans the subs it holds, so stretch its type to the last member in its namespace.
@@ -112,8 +198,13 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
         .enumerate()
         .filter(|(_, decl)| decl.kind == "type")
         .filter_map(|(at, decl)| {
-            let prefix = format!("{}::", &decl.name);
-            decls.iter().filter(|other| other.kind == "fn" && other.name.starts_with(&prefix)).map(|other| other.lines[1]).max().map(|last| (at, last))
+            let prefix = format!("{}::", decl.name);
+            decls
+                .iter()
+                .filter(|other| other.kind == "fn" && other.name.starts_with(&prefix))
+                .map(|other| other.lines[1])
+                .max()
+                .map(|last| (at, last))
         })
         .collect();
     for (at, last) in stretch {
@@ -131,10 +222,16 @@ fn packages(masked: &str) -> Vec<Package> {
         let Some(name) = package_at(trimmed) else {
             continue;
         };
-        let after = trimmed.strip_prefix("package").unwrap().trim_start();
-        let block = after[after.find(|c: char| c.is_alphanumeric() || c == '_').unwrap_or(after.len())..].trim_start().starts_with('{');
-        let end = block.then(|| block_end(masked, index)).flatten();
-        found.push(Package { line: number, name, block, end });
+        let end = if trimmed.contains('{') {
+            block_end(masked, index)
+        } else {
+            None
+        };
+        found.push(Package {
+            line: number,
+            name,
+            end,
+        });
     }
     found
 }
@@ -142,10 +239,16 @@ fn packages(masked: &str) -> Vec<Package> {
 /// The qualified name a `package` line declares, or `None` when the line is not one.
 fn package_at(line: &str) -> Option<String> {
     let rest = line.strip_prefix("package")?;
-    if !rest.is_empty() && !rest.starts_with(|c: char| c.is_alphanumeric() || c == '_') {
+    if !rest.starts_with(char::is_whitespace) {
         return None;
     }
-    ident_at(rest.trim_start()).filter(|name| !is_denied(name)).map(ToString::to_string)
+    let rest = rest.trim_start();
+    let end = rest
+        .find(|c: char| !(c.is_alphanumeric() || c == '_' || c == ':'))
+        .unwrap_or(rest.len());
+    let name = &rest[..end];
+    (!name.is_empty() && !name.starts_with(|c: char| c.is_ascii_digit()) && !is_denied(name))
+        .then(|| name.to_string())
 }
 
 /// The name a `sub` line declares, or `None` when the line is not one.
@@ -154,57 +257,41 @@ fn sub_at(line: &str) -> Option<String> {
     if !rest.starts_with(|c: char| c.is_whitespace() || c == '{') {
         return None;
     }
-    ident_at(rest.trim_start()).filter(|name| !is_denied(name) && !name.starts_with(|c: char| c.is_ascii_digit())).map(ToString::to_string)
+    ident_at(rest.trim_start())
+        .filter(|name| !is_denied(name) && !name.starts_with(|c: char| c.is_ascii_digit()))
+        .map(ToString::to_string)
 }
 
 /// The 1-based line on which the block opened on line `start` (0-based) closes, or `None` when it never does.
 fn block_end(masked: &str, start: usize) -> Option<u32> {
-    let mut depth = 0i32;
+    let mut depth = 0u32;
     let mut seen = false;
-    for (offset, scan) in masked.split('\n').enumerate().skip(start + 1) {
+    for (index, scan) in masked.split('\n').enumerate().skip(start) {
         for byte in scan.bytes() {
             if byte == b'{' {
-                depth += 1;
+                depth = depth.saturating_add(1);
                 seen = true;
-            } else if byte == b'}' && depth > 0 {
-                depth -= 1;
+            } else if byte == b'}' && seen {
+                depth = depth.saturating_sub(1);
             }
         }
-        if seen && depth <= 0 {
-            return u32::try_from(start + 2 + offset).ok();
+        if seen && depth == 0 {
+            return u32::try_from(index + 1).ok();
         }
     }
     None
 }
 
 /// The 1-based line on which the `sub` declared on line `start` (0-based) closes, or the declaration line when its body
-/// never opens. Curly braces of a hash reference (`->{ .. }`) do not count, so a body that reads `->{sum}` ends at its
-/// own closing brace.
+/// never closes. Hash-reference braces count as nested braces, so they cannot close the function body early.
 fn sub_end(masked: &str, start: usize) -> u32 {
-    let mut depth = 0i32;
-    let mut seen = false;
-    let mut prev = 0u8;
-    for (offset, scan) in masked.split('\n').skip(start + 1).enumerate() {
-        for byte in scan.bytes() {
-            if byte == b'{' && prev != b'>' {
-                depth += 1;
-                seen = true;
-            } else if byte == b'}' && depth > 0 {
-                depth -= 1;
-            }
-            prev = byte;
-        }
-        if seen && depth <= 0 {
-            return u32::try_from(start + 2 + offset).unwrap_or(u32::MAX);
-        }
-    }
-    u32::try_from(start + 1).unwrap_or(u32::MAX)
+    block_end(masked, start).unwrap_or_else(|| u32::try_from(start + 1).unwrap_or(u32::MAX))
 }
 
 /// Called names in one function's masked body, in source order without repeats. A call is `name(..)`, a bareword `name`
 /// followed by whitespace and an argument, or `&name`; never a Perl builtin, a method after `->`, or a name after
 /// `sub`, `$`, `@` or `%`.
-pub(super) fn call_names<'a>(body: &'a str, own: &'a str, defined: &'a HashSet<&'a str>) -> Vec<&'a str> {
+pub(super) fn call_names<'a>(body: &'a str, own: &str, defined: &HashSet<&str>) -> Vec<&'a str> {
     let bytes = body.as_bytes();
     let first_line_end = body.find('\n').unwrap_or(body.len());
     let mut found: Vec<&str> = Vec::new();
@@ -219,7 +306,11 @@ pub(super) fn call_names<'a>(body: &'a str, own: &'a str, defined: &'a HashSet<&
             at += 1;
         }
         let word = &body[start..at];
-        let before = if start > 0 { Some(bytes[start - 1]) } else { None };
+        let before = if start > 0 {
+            Some(bytes[start - 1])
+        } else {
+            None
+        };
         let receiver = matches!(before, Some(b'>'));
         let variable = matches!(before, Some(b'$' | b'@' | b'%'));
         let after = &body[at..];
@@ -239,19 +330,13 @@ pub(super) fn call_names<'a>(body: &'a str, own: &'a str, defined: &'a HashSet<&
         } else {
             None
         };
-        if let Some(word) = name && !found.contains(&word) {
+        if let Some(word) = name
+            && !found.contains(&word)
+        {
             found.push(word);
         }
     }
     found
-}
-
-/// Perl `package A::B;` or `package A { .. }` members are handled by the symbols parser.
-/// This function is called from data member dispatch.
-fn perl_member(rest: &str) -> Option<Found> {
-    // Perl data members are handled through the package/sub structure
-    // Return None to let the caller use the default handling
-    None
 }
 
 /// True when `text` starts with `needle`.

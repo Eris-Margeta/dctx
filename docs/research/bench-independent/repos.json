@@ -1,0 +1,56 @@
+{
+  "_doc": "Fixed candidate list for the independent benchmark (v1 card 6). Written 31 Oct 2026, before any seed exists. Widely starred, actively maintained CLI/library repos per language, each pinned by release tag; select.py resolves the tag to a commit once and records it in selection.json (the sha is then checked on every clone). Order is fixed: the seed picks an index into each list. Do not reorder or edit after the v1.0.0 tag exists.",
+  "seed_rule": "sha256('<seed>:<language>') as a big-endian integer modulo the list length; seed = full sha of the dctx commit the v1.0.0 tag points to",
+  "candidates": {
+    "rust": [
+      {"name": "fd",        "url": "https://github.com/sharkdp/fd.git",               "tag": "v10.2.0"},
+      {"name": "bat",       "url": "https://github.com/sharkdp/bat.git",              "tag": "v0.24.0"},
+      {"name": "hyperfine", "url": "https://github.com/sharkdp/hyperfine.git",        "tag": "v1.18.0"},
+      {"name": "zoxide",    "url": "https://github.com/ajeetdsouza/zoxide.git",       "tag": "v0.9.6"},
+      {"name": "delta",     "url": "https://github.com/dandavison/delta.git",         "tag": "0.18.2"},
+      {"name": "just",      "url": "https://github.com/casey/just.git",               "tag": "1.36.0"},
+      {"name": "tokei",     "url": "https://github.com/XAMPPRocky/tokei.git",         "tag": "v12.1.2"},
+      {"name": "eza",       "url": "https://github.com/eza-community/eza.git",        "tag": "v0.20.0"}
+    ],
+    "python": [
+      {"name": "requests",  "url": "https://github.com/psf/requests.git",             "tag": "v2.32.3"},
+      {"name": "click",     "url": "https://github.com/pallets/click.git",            "tag": "8.1.7"},
+      {"name": "httpx",     "url": "https://github.com/encode/httpx.git",             "tag": "0.27.2"},
+      {"name": "typer",     "url": "https://github.com/fastapi/typer.git",            "tag": "0.12.5"},
+      {"name": "rich",      "url": "https://github.com/Textualize/rich.git",          "tag": "v13.9.4"},
+      {"name": "black",     "url": "https://github.com/psf/black.git",                "tag": "24.10.0"},
+      {"name": "httpie",    "url": "https://github.com/httpie/cli.git",               "tag": "3.2.3"},
+      {"name": "fastapi",   "url": "https://github.com/fastapi/fastapi.git",          "tag": "0.115.0"}
+    ],
+    "go": [
+      {"name": "fzf",       "url": "https://github.com/junegunn/fzf.git",             "tag": "v0.56.0"},
+      {"name": "cobra",     "url": "https://github.com/spf13/cobra.git",              "tag": "v1.8.1"},
+      {"name": "bubbletea", "url": "https://github.com/charmbracelet/bubbletea.git",  "tag": "v1.1.0"},
+      {"name": "gin",       "url": "https://github.com/gin-gonic/gin.git",            "tag": "v1.10.0"},
+      {"name": "chi",       "url": "https://github.com/go-chi/chi.git",               "tag": "v5.1.0"},
+      {"name": "logrus",    "url": "https://github.com/sirupsen/logrus.git",          "tag": "v1.9.3"},
+      {"name": "urfave-cli","url": "https://github.com/urfave/cli.git",               "tag": "v2.27.5"},
+      {"name": "lazygit",   "url": "https://github.com/jesseduffield/lazygit.git",    "tag": "v0.44.1"}
+    ]
+  },
+  "excluded": {
+    "_doc": "Every repository the dctx team has measured or tuned against (bench-3way corpora, mixed and docs parts, October task corpora). A candidate equal to one of these is a hard error.",
+    "urls": [
+      "https://github.com/pallets/flask.git", "https://github.com/BurntSushi/ripgrep.git", "https://github.com/pocketbase/pocketbase.git",
+      "https://github.com/trailhq/Trail-Code.git", "https://github.com/django/django.git",
+      "https://github.com/lihaoyi/fansi.git", "https://github.com/dart-lang/path.git", "https://github.com/rxi/lume.git",
+      "https://github.com/dashbitco/nimble_options.git", "https://github.com/MasterQ32/zig-args.git", "https://github.com/dbuenzli/cmdliner.git",
+      "https://github.com/transmissions11/solmate.git", "https://github.com/terraform-aws-modules/terraform-aws-vpc.git",
+      "https://github.com/theory/pgtap.git", "https://github.com/bats-core/bats-core.git", "https://github.com/python/devguide.git",
+      "https://github.com/rust-lang/book.git", "https://github.com/asciidoctor/asciidoctor.git"
+    ]
+  },
+  "pins": {
+    "tokenizer": {"name": "cl100k_base", "package": "tiktoken", "version": "0.8.0",
+                  "bpe_url": "https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken",
+                  "bpe_sha256": "223921b76ee99bde995b7ff738513eef100fb51d18c93597a113bcffe865b2a7"},
+    "rust-analyzer": {"release": "2024-10-28", "asset": "rust-analyzer-x86_64-unknown-linux-gnu.gz"},
+    "pyright": {"package": "pyright", "version": "1.1.386", "registry": "npm"},
+    "gopls": {"module": "golang.org/x/tools/gopls", "version": "v0.16.2"}
+  }
+}
