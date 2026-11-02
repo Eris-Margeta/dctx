@@ -70,16 +70,17 @@ fn promised_tiers_of_the_benchmark_languages() {
     // Shell has same-file command-word call guesses, but the benchmark probe found no shell call edges: v1 promises symbols only.
     assert_eq!(entry("shell").tier, Tier::Outline);
     assert_eq!(entry("markdown").tier, Tier::Docs);
-for tag in ["rust", "python", "javascript", "typescript", "go", "erlang", "powershell", "verilog"] {
+for tag in ["rust", "python", "javascript", "typescript", "go", "erlang", "powershell", "perl", "verilog"] {
         assert_eq!(entry(tag).tier, Tier::Full, "{tag}");
     }
     for tag in ["config", "make", "docker", "proto", "pascal", "graphql", "nix"] {
         assert_eq!(entry(tag).tier, Tier::Outline, "{tag}");
     }
-    for tag in ["perl", "fortran"] {
+    for tag in ["fortran"] {
         assert!(by_tag(tag).is_none(), "{tag} is not in v1");
     }
     assert!(by_tag("verilog").is_some(), "verilog is present");
+    let tiers: Vec<&str> = Tier::ALL.iter().map(|tier| tier.as_str()).collect();
     assert_eq!(tiers, ["full", "outline", "docs"]);
     assert!(LANGUAGES.iter().all(|language| Tier::ALL.contains(&language.tier)));
 }

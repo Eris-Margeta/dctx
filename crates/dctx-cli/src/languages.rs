@@ -263,7 +263,6 @@ mod tests {
         }
         assert!(markdown.contains("| Verilog/SystemVerilog | `verilog` | `.v`, `.vh`, `.sv`, `.svh` | full | guess |
 "));
-        }
     }
 
     #[test]
