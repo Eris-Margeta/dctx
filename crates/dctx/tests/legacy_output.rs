@@ -100,7 +100,8 @@ fn facade_diff_preserves_full_tree_ids_and_changed_content_only() {
     {
         let mut source = handle.lock().expect("source");
         source.insert_file("changed.txt", b"new\n", 2).expect("changed");
-        source.insert_file("icon.svg", b"<svg/>", 2).expect("svg");
+        // Same size, other bytes: a bare mtime change alone is no longer a modification (DCX-P-C1b).
+        source.insert_file("icon.svg", b"<svG/>", 2).expect("svg");
     }
     let mut sink = VecSink::new();
     let report = session.pack(&request, &mut sink).expect("diff");

@@ -276,6 +276,7 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
             coverage,
             completion,
             parser,
+            ids: crate::index::IdIndex::default(),
         },
     })
 }

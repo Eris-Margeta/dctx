@@ -10,7 +10,7 @@ use crate::domain::{AnswerRecord, DctxError, MapRequest};
 /// The module of the file named by `request.target`, then its symbols with their signatures.
 pub(super) fn skeleton(generation: &Generation, request: &MapRequest) -> Result<Collected, DctxError> {
     let text = &generation.text;
-    let Some(root) = require(&generation.nodes, text, &request.target)? else {
+    let Some(root) = require(generation, &request.target)? else {
         return Ok(missing(&request.target));
     };
     if root.kind != "module" {

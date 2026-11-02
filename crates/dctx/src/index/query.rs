@@ -6,7 +6,7 @@
 use super::concept;
 use super::outline_order;
 use super::extract::language_of;
-use super::{generic, id_matches, write_node_id, Generation, IndexedNode, TextBlob};
+use super::{generic, write_node_id, Generation, IndexedNode, TextBlob};
 use crate::domain::{AnswerRecord, Direction, IdentityOutcome, MapRequest, Verb, DctxError};
 
 /// Records for a page, a verified read, or a normal identity outcome.
@@ -35,13 +35,8 @@ pub(crate) fn collect(generation: &Generation, request: &MapRequest, depth: u32)
 }
 
 /// The node named `target`, or `None` when it is absent. An `@` alias is never guessed.
-pub(crate) fn lookup<'a>(nodes: &'a [IndexedNode], text: &TextBlob, target: &str) -> Option<&'a IndexedNode> {
-    let index = lookup_index(nodes, text, target)?;
-    nodes.get(index)
-}
-
-fn lookup_index(nodes: &[IndexedNode], text: &TextBlob, target: &str) -> Option<usize> {
-    nodes.iter().position(|node| id_matches(text, node, target))
+pub(crate) fn lookup<'a>(generation: &'a Generation, target: &str) -> Option<&'a IndexedNode> {
+    generation.nodes.get(generation.node_index(target)?)
 }
 
 fn node_at(nodes: &[IndexedNode], index: u32) -> Option<&IndexedNode> {
@@ -50,7 +45,7 @@ fn node_at(nodes: &[IndexedNode], index: u32) -> Option<&IndexedNode> {
 
 fn map_children(generation: &Generation, request: &MapRequest, depth: u32) -> Result<Collected, DctxError> {
     let text = &generation.text;
-    let Some(root) = require_index(&generation.nodes, text, &request.target)? else {
+    let Some(root) = require_index(generation, &request.target)? else {
         return Ok(missing(&request.target));
     };
     let mut frontier = vec![root];
@@ -120,7 +115,7 @@ const DATA_KEY_PENALTY: i64 = 600;
 /// A line deeper than one carries its depth after the direction, as `calls:in:2:<id>`; depth-1 lines keep `calls:in:<id>`.
 fn neighbors(generation: &Generation, request: &MapRequest, depth: u32) -> Result<Collected, DctxError> {
     let text = &generation.text;
-    let Some(root) = require_index(&generation.nodes, text, &request.target)? else {
+    let Some(root) = require_index(generation, &request.target)? else {
         return Ok(missing(&request.target));
     };
     // A declaration-only symbol answers with its paired definition's records, exactly as if asked for the definition.
@@ -203,7 +198,7 @@ fn clip_summary(record: &mut AnswerRecord) {
 
 fn explain(generation: &Generation, request: &MapRequest) -> Result<Collected, DctxError> {
     let text = &generation.text;
-    let Some(node) = require(&generation.nodes, text, &request.target)? else {
+    let Some(node) = require(generation, &request.target)? else {
         return Ok(missing(&request.target));
     };
     let mut record = record_of(text, node);
@@ -215,7 +210,7 @@ fn explain(generation: &Generation, request: &MapRequest) -> Result<Collected, D
 
 fn read(generation: &Generation, request: &MapRequest) -> Result<Collected, DctxError> {
     let text = &generation.text;
-    let Some(node) = require(&generation.nodes, text, &request.target)? else {
+    let Some(node) = require(generation, &request.target)? else {
         return Ok(missing(&request.target));
     };
     let mut record = record_of(text, node);
@@ -223,18 +218,18 @@ fn read(generation: &Generation, request: &MapRequest) -> Result<Collected, Dctx
     Ok(Collected::Read(Box::new(record)))
 }
 
-pub(super) fn require<'a>(nodes: &'a [IndexedNode], text: &TextBlob, target: &str) -> Result<Option<&'a IndexedNode>, DctxError> {
+pub(super) fn require<'a>(generation: &'a Generation, target: &str) -> Result<Option<&'a IndexedNode>, DctxError> {
     if target.is_empty() {
         return Err(DctxError::invalid("target is required"));
     }
-    Ok(lookup(nodes, text, target))
+    Ok(lookup(generation, target))
 }
 
-fn require_index(nodes: &[IndexedNode], text: &TextBlob, target: &str) -> Result<Option<u32>, DctxError> {
+fn require_index(generation: &Generation, target: &str) -> Result<Option<u32>, DctxError> {
     if target.is_empty() {
         return Err(DctxError::invalid("target is required"));
     }
-    let Some(index) = lookup_index(nodes, text, target) else {
+    let Some(index) = generation.node_index(target) else {
         return Ok(None);
     };
     Ok(u32::try_from(index).ok())
