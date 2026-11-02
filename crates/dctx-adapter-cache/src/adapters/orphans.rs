@@ -50,7 +50,7 @@ fn walk(
         let relative = if prefix.is_empty() { name } else { format!("{prefix}/{name}") };
         let path = entry.path();
         let meta = fs::symlink_metadata(&path).map_err(|_| CacheError::LedgerIo { reason: "metadata" })?;
-        if relative == LEDGER_FILE || relative == LOCK_FILE || known_object(&relative, known) {
+        if relative == LEDGER_FILE || relative == LOCK_FILE || super::reclaim::is_lease_lock(&relative) || known_object(&relative, known) {
             continue;
         }
         charge(budget, &relative)?;

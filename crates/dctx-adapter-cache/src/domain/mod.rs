@@ -20,6 +20,7 @@ mod purge;
 mod queries;
 mod quota;
 mod reach;
+mod reclaim;
 mod reserve;
 mod restart;
 mod retire;
@@ -174,6 +175,11 @@ pub struct Lifecycle {
     touches: u64,
     last_auto_clean: Option<Timestamp>,
     clean_ttl: Option<CleanTtl>,
+    /// Objects dropped from the ledger by admission eviction whose files still need unlinking. Not persisted.
+    evicted: Vec<ObjectId>,
+    /// View manifests retired because a newer view replaced them, not yet handed to the unlink step. Not persisted:
+    /// the same ledger section that retires them marks them pending and commits.
+    superseded: BTreeSet<ManifestId>,
 }
 
 /// TTLs used for one [`Lifecycle::auto_clean`] slice. Absent means the product constants.
@@ -227,6 +233,8 @@ impl Lifecycle {
             touches: 0,
             last_auto_clean: None,
             clean_ttl: None,
+            evicted: Vec::new(),
+            superseded: BTreeSet::new(),
         }
     }
 

@@ -8,6 +8,7 @@ mod coordinate;
 mod lock;
 mod orphans;
 mod publish;
+mod reclaim;
 
 use crate::domain::{Lifecycle, ObjectId, Quota, LEDGER_MAX_BYTES};
 use crate::error::CacheError;
@@ -19,6 +20,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Mutex;
 
 pub use cache::FsObjectStore;
+pub use reclaim::LeaseHold;
 pub use coordinate::auto_clean;
 pub use dctx_ports::Cache;
 
@@ -95,6 +97,29 @@ impl FsLedgerStore {
         body()
     }
 
+    /// Holds the shared cache lock for `body`. Other readers run beside it; a publish waits for it to end.
+    pub(super) fn shared<T>(&self, body: impl FnOnce() -> Result<T, CacheError>) -> Result<T, CacheError> {
+        let _guard = lock::LockGuard::acquire_shared(&self.root)?;
+        body()
+    }
+
+    /// Loads the ledger and runs `body` on it while the shared lock is held, so no publish can reclaim
+    /// an object file `body` reads. Readers share the lock; only a publish or commit excludes them.
+    /// # Errors
+    /// Returns `LedgerUpdateError::Cache` for locking/load faults or a corrupt image, or `LedgerUpdateError::Body`.
+    pub fn read<T, E>(
+        &self,
+        empty_quota: Quota,
+        body: impl FnOnce(&Lifecycle) -> Result<T, E>,
+    ) -> Result<T, LedgerUpdateError<E>> {
+        let _guard = lock::LockGuard::acquire_shared(&self.root).map_err(LedgerUpdateError::Cache)?;
+        let loaded = self.load_locked(empty_quota).map_err(LedgerUpdateError::Cache)?;
+        if let Some(error) = loaded.fault {
+            return Err(LedgerUpdateError::Cache(error));
+        }
+        body(&loaded.lifecycle).map_err(LedgerUpdateError::Body)
+    }
+
     /// Writes and syncs a unique temp file. The committed name is unchanged until [`Self::commit`].
     /// # Errors
     /// Propagates lock acquisition and ledger encoding/staging failures.
@@ -154,8 +179,23 @@ impl FsLedgerStore {
     /// Stores `ledger` while the caller already holds [`Self::exclusive`].
     pub(super) fn store_locked(&self, ledger: &Lifecycle) -> Result<(), CacheError> {
         self.ensure_current()?;
+        self.unlink_evicted(ledger)?;
         self.stage_locked(ledger)?;
         self.commit_locked()
+    }
+
+    /// Unlinks the files of objects admission evicted. They left the ledger, so their files go before it commits:
+    /// a crash in between leaves a charge for a missing file, never a file without a charge.
+    fn unlink_evicted(&self, ledger: &Lifecycle) -> Result<(), CacheError> {
+        let ids = ledger.evicted_ids();
+        if ids.is_empty() {
+            return Ok(());
+        }
+        let objects = FsObjectStore::open(&self.root)?;
+        for id in ids {
+            crate::ports::ObjectStore::unlink_object(&objects, *id)?;
+        }
+        Ok(())
     }
 
     /// Loads, runs `body`, and stores when `body` commits, all under the cache lock.
@@ -295,7 +335,7 @@ fn revision_matches(observed: Observed, disk: Observed) -> bool {
 
 impl LedgerStore for FsLedgerStore {
     fn load(&self, empty_quota: Quota) -> Result<LoadedLedger, CacheError> {
-        self.exclusive(|| self.load_locked(empty_quota))
+        self.shared(|| self.load_locked(empty_quota))
     }
 
     fn store(&self, ledger: &Lifecycle) -> Result<(), CacheError> {
