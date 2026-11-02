@@ -116,18 +116,26 @@ fn stamp(path: &Path, millis: u64) {
 
 #[test]
 fn alias_snapshot_and_tree_are_the_pinned_bytes() {
-    for (tree, expected) in [
-        (false, include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot.txt").as_slice()),
-        (true, include_bytes!("../../dctx-template/tests/fixtures/legacy-tree.txt").as_slice()),
+    // Every mode is pinned: no flag and `--tree-stamps=off` give the MOD-free text, `--tree-stamps=on` the 1.0.0 bytes.
+    for (flag, tree, expected) in [
+        ("", false, include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot.txt").as_slice()),
+        ("", true, include_bytes!("../../dctx-template/tests/fixtures/legacy-tree.txt").as_slice()),
+        ("--tree-stamps=off", false, include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot.txt").as_slice()),
+        ("--tree-stamps=off", true, include_bytes!("../../dctx-template/tests/fixtures/legacy-tree.txt").as_slice()),
+        ("--tree-stamps=on", false, include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot-stamped.txt").as_slice()),
+        ("--tree-stamps=on", true, include_bytes!("../../dctx-template/tests/fixtures/legacy-tree-stamped.txt").as_slice()),
     ] {
         let case = Case::new();
         case.corpus();
         let mut args = vec![".", "--debug-ignored", "--non-empty", "--binary"];
+        if !flag.is_empty() {
+            args.push(flag);
+        }
         if tree {
             args.push("--tree");
         }
         case.run(&args);
-        assert_eq!(case.text(), expected);
+        assert_eq!(case.text(), expected, "{flag} tree={tree}");
         assert_eq!(case.version(), "V1");
         assert!(!case.root.join(".gitignore").exists());
         assert_eq!(fs::read(case.root.join(".git/config")).unwrap(), b"sensitive");
@@ -156,6 +164,9 @@ fn second_run_diffs_unchanged_stays_put_and_resets_retain_exports() {
     assert!(text.contains("[MODIFIED] change.rs"));
     assert!(text.contains("after: a different size"));
     assert!(!text.contains("fn kept()"));
+    assert!(text.contains("<UPDATED_DIRECTORY_TREE>\n[D]  (ID:ROOT)\n"), "default diff tree has no timestamp: {text}");
+    assert!(!text.contains("MOD:"), "default diff carries no MOD: {text}");
+    assert!(!String::from_utf8(case.text()).unwrap().contains("MOD:"), "default snapshot carries no MOD");
     case.write("change.rs", b"next version\n");
     case.run(&["."]);
     assert_eq!(case.version(), "V2");
@@ -188,6 +199,21 @@ fn a_bare_touch_is_no_change_and_a_same_size_edit_is_one() {
     let edited = case.run(&["."]);
     assert!(String::from_utf8_lossy(&edited.stdout).contains("~1"));
     assert_eq!(case.version(), "V1.1");
+}
+
+#[test]
+fn tree_stamps_on_keeps_mod_in_the_snapshot_and_the_diff_tree() {
+    let case = Case::new();
+    case.config("text_output_mode_generates_diff_files = true\nmax_diff_files = 1\n");
+    case.write("kept.rs", b"fn kept() {}\n");
+    case.write("change.rs", b"before\n");
+    case.run(&[".", "--tree-stamps=on"]);
+    assert!(String::from_utf8(case.text()).unwrap().contains("(ID:ROOT, MOD:"));
+    case.write("change.rs", b"after: a different size\n");
+    case.run(&[".", "--tree-stamps=on"]);
+    let diff = fs::read_to_string(case.root.join(".dctx/Corpus.llmcontext-V1.1-diff.txt")).unwrap();
+    assert!(diff.contains("<UPDATED_DIRECTORY_TREE>\n[D]  (ID:ROOT, MOD:"), "{diff}");
+    assert!(diff.contains("change.rs (ID:F001, MOD:") || diff.contains("(ID:F002, MOD:"), "{diff}");
 }
 
 #[test]
@@ -240,14 +266,15 @@ fn filters_do_not_change_state_and_local_omit_is_not_cached() {
 fn configured_template_binary_only_and_rule_read_errors_keep_legacy_behavior() {
     let case = Case::new();
     case.corpus();
-    let template = dctx_template::Template::parse(include_str!("../../dctx-template/templates/default.dctx_template"));
+    // A custom template keeps `{{{node.mod}}}`: the stamped text compiled as a user template renders the 1.0.0 bytes.
+    let template = dctx_template::TreeStamps::On.template();
     let compiled = template.compile("custom").unwrap();
     let directory = case.base.join("cache/dctx/templates");
     fs::create_dir_all(&directory).unwrap();
     compiled.serialize(&mut fs::File::create(directory.join("custom.bin")).unwrap()).unwrap();
     case.config("default_template = 'custom'\n");
     case.run(&[".", "--debug-ignored", "--non-empty", "--binary"]);
-    assert_eq!(case.text(), include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot.txt"));
+    assert_eq!(case.text(), include_bytes!("../../dctx-template/tests/fixtures/legacy-snapshot-stamped.txt"));
     let saved = case.text();
     case.config("output_mode = 'binary'\n");
     case.run(&[".", "--reset"]);

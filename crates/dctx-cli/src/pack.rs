@@ -45,6 +45,8 @@ struct Plan {
     /// Summary report encoding. `None` selects the source-bearing page.
     report_format: Option<u32>,
     filters: Filters,
+    /// `--tree-stamps`: `MOD:` timestamps on the tree lines of the source page.
+    tree_stamps: dctx_template::TreeStamps,
 }
 
 /// Result of one explicit pack. `wrote` is set only for `--output`.
@@ -79,6 +81,7 @@ Pack filters (ADR-011, ADR-009):
   --output, -o <path>   Write the page to one file
   --clipboard, -c       Copy the page to the clipboard
   --json                Summary report instead of the source page
+  --tree-stamps=on|off  MOD: timestamp on tree lines: off (default) keeps the page prefix stable across a touch, on = the 1.0.0 text
 Task context (agent cards):
   --for <text>          Instead of the source page: map find on the names in <text>, then neighbors and read of the best hits
   --budget <tokens>     With --for: cap in estimated tokens, ceil(2 * UTF-8 bytes / 7), 100..100000 (default 3000); whole lines only
@@ -206,7 +209,7 @@ fn source_page(plan: &Plan) -> Result<(Vec<u8>, u64, String), String> {
     let tree = narrow(&scanned.tree, &plan.filters);
     let files = file_count(&tree);
     let markers = legacy_markers(&tree, &policy);
-    let output = source_document(&plan.path)?;
+    let output = source_document(&plan.path, plan.tree_stamps)?;
     let version = Version::new_v1();
     let text = dctx_template::render_legacy_snapshot(
         &output.template,
@@ -260,6 +263,7 @@ fn parse(args: &[String]) -> Result<Plan, String> {
     let mut clipboard = false;
     let mut json = false;
     let mut filters = Filters::new();
+    let mut tree_stamps = dctx_template::TreeStamps::default();
     let mut index = 1;
     while index < args.len() {
         let arg = &args[index];
@@ -271,6 +275,16 @@ fn parse(args: &[String]) -> Result<Plan, String> {
             "--non-empty" => filters.config = filters.config.with_only_non_empty(true),
             "--hidden" => filters.config = filters.config.with_only_hidden(true),
             "--debug-ignored" => filters.debug_ignored = true,
+            "--tree-stamps" => {
+                index += 1;
+                let value = args
+                    .get(index)
+                    .ok_or_else(|| "--tree-stamps requires on or off".to_string())?;
+                tree_stamps = dctx_template::TreeStamps::parse(value)?;
+            }
+            other if other.starts_with("--tree-stamps=") => {
+                tree_stamps = dctx_template::TreeStamps::parse(&other["--tree-stamps=".len()..])?;
+            }
             "--output" | "-o" => {
                 index += 1;
                 let value = args
@@ -351,6 +365,7 @@ fn parse(args: &[String]) -> Result<Plan, String> {
         destination,
         report_format: if json { Some(2) } else { None },
         filters,
+        tree_stamps,
     })
 }
 

@@ -5,8 +5,11 @@ use std::path::Path;
 use super::base_name;
 
 /// Source-bearing page. Scan caps in the facade bound which files are packed.
-pub(super) fn source_document(path: &Path) -> Result<dctx_template::LegacyOutput, String> {
-    let mut template = crate::template::legacy_template("default")?;
+pub(super) fn source_document(
+    path: &Path,
+    stamps: dctx_template::TreeStamps,
+) -> Result<dctx_template::LegacyOutput, String> {
+    let mut template = crate::template::legacy_template("default", stamps)?;
     template.insert_variable("project", &project_name(path));
     Ok(dctx_template::LegacyOutput::new(
         template,

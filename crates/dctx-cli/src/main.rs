@@ -20,6 +20,7 @@ enum CliCommand {
 }
 
 fn main() {
+    exit_quietly_on_broken_pipe();
     let raw = match utf8_arguments(env::args_os()) {
         Ok(raw) => raw,
         Err(failure) => fail(&failure),
@@ -85,6 +86,26 @@ fn main() {
     if let Err(failure) = result {
         fail(&failure);
     }
+}
+
+/// A reader that closes stdout early (`dctx pack . | head -1`) ends the run with exit 0 and no message.
+/// Rust ignores SIGPIPE, so the write returns EPIPE and `print!` panics with "failed printing to stdout";
+/// that one panic is turned into a quiet exit, as `cat` and `rg` behave. Every other panic keeps the default report.
+fn exit_quietly_on_broken_pipe() {
+    let default = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let payload = info.payload();
+        let message = payload.downcast_ref::<String>().map(String::as_str).or_else(|| payload.downcast_ref::<&str>().copied());
+        if message.is_some_and(is_broken_stdout) {
+            std::process::exit(0);
+        }
+        default(info);
+    }));
+}
+
+/// True for the std panic text of a stdout write that hit a closed pipe (Unix EPIPE, Windows ERROR_NO_DATA).
+fn is_broken_stdout(message: &str) -> bool {
+    message.starts_with("failed printing to stdout") && (message.contains("Broken pipe") || message.contains("os error 232"))
 }
 
 /// Prints `failure` (message, then hint) on stderr and exits with its code.
@@ -161,6 +182,14 @@ fn parse_snapshot_args(args: &[String]) -> Result<CliCommand, String> {
                 config.filter_config = config.filter_config.with_collect_ignored(true);
             }
             "--debug-verbose" | "-V" => config.debug_verbose = true,
+            "--tree-stamps" => {
+                index += 1;
+                let value = args.get(index).ok_or("--tree-stamps requires on or off")?;
+                config.tree_stamps = dctx_template::TreeStamps::parse(value)?;
+            }
+            flag if flag.starts_with("--tree-stamps=") => {
+                config.tree_stamps = dctx_template::TreeStamps::parse(&flag["--tree-stamps=".len()..])?;
+            }
             "--ext" => {
                 index += 1;
                 let value = args.get(index).ok_or("--ext requires a comma-separated list of extensions")?;
@@ -233,6 +262,14 @@ mod compatibility {
         assert!(failure.message.contains("argument 3 is not valid UTF-8"), "{}", failure.message);
         let program = vec![std::ffi::OsString::from_vec(vec![b'd', 0xff]), "map".into()];
         assert_eq!(super::utf8_arguments(program.into_iter()).expect("lossy name")[1], "map");
+    }
+
+    #[test]
+    fn only_a_closed_stdout_pipe_is_quiet() {
+        assert!(super::is_broken_stdout("failed printing to stdout: Broken pipe (os error 32)"));
+        assert!(!super::is_broken_stdout("failed printing to stdout: No space left on device (os error 28)"));
+        assert!(!super::is_broken_stdout("failed printing to stderr: Broken pipe (os error 32)"));
+        assert!(!super::is_broken_stdout("called `Option::unwrap()` on a `None` value"));
     }
 
     #[test]

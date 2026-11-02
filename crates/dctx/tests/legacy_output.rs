@@ -13,16 +13,25 @@ use std::sync::Arc;
 use dctx::memory::{CancelFlag, FixedClock, MemorySource};
 use dctx::{DctxError, HostCeiling, HostGrants, OperationLimits, PackRequest, RuleTexts, SelectionPolicy,
     Session, Source, StoragePolicy, Timestamp, VecSink};
-use dctx_template::{LegacyLayout, LegacyOutput, Template};
+use dctx_template::{LegacyLayout, LegacyOutput, Template, TreeStamps};
 
 use common::SharedSource;
 
 const SNAPSHOT: &str = include_str!("../../dctx-template/tests/fixtures/legacy-snapshot.txt");
 const TREE: &str = include_str!("../../dctx-template/tests/fixtures/legacy-tree.txt");
-const DEFAULT_TEMPLATE: &str = include_str!("../../dctx-template/templates/default.dctx_template");
+const SNAPSHOT_STAMPED: &str = include_str!("../../dctx-template/tests/fixtures/legacy-snapshot-stamped.txt");
+const TREE_STAMPED: &str = include_str!("../../dctx-template/tests/fixtures/legacy-tree-stamped.txt");
+
+/// Both built-in modes with their pinned bytes: the default (no `MOD:`) and the stamped 1.0.0 text.
+const MODES: [(TreeStamps, &str, &str); 2] =
+    [(TreeStamps::Off, SNAPSHOT, TREE), (TreeStamps::On, SNAPSHOT_STAMPED, TREE_STAMPED)];
 
 fn request(layout: LegacyLayout) -> PackRequest {
-    let mut template = Template::parse(DEFAULT_TEMPLATE);
+    request_with(layout, TreeStamps::Off)
+}
+
+fn request_with(layout: LegacyLayout, stamps: TreeStamps) -> PackRequest {
+    let mut template = stamps.template();
     template.insert_variable("project", "Corpus");
     let mut output = LegacyOutput::new(template, layout);
     output.debug_ignored = true;
@@ -69,22 +78,32 @@ fn snapshot_source() -> MemorySource {
 
 #[test]
 fn facade_snapshot_and_tree_match_pinned_legacy_bytes() {
-    let source = SharedSource::new(snapshot_source());
-    let spy = source.handle();
-    let mut session = session(source, None);
-    for (layout, expected) in [(LegacyLayout::Snapshot, SNAPSHOT), (LegacyLayout::TreeOnly, TREE)] {
-        let mut sink = VecSink::new();
-        let report = session.pack(&request(layout), &mut sink).expect("pack");
-        assert_eq!(sink.as_bytes(), expected.as_bytes());
-        assert_eq!(report.legacy_layout, Some(layout));
+    for (stamps, snapshot, tree) in MODES {
+        let source = SharedSource::new(snapshot_source());
+        let spy = source.handle();
+        let mut session = session(source, None);
+        for (layout, expected) in [(LegacyLayout::Snapshot, snapshot), (LegacyLayout::TreeOnly, tree)] {
+            let mut sink = VecSink::new();
+            let report = session.pack(&request_with(layout, stamps), &mut sink).expect("pack");
+            assert_eq!(sink.as_bytes(), expected.as_bytes(), "{stamps:?} {layout:?}");
+            assert_eq!(report.legacy_layout, Some(layout));
+        }
+        let mut reads = spy.lock().expect("source").reads();
+        reads.sort();
+        assert_eq!(reads, ["logo.png", "logo.png", "src/main.rs", "src/main.rs"]);
     }
-    let mut reads = spy.lock().expect("source").reads();
-    reads.sort();
-    assert_eq!(reads, ["logo.png", "logo.png", "src/main.rs", "src/main.rs"]);
+    assert!(!SNAPSHOT.contains("MOD"));
+    assert!(SNAPSHOT_STAMPED.contains("MOD:"));
 }
 
 #[test]
 fn facade_diff_preserves_full_tree_ids_and_changed_content_only() {
+    for stamps in [TreeStamps::Off, TreeStamps::On] {
+        diff_case(stamps);
+    }
+}
+
+fn diff_case(stamps: TreeStamps) {
     let mut source = MemorySource::new();
     source.insert_file("a.txt", b"unchanged", 1).expect("a");
     source.insert_file("changed.txt", b"old", 1).expect("changed");
@@ -92,7 +111,7 @@ fn facade_diff_preserves_full_tree_ids_and_changed_content_only() {
     let source = SharedSource::new(source);
     let handle = source.handle();
     let mut session = session(source, None);
-    let request = request(LegacyLayout::Diff);
+    let request = request_with(LegacyLayout::Diff, stamps);
     let mut first = VecSink::new();
     let report = session.pack(&request, &mut first).expect("first");
     assert_eq!(report.legacy_layout, Some(LegacyLayout::Snapshot));
@@ -106,20 +125,30 @@ fn facade_diff_preserves_full_tree_ids_and_changed_content_only() {
     let mut sink = VecSink::new();
     let report = session.pack(&request, &mut sink).expect("diff");
     assert_eq!(report.legacy_layout, Some(LegacyLayout::Diff));
-    assert_eq!(sink.as_bytes(), b"[DCTX_LLM_CONTEXT_DIFF_V1.1]\n\
-Version Change: V1 -> V1.1\n\n\
+    let (root, a, changed, icon) = match stamps {
+        TreeStamps::Off => ("", "", "", ""),
+        TreeStamps::On => (", MOD:0", ", MOD:1", ", MOD:2", ", MOD:2"),
+    };
+    let (size_a, size_changed, size_icon) = match stamps {
+        TreeStamps::Off => ("", "", ""),
+        TreeStamps::On => (", SIZE:9", ", SIZE:4", ", SIZE:6"),
+    };
+    let expected = format!(
+        "[DCTX_LLM_CONTEXT_DIFF_V1.1]\nVersion Change: V1 -> V1.1\n\n\
 <CHANGES_SUMMARY>\n\
 [MODIFIED] changed.txt\n\
 [MODIFIED] icon.svg\n\
 </CHANGES_SUMMARY>\n\n\
 <UPDATED_DIRECTORY_TREE>\n\
-[D]  (ID:ROOT, MOD:0)\n  [F] a.txt (ID:F001, MOD:1, SIZE:9)\n  [F] changed.txt (ID:F002, MOD:2, SIZE:4)\n  [F] icon.svg (ID:F003, MOD:2, SIZE:6)</UPDATED_DIRECTORY_TREE>\n\n\
+[D]  (ID:ROOT{root})\n  [F] a.txt (ID:F001{a}{size_a})\n  [F] changed.txt (ID:F002{changed}{size_changed})\n  [F] icon.svg (ID:F003{icon}{size_icon})</UPDATED_DIRECTORY_TREE>\n\n\
 <FILE_CONTENT_START ID=\"F002\" PATH=\"changed.txt\" LINES=\"2\">\n\
 new\n\n\
 </FILE_CONTENT_END ID=\"F002\">\n\
 <FILE_CONTENT_START ID=\"F003\" PATH=\"icon.svg\" LINES=\"0\">\n\
 [SVG file, content omitted (omit_svg_content=true)]\n\
-</FILE_CONTENT_END ID=\"F003\">\n");
+</FILE_CONTENT_END ID=\"F003\">\n"
+    );
+    assert_eq!(sink.as_bytes(), expected.as_bytes(), "{stamps:?}");
     let mut unchanged = VecSink::new();
     let report = session.pack(&request, &mut unchanged).expect("unchanged");
     assert!(!report.published);
@@ -139,9 +168,15 @@ new\n\n\
 
 #[test]
 fn final_byte_cap_includes_header_and_utf8_and_never_writes_a_partial_page() {
-    let expected = SNAPSHOT.replace("Corpus", "Ž");
+    for (stamps, snapshot, _tree) in MODES {
+        byte_cap_case(stamps, snapshot);
+    }
+}
+
+fn byte_cap_case(stamps: TreeStamps, snapshot: &str) {
+    let expected = snapshot.replace("Corpus", "Ž");
     let length = expected.len() as u64;
-    let mut request = request(LegacyLayout::Snapshot);
+    let mut request = request_with(LegacyLayout::Snapshot, stamps);
     request.legacy_output.as_mut().expect("output").template.insert_variable("project", "Ž");
     for host_cap in [false, true] {
         let mut session = session(snapshot_source(), host_cap.then_some(length - 1));

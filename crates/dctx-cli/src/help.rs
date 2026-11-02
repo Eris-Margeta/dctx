@@ -137,6 +137,7 @@ Filter Options:
   --hidden              Show ONLY hidden files and folders (starting with .)
   --debug-ignored       Show ignored files in the tree without reading them
   -V, --debug-verbose   Show ignore decision traces
+  --tree-stamps=on|off  MOD: timestamps on tree lines: off (default) keeps the output prefix stable across a touch, on = the 1.0.0 text
 
 Template Commands:
   template build <PATH>  Compile a template through the facade
