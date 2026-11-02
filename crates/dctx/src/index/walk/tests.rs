@@ -1,6 +1,6 @@
 use std::fmt::Write as _;
 use super::*;
-use crate::domain::{FreshnessMode, HostGrants, OperationLimits, ParserChoice, PolicyView};
+use crate::domain::{DctxError, FreshnessMode, HostGrants, OperationLimits, ParserChoice, PolicyView};
 use dctx_core::selection::{RuleTexts, SelectionPolicy};
 use dctx_ports::memory::{CancelFlag, MemorySource};
 use dctx_template::HostCeiling;
@@ -129,4 +129,59 @@ fn profiled_files_report_bytes_symbols_and_leave_finalization_out() {
     assert_eq!(stages.iter().find(|(name, _)| name == "canonicalize/seal").map(|(_, ns)| *ns), Some(1_000));
     assert_eq!(stages.iter().find(|(name, _)| name == "persist/reuse").map(|(_, ns)| *ns), Some(2_000));
     assert_eq!(stages.iter().find(|(name, _)| name == "query").map(|(_, ns)| *ns), Some(4_000));
+}
+
+fn fifty_files() -> MemorySource {
+    let mut source = MemorySource::new();
+    for index in 0..50 {
+        let body = format!("fn first{index}() {{}}\nfn second{index}() {{}}\n");
+        source.insert_file(&format!("f{index:02}.rs"), body.as_bytes(), 0).expect("file");
+    }
+    source
+}
+
+fn walk_capped(source: &MemorySource, limits: &crate::domain::ScanLimits) -> Result<Walked, DctxError> {
+    let selection = SelectionPolicy::from_texts(&RuleTexts::default());
+    let ceiling = HostCeiling::base();
+    walk_source(&WalkArgs {
+        source,
+        cancel: &CancelFlag::new(),
+        policy: PolicyView { selection: &selection, ceiling: &ceiling, grants: HostGrants::PermitAll, plan: None, view: "map" },
+        limits,
+        freshness: FreshnessMode::ImmutableSnapshot,
+        parser: ParserChoice::Structural,
+        deadline_ms: None,
+        started_ms: 0,
+        now_ms: 0,
+    })
+}
+
+#[test]
+fn caps_early_record_cap_refuses_before_the_walk_ends_and_a_raised_cap_passes() {
+    let source = fifty_files();
+    let mut limits = crate::domain::resolve_scan(&OperationLimits::default()).expect("limits");
+    limits.records = 20;
+    let error = walk_capped(&source, &limits).expect_err("over the record cap");
+    assert_eq!(error, DctxError::ResourceLimit { resource: crate::domain::Resource::Records, limit: 20 });
+    assert!(error.to_string().contains("records > 20"), "{error}");
+    let reads = source.reads().len();
+    assert!(reads < 50 && reads > 0, "refused after {reads} of 50 reads, not after the whole tree");
+
+    limits.records = 1_000;
+    let walked = walk_capped(&fifty_files(), &limits).expect("raised cap");
+    assert_eq!(walked.files.len(), 50);
+}
+
+#[test]
+fn caps_early_entry_cap_refuses_before_the_walk_ends_and_a_raised_cap_passes() {
+    let source = fifty_files();
+    let mut limits = crate::domain::resolve_scan(&OperationLimits::default()).expect("limits");
+    limits.entries = 10;
+    let error = walk_capped(&source, &limits).expect_err("over the entry cap");
+    assert_eq!(error, DctxError::ResourceLimit { resource: crate::domain::Resource::Entries, limit: 10 });
+    let reads = source.reads().len();
+    assert!(reads < 50, "refused after {reads} of 50 reads");
+
+    limits.entries = 1_000;
+    assert_eq!(walk_capped(&fifty_files(), &limits).expect("raised cap").files.len(), 50);
 }

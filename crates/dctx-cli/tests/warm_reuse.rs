@@ -39,6 +39,10 @@ impl Repository {
     }
 
     fn output(&self, args: &[&str]) -> Output {
+        self.output_env(args, &[])
+    }
+
+    fn output_env(&self, args: &[&str], extra: &[(&str, &str)]) -> Output {
         let mut command = Command::new(env!("CARGO_BIN_EXE_dctx-cli"));
         command
             .current_dir(self.repo())
@@ -63,6 +67,7 @@ impl Repository {
         ] {
             command.env(variable, self.root.join(folder));
         }
+        command.envs(extra.iter().copied());
         command.output().expect("run compiled CLI")
     }
 
@@ -144,4 +149,67 @@ fn a_second_process_reuses_until_the_bytes_change() {
     let listed: Vec<_> = fs::read_dir(repo.repo()).expect("list").flatten().collect();
     assert_eq!(listed.len(), 1);
     assert!(repo.cache().join("ledger.v1").is_file());
+}
+
+/// Sets `path` an hour in the past, outside the 2 s racy window, so a stat stamp can vouch for it.
+fn age(path: &std::path::Path) {
+    let when = std::time::SystemTime::now() - std::time::Duration::from_secs(3600);
+    File::options().write(true).open(path).expect("open").set_modified(when).expect("set mtime");
+}
+
+#[test]
+fn a_settled_file_is_trusted_by_its_stamp_until_strict_live_asks_for_the_bytes() {
+    let repo = Repository::new();
+    let source = repo.repo().join("item.rs");
+    fs::write(&source, b"fn kept() {}\n").expect("source");
+    age(&source);
+    let place = repo.repo().to_string_lossy().into_owned();
+    let args = ["map", "find", "kept", "--json", "--place", place.as_str()];
+    let (cold, cold_err) = repo.run(&args);
+    assert!(cold_err.contains("generation built"), "{cold_err}");
+
+    let (warm, warm_err) = repo.run(&args);
+    assert!(warm_err.contains("generation reused"), "{warm_err}");
+    assert_eq!(count_line(&warm_err, "stamp_skipped_reads"), 1, "{warm_err}");
+    assert_eq!(count_line(&warm_err, "cached_content_reads"), 0, "{warm_err}");
+    assert_eq!(records(&warm), records(&cold));
+
+    let output = repo.output_env(&args, &[("DCTX_FRESHNESS", "strict_live")]);
+    let strict_err = String::from_utf8_lossy(&output.stderr).into_owned();
+    assert!(output.status.success(), "{strict_err}");
+    assert!(strict_err.contains("generation reused"), "{strict_err}");
+    assert_eq!(count_line(&strict_err, "stamp_skipped_reads"), 0, "{strict_err}");
+    assert_eq!(count_line(&strict_err, "cached_content_reads"), 1, "{strict_err}");
+    assert_eq!(records(&String::from_utf8_lossy(&output.stdout)), records(&cold));
+
+    let typo = repo.output_env(&args, &[("DCTX_FRESHNESS", "strict-live")]);
+    assert!(!typo.status.success());
+    assert!(String::from_utf8_lossy(&typo.stderr).contains("DCTX_FRESHNESS"), "{}", String::from_utf8_lossy(&typo.stderr));
+}
+
+#[test]
+fn caps_early_refusal_names_the_cap_and_the_override_passes() {
+    let repo = Repository::new();
+    for name in ["a.rs", "b.rs", "c.rs", "d.rs"] {
+        fs::write(repo.repo().join(name), format!("fn f_{}() {{}}\n", &name[..1])).expect("source");
+    }
+    let place = repo.repo().to_string_lossy().into_owned();
+    let args = ["map", "find", "f_a", "--place", place.as_str()];
+
+    for (variable, resource) in [("DCTX_MAX_RECORDS", "records"), ("DCTX_MAX_ENTRIES", "entries")] {
+        let refused = repo.output_env(&args, &[(variable, "2")]);
+        let stderr = String::from_utf8_lossy(&refused.stderr).into_owned();
+        assert_eq!(refused.status.code(), Some(3), "{variable}: {stderr}");
+        assert!(stderr.contains(&format!("{resource} > 2")), "{variable}: {stderr}");
+        assert!(stderr.contains(variable), "{variable} is named in the hint: {stderr}");
+        assert!(refused.stdout.is_empty(), "{variable}: no partial answer");
+
+        let passed = repo.output_env(&args, &[(variable, "1000")]);
+        assert!(passed.status.success(), "{variable}: {}", String::from_utf8_lossy(&passed.stderr));
+        assert!(String::from_utf8_lossy(&passed.stdout).contains("f_a"), "{variable}");
+
+        let bad = repo.output_env(&args, &[(variable, "0")]);
+        assert_eq!(bad.status.code(), Some(3), "{variable}: {}", String::from_utf8_lossy(&bad.stderr));
+        assert!(String::from_utf8_lossy(&bad.stderr).contains(variable), "{variable} is named when its value is invalid");
+    }
 }

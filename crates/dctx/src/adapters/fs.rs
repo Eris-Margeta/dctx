@@ -10,7 +10,7 @@ use std::path::{Path, PathBuf};
 
 use dctx_core::datatypes::NodeType;
 use dctx_core::error::DctxError as CoreError;
-use dctx_core::facts::{EntryMeta, ReadGrant, SourceEntry};
+use dctx_core::facts::{EntryMeta, EntryStamp, ReadGrant, SourceEntry};
 use dctx_core::ids::{RelativePath, Timestamp};
 use dctx_ports::Source;
 
@@ -152,6 +152,16 @@ impl Source for FsSource {
         Ok(EntryMeta { size: meta.len(), modified: Timestamp(modified_millis(&meta)) })
     }
 
+    fn stat(&self, path: &RelativePath) -> Result<(EntryMeta, Option<EntryStamp>), CoreError> {
+        let full = self.confined(path)?;
+        // The clock is read before the stat: an edit after this stat gets a time no earlier than `now`,
+        // so a stamp older than `now - RACY_WINDOW_NS` can never be matched by a later edit.
+        let now = now_ns();
+        let meta = std::fs::symlink_metadata(&full).map_err(map_io)?;
+        let entry = EntryMeta { size: meta.len(), modified: Timestamp(modified_millis(&meta)) };
+        Ok((entry, settled_stamp(&meta, now)))
+    }
+
     fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
         let full = self.confined(grant.path())?;
         self.reject_links(grant.path(), false)?;
@@ -180,6 +190,36 @@ fn modified_millis(meta: &std::fs::Metadata) -> u64 {
         .map_or(0, |duration| u64::try_from(duration.as_millis()).unwrap_or(u64::MAX))
 }
 
+/// A stamp is trusted only when the file's mtime is at least this far behind the clock of the stat (git's racy-entry rule).
+const RACY_WINDOW_NS: u128 = 2_000_000_000;
+
+fn now_ns() -> u128 {
+    std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_or(0, |duration| duration.as_nanos())
+}
+
+/// The stat identity of a regular file whose mtime is settled: at least [`RACY_WINDOW_NS`] before `now_ns`.
+/// `None` for anything else (a symlink, a recent or future mtime, no inode on this platform), and the caller hashes.
+fn settled_stamp(meta: &std::fs::Metadata, now_ns: u128) -> Option<EntryStamp> {
+    if !meta.file_type().is_file() {
+        return None;
+    }
+    let modified_ns = meta.modified().ok()?.duration_since(std::time::UNIX_EPOCH).ok()?.as_nanos();
+    if modified_ns == 0 || modified_ns.saturating_add(RACY_WINDOW_NS) > now_ns {
+        return None;
+    }
+    Some(EntryStamp { size: meta.len(), modified_ns, inode: inode_of(meta)? })
+}
+
+#[cfg(unix)]
+fn inode_of(meta: &std::fs::Metadata) -> Option<u64> {
+    Some(std::os::unix::fs::MetadataExt::ino(meta))
+}
+
+#[cfg(not(unix))]
+fn inode_of(_meta: &std::fs::Metadata) -> Option<u64> {
+    None
+}
+
 fn map_io(error: std::io::Error) -> CoreError {
     if error.kind() == std::io::ErrorKind::NotFound {
         CoreError::SourceUnavailable
@@ -193,6 +233,28 @@ mod tests {
     use super::*;
     use dctx_core::FileHandlingDecision;
     use std::fs;
+
+    #[test]
+    fn stat_stamps_only_a_settled_regular_file() {
+        let dir = tempfile::tempdir().expect("temp");
+        let path = dir.path().join("a.txt");
+        fs::write(&path, b"abc").expect("write");
+        let source = FsSource::open(dir.path()).expect("open");
+        let rel = RelativePath::parse("a.txt").expect("path");
+        let (meta, fresh) = source.stat(&rel).expect("stat");
+        assert_eq!(meta.size, 3);
+        assert_eq!(fresh, None, "a file written just now is inside the racy window");
+        let old = std::time::SystemTime::now() - std::time::Duration::from_secs(3600);
+        fs::File::options().write(true).open(&path).expect("open").set_modified(old).expect("age");
+        let (_, settled) = source.stat(&rel).expect("stat");
+        let stamp = settled.expect("settled stamp");
+        assert_eq!(stamp.size, 3);
+        assert_ne!(stamp.inode, 0);
+        assert_eq!(source.stat(&rel).expect("again").1, Some(stamp));
+        let future = std::time::SystemTime::now() + std::time::Duration::from_secs(3600);
+        fs::File::options().write(true).open(&path).expect("open").set_modified(future).expect("future");
+        assert_eq!(source.stat(&rel).expect("future").1, None, "a future mtime is never settled");
+    }
 
     #[test]
     fn empty_path_and_missing_root_are_refused() {

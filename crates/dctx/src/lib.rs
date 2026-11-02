@@ -29,7 +29,7 @@ pub use domain::{
     CacheReport, Capabilities,
     Direction, DctxError, ErrorCode, Freshness, FreshnessMode, GcRequest, HostGrants, IdentityOutcome, MapRequest,
     OperationLimits, PackReport, PackRequest, Precision, PurgeRequest, PurgeScope, Resource, RuleSources, SegmentInfo,
-    SnapshotRequest, VecSink, Verb, parse_source_ceiling, source_ceiling, REQUEST_VERSION, SOURCE_ENV, STRUCTURAL_PARSER,
+    SnapshotRequest, VecSink, Verb, parse_source_ceiling, source_ceiling, ENTRIES_ENV, RECORDS_ENV, REQUEST_VERSION, SOURCE_ENV, STRUCTURAL_PARSER,
 };
 pub use languages::{Confidence, Language, Tier, LANGUAGES};
 pub use plugins::{Boundary, HookEffect, HookWarning, PluginHost};

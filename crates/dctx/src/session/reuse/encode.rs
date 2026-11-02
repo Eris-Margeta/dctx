@@ -40,6 +40,14 @@ pub(in crate::session) fn encode_generation(
         }
         push_u64(&mut out, file.size);
         push_u64(&mut out, file.modified);
+        match file.stamp {
+            Some(stamp) => {
+                out.push(1);
+                out.extend_from_slice(&stamp.modified_ns.to_le_bytes());
+                push_u64(&mut out, stamp.inode);
+            }
+            None => out.push(0),
+        }
     }
     push_count(&mut out, generation.nodes.len())?;
     let mut id = String::new();

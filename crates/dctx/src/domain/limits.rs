@@ -8,13 +8,11 @@ use dctx_core::budget::{byte_ceiling, estimate_tokens};
 use dctx_template::{BudgetPlan, HostCeiling};
 
 use super::error::{DctxError, Resource};
-use super::source_ceiling::source_ceiling;
+use super::source_ceiling::{entries_ceiling, records_ceiling, source_ceiling};
 use super::request::Verb;
 
 /// Most directory levels one snapshot will walk when the caller sets no depth.
 pub(crate) const SAFETY_DEPTH: u64 = 256;
-/// Most entries one snapshot will visit when the caller sets no work cap.
-pub(crate) const SAFETY_ENTRIES: u64 = 100_000;
 /// Most bytes read from one file.
 pub(crate) const SAFETY_FILE: u64 = 8 * 1024 * 1024;
 /// Read token budget when the caller sets none. Equal to the verb hard cap.
@@ -282,14 +280,17 @@ pub(crate) struct ScanLimits {
     pub file_bytes: u64,
     /// Total content cap.
     pub source_bytes: u64,
+    /// Record cap: files, nodes and edges are each counted against it during the walk.
+    pub records: u64,
 }
 
 pub(crate) fn resolve_scan(limits: &OperationLimits) -> Result<ScanLimits, DctxError> {
     Ok(ScanLimits {
-        entries: under(limits.work_units, SAFETY_ENTRIES, "work")?,
+        entries: under(limits.work_units, entries_ceiling()?, "work")?,
         depth: under(limits.depth.map(u64::from), SAFETY_DEPTH, "depth")?,
         file_bytes: under(limits.parse_bytes, SAFETY_FILE, "file")?,
         source_bytes: under(limits.source_bytes, source_ceiling()?, "source")?,
+        records: records_ceiling()?,
     })
 }
 
@@ -366,7 +367,8 @@ mod tests {
 
     #[test]
     fn safety_cap_refuses_a_raised_walk_limit() {
-        let mut limits = OperationLimits { work_units: Some(SAFETY_ENTRIES + 1), ..OperationLimits::default() };
+        let ceiling = super::entries_ceiling().expect("entries ceiling");
+        let mut limits = OperationLimits { work_units: Some(ceiling + 1), ..OperationLimits::default() };
         assert!(resolve_scan(&limits).is_err());
         limits.work_units = Some(4);
         assert_eq!(resolve_scan(&limits).expect("narrow").entries, 4);

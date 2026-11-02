@@ -93,11 +93,17 @@ pub fn from_facade(error: &DctxError, help: &str) -> Failure {
     }
 }
 
-/// The hint for a bounded quantity: the source cap has an env switch, the others need a smaller place.
+/// The hint for a bounded quantity: the source, record and entry caps have an env switch, the others need a smaller place.
 fn limit_hint(error: &DctxError) -> &'static str {
     match error {
         DctxError::ResourceLimit { resource: Resource::SourceBytes, .. } => {
             "the place has more source bytes than one scan reads; raise DCTX_MAX_SOURCE_BYTES or pass --place <a smaller directory>"
+        }
+        DctxError::ResourceLimit { resource: Resource::Records, .. } => {
+            "the place holds more records (files, symbols, edges) than one index keeps; raise DCTX_MAX_RECORDS (1..100000000) or pass --place <a smaller directory>"
+        }
+        DctxError::ResourceLimit { resource: Resource::Entries, .. } => {
+            "the place has more files and directories than one scan visits; raise DCTX_MAX_ENTRIES (1..100000000) or pass --place <a smaller directory>"
         }
         _ => "the place or the answer exceeds a dctx limit; pass --place <a smaller directory> or narrow the query",
     }
@@ -132,6 +138,10 @@ mod tests {
         assert_eq!(from_facade(&DctxError::Busy, "x").code, INDEX);
         let cap = DctxError::ResourceLimit { resource: Resource::SourceBytes, limit: 1 };
         assert!(from_facade(&cap, "x").hint.contains("DCTX_MAX_SOURCE_BYTES"));
+        let records = DctxError::ResourceLimit { resource: Resource::Records, limit: 1 };
+        assert!(from_facade(&records, "x").hint.contains("DCTX_MAX_RECORDS"));
+        let entries = DctxError::ResourceLimit { resource: Resource::Entries, limit: 1 };
+        assert!(from_facade(&entries, "x").hint.contains("DCTX_MAX_ENTRIES"));
         for error in [DctxError::SourceUnavailable, DctxError::io("disk"), DctxError::StaleContinuation, DctxError::PolicyDenied] {
             assert!(!from_facade(&error, "x").hint.is_empty(), "{error}");
         }

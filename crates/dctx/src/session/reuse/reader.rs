@@ -1,4 +1,4 @@
-use super::{MAX_COUNT, MAX_STRING};
+use super::{MAX_STRING, records_cap};
 use crate::domain::DctxError;
 
 pub(super) struct Reader<'a> {
@@ -37,6 +37,14 @@ impl<'a> Reader<'a> {
         Ok(u64::from_le_bytes(raw))
     }
 
+    pub(super) fn u128(&mut self) -> Result<u128, DctxError> {
+        let bytes = self.take(16)?;
+        let raw: [u8; 16] = bytes.try_into().map_err(|_| DctxError::CorruptIndex {
+            reason: "generation truncated",
+        })?;
+        Ok(u128::from_le_bytes(raw))
+    }
+
     pub(super) fn string(&mut self) -> Result<String, DctxError> {
         let len = usize::try_from(self.u32()?).map_err(|_| DctxError::CorruptIndex {
             reason: "generation string",
@@ -57,7 +65,7 @@ impl<'a> Reader<'a> {
         let count = usize::try_from(self.u64()?).map_err(|_| DctxError::CorruptIndex {
             reason: "generation count",
         })?;
-        if count > MAX_COUNT {
+        if count > records_cap() {
             return Err(DctxError::CorruptIndex {
                 reason: "generation count",
             });

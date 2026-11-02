@@ -105,7 +105,8 @@ fn answer_with(
     if profiling {
         session.enable_profile();
     }
-    // Reuse checks content with digest_text, the same comparison as read_verified. Size and mtime are only a prefilter.
+    // Reuse checks content with digest_text, the same comparison as read_verified, except for a file whose size, mtime
+    // (older than 2 s) and inode are all unchanged: that stamp is trusted. DCTX_FRESHNESS=strict_live hashes every file.
     let built = if profiling {
         session.snapshot_reusable_for_profile(&SnapshotRequest::strict(), &key)
     } else {
@@ -125,6 +126,7 @@ fn answer_with(
         eprintln!("{status}");
         eprintln!("content_reads {}", session.content_reads());
         eprintln!("cached_content_reads {}", session.cached_content_reads());
+        eprintln!("stamp_skipped_reads {}", session.stamp_skipped_reads());
     }
     if options.hubs {
         return hubs::answer(&mut session, &handle, &options).map(Answered::page).map_err(failure::answer);
