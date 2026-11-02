@@ -5,24 +5,22 @@ workflow execution, publication and deployment require separate owner authorizat
 
 ## Version plan
 
-The next planned CLI/core version is **0.26.0**. The sync helper accepts stable
-`X.Y.Z` versions only; prerelease version synchronization needs a separate change.
-Current version lines are:
+The current release is **1.0.0**. The sync helper accepts stable `X.Y.Z` versions
+only; prerelease version synchronization needs a separate change. Version lines:
 
-| Scope | Current | Next CLI release action |
+| Scope | Current | Next release action |
 | --- | --- | --- |
-| `VERSION`, `project-meta.yaml`, README badge | 0.25.0 (badge has a dev suffix) | Set to 0.26.0; remove the badge dev suffix only when approved for release |
-| `crates/dctx-cli`, `crates/dctx-core` | 0.25.0 | Set package versions to 0.26.0 |
-| Other direct `crates/*` packages | 0.1.0 | Retain; separately version any future library publication |
-| `plugins/dctx-plugin-git` | 1.0.0 | Retain |
+| `VERSION`, `project-meta.yaml`, README badge | 1.0.0 | Set `VERSION`, then run the sync helper |
+| Every `crates/*` and `plugins/*` package and its `Cargo.lock` entry | 1.0.0 | Written by the sync helper from `VERSION` |
 | Desktop Cargo package, package.json and tauri.conf.json | 0.11.0 | Retain; desktop has a separate `desktop-v*` workflow |
 
 Do not bulk-replace dependency versions or nested test fixture versions. The
-root workspace has no inherited package version. CLI `--version` uses the
-`dctx-cli` package version, not the root `VERSION` file at runtime.
+root workspace has no inherited package version. `dctx --version` prints the
+`dctx-cli` package version and the short git sha embedded by `crates/dctx-cli/build.rs`
+(`unknown` when built without git); it does not read `VERSION` at runtime.
 
-In a separately authorized version-change task, set `VERSION` to `0.26.0`, then
-run these commands from the repository root with zsh and Python 3 available:
+In a separately authorized version-change task, set `VERSION`, then run these
+commands from the repository root with zsh and Python 3 available:
 
 ```zsh
 zsh tools/sync-version.sh --write
@@ -31,10 +29,10 @@ zsh tools/sync-version.sh --check
 
 Both helpers use portable shell syntax and also run under zsh; hosted Ubuntu
 release steps invoke their shebangs without requiring a zsh installation.
-The default mode is `--check` and changes nothing. `--write` updates only the
-metadata, CLI/core package versions and numeric README badge version; it preserves
-the dev suffix. It does not change `VERSION`, `Cargo.lock`, other crates, desktop
-files, dependency constraints or changelog headings. Review its four-file diff.
+The default mode is `--check` and changes nothing. `--write` updates the metadata,
+the numeric README badge version, the `[package]` version of every `crates/*` and
+`plugins/*` manifest, and those packages' `version` lines in `Cargo.lock`. It does
+not change `VERSION`, desktop files, dependency constraints or changelog headings.
 Use this explicit `--write` procedure instead of the old no-argument write
 instruction in `docs/ADR-006-Versioning-Strategy.md:32`; the unified desktop
 inventory in `docs/ADR-013-Monorepo-Structure.md:265` is historical.
@@ -50,8 +48,8 @@ Review every lockfile change; do not accept unrelated dependency upgrades. For
 remote infrastructure exit 255 or 75, retry once on build-host, then use `mint` with
 the same arguments. Never run Cargo directly on this Mac.
 
-Move completed Unreleased entries into `## [0.26.0] — YYYY-MM-DD` using the actual
-release date, and leave a fresh `## [Unreleased]` section above it. The extractor
+Move completed Unreleased entries into `## [X.Y.Z] — YYYY-MM-DD` using the actual
+release date, and open a fresh `## [Unreleased]` section above it when work resumes. The extractor
 reads root `CHANGELOG.md`, matches bracketed versions literally, skips Unreleased
 by default, accepts an optional `v` prefix and fails for a missing version.
 

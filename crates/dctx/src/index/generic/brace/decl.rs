@@ -56,6 +56,7 @@ pub(super) fn declarations(lang: &Lang, line: &str, original: &str, scope: &Scop
     let found = found
         .or_else(|| zig_test(lang, line, original).map(|name| (name, "fn")))
         .or_else(|| constructor(lang, rest, scope).map(|name| (name, "fn")))
+        .or_else(|| powershell_method(lang, rest, scope))
         .or_else(|| data::member(lang, rest, mods, scope));
     found.into_iter().collect()
 }
@@ -86,6 +87,16 @@ fn core(lang: &Lang, rest: &str) -> Option<Found> {
         return name_after(after, false, word).map(|name| (name, "type"));
     }
     if lang.fns.contains(&word) {
+        if lang.tag == "powershell" {
+            // PowerShell function names may contain hyphens.
+            if let Some(name) = read_powershell_name(after.trim_start()) {
+                if !is_denied(name) {
+                    return Some((name.to_string(), "fn"));
+                }
+                // Denied name (e.g., `function if {`): not a function declaration.
+                return None;
+            }
+        }
         return name_after(after, lang.paren, word).map(|name| (name, "fn"));
     }
     if lang.const_type && word == "const" {
@@ -170,6 +181,45 @@ fn constructor(lang: &Lang, rest: &str, scope: &Scope) -> Option<String> {
     }
     let named = after.strip_prefix('.').and_then(ident_at)?;
     after[1 + named.len()..].starts_with('(').then(|| named.to_string())
+}
+
+/// PowerShell class methods: `[type] Name(` inside a class body. Names may contain `-`.
+fn powershell_method(lang: &Lang, rest: &str, scope: &Scope) -> Option<Found> {
+    if lang.tag != "powershell" || !matches!(scope.inside, Inside::Type | Inside::Enum) {
+        return None;
+    }
+    // Strip `[type]` prefix: skip past `]` if present.
+    let after_bracket = if rest.starts_with('[') {
+        rest.find(']').map(|i| rest[i + 1..].trim_start())
+    } else {
+        None
+    }?;
+    // Read the method name (may include `-`).
+    let name = read_powershell_name(after_bracket)?;
+    let tail = after_bracket[name.len()..].trim_start();
+    tail.starts_with('(').then(|| (name.to_string(), "fn"))
+}
+
+/// Read a PowerShell identifier from `text`: letters, digits, `_`, and `-`, not starting with a digit.
+fn read_powershell_name(text: &str) -> Option<&str> {
+    let mut end = 0usize;
+    for (i, &byte) in text.as_bytes().iter().enumerate() {
+        if i == 0 {
+            if byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'$' || byte >= 0x80 {
+                if byte.is_ascii_digit() {
+                    return None;
+                }
+                end = i + 1;
+            } else {
+                return None;
+            }
+        } else if byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'$' || byte == b'-' || byte >= 0x80 {
+            end = i + 1;
+        } else {
+            break;
+        }
+    }
+    (end > 0).then(|| &text[..end])
 }
 
 /// Dart `Type name(` or `Type<T> name<U>(`, and the accessors `get name =>`, `set name(..)`, `Type get name =>`.

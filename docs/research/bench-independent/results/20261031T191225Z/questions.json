@@ -1,0 +1,1296 @@
+{
+ "seed": "f77f86ac255ad5c35645dab2242ed1a56804cc1f",
+ "questions": [
+  {
+   "id": "zoxide-01-def",
+   "repo": "zoxide",
+   "kind": "def",
+   "q": "Where is `impl StreamOptions.with_exists` defined?",
+   "t": {
+    "def": {
+     "name": "with_exists",
+     "file": "src/db/stream.rs",
+     "line": 143,
+     "end": 146,
+     "kind": "method",
+     "container": "impl StreamOptions"
+    },
+    "callers": [
+     {
+      "file": "src/cmd/query.rs",
+      "line": 85,
+      "caller": "get_stream",
+      "caller_line": 79
+     }
+    ],
+    "callers2": [],
+    "callees": [],
+    "source": "lsp:callHierarchy/incomingCalls"
+   },
+   "facts": [
+    [
+     "loc",
+     [
+      "src/db/stream.rs",
+      143
+     ]
+    ]
+   ],
+   "provenance": {
+    "gold": "lsp:callHierarchy/incomingCalls"
+   }
+  },
+  {
+   "id": "zoxide-02-callers",
+   "repo": "zoxide",
+   "kind": "callers",
+   "q": "Which functions call `to_lowercase` (defined in src/util.rs)? Give the file and line of each call.",
+   "t": {
+    "def": {
+     "name": "to_lowercase",
+     "file": "src/util.rs",
+     "line": 375,
+     "end": 379,
+     "kind": "function",
+     "container": null
+    },
+    "callers": [
+     {
+      "file": "src/db/stream.rs",
+      "line": 56,
+      "caller": "filter_by_keywords",
+      "caller_line": 50
+     },
+     {
+      "file": "src/db/stream.rs",
+      "line": 134,
+      "caller": "with_keywords",
+      "caller_line": 129
+     }
+    ],
+    "callers2": [
+     {
+      "file": "src/db/stream.rs",
+      "line": 27,
+      "caller": "next",
+      "caller_line": 23
+     },
+     {
+      "file": "src/cmd/query.rs",
+      "line": 81,
+      "caller": "get_stream",
+      "caller_line": 79
+     },
+     {
+      "file": "src/db/stream.rs",
+      "line": 184,
+      "caller": "query",
+      "caller_line": 162
+     }
+    ],
+    "callees": [],
+    "source": "lsp:callHierarchy/incomingCalls"
+   },
+   "facts": [
+    [
+     "caller",
+     [
+      "src/db/stream.rs",
+      [
+       56,
+       134
+      ]
+     ]
+    ]
+   ],
+   "provenance": {
+    "gold": "lsp:callHierarchy/incomingCalls"
+   }
+  },
+  {
+   "id": "zoxide-03-callers",
+   "repo": "zoxide",
+   "kind": "callers",
+   "q": "Which functions call `current_dir` (defined in src/util.rs)? Give the file and line of each call.",
+   "t": {
+    "def": {
+     "name": "current_dir",
+     "file": "src/util.rs",
+     "line": 248,
+     "end": 250,
+     "kind": "function",
+     "container": null
+    },
+    "callers": [
+     {
+      "file": "src/util.rs",
+      "line": 299,
+      "caller": "get_drive_relative",
+      "caller_line": 298
+     },
+     {
+      "file": "src/util.rs",
+      "line": 347,
+      "caller": "resolve_path",
+      "caller_line": 266
+     },
+     {
+      "file": "src/util.rs",
+      "line": 355,
+      "caller": "resolve_path",
+      "caller_line": 266
+     }
+    ],
+    "callers2": [
+     {
+      "file": "src/util.rs",
+      "line": 321,
+      "caller": "resolve_path",
+      "caller_line": 266
+     },
+     {
+      "file": "src/cmd/add.rs",
+      "line": 23,
+      "caller": "run",
+      "caller_line": 10
+     },
+     {
+      "file": "src/cmd/remove.rs",
+      "line": 13,
+      "caller": "run",
+      "caller_line": 8
+     }
+    ],
+    "callees": [],
+    "source": "lsp:callHierarchy/incomingCalls"
+   },
+   "facts": [
+    [
+     "caller",
+     [
+      "src/util.rs",
+      [
+       299,
+       347,
+       355
+      ]
+     ]
+    ]
+   ],
+   "provenance": {
+    "gold": "lsp:callHierarchy/incomingCalls"
+   }
+  },
+  {
+   "id": "zoxide-04-callees",
+   "repo": "zoxide",
+   "kind": "callees",
+   "q": "Which functions of this repository does `impl Stream<'a>.next` (src/db/stream.rs) call?",
+   "t": {
+    "def": {
+     "name": "next",
+     "file": "src/db/stream.rs",
+     "line": 23,
+     "end": 48,
+     "kind": "method",
+     "container": "impl Stream<'a>"
+    },
+    "callers": [
+     {
+      "file": "src/cmd/query.rs",
+      "line": 35,
+      "caller": "query_interactive",
+      "caller_line": 32
+     },
+     {
+      "file": "src/cmd/query.rs",
+      "line": 57,
+      "caller": "query_list",
+      "caller_line": 55
+     }
+    ],
+    "callers2": [
+     {
+      "file": "src/cmd/query.rs",
+      "line": 24,
+      "caller": "query",
+      "caller_line": 19
+     },
+     {
+      "file": "src/cmd/query.rs",
+      "line": 26,
+      "caller": "query",
+      "caller_line": 19
+     }
+    ],
+    "callees": [
+     {
+      "name": "swap_remove",
+      "file": "src/db/mod.rs",
+      "line": 115
+     },
+     {
+      "name": "dirs",
+      "file": "src/db/mod.rs",
+      "line": 186
+     },
+     {
+      "name": "filter_by_keywords",
+      "file": "src/db/stream.rs",
+      "line": 50
+     },
+     {
+      "name": "filter_by_exclude",
+      "file": "src/db/stream.rs",
+      "line": 78
+     },
+     {
+      "name": "filter_by_exists",
+      "file": "src/db/stream.rs",
+      "line": 82
+     }
+    ],
+    "source": "lsp:callHierarchy/incomingCalls"
+   },
+   "facts": [
+    [
+     "word",
+     "swap_remove"
+    ],
+    [
+     "word",
+     "dirs"
+    ],
+    [
+     "word",
+     "filter_by_keywords"
+    ],
+    [
+     "word",
+     "filter_by_exclude"
+    ],
+    [
+     "word",
+     "filter_by_exists"
+    ]
+   ],
+   "provenance": {
+    "gold": "lsp:callHierarchy/incomingCalls"
+   }
+  },
+  {
+   "id": "zoxide-05-outline",
+   "repo": "zoxide",
+   "kind": "outline",
+   "q": "List the top-level definitions in src/db/stream.rs.",
+   "t": {
+    "def": {
+     "name": "filter_by_exclude",
+     "file": "src/db/stream.rs",
+     "line": 78,
+     "end": 80,
+     "kind": "method",
+     "container": "impl Stream<'a>"
+    },
+    "callers": [
+     {
+      "file": "src/db/stream.rs",
+      "line": 31,
+      "caller": "next",
+      "caller_line": 23
+     }
+    ],
+    "callers2": [
+     {
+      "file": "src/cmd/query.rs",
+      "line": 35,
+      "caller": "query_interactive",
+      "caller_line": 32
+     },
+     {
+      "file": "src/cmd/query.rs",
+      "line": 57,
+      "caller": "query_list",
+      "caller_line": 55
+     }
+    ],
+    "callees": [],
+    "source": "lsp:callHierarchy/incomingCalls"
+   },
+   "facts": [
+    [
+     "word",
+     "Stream"
+    ],
+    [
+     "word",
+     "impl Stream<'a>"
+    ],
+    [
+     "word",
+     "StreamOptions"
+    ],
+    [
+     "word",
+     "impl StreamOptions"
+    ],
+    [
+     "word",
+     "tests"
+    ]
+   ],
+   "provenance": {
+    "gold": "lsp:callHierarchy/incomingCalls"
+   },
+   "file": "src/db/stream.rs"
+  },
+  {
+   "id": "zoxide-06-impact",
+   "repo": "zoxide",
+   "kind": "impact",
+   "q": "If `rename` (src/util.rs) changes, which files are affected through its callers, up to two levels?",
+   "t": {
+    "def": {
+     "name": "rename",
+     "file": "src/util.rs",
+     "line": 221,
+     "end": 241,
+     "kind": "function",
+     "container": null
+    },
+    "callers": [
+     {
+      "file": "src/util.rs",
+      "line": 183,
+      "caller": "write",
+      "caller_line": 153
+     }
+    ],
+    "callers2": [
+     {
+      "file": "src/db/mod.rs",
+      "line": 61,
+      "caller": "save",
+      "caller_line": 54
+     },
+     {
+      "file": "src/util.rs",
+      "line": 126,
+      "caller": "write",
+      "caller_line": 124
+     }
+    ],
+    "callees": [],
+    "source": "lsp:callHierarchy/incomingCalls"
+   },
+   "facts": [
+    [
+     "path",
+     "src/util.rs"
+    ],
+    [
+     "path",
+     "src/db/mod.rs"
+    ]
+   ],
+   "provenance": {
+    "gold": "lsp:callHierarchy/incomingCalls"
+   }
+  },
+  {
+   "id": "zoxide-07-concept",
+   "repo": "zoxide",
+   "kind": "concept",
+   "q": "Where is the code for: Forcibly disable backtraces?",
+   "words": "Forcibly disable backtraces",
+   "facts": [
+    [
+     "path",
+     "src/main.rs"
+    ]
+   ],
+   "provenance": {
+    "commit": "eeaf8af2021fab0ef9d0539565e491d32c3f341e",
+    "subject": "Forcibly disable backtraces (#130)"
+   }
+  },
+  {
+   "id": "requests-07-concept",
+   "repo": "requests",
+   "kind": "concept",
+   "q": "Where is the code for: Issue : Add optional SNI support for python2?",
+   "words": "Issue : Add optional SNI support for python2",
+   "facts": [
+    [
+     "path",
+     "setup.py"
+    ]
+   ],
+   "provenance": {
+    "commit": "18857a0eedcebbfc40bb1ae431daed935cd51d56",
+    "subject": "Issue #749: Add optional SNI support for python2."
+   }
+  },
+  {
+   "id": "gin-01-def",
+   "repo": "gin",
+   "kind": "def",
+   "q": "Where is `source` defined?",
+   "t": {
+    "def": {
+     "name": "source",
+     "file": "recovery.go",
+     "line": 138,
+     "end": 144,
+     "kind": "function",
+     "container": null
+    },
+    "callers": [
+     {
+      "file": "recovery.go",
+      "line": 132,
+      "caller": "stack",
+      "caller_line": 111
+     },
+     {
+      "file": "recovery_test.go",
+      "line": 93,
+      "caller": "TestSource",
+      "caller_line": 92
+     },
+     {
+      "file": "recovery_test.go",
+      "line": 100,
+      "caller": "TestSource",
+      "caller_line": 92
+     },
+     {
+      "file": "recovery_test.go",
+      "line": 103,
+      "caller": "TestSource",
+      "caller_line": 92
+     }
+    ],
+    "callers2": [
+     {
+      "file": "recovery.go",
+      "line": 73,
+      "caller": "CustomRecoveryWithWriter",
+      "caller_line": 51
+     }
+    ],
+    "callees": [],
+    "source": "lsp:callHierarchy/incomingCalls"
+   },
+   "facts": [
+    [
+     "loc",
+     [
+      "recovery.go",
+      138
+     ]
+    ]
+   ],
+   "provenance": {
+    "gold": "lsp:callHierarchy/incomingCalls"
+   }
+  },
+  {
+   "id": "gin-02-callers",
+   "repo": "gin",
+   "kind": "callers",
+   "q": "Which functions call `decodeYAML` (defined in binding/yaml.go)? Give the file and line of each call.",
+   "t": {
+    "def": {
+     "name": "decodeYAML",
+     "file": "binding/yaml.go",
+     "line": 29,
+     "end": 35,
+     "kind": "function",
+     "container": null
+    },
+    "callers": [
+     {
+      "file": "binding/yaml.go",
+      "line": 22,
+      "caller": "Bind",
+      "caller_line": 21
+     },
+     {
+      "file": "binding/yaml.go",
+      "line": 26,
+      "caller": "BindBody",
+      "caller_line": 25
+     }
+    ],
+    "callers2": [
+     {
+      "file": "binding/binding_msgpack_test.go",
+      "line": 43,
+      "caller": "testMsgPackBodyBinding",
+      "caller_line": 37
+     },
+     {
+      "file": "binding/binding_msgpack_test.go",
+      "line": 50,
+      "caller": "testMsgPackBodyBinding",
+      "caller_line": 37
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 177,
+      "caller": "TestBindingJSONNilBody",
+      "caller_line": 174
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 378,
+      "caller": "TestBindingFormStringSliceMap",
+      "caller_line": 374
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 391,
+      "caller": "TestBindingFormStringSliceMap",
+      "caller_line": 374
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 430,
+      "caller": "TestBindingQueryStringMap",
+      "caller_line": 425
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 439,
+      "caller": "TestBindingQueryStringMap",
+      "caller_line": 425
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 620,
+      "caller": "TestBindingFormPost",
+      "caller_line": 617
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 630,
+      "caller": "TestBindingDefaultValueFormPost",
+      "caller_line": 627
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 639,
+      "caller": "TestBindingFormPostForMap",
+      "caller_line": 636
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 647,
+      "caller": "TestBindingFormPostForMapFail",
+      "caller_line": 644
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 654,
+      "caller": "TestBindingFormFilesMultipart",
+      "caller_line": 651
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 676,
+      "caller": "TestBindingFormFilesMultipartFail",
+      "caller_line": 673
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 683,
+      "caller": "TestBindingFormMultipart",
+      "caller_line": 680
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 693,
+      "caller": "TestBindingFormMultipartForMap",
+      "caller_line": 690
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 703,
+      "caller": "TestBindingFormMultipartForMapFail",
+      "caller_line": 700
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 734,
+      "caller": "TestValidationFails",
+      "caller_line": 731
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 745,
+      "caller": "TestValidationDisabled",
+      "caller_line": 738
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 756,
+      "caller": "TestRequiredSucceeds",
+      "caller_line": 749
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 767,
+      "caller": "TestRequiredFails",
+      "caller_line": 760
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 782,
+      "caller": "TestHeaderBinding",
+      "caller_line": 771
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 792,
+      "caller": "TestHeaderBinding",
+      "caller_line": 771
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 848,
+      "caller": "testFormBindingEmbeddedStruct",
+      "caller_line": 839
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 864,
+      "caller": "testFormBinding",
+      "caller_line": 855
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 871,
+      "caller": "testFormBinding",
+      "caller_line": 855
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 884,
+      "caller": "testFormBindingDefaultValue",
+      "caller_line": 875
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 891,
+      "caller": "testFormBindingDefaultValue",
+      "caller_line": 875
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 901,
+      "caller": "TestFormBindingFail",
+      "caller_line": 895
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 912,
+      "caller": "TestFormBindingMultipartFail",
+      "caller_line": 905
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 922,
+      "caller": "TestFormPostBindingFail",
+      "caller_line": 916
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 932,
+      "caller": "TestFormMultipartBindingFail",
+      "caller_line": 926
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 945,
+      "caller": "testFormBindingForTime",
+      "caller_line": 936
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 957,
+      "caller": "testFormBindingForTime",
+      "caller_line": 936
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 970,
+      "caller": "testFormBindingForTimeNotUnixFormat",
+      "caller_line": 961
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 975,
+      "caller": "testFormBindingForTimeNotUnixFormat",
+      "caller_line": 961
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 988,
+      "caller": "testFormBindingForTimeNotFormat",
+      "caller_line": 979
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 993,
+      "caller": "testFormBindingForTimeNotFormat",
+      "caller_line": 979
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1006,
+      "caller": "testFormBindingForTimeFailFormat",
+      "caller_line": 997
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1011,
+      "caller": "testFormBindingForTimeFailFormat",
+      "caller_line": 997
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1024,
+      "caller": "testFormBindingForTimeFailLocation",
+      "caller_line": 1015
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1029,
+      "caller": "testFormBindingForTimeFailLocation",
+      "caller_line": 1015
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1042,
+      "caller": "testFormBindingIgnoreField",
+      "caller_line": 1033
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1057,
+      "caller": "testFormBindingInvalidName",
+      "caller_line": 1048
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1063,
+      "caller": "testFormBindingInvalidName",
+      "caller_line": 1048
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1076,
+      "caller": "testFormBindingInvalidName2",
+      "caller_line": 1067
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1081,
+      "caller": "testFormBindingInvalidName2",
+      "caller_line": 1067
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1096,
+      "caller": "testFormBindingForType",
+      "caller_line": 1085
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1102,
+      "caller": "testFormBindingForType",
+      "caller_line": 1085
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1106,
+      "caller": "testFormBindingForType",
+      "caller_line": 1085
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1115,
+      "caller": "testFormBindingForType",
+      "caller_line": 1085
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1124,
+      "caller": "testFormBindingForType",
+      "caller_line": 1085
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1129,
+      "caller": "testFormBindingForType",
+      "caller_line": 1085
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1133,
+      "caller": "testFormBindingForType",
+      "caller_line": 1085
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1140,
+      "caller": "testFormBindingForType",
+      "caller_line": 1085
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1145,
+      "caller": "testFormBindingForType",
+      "caller_line": 1085
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1150,
+      "caller": "testFormBindingForType",
+      "caller_line": 1085
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1164,
+      "caller": "testQueryBinding",
+      "caller_line": 1155
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1179,
+      "caller": "testQueryBindingFail",
+      "caller_line": 1170
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1192,
+      "caller": "testQueryBindingBoolFail",
+      "caller_line": 1183
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 1201,
+      "caller": "testBodyBinding",
+      "caller_line": 1196
+     }
+    ],
+    "callees": [
+     {
+      "name": "validate",
+      "file": "binding/binding.go",
+      "line": 117
+     }
+    ],
+    "source": "lsp:callHierarchy/incomingCalls"
+   },
+   "facts": [
+    [
+     "caller",
+     [
+      "binding/yaml.go",
+      [
+       22,
+       26
+      ]
+     ]
+    ]
+   ],
+   "provenance": {
+    "gold": "lsp:callHierarchy/incomingCalls"
+   }
+  },
+  {
+   "id": "gin-03-callers",
+   "repo": "gin",
+   "kind": "callers",
+   "q": "Which functions call `BindingUri.BindUri` (defined in binding/binding.go)? Give the file and line of each call.",
+   "t": {
+    "def": {
+     "name": "BindUri",
+     "file": "binding/binding.go",
+     "line": 47,
+     "end": 47,
+     "kind": "method",
+     "container": "BindingUri"
+    },
+    "callers": [
+     {
+      "file": "binding/binding_test.go",
+      "line": 806,
+      "caller": "TestUriBinding",
+      "caller_line": 796
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 813,
+      "caller": "TestUriBinding",
+      "caller_line": 796
+     },
+     {
+      "file": "binding/binding_test.go",
+      "line": 834,
+      "caller": "TestUriInnerBinding",
+      "caller_line": 817
+     },
+     {
+      "file": "context.go",
+      "line": 746,
+      "caller": "ShouldBindUri",
+      "caller_line": 741
+     }
+    ],
+    "callers2": [
+     {
+      "file": "context.go",
+      "line": 678,
+      "caller": "BindUri",
+      "caller_line": 677
+     },
+     {
+      "file": "githubapi_test.go",
+      "line": 298,
+      "caller": "TestShouldBindUri",
+      "caller_line": 288
+     }
+    ],
+    "callees": [],
+    "source": "lsp:callHierarchy/incomingCalls"
+   },
+   "facts": [
+    [
+     "caller",
+     [
+      "binding/binding_test.go",
+      [
+       806,
+       813,
+       834
+      ]
+     ]
+    ],
+    [
+     "caller",
+     [
+      "context.go",
+      [
+       746
+      ]
+     ]
+    ]
+   ],
+   "provenance": {
+    "gold": "lsp:callHierarchy/incomingCalls"
+   }
+  },
+  {
+   "id": "gin-04-callees",
+   "repo": "gin",
+   "kind": "callees",
+   "q": "Which functions of this repository does `CreateTestContextOnly` (test_helpers.go) call?",
+   "t": {
+    "def": {
+     "name": "CreateTestContextOnly",
+     "file": "test_helpers.go",
+     "line": 19,
+     "end": 24,
+     "kind": "function",
+     "container": null
+    },
+    "callers": [
+     {
+      "file": "context_test.go",
+      "line": 2668,
+      "caller": "TestCreateTestContextWithRouteParams",
+      "caller_line": 2662
+     }
+    ],
+    "callers2": [],
+    "callees": [
+     {
+      "name": "reset",
+      "file": "context.go",
+      "line": 97
+     },
+     {
+      "name": "allocateContext",
+      "file": "gin.go",
+      "line": 237
+     },
+     {
+      "name": "reset",
+      "file": "response_writer.go",
+      "line": 58
+     }
+    ],
+    "source": "lsp:callHierarchy/incomingCalls"
+   },
+   "facts": [
+    [
+     "word",
+     "reset"
+    ],
+    [
+     "word",
+     "allocateContext"
+    ]
+   ],
+   "provenance": {
+    "gold": "lsp:callHierarchy/incomingCalls"
+   }
+  },
+  {
+   "id": "gin-05-outline",
+   "repo": "gin",
+   "kind": "outline",
+   "q": "List the top-level definitions in context.go.",
+   "t": {
+    "def": {
+     "name": "bodyAllowedForStatus",
+     "file": "context.go",
+     "line": 872,
+     "end": 882,
+     "kind": "function",
+     "container": null
+    },
+    "callers": [
+     {
+      "file": "context.go",
+      "line": 954,
+      "caller": "Render",
+      "caller_line": 951
+     },
+     {
+      "file": "context_test.go",
+      "line": 644,
+      "caller": "TestContextBodyAllowedForStatus",
+      "caller_line": 643
+     },
+     {
+      "file": "context_test.go",
+      "line": 645,
+      "caller": "TestContextBodyAllowedForStatus",
+      "caller_line": 643
+     },
+     {
+      "file": "context_test.go",
+      "line": 646,
+      "caller": "TestContextBodyAllowedForStatus",
+      "caller_line": 643
+     },
+     {
+      "file": "context_test.go",
+      "line": 647,
+      "caller": "TestContextBodyAllowedForStatus",
+      "caller_line": 643
+     }
+    ],
+    "callers2": [
+     {
+      "file": "context.go",
+      "line": 972,
+      "caller": "HTML",
+      "caller_line": 970
+     },
+     {
+      "file": "context.go",
+      "line": 980,
+      "caller": "IndentedJSON",
+      "caller_line": 979
+     },
+     {
+      "file": "context.go",
+      "line": 987,
+      "caller": "SecureJSON",
+      "caller_line": 986
+     },
+     {
+      "file": "context.go",
+      "line": 996,
+      "caller": "JSONP",
+      "caller_line": 993
+     },
+     {
+      "file": "context.go",
+      "line": 999,
+      "caller": "JSONP",
+      "caller_line": 993
+     },
+     {
+      "file": "context.go",
+      "line": 1005,
+      "caller": "JSON",
+      "caller_line": 1004
+     },
+     {
+      "file": "context.go",
+      "line": 1011,
+      "caller": "AsciiJSON",
+      "caller_line": 1010
+     },
+     {
+      "file": "context.go",
+      "line": 1017,
+      "caller": "PureJSON",
+      "caller_line": 1016
+     },
+     {
+      "file": "context.go",
+      "line": 1023,
+      "caller": "XML",
+      "caller_line": 1022
+     },
+     {
+      "file": "context.go",
+      "line": 1028,
+      "caller": "YAML",
+      "caller_line": 1027
+     },
+     {
+      "file": "context.go",
+      "line": 1033,
+      "caller": "TOML",
+      "caller_line": 1032
+     },
+     {
+      "file": "context.go",
+      "line": 1038,
+      "caller": "ProtoBuf",
+      "caller_line": 1037
+     },
+     {
+      "file": "context.go",
+      "line": 1043,
+      "caller": "String",
+      "caller_line": 1042
+     },
+     {
+      "file": "context.go",
+      "line": 1048,
+      "caller": "Redirect",
+      "caller_line": 1047
+     },
+     {
+      "file": "context.go",
+      "line": 1057,
+      "caller": "Data",
+      "caller_line": 1056
+     },
+     {
+      "file": "context.go",
+      "line": 1065,
+      "caller": "DataFromReader",
+      "caller_line": 1064
+     },
+     {
+      "file": "context.go",
+      "line": 1108,
+      "caller": "SSEvent",
+      "caller_line": 1107
+     },
+     {
+      "file": "context_test.go",
+      "line": 662,
+      "caller": "TestContextRenderIfErr",
+      "caller_line": 658
+     },
+     {
+      "file": "context_test.go",
+      "line": 983,
+      "caller": "TestContextRenderSSE",
+      "caller_line": 978
+     },
+     {
+      "file": "middleware_test.go",
+      "line": 243,
+      "caller": "TestMiddlewareWrite",
+      "caller_line": 229
+     }
+    ],
+    "callees": [],
+    "source": "lsp:callHierarchy/incomingCalls"
+   },
+   "facts": [
+    [
+     "word",
+     "MIMEJSON"
+    ],
+    [
+     "word",
+     "MIMEHTML"
+    ],
+    [
+     "word",
+     "MIMEXML"
+    ],
+    [
+     "word",
+     "MIMEXML2"
+    ],
+    [
+     "word",
+     "MIMEPlain"
+    ],
+    [
+     "word",
+     "MIMEPOSTForm"
+    ],
+    [
+     "word",
+     "MIMEMultipartPOSTForm"
+    ],
+    [
+     "word",
+     "MIMEYAML"
+    ],
+    [
+     "word",
+     "MIMETOML"
+    ],
+    [
+     "word",
+     "BodyBytesKey"
+    ],
+    [
+     "word",
+     "ContextKey"
+    ],
+    [
+     "word",
+     "ContextKeyType"
+    ]
+   ],
+   "provenance": {
+    "gold": "lsp:callHierarchy/incomingCalls"
+   },
+   "file": "context.go"
+  },
+  {
+   "id": "gin-06-concept",
+   "repo": "gin",
+   "kind": "concept",
+   "q": "Where is the code for: Add LoggerWithFormatter method?",
+   "words": "Add LoggerWithFormatter method",
+   "facts": [
+    [
+     "path",
+     "logger.go"
+    ]
+   ],
+   "provenance": {
+    "commit": "f76ccb25f1eee8684e545ec00f8f2934fec98f09",
+    "subject": "Add LoggerWithFormatter method (#1677)"
+   }
+  }
+ ]
+}

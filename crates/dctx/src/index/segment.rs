@@ -179,6 +179,7 @@ mod tests {
             digest: Some(digest),
             size: 3,
             modified: 7,
+            stamp: None,
         };
         let other = IndexedFile { path: "README.md".to_string(), ..file.clone() };
         let text = TextBlob::default();
@@ -198,6 +199,7 @@ mod tests {
                 digest: Some(digest),
                 size: 4,
                 modified: 2,
+                stamp: None,
             },
             IndexedFile {
                 path: "README.md".to_string(),
@@ -205,6 +207,7 @@ mod tests {
                 digest: None,
                 size: 8,
                 modified: 1,
+                stamp: None,
             },
         ];
         let mut text = TextBlob::default();

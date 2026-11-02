@@ -16,7 +16,7 @@ pub struct Capabilities {
     pub dts_version: u32,
     /// Segment envelope version.
     pub segment_version: u32,
-    /// Languages the structural extractor recognises.
+    /// Language tags the structural extractor recognises: the tags of [`crate::languages::LANGUAGES`].
     pub languages: &'static [&'static str],
     /// Parser ids linked into this build. No plan uses `syn` for Rust when that feature is linked.
     pub parsers: Vec<&'static str>,
@@ -68,7 +68,7 @@ impl Capabilities {
             wire_version: crate::WIRE_VERSION,
             dts_version: 2,
             segment_version: 1,
-            languages: &["rust", "javascript", "typescript", "markdown"],
+            languages: crate::languages::TAGS,
             parsers,
             storage: if cfg!(feature = "segments") { "buffered-segments" } else { "caller-ports" },
             cancellation: "checkpoint",

@@ -4,7 +4,7 @@
 //! Empty host grants exclude only when the caller chose [`HostGrants::Ceiling`]. [`HostGrants::PermitAll`] does not.
 
 use dctx_core::domain::{FileHandlingDecision, ItemContext};
-use dctx_core::filter::is_secret_shaped_name;
+use dctx_core::filter::{has_git_segment, is_secret_shaped_name};
 use dctx_core::selection::{glob_match, SelectionPolicy};
 use dctx_template::{ContextPlan, HostCeiling, SelectRule};
 
@@ -50,6 +50,10 @@ pub struct PolicyView<'a> {
 impl PolicyView<'_> {
     /// The decision for `path`. The empty root is decided too; the walk still lists it.
     pub fn decide(&self, path: &str, is_dir: bool) -> Result<FileHandlingDecision, DctxError> {
+        // Hard guard: a `.git` segment is never listed or read, whatever a negation such as `!.git/` says.
+        if has_git_segment(path) {
+            return Ok(FileHandlingDecision::Exclude);
+        }
         let host = host_decision(self.grants, self.ceiling, path);
         let name = path.rsplit('/').next().unwrap_or(path);
         let selected = self.selection.decide(&ItemContext {
@@ -60,7 +64,7 @@ impl PolicyView<'_> {
         });
         let planned = plan_decision(self.plan, self.view, path)?;
         let decided = narrower(narrower(host, selected), planned);
-        // Env-shaped files (`.env`, `.env.*`, `*.env`, `.envrc`) never give up their bytes, whatever the grants say.
+        // Sensitive files (`is_secret_shaped_name`: env, key, credential and token files) never give up their bytes, whatever the grants say.
         if !is_dir && is_secret_shaped_name(name) {
             return Ok(narrower(decided, FileHandlingDecision::OmitContent));
         }
@@ -305,5 +309,35 @@ mod tests {
         }
         assert_eq!(view.decide("src/lib.rs", false).expect("decide"), FileHandlingDecision::Include);
         assert_eq!(view.decide("settings.env", true).expect("decide"), FileHandlingDecision::Include);
+    }
+
+    /// v1 card 1: key, credential and token files are content-omitted too; a look-alike source file is not.
+    #[test]
+    fn key_and_credential_files_are_omitted_whatever_the_grants_say() {
+        use dctx_core::selection::RuleTexts;
+
+        let selection = SelectionPolicy::from_texts(&RuleTexts::default());
+        let ceiling = HostCeiling::base();
+        let view = PolicyView { selection: &selection, ceiling: &ceiling, grants: HostGrants::PermitAll, plan: None, view: "map" };
+        for path in ["certs/server.pem", "id_rsa", "keys/id_ed25519", "credentials", "config/credentials.json", ".npmrc", "deploy/secrets.yaml"] {
+            assert_eq!(view.decide(path, false).expect("decide"), FileHandlingDecision::OmitContent, "{path}");
+        }
+        assert_eq!(view.decide("src/credentials.py", false).expect("decide"), FileHandlingDecision::Include);
+    }
+
+    /// v1 card 1: `!.git/` and wildcard or nested negations cannot re-include a `.git` path.
+    #[test]
+    fn git_negations_never_include_git() {
+        use dctx_core::selection::RuleTexts;
+
+        let ceiling = HostCeiling::base();
+        for rules in ["!.git/\n", "!.g*/\n", "!nested/.git/\n!nested/.git/**\n"] {
+            let selection = SelectionPolicy::from_texts(&RuleTexts { local_ignore: Some(rules), ..RuleTexts::default() });
+            let view = PolicyView { selection: &selection, ceiling: &ceiling, grants: HostGrants::PermitAll, plan: None, view: "map" };
+            for (path, is_dir) in [(".git", true), (".git/config", false), ("nested/.git", true), ("nested/.git/config", false)] {
+                assert_eq!(view.decide(path, is_dir).expect("decide"), FileHandlingDecision::Exclude, "{rules} {path}");
+            }
+            assert_eq!(view.decide(".github/ci.yml", false).expect("decide"), FileHandlingDecision::Include, "{rules}");
+        }
     }
 }

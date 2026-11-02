@@ -3,6 +3,7 @@
 //! JSON, canonical encoding, closed records, version negotiation and a pure session tracker.
 //! Depends on std only. Used by the plugin host, platform adapters, the Git plugin and distribution.
 //! Domain records, negotiation and session tracking do no IO; `stream` is the only `std::io` adapter.
+//! **Unstable**: this crate has no API or ABI stability promise in dctx v1 and may change in any release.
 
 #![forbid(unsafe_code)]
 #![deny(missing_docs)]

@@ -89,14 +89,23 @@ fn live_snapshot_lease_is_persisted_and_survives_reopen() {
 fn facade_purge_and_gc_remove_unleased_bytes_and_keep_leased_ones() {
     let dir = tempfile::tempdir().expect("temp");
     let cache = cache_dir(dir.path());
-    let mut session = open(&cache, CAP, wide_source());
+    // The unleased view lives under its own root: a second view of one root replaces the first at publish (P-C10).
+    let mut session = open_root(&cache, CAP, wide_source(), 11);
     let unleased = session.snapshot(&SnapshotRequest::immutable()).expect("unleased");
     let unleased_files = objects(&cache);
     assert!(!unleased_files.is_empty());
     drop(unleased);
     assert_eq!(objects(&cache), unleased_files);
 
-    let leased = session.snapshot(&SnapshotRequest::immutable()).expect("leased");
+    // A second view of the same root reclaims the first at once, because no reader holds it.
+    let replaced = session.snapshot(&SnapshotRequest::immutable()).expect("replacement");
+    assert_eq!(replaced.generation(), 2);
+    drop(replaced);
+    assert_eq!(objects(&cache).len(), unleased_files.len(), "the replaced view's files were unlinked");
+    let unleased_files = objects(&cache);
+
+    let mut other = open_root(&cache, CAP, narrow_source(), 12);
+    let leased = other.snapshot(&SnapshotRequest::immutable()).expect("leased");
     let both = objects(&cache);
     assert!(both.len() > unleased_files.len());
     let leased_only: BTreeMap<_, _> = both
@@ -121,27 +130,29 @@ fn facade_purge_and_gc_remove_unleased_bytes_and_keep_leased_ones() {
         .cache_purge(PurgeRequest { confirm: true, apply: true, scope: PurgeScope::All })
         .expect("purge");
     let collected = session.cache_gc(GcRequest { apply: true }).expect("gc");
-    assert!(purged.blocked_generations >= 1);
     assert!(purged.reclaimed_bytes > 0);
     assert_eq!(collected.reclaimed_bytes, 0);
     assert_eq!(objects(&cache), leased_only);
     assert_eq!(payload(&leased_only), session.cache_ledger().expect("kept").admitted_bytes);
-    assert_eq!(session.generation_count(), 1);
     let _kept = session.cache_status();
     assert!(leased.generation() >= 1);
 
     drop(leased);
-    let finished = session
+    let finished = other
         .cache_purge(PurgeRequest { confirm: true, apply: true, scope: PurgeScope::All })
         .expect("final purge");
-    let _ = session.cache_gc(GcRequest { apply: true }).expect("final gc");
+    let _ = other.cache_gc(GcRequest { apply: true }).expect("final gc");
     assert!(finished.reclaimed_bytes > 0);
     assert!(objects(&cache).is_empty());
-    assert_eq!(session.cache_ledger().expect("gone").admitted_bytes, 0);
-    assert_eq!(session.generation_count(), 0);
+    assert_eq!(other.cache_ledger().expect("gone").admitted_bytes, 0);
+    assert_eq!(other.generation_count(), 0);
 }
 
 fn open(cache: &Path, max_bytes: u64, source: impl Source + Send + 'static) -> Session {
+    open_root(cache, max_bytes, source, 11)
+}
+
+fn open_root(cache: &Path, max_bytes: u64, source: impl Source + Send + 'static, root_id: u64) -> Session {
     Session::builder(source)
         .clock(FixedClock(Timestamp(0)))
         .cancellation(Arc::new(CancelFlag::new()))
@@ -152,7 +163,7 @@ fn open(cache: &Path, max_bytes: u64, source: impl Source + Send + 'static) -> S
         .limits(OperationLimits::default())
         .place("fixture")
         .view("map")
-        .cache_root(cache, 11)
+        .cache_root(cache, root_id)
         .auto_clean(AutoCleanConfig::default())
         .build()
         .expect("session")

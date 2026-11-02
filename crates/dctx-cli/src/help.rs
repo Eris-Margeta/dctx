@@ -89,8 +89,10 @@ pub fn text() -> String {
         "\
 Usage: dctx [PATH] [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json]
+       dctx pack [PATH] --for <TEXT> [--budget TOKENS]
        dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]
        dctx mcp [PATH]
+       dctx languages [--json|--markdown]
        dctx cache status [--json] [--root PATH]
        dctx cache gc [--dry-run] [--root PATH] [--max-bytes N] [--legacy]
        dctx cache purge --root PATH [--dry-run] [--yes]
@@ -102,8 +104,10 @@ Usage: dctx [PATH] [OPTIONS]
        dctx plugin search|install|list|info|enable|disable|remove|update|verify
        dctx git <status|protect>
 
+`dctx languages` lists every supported language with its tier: full (symbols and call edges), outline (symbols only) or docs (sections).
 `dctx mcp` serves the map verbs as MCP tools over stdio (JSON-RPC 2.0, one message per line) for Claude Code, Cursor and Codex.
 Explicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not create a project text file.
+`dctx pack --for <TEXT>` prints task context for an agent card instead: map find, neighbors and read of the names in TEXT, cut to `--budget` estimated tokens (default 3000).
 `dctx .` remains the legacy snapshot alias and still writes its documented project text.
 `dctx plugin list` and `dctx --help` do not create a project `.dctx/` directory or start a plugin.
 `dctx git` routes to the bundled dctx/git plugin. It is not a Git passthrough.
@@ -133,6 +137,7 @@ Filter Options:
   --hidden              Show ONLY hidden files and folders (starting with .)
   --debug-ignored       Show ignored files in the tree without reading them
   -V, --debug-verbose   Show ignore decision traces
+  --tree-stamps=on|off  MOD: timestamps on tree lines: off (default) keeps the output prefix stable across a touch, on = the 1.0.0 text
 
 Template Commands:
   template build <PATH>  Compile a template through the facade
@@ -142,6 +147,7 @@ Examples:
   dctx .                      Legacy snapshot of the current directory
   dctx pack .                 Pack to stdout and write no project text file
   dctx pack . --output out.txt
+  dctx languages --json
   dctx cache status --json
   dctx cache gc --dry-run
   dctx cache purge --root /path --dry-run
@@ -168,6 +174,7 @@ pub fn limits() -> String {
     push(&mut out, "storage", caps.storage);
     push(&mut out, "features", &caps.features.join(","));
     push(&mut out, "parsers", &caps.parsers.join(","));
+    // The facade registry (`dctx::LANGUAGES`) is the source of this list and of `dctx languages`.
     push(&mut out, "languages", &caps.languages.join(","));
     push(&mut out, "unsafe_boundary", caps.unsafe_boundary);
     let _ = writeln!(out, "native_code: {}", caps.native_code);
@@ -228,5 +235,12 @@ mod tests {
         assert!(limits.contains("30 days"));
         assert!(limits.contains("auto-clean interval: 1 day"));
         assert!(page.contains(&limits));
+    }
+
+    #[test]
+    fn capability_languages_come_from_the_registry() {
+        let tags: Vec<&str> = dctx::LANGUAGES.iter().map(|language| language.tag).collect();
+        assert!(limits().contains(&format!("languages: {}\n", tags.join(","))));
+        assert!(text().contains("dctx languages [--json|--markdown]"));
     }
 }

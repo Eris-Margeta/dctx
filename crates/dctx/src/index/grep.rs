@@ -206,7 +206,7 @@ mod tests {
             node(&mut text, "fn", "beta", [5, 6]),
         ];
         let digest = crate::domain::digest_text(b"x").expect("digest");
-        let file = |path: &str, decision| IndexedFile { path: path.to_string(), decision, digest: Some(digest), size: 1, modified: 0 };
+        let file = |path: &str, decision| IndexedFile { path: path.to_string(), decision, digest: Some(digest), size: 1, modified: 0, stamp: None };
         Generation {
             id: 1,
             digest: "v1".to_string(),
@@ -225,6 +225,7 @@ mod tests {
             coverage: "structural".to_string(),
             completion: "complete".to_string(),
             parser: "p".to_string(),
+            ids: crate::index::IdIndex::default(),
         }
     }
 

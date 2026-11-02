@@ -36,5 +36,8 @@ fn default_snapshot_uses_bounded_syn_and_rejects_comment_and_string_decoys() {
         let found = session.find(&handle, decoy, &mut sink).expect(decoy);
         // The literal fallback may list the text line, but never a symbol.
         assert!(found.records.iter().all(|record| record.kind == "text"), "{decoy} was fabricated: {:?}", found.records);
+        if !found.records.is_empty() {
+            assert_eq!(found.precision.coverage, "text", "{decoy} coverage");
+        }
     }
 }

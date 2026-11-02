@@ -120,6 +120,16 @@ const FIXTURES: &[Fixture] = &[
         symbol: "GroovyMain",
     },
     Fixture {
+        extensions: &["erl", "hrl"],
+        source: "-module(erlang_sample).\n\nerlang_main() ->\n    erlang_helper().\n\nerlang_helper() ->\n    1.\n",
+        symbol: "erlang_main",
+    },
+    Fixture {
+        extensions: &["ps1", "psm1", "psd1"],
+        source: "function PsMain {\n  return 1\n}\n",
+        symbol: "PsMain",
+    },
+    Fixture {
         extensions: &["v", "vh", "sv", "svh"],
         source: "module test\n  function test_fn()\nendmodule\n",
         symbol: "test::test_fn",
@@ -234,8 +244,13 @@ fn write_sources(root: &Path) -> Vec<(String, &'static str)> {
 }
 
 fn open(root: &Path, selection: SelectionPolicy) -> Session {
+    open_source(FsSource::open(root).expect("open"), selection)
+}
+
+/// [`open`] over any source, such as a [`common::LoggedSource`] read log.
+fn open_source(source: impl dctx::Source + Send + 'static, selection: SelectionPolicy) -> Session {
     common::session_parts(
-        FsSource::open(root).expect("open"),
+        source,
         Arc::new(CancelFlag::new()),
         HostGrants::PermitAll,
         StoragePolicy::Ephemeral { max_bytes: 8 * 1024 * 1024 },
@@ -287,7 +302,9 @@ fn selection_excludes_or_omits_new_languages_before_content_reads() {
         RuleTexts { local_ignore: Some("sample.*\n"), ..RuleTexts::default() },
         RuleTexts { local_omit: Some("sample.*\n"), ..RuleTexts::default() },
     ] {
-        let mut session = open(root.path(), SelectionPolicy::from_texts(&rules));
+        let source = common::LoggedSource::new(FsSource::open(root.path()).expect("open"));
+        let log = source.log();
+        let mut session = open_source(source, SelectionPolicy::from_texts(&rules));
         let handle = session.snapshot(&SnapshotRequest::immutable()).expect("snapshot");
         assert_eq!(session.content_reads(), 1, "only the visible control may be read");
         let control = session.find(&handle, "VisibleControl", &mut VecSink::new()).expect("control");
@@ -302,6 +319,12 @@ fn selection_excludes_or_omits_new_languages_before_content_reads() {
         }
         // Each empty find falls back to the literal search, which may reread only the visible control.
         assert!(session.content_reads() <= 1 + files.len() as u64, "excluded files stay unread");
+        let reads = log.lock().expect("log").clone();
+        assert!(reads.iter().any(|path| path == "visible.py"), "the control is read: {reads:?}");
+        assert!(reads.iter().all(|path| path == "visible.py"), "an excluded path was read: {reads:?}");
+        for (path, _) in &files {
+            assert!(!reads.iter().any(|read| read == path), "excluded {path} was read");
+        }
     }
 }
 
@@ -310,7 +333,7 @@ fn selection_excludes_or_omits_new_languages_before_content_reads() {
 const SHARED_EXTENSIONS: &[&str] = &[
     "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java", "c", "h",
     "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts", "rb", "rake", "gemspec",
-    "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "groovy", "gradle", "v", "vh", "sv", "svh", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs",
+    "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam", "erl", "hrl", "groovy", "gradle", "ps1", "psm1", "psd1", "v", "vh", "sv", "svh", "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs",
     "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
     "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl", "scm", "ss", "el", "nix",
 ];
@@ -401,6 +424,9 @@ fn extension_case_and_ruby_basenames_match_the_shared_literal() {
     for hidden in ["GuardHidden", "ConfigHidden"] {
         let found = session.find(&handle, hidden, &mut VecSink::new()).expect("opaque find");
         assert!(found.records.iter().all(|record| record.kind == "text"), "{hidden} is no symbol: {:?}", found.records);
+        if !found.records.is_empty() {
+            assert_eq!(found.precision.coverage, "text", "{hidden} coverage");
+        }
     }
 }
 
@@ -465,4 +491,7 @@ fn infra_basenames_are_outlined_and_labelled_guess() {
     }
     let hidden = session.find(&handle, "BakHidden", &mut VecSink::new()).expect("opaque find");
     assert!(hidden.records.iter().all(|record| record.kind == "text"), "BakHidden is no symbol: {:?}", hidden.records);
+    if !hidden.records.is_empty() {
+        assert_eq!(hidden.precision.coverage, "text", "BakHidden coverage");
+    }
 }

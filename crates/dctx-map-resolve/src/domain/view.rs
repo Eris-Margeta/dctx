@@ -83,6 +83,7 @@ pub struct ViewResolution {
 impl ViewResolution {
     /// Canonical UTF-8 result. Equal inputs produce equal bytes.
     #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
+    #[allow(clippy::expect_used, reason = "writing to a String cannot fail")]
     pub fn canonical_bytes(&self) -> String {
         let mut out = String::new();
         writeln!(out, "root\t{}\nns\t{}\nresolver\t{}\nranking\t{}\nclock\t{}",

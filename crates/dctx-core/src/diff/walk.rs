@@ -2,7 +2,8 @@
 //! Implements the child-matching half of the pack diff (relative path identity, decision 078).
 //! Depends on [`super`] and [`crate::datatypes`]; pure, no IO.
 //! Used by [`super::compare::compare_trees`].
-//! A file changes when its size or modification time differs; directories change through children.
+//! A file changes when its size differs, or when its modification time differs and its bytes do (a bare `touch` is no change).
+//! Directories change through children.
 
 use super::{ChangeType, DiffEntry, DiffReport};
 use crate::datatypes::{DirContextTreeNode, NodeType};
@@ -155,8 +156,8 @@ pub(super) fn compare_nodes_recursive(
 }
 
 /// Logika za detekciju promjene sadržaja.
-/// Trenutno koristi Size + Timestamp.
-/// U budućnosti ovdje možemo dodati Hash check.
+/// Size + Timestamp; a touch-only change (same size, other timestamp) is settled by the bytes when both nodes carry the whole file.
+/// Without bytes on either side the timestamp decides, so state files written without bodies keep their old meaning.
 fn is_file_modified(old: &DirContextTreeNode, new: &DirContextTreeNode) -> bool {
     // 1. Provjera veličine
     if old.content_size != new.content_size {
@@ -167,10 +168,21 @@ fn is_file_modified(old: &DirContextTreeNode, new: &DirContextTreeNode) -> bool 
     // Napomena: Ovo može biti nepouzdano ako se kopira na drugi FS.
     // Ali za lokalni diff je standard.
     if old.last_modified_timestamp != new.last_modified_timestamp {
-        return true;
+        // Same size, other timestamp: equal whole bodies mean the file was only touched.
+        return match (whole_body(old), whole_body(new)) {
+            (Some(before), Some(after)) => before != after,
+            _ => true,
+        };
     }
 
     false
+}
+
+/// The node's bytes when they are the complete file; an omitted or partial body is no evidence.
+fn whole_body(node: &DirContextTreeNode) -> Option<&[u8]> {
+    node.file_content
+        .as_deref()
+        .filter(|bytes| u64::try_from(bytes.len()).is_ok_and(|len| len == node.content_size))
 }
 
 #[cfg(test)]
@@ -225,6 +237,46 @@ mod tests {
         let old = create_file_node("test.txt", 100, 1000);
         let new = create_file_node("test.txt", 200, 2000);
         assert!(is_file_modified(&old, &new));
+    }
+
+    fn with_body(mut node: DirContextTreeNode, body: &[u8]) -> DirContextTreeNode {
+        node.content_size = body.len() as u64;
+        node.file_content = Some(body.to_vec());
+        node
+    }
+
+    #[test]
+    fn touch_only_with_equal_bodies_is_not_modified() {
+        let old = with_body(create_file_node("a.txt", 0, 1000), b"same bytes");
+        let new = with_body(create_file_node("a.txt", 0, 2000), b"same bytes");
+        assert!(!is_file_modified(&old, &new));
+    }
+
+    #[test]
+    fn same_size_edit_with_other_timestamp_is_modified() {
+        let old = with_body(create_file_node("a.txt", 0, 1000), b"same bytes");
+        let new = with_body(create_file_node("a.txt", 0, 2000), b"samx bytes");
+        assert!(is_file_modified(&old, &new));
+    }
+
+    #[test]
+    fn a_missing_or_partial_body_keeps_the_timestamp_rule() {
+        let full = with_body(create_file_node("a.txt", 0, 1000), b"same bytes");
+        let bare = create_file_node("a.txt", 10, 2000);
+        assert!(is_file_modified(&full, &bare));
+        assert!(is_file_modified(&bare, &full));
+        let mut omitted = with_body(create_file_node("a.txt", 0, 2000), b"");
+        omitted.content_size = 10;
+        let mut omitted_old = with_body(create_file_node("a.txt", 0, 1000), b"");
+        omitted_old.content_size = 10;
+        assert!(is_file_modified(&omitted_old, &omitted));
+    }
+
+    #[test]
+    fn equal_timestamp_and_size_stay_unmodified_whatever_the_bodies() {
+        let old = with_body(create_file_node("a.txt", 0, 1000), b"same bytes");
+        let new = with_body(create_file_node("a.txt", 0, 1000), b"samx bytes");
+        assert!(!is_file_modified(&old, &new));
     }
 
     // --- COUNT FILES RECURSIVE TESTS ---

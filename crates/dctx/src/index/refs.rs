@@ -9,6 +9,7 @@ use dctx_map_model::EdgeKind;
 
 use super::extract::language_of;
 use super::refs_names::{call_segments, import_segments, last_segment, module_keys};
+use super::decl_pair::is_declaration_only_path;
 use super::{write_node_id, IndexedEdge, IndexedNode, TextBlob};
 
 /// One unresolved call or import exactly as a lexer reported it.
@@ -114,6 +115,11 @@ impl<'a> Tables<'a> {
                 if node.letter != b's' || node.name.is_empty() {
                     continue;
                 }
+                let path = text.get(node.path);
+                // A declaration-only symbol is not callable: its paired definition is the real implementation.
+                if is_declaration_only_path(path, node) {
+                    continue;
+                }
                 names.entry((file.first, node.name.as_str())).or_default().push(index);
                 bare.entry(last_segment(&node.name)).or_default().push(index);
             }
@@ -152,10 +158,12 @@ impl<'a> Tables<'a> {
                 }
             }
         }
-        let receiver_only = self.nodes.get(file.first as usize).is_some_and(|module| RECEIVER_ONLY.contains(&language_of(self.text.get(module.path))));
+        let module_node = self.nodes.get(file.first as usize);
+        let language = module_node.map(|module| language_of(self.text.get(module.path)));
+        let receiver_only = module_node.is_some_and(|module| RECEIVER_ONLY.contains(&language_of(self.text.get(module.path))));
         for reference in file.refs.iter().filter(|reference| reference.kind == EdgeKind::Calls) {
             let Some(&src) = ids.get(&reference.src) else { continue };
-            let segments = call_segments(&reference.name);
+            let segments = call_segments(&reference.name, language);
             let Some((callee, qualifier)) = segments.split_last() else { continue };
             // `interpolate(..)` inside the method `Captures::interpolate` is the imported free function, not the method itself.
             let free = receiver_only && reference.name.chars().all(|ch| ch.is_alphanumeric() || ch == '_' || ch == '$');

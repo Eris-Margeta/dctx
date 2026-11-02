@@ -1,6 +1,6 @@
 [package]
 name = "dctx-cli"
-version = "0.25.0"
+version = "1.0.0"
 edition = "2021"
 license.workspace = true
 repository.workspace = true

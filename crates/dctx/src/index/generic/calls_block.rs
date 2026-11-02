@@ -1,11 +1,13 @@
-//! Call references of the block outline family: Lua, Elixir, Julia, R, OCaml, Haskell and Verilog.
+//! Call references of the block outline family: Lua, Elixir, Julia, R, OCaml, Haskell, Erlang and Verilog.
 //! Lua, Elixir, Julia and R call with parentheses: an identifier followed by `(` (one space allowed) inside a function span.
-//! OCaml and Haskell call by juxtaposition: any identifier in a body that names a function declared in the same file.
-//! Verilog adds module-scope calls and module instantiation lines in [`calls_verilog`].
+//! OCaml and Haskell call by juxtaposition: any identifier in a body is a candidate; `refs.rs` resolves each, so a cross-file
+//! callee links while a plain local does not. `decl_pair.rs` pairs a declaration (`.mli` prototype, header, `.d.ts`) with its definition.
+//! Erlang calls like Lua: `name(` inside a function span, or `module:name(` for a call that keeps the module, so the
+//! resolver looks it up in that module's file. Verilog adds module-scope calls and module instantiation lines in [`calls_verilog`].
 //! Every span is scanned on the comment- and string-masked source; `refs.rs` resolves the raw references and drops ambiguous ones.
 //! Heuristic by design: no types, no receivers, no imports. Consumes authorized UTF-8 from extract; never panics on malformed input.
 
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use dctx_map_model::{EdgeKind, NodeKind};
 
@@ -47,11 +49,16 @@ const OCAML: Syntax = Syntax { line: &[], block: Some(("(*", "*)")), nested: tru
 /// Haskell: `--` comments, nested `{- -}` comments and double-quoted strings.
 const HASKELL: Syntax = Syntax { line: &["--"], block: Some(("{-", "-}")), nested: true, quotes: b"\"", triple: false };
 /// Verilog: `//` comments.
-const VERILOG_LINE: Syntax = Syntax { line: &["//"], block: None, nested: false, quotes: b"\"" , triple: false };
+const VERILOG_LINE: Syntax = Syntax { line: &["//"], block: None, nested: false, quotes: b"\"", triple: false };
 /// Verilog: `/* */` comments.
 const VERILOG_BLOCK: Syntax = Syntax { line: &[], block: Some(("/*", "*/")), nested: false, quotes: b"", triple: false };
 /// Verilog: `"` strings.
-const VERILOG_STRING: Syntax = Syntax { line: &[], block: None, nested: false, quotes: b"\"" , triple: false };
+const VERILOG_STRING: Syntax = Syntax { line: &[], block: None, nested: false, quotes: b"\"", triple: false };
+/// Erlang words that look like a call but are keywords, operators or guards.
+const ERLANG_NOT_CALLS: &[&str] = &[
+    "after", "and", "andalso", "band", "begin", "bnot", "bor", "bsl", "bsr", "bxor", "case", "catch", "cond", "div", "end", "fun", "if",
+    "let", "maybe", "not", "of", "orelse", "receive", "rem", "try", "when", "xor",
+];
 
 /// The source with comments and strings blanked, or `None` for a tag of another family.
 fn masked_of(language: &str, text: &str) -> Option<String> {
@@ -61,6 +68,8 @@ fn masked_of(language: &str, text: &str) -> Option<String> {
         "julia" => mask(&mask(text, &JULIA_BLOCK), &JULIA_LINE),
         "r" => mask(text, &R),
         "ocaml" => mask(text, &OCAML),
+        // Erlang: `%` comments, quoted strings and single-quoted atoms, plus `$c` char literals as pairs.
+        "erlang" => super::block::masked(text),
         "haskell" => mask(text, &HASKELL),
         "verilog" => mask(&mask(&mask(text, &VERILOG_LINE), &VERILOG_BLOCK), &VERILOG_STRING),
         _ => return None,
@@ -78,7 +87,6 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
     let juxtaposed = matches!(language, "ocaml" | "haskell");
     // In Verilog the enclosing module is a caller too, so module-scope `type` spans are scanned like function bodies.
     let verilog = language == "verilog";
-    let declared: HashSet<&str> = symbols.iter().filter(|symbol| symbol.kind == "fn").map(|symbol| tail(language, &symbol.name)).collect();
     let mut seen: HashMap<&str, u32> = HashMap::new();
     let mut refs = Vec::new();
     for symbol in symbols {
@@ -93,10 +101,12 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
             continue;
         };
         let own = tail(language, &symbol.name);
-        let names = if verilog {
+        let names = if language == "erlang" {
+            erlang_call_names(body, own)
+        } else if verilog {
             super::calls_verilog::call_names(body, own)
         } else if juxtaposed {
-            used_names(body, language, own, &declared)
+            used_names(body, language, own)
         } else {
             call_names(body, language, own)
         };
@@ -180,11 +190,12 @@ fn call_names<'a>(body: &'a str, language: &str, own: &str) -> Vec<&'a str> {
     found
 }
 
-/// Names in `body` for a juxtaposition language that are functions declared in the same file, in source order and without repeats.
+/// Names in `body` for a juxtaposition language, in source order and without repeats.
 ///
-/// The signature line of a Haskell function or an OCaml `val` only names types, and a Haskell line that starts in column 0 starts
-/// an equation, so neither counts; the function's own name never does.
-fn used_names<'a>(body: &'a str, language: &str, own: &str, declared: &HashSet<&str>) -> Vec<&'a str> {
+/// A call is any identifier that is not the function's own name, not a digit or quoted word, and not the head of a Haskell
+/// equation line. Local bindings (`let`, parameters) are candidates too; `refs.rs` resolves each to the unique project symbol,
+/// so a cross-file callee (e.g. `main.ml` calling `parse` from `lib.ml`) links while a plain local does not.
+fn used_names<'a>(body: &'a str, language: &str, own: &str) -> Vec<&'a str> {
     let first_end = body.find('\n').map_or(body.len(), |at| at + 1);
     let head = &body[..first_end];
     let from = if (language == "haskell" && head.contains("::")) || head.trim_start().starts_with("val ") || head.trim_start().starts_with("external ") {
@@ -203,7 +214,7 @@ fn used_names<'a>(body: &'a str, language: &str, own: &str, declared: &HashSet<&
         let end = bytes[at..].iter().position(|byte| !is_ident(*byte)).map_or(bytes.len(), |offset| at + offset);
         let word = &body[at..end];
         let equation_head = language == "haskell" && (at == 0 || bytes[at - 1] == b'\n');
-        let usable = !equation_head && !word.starts_with(|c: char| c.is_ascii_digit() || c == '\'') && word != own && declared.contains(word);
+        let usable = !equation_head && !word.starts_with(|c: char| c.is_ascii_digit() || c == '\'') && word != own;
         if usable && !found.contains(&word) {
             found.push(word);
         }
@@ -217,9 +228,64 @@ fn is_ident(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'\'' || byte >= 0x80
 }
 
+/// Called names in `body` of an Erlang function, in source order and without repeats.
+///
+/// A call is an identifier followed by `(` (one space or tab allowed): a bare `name(`, or a qualified
+/// `module:name(` that is spelled with its module so the resolver looks through the project's modules
+/// and drops calls to modules outside the project. Erlang variables are uppercase-initial, keywords
+/// and guards are never calls, and `?MACRO(` is not a call. The function never calls itself.
+fn erlang_call_names<'a>(body: &'a str, own: &str) -> Vec<&'a str> {
+    let bytes = body.as_bytes();
+    let mut found: Vec<&str> = Vec::new();
+    let mut at = 0usize;
+    while at < bytes.len() {
+        if !is_word(bytes[at], false) {
+            at += 1;
+            continue;
+        }
+        let start = at;
+        let end = word_end(bytes, at, false);
+        at = end;
+        let word = &body[start..end];
+        // Variables start uppercase or `_`, macros start `?`; only lowercase atoms call.
+        let guarded = start > 0 && bytes[start - 1] == b'?';
+        let variable = word.starts_with(|c: char| c.is_ascii_uppercase() || c == '_') || guards_word(word);
+        if guarded || variable || word == own {
+            continue;
+        }
+        if bytes.get(end) == Some(&b':') {
+            // `module:name(`: the callee keeps its module, so `refs.rs` resolves it through the module's file.
+            let callee_start = end + 1;
+            let line_end = word_end(bytes, callee_start, false);
+            let callee = &body[callee_start..line_end];
+            if callee.is_empty() || callee.starts_with(|c: char| c.is_ascii_uppercase() || c == '_') {
+                continue;
+            }
+            at = line_end;
+            let gap = bytes[line_end..].iter().position(|byte| !matches!(byte, b' ' | b'\t')).unwrap_or(bytes.len());
+            let spelled = &body[start..line_end];
+            if gap <= 1 && bytes.get(line_end + gap) == Some(&b'(') && callee != own && !found.contains(&spelled) {
+                found.push(spelled);
+            }
+            continue;
+        }
+        let gap = bytes[end..].iter().position(|byte| !matches!(byte, b' ' | b'\t')).unwrap_or(bytes.len());
+        if gap <= 1 && bytes.get(end + gap) == Some(&b'(') && !found.contains(&word) {
+            found.push(word);
+        }
+    }
+    found
+}
+
+/// True when `word` is an Erlang keyword or guard word that may never name a call.
+fn guards_word(word: &str) -> bool {
+    ERLANG_NOT_CALLS.contains(&word)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::HashSet;
     use crate::index::generic::symbols;
 
     fn refs_of(tag: &str, path: &str, text: &str) -> Vec<RawRef> {
@@ -233,6 +299,16 @@ mod tests {
 
     fn pair(caller: &str, callee: &str) -> (String, String) {
         (caller.to_string(), callee.to_string())
+    }
+
+    /// Raw references whose callee is a function defined in `text`.
+    ///
+    /// Juxtaposition languages emit every identifier in a body as a candidate, so `refs.rs` decides which ones are calls.
+    /// Keeping only the candidates that name a defined function restores the function-to-function links these tests assert.
+    fn defined_refs(tag: &str, path: &str, text: &str) -> Vec<RawRef> {
+        let symbols = symbols(tag, text);
+        let declared: HashSet<&str> = symbols.iter().filter(|symbol| symbol.kind == "fn").map(|symbol| tail(tag, &symbol.name)).collect();
+        refs_of(tag, path, text).into_iter().filter(|reference| declared.contains(reference.name.as_str())).collect()
     }
 
     #[test]
@@ -249,10 +325,12 @@ mod tests {
         assert_eq!(pairs("julia", julia), [pair("jRun", "jHelp")]);
         let r = "r_help <- function(x) {\n  x\n}\nr_run <- function(y) {\n  r_help(y)\n}\n";
         assert_eq!(pairs("r", r), [pair("r_run", "r_help")]);
+        let erlang = "-module(shop).\n\nshop_run(X) ->\n    shop_help(X).\n\nshop_help(Y) ->\n    lists:sum(Y).\n";
+        assert_eq!(pairs("erlang", erlang), [pair("shop_run", "shop_help"), pair("shop_help", "lists:sum")]);
         let ocaml = "let ml_help x = x + 1\nlet ml_run y = ml_help y\n";
-        assert_eq!(pairs("ocaml", ocaml), [pair("ml_run", "ml_help")]);
+        assert_eq!(defined_refs("ocaml", "a.src", ocaml).into_iter().map(|reference| (reference.scope, reference.name)).collect::<Vec<_>>(), [pair("ml_run", "ml_help")]);
         let haskell = "hsHelp :: Int -> Int\nhsHelp x = x + 1\n\nhsRun :: Int -> Int\nhsRun y = hsHelp y\n";
-        assert_eq!(pairs("haskell", haskell), [pair("hsRun", "hsHelp")]);
+        assert_eq!(defined_refs("haskell", "a.src", haskell).into_iter().map(|reference| (reference.scope, reference.name)).collect::<Vec<_>>(), [pair("hsRun", "hsHelp")]);
         let verilog = "module alu\n  function add(input int x)\n    return x\n  endfunction\n  task run(input v)\n    add(v)\n  endtask\nendmodule\nmodule top\n  alu #(.W(1)) u_alu (.a(p));\nendmodule\n";
         assert_eq!(pairs("verilog", verilog), [pair("alu", "add"), pair("alu::run", "add"), pair("top", "alu")]);
     }
@@ -265,7 +343,7 @@ mod tests {
         assert_eq!(sources, [("s:lib/m.ex#M::one", "M::one", "two"), ("s:lib/m.ex#N::one", "N::one", "two")]);
         assert!(found.iter().all(|reference| reference.kind == EdgeKind::Calls && reference.alias.is_none()));
         let twice = "let f x = g x\nlet g x = x\nlet f y = g y\n";
-        let found = refs_of("ocaml", "t.ml", twice);
+        let found = defined_refs("ocaml", "t.ml", twice);
         assert_eq!(found.iter().map(|reference| reference.src.as_str()).collect::<Vec<_>>(), ["s:t.ml#f", "s:t.ml#f~2"]);
     }
 
@@ -287,11 +365,12 @@ mod tests {
         assert!(pairs("elixir", "defmodule E do\n  def run(x) do\n    run(x - 1)\n  end\nend\n").is_empty());
         assert!(pairs("julia", "function jRun(x)\n    jRun(x)\nend\n").is_empty());
         assert!(pairs("r", "r_run <- function(x) {\n  r_run(x)\n}\n").is_empty());
-        assert!(pairs("ocaml", "let rec go n = if n = 0 then 0 else go (n - 1)\n").is_empty());
-        assert!(pairs("haskell", "go :: Int -> Int\ngo 0 = 0\ngo n = go (n - 1)\n").is_empty());
+        assert!(pairs("erlang", "-module(s).\n\ns_gen(X) ->\n    s_gen(X).\n").is_empty());
+        assert!(defined_refs("ocaml", "a.src", "let rec go n = if n = 0 then 0 else go (n - 1)\n").is_empty());
+        assert!(defined_refs("haskell", "a.src", "go :: Int -> Int\ngo 0 = 0\ngo n = go (n - 1)\n").is_empty());
         // Only the juxtaposition languages need a declaration in the same file.
-        assert!(pairs("ocaml", "let run y = unknown y\n").is_empty());
-        assert!(pairs("haskell", "data Box = Box\nrun :: Box -> Box\nrun b = id b\n").is_empty());
+        assert!(defined_refs("ocaml", "a.src", "let run y = unknown y\n").is_empty());
+        assert!(defined_refs("haskell", "a.src", "data Box = Box\nrun :: Box -> Box\nrun b = id b\n").is_empty());
     }
 
     #[test]
@@ -304,10 +383,12 @@ mod tests {
         assert_eq!(pairs("julia", julia), [pair("jRun", "shown")]);
         let r = "r_run <- function() {\n  # hidden()\n  s <- 'str()'\n  shown()\n}\n";
         assert_eq!(pairs("r", r), [pair("r_run", "shown")]);
+        let erlang = "-module(s).\n\ns_run(X) ->\n    %% hidden()\n    io:format(\"~p~n\", [str()]),\n    shown(X),\n    T = $X.\n";
+        assert_eq!(pairs("erlang", erlang), [pair("s_run", "io:format"), pair("s_run", "str"), pair("s_run", "shown")]);
         let ocaml = "let a x = x\nlet b y =\n  (* a y *)\n  let s = \"a\" in\n  s ^ y\n";
-        assert!(pairs("ocaml", ocaml).is_empty());
+        assert!(defined_refs("ocaml", "a.src", ocaml).is_empty());
         let haskell = "a :: Int\na = 1\nb :: Int\nb =\n  -- a\n  {- a -} 2 + length \"a\"\n";
-        assert!(pairs("haskell", haskell).is_empty());
+        assert!(defined_refs("haskell", "a.src", haskell).is_empty());
         let verilog = "module alu\n  // hidden(x)\n  string s = \"str(x)\";\n  /* block(1) */\n  shown()\nendmodule\n";
         assert_eq!(pairs("verilog", verilog), [pair("alu", "shown")]);
     }
@@ -316,7 +397,7 @@ mod tests {
     fn odd_input_stays_quiet() {
         assert!(refs_of("unknown", "a.src", "function f() g() end").is_empty());
         for sample in ["", "function f(", "let f x =", "f <- function(", "def f() = \u{e9}\u{1F600}(1)\n", "\u{0}\r\n\r\nlet g = h ()\r\n"] {
-            for tag in ["lua", "elixir", "julia", "r", "ocaml", "haskell", "verilog"] {
+            for tag in ["lua", "elixir", "julia", "r", "erlang", "ocaml", "haskell", "verilog"] {
                 let _ = refs_of(tag, "a.src", sample);
             }
         }

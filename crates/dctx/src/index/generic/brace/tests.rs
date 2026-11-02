@@ -118,6 +118,15 @@ fn groovy_fields_in_a_class_are_symbols_and_script_variables_are_not() {
 }
 
 #[test]
+fn powershell_symbols_and_methods_are_recognized() {
+    let text = "class Deployer {\n  [string] Run() {\n    return $null\n  }\n}\nfunction Get-Config {\n}\nfunction Read-File {\n}\nenum Status {\n  Good\n  Bad\n}\n";
+    expect(
+        named("powershell", text),
+        &[("Deployer", "type"), ("Deployer::Run", "fn"), ("Get-Config", "fn"), ("Read-File", "fn"), ("Status", "type"), ("Status::Good", "const"), ("Status::Bad", "const")]
+    );
+}
+
+#[test]
 fn an_open_parenthesis_does_not_turn_parameters_into_fields() {
     let zig = "const P = struct {\n    pub fn f(\n        a: i32,\n        b: i32,\n    ) void {\n    }\n    z: i32,\n};\n";
     expect(named("zig", zig), &[("P", "type"), ("P::f", "fn"), ("P::z", "field")]);

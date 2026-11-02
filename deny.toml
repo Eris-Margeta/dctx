@@ -1,0 +1,28 @@
+# cargo-deny configuration (informational: cargo-deny is not installed on the build host and is not part of the gate).
+# The enforced licence gate is scripts/third_party.py, which uses the same allow-list below.
+# Run with `cargo deny check licenses` where cargo-deny is available.
+
+[graph]
+# All targets: the same superset scripts/third_party.py checks without --target.
+all-features = false
+
+[licenses]
+version = 2
+# Keep in sync with ALLOWED in scripts/third_party.py.
+allow = [
+  "Apache-2.0",
+  "MIT",
+  "BSD-2-Clause",
+  "BSD-3-Clause",
+  "ISC",
+  "Unicode-3.0",
+  "Unicode-DFS-2016",
+  "Zlib",
+  "MPL-2.0",
+  "CC0-1.0",
+]
+confidence-threshold = 0.93
+
+[licenses.private]
+# Workspace crates are licensed Apache-2.0, checked by scripts/spdx_check.sh.
+ignore = true

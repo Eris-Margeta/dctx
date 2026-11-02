@@ -21,7 +21,8 @@ pub const ROOT_PREVIEW_CEILING_BYTES: u64 = 64 * 1024 * 1024;
 pub const EMERGENCY_METADATA_BYTES: u64 = 64 * 1024;
 /// One cache accounting unit. Payload lengths are exact bytes.
 pub const ACCOUNTING_UNIT: u64 = 1;
-/// Retained committed view manifests per root.
+/// Upper bound on committed view manifests per root. A publish retires every unheld older view (P-C10),
+/// so only views a lease or pin holds stay beyond the current one.
 pub const MAX_VIEW_MANIFESTS: usize = 3;
 /// Latest pack snapshot plus one predecessor.
 pub const MAX_PACK_SNAPSHOTS: usize = 2;
@@ -194,7 +195,9 @@ mod tests {
         assert_eq!(EVICTION_TARGET_BYTES, u64::try_from(12 * (1024u128 * 1024 * 1024) / 10).expect("fixture cap fits u64"));
         assert_eq!(ROOT_VIEW_CEILING_BYTES, 805_306_368);
         assert_eq!(ROOT_PACK_CEILING_BYTES, 805_306_368);
-        assert!(ROOT_VIEW_CEILING_BYTES < HARD_CAP_BYTES && ROOT_PACK_CEILING_BYTES < HARD_CAP_BYTES);
+        const {
+            assert!(ROOT_VIEW_CEILING_BYTES < HARD_CAP_BYTES && ROOT_PACK_CEILING_BYTES < HARD_CAP_BYTES);
+        };
         assert_eq!(ROOT_PREVIEW_CEILING_BYTES, 67_108_864);
         let quota = Quota::product_default();
         assert!(quota.check().is_ok());

@@ -210,6 +210,8 @@ When creating custom templates, developers must understand the safety classifica
 **Metadata-Only Variables** (safe for all files, including ignored):
 - `{{{node.type_char}}}`, `{{{node.path}}}`, `{{{node.id}}}`
 - `{{{node.mod}}}`, `{{{node.size_part}}}`
+
+`{{{node.mod}}}` (a millisecond timestamp) and `{{{node.size_part}}}` stay available to custom templates, but the built-in default template has not printed either since 1.0.1: a timestamp changes on a bare `touch` and a size on every edit, and both break the byte-stable prefix of the page, because the tree comes before the file blocks. `--tree-stamps=on` (on `dctx pack` and on `dctx .`) renders the built-in stamped template, which is the 1.0.0 text byte for byte (`MOD:` and `SIZE:` on every tree line). Both built-in templates live in `crates/dctx-template/templates/` (`default.dctx_template`, `stamped.dctx_template`); `crates/dctx-core/templates/default.dctx_template` is an identical copy of the default, and a test keeps them equal.
 - `{{{file.id}}}`, `{{{file.path}}}`, `{{{file.size}}}`
 
 These variables only access filesystem metadata (via `stat`/`lstat`) and **never open or read file contents**.

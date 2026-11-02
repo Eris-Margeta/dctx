@@ -35,6 +35,38 @@ pub(super) fn enum_values(lang: &Lang, line: &str) -> Vec<Found> {
             Some(after) if after.starts_with(char::is_whitespace) && !matches!(ident_at(after.trim_start()), Some("class" | "object")) => after,
             _ => return Vec::new(),
         }
+    } else if lang.tag == "powershell" {
+        // PowerShell enums have bare names on separate lines: "Good\n  Bad"
+        // Split by newline and extract each identifier.
+        return line
+            .lines()
+            .filter_map(|l| {
+                let trimmed = l.trim();
+                if trimmed.is_empty() || trimmed.starts_with('#') {
+                    return None;
+                }
+                // PowerShell identifiers can contain hyphens
+                let mut end = 0usize;
+                for (i, &byte) in trimmed.as_bytes().iter().enumerate() {
+                    if i == 0 {
+                        if byte.is_ascii_alphanumeric() || byte == b'_' || byte >= 0x80 {
+                            if byte.is_ascii_digit() {
+                                return None;
+                            }
+                            end = i + 1;
+                        } else {
+                            return None;
+                        }
+                    } else if byte.is_ascii_alphanumeric() || byte == b'_' || byte == b'-' || byte >= 0x80 {
+                        end = i + 1;
+                    } else {
+                        break;
+                    }
+                }
+                (end > 0).then(|| trimmed[..end].to_string())
+            })
+            .map(|name| (name, "const"))
+            .collect();
     } else {
         line
     };

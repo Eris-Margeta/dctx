@@ -197,16 +197,16 @@ fn temp_name(name: &str) -> PathBuf {
     PathBuf::from(temp)
 }
 
-fn read_state(path: &Path) -> Result<(DirContextTreeNode, Version), String> {
+fn read_state(path: &Path, bodies: LegacyBodies) -> Result<(DirContextTreeNode, Version), String> {
     let limits = LegacyLimits::default();
     let file = fs::File::open(path).map_err(|error| error.to_string())?;
     let mut bytes = Vec::new();
     file.take(limits.max_total_bytes as u64 + 1).read_to_end(&mut bytes).map_err(|error| error.to_string())?;
-    let document = decode_legacy(&bytes, LegacyBodies::MetadataOnly, limits).map_err(|error| error.to_string())?;
+    let document = decode_legacy(&bytes, bodies, limits).map_err(|error| error.to_string())?;
     Ok((document.root, document.header.version))
 }
 
-/// Metadata-only history preserves the old reader and folder-recreation heuristic.
+/// History keeps the old reader and folder-recreation heuristic. Bodies are read so a touch-only change can be told from an edit.
 #[allow(clippy::must_use_candidate, reason = "Preserve the existing public API's caller lint behavior; adding must_use would change that contract.")]
 #[allow(clippy::unnecessary_debug_formatting, reason = "Retain quoted and escaped filesystem paths in user diagnostics, including paths containing controls or spaces.")]
 pub fn load_state(root: &Path, binary: &Path, reset: bool) -> Option<(DirContextTreeNode, Version)> {
@@ -219,7 +219,7 @@ pub fn load_state(root: &Path, binary: &Path, reset: bool) -> Option<(DirContext
         return None;
     }
     println!("📝 Found existing binary state at {binary:?}");
-    match read_state(binary) {
+    match read_state(binary, LegacyBodies::Include) {
         Ok((tree, version)) => {
             // The legacy heuristic compares disk seconds to stored timestamps verbatim.
             let disk_seconds = fs::metadata(root)
@@ -249,7 +249,7 @@ pub fn last_version(path: &Path) -> Option<String> {
     let cache = cache_dir()?;
     let id = project_id(&cache, &root).ok()?;
     let binary = state_path(&cache, &id).ok()?;
-    read_state(&binary).ok().map(|(_, version)| version.to_string())
+    read_state(&binary, LegacyBodies::MetadataOnly).ok().map(|(_, version)| version.to_string())
 }
 
 /// Encode before touching the previous binary, so codec refusal leaves it intact.

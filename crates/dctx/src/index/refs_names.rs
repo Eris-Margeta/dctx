@@ -15,13 +15,19 @@ const CALL_NOISE: &[&str] = &["new", "await", "async", "self", "this", "Self", "
 const IMPORT_NOISE: &[&str] = &["static", "crate", "self", "super", "use", "import", "include", "require", "from"];
 
 /// Words of `name`, split on everything that cannot be part of an identifier.
-fn words(name: &str) -> Vec<String> {
-    name.split(|c: char| !(c.is_alphanumeric() || c == '_')).filter(|word| !word.is_empty()).map(str::to_string).collect()
+/// For PowerShell, `-` is allowed in identifiers (e.g., `Get-Config`).
+fn words(name: &str, language: Option<&str>) -> Vec<String> {
+    let is_powershell = language == Some("powershell");
+    name.split(|c: char| !(c.is_alphanumeric() || c == '_' || (is_powershell && c == '-')))
+        .filter(|word| !word.is_empty())
+        .map(str::to_string)
+        .collect()
 }
 
 /// Segments of a call spelling without receiver noise: `self.helper` is `[helper]`, `a::b.c` is `[a, b, c]`.
-pub(super) fn call_segments(name: &str) -> Vec<String> {
-    let mut all = words(name);
+/// For PowerShell, `-` is not a segment separator (e.g., `Read-File` stays as one segment).
+pub(super) fn call_segments(name: &str, language: Option<&str>) -> Vec<String> {
+    let mut all = words(name, language);
     let skip = all.iter().take_while(|word| CALL_NOISE.contains(&word.as_str())).count();
     all.drain(..skip);
     all
@@ -36,7 +42,7 @@ pub(super) fn import_segments(name: &str) -> Vec<String> {
     {
         spelled = stem;
     }
-    let mut all = words(spelled);
+    let mut all = words(spelled, None);
     let skip = all.iter().take_while(|word| IMPORT_NOISE.contains(&word.as_str())).count();
     all.drain(..skip);
     all
@@ -68,15 +74,29 @@ mod tests {
 
     #[test]
     fn spellings_of_every_lexer_reduce_to_segments() {
-        assert_eq!(call_segments("self.helper"), ["helper"]);
-        assert_eq!(call_segments("new Point"), ["Point"]);
-        assert_eq!(call_segments("$this->save"), ["save"]);
-        assert_eq!(call_segments("a::b.c"), ["a", "b", "c"]);
+        assert_eq!(call_segments("self.helper", None), ["helper"]);
+        assert_eq!(call_segments("new Point", None), ["Point"]);
+        assert_eq!(call_segments("$this->save", None), ["save"]);
+        assert_eq!(call_segments("a::b.c", None), ["a", "b", "c"]);
+        // PowerShell: hyphenated names stay as one segment.
+        assert_eq!(call_segments("Read-File", Some("powershell")), ["Read-File"]);
+        assert_eq!(call_segments("Get-Config", Some("powershell")), ["Get-Config"]);
+        assert_eq!(call_segments("Get-ChildItem", Some("powershell")), ["Get-ChildItem"]);
+        // Other languages still split on hyphen.
+        assert_eq!(call_segments("Read-File", Some("rust")), ["Read", "File"]);
+    }
+
+    #[test]
+    fn import_segments_work() {
         assert_eq!(import_segments("./util.js"), ["util"]);
         assert_eq!(import_segments("a::beta"), ["a", "beta"]);
         assert_eq!(import_segments("static java.util.Objects.*"), ["java", "util", "Objects"]);
         assert_eq!(import_segments("crate::a::B"), ["a", "B"]);
         assert_eq!(import_segments("stdio.h"), ["stdio"]);
+    }
+
+    #[test]
+    fn last_segment_works() {
         assert_eq!(last_segment("Box::Nested::ping"), "ping");
     }
 

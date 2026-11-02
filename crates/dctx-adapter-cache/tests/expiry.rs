@@ -175,13 +175,14 @@ fn last_use_persists_at_most_once_per_five_minutes() {
     life.touch(left).expect("touch");
     assert_eq!(life.persist_writes(left), Some(2));
 
+    // Overlays: a superseded view is retired at publish (P-C10), so LRU pressure is shown on overlays.
     let mut pressured = ledger(200);
     pressured.register_root(left).expect("root");
     pressured.register_root(right).expect("root");
-    let older = pressured.publish_view(left, 40, &[]).expect("view");
-    let other = pressured.publish_view(right, 40, &[]).expect("view");
-    pressured.publish_view(left, 40, &[]).expect("view");
-    pressured.publish_view(right, 40, &[]).expect("view");
+    let older = pressured.publish_overlay(left, 40, &[]).expect("view");
+    let other = pressured.publish_overlay(right, 40, &[]).expect("view");
+    pressured.publish_overlay(left, 40, &[]).expect("view");
+    pressured.publish_overlay(right, 40, &[]).expect("view");
     let once = GcRequest {
         root: None,
         budget: SliceBudget { max_objects: 1, max_millis: u64::MAX, millis_per_object: 0 },
@@ -196,10 +197,10 @@ fn last_use_persists_at_most_once_per_five_minutes() {
     let mut touched = ledger(200);
     touched.register_root(left).expect("root");
     touched.register_root(right).expect("root");
-    let older = touched.publish_view(left, 40, &[]).expect("view");
-    let other = touched.publish_view(right, 40, &[]).expect("view");
-    touched.publish_view(left, 40, &[]).expect("view");
-    touched.publish_view(right, 40, &[]).expect("view");
+    let older = touched.publish_overlay(left, 40, &[]).expect("view");
+    let other = touched.publish_overlay(right, 40, &[]).expect("view");
+    touched.publish_overlay(left, 40, &[]).expect("view");
+    touched.publish_overlay(right, 40, &[]).expect("view");
     let mut clock = FakeClock::at(0);
     clock.advance(1);
     touched.follow(&clock);

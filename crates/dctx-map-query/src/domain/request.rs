@@ -118,6 +118,7 @@ impl Request {
         Ok(())
     }
 
+    #[allow(clippy::expect_used, reason = "writing to a String cannot fail")]
     pub(crate) fn command(&self, offset: usize) -> String {
         let verb = match self.verb {
             Verb::Map => "map",

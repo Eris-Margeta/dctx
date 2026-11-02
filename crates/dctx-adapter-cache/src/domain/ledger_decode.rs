@@ -89,6 +89,8 @@ impl Lifecycle {
             touches,
             last_auto_clean,
             clean_ttl: None,
+            evicted: Vec::new(),
+            superseded: std::collections::BTreeSet::new(),
         };
         if !life.ids_cover() {
             return Err(corrupt("id cursor"));

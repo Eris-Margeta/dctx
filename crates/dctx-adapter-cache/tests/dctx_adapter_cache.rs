@@ -145,7 +145,10 @@ fn system_cap_reclaims_views_across_roots() {
     assert_eq!(life.status().hard_cap, 1_000);
     assert!(life.admitted() > 1_000);
     assert!(life.legacy_frozen());
-    assert!(life.reserve_for(None, Purpose::Payload, 1).is_err());
+    // Admission evicts the expired views instead of refusing (P-C11); the files wait for the next commit.
+    let mut probe = life.clone();
+    probe.reserve_for(None, Purpose::Payload, 1).expect("eviction makes room");
+    assert_eq!(probe.take_evicted().len(), 2, "oldest first, and only as many as make room");
     for path in &files {
         assert!(path.is_file());
     }

@@ -20,6 +20,17 @@ lint:
 build:
     cargo build --release -p dctx-cli
 
+# v1 release gate on Linux: cargo build/test/clippy, shipped-code scan, determinism, unrelated edit, zero network,
+# then the committed bench floors. `just release-check --quick path/to/dctx-cli` skips cargo.
+release-check *ARGS:
+    ./scripts/release-check.sh {{ARGS}}
+    python3 scripts/bench_floors.py
+
+# Fail if the README bench block differs from the one rendered from the committed bench JSON.
+# `python3 scripts/render_readme.py` (no flag) rewrites the block.
+readme-check:
+    python3 scripts/render_readme.py --check
+
 # Render Mermaid diagrams from docs/diagrams/*.mmd into docs/assets/*.svg
 diagrams:
     #!/usr/bin/env bash
@@ -98,9 +109,9 @@ ci: fmt-check lint test desktop-lint
 clean:
     cargo clean
 
-# Sync version from VERSION file to Cargo.toml
-sync-version:
-    ./tools/sync-version.sh
+# Check (default) or, with `--write`, sync every crates/* and plugins/* version and their Cargo.lock entries to VERSION
+sync-version *ARGS:
+    ./tools/sync-version.sh {{ARGS}}
 
 # Run integrity tests
 test-integrity:

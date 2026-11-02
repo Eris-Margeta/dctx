@@ -96,9 +96,43 @@ impl Lifecycle {
             && !self.lease_holds(generation)
         {
             self.finish_requested_deletion(generation);
+            self.retire_superseded_generation(generation);
         }
         self.bump();
         self.debug_check();
+        Ok(())
+    }
+
+    /// Leases that still protect a generation: confirmed pins and handshakes in flight.
+    #[allow(clippy::must_use_candidate, reason = "Read-only list for the adapter's liveness probe.")]
+    pub fn open_leases(&self) -> Vec<LeaseId> {
+        self.leases
+            .iter()
+            .filter(|(_, lease)| matches!(lease.phase, LeasePhase::Active { .. } | LeasePhase::Acquiring { .. }))
+            .map(|(id, _)| *id)
+            .collect()
+    }
+
+    /// The adapter proved the process that took this lease is gone. The lease stops protecting its
+    /// generation, and a superseded view it held becomes reclaimable.
+    /// # Errors
+    /// Refuses an unknown lease ID.
+    pub fn reader_owner_dead(&mut self, id: LeaseId) -> Result<(), CacheError> {
+        let Some(lease) = self.leases.get_mut(&id) else {
+            return Err(CacheError::InvalidRequest { reason: "unknown lease" });
+        };
+        let held = match lease.phase {
+            LeasePhase::Active { generation } => Some(generation),
+            LeasePhase::Acquiring { .. } | LeasePhase::Released | LeasePhase::OwnerProvenDead => None,
+        };
+        lease.phase = LeasePhase::OwnerProvenDead;
+        if let Some(generation) = held
+            && !self.lease_holds(generation)
+        {
+            self.finish_requested_deletion(generation);
+            self.retire_superseded_generation(generation);
+        }
+        self.bump();
         Ok(())
     }
 

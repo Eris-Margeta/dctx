@@ -47,6 +47,21 @@ pub struct EntryMeta {
     pub modified: Timestamp,
 }
 
+/// Stat identity of one regular file: size, modification time in nanoseconds since the Unix epoch, and inode.
+///
+/// A source hands one out only when it can vouch that the file is settled: its mtime is old enough that a later
+/// edit cannot reproduce the same value, and it has an inode. Equal stamps then mean "same file, untouched".
+/// It is a hint to skip hashing, never an identity: reads still verify bytes.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct EntryStamp {
+    /// Size in bytes.
+    pub size: u64,
+    /// Modification time, nanoseconds since the Unix epoch.
+    pub modified_ns: u128,
+    /// Inode (file index) of the file itself, not of a link target.
+    pub inode: u64,
+}
+
 /// Authorization to read one file's content. Only [`ReadGrant::authorize`] creates one.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ReadGrant {

@@ -56,6 +56,20 @@ Desktop changes need their platform prerequisites and separate validation; see
 [the desktop guide](apps/dctx-desktop/README.md). The root `just ci` recipe also
 invokes desktop setup and is broader than the current main CI job.
 
+## Developer Certificate of Origin
+
+Contributions use the [Developer Certificate of Origin](https://developercertificate.org)
+(DCO) instead of a contributor license agreement. Sign off each commit to certify that
+you wrote the change, or otherwise have the right to submit it under Apache-2.0:
+
+```zsh
+git commit -s
+```
+
+The `-s` flag adds a `Signed-off-by:` line with your name and email. Pull requests with
+unsigned commits will be asked to amend them with `git commit --amend -s`, or to rebase
+with `--signoff`.
+
 ## Pull requests
 
 Create a focused branch from `main` and describe the problem, resulting behavior

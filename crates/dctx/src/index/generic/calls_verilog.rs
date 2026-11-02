@@ -61,11 +61,12 @@ fn instantiation(line: &str) -> Option<&str> {
     if let Some(after) = rest.strip_prefix('#') {
         rest = after_group(after.trim_start());
     }
-    let instance = word_at(rest.trim_start())?;
+    let head = rest.trim_start();
+    let instance = word_at(head)?;
     if KEYWORDS.contains(&instance) || instance == module {
         return None;
     }
-    rest[instance.len()..].trim_start().starts_with('(').then_some(module)
+    head[instance.len()..].trim_start().starts_with('(').then_some(module)
 }
 
 /// Called names in `body` (a comment- and string-masked span), in source order and without repeats.
@@ -89,10 +90,19 @@ pub(super) fn call_names<'a>(body: &'a str, own: &str) -> Vec<&'a str> {
 }
 
 /// `<name>(` calls on one already masked line, in source order and without repeats.
+/// Words inside a `"..."` literal never call, so odd unmasked input stays quiet.
 fn line_calls<'a>(line: &'a str, own: &str, found: &mut Vec<&'a str>) {
     let bytes = line.as_bytes();
     let mut at = 0usize;
     while at < bytes.len() {
+        if bytes[at] == b'"' {
+            // Skip to the closing quote; an unclosed literal swallows the rest of the line.
+            match bytes[at + 1..].iter().position(|byte| *byte == b'"') {
+                Some(end) => at += end + 2,
+                None => break,
+            }
+            continue;
+        }
         if !is_word(bytes[at]) {
             at += 1;
             continue;
@@ -105,7 +115,7 @@ fn line_calls<'a>(line: &'a str, own: &str, found: &mut Vec<&'a str>) {
         let before = start.checked_sub(1).map(|index| bytes[index]);
         let gap = bytes[at..].iter().position(|byte| !matches!(byte, b' ' | b'\t'));
         let open = gap.is_some_and(|gap| gap <= 1 && bytes.get(at + gap) == Some(&b'('));
-        let skipped = KEYWORDS.contains(&word) || word.starts_with(|c: char| c.is_ascii_digit()) || before.is_some_and(|byte| byte == b'.' || byte == b'$') || word == own;
+        let skipped = KEYWORDS.contains(&word) || word.starts_with(|c: char| c.is_ascii_digit() || c == '$') || before.is_some_and(|byte| byte == b'.' || byte == b'$') || word == own;
         if open && !skipped && !found.contains(&word) {
             found.push(word);
         }
