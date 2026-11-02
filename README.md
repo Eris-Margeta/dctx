@@ -190,13 +190,13 @@ Details: [Map mode guide](docs/guides/MAP-MODE.md). The three-way benchmark agai
 | Julia | `julia` | `.jl` | full | guess |
 | Haskell | `haskell` | `.hs` | full | guess |
 | Erlang | `erlang` | `.erl`, `.hrl` | full | guess |
+| Verilog/SystemVerilog | `verilog` | `.v`, `.vh`, `.sv`, `.svh` | full | guess |
 | Terraform/HCL | `hcl` | `.tf`, `.tfvars`, `.hcl` | full | guess |
 | SQL | `sql` | `.sql`, `*.sql.in` | full | guess |
 | Clojure | `clojure` | `.clj`, `.cljs`, `.cljc`, `.edn` | full | guess |
 | Common Lisp | `lisp` | `.lisp`, `.lsp`, `.cl` | full | guess |
 | Scheme | `scheme` | `.scm`, `.ss` | full | guess |
 | Emacs Lisp | `elisp` | `.el` | full | guess |
-| Verilog/SystemVerilog | `verilog` | `.v`, `.vh`, `.sv`, `.svh` | full | guess |
 | JSON/JSONC/TOML/YAML | `config` | `.json`, `.jsonc`, `.toml`, `.yaml`, `.yml` | outline | structural |
 | Shell | `shell` | `.sh`, `.bash`, `.zsh`, `.bats` | outline | guess |
 | Makefile | `make` | `.mk`, `Makefile`, `GNUmakefile` | outline | guess |
