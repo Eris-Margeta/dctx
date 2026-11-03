@@ -10,7 +10,9 @@ dctx Enterprise.
 
 ## [Unreleased]
 
-Candidate for **1.1.0** (`v1.1.0-rc1`). It folds in the 1.0.1 line, which was never released on its own.
+## [1.1.0] - 2026-11-04
+
+Release **1.1.0** (`v1.1.0-rc1`). It folds in the 1.0.1 line, which was never released on its own.
 
 ### Added
 
@@ -220,3 +222,11 @@ The original tool, written in pure C (`legacy-c/`).
 - Automatic versioning with diffs that carry only the changed files.
 - A three-tier ignore system (built-in defaults, a global ignore file and a
   per-project `.dircontxtignore`) and a global configuration file.
+
+[Unreleased]: https://github.com/Eris-Margeta/dctx/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/Eris-Margeta/dctx/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/Eris-Margeta/dctx/compare/v0.25.0...v1.0.0
+[0.25.0]: https://github.com/Eris-Margeta/dctx/compare/v0.11.0...v0.25.0
+[0.11.0]: https://github.com/Eris-Margeta/dctx/compare/v0.10.0...v0.11.0
+[0.10.0]: https://github.com/Eris-Margeta/dctx/compare/v0.1.0...v0.10.0
+[0.1.0]: https://github.com/Eris-Margeta/dctx/releases/tag/v0.1.0
