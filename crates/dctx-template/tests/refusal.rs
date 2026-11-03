@@ -257,7 +257,7 @@ fn plugin_declarations_narrow_the_catalog() {
     let good = skeleton(
         r#"
 [PLUGIN:dctx/git]
-version = "1.0.0"
+version = "1.1.0"
 hooks = ["before-pack-output-written"]
 required = true
 allow = ["file.read:.gitignore", "file.write:.gitignore", "program:git.add-ignore", "resource:git-admin:stage-ignore"]
@@ -281,7 +281,7 @@ config.stage = true
     let hook = good.replace("before-pack-output-written", "not-a-hook");
     assert!(matches!(compile(&hook, &host), Err(TemplateError::UnknownCapability { .. })));
 
-    let missing = skeleton("[PLUGIN:dctx/git]\nversion = \"1.0.0\"\nrequired = true\n");
+    let missing = skeleton("[PLUGIN:dctx/git]\nversion = \"1.1.0\"\nrequired = true\n");
     assert!(matches!(compile(&missing, &HostCeiling::base()), Err(TemplateError::RequiredPluginMissing { .. })));
     let optional = skeleton("[PLUGIN:dctx/git]\nrequired = false\n");
     let unavailable = compile(&optional, &HostCeiling::base()).expect("optional");
@@ -299,7 +299,7 @@ config.stage = true
     let aliased = good.replace("required = true", "required = true\nalias = \"git\"");
     assert!(compile(&aliased, &host).is_ok());
 
-    let bad_version = good.replace("1.0.0", "9.9.9");
+    let bad_version = good.replace("1.1.0", "9.9.9");
     let err = compile(&bad_version, &host).expect_err("version");
     assert!(matches!(err, TemplateError::InvalidSyntax { detail, .. } if detail.contains("version")));
     let mut pinned = bundled_git_plugin();
@@ -375,7 +375,7 @@ version = "1.0.0"
 network = "external"
 enabled = ["dctx/git"]
 [PLUGIN:dctx/git]
-version = "1.0.0"
+version = "1.1.0"
 required = true
 "#,
     );

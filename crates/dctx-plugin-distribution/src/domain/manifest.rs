@@ -225,7 +225,7 @@ mod tests {
             ("\"bytes\": 3", "\"bytes\": 0"),
             ("\"format\": \"native-executable\"", "\"format\": \"script\""),
             ("\"target\": \"aarch64-apple-darwin\"", "\"target\": \"riscv64\""),
-            ("\"version\": \"1.0.0\"", "\"version\": \"latest\""),
+            ("\"version\": \"1.1.0\"", "\"version\": \"latest\""),
             ("\"license\": \"Apache-2.0\",", "\"license\": \"Apache-2.0\", \"post_install\": \"x\","),
             ("\"license\": \"Apache-2.0\",", "\"license\": \"Apache-2.0\", \"license\": \"MIT\","),
             ("\"runtime_resources\": []", "\"runtime_resources\": [{\"file\": \"abc.bin\", \"bytes\": 1, \"sha256\": \"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"}]"),

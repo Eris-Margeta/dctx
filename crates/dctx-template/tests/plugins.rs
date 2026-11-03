@@ -30,7 +30,7 @@ fn git_source() -> String {
     v2(
         "\
 [PLUGIN:dctx/git]
-version = \"1.0.0\"
+version = \"1.1.0\"
 digest = \"ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad\"
 hooks = [\"before-pack-output-written\"]
 required = true
@@ -184,13 +184,13 @@ required = false
     assert!(matches!(compile(&nope, &git_host()), Err(TemplateError::UnknownField { .. })));
     let token = git_source().replace("config.stage = true", "config.stage = true\ntoken = \"x\"");
     assert!(matches!(compile(&token, &git_host()), Err(TemplateError::InvalidSyntax { .. })));
-    let range = git_source().replace("version = \"1.0.0\"", "version = \"^1.0.0\"");
+    let range = git_source().replace("version = \"1.1.0\"", "version = \"^1.1.0\"");
     let err = compile(&range, &git_host()).expect_err("range");
     assert!(matches!(err, TemplateError::InvalidSyntax { detail, .. } if detail.contains("version")));
-    let unmet = git_source().replace("version = \"1.0.0\"", "version = \"9.9.9\"");
+    let unmet = git_source().replace("version = \"1.1.0\"", "version = \"9.9.9\"");
     let err = compile(&unmet, &git_host()).expect_err("unmet");
     assert!(matches!(err, TemplateError::InvalidSyntax { detail, .. } if detail.contains("version")));
-    let bare = git_source().replace("version = \"1.0.0\"", "version = \"1\"");
+    let bare = git_source().replace("version = \"1.1.0\"", "version = \"1\"");
     let err = compile(&bare, &git_host()).expect_err("not semver");
     assert!(matches!(err, TemplateError::InvalidSyntax { detail, .. } if detail.contains("version")));
 }
@@ -206,7 +206,7 @@ fn disable_and_the_policy_ceiling_outrank_the_template() {
 network = \"none\"
 enabled = [\"dctx/git\"]
 [PLUGIN:dctx/git]
-version = \"1.0.0\"
+version = \"1.1.0\"
 required = false
 config.stage = true
 ",

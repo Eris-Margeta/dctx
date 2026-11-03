@@ -133,7 +133,7 @@ records = 1
 selection = \"s\"
 budget = \"b\"
 [PLUGIN:dctx/git]
-version = \"1.0.0\"
+version = \"1.1.0\"
 hooks = [\"before-pack-output-written\"]
 required = true
 allow = [\"file.read:.gitignore\"]

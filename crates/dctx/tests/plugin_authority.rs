@@ -33,7 +33,7 @@ selection = "s"
 index = "s"
 budget = "b"
 [PLUGIN:dctx/git]
-version = "1.0.0"
+version = "1.1.0"
 digest = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
 hooks = ["before-pack-output-written"]
 required = true

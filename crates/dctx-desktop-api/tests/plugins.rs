@@ -74,7 +74,7 @@ fn official_installation_acceptance_lists_default_bundled_enabled_with_grants() 
     assert_eq!(rows.len(), 1);
     let row = &rows[0];
     assert_eq!(row.id, "dctx/git");
-    assert_eq!(row.version.as_deref(), Some("1.0.0"));
+    assert_eq!(row.version.as_deref(), Some("1.1.0"));
     assert_eq!(row.source, PluginSource::Bundled);
     assert_eq!(row.state, PluginState::Enabled);
     assert!(row.enabled);
@@ -302,7 +302,7 @@ fn review_payload_serializes_exact_identity_bounds_and_roundtrips_to_approval() 
     let encoded = serde_json::to_value(&row).unwrap();
     let payload = &encoded["consent"];
     assert_eq!(payload["id"], row.id);
-    assert_eq!(payload["version"], "1.0.0");
+    assert_eq!(payload["version"], "1.1.0");
     assert_eq!(payload["digest"], approval().digest.to_string());
     assert_eq!(payload["scope"], serde_json::json!({"kind": "user"}));
     let lines = payload["capability_lines"].as_array().unwrap();
@@ -359,6 +359,6 @@ fn review_payload_selects_inactive_candidate_and_refuses_stale_versions() {
     let row = f.ops().list().unwrap().into_iter().find(|row| row.id == id.as_str()).unwrap();
     let registry = f.dist().registry().unwrap();
     let payload = row.with_consent(&registry).unwrap().consent.unwrap();
-    assert_eq!(payload["version"], "1.0.0");
+    assert_eq!(payload["version"], "1.1.0");
     assert_eq!(payload["digest"], approval().digest.to_string());
 }

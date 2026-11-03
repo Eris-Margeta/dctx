@@ -12,9 +12,9 @@ pub const RESERVED_ALIASES: &[&str] = &["plugin", "pack", "map", "cache", "templ
 pub fn bundled_git_plugin() -> KnownPlugin {
     KnownPlugin {
         id: "dctx/git".to_string(),
-        version: "1.0.0".to_string(),
+        version: "1.1.0".to_string(),
         digest: Some(hex32("ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad")),
-        manifest_digest: Some(hex32("bf74b6b3ff523cb08461bff8bbaa48dba16d91026d17ecd59e683beb165cbf9c")),
+        manifest_digest: Some(hex32("06103b8c8f458e406fc73a174110ea560970c4183ce930dfd642fe13013f4f44")),
         publisher_key: "fixture-key-1".to_string(),
         origin: PluginOrigin::Bundled,
         hooks: vec!["before-pack-output-written".to_string()],
