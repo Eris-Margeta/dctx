@@ -312,7 +312,7 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 - `crates/dctx-core/src/llm_formatter.rs` - Module-level safety documentation
 - `crates/dctx-core/src/llm_formatter.rs:345` - Safety comment at guard
 - `crates/dctx-core/src/llm_formatter.rs::test_template_variable_safety_for_ignored_files`
-- `docs/GUIDES/DEVELOPER-GUIDE.md` - Template Variable Safety section
+- `docs/guides/DEVELOPER-GUIDE.md` - Template Variable Safety section
 
 ---
 
@@ -377,7 +377,7 @@ For ignored/omitted files, content-requiring variables are never resolved due to
 * Ignore rules: `crates/dctx-core/src/ignore.rs`
 * Omit rules: `crates/dctx-core/src/omit_content.rs`
 * Formatter: `crates/dctx-core/src/llm_formatter.rs`
-* Phase 10.6 specification: `docs/DOCUMENTS/PROJECT-DEVELOPMENT-ELABORATION.md`
+* Phase 10.6 specification: the archived `PROJECT-DEVELOPMENT-ELABORATION.md` in `docs/LEGACY/`
 
 ---
 

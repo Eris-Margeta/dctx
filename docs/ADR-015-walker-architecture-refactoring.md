@@ -275,9 +275,9 @@ fn walk(path) -> Iterator<Decision>
 
 ## References
 
-- **Bug Report:** `docs/DOCUMENTS/BUG-REPORT-IGNORED-DIRECTORIES-RECURSION.md`
-- **Refactoring Proposal:** `docs/DOCUMENTS/REFACTORING-PROPOSAL-WALKER-IGNORE.md`
-- **Code Standards:** `docs/GUIDES/RUST-ENTERPRISE-CODE-DOCTRINE.md`
+- **Bug Report:** `BUG-REPORT-IGNORED-DIRECTORIES-RECURSION.md` (legacy archive, `docs/LEGACY/`)
+- **Refactoring Proposal:** `REFACTORING-PROPOSAL-WALKER-IGNORE.md` (legacy archive, `docs/LEGACY/`)
+- **Code Standards:** `RUST-ENTERPRISE-CODE-DOCTRINE.md` (legacy archive, `docs/LEGACY/`)
 - **Work Orders:** WO-063, WO-064, WO-065, WO-066, WO-067
 
 ---

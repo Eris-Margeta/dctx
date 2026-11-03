@@ -24,7 +24,7 @@ Board for Standardization and Development
 
 ## **Article 2: Relationship to Architecture Decision Records (ADRs)**
 
-  (1) **Scope Distinction:** This document codifies the **"how"**—specific, concrete technical solutions and best practices for recurring problems. In contrast, Architecture Decision Records (ADRs), located in `docs/ARCHITECTURE/`, codify the **"why"**—the rationale behind significant, high-level architectural choices.
+  (1) **Scope Distinction:** This document codifies the **"how"**—specific, concrete technical solutions and best practices for recurring problems. In contrast, Architecture Decision Records (ADRs), located in `docs/`, codify the **"why"**—the rationale behind significant, high-level architectural choices.
 
   (2) **Workflow:** An ADR is created to decide on a major architectural path (e.g., choosing a database technology). Once that path is implemented, if specific, recurring technical challenges or patterns emerge, their solutions are then formalized as new articles in *this* document.
 

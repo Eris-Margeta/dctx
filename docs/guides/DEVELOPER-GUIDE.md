@@ -39,17 +39,17 @@ cd dctx
 dctx --version
 ```
 
-#### **Step 2: Understand the Project's "Brain" - The `docs` Directory**
+#### **Step 2: Understand the Project's "Brain" - The `docs/` Directory**
 All project-specific documentation, rules, tasks, and operational protocols reside in the `docs/` directory. This is the **single source of truth** for the project's execution. Before writing any code, you must familiarize yourself with its contents.
 
 #### **Step 3: Read the Core Documents (In This Order)**
-To understand the rules of this repository, read the following documents from `docs/`:
+To understand the rules of this repository, read the following documents from the project guides and the legacy archive:
 
 1.  **`AI-INSTRUCTIONS.md`**: This is **"The Constitution"**. It defines the formal procedures that govern development, especially the interaction between you (the Operator) and the AI Assistant. It dictates the "how" of our work.
 2.  **`DEVELOPER-GUIDE.md`**: This is the main development guide on how to approach the development of our project.
 3.  **`DEVELOPMENT-PRACTICES.md`**: This is the project's **living knowledge base**. It starts empty and is populated with solutions to recurring technical challenges to prevent regressions and save time.
 
-and from `docs/DOCUMENTS/` read:
+and from the legacy archive (`docs/LEGACY/`) read:
 
 4.  **`PROJECT-DEVELOPMENT-ELABORATION.md`**: This is the official **backlog and development plan**. It details what has been completed, what is in progress, and defines the next specific tasks. It dictates the "what" and "when" of our work.
 
@@ -87,7 +87,7 @@ dctx/
 #### **Architectural Decision Records (ADRs)**
 Significant architectural decisions, their context, and their consequences are formally documented in Architecture Decision Records (ADRs). This practice ensures that the reasoning behind our technical choices is preserved and accessible.
 
-All ADRs are located in the `docs/ARCHITECTURE/` directory.
+All ADRs are located in the `docs/` directory.
 *   **ADR-001:** System Architecture (Centralized State).
 *   **ADR-002:** Versioning & Recovery.
 *   **ADR-003:** Templating Engine.
@@ -173,7 +173,7 @@ The walker architecture enforces privacy through multiple layers:
 
 This makes it **structurally impossible** to accidentally read ignored files, ensuring `.env`, credentials, and sensitive data are never loaded into memory.
 
-**For More Details:** See ADR-015 in `docs/ARCHITECTURE/`.
+**For More Details:** See ADR-015 in the `docs/` directory.
 
 #### **Data Flow & Cross-Platform Standards**
 We strictly adhere to OS standards for storing configuration and state. We do NOT clutter the user's home folder.
@@ -291,7 +291,7 @@ When contributing to `dctx-core`, assume the filesystem is hostile.
 Architectural changes and new features must be formally integrated into the plan **before** implementation.
 
 1.  **Do Not Start Coding:** Directly implementing an unplanned feature is a violation of the protocol.
-2.  **Initiate a Revision:** Following the procedure in `docs/GUIDES/AI-INSTRUCTIONS.md`, instruct the AI to begin a "Revision Phase" for the `docs/DOCUMENTS/PROJECT-DEVELOPMENT-ELABORATION.md` document.
+2.  **Initiate a Revision:** Following the procedure in the `AI-INSTRUCTIONS.md` governance guide, instruct the AI to begin a "Revision Phase" for the `PROJECT-DEVELOPMENT-ELABORATION.md` backlog document.
 3.  **Update The Plan:** Work with the AI to formally add the new feature, breaking it down into phases and tasks.
-4.  **Formalize the Decision:** If the change involves a significant architectural decision (e.g., adding a new database, changing a core library), it **must be documented** in an **Architecture Decision Record (ADR)**. Use the template located at `docs/ARCHITECTURE/adr-template.md`.
+4.  **Formalize the Decision:** If the change involves a significant architectural decision (e.g., adding a new database, changing a core library), it **must be documented** in an **Architecture Decision Record (ADR)**. Use the ADR template in the legacy archive (`docs/LEGACY/`).
 5.  **Begin Development:** Once the plan is updated and the decision is recorded, development can commence by following the standard Work Order cycle.
