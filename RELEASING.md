@@ -5,13 +5,13 @@ workflow execution, publication and deployment require separate owner authorizat
 
 ## Version plan
 
-The current release is **1.0.0**. The sync helper accepts stable `X.Y.Z` versions
+The candidate is **1.1.0**; the last published release is 1.0.0. The sync helper accepts stable `X.Y.Z` versions
 only; prerelease version synchronization needs a separate change. Version lines:
 
 | Scope | Current | Next release action |
 | --- | --- | --- |
-| `VERSION`, `project-meta.yaml`, README badge | 1.0.0 | Set `VERSION`, then run the sync helper |
-| Every `crates/*` and `plugins/*` package and its `Cargo.lock` entry | 1.0.0 | Written by the sync helper from `VERSION` |
+| `VERSION`, `project-meta.yaml`, README badge | 1.1.0 | Set `VERSION`, then run the sync helper |
+| Every `crates/*` and `plugins/*` package and its `Cargo.lock` entry | 1.1.0 | Written by the sync helper from `VERSION` |
 | Desktop Cargo package, package.json and tauri.conf.json | 0.11.0 | Retain; desktop has a separate `desktop-v*` workflow |
 
 Do not bulk-replace dependency versions or nested test fixture versions. The

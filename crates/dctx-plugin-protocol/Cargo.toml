@@ -1,6 +1,6 @@
 [package]
 name = "dctx-plugin-protocol"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2024"
 description = "**Unstable** (no stability promise in v1). Std-only codec and records for the frozen dctx plugin wire protocol v1"
 license.workspace = true

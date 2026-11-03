@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0-8b5cf6" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.1.0-8b5cf6" alt="Version">
   <a href="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml?query=branch%3Amain">
     <img src="https://github.com/Eris-Margeta/dctx/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI">
   </a>
@@ -78,7 +78,7 @@ Requires a recent stable Rust toolchain with Cargo (the workspace includes Rust 
 git clone https://github.com/Eris-Margeta/dctx
 cd dctx
 cargo build --locked --release -p dctx-cli
-./target/release/dctx-cli --version   # dctx 1.0.0 (<git sha>)
+./target/release/dctx-cli --version   # dctx 1.1.0 (<git sha>)
 ```
 
 The package and Cargo-built executable are named **`dctx-cli`** (`dctx-cli.exe` on Windows). The help text and examples use **`dctx`**. After building, this zsh alias lets you use those examples in the current shell:
@@ -157,7 +157,6 @@ Details: [Map mode guide](docs/guides/MAP-MODE.md). The three-way benchmark agai
 - **outline**: symbols only; no call edges are promised. Shell function bodies can yield same-file call guesses, but v1 does not promise shell call edges.
 - **docs**: headed sections.
 - **Confidence**: `guess` marks the heuristic outline families, and every record from those files carries confidence `guess`; `structural` means a dedicated lexer or deterministic document rules.
-- **Not in v1**: Fortran and Verilog.
 
 <!-- languages:begin -->
 | Language | Tag | Files | Tier | Confidence |
@@ -302,7 +301,6 @@ An earlier two-way study against Trail-Code (October 2026, dctx `17dff0b`, befor
 - Any network or cloud feature.
 - macOS and Windows support claims: they are untested; Linux x86_64 is the only tested platform.
 - Watch or incremental mode beyond re-indexing.
-- Fortran and Verilog.
 - Shell call edges (shell is outline tier: symbols only).
 - Embeddings or semantic search.
 - LSP-grade type resolution: call edges are lexical.

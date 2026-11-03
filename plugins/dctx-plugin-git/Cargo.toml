@@ -1,6 +1,6 @@
 [package]
 name = "dctx-plugin-git"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2024"
 description = "The bundled dctx/git plugin: local .gitignore protection and brokered staging (PLUGINS.md §6)"
 license.workspace = true

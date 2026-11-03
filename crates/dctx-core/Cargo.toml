@@ -1,6 +1,6 @@
 [package]
 name = "dctx-core"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
 description = "Pure dctx domain (ids, selection, budgets, errors, pack facts) plus legacy compatibility modules"
 license.workspace = true

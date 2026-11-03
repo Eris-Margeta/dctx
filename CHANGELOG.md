@@ -10,11 +10,41 @@ dctx Enterprise.
 
 ## [Unreleased]
 
+Candidate for **1.1.0** (`v1.1.0-rc1`). It folds in the 1.0.1 line, which was never released on its own.
+
 ### Added
 
+- **Perl** (`.pl`, `.pm`, `.t`, `.psgi`): `package A::B;` and `package A { .. }` as `type` symbols holding every later
+  `sub` (named `A::B::name`) as `fn` symbols (`guess` confidence, full tier). POD is masked like a comment; call edges
+  come from `name(..)`, bareword calls with an argument and `&name`, never after `->`, `sub` or a sigil.
+- **Fortran** (`.f90`, `.f95`, `.f03`, `.f08`, `.f`, `.for`): `module`, derived `type` and named `interface` as `type`
+  symbols; `program`, `function` and `subroutine` as `fn` symbols named `module::name` (`guess` confidence, full tier).
+  Keywords are case-insensitive, `!` comments only, fixed-form column rules are not modelled; call edges skip
+  intrinsic and control keywords that precede `(`.
 - **Verilog/SystemVerilog** (`.v`, `.vh`, `.sv`, `.svh`): `module`, `macromodule`, `interface`, `package` and `class`
   declarations as `type` outline symbols and `function`/`task` declarations as `fn` symbols (`guess` confidence, full tier),
   with module-scope call edges and `<module> <instance> (` instantiation links resolved through the call index.
+- **Prefix-stable `pack` output** (DCX-P-PACK): tree lines carry the `ID` only, with no `MOD:` and no `SIZE:`, so a
+  bare `touch` leaves the page byte-identical and an edit keeps everything before the edited file as a shared prefix
+  for prompt caches. `--tree-stamps=on|off` (default `off`) selects the built-in tree template; `on` reproduces the
+  1.0.0 bytes. The desktop tree-only export keeps its digest line last, behind a stable lead line.
+- **Stat stamps in the manifest** (DCX-P-STAMP): a stamp pass runs before the digest, with a racy-timestamp guard; a
+  touch-only change is decided by content. A gate replays 200 random edits against a cold rebuild.
+- **Record and entry caps** (DCX-P-CACHE): checked during the scan and set by `DCTX_MAX_RECORDS` and
+  `DCTX_MAX_ENTRIES`; the cache is reclaimed on publish, evicts before refusing, and readers share one lock.
+- **Open-source maintenance model** (DCX-OSS): `MAINTENANCE.md`, `TRADEMARK.md`, a DCO in
+  `CONTRIBUTING.md` and `FUNDING.yml`; the desktop app is open source too.
+
+### Changed
+
+- **Id lookup** (DCX-P-IDX) uses a sorted hash index instead of a linear node scan.
+- Large source files were split into submodules by pure moves (400-line rule): `pack.rs`, `path.rs`, `reuse.rs`,
+  `bound.rs`, `plugin.rs`, `yaml.rs` and others. No behaviour change.
+- The version is **1.1.0** for every `crates/*` and `plugins/*` package; the desktop app stays on 0.11.0.
+
+### Fixed
+
+- A closed stdout pipe (`dctx pack | head`) exits 0 without a panic.
 
 ## [1.0.0] — 2026-10-31
 
@@ -45,7 +75,7 @@ desktop app keeps its own version line (0.11.0) and its own release workflow.
 - Any network or cloud feature.
 - macOS and Windows support claims (untested); Linux x86_64 is the only tested platform.
 - Watch or incremental mode beyond re-indexing.
-- Fortran and Verilog.
+- Fortran and Verilog (both shipped in 1.1.0).
 - Shell call edges.
 - Embeddings and semantic search.
 - LSP-grade type resolution.

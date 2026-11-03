@@ -1,6 +1,6 @@
 [package]
 name = "dctx-ed25519"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2024"
 description = "Ed25519 signature verification for dctx via audited ed25519-dalek"
 license.workspace = true
