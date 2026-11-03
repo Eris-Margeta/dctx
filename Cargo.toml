@@ -4,13 +4,13 @@ members = [
   # Plugin crates (PL-W). dctx-cli's default `git-worker` feature depends on dctx-plugin-git;
   # only the strict build (--no-default-features --features strict) contains no plugin worker.
   "plugins/*",
+  "apps/dctx-desktop/src-tauri",
   # Bindings (future)
   # "bindings/dctx-py",
   # "bindings/dctx-node",
 ]
-# plugins/index is the JSON index (PL-X), not a crate. The desktop requires native
-# GLib/GObject development libraries and is built separately on a provisioned host.
-exclude = ["plugins/index", "apps/dctx-desktop/src-tauri"]
+# plugins/index is the JSON index (PL-X), not a crate.
+exclude = ["plugins/index"]
 resolver = "2"
 
 [workspace.package]
