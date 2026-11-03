@@ -258,9 +258,8 @@ mod tests {
         assert!(text.contains("Perl") && json.contains("Perl") && markdown.contains("Perl"), "Perl is listed");
         assert!(markdown.contains("| Perl | `perl` | `.pl`, `.pm`, `.t`, `.psgi` | full | guess |
 "));
-        for gone in ["Fortran"] {
-            assert!(!text.contains(gone) && !json.contains(gone) && !markdown.contains(gone), "{gone}");
-        }
+        let gone = "Fortran";
+        assert!(!text.contains(gone) && !json.contains(gone) && !markdown.contains(gone), "{gone}");
         assert!(markdown.contains("| Verilog/SystemVerilog | `verilog` | `.v`, `.vh`, `.sv`, `.svh` | full | guess |
 "));
     }

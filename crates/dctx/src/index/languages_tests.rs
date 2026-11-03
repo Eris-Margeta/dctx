@@ -76,9 +76,7 @@ for tag in ["rust", "python", "javascript", "typescript", "go", "erlang", "power
     for tag in ["config", "make", "docker", "proto", "pascal", "graphql", "nix"] {
         assert_eq!(entry(tag).tier, Tier::Outline, "{tag}");
     }
-    for tag in ["fortran"] {
-        assert!(by_tag(tag).is_none(), "{tag} is not in v1");
-    }
+    assert!(by_tag("fortran").is_none(), "fortran is not in v1");
     assert!(by_tag("verilog").is_some(), "verilog is present");
     let tiers: Vec<&str> = Tier::ALL.iter().map(|tier| tier.as_str()).collect();
     assert_eq!(tiers, ["full", "outline", "docs"]);
