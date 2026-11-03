@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Unit tests for aliases, glob imports and qualified reexport traversal.
 //! Verifies SPEC-MAP-MODE section 6.3 against hand-built parser facts.
 //! Uses the public resolver and model types; performs no IO.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Hidden-name, extension and sensitive-name helpers for pack file filters and every map verb.
 //! Implements the name rules used by [`super::include`] (leading dot, last extension) and the strict
 //! sensitive-file deny of ADR-014 (no override flag in v1).

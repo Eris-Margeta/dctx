@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Host IO for the legacy alias, per D3-COMPATIBILITY and D3-LEGACY-REMOVAL §5 D3-04.
 //! Owns directory discovery, FNV/projects.db mapping, DIRCTXTV state and export retention.
 //! Uses pure core settings/selection and the pack codec; rule reads use the filesystem adapter.

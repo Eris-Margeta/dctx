@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Positioned reads that fill a bounded buffer before decode.
 //! Implements SEGMENTS-v1: refuse a file larger than the ceiling before allocating it.
 //! Depends on [`crate::domain::SegmentError`] and [`crate::DecoderLimits`]. Adapters implement [`SegmentRead`].

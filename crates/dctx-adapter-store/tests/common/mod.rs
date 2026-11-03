@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared segment fixtures for publication tests.
 //! Builds valid `dctx-map-segment` fact bytes and store options.
 //! Integration tests share this module. Labels change the fact so digests differ.

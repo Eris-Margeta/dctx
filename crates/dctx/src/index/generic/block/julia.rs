@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Julia: functions (`function f(`, short-form `f(x) = ...`), macros, structs and their fields, abstract and primitive types, modules and constants.
 //! A function or macro is `fn`, a struct, module or abstract type `type`, `name::T` inside a type a `field` and `const NAME = ...` a `const`.
 

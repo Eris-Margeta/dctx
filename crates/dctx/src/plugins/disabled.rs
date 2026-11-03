@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Plugin-free facade host for PP6 strict isolation (F-STRICT).
 //! Uses only facade and template types; no runtime ports or process primitives exist here.
 //! Session hooks use the plan's participants to report unavailability before any admission.

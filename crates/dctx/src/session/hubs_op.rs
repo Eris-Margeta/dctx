@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The hubs verb: most-called symbols and per-directory counts, written as one bounded page.
 //! Implements the `dctx map hubs` read over the pinned generation; it needs no target and has no cursor.
 //! Depends on the index hub counts and the same limit resolution as the five verbs.

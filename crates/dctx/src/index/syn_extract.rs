@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Optional Rust syntax extractor. This file is compiled only with the `syntax-rust` feature.
 //! Implements the enhanced parser profile on top of `dctx-lex-rust` (syn).
 //! Depends on that crate's [`extract`](dctx_lex_rust::extract). The walk calls it for Rust files.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! A scripted fake host driving the real worker over in-memory framed pipes, with its own session tracker.
 //! Implements the host side of wire.md §Bootstrap and lifecycle for standalone protocol conformance:
 //! every worker frame is strictly decoded and observed by dctx-plugin-protocol's `Session` (a refusal fails

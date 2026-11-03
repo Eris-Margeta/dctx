@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Ports the installer needs: HTTPS fetch, the managed plugin store and a clock.
 //! Implements the IO boundary of PLUGINS.md §5.3/§5.4: a reviewed HTTPS adapter (not a plugin grant)
 //! and an owned data root with same-filesystem staging, immutable publish and atomic registry replace.

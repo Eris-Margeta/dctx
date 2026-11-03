@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Blocking `std::io` adapter over the sans-IO frame codec (the crate's only IO; records stay IO-free).
 //! Implements plugin-api wire.md §Bytes "split reads/writes are legal and must reconstruct the same message"
 //! for any reader/writer that returns short counts or `Interrupted`. Depends on frame and refusal.

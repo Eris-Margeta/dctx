@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Visibility, attributes, aliases and final fact assembly.
 //! Implements Ruby's attribute and alias conventions as method symbols.
 //! A dynamic name is skipped; the extractor does not call `define_method`.

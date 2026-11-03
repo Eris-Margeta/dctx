@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Name and doc text rules shared by both extraction paths.
 //! Implements the oracle's naming (SPEC-MAP-MODE §5.1): `::` scopes, compact type text.
 //! Pure string functions; used by the syn adapter and the line scan.

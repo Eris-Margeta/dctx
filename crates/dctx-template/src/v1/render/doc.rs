@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Run-length piece table for the bounded marker renderer.
 //! Substitution and trimming stay below the render ceiling without allocating oversized documents.
 //! Depends on [`super::parse`]. Used by [`super::measure`].

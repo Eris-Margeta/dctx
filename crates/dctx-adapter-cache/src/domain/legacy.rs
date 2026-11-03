@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Legacy export classification. Dry-run is a pure function of the records the caller already holds.
 //! Implements CACHE-v1 legacy safety: extension, place, version and ownership are all required.
 //! Depends on nothing in the ledger except the adopted-export map for apply. GC does not call this.

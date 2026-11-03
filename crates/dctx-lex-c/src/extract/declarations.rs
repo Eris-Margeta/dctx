@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Top-level dispatch: directives, namespaces, using-declarations and typedefs.
 //! Implements SPEC-MAP-MODE 5.3 for `#include` and the C++ namespace / using forms.
 //! Type bodies and functions live in sibling modules. Macros are never expanded.

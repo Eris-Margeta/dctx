@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PHP token vocabulary, source coordinates and bounded delimiter pairing.
 //! Implements PARSERS-v1 lexical limits and partial diagnostics (decision 077).
 //! The scanner keeps template HTML and literals opaque for the extractor.

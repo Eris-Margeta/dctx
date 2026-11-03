@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `dctx map skeleton <file>`: the CLI side of the skeleton verb.
 //! It parses as a map request (target required, `m:<path>` or a file), then turns the facade request into the skeleton verb.
 //! The facade default of 2,000 tokens applies unless `--budget` is given; depth does not apply.

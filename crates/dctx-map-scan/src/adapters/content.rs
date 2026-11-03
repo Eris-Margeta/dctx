@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Content access guarded before opening any path.
 //! Implements the ADR-014 never-read guarantee for excluded and omitted files.
 //! Uses ContentSource so tests can observe every attempted open.

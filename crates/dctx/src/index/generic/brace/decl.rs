@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! One masked line of a brace-family file: what it declares in its scope. Types and functions come from the keyword tables,
 //! with Dart's `Type name(` forms, constructors and accessors and Zig's `test` blocks on top; constants, variables, fields and
 //! enum values are answered by [`super::data`]. Pure functions of one line: nesting, spans and signatures belong to the caller.

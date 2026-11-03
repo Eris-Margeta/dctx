@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Persistent parse outcomes, recovery labels and invalidation regressions.
 //! Implements DX-FIX1 and SPEC-MAP-MODE section 7 through the public query API.
 //! SQLite assertions verify the digest, revision and diagnostic survive reopening.

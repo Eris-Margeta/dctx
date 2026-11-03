@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Declaration-to-definition pairing for the neighbors verb.
 //! A declaration-only symbol (a C/C++ header prototype, an `.mli` `val`, or a `.d.ts` `declare`) has no call edges of its own,
 //! so a neighbors probe on it scores nothing. When the declaration has a unique definition in the same project, the probe

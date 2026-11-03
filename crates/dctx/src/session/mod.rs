@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Session: one explicit source, one policy and the operations every surface calls.
 //! Implements ARCHITECTURE-PROPOSAL §2 and §7 row DX-D1. The facade is synchronous.
 //! Depends on the domain types, the index and the pack and template engines.

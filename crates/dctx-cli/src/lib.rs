@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! CLI application operations shared by the binary, TUI and integration tests.
 //! Implements D3-LEGACY-REMOVAL §5 D3-04 without legacy core IO dependencies.
 //! Uses the facade filesystem source, pure pack scan/diff/render and explicit compatibility IO.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Elixir: modules, protocols and implementations (types), structs, `@type` names, functions, macros and `@spec` names.
 //! Blocks open at `do` and `fn`; a `defimpl` is named `Protocol.Target` so its functions stay apart from the protocol's own.
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! DX-A1 baseline for the current dctx map mode.
 //! Implements ARCHITECTURE-PROPOSAL §3 and §7 Stage 0.
 //! Depends on the map query library; `run.sh` and the binary call `run`.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Per-file facts in the dctx-map-parse shape, each carrying a precision label.
 //! Implements PARSERS-v1 (completion, diagnostics) and SPEC-MAP-MODE 5.3 and 6.2.
 //! Uses dctx-map-model nodes and edges; the walkers build these, callers consume them.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Literal masking, docstrings, indentation and call scopes for the Python extractor.
 //! Covers the Python structural extractor contract (decision 077/decision 078).
 //! Uses common helpers and inline fixtures through the public lexer API.

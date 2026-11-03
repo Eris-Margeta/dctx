@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Sorted id index over a generation's nodes: one lookup is a binary search, not a scan of every node.
 //! Implements `Generation::node_index`, the one place a stable id (`s:path#name~2`) becomes a node position.
 //! Depends on [`super::id_matches`], which stays the single judge of a match; the index only narrows the candidates.

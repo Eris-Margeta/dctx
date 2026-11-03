@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Desktop settings: defaults, escaped line format, save, reset and `validate`.
 //! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4a and review F17.
 //! Depends on [`crate::error::DesktopError`] and serde. The Tauri layer injects both directories.

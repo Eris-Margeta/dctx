@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The budgeted page of `dctx pack --for`: whole lines only, sections in the order they are added, and an end line.
 //! A line that would push the page over the budget is dropped and counted; a later, shorter line may still fit.
 //! The estimate is the `dctx map --budget` one, ceil(2 * UTF-8 bytes / 7); it is not a tokenizer guarantee.

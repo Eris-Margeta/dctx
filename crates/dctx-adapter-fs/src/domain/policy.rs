@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Ordered ignore and omit policy.
 //! Implements ADR-014: the decision is complete before any content IO.
 //! Depends on [`super::rule`] and [`super::selection`]. The filesystem loader supplies text.

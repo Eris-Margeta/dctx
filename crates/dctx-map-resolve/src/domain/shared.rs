@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Path-independent fact payloads placed into a package layout.
 //! Implements ARCHITECTURE-PROPOSAL §7 DX-B5 and IDENTITY-v1 sharing.
 //! Depends on fact keys and model nodes. The view resolver materializes these.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure symbol resolution and move detection for dctx map mode.
 //! Implements SPEC-MAP-MODE sections 5.2, 5.3, 6.2 and 6.3.
 //! DX-B5 adds contextual views: content-keyed facts, per-layout edges,

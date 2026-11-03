@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Call sites: callee spelling, node:test/vitest blocks and `CommonJS` `require` imports.
 //! Implements SPEC-MAP-MODE 5.3 calls/tests with name confidence only; dynamic or
 //! computed callees are abstained rather than guessed (PARSERS-v1 JavaScript row).

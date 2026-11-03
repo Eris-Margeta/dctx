@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! SHA-256 envelopes and the identity-v1 `SegmentObject` digest.
 //! Implements SEGMENTS-v1 checksums and IDENTITY-v1 structured kind 9.
 //! Depends on `dctx-hash` and [`super::error::SegmentError`]. The directory stores payload digests.

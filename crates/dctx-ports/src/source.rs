@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `Source` port: confined, metadata-first access to one source root.
 //! Implements contracts/API-PORTS-v1.md `Source.inventory/open/read`: listing returns names and
 //! kinds only, metadata is a separate call, and content needs a core [`ReadGrant`] (P1).

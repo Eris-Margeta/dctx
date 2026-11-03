@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pack versions (`V{major}.{minor}`): parsing, display and the next-version rule.
 //! Implements the pack versioning of the current CLI (minor per change, major on massive change or limit).
 //! Depends on [`crate::diff`] for the change statistics; pure.

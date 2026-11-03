@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The MCP tool table: names, input schemas and the mapping from a call to `dctx map` arguments.
 //! A call becomes the same argument vector the CLI would receive, so `map::execute` is the only code path.
 

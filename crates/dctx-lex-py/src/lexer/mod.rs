@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Token stream for Python source, including indentation and f-strings.
 //! Implements PARSERS-v1 lexing: comments, strings, prefixes, brackets and indent,
 //! all bounded by the depth ceiling. The structural walker consumes this.

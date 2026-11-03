@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Compares two snapshot trees into a [`super::DiffReport`].
 //! Implements pack diff metadata rules (size and modification time, decision 078; no VCS state).
 //! Depends on [`super::walk`] and [`crate::datatypes`]; pure, no IO.

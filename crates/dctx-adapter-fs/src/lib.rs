@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Confined filesystem Source adapter.
 //! Implements ARCHITECTURE-PROPOSAL §7 DX-B3 as adapted by decision 078:
 //! selection before content, plain ignore rules, and [`dctx_hash`] digests.

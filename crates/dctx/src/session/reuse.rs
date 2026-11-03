@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Persisted map generation reused when content digests still match.
 //! Implements DCTX-SERIOUS-GAPS G6 (CLI-WARM-REUSE) on the session cache lease.
 //! Depends on Session, the index walk and `digest_text` (the `read_verified` check).

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Domain-separated detached Ed25519 verification of exact document bytes.
 //! Implements distribution.md §Authenticated bytes: `ASCII(domain) || exact_bytes`, no separator,
 //! length prefix or prehash; 64 raw signature bytes. decision 081: verification only, via dctx-ed25519.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Facade plugin host: DTS plans sequenced over host and platform ports.
 //! Implements PLUGINS.md §3.1 and §7.3 row PL-F. Engines stay unaware of the host.
 //! The `plugin-runtime` feature enables host/platform ports; otherwise only refusal stubs compile.

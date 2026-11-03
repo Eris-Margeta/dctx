@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Opaque binding context, replay keys and argument digests.
 //! Implements Authority.tla `Context`/`CheckBinding` (plugin, artifact, root, invocation, session,
 //! generation, namespace) and properties.md `K` and `D(args)` (S-REPLAY). Depends on dctx-hash and

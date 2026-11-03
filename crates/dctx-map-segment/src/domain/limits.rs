@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Decoder ceilings from SEGMENTS-v1. A caller may tighten them, never raise them.
 //! Implements the default caps: 64 MiB, 64 sections, 1 MiB strings and records, `1_000_000` records.
 //! Depends on [`super::error::SegmentError`]. Every section parser calls [`bounded_count`] before it reserves.

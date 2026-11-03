@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Legacy layout byte parity through the public pack facade (D3-03).
 //! Uses injected memory ports, fixed metadata and the D3-01 pinned snapshot bytes.
 //! Covers diff selection, final byte caps and explicit SVG/configuration handling.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Incremental indexing and bounded traversal for dctx map mode.
 //! Implements SPEC-MAP-MODE sections 4, 6.4 and 7.
 //! Wires the scan, parse, resolve and store public APIs for library and CLI users.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure session tracker: validates every post-hello message against lifecycle state and pending requests.
 //! Implements wire.md §Bootstrap and lifecycle (W-STATE, W-BINDING, W-RESULT, W-PROGRESS, W-LIMITS):
 //! sender-owned unique IDs, one active invoke, exactly-once out-of-order responses, method-selected results,

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Structural walker over the token stream: shared state, scopes and fact emission.
 //! Implements SPEC-MAP-MODE 5.1–5.4 and 6.2 with the dctx-map-parse ownership rules:
 //! a declaration owns everything lexically inside it. Uses `lexer` tokens and `assemble`.

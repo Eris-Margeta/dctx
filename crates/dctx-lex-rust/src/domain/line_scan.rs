@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Conservative line scan that recovers declarations from files syn refused.
 //! Implements PARSERS-v1 "malformed syntax returns partial opaque module + diagnostics";
 //! every fact is labelled `Precision::LineScan`. Pure, single pass over masked lines,

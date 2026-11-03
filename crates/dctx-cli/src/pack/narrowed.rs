@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Narrowed source: drops files the view filters reject before `dctx-pack` can read them.
 
 use dctx::{PackRequest, Source};

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded accumulator of facts shared by the syn adapter and the line scan.
 //! Implements the PARSERS-v1 record bound: overflow drops later facts and reports it.
 //! Pure; finishing it yields the public Extraction.

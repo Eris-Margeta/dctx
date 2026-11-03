@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Redacted platform failures and explicit missing guarantees.
 //! Implements S-ADMISSION/S-FILE: failures never cause unrestricted execution.
 //! Depends on protocol error codes; paths, environment and OS messages stay private.

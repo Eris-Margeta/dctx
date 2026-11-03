@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Turns retained fact payloads into package-layout facts.
 //! Implements DX-B5: the same bytes can resolve differently per placement.
 //! Depends on shared symbols and the pure resolver. Views call this before resolve.

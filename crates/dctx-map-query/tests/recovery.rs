@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Rust compatibility recovery and modern-syntax integration regressions.
 //! Implements DX-FIX1 pending the syn extractor, preserving source coordinates.
 //! Uses temporary repositories and the public query API across persistent reopen.

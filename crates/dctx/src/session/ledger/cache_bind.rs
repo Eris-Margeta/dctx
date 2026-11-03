@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared admission, persisted snapshot leases, and purge/GC for one cache root.
 //! Implements CACHE-v1 publication and explicit purge on the adapter coordinator (DX-RV5H).
 //! Depends on [`super::PersistedCache`] and `dctx-adapter-cache` load/store, leases, and unlink.

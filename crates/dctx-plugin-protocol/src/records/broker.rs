@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Plugin broker request params: output, file, program and state effects.
 //! Implements requests.schema.json `output.*`, `file.*`, `program.run` and `state.*`; Git has exactly one
 //! recipe with handle arguments, never argv (S-CAPABILITY). Depends on json, scalars, bytes and refusal.

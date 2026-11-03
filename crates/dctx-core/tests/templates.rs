@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shipped rule templates (`templates/global-ignore`, `templates/global-omitcontent`) stay valid.
 //! Checks syntax, duplicates, ignore/omit conflicts and the critical patterns installs rely on.
 //! Depends only on the template files; moved here from `lib.rs` so the crate root is public API only.

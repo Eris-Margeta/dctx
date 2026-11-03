@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The export verb: the whole graph of the pinned generation as one document.
 //! Implements the `dctx map export` read; it has no cursor, no page header and no token cap, because it is an export.
 //! Depends on the index export encoder only.

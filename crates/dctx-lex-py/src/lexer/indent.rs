@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Logical indentation: spaces, tabs, blank lines and comments between statements.
 //! Implements PARSERS-v1 indent and dedent tokens, including mixed-tab diagnostics.
 //! The code scanner calls this at the beginning of each logical line.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Relative source path components.
 //! Implements DX-B3 confinement for caller paths and directory names.
 //! Depends on [`super::error`]. Walk and single-path lookup both use it.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Scope, import and reexport traversal with explicit ambiguity.
 //! Implements SPEC-MAP-MODE section 6.3 without compiler or filesystem access.
 //! Uses the borrowed symbol table; resolution assigns edge confidences.

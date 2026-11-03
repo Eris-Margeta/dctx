@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Manifest retirement, root expiry and generation availability.
 //! Implements CACHE-v1 retention limits, TTL and recovery pointer protection.
 //! Depends on lifecycle reachability; maintenance and generation readers use these rules.

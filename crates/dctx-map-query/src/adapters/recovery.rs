@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Conservative recovery through the strict parser's public API.
 //! Implements DX-FIX1 pending the syn extractor: retain complete Rust item
 //! prefixes and suffixes, never infer facts from the rejected region.

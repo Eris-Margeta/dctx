@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Token stream for Java source, including text blocks, literals and comments.
 //! Implements PARSERS-v1 lexing: comments and literals are opaque, brackets are paired,
 //! and nesting past the caller limit is a typed refusal. The structural walker consumes it.

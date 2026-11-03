@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! TypeScript declarations: interfaces, type aliases, enums and namespaces.
 //! Implements SPEC-MAP-MODE 5.1 interface/type/enum symbols; namespace bodies are
 //! transparent (their members keep root names), as in dctx-map-parse.

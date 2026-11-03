@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! One-block SHA-256 compression (FIPS 180-4 §6.2.2).
 //! Used only by the streaming hasher in `sha256`. No IO and no allocation.
 //! The block is a fixed 64-byte array. NIST vectors in `sha256` check the result.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Progress sequencing for one invocation: payload sequence, per-phase monotone counts and stable units.
 //! Implements wire.md §Bootstrap progress rules (W-PROGRESS): seq starts at 1 and strictly increases,
 //! completed is monotone and <= total within a phase, unit/total stable per phase, bounded phase table.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Ignore/omit rule parsing and single-rule matching (gitignore-style plain text, last match wins).
 //! Implements the selection rule syntax preserved by ARCHITECTURE-PROPOSAL §2 ("last-match semantics").
 //! Depends on [`crate::datatypes::IgnoreRule`] and [`super::glob`]; pure, no IO.

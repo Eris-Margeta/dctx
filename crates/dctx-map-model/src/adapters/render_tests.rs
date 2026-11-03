@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Byte-for-byte golden examples and renderer refusal controls.
 //! Pins SPEC-MAP-MODE sections 3, 4.1 and 4.2.
 //! JSON oracles live in `fixtures/wire-json/` for the future wire adapter.

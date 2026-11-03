@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Successful result records selected by the pending request's method (never by the union alone).
 //! Implements results.schema.json and wire.md §Bootstrap "the pending request's method selects the exact
 //! result schema" (W-RESULT). Depends on json, common, invocation, bytes, method; used by envelope/session.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Structural walker: scopes, fact emission and source order.
 //! Implements SPEC-MAP-MODE 5.1–5.4 for C#. A declaration owns what is lexically inside it.
 //! The token cursor, type grammar and reference scan live in sibling modules.

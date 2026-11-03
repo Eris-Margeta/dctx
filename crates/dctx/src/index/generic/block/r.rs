@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! R declarations: `name <- function(` and `name = function(` outside any brace or parenthesis (fn), and the object-system calls
 //! `setClass("Name")`, `setRefClass("Name")` and `R6Class("Name")` (type) and `setGeneric("name")` (fn), with or without `x <-` in front.
 

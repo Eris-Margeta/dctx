@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Swift scanner for comments, names, operators and compiler directives.
 //! Implements PARSERS-v1 bounded lexing without evaluating conditions.
 //! The sibling strings module handles literals and interpolation.

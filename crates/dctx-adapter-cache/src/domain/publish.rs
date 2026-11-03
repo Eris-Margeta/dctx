@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! High-level publication of views, overlays, packs, previews and facts.
 //! Implements CACHE-v1 retention: two pack snapshots, two previews, and (P-C10) one current view per root plus any
 //! older view a reader lease or pin still holds. A view a newer one replaced is retired at publish and is reclaimable.

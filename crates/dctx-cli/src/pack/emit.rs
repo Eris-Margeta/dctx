@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Output emission for `dctx pack`: stdout, file, and clipboard destinations.
 
 use std::path::Path;

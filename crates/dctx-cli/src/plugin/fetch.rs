@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! One bounded HTTPS GET for the discovery index.
 //! Implements PLUGINS.md §5.1 search `--refresh`: origin and peer checks, no credential header,
 //! no plugin execution. Depends on the distribution network port. Used by search only.

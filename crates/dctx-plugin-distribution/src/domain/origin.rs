@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! HTTPS locators and the installer's download-origin policy.
 //! Implements PLUGINS.md §5.3 and distribution.md I-ORIGIN: HTTPS only, no userinfo or fragment,
 //! no loopback/private/link-local destination unless policy permits, redirects stay on the selected

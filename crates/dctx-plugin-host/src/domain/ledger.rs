@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Receipt ledger: durable intent, execution, completion, uncertainty, replay and retention.
 //! Implements Receipts.tla `Request`, `Execute`, `Complete`, `CrashOrUncertain`, `Repeat`, `Reconcile`
 //! and `Rotate` (PP3, PP5). Pure state; the broker appends audit records before calling each step.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Module and suite docstrings, taken from the first statement's string literals.
 //! Implements SPEC-MAP-MODE 5.4 summaries for Python docstrings and leading comments.
 //! The walker asks for these before it consumes the suite they document.

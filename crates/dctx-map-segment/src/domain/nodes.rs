@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! View key prelude and dense node records.
 //! Implements SEGMENTS-v1 kind 5. Dense ids are assigned in public-id order and are not portable.
 //! Depends on [`super::facts`] for the fact-key bytes. View adjacency addresses these ids.

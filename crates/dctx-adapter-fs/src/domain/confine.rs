@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Lexical path confinement for symlink targets.
 //! Implements DX-B3 escape refusal without following links.
 //! Depends only on `std::path`. The walker asks [`is_inside`] before any content read.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit legacy import through `FactStore` (D3-LEGACY-REMOVAL §5 D3-02).
 //! Depends on dctx-pack's bounded codec and the session's injected store/cache/clock.
 //! Hosts supply immutable bytes and an empty destination view. No discovery or cleanup runs.

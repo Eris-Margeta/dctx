@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Tests for the block family: Elixir, Lua, OCaml, R, Julia, Haskell, Erlang, Verilog and Fortran.
 
 use super::super::{handles, symbols};

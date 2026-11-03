@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Rust item names, signatures, attributes, and doc summaries.
 //! Implements SPEC-MAP-MODE sections 5.1, 5.2 and 5.4.
 //! Uses Rust syntax nodes; the traversal supplies lexical context.

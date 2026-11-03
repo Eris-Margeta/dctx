@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Golden fixtures, store ownership and deterministic fuzz for the C# extractor.
 //! Implements PARSERS-v1 validation: partial facts, typed refusals and stable output.
 //! Uses the public `CsLexer` API only.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! SHA-256 digests, key fingerprints and the streaming payload check.
 //! Implements PLUGINS.md §5.2 "DX-SHA compares downloaded bytes against the signed digest" and
 //! distribution.md fingerprints (lowercase hex SHA-256 of the exact 32 key bytes, via dctx-hash).

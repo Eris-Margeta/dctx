@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Build script: embeds the short git commit of the source tree as `DCTX_GIT_SHA` for `dctx --version`.
 //! Never spawns git (decision 078): it reads `HEAD`, the branch ref and `packed-refs` as plain files of the nearest `.git`
 //! (a directory, or a worktree's `gitdir:` file). A `DCTX_GIT_SHA` in the build environment wins; outside a checkout or

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Checked next-version rules and the legacy exhaustion sentinel.
 //! Implements pack versioning; docs/reviews/dctx-legacy-removal.md F11.
 //! Depends on the parent version types; pure, no IO.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Line-start markers: ATX and setext headings, code fences, thematic breaks, list items.
 //! Implements `CommonMark` 0.31 §4.1–4.5 and §5.2 recognition rules.
 //! Each function reads text after container prefixes and at most three columns of indent.

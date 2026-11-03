@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! A segment whose lengths, checksums, and section bodies have been checked.
 //! Implements SEGMENTS-v1 `ValidatedSegment`. Borrowed strings point into the caller's bytes.
 //! Depends on the section types. [`super::decode`] is the only constructor.

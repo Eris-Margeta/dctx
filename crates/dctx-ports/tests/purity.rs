@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Source-level forbidden-IO check for the ports crate: traits and in-memory doubles only,
 //! no filesystem, environment, process, network, thread, wall-clock or stdout access, and
 //! no dependency besides dctx-core (contracts/API-PORTS-v1.md "imports no engine or adapter").

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared session construction for the public facade tests.
 //! Every session gets an explicit source, clock, policy, storage policy and place.
 //! Nothing in this helper reads a home directory or a git repository.

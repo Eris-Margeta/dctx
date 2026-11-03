@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Rank statistics and cache-density arithmetic for DX-A1.
 //! Implements ARCHITECTURE-PROPOSAL §3 measurement definitions for Stage 0.
 //! Depends only on the bench error type; the measure adapter and report use it.

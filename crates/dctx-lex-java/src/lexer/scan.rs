@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Character scanner for Java source: comments, literals, text blocks and words.
 //! Implements the lexical mask of PARSERS-v1 so strings and comments cannot declare types.
 //! Used only by [`super::lex`]; bracket pairing and depth refusal live in the parent module.

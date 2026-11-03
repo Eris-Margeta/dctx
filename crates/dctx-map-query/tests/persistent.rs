@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Byte parity for lazily loaded persistent graph queries and crash repair.
 //! Implements CM-6c, preserving all five verbs while changing cache hydration.
 //! Compares public render output against the complete in-memory reference graph.

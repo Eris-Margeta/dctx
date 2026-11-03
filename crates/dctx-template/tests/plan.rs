@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! V2 `ContextPlan` compile, canonical bytes and domain digests.
 
 use dctx_core::FileHandlingDecision;

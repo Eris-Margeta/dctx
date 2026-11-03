@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Leaf blocks: paragraphs, ATX and setext headings, fenced, indented and HTML blocks.
 //! Implements `CommonMark` 0.31 §4.1–4.6 and §4.8 for the block scanner.
 //! Extends `Scanner` with leaf rules; uses line, marker and HTML helpers.

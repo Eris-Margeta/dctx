@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Reachability, pins, purge, revocation and quarantine.
 //! Implements CACHE-v1 `Live = closure(retained manifests ∪ active leases)` and purge rules.
 //! Depends on the public ledger API. `p3_pin_gc_interleavings` is the P3 schedule.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Immutable object publication inside the cache root.
 //! Implements review F05: create a new inode and link it, never truncate an existing object.
 //! Depends on [`super::write_exclusive`] and std hard links. [`super::FsObjectStore::put_object`] calls this.

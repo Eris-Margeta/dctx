@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Read line windows and over-budget source cuts.
 //! Implements contracts/API-PORTS-v1.md read ranges and `BudgetTooSmall`.
 //! Depends on Session and an in-memory source. No clock and no network.

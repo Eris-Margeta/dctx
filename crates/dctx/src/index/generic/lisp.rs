@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Lisp-family outlines: Clojure, Common Lisp, Scheme, Emacs Lisp (here) and Nix (in `nix`).
 //! A symbol is a top-level `(def... name ...)` form found on comment- and string-masked text; the form's closing paren sets the end
 //! line. `(define (name args) ...)` names the first symbol inside, a `(def name (fn ...))` value is a function, Clojure's `(ns x)` is

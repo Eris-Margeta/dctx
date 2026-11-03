@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! One plain ignore or omit rule.
 //! Implements ADR-015b last-match lines, including `!`, directory `/`, and wildcards.
 //! Depends on [`super::glob`]. Policy and the rule loader share [`parse_rule`].

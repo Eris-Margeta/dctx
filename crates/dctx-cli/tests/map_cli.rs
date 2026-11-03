@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Binary smoke test for the new map languages in SPEC-MAP-MODE §4–6.
 //! Uses only std and Cargo's compiled CLI, with inline temporary source files.
 //! Exercises automatic indexing, find, outlines and repeat queries without git.

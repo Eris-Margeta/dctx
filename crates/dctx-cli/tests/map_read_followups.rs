@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Binary checks for absolute --lines and an over-budget read.
 //! Covers DCTX-SERIOUS-GAPS G5b and G9b and contracts/API-PORTS-v1.md.
 //! Depends on the compiled dctx-cli and a temporary source file. No network.

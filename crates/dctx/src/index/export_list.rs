@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! A file's explicit export list (DCX-55b): Python `__all__`, CommonJS `module.exports` / `exports.x`, ES `export { .. }`.
 //! Pure text scan; `session::export_order_op` uses the list to order a file's outline (DCX-55c).
 

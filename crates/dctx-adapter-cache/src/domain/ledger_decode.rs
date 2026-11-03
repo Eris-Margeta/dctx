@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Ledger body parsing, cursor checks and lifecycle invariant refusals.
 //! Implements CACHE-v1 reconstruction. A checksum does not prove accounting or ownership.
 //! Depends on domain map codecs and ledger primitives; restart verifies the frame first.

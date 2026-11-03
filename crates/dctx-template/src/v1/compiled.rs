@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! V1 compiled template and its `DCTXTMPL` byte encoding.
 //! Implements ADR-003 ahead-of-time compilation. The magic and field order match dctx-core.
 //! Depends on [`super::parse`] and [`crate::error`]. Callers compile before render or plan lowering.

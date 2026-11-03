@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Haskell declarations: column-0 `name ::` signatures, `data`, `newtype`, `type`, `class` and `instance`. A class and an instance own the
 //! indented lines that start at the column of their first member: signatures for a class, equations for an instance. Record fields of a
 //! `data` or `newtype` are read from its braces. A declaration runs to the last line indented under it; bodies are never entered.

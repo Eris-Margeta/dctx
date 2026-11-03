@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! File and directory inclusion predicates for [`super::FilterConfig`].
 //! Implements extension, size, empty, hidden and binary filters for pack output.
 //! Depends on [`super`] and [`super::names`]; pure over names and sizes.

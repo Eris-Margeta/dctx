@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Symlink classification against the source root.
 //! Implements DX-B3 escape refusal before a content read.
 //! Depends on [`crate::domain::confine`] and [`crate::ports`]. Walk and lookup both use it.

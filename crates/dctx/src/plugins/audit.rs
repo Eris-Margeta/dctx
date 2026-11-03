@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded append-only effect evidence for PLUGINS.md §4.4 and PP3.
 //! The host orders intent/effect/completion; this adapter acknowledges only synced frames.
 //! Recovery retains unresolved receipt links and refuses torn/corrupt logs without truncation.

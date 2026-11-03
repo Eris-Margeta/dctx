@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Launch admission, worker leases, bundled registration and visible status.
 //! Implements Install.tla `Revalidate`/`Launch`/`EndWorker` preconditions at the registry level,
 //! PLUGINS.md §5.1 list columns and §5.4 bundled/override/sticky-mask rules (I-BUNDLED, I-OFFLINE).

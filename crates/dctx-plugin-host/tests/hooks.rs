@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PP10 order and truth: canonical acyclic order (property test), required-predecessor suppression,
 //! publication never rolled back, and reports equal host-ledger receipts rather than plugin claims.
 //! Traces to Hooks.tla `Plan`, `RunHook`, `Publish`, `Report` with receipts from the real broker.

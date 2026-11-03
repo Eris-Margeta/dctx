@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pack engine through its public API with spy ports: publish/diff/version flow, privacy (P1),
 //! cancellation and quota refusals with positive controls, and replay determinism (P6).
 //! Depends on dctx-pack, dctx-ports' in-memory doubles and dctx-core.

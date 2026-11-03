@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Algorithm-tagged content identity.
 //! Implements IDENTITY-v1 `ObjectKey` text and decision 078: own hashing, no git object ids.
 //! Wraps [`dctx_hash::ContentDigest`]. Callers are facts, provenance and the future wire adapter.

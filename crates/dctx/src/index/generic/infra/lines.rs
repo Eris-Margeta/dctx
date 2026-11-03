@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Line-oriented infra formats: SQL `CREATE` statements, Makefile targets and Pascal routines.
 //! One declaration per line, picked from the masked line; the name is read back from the original line so quoted
 //! identifiers survive. Bodies are never entered.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! In-memory `Source` with a call log: an ephemeral source and a read spy for tests.
 //! Implements the `Source` contract (names-only listing, separate metadata, grant-checked reads)
 //! over a map of files and directories; every call is recorded so P1 tests can prove what was touched.

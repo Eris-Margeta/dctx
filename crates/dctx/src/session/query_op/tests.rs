@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use super::{parse_resume, read_cursor, slice_span, truncation_line};
 
 #[test]

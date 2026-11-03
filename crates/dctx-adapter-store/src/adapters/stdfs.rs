@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Std filesystem adapter for durable segment names.
 //! Implements SEGMENTS-v1 sync and rename on a caller-supplied directory.
 //! Depends on [`crate::ports::StoreFs`]. Crash cuts and Windows sharing live in [`super::memory`].

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `dctx map path <FROM> <TO>`: the shortest edge path between two nodes (calls, imports, contains), at most 8 hops.
 //! Parses its own few flags, so the five verbs and their bounds in `args` stay as they are.
 //! Both ends are stable ids or place-relative files; an id that names no node is an error. The page fits the 2,000-token cap.

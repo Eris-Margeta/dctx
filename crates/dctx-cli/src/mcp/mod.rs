@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `dctx mcp`: a stdio MCP server (JSON-RPC 2.0, one message per line) exposing the map verbs as tools.
 //! Every `tools/call` builds the argument vector of `dctx map <verb> ...` and runs `map::execute`, the CLI's own code path.
 //! Only JSON-RPC lines go to stdout; diagnostics stay on stderr. The server exits 0 at end of input.

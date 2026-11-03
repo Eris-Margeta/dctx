@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Public per-file parse records and explicit failure states.
 //! Implements SPEC-MAP-MODE sections 5.3 and 6.2–6.3.
 //! Uses model facts; a resolver consumes references before storage.

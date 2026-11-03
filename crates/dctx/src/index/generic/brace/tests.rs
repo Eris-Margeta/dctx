@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Tests for the member-level symbols of the brace family: one per language, plus the multi-line headers they depend on.
 
 use super::symbols;

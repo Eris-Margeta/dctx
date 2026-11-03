@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! C and C++ scanner: whitespace, comments, identifiers, numbers, strings and directives.
 //! Implements line-comment and block-comment masking, prefixed and raw strings,
 //! and preprocessor lines as single tokens. Used only by `lexer::lex`.

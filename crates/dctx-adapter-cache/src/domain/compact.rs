@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Segment compaction reserves the copy before it retires the input.
 //! Implements CACHE-v1: no headroom means `CacheLimit`, and the live input is not deleted to make room.
 //! Depends on admission and reachability in [`super::Lifecycle`]. Explicit GC unlinks the old segment later.

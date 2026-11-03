@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Gap oracles for C# raw-string delimiters, reopened namespaces and hostile limits.
 //! Spec: docs/reviews/dctx-test-gaps.md P05 CS1–CS3; PARSERS-v1 lexical mask.
 //! Depends on the public `CsLexer` API; used by `cargo nextest -p dctx-lex-cs`.

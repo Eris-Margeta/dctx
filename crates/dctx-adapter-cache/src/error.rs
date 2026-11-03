@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Refusals for admission, maintenance and legacy adoption.
 //! Implements CACHE-v1 `CacheLimit {needed, available, pinned, pending}` and the typed
 //! disk-full failure. Depends on `dctx_core::error::DctxError` for the `Cache` port.

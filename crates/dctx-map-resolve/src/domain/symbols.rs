@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Borrowed symbol table and validation of per-file facts.
 //! Implements SPEC-MAP-MODE section 6.3 with package-isolated indexes.
 //! Uses parser-neutral definitions; lookup and resolution share this table.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Hand-written, zero-dependency JavaScript and TypeScript structural extractor.
 //! Implements decision 077, PARSERS-v1 (JavaScript/TypeScript rows) and SPEC-MAP-MODE 5–6.2.
 //! Depends on dctx-map-model facts and dctx-hash; never on tree-sitter.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Lexical checks for index strings.
 //! Implements the PL-C index schema patterns and semantics.md S-BOUNDS / S-MANIFEST.
 //! Depends on [`crate::IndexError`]. The index walker calls these before accepting a page.

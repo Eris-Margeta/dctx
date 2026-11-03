@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Every refusal path of the public extract API, each next to its positive control.
 //! Checks PARSERS-v1 limits (bytes, nesting, records) and malformed-input behaviour;
 //! deep inputs at the nesting ceiling must parse on the worker without exhausting its stack.

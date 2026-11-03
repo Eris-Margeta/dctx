@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Type parameters, generic arguments and formal declarators.
 //! Implements SPEC-MAP-MODE 5.1 type-parameter lists and 5.3 type-argument spans.
 //! Depends on the walker cursor for brackets, annotations and depth limits.

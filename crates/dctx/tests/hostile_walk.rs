@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! One hostile file never fails the whole map walk (v1 card 10, robustness corpus).
 //! A Rust file that is not UTF-8, and a file name the confined path type cannot carry (a backslash), are skipped;
 //! every other file is still indexed. Before the fix either one made the snapshot, and so every map verb, fail.

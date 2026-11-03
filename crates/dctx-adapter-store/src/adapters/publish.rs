@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Temp write, validate, sync, immutable rename, then the generation pointer.
 //! Implements SEGMENTS-v1 publication order and the P2 crash cuts in [`crate::domain::Boundary`].
 //! Depends on [`super::store::SegmentStore`] and `dctx-map-segment` validation. Recovery reads the result.

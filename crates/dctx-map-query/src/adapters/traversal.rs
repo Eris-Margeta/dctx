@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded outlines, directed graph neighborhoods and node explanations.
 //! Implements SPEC-MAP-MODE section 4 using indexed adjacency lists.
 //! Pure traversal over Index facts; query dispatch handles freshness and budgets.

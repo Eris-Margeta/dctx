@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Type grammar: modifiers, attributes, generics, base lists and type references.
 //! Implements SPEC-MAP-MODE 5.3 `uses-type` and `implements` for C# declarations.
 //! Members and type declarations call these helpers while they walk a span.

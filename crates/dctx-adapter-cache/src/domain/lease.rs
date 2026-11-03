@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Reader pin handshake.
 //! Implements the DX-A2 model: begin observes one pointer, confirm pins it only while that
 //! generation is still retained and complete, release drops the pin.

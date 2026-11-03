@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Host checks for a parsed template: permissions, budgets, plugins and render bytecode.
 //! Implements PRODUCT-CONTRACTS C03 and PLUGINS.md §3.5 (narrow only, cycles refused).
 //! Depends on [`crate::source`], [`crate::opcode`] and [`crate::binary`]. Callers use [`compile`].

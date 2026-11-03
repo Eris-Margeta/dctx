@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Tests for call and import linking over lexed fixtures.
 //! Runs the lexers through `prepare_structural` and the graph assembly the walk uses, then [`link`].
 //! Each fixture mirrors one language of the DCX-12 card check.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Linux-only adversary operations for the trusted subprocess fixture.
 //! Each forbidden effect is attempted after `run_restricted`; success is a test failure.
 //! Depends on safe std/rustix APIs only; never executes arbitrary input as command text.

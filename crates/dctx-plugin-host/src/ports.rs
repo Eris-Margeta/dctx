@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! IO ports the host domain needs: durable audit, race-safe files, worker processes and a monotonic clock.
 //! Implements the port boundary of PLUGINS.md §3.1 (process/confinement/audit/effect ports) and §4.4.
 //! Real adapters live in PL-A (`dctx-plugin-platform`) and the facade; `fakes` provides deterministic

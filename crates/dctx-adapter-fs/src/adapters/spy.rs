@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Read spy around an injected filesystem.
 //! Implements the DX-B3 evidence that ignored and omitted paths are never opened.
 //! Depends on [`crate::ports`]. Tests and callers inspect [`SpyFs::read_files`].

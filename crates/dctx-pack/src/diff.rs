@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Snapshot diff: compares a new scan with the previous snapshot and picks the next version.
 //! Implements the CLI's diff-and-versioning step over facts: no previous snapshot is V1 with an
 //! empty report; otherwise `compare_trees` (size/mtime) then `version_after_diff`.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded byte reader and writer for plugin section values.
 //! Implements contracts/DTS-v2.md plugin section payloads.
 //! Depends on template size limits and typed corruption errors; used by the binary plugin section codec.

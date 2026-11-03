@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use crate::{Parser, PureParser};
 use dctx_map_model::{EdgeKind, NodeKind, SymbolKind};
 

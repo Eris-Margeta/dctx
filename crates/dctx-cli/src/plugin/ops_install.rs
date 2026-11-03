@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Plugin installation and update commands for PLUGINS.md §5.1.
 //! Depends on distribution installs, the cached index and consent enablement.
 //! Used by the plugin operations dispatcher.

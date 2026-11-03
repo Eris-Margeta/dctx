@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Built-in plain ignore and omit lines.
 //! Implements the product privacy defaults used by DX-B3 rule loading.
 //! Depends on [`super::rule`]. These are text patterns, not VCS metadata reads.

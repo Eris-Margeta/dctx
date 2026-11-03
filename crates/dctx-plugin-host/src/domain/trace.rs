@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Model-action trace: every host transition names the PL-M TLA+ action it refines.
 //! Implements the "Host transition correspondence" table of docs/formal/dctx-plugins/README.md for
 //! Authority, Receipts, Resources, Lifecycle and Hooks. Depends on nothing; used by every service so

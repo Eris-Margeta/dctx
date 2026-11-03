@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! JavaScript and TypeScript facts from dctx-lex-js, plus the optional tree-sitter walker.
 //! Implements SPEC-MAP-MODE sections 5 and 6.2 and the PARSERS-v1 JavaScript and TypeScript rows.
 //! The lexer already emits model nodes; this adapter copies them and records structural precision.

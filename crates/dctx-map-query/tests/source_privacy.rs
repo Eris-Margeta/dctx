@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Privacy refusals for secrets, ignored files, and symlinks.
 //! Implements SPEC-MAP-MODE sections 6.1 and 7 on the public source port.
 //! The engine records content opens and leaves denied paths unread.

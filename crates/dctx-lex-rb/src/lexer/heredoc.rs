@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Heredoc openers and bodies, including several openers on one line.
 //! Implements Ruby `<<`, `<<-` and `<<~` forms with quoted and bare terminators.
 //! The walker sees a string token at the opener; only `#{}` inside becomes code.

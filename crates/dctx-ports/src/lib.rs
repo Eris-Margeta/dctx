@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! dctx-ports: the boundary traits engines use instead of IO — `Source`, `FactStore`, `Cache`, `Clock`,
 //! `Cancellation` — whose data are dctx-core types, plus in-memory implementations and spies.
 //! Implements ARCHITECTURE-PROPOSAL §2 (`dctx-ports`) and contracts/API-PORTS-v1.md "Boundary ports".

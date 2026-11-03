@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Golden fixtures, store invariants and deterministic fuzz for configuration files.
 //! Implements PARSERS-v1: partial facts for malformed input, no panic on arbitrary bytes.
 //! Store rules match dctx-map-store: file ownership, unique ids, spans inside the file.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Projection of prepared symbols and complete config lexes into indexed nodes and contains edges.
 use super::*;
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Record order for `map` of one file: what a reader of the outline needs first survives a page cut.
 //! Tier 0 holds the file's exported top-level declarations, tier 1 every other declaration, tier 2 impl blocks,
 //! constants, variables and tests. Each tier is in source order, so a page is the file's public surface plus the

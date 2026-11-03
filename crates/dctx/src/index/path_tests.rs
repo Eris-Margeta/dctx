@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Tests for [`super`]: edge direction, the sibling rule, tie-breaks, the hop cap and the pages.
 
 use super::*;

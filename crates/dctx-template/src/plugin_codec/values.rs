@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Plugin policy, capability, configuration and lock value encodings.
 //! Implements contracts/DTS-v2.md plugin section payloads.
 //! Depends on plugin domain types and bounded byte I/O; used by the binary plugin section codec.

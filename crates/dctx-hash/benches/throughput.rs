@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Throughput of the streaming SHA-256 content hasher.
 //! A measurement only: `cargo test` does not run or assert this bench.
 //! Depends on criterion and [`dctx_hash::Sha256`]. Used when comparing the strict profile.

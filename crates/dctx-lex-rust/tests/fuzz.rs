@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Property tests: arbitrary bytes and Rust-like token soup never panic, and every
 //! result keeps the PARSERS-v1 invariants (in-range UTF-8 spans, ordered lines,
 //! consistent labels, determinism). Uses proptest and the public API only.

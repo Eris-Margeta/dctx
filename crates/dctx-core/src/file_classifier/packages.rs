@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Extension classification for documents, archives, executables and compiled artifacts.
 //! Implements the pack rule that these types appear in the tree with content omitted.
 //! Depends on [`super::FileContentHandling`]; pure over a lowercased extension.

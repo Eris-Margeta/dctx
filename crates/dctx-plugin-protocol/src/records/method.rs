@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Session method registry: the closed v1 method set, its sender and whether it is a broker effect.
 //! Implements the method table of plugin-api wire.md §Bootstrap and lifecycle.
 //! Depends on `scalars::Sender`; used by requests, results, session and negotiation.

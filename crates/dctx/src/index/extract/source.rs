@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Line-oriented Rust and Markdown symbols, plus the signature text shared with the syn walk.
 use super::*;
 

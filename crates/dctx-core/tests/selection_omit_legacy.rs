@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Legacy omit-content behavior through the pure policy (D3-LEGACY-REMOVAL §3/§5 D3-07).
 //! Depends on dctx-core selection and `ItemContext`; the core integration suite uses it.
 //! All twelve legacy omit tests retain their names below; no retirements or differences.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Boundary policy for the pure model crate.
 //! SPEC-MAP-MODE section 10 and ARCHITECTURE-PROPOSAL §2 assign IO to adapters.
 //! This crate has no filesystem, clock, process or network port.

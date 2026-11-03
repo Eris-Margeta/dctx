@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Signed local fixtures for the public index page.
 //! Implements PLUGINS.md §7.2 PL-X: the git page verifies, and the named refusals stay refusals.
 //! Depends on dev-only ed25519-dalek to mint a signature from the RFC 8032 test secret.

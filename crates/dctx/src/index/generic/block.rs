@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Block-structured declarations: Elixir, Lua and Julia (blocks closed by `end`), R and Erlang (their own scanner),
 //! Fortran (blocks closed by `end`), Verilog (construct blocks closed by `endmodule` and friends), and through [`layout`] OCaml and Haskell.
 //! The `end` languages share one scanner: a table says which words open or close a block and how a declaration line reads.

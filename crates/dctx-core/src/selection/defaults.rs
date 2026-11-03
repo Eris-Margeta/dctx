@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Built-in (layer 1) ignore and omit-content rules compiled into every build.
 //! Implements the hardcoded layer of the three-layer selection policy (hardcoded → global → local).
 //! Depends on nothing; plain rule text parsed by [`super::rule`].

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Hand-written, zero-dependency configuration structural extractor.
 //! Implements decision 077, PARSERS-v1 and SPEC-MAP-MODE 5–6.2 for JSON, TOML and YAML.
 //! Depends on dctx-map-model facts and dctx-hash; never on tree-sitter, git or mmap.

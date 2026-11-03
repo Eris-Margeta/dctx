@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Public Swift extractor contract, golden corpus and adversarial inputs.
 //! Implements PARSERS-v1 refusal and map-store ownership regression checks.
 //! Uses only the public extractor and shared model, without IO or dependencies.

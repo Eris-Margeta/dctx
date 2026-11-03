@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The CLI exit-code contract of docs/CLI-EXIT-CODES.md: 0 ok, 1 no result, 2 usage, 3 index error.
 //! `map`, `pack`, `mcp`, `languages`, unknown commands and non-UTF-8 arguments return a [`Failure`]; `main` prints it and exits with its code.
 //! Every failure carries a hint the user can act on. The legacy snapshot, cache, template, plugin and git commands keep their exit 1.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Filesystem boundary for map traversal.
 //! Implements SPEC-MAP-MODE §13a without coupling scan to model ids.
 //! Adapters supply entry kinds without opening file content.

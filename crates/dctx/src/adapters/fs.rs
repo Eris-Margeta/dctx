@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Filesystem source rooted at a caller-supplied directory.
 //! Implements contracts/API-PORTS-v1.md `Source`: confined paths, metadata before content.
 //! Depends on [`crate::ports::Source`] and the standard library. The session does not open a path itself.

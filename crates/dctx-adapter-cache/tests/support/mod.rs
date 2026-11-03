@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared ledger helpers for the cache lifecycle integration tests.
 //! Each test binary pulls this file in with `#[path]`. It is not a test crate of its own.
 //! Depends on the public `Lifecycle` API. Tests call `gc` and `drain`.

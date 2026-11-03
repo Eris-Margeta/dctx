@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Expressions: groups, arrows, function and class expressions, templates and ASI ends.
 //! Implements the PARSERS-v1 rule that calls and declarations inside templates, JSX
 //! containers and arrow bodies are kept while unknown shapes are skipped token by token.

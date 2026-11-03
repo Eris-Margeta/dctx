@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Type declarations: aliases, structs, interfaces and grouped type specs.
 //! Implements SPEC-MAP-MODE 5.1 Go type facts, including interface method members.
 //! Depends on the walker and on reference scans for fields and embedded types.

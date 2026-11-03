@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Classes, modules, methods, singleton classes and constants.
 //! Implements SPEC-MAP-MODE 5.1 declaration spans for Ruby `class`, `module` and `def`.
 //! Metaprogramming is not a declaration: only a statement-level keyword is extracted.

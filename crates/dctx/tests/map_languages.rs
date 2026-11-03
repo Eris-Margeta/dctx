@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Public map verbs over temporary repositories covering the facade's new lexers.
 //! Implements SPEC-MAP-MODE 4–6.2 and the selection rule that excluded bytes stay unread.
 //! Uses `FsSource` and an explicit Session policy, following `fs_fixture`'s construction.

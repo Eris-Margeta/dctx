@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Omit-rule parity corpus from dctx-core.
 //! Implements ADR-015 and SPEC-MAP-MODE section 13a content omission.
 //! Uses pure compiled rules; filesystem layering is handled by adapters/rules.

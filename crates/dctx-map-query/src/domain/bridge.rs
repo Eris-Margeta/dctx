@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Package-aware conversion between parser facts and resolver inputs.
 //! Implements SPEC-MAP-MODE sections 5.1, 5.3 and 6.3.
 //! Uses only public map types and creates the place/package containment graph.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Multi-word concept matching for find: weighted word overlap on top of the lexical rank.
 //! A query of two or more content words keeps a candidate only when at least half of them match.
 //! Fewer than two content words never reach this module's filter, so single-word find stays as it was.

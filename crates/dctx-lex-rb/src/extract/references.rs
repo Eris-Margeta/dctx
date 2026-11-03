@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Imports, calls, member references and comment summaries.
 //! Implements SPEC-MAP-MODE 5.3 references for Ruby without resolving them.
 //! A bare word is not a call. A non-literal `require` emits no import edge.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Top-level and member declarations: packages, imports, functions, aliases.
 //! A package name is the module signature. Imports keep `*` and `as`.
 //! An unclosed parameter list stops before the next declaration keyword.

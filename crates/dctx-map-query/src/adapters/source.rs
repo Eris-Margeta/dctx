@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Privacy-filtered snapshots and selected source reads through the filesystem port.
 //! Implements SPEC-MAP-MODE sections 6.1 and 7 using the DX-B3 source adapter.
 //! Content opens are counted; metadata and denied paths are not.

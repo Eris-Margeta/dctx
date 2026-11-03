@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Paths added, edited, or removed since the clean base generation.
 //! Implements ARCHITECTURE-PROPOSAL DX-C5 overlay on a content snapshot.
 //! Query rendering does not read this set; wire dirty counts stay on the snapshot.

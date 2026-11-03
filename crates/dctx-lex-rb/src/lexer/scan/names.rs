@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Identifiers, globals, numbers and operators.
 //! Keyword text decides whether an identifier opens an expression; the longest
 //! matching operator wins over its one-byte prefixes.

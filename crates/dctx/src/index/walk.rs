@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Snapshot walk. Excluded directories are not listed, and excluded files are not opened.
 //! Implements contracts/API-PORTS-v1.md source confinement and the freshness modes.
 //! Depends on the source port, the effective policy and the structural extractor.

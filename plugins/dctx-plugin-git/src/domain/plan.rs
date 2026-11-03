@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The protection plan: already protected, a bounded append, or a refusal to claim protection.
 //! Implements PLUGINS.md §6.2 steps 4–5 and git.md "If rules, current marker and coverage are complete,
 //! return ok/already-protected with zero writes" / "append missing literals in order; separator if

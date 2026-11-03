@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Quotas, wire-size arithmetic and bounded request queues (backpressure).
 //! Implements Resources.tla `Receive`/`Drain` (PP7): the ceiling is the minimum of every layer, every
 //! charge is checked with non-wrapping arithmetic before allocation, and chunks must fit the frame after

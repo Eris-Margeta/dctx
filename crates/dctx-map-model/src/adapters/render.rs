@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Deterministic whole-record text answers, with JSON delegated to `wire-json`.
 //! Implements SPEC-MAP-MODE sections 3, 4.1 and 4.2.
 //! Depends on domain records. Callers transport the returned string. No IO.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Lua: functions (`function a.b(`, `local function x(`, `name = function(`), table fields (`M.x = ...`), local tables and upper-case constants.
 //! A function is `fn`, `Table.field = value` a `field`, `local t = {` a `var` and `local MAX = 1` a `const`.
 

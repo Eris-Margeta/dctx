@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Budget checks and output fitting for bounded answer rendering.
 
 use dctx_core::budget::estimate_tokens;

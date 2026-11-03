@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Invoke payloads: the six closed hook/command invocation forms.
 //! Implements invocation.schema.json (before/after pack, before/after index, cache-gc, command) and
 //! wire.md §Invocation boundaries: projects and resources are opaque handles, never OS paths.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded measurement of the legacy marker expansion.
 //! Tree and file bodies are measured as run-length documents, so an oversized answer is refused without allocation.
 //! Depends on [`super::doc`]. Used by [`crate::legacy_output`] and the parity tests.

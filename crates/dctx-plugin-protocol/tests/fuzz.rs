@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Property tests: frame fuzzing, random split reads of back-to-back fixture frames, body mutation fuzzing
 //! and canonical encode/decode round trips of arbitrary bounded JSON trees.
 //! Implements W-FRAME/W-JSON robustness: arbitrary input never panics, splits never change messages.

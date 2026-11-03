@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Canonical JSON v2 and a plain text page. No insignificant whitespace, LF terminated.
 //! Implements contracts/API-PORTS-v1.md ("JSON v2 and compatibility").
 //! Depends on [`super::answer`]. The session writes the returned string as one sink page.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Session authority: grant layers, selection, policy epoch, readiness and halt.
 //! Implements Authority.tla `Initialize`, `Configure`, `Consent`, `Narrow`, `ChangeSelection`, `Halt`,
 //! `Admit`, `Commit` and `Read` (PP1, PP2, PP4). Admission snapshots the epoch; commit rechecks the

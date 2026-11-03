@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure safe codec for immutable map index segments.
 //! Implements ARCHITECTURE-PROPOSAL §3 Segments and §7 DX-C1, plus SEGMENTS-v1.
 //! Checksums use `dctx-hash`. Stores and tests borrow validated slices from the bytes they pass in.

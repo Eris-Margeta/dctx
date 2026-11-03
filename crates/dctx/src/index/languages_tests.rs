@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Locks [`crate::languages`] to the extension dispatch of [`super::extract`], to the heuristic families of
 //! [`super::generic`] (confidence `guess`) and to the document formats (tier `docs`).
 

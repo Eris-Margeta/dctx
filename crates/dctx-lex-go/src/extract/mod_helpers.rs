@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Draft assembly, duplicate ordinals and signature or doc text helpers.
 //! Implements SPEC-MAP-MODE 5.1–5.4 fact order, containment edges and summaries.
 //! Depends on lexer positions and dctx-map-model nodes. The walker in `extract`

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Gap closures PY1–PY3 for the Python extractor.
 //! Covers f-string call ownership, indent composition and resource refusals.
 //! Uses the public lexer API; the oracles in this file are the controls.

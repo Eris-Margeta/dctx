@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Segment store: pins, admission, and the shared coordinator.
 //! Implements the short reader handshake in SEGMENTS-v1 and CACHE-v1 admission.
 //! Depends on [`crate::ports::StoreFs`] and the pure manifest rules. Publish, recover, and GC share this type.

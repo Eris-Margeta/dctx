@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! IO-free extraction vocabulary: facts, precision labels, limits and refusals.
 //! Implements PARSERS-v1 (`ParseResult`, completion, limits) for configuration files.
 //! Used by the JSON, TOML and YAML walkers and by callers of the public API.

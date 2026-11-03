@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Maintenance slice bounds, requests and reports.
 //! Implements CACHE-v1 startup bounds and explicit garbage collection inputs.
 //! Depends on blockers, root ids and cancellation; the maintenance facade uses these types.

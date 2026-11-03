@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Versioned requests for snapshot, pack and the five map verbs.
 //! Implements contracts/API-PORTS-v1.md ("Requests, budgets and results").
 //! Depends on [`super::limits::OperationLimits`]. The session validates these before any source read.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Structural walker: scopes and top-level declaration dispatch.
 //! Implements SPEC-MAP-MODE 5.1–5.4 for Go. A declaration owns the spans lexically
 //! inside it. Uses lexer tokens; draft helpers, declarations and reference scans

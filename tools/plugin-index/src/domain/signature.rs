@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Detached index signature and local test pins.
 //! Implements distribution.md `dctx-plugin-index-v1` || exact index bytes, and decision 081 verification.
 //! Depends on `dctx-ed25519` and `dctx-hash`. [`crate::execute`] and the fixture tests call it.

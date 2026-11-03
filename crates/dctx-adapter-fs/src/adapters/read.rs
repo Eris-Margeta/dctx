@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Authorized content reads with a before/after stamp.
 //! Implements DX-B3: a race discards the digest instead of reporting it as current.
 //! Depends on [`crate::ports`] and `dctx-hash`. Inventory and `validate` share it.

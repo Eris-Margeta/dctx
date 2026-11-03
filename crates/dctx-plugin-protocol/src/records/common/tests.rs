@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use super::*;
 use crate::json::decode::{DecodeLimits, decode_object};
 

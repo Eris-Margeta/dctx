@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Call, member and type references inside already-recognised spans.
 //! Implements SPEC-MAP-MODE 5.3 calls and uses-type. A call whose callee is a
 //! macro defined in this file is abstained. Bare `a.b` and `p->b` reads are

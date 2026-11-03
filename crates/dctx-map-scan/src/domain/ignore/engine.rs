@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure layered ignore and omission decisions.
 //! Implements ADR-014/015b and SPEC-MAP-MODE section 6.1.
 //! Consumes compiled rules supplied by adapters; no model dependency.

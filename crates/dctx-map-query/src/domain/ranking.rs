@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Integer ranking features layered over SQLite FTS5 BM25.
 //! Implements SPEC-MAP-MODE section 6.4 without IO.
 //! Used by find after lexical candidates are retrieved from the store.

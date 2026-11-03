@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Privacy evidence for the filesystem Source adapter.
 //! Implements DX-B3 read-spy and the decision 078 plain-folder / `.git` folder contract.
 //! Depends on `dctx-adapter-fs` and `tempfile`. The adapter tests call the public API.

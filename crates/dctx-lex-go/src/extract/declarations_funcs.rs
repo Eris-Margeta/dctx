@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Function and method declarations, including receivers and type parameters.
 //! Implements SPEC-MAP-MODE 5.1 Go function facts and method names (`Type::Name`).
 //! Depends on the walker and on reference scans for parameters, results and bodies.

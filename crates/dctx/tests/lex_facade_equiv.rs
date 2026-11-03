@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Map, find and explain stay aligned for a generated nested JSON file.
 //! Spec: SPEC-MAP-MODE 5–6.2. The pre-change line scan is the span oracle.
 //! Depends on the session helper and an in-memory source. No clock assertions.

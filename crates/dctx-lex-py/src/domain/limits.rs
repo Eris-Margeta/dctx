@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Input ceilings for one Python extraction.
 //! Implements PARSERS-v1 capabilities: caller limits can only narrow ceilings.
 //! Used by the public extractor, the lexer and the structural walker.

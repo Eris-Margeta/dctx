@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The 80-byte segment header. Magic, versions, lengths and the envelope checksum slot.
 //! Implements SEGMENTS-v1 "Encoding envelope". Checksum comparison happens after the directory.
 //! Depends on [`super::cursor`] and [`super::limits`]. [`super::decode`] calls [`parse`] first.

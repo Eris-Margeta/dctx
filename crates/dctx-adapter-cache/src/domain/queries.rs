@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Read-only ledger introspection: revision, clock, maintenance, cursors and TTLs.
 //! Implements the CACHE-v1 status inputs over [`super::Lifecycle`]. The facade and tests only read state here.
 //! Dry-runs do not move the revision and a rejected backward sample does not move the wall clock.

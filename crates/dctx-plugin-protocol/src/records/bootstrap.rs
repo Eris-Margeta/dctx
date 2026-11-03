@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bootstrap envelope (`wire: 1`): the host hello and the worker's selection or refusal.
 //! Implements bootstrap.schema.json and wire.md §Bootstrap and lifecycle; negotiation rules are in negotiate.
 //! Depends on json, common, failure, scalars, refusal; used by envelope, negotiate and session.

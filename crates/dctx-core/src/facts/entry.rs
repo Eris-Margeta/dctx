@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Source facts: listed entries, their metadata and the read grant that authorizes content.
 //! Implements PRODUCT-CONTRACTS C03/P1: a content read needs a [`ReadGrant`], and a grant
 //! exists only for an `Include` decision on an item whose ancestors are all `Include`.

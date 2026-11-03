@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Whitespace-normalized fingerprints for rename and move detection.
 //! Implements SPEC-MAP-MODE section 5.2.
 //! Depends on dctx-hash SHA-256. Every parser adapter uses this fingerprint.

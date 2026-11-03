@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Closed-object field access over the protocol's strict JSON value tree.
 //! Implements `additionalProperties: false` and required-member rules of the plugin-api schemas.
 //! Depends on dctx-plugin-protocol's `Json`; used by manifest, bundle, index and registry codecs.

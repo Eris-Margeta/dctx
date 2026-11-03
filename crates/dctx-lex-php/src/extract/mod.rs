@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Structural fact assembly, lexical scopes and bounded source coordinates.
 //! Implements SPEC-MAP-MODE 5–6.2 with file-owned identities and containment.
 //! Sibling walkers consume opaque lexer tokens; no names are resolved here.

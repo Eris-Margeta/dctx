@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Perl extraction for the brace family.
 //!
 //! A `package A::B;` (or a `package A { .. }` block) opens a type that holds every later `sub` until the next package,

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Model-independent scan privacy rules.
 //! Implements SPEC-MAP-MODE sections 6.1 and 13a.
 //! Uses the standard library and serves map indexers.

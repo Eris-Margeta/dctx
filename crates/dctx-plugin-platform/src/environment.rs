@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Fixed environment for trusted bootstrap processes; never an inherited allowlist.
 //! Implements S-ADMISSION and PL-R loader/credential isolation requirements.
 //! Only prepares a Command; it is not permission to spawn an unconfined plugin.

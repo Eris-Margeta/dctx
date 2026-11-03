@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Differential test against the tree-sitter oracle in dctx-map-parse.
 //! Implements the PARSERS-v1 gate: per-language, per-family precision and recall,
 //! with declarations held to >= 98% precision and >= 85% recall (ARCH §3).

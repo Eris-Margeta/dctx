@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The broker: admits, audits and serves worker requests through the file, recipe and audit ports.
 //! Implements PLUGINS.md §3.3/§4.3/§4.4 for `file.read`, `output.read` and `file.stage` here, and the
 //! effect methods in `effects`. Every serve passes Authority `Admit` → Resources `Receive` → Authority

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Hook sequencing: canonical acyclic order, required-predecessor suppression and ledger-truth reports.
 //! Implements PLUGINS.md §3.5 and Hooks.tla `Plan`, `RunHook`, `Publish`, `Report` (PP10): topological
 //! sort with canonical-ID tie-break, cycles refused, sequential execution, earlier committed effects kept,

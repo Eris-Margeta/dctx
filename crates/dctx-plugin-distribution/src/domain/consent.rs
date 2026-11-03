@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Requested capability sets and digest-bound consent records.
 //! Implements PLUGINS.md §4.1/§5.1 "reject capability expansion without new consent; existing consent may
 //! cover a verified equal/narrower update" and requirements I-CONSENT. Pure; depends on the protocol's

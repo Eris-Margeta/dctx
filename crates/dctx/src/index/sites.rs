@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Call-site lines for inbound `calls` records of a neighbors answer.
 //! Implements the `sites` field: the 1-based absolute lines inside a caller's span where the callee's last name segment occurs as a call.
 //! Depends on the caller's verified bytes, which the session reads; this module only plans the reads and scans the text.

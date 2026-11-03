@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Model-independent scan records and content hashes.
 //! Implements SPEC-MAP-MODE section 13a.
 //! Depends on dctx-hash SHA-256. Map indexers consume these records.

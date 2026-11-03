@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Build capabilities. These describe this binary, not the caller's host grants.
 //! Implements contracts/API-PORTS-v1.md ("Typed error set and capabilities").
 //! Depends on the crate's feature flags. [`crate::Session::capabilities`] returns [`Capabilities::current`].

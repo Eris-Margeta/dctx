@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Local public-index validator for dctx plugins.
 //! Implements PLUGINS.md §5.3 and §7.2 row PL-X, and the PL-C index schema.
 //! Depends on `dctx-ed25519` for verification and `dctx-hash` for key fingerprints.

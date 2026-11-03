@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Extraction ceilings and the typed refusals they produce.
 //! Implements PARSERS-v1 "Caller limits can only narrow these ceilings".
 //! Pure values; the extract pipeline enforces them before allocating a syntax tree.

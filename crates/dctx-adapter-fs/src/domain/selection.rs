@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! File-handling permission after a selection decision.
 //! Implements ADR-014 guarantees and ADR-015b's four decisions.
 //! Depends on no IO. The walker and `FsSource::read` both consult it before content.

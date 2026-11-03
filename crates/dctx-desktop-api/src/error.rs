@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Desktop error enum and the only text mapping the Tauri layer needs.
 //! Implements ARCHITECTURE-PROPOSAL §7 DX-E4a and PLUGINS.md §7.3 PL-APP refusals.
 //! Depends on distribution's typed errors. Callers convert with [`DesktopError::command_string`].

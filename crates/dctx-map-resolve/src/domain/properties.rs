@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Property tests for deterministic views and content-keyed sharing.
 //! Implements PRODUCT-CONTRACTS P6 `p6_permutation_replay` and P7 `p7_non_vcs_reuse`.
 //! Depends on the public view resolver. No clock, filesystem or git object id is read.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Unresolved Rust imports, calls, implementations, tests, and type uses.
 //! Implements SPEC-MAP-MODE section 5.3 without name resolution.
 //! Uses syntax fields and lexical scope; outputs resolver-ready raw sites.

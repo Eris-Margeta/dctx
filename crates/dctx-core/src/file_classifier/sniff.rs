@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Content sniff for files whose extension is not a known binary type.
 //! Implements the null-byte and non-printable ratio check used when the extension is inconclusive.
 //! Depends on nothing; pure over bytes already read under a grant.

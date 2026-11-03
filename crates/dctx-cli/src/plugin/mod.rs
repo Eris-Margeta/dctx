@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Plugin management commands and the same-binary worker switch.
 //! Implements PLUGINS.md §5.1 and §7.3 row PL-CLI: every management command goes through
 //! `dctx-plugin-distribution`, and the bundled git catalog comes from the dctx facade.

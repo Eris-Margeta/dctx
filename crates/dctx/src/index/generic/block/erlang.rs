@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Erlang declarations: the `-module(name).` attribute is the module, the `-record(name, ..)` and
 //! `-type name(` attributes are types, and the clauses `name(Args) [when ..] ->` written at column 0,
 //! separated by `;` and closed by a full stop at the end of a line, are one fn symbol per function.

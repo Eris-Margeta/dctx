@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Versioned persistence of the registry as canonical JSON (state format 1).
 //! Implements distribution.md "version state explicitly; no post-install/migration scripts" and
 //! makes disable, consent, high-water marks and quarantine survive restarts (I-CONSENT, I-ATOMIC).

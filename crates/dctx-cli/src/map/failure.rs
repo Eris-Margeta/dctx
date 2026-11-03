@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Exit-code failures of the map verbs (docs/CLI-EXIT-CODES.md), each with a hint the user can act on.
 //! Covers argument refusals, ids that climb out of the place, binary file targets, places that cannot be opened and ids the index does not hold.
 //! Used by the parent module before the scan (arguments, targets) and after the facade query (outcomes, answer errors).

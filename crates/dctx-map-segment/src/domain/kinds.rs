@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Stable numeric tags for segment sections, facts, edges and ranking fields.
 //! Implements SEGMENTS-v1 schema 1 and the SPEC-MAP-MODE confidence matrix.
 //! Depends on no other module. Encoders and decoders share these codes.

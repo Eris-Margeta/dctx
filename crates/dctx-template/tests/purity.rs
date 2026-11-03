@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Source-level forbidden-IO check. This crate does not touch the filesystem, process or network.
 
 use std::fs;

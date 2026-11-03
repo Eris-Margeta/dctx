@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Content-addressed fact identity for contextual resolution.
 //! Implements IDENTITY-v1 `FactKey` and decision 078: own digest, no git object id.
 //! Depends on the model content id. Views and the fact store key payloads with it.

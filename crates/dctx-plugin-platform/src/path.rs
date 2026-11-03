@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Literal resource names independent of IO and authorization.
 //! Implements the spelling subset of S-FILE/S-CAPABILITY; Linux resolves through handles.
 //! A validated name is not a consent grant or a filesystem identity.

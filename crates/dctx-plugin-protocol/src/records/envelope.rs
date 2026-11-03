@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Wire message envelope: decode a frame body into a bootstrap or session message and encode it back.
 //! Implements wire.schema.json (bootstrap | request | response | event), exactly one of result/error,
 //! no id on events, closed envelopes and per-message semantic checks. Depends on json and every record.

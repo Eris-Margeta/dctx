@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Half-open byte spans and their one-based line projections.
 //! Implements ARCHITECTURE-PROPOSAL §3 and PARSERS-v1 span rules.
 //! Depends only on the standard library. Facts and the future wire adapter carry these values.

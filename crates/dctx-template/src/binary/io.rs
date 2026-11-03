@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded little-endian byte primitives and section framing reader.
 //! Implements contracts/DTS-v2.md compiled IR and IDENTITY-v1.
 //! Depends on typed template errors and binary size limits; used by the `ContextPlan` binary codec.

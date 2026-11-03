@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Brace-family declarations: Scala, Dart, Zig, Solidity, Gleam, Groovy, Perl and PowerShell.
 //! A small keyword table per language picks `type` and `fn` declarations from lines the masked source shows at file level
 //! or directly inside a type body; [`decl`] reads one line, [`data`] adds constants, variables, fields and enum values.

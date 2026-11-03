@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Quoted scalars, marks, document splitting and line-shape helpers for the YAML walker.
 use super::*;
 use crate::domain::DiagnosticReason;

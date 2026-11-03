@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Masks comments, strings and char literals so the line scan sees only code.
 //! Implements the PARSERS-v1 Rust row rule that literals and comments never declare.
 //! Pure and iterative; used by the line scan, which also reads `///` doc lines from it.

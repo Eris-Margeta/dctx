@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Markdown sections from dctx-lex-md, plus the optional tree-sitter walker.
 //! Implements SPEC-MAP-MODE sections 5.1–5.4 and 6.2 and the PARSERS-v1 Markdown row.
 //! Headings become doc nodes; inline code and link destinations stay unresolved.

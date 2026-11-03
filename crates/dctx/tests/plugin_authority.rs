@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Facade PP1/PP4 controls: independent current authority and bound broker requests.
 //! Exercises admission-to-commit revocation through the existing in-memory host ports.
 //! No process or filesystem effects; every refusal has the unchanged authorized control.

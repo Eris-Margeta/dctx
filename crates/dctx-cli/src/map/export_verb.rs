@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `dctx map export`: the whole graph as one deterministic document, graph JSON or a Mermaid flowchart.
 //! Parses its own few flags, so the five verbs and their bounds in `args` stay as they are.
 //! It is an export, not an answer: no target, no 2,000-token cap; `--output PATH` writes a file instead of stdout.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! File-owned facts, content-addressed keys and cache accounting.
 //! Implements map spec sections 7 and 8, IDENTITY-v1 `FactKey` and CACHE-v1 stage-0 limits.
 //! Uses model graph types and dctx-hash. Consumed by the SQLite comparison bridge.

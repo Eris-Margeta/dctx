@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Swift structural extraction and file-owned graph assembly.
 //! Implements SPEC-MAP-MODE 5.1–5.4 using only lexical evidence.
 //! Declarations, members and unresolved references live in sibling modules.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Worker lifecycle: pre-exec admission, negotiation, invocation, cancellation and reaping.
 //! Implements Lifecycle.tla `EnableOrRefuse`, `Start`, `Negotiate`, `Initialize`, `Invoke`, `Finish`,
 //! `CancelStalled`, `Halt`, `AcknowledgeOrForce`, `Reap`, `ObserveReapPending` (PP4, PP8 safety) and the

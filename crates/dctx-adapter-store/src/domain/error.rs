@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed refusals for segment publication.
 //! Implements SEGMENTS-v1 and CACHE-v1 names: disk full, cache limit, busy, corrupt, durability.
 //! Depends on no other module. [`crate::SegmentStore`] returns these instead of panicking.

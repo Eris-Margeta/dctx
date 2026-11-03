@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use std::fmt::Write as _;
 use super::*;
 use crate::domain::{DctxError, FreshnessMode, HostGrants, OperationLimits, ParserChoice, PolicyView};

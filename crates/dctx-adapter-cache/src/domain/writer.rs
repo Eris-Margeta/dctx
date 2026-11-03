@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! One writer per root: reserve, stage, validate, swap, crash, recover.
 //! Implements the DX-A2 publication steps. The swap is the only visibility point.
 //! Depends on [`super::Lifecycle`] reservations and objects. Restart reconciliation calls recover.

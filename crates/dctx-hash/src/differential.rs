@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Property test: streaming SHA-256 matches the `sha2` crate.
 //! `sha2` is a dev-dependency only (enhanced-profile oracle). Not used in production.
 //! Covers arbitrary bytes and an arbitrary split between two `update` calls.

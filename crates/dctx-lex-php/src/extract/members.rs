@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PHP functions, methods, constant declarations and property lists.
 //! Implements structural signatures and visibility for decision 077/PARSERS-v1.
 //! The model has no property kind, so properties use an unclassified symbol.

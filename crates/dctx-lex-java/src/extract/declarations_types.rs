@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Type declarations: classes, interfaces, enums, records and their heritage.
 //! Implements SPEC-MAP-MODE 5.1 Java type facts, enum constants and record components.
 //! Depends on generic parameter lists and the member walker.

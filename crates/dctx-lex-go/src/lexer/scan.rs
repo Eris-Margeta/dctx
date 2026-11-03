@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Go scanner: whitespace, comments, idents, numbers, strings, runes and ASI.
 //! Implements the Go spec semicolon rules and the string/comment masking that
 //! keeps literals from producing declarations. Used only by `lexer::lex`.

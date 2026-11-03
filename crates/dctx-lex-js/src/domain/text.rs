@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure text rules shared with dctx-map-parse: summaries, `JSDoc` and fingerprints.
 //! Implements SPEC-MAP-MODE 5.2 (fingerprints) and 5.4 (tier-zero summaries).
 //! Uses dctx-hash SHA-256; the walker and assembly call these.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Facade domain: owned request, result, error and policy types.
 //! Implements ARCHITECTURE-PROPOSAL §2 (library contract) and contracts/API-PORTS-v1.md.
 //! Depends on dctx-core, dctx-hash and dctx-template for the pure rules those crates already own.

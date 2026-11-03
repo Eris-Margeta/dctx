@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Host-owned registry: installed immutable versions, the activation record, enablement and consent.
 //! Implements docs/formal/dctx-plugins/Install.tla (`PP9Integrity`: active is complete, verified and allowed;
 //! leases only on complete versions; activation never below the high-water mark unless an approved rollback)

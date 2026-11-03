@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Opaque PHP quoted strings, interpolation, heredoc and nowdoc boundaries.
 //! Implements decision 077: literal contents never become declarations or calls.
 //! Used by the byte scanner; nesting refusals use the shared limits.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Validated names: plugin IDs, safe file names, key IDs, versions and host targets.
 //! Implements common.schema.json `id`/`file`/`token`/`semver`, the manifest target enum and the
 //! PLUGINS.md §5.4 rule "encode IDs as validated path components". Pure; used by every domain module.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! A validated `.gitignore` body: bounded, UTF-8, no NUL, with its newline style and lines.
 //! Implements plugin-api git.md "invalid UTF-8/NUL => typed refusal" and "preserve all bytes, newline
 //! style and old markers" (G-COVERAGE, G-REPLACE). Pure; the bytes come from the broker's file.read.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! In-memory segment bytes.
 //! Implements the [`crate::ports::SegmentRead`] port for tests and callers that already hold a buffer.
 //! Depends on [`crate::decode`] for [`MemorySegment::validate`]. Stores can wrap the same bytes.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! IO-free map domain: identities, byte spans, precision, provenance and answers.
 //! Implements ARCHITECTURE-PROPOSAL §7 DX-B1 and SPEC-MAP-MODE sections 3 through 5.
 //! Production dependency is first-party `dctx-hash` only. Optional `wire-json` adds JSON v1.

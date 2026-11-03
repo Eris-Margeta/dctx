@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Atomic file-owned replacement of graph facts and lexical rows.
 //! Implements map spec section 7 without deleting foreign-owned edges.
 //! Uses SQLite transactions; called by the persistence adapter.

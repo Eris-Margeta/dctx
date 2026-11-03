@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Content-hash incremental indexing with explicit stale diagnostics.
 //! Implements SPEC-MAP-MODE sections 6 and 7 via public scan/parse/resolve/store APIs.
 //! Retains parser retry facts and replaces only changed file-owned transactions.

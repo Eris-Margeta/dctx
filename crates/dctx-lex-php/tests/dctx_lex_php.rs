@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Golden PHP facts, typed refusals and deterministic adversarial input checks.
 //! Implements decision 077 and DX-PW store ownership, identity and span invariants.
 //! Tests the public API only; no external parser, store or fuzz dependency.

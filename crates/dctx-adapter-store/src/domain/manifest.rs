@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Manifest v1 bytes: identity, segment references, and revisions.
 //! Implements SEGMENTS-v1 manifest kinds 1, 2, and 5. Kind 6 is a VCS identity and is refused.
 //! Depends on [`super::envelope`], [`super::bytes`], and [`super::options::Revisions`]. The store writes the result.

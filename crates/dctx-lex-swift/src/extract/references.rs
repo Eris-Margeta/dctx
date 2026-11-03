@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Unresolved Swift call and member references with lexical owners.
 //! Implements SPEC-MAP-MODE 5.3 without inventing dispatch destinations.
 //! Macros are opaque; member reads use convention-labeled uses-type hints.

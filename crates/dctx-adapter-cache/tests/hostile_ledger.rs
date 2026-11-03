@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Checksum-valid hostile ledgers are typed refusals, not debug panics.
 //! Spec: CACHE-v1 ledger reconstruction; review F10.
 //! Depends on the public ledger API and first-party dctx-hash.

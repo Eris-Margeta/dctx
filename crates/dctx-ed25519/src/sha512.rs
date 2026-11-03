@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Streaming SHA-512 for the public digest API, per FIPS 180-4 §5–6.
 //! Owns a fixed-size block buffer and 128-bit bit count; no IO or allocation.
 //! Signature verification hashes inside ed25519-dalek, not through this type.

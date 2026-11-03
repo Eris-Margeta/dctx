@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Ignored paths stay unread, and `pack --ext` opens only matching files.
 //! Covers DCTX-COLD-SCAN C3 and E-02e G8b. A rule-text edit misses the reuse key.
 //! Depends on the compiled `dctx-cli` binary and a private temporary directory.

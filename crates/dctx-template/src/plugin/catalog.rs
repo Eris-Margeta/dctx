@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Reserved alias words and the bundled `dctx/git` catalog row with its digests.
 //! Implements PLUGINS.md §3.5 (bundled manifest from the plugin-api fixtures).
 //! Depends on [`super`] catalog types; the host still opts in.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Structural lexer dispatch and the facade's shared fact-to-symbol conversion.
 //! Implements SPEC-MAP-MODE 5–6.2 using the first-party language lexers.
 //! Consumes authorized UTF-8 from extract; never reads source or retains bodies.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Five-verb dispatch with lazy refresh and explicit identity outcomes.
 //! Implements SPEC-MAP-MODE sections 3, 4, 6.4 and 7.
 //! Uses the index graph and FTS5 store; renderers impose final wire budgets.

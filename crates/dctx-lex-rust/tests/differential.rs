@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Differential test of the syn extractor against the tree-sitter Rust adapter (oracle).
 //! Checks ARCHITECTURE-PROPOSAL §3 gates on crates/dctx-map-parse/tests/fixtures/rust and
 //! a valid snippet corpus: syn ≥99% declaration precision/recall, line scan ≥98%/≥85%.

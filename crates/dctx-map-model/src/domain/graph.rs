@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Graph kinds, source spans and fingerprint-bound summaries.
 //! Implements SPEC-MAP-MODE sections 5.1, 5.3 and 5.4.
 //! JSON derives exist only behind the `wire-json` feature. Indexers exchange these facts.

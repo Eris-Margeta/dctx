@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `ContextPlan` section bodies, domain digests and provenance.
 //! Implements contracts/DTS-v2.md compiled IR and IDENTITY-v1.
 //! Depends on dctx-hash, section codecs and byte readers; used by the `ContextPlan` binary codec.

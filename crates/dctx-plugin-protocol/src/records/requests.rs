@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Session request params: the host control requests and the dispatch over every method.
 //! Implements requests.schema.json (`initialize`, `probe`, `cancel`, `shutdown`, plus `broker::`* forms) and the
 //! S-REPLAY action input: canonical `{method, params}` without `params.action_id` (wire.md §Bytes).

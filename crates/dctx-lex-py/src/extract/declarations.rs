@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Function, class and compound statements, plus the suites they own.
 //! Implements SPEC-MAP-MODE 5.1 declaration spans for Python `def`, `class` and blocks.
 //! Calls import, reference and docstring scans; the walker drives `statement`.

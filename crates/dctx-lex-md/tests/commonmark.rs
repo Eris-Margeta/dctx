@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `CommonMark` 0.31 heading edge cases through the public API (spec examples 62–100).
 //! Checks levels, titles, styles and that code, HTML and containers are honoured.
 //! Uses only `dctx_lex_md::extract`.

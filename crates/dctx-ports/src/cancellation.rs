@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `Cancellation` port: cooperative cancellation checked at work boundaries.
 //! Implements contracts/API-PORTS-v1.md `Cancellation.checkpoint`: returns `Cancelled` and never
 //! kills a thread; cancellation before a commit point leaves the committed state unchanged.

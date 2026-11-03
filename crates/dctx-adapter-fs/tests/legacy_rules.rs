@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Filesystem rule-loading evidence for D3-LEGACY-REMOVAL §3/§5 D3-07.
 //! Uses public `FsSource` with temp roots and an injected `SourceFs` error control.
 //! Complements core `selection_legacy/selection_omit_legacy` without legacy imports.

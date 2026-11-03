@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Selection bounded context: which items a pack sees and whose content it may read.
 //! Implements the ignore/omit rule semantics of ARCHITECTURE-PROPOSAL §2 and PRODUCT-CONTRACTS C03.
 //! Depends on [`crate::datatypes`] and [`crate::domain`]; pure, with no filesystem or environment access.

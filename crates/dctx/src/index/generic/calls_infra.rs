@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Call references for the infra outline family: Terraform/HCL, SQL and shell.
 //! Every reference is a guess made on masked text: a Terraform address (`var.x`, `module.x`, `TYPE.NAME`), a SQL
 //! `name(` inside a view, function, procedure or trigger, a shell command word that names a function of the same file.

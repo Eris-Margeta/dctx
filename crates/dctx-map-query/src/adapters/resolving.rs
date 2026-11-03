@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Parallel resolution of independent package components.
 //! Implements SPEC-MAP-MODE section 6.3 without changing resolver semantics.
 //! Explicit cross-package references join components; document paths import only their target.

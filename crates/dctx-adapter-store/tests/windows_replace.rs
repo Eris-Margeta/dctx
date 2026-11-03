@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Windows sharing: an open handle blocks replace and unlink without truncating bytes.
 //! The refused name stays pending and is collected after the handle closes.
 //! POSIX replace keeps the old inode readable through the open handle.

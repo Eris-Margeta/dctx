@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Persistence boundary for incremental map indexing.
 //! Implements spec sections 7 and 8 as synchronous operations.
 //! Uses domain facts only; implemented by SQLite adapters.

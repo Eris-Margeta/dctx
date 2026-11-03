@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Owned drafts the builder interns into dictionary ids.
 //! Implements SEGMENTS-v1 section inputs before they become canonical records.
 //! Depends on [`super::kinds`]. [`super::builder`] validates these at insertion and again while encoding.

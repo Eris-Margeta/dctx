@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! JSON serialization and Markdown summaries of baseline reports.
 //! Implements ARCHITECTURE-PROPOSAL §7 Stage 0 evidence.
 //! Depends on the parent report types, serde and BenchError.

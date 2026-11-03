@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared fixture: a ready broker over fake audit, file and recipe ports with `.gitignore = "abc"`.
 //! Used by every integration test file; positive controls start from this fully granted state.
 

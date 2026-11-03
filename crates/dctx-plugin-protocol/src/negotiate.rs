@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Version negotiation and hello acceptance (pure functions, no IO).
 //! Implements wire.md §Bootstrap and semantics.md S-MANIFEST ranges (W-NEGOTIATE): highest common major then
 //! minor, min <= max and one range per major, identity equal to the install record, required APIs offered,

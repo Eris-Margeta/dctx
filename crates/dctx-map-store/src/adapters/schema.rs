@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Versioned SQLite schema for persistent map facts.
 //! Implements spec section 8 including FTS5 and owner indexes.
 //! Called only by the SQLite adapter at connection startup.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Global reservation coordinator.
 //! Implements CACHE-v1 `admitted = C + Sg + R + P` and `admit(n)` only when that sum stays ≤ H.
 //! Depends on [`super::Lifecycle`] buckets. Publication, compaction and the `Cache` port all reserve here.

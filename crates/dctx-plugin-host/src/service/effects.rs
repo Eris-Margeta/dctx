@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Brokered effects: `file.replace` and `program.run git.add-ignore`, plus reconcile and rotation.
 //! Implements PLUGINS.md §3.3 replay rules and §4.4 audit ordering, refining Receipts.tla: Repeat guard →
 //! Authority Admit → Resources Receive → durable intent (Request) → Authority Commit → Execute → completion

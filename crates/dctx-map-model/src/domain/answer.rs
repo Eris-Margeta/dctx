@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded query answer records and explicit moved/gone outcomes.
 //! Implements SPEC-MAP-MODE sections 3, 4 and 5.2.
 //! Query engines supply ranked facts. The renderer enforces the final byte limit.

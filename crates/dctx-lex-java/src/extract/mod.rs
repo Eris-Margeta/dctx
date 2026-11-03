@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Structural walker: scopes, fact emission and source order.
 //! Implements SPEC-MAP-MODE 5.1–5.4 for Java with the same ownership rules as dctx-lex-js:
 //! a declaration owns what is lexically inside it. Callers use [`extract`].

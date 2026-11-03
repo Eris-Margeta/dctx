@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! dctx/git: the bundled git plugin. Local `.gitignore` protection and the brokered `git add .gitignore`.
 //! Implements PLUGINS.md §6 and the frozen plugin-api git.md profile (decision 078/decision 079: no Git in the core;
 //! the behaviour lives only here). Every effect is a broker request (decision 080); the worker has no direct

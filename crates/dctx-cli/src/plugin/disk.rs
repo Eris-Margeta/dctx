@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Filesystem plugin root and the product network stub.
 //! Implements PLUGINS.md §5.4 locations: owner-only directories, atomic registry replace.
 //! Linux pins traversal with directory descriptors: children are `/proc/self/fd/<fd>/<child>`,

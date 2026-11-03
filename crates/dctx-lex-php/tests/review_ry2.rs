@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Regression oracles for heredoc closers and `?>` inside comments.
 //! Finding 2 is not a defect: the closer is already the whole label.
 //! Finding 3 records PHP's rule that only `//` and `#` comments end at `?>`.

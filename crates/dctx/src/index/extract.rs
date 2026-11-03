@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Structural extractor for the facade's supported source and configuration languages.
 //! Implements the strict parser profile: coverage `structural`.
 //! Uses `lex_dispatch` and dctx-lex-md. Explicit structural Rust stays line-oriented; the default walk uses syn.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Safe decoder for one immutable segment.
 //! Implements SEGMENTS-v1 check order: structure, then checksums, then bodies.
 //! Depends on the section codecs. Stores and tests call [`decode`] or [`decode_with_limits`].

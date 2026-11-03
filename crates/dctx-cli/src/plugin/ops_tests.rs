@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Operation regression tests for PLUGINS.md §5.1.
 //! Depends on signed release fixtures and fake distribution ports.
 //! Exercises the unchanged operations dispatcher without starting workers.

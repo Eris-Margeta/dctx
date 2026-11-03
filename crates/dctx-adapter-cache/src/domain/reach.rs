@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! LRU chooses a manifest. Reachability then decides which facts can be unlinked.
 //! Implements CACHE-v1 `Live = closure(R ∪ L ∪ recovery pointers)` and DX-A2 P3.
 //! Depends on manifests, leases and pointers in [`super::Lifecycle`]. Maintenance applies one retire or sweep.

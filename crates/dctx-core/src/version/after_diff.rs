@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Version selection from a completed pack diff.
 //! Implements pack versioning; docs/reviews/dctx-legacy-removal.md F11.
 //! Depends on the parent Version and `crate::diff::DiffReport`; pure.

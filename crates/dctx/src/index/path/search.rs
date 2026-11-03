@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use super::super::{Generation, write_node_id};
 use super::graph::{adjacency, allowed, arrival, locate};
 use super::model::{Hop, MAX_HOPS, UNSEEN};

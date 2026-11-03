@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `FactStore` roundtrip, corruption, cap refusal and view expiry.
 //! Implements the frozen load/publish port on the comparison bridge.
 //! Uses dctx-core snapshots. A failed publish leaves the previous generation visible.

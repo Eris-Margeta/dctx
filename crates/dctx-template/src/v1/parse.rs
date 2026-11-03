@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! V1 source parser and `{{var}}` substitution.
 //! Implements ADR-003 two-pass resolution and contracts/DTS-v2.md variable cycles.
 //! Depends on [`crate::error`]. Used by [`super::compiled`] and the v2 source extractor.

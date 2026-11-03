@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Path: the shortest edge path between two nodes (the `dctx map path` verb).
 //! Searches every stored edge (calls, imports, contains, ...) in both directions, at most [`MAX_HOPS`] hops.
 //! A walk may not climb out of a container and straight down into a sibling, because that links every

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Status report: caps, buckets, per-root attribution, leases and maintenance.
 //! Implements CACHE-v1 `status` fields. Shared bytes are reported per root and counted once globally.
 //! Depends on the ledger maps in [`super::Lifecycle`]. The facade prints this; it does not change it.

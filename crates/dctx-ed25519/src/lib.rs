@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Ed25519 verification for dctx plugin trust (decision 081, decision 087, PLUGINS §5.2).
 //! Curve arithmetic is audited `ed25519-dalek` 2.2.0 (`VerifyingKey::verify_strict`).
 //! Safe Rust, `forbid(unsafe_code)`, no signing or key generation in the public API.

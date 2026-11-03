@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Search terms of `dctx pack --for`: the names a task text mentions, in the order the text mentions them.
 //! Code-like words come first (a single backticked word, snake_case, camelCase, PascalCase with an inner capital,
 //! the last segment of `a::b`), then plain words of five or more ASCII letters that are not common card English.

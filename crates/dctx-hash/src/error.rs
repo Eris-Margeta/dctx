@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed refusal for the SHA-256 content hasher.
 //! Implements the length bound of FIPS 180-4 (a message longer than 2^64 − 1 bits).
 //! Depends on no other dctx crate. [`crate::Sha256::update`] returns it.

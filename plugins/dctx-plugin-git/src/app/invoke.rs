@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Invoke dispatch: the `before-pack-output-written` hook, the `git status|protect` command, and the
 //! typed invoke result. Implements PLUGINS.md §6.2 step 1 (project-local text exports only; outside-project
 //! => skipped without paths) and §3.2 results (`command_output` only for explicit commands, S-RESULT).

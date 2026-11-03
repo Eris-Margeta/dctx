@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Legacy writer byte parity and roundtrip tests (D3-LEGACY-REMOVAL §5 D3-02).
 //! Golden little-endian fields are pinned independently of either implementation.
 //! Exercises caller sinks, omitted bodies, UTF-8 paths and encoder preflight bounds.

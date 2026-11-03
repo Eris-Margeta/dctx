@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Host and process-RSS evidence for one DX-A1 measurement process.
 //! Implements ARCHITECTURE-PROPOSAL §3 resource accounting for Stage 0.
 //! Depends on the stats parsers; the measure adapter records the result.

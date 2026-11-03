@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! IO-free extraction vocabulary: facts, precision labels, limits and refusals.
 //! Implements PARSERS-v1 (completion, diagnostics, limits) for Kotlin source.
 //! Used by the lexer, the structural walker and callers of the public API.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Queries share one generation across files. Pages and the digest stay the same.
 //! Spec: DCTX-COLD-SCAN.md C2 (E-02i).
 //! Depends on the session facade and an in-memory multi-file source.

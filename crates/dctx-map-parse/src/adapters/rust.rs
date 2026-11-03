@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Rust facts from dctx-lex-rust, plus the optional tree-sitter walker.
 //! Implements SPEC-MAP-MODE sections 5.1, 5.3 and 6.2 and the PARSERS-v1 Rust row.
 //! syn facts become model nodes; a partial extraction is refused, not labelled complete.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Object creation, removal and saturating byte accounting.
 //! Implements the CACHE-v1 object table mutations on [`super::Lifecycle`]. Writers, reserve and compact spawn here.
 //! Removal drops the object's manifests and back-references, then re-checks the legacy freeze.

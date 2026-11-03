@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! In-memory disk with crash cuts, a byte budget, and Windows sharing rules.
 //! Implements the DX-C3 crash matrix and the Windows open-file replacement tests.
 //! Depends on [`crate::ports::StoreFs`]. [`super::store::SegmentStore`] publishes through it.

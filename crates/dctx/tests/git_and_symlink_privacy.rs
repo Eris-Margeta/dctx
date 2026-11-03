@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! v1 card 1 on the shipped engine: `.git` stays closed under rule negations, and symlinks never leak outside bytes.
 //! Ports desktop-api's `git_negations_never_list_or_read_git` to the `dctx` facade with a real [`dctx::FsSource`].
 //! Every fixture lives in a private temporary directory; nothing here reads a home directory or spawns git.

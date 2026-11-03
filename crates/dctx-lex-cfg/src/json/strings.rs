@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! String decoding for the JSON walker.
 use super::*;
 

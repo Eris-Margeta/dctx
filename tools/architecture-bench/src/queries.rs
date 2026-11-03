@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The thirty warm `find` terms for the DX-A1 baseline.
 //! Implements ARCHITECTURE-PROPOSAL §3 warm-query sample size.
 //! Depends on nothing; the manifest check and the measure adapter share this list.

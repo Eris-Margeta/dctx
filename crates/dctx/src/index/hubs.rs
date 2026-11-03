@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Hubs: the most-called symbols of a generation and per-directory counts (the `dctx map hubs` verb).
 //! Counts incoming `calls` and `imports` edges per symbol node. It is a view over the edges the walk already stored.
 //! An import whose file also calls the same symbol is the same dependency, so it is counted once, as the calls.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Cache status, reachability collection and explicit purge.
 //! Implements contracts/API-PORTS-v1.md cache administration.
 //! Depends on [`super::Session`] and the shared ledger. A live lease blocks destruction.

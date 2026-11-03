@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Member-level declarations of the infra formats: Terraform `locals` keys, shell variables and aliases, protobuf fields and
 //! enum values, GraphQL fields and enum values, Dockerfile `ARG` and `ENV` names. Every function takes one masked, trimmed
 //! line and answers with names and wire kinds; the caller owns nesting, spans and signatures. Never panics on odd input.

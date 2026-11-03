@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Map a compiled DTS plugin plan onto host grants, selection and hook order.
 //! Implements PLUGINS.md §3.5 and §4.1. The template crate remains the planner.
 //! Depends on `dctx-template` and `dctx-plugin-host`. [`super::boundary`] executes the result.

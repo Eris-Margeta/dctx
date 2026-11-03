@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure selection-policy benchmarks for D3-07: glob cases and a 1000-path workload.
 //! Depends on Criterion and the public SelectionPolicy/ItemContext API.
 //! The former cold/warm cache comparison becomes cold-policy-build versus

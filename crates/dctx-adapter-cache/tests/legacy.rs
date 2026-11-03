@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Legacy export dry-run. Inspection is a pure function of records the caller already holds.
 //! Implements CACHE-v1 legacy safety: place, ownership, version and unchanged bytes are all required.
 //! Depends on [`Lifecycle::legacy_dry_run`]. Apply removes only an adopted candidate that still matches.

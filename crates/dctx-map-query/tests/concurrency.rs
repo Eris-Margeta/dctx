@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Concurrent production readers, serialized writers and coherent WAL snapshots.
 //! Implements CM-6c and SPEC-MAP-MODE section 8 on a shared on-disk index.
 //! Channels bound waits so a mistakenly exclusive reader lock fails promptly.

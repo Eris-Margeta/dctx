@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The git-cases.json parity corpus: case setup on the fake broker and the shared expectation check.
 //! Implements fixtures/README.md "git-cases.json adds exact byte goldens ... Stages/receipts and spy
 //! counters must match" (G-PARITY, G-COVERAGE, G-STAGE). Used by parity (direct) and conformance (wire).

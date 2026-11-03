@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Fortran: programs, modules, derived types, procedures and named interfaces.
 //! Fortran is a block-family language: `program`, `module`, `function`, `subroutine`, `type` and `interface` open a block and a
 //! bare `end` (also `end function name`, `endsubroutine`) closes it. `end if`, `end do`, `end select` and friends close

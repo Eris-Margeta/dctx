@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Property tests against ed25519-dalek strict verification and sha2.
 //! Tests random signed messages, bit mutations, arbitrary encodings and hashes.
 //! Every disagreement fails; test seeds are synthetic and never production keys.

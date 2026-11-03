@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Tauri commands for dctx Desktop.
 //! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4 (second half, DX-E4b).
 //! Depends on Tauri, tokio and `dctx_desktop_api`. The TypeScript UI invokes these command names.

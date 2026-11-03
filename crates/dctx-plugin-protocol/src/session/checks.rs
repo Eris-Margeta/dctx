@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Result checks that need the pending request: chunk arithmetic, probe echoes and hook output rules.
 //! Implements wire.md §Bytes "offset + `decoded_length` <= size; eof iff equal; never more than requested"
 //! (W-BYTES), the exact probe challenge echo and S-CONFIG/S-RESULT "ordinary hooks return `command_output`=[]".

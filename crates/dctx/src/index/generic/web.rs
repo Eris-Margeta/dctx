@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Web files: Vue, Svelte, Astro and HTML (`.vue`, `.svelte`, `.astro`, `.html`, `.htm`, language tag `web`).
 //! Script blocks (and the Astro `---` front matter) go through the first-party JS/TS lexer. They are lexed as one
 //! program laid over a copy of the file in which everything else is blanked, so lines, byte spans, ids and call

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Reference scan for calls, type uses, class literals and anonymous classes.
 //! Implements SPEC-MAP-MODE 5.3 for Java calls, implements and uses-type.
 //! Uses declaration scopes from the walker; bodies stay inside their owner.

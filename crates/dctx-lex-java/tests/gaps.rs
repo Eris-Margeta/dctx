@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Oracles for Java unicode escapes, graph identity, hostile bounds and damaged containment.
 //! The golden corpus never pinned these inputs; a control sits beside every refusal.
 //! Calls the public extractor only.

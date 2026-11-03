@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Facade sessions share one cache root's admission, leases, and purge.
 //! Implements CACHE-v1 through the dctx session (DX-RV5H) on the adapter coordinator.
 //! Depends on [`dctx::Session`] and a temporary cache directory. The suite runs these tests.

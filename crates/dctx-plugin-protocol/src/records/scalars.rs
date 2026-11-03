@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Validated string newtypes: tokens, request IDs, plugin IDs, names, roles, aliases, `SemVer`, digests, paths, text.
 //! Implements common.schema.json string `$defs` with byte-length bounds and whole-string matching (S-BOUNDS),
 //! plus the plugin-ID component and `SemVer` prerelease rules of S-MANIFEST. Depends on json and refusal.

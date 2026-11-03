@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! TypeScript type expressions: references, generics, function/object/tuple types.
 //! Implements SPEC-MAP-MODE 5.3 `uses-type` spellings as dctx-map-parse emits them
 //! (qualified names compacted, predefined types and declared names excluded).

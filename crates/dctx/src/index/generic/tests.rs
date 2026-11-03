@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Tests for the generic heuristic extractor: the six brace languages, the denylist, masking and malformed input.
 
 use super::{brace, handles, mask, symbols};

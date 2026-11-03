@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Exact JavaScript and TypeScript fixture facts through the Parser port.
 //! Verifies SPEC-MAP-MODE sections 5 and 6.2 and CM-9 determinism.
 //! Checked-in source is parsed without executing code or reading dependencies.

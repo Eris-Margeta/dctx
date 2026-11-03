@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure requests, ranking and answer selection for the five map verbs.
 //! Implements SPEC-MAP-MODE sections 4 and 6.4.
 //! Uses graph model values and is called by the query adapter.

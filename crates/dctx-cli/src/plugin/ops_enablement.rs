@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Plugin enablement, removal and bundled consent for PLUGINS.md §5.1.
 //! Depends on distribution registry operations and the bundled catalog.
 //! Used by the dispatcher, installation and execution operations.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Argument dispatch for the local checker.
 //! Implements PLUGINS.md §7.2 PL-X. Depends on the pure domain functions.
 //! The binary supplies a filesystem reader. Tests pass bytes in memory.

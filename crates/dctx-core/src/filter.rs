@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! File filtering for pack output (`--ext`, size, empty, hidden, binary filters).
 //! Provides fine-grained control over what files appear in context output;
 //! all filters apply to both the directory tree and the file content sections.

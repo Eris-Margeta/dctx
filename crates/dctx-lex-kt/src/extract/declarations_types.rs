@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Type declarations: classes, interfaces, objects, enums and data classes.
 //! A primary constructor exists only when a parameter list is present.
 //! Supertypes are uses-type facts, and calls only when arguments follow.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded section directory. Entries are 64 bytes, unique, sorted, and packed without gaps.
 //! Implements SEGMENTS-v1 directory rules and the fact/view role section sets.
 //! Depends on the header constants, checksums, and [`super::kinds::SegmentRole`]. The assembler writes files.

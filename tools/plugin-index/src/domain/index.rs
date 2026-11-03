@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Closed index page: identity, releases, and display text.
 //! Implements index.schema.json, semantics.md S-BOUNDS, and PLUGINS.md §5.3.
 //! Depends on the strict JSON parser and text checks. Signature verification calls [`validate_index`].

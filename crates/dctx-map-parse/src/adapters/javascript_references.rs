@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! JavaScript/TypeScript imports, exports, calls and type references.
 //! Implements SPEC-MAP-MODE sections 5.3 and 6.2 without resolution.
 //! The walker supplies lexical source ownership; the resolver consumes spellings.

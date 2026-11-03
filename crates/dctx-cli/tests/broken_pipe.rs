@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! DCX-P-C4: a reader that closes stdout early (`dctx pack . | head -1`) ends the run with exit 0
 //! and no panic message, as `cat` and `rg` do. The test closes the read end before the child writes,
 //! so the first write fails with EPIPE every time.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Exit-code contract of docs/CLI-EXIT-CODES.md through the compiled CLI: 0 ok, 1 no result, 2 usage, 3 index error.
 //! Twelve bad inputs each expect their code, a specific stderr message and a `hint:` line, and never a panic.
 //! Every subcommand `--help` page carries an `Example:` line. Home, cache and plugin state are isolated per fixture.

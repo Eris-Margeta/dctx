@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Advisory cross-process lock for one cache root.
 //! Implements review F05 and P-C12: reload, publish and commit take the same lock; readers share it.
 //! Depends on std `File` locks. [`super::FsLedgerStore`] holds the guard for the critical section.

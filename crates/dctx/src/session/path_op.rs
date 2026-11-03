@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The path verb: the shortest edge path between two nodes, written as one bounded page.
 //! Implements the `dctx map path` read over the pinned generation; it has no cursor.
 //! Depends on the index path search and the same limit resolution as the five verbs.

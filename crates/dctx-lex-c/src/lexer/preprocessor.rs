@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Preprocessor directives as facts, never as expanded tokens.
 //! Implements the C and C++ translation phases for `#include` and `#define` only.
 //! The structural walker records the result and does not rescan macro bodies.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Wire-budget and continuation invariants through the public query API.
 //! Implements SPEC-MAP-MODE sections 3 and 4 for text and JSON.
 //! Uses real parsed source to catch skipped pages and oversized source bodies.

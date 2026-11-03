@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Activation, consent, sticky disable, leases, rollback, freshness, verify and crash/concurrency.
 //! Install.tla `PP9Integrity` and the activation-crash/install-integrity scenario pairs;
 //! requirements I-ATOMIC, I-CONSENT, I-TRUST, I-MANAGEMENT, I-BUNDLED; decision 080 confinement gate.

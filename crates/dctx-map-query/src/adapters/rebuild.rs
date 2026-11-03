@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Reconciles changed graph facts through the public per-file store API.
 //! Implements SPEC-MAP-MODE section 7, retaining retry and move semantics.
 //! Called only by the index refresh writer after content changes.

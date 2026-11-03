@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Port of the dctx-core template unit tests. Assertions stay byte-level.
 
 use std::collections::HashMap;

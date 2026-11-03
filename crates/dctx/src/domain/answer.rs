@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Owned query answers. No SQL handle, parser node or storage path is reachable from these types.
 //! Implements contracts/API-PORTS-v1.md `Answer` and the golden semantic projection.
 //! Depends on [`super::request::Verb`]. The session fills one answer per successful query.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Adversarial DIRCTXTV reader checks for D3-LEGACY-REMOVAL §5 D3-02.
 //! Uses fixed wire fields and the D3-01 PNG bytes, never the legacy IO implementation.
 //! Exercises bounds independently of the encoder, including every truncated prefix.

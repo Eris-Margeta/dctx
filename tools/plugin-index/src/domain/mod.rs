@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure index rules: strict JSON, schema, display text, and signature bytes.
 //! Implements PLUGINS.md §5.3 / §7.2 PL-X and plugin-api distribution.md.
 //! Depends on `dctx-ed25519` and `dctx-hash`. The command layer calls this module.

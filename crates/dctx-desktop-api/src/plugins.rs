@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Public desktop plugin seam and catalog-to-distribution conversion.
 //! Implements PLUGINS.md §4, §5 and §7.3 PL-APP using public crate APIs only.
 //! Depends on the facade catalog, its typed records and the distribution state codec.

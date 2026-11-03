@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Adversarial checks for the documented PL-ED encoding and torsion policy.
 //! Public algebra fixtures distinguish strict/cofactorless from cofactored checks.
 //! Each assertion has a valid control and dalek strict verification as reference.

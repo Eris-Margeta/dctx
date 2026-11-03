@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Property tests for the PL-G invariants: marker/version, newline preservation, negation conflicts,
 //! glob-intersection soundness and concurrency (no overwrite of a concurrent edit).
 //! Implements PLUGINS.md §7.2 PL-G "marker/version/newline/negation/concurrency property tests" and

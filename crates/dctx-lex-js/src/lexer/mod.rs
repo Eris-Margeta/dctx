@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Token stream for JavaScript, TypeScript and JSX source.
 //! Implements PARSERS-v1 lexing rules: comments, strings, nested templates, regex versus
 //! division, JSX segments and Unicode identifiers, all bounded by `Limits`.

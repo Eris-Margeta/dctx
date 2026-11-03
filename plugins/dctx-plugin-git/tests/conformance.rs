@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Standalone protocol conformance: the real worker loop against a host tracker from dctx-plugin-protocol.
 //! Implements PLUGINS.md §7.2 PL-G "standalone protocol conformance" and G-DISTRIBUTION "same corpus
 //! through standalone/same-binary workers": the parity corpus over frames, negotiation goldens, lifecycle

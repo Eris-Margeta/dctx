@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Every git-cases.json fixture through the fake broker, directly against the use case (no framing).
 //! Implements PLUGINS.md §7.2 PL-G "All §6 fixtures through a fake broker" (G-PARITY, G-COVERAGE,
 //! G-IDEMPOTENT, G-STAGE). Depends on tests/common; the wire path is in conformance.rs.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The five verbs. Convenience methods only fill a [`MapRequest`] and call [`Session::query`].
 //! Implements contracts/API-PORTS-v1.md query, budgets and continuation.
 //! Depends on the index and the wire encoder. A refusal does not write the sink.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Adapters for the facade ports. Memory doubles stay in `dctx-ports`.
 //! Implements the filesystem source used by hosts that already chose a root.
 //! Depends on [`crate::ports`]. [`crate::Session::builder`] takes the adapter as a `Source`.

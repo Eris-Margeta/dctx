@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Default Rust extraction goes through the bounded syn adapter.
 //! Implements PARSERS-v1 (Rust row) and facade review F12.
 //! Depends on Session and `syntax-rust` (`dctx-lex-rust`, syn 3.0.9). The dctx nextest target runs it.

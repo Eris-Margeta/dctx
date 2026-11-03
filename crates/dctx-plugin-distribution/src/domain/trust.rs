@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Host-managed trust: pinned/approved keys, publisher pins, revocation state and freshness.
 //! Implements PLUGINS.md §5.2 trust paragraph and requirements I-TRUST/I-IDENTITY/I-SIGNATURE:
 //! a key downloaded beside its signature is never trust; unknown publishers need independent approval;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Remote install through the fake network: SHA, size, signature, key, identity, target, revocation,
 //! downgrade/replay, download limits, origins and interruption, each beside its positive control.
 //! PLUGINS.md §5.2/§5.3, requirements I-INTEGRITY, I-SIGNATURE, I-TRUST, I-IDENTITY, I-ORIGIN.

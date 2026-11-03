@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Cold index, warm queries, RSS, cache, parse calls, and five verb answers.
 //! Implements ARCHITECTURE-PROPOSAL §3 for the current map mode in Stage 0.
 //! Depends on dctx-map-query; the parent process runs one corpus per child.

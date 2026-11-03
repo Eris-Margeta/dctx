@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Plugin plan compile, load and the refusals around a plan that is accepted.
 
 use std::collections::BTreeSet;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Recent projects: add, remove and get with dedup, newest-first order and a cap of 20.
 //! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4a and review F18, matching `recent_projects.rs`.
 //! Depends on [`crate::error::DesktopError`] and `serde_json`. The caller injects the storage directory and the timestamp.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed `ContextPlan`, host ceiling and plugin catalog.
 //! Implements contracts/DTS-v2.md (`ContextPlanV1`) and PLUGINS.md §3.5 declarations.
 //! Depends on [`crate::error`] and [`dctx_core::FileHandlingDecision`]. Used by compile, encode and render.

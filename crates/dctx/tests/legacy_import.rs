@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit facade import tests for D3-LEGACY-REMOVAL §5 D3-02.
 //! Uses shared in-memory store/cache spies and immutable legacy bytes.
 //! Checks publication, body policy, refusal atomicity and absence of source reads.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Iterative byte wildcard matching.
 //! Implements SPEC-MAP-MODE section 6.1 and ADR-014/015b.
 //! Uses standard-library types; consumed by scan clients.

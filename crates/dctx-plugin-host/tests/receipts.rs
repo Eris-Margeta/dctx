@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PP3 effect audit and PP5 replay through the broker, plus a ledger state-machine property test.
 //! Traces to Receipts.tla `Request`, `Execute`, `Complete`, `CrashOrUncertain`, `AuditFailure`, `Repeat`,
 //! `Reconcile`, `Rotate` and Authority.tla `Admin` for the git recipe. Every refusal has a control.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Ignore cache and rule diagnostics.
 //! Implements ADR-015b observable matching without filesystem IO.
 //! Depends on domain values and is used by the ignore engine.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Outline order by a file's explicit export list (DCX-55c): `map m:<file>` lists the names in Python `__all__`, CommonJS
 //! `module.exports` / `exports.x` and ES `export { .. }` first. The list is read at index time and kept on the module node
 //! (`index::outline_order::export_signature`), so the outline never rereads the file.

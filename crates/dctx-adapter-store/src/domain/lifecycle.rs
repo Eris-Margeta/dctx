@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Finite publication, pin, and reclamation state machine.
 //! Implements CacheLifecycle.tla actions for P2, P3, and P8 (DX-A2), without git ownership.
 //! Depends on no IO. Property tests drive it; [`crate::SegmentStore`] is the filesystem image of the same cuts.

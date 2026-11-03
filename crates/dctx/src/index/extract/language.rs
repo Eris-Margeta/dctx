@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Language detection: the extension table, the Ruby and infra basenames, and the tag a path maps to.
 
 /// Duplicate of `dctx-map-parse` `domain::facts::EXTENSIONS`.

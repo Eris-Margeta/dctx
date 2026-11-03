@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Application settings as data: file-name constants, `AppConfig` and its line parser.
 //! Implements the `config.toml` key set of the current CLI (ADR-005, Phase 5.2/10.8.2 keys).
 //! Depends on nothing; the caller supplies the text, this module never discovers or reads files.

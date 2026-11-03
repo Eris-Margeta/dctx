@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Disposable three-process parent-crash fixture for Linux PP8 evidence.
 //! A dedicated subreaper owns the experiment, so no orphan/zombie escapes into the suite.
 //! The confined grandchild computes forever; EOF cooperation cannot explain its death.

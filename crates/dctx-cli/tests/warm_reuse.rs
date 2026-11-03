@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Two CLI processes reuse one generation, then a same-stamp edit rebuilds.
 //! Covers DCTX-SERIOUS-GAPS G6. The content check is `digest_text`, as in `read_verified`.
 //! Depends on the compiled dctx-cli and an absolute `DCTX_CACHE_DIR`. No network.

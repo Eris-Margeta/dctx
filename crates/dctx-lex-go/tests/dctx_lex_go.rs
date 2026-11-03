@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Golden fixtures, abstentions and deterministic fuzz for the Go extractor.
 //! Implements PARSERS-v1: partial facts for malformed input, no panic on arbitrary bytes.
 #![forbid(unsafe_code)]

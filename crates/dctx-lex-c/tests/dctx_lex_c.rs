@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Golden fixtures, store invariants and deterministic fuzz for the C extractor.
 //! Implements PARSERS-v1: partial facts for malformed input, no panic on arbitrary bytes.
 //! Every node is owned by the file module and every span lies inside the file.

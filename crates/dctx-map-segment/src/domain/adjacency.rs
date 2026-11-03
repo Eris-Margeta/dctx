@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Forward edges and the reverse index derived from them.
 //! Implements SEGMENTS-v1 kinds 6 and 7. Reverse bytes are a pure function of forward bytes.
 //! Depends on [`super::kinds`] for the confidence matrix. The decoder recomputes reverse and compares.

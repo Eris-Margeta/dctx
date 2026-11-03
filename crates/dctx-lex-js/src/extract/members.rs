@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Object literals, parameter lists and interface/type-literal members.
 //! Implements SPEC-MAP-MODE 5.1 for `key: () => ..` functions, object methods and
 //! TypeScript method signatures; destructuring defaults are walked, never declared.

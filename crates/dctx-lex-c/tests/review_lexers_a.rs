@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! C and C++ regressions for comparison nesting and dialect suffixes.
 //! Spec: docs/reviews/dctx-lexers-a.md findings 3, 10 and 11.
 //! Depends on dctx-lex-c and dctx-map-model; used by the crate test suite.

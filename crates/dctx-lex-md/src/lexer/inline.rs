@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Inline scan of paragraph text for code spans and inline link or image destinations.
 //! Implements `CommonMark` 0.31 §2.4 escapes, §6.1 code spans, §6.3 inline links, §6.5 autolinks.
 //! Pure, linear-time apart from bounded title scans; used by the outline step.

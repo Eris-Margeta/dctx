@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Real-filesystem adversaries for PP2/PP9 and the PL-R binding contract.
 //! Successful immutable snapshots accompany substitution, hardlink and symlink refusals.
 //! Expected digests represent host-authorized bytes; no tests use developer project/home data.

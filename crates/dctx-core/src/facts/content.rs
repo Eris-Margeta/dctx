@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Content facts: how read bytes and debug-visible subtrees are recorded on tree nodes.
 //! Implements the content classification of the pack format (text kept, binaries omitted,
 //! SVG kept but labelled) and the `[IGNORED]` subtree marking of `--debug-ignored`.

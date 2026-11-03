@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Binary pack of two source files through the CLI.
 //! Gap G1 of DCTX-SERIOUS-GAPS.md: an explicit pack carries each path and body.
 //! Depends on the compiled `dctx-cli` binary and a private temporary directory.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Identifier newtypes: confined relative paths, view keys, timestamps and snapshot digests.
 //! Implements the identity rules of contracts/IDENTITY-v1.md and decision 078: content and snapshot
 //! identity come only from the first-party digest in `dctx-hash`, never from a VCS object id.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Delta-coded field postings and per-document token lengths.
 //! Implements SEGMENTS-v1 kind 4. Deltas are canonical base-128 and strictly increasing after the first.
 //! Depends on [`super::varint`] and [`super::kinds::Field`]. Ranking reads the token lengths from here.

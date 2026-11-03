@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Template-argument depth, separate from comparisons and shifts.
 //! Implements PARSERS-v1 nesting limits for C and C++ angle brackets.
 //! Depends only on token spellings; the lexer and the declarator scan use it.

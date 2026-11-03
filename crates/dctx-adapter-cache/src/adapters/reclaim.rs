@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Publish section: one exclusive lock covers the fresh load, the edit, the unlink of reclaimed files and the commit.
 //! Implements P-C10 and P-C12: a superseded view is unlinked right after the new one is durable, and only
 //! this section takes the exclusive lock. Depends on [`super::FsLedgerStore`] and [`super::FsObjectStore`].

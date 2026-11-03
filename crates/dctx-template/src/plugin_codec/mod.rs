@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Binary plugin section of a `ContextPlan`.
 //! Implements contracts/DTS-v2.md section payloads for the plugin extension.
 //! Depends on [`crate::plugin`] and [`crate::error`]. [`crate::binary`] frames the bytes.

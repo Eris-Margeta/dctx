@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Observable filesystem decorator for privacy evidence.
 //! Implements SPEC-MAP-MODE section 13a's spy adapter.
 //! Records attempts before delegating to an injected filesystem.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Planned-output coverage: do the required rules still ignore every dctx export class after negations?
 //! Implements plugin-api git.md "Verify planned output coverage ... including negations and authorized
 //! nested rules. Missing authorized evidence => coverage-unknown; known negation/custom-name conflict =>

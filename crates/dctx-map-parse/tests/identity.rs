@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Identity, location, and fingerprint invariants through the public port.
 //! Verifies SPEC-MAP-MODE section 5.2 across edits and duplicate items.
 //! Uses proptest plus small Rust sources; consumed by the crate test suite.

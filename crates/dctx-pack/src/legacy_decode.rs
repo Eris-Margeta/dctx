@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded DIRCTXTV decoding over immutable bytes (D3-LEGACY-REMOVAL §5 D3-02).
 //! Ports the old reader's metadata layout and validates the whole data section.
 //! Depends on `legacy_codec` and core fact nodes; used by explicit facade imports.

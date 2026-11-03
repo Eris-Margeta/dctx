@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! A reader handle for one committed generation.
 //! Implements SEGMENTS-v1 reader protocol: one generation per handle, no per-record lock.
 //! Depends on [`crate::SegmentRole`]. [`crate::SegmentStore::pin`] builds it and [`crate::SegmentStore::release`] drops it.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Metadata pre-filter identity for one file.
 //! Implements DX-B3 freshness: size, mtime, and inode where the platform has one.
 //! Depends on no IO. Strict mode still hashes when this stamp matches.

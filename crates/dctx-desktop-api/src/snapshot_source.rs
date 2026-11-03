@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Desktop snapshot source: filters and a closed `.git` boundary around `FsSource`.
 //! Implements DX-E4a privacy: selection is applied before any content read (F01, F03).
 //! Depends on the `dctx` `Source` port and [`crate::settings::DesktopConfig`].

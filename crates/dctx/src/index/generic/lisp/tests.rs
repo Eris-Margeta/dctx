@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Tests for the lisp family: Clojure, Common Lisp, Scheme, Emacs Lisp and Nix.
 
 use super::super::{handles, symbols};

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Byte reports for cache status, gc and purge.
 //! Implements ARCHITECTURE-PROPOSAL §4 status fields and reclaimed-byte reports.
 //! Depends on adapter status types and the facade [`dctx::CacheReport`]. The command module prints this text.

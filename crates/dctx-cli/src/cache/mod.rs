@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `dctx cache status|gc|purge|config|auto` over the persisted facade ledger.
 //! Implements ARCHITECTURE-PROPOSAL §4 and §7 row DX-D2.
 //! Depends on `dctx-adapter-cache` for quotas and on [`crate::host`] for the cache root and facade auto-clean.

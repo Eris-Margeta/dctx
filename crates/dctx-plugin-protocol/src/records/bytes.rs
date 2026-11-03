@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Raw byte chunks carried as canonical RFC 4648 base64 (`base64` in common.schema.json).
 //! Implements plugin-api wire.md §Bytes: standard alphabet, required padding, no whitespace, zero pad bits,
 //! decoded size at most 65536 checked before allocation (W-BYTES). Depends on json and refusal.

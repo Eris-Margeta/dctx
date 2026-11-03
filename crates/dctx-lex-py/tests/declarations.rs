@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Golden declaration facts, constants and imports for the Python extractor.
 //! Covers the Python structural extractor contract (decision 077/decision 078).
 //! Uses common helpers and fixtures with the public lexer and map-model APIs.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Parsing for the five read-only map verbs and their bounded options.
 //! Implements SPEC-MAP-MODE sections 4 and 9.1 with no admin commands.
 //! Uses map-query request validation. Execution is the facade in the parent module.

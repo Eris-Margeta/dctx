@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! dctx plugin installer, trust and discovery client (PLUGINS.md §5, §7.2 row PL-I).
 //! Implements docs/design/plugin-api/distribution.md and docs/formal/dctx-plugins/Install.tla:
 //! signed manifests verified with dctx-ed25519, payload digests with dctx-hash, DCTXPLG1 offline

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Content-addressed fact identity for the SQLite comparison bridge.
 //! Implements IDENTITY-v1 `FactKey` and decision 078: own dctx-hash digest, no git object id.
 //! Depends on [`dctx_map_model::ContentId`]. The blob table and retain tests key payloads with it.

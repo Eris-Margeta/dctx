@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! dctx-pack: the pack snapshot and diff engine over injected ports, with no concrete IO.
 //! Implements ARCHITECTURE-PROPOSAL §2 (`dctx-pack`) and §7 DX-B0: it reproduces the legacy
 //! walker/content-reader tree through `Source`, diffs and versions it, and publishes via `FactStore`.

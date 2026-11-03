@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Manifest capability records and ceiling checks.
 //! Implements plugin-api/dts.md allow table and S-CONFIG / S-CAPABILITY.
 //! Depends on plugin catalog types and selector role validation; used by plugin plan admission.

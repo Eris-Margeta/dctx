@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Binary and SVG content classification.
 //! Ports dctx-core classifier behavior (ADR-009/015).
 //! Pure byte rules used after traversal authorizes a content read.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Small readings of syn nodes: identifiers, visibility, doc and test attributes.
 //! Implements the PARSERS-v1 Rust row "doc comments, test attributes".
 //! Uses syn attributes and the domain text rules; used by the syntax visitor and refs.

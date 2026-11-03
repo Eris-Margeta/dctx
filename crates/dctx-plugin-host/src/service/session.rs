@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Host session: one worker's broker, supervisor and bounded inbound request queue.
 //! Implements the PLUGINS.md §3.2 backpressure rule (over-limit senders get `ResourceLimit` and are
 //! cancelled) and PP8 "no admission after cancel": cancellation halts authority, revokes handles and

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Repository-scale recall and timing evidence for map mode.
 //! Implements packet CM-6b acceptance on the real dctx workspace, not synthetic code.
 //! Uses the checked-in thirty-question corpus and public source/index/query APIs.

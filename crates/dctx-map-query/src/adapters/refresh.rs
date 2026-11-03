@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Coordinates metadata pre-filtering and exclusive incremental refreshes.
 //! Implements SPEC-MAP-MODE section 7. Warm readers do not take the writer mutex.
 //! The mutex is in-process; segment publication locks only for its own publish call.

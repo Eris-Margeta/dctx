@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Heuristic symbol extraction for languages that have no first-party lexer.
 //! Every symbol is a guess: the records of these files carry confidence `guess`, edges stay `contains`.
 //! Shared helpers live here; a family (brace languages today, lisp, infra and web later) is a sibling file with a

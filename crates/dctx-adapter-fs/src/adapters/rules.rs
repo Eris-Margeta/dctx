@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Loads built-in, global, and project rule files.
 //! Implements DX-B3 rule loading: `.dctxignore`, global rules, and `.gitignore` as plain text.
 //! Depends on [`crate::ports::SourceFs`]. [`super::source`] calls this before the walk.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Source-level forbidden-IO check for the pack engine (ARCHITECTURE-PROPOSAL §2: engines call
 //! `Source::read` but never `std::fs`, the environment, processes, the wall clock or stdout).
 //! Also checks the manifest names no git or filesystem crate (decision 078). Comments and `#[cfg(test)]`

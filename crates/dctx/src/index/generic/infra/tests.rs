@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Tests for the infra family: eight formats, the denylist, truncated input and extension dispatch.
 
 use super::{handles, symbols, TAGS};

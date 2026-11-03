@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Native subprocess adversaries for Linux Landlock/seccomp and bootstrap refusal.
 //! PP4/PP8: successful restricted computation precedes escape checks; no fake provider claims.
 //! Fixtures and markers are private and disposable; this never reads the real user home.

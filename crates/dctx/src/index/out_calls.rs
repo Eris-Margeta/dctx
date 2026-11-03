@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Outbound call names inside one symbol's source span, resolved or not (DCX-54b).
 //! A call is an identifier followed by optional spaces and `(`; for `a.b.c(` and `x::y(` the name is the last segment.
 //! Comments and string literals are blanked first, language keywords and the symbol's own declaration are dropped.

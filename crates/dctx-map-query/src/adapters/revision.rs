@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Place revision from authorized content hashes only.
 //! Implements SPEC-MAP-MODE section 7 under decision 078: no Git and no other
 //! version-control tool. Freshness pre-filter (mtime and size) stays in inventory.

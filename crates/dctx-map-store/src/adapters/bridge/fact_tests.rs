@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Parse-once, expiry and cap evidence for retained `FactKeys`.
 //! Implements DX-C2: three roots, one parse, reparse after grace and a lowered cap.
 //! Uses the public store API. The five-verb rows are covered beside this bridge.

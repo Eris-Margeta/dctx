@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! dctx-core: the pure dctx domain (ids, selection decisions, budgets, errors, pack facts).
 //! Implements ARCHITECTURE-PROPOSAL §2 and D3-LEGACY-REMOVAL §5 D3-08.
 //! Depends on dctx-hash for content identity; used by ports, engines, adapters and frontends.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Public pipeline tests for incremental indexing and graph traversal.
 //! Implements SPEC-MAP-MODE sections 4, 5.2 and 7 using real temporary files.
 //! Verifies stale refusals, dependency retries, moves and persisted cache reuse.

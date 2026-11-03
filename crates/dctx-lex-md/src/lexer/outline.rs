@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Heading tree, section spans, slugs, ordinals, summaries and placed references.
 //! Implements SPEC-MAP-MODE 5.1–5.4 doc nodes exactly as dctx-map-parse computes them.
 //! Uses scanned blocks and the inline scanner; produces the public `Document`.

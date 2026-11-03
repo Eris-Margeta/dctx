@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Plugin events: progress samples and the cancelled acknowledgement (no response is ever sent).
 //! Implements events.schema.json; sequencing rules live in `session::progress` (W-PROGRESS).
 //! Depends on json, common, scalars, refusal; used by envelope and session.

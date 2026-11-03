@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Segment generations for the query journal and a file-level view.
 //! Implements DX-C3 publication and DX-C4 admission for one map root.
 //! Cache load pins the latest generation; sqlite remains the comparison backend.

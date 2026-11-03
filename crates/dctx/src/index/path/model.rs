@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// Longest path, in edges.
 pub(crate) const MAX_HOPS: usize = 8;
 

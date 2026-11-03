@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Literal scanners: numbers, quoted strings, template segments and regex bodies.
 //! Implements the PARSERS-v1 lexical rules for escapes, interpolation and regex classes;
 //! unterminated literals are reported and never consume past their line or input.

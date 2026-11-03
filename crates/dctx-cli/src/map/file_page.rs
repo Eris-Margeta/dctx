@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The page size of `dctx map map <file>`: a file outline is listed to its record limit.
 //! The query default of 500 tokens cuts a 40-record outline near record 20, so a plain map of an `m:` target
 //! without `--budget` gets [`FILE_MAP_TOKENS`]. Skeleton, hubs, path, export and every other root keep their budgets.

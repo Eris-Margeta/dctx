@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Property tests: arbitrary bytes and Markdown-shaped noise never panic or break invariants.
 //! Checks the bounded-parser rule (ARCHITECTURE-PROPOSAL §3) and span/line consistency.
 //! Uses proptest and the public API only.

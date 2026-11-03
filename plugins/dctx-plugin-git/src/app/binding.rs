@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Session binding from `initialize`: the fixed v1 config, grants by kind, and the ignore/repository handles.
 //! Implements plugin-api git.md "Config cannot expand these fixed v1 values" (G-PROFILE), PLUGINS.md §3.2
 //! "a plugin may refuse an unsupported configuration but may not reinterpret it", and per-invocation grant

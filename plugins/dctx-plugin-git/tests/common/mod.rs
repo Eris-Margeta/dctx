@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared test support: the PL-C fixture corpus, a fake broker with spy counters, and fixture builders.
 //! Implements the fixtures/README.md rules (exact bytes, null input = absent or withheld) and the fake
 //! host-broker semantics of PLUGINS.md §3.3 (preconditions, sealed uploads, replay keys, receipts).

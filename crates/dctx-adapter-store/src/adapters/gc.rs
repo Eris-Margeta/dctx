@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Reachability GC for immutable segment and manifest names.
 //! Implements CACHE-v1 reclamation and the P3 mark set: pointers, writer protections, and reader leases.
 //! Depends on [`super::store`] closures. Unlink never truncates a live inode.

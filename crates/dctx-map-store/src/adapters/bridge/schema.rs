@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Comparison-bridge tables beside the v1 map schema.
 //! Implements ARCHITECTURE-PROPOSAL §3 option B: shared blob facts plus pack snapshots.
 //! Depends on the SQLite connection. Called on every [`super::super::SqliteStore`] open.

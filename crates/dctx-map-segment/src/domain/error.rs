@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed refusal for a segment that is truncated, corrupt, or outside v1.
 //! Implements SEGMENTS-v1: corruption is an error, never a panic or a partial slice.
 //! Depends on no other module. Every decoder in this crate returns [`SegmentError`].

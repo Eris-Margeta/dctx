@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Binary checks that `map read` of a normal module fits its default budget.
 //! Covers SPEC-MAP-MODE §4 and contracts/API-PORTS-v1.md read token caps.
 //! Depends on the compiled dctx-cli and a temporary source file. No network.

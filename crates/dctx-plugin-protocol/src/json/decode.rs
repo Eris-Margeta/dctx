@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Strict bounded JSON decoder for frame bodies and other preserved contract documents.
 //! Implements plugin-api wire.md §Bytes and semantics.md S-BOUNDS: no BOM, UTF-8 only, one root object,
 //! no trailing JSON, no duplicate keys, integer-only numbers, no NUL or unpaired surrogates, depth/member caps.

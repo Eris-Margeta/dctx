@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `dctx --version` names the release and the build commit (v1 card 7).
 //! Depends on the compiled `dctx-cli` binary; `build.rs` embeds the short git sha or `unknown`.
 //! Used by `cargo test -p dctx-cli`.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Argument rules for `dctx cache status|gc|purge|config|auto`.
 //! Implements ARCHITECTURE-PROPOSAL §4 public cache commands.
 //! Depends on nothing but the argument strings. [`super::execute`] applies the parsed command.

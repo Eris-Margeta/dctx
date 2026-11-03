@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Headed sections of plain-text documents: `.txt`, `.rst`, `.adoc`/`.asciidoc`, `.org` and `.tex`.
 //! Every heading becomes a `d:` doc node exactly like a Markdown heading: kind `heading`, level from the marker,
 //! section = the heading line up to the line before the next heading of the same or a higher level.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Tests for the breadth-first neighbors traversal over a hand-built call chain `f1 -> f2 -> f3 -> f4` plus a back edge `f4 -> f1`.
 
 use super::{collect, Collected};

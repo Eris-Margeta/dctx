@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! 80-byte header and 64-byte directory shared by manifest bytes.
 //! Implements SEGMENTS-v1 envelope rules for magic `DCTXMAN`. Segment files stay in `dctx-map-segment`.
 //! Depends on [`super::bytes`] and `dctx_map_segment::envelope_checksum`. Manifest encode calls [`assemble`].

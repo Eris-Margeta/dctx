@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The protection use case: bind, read, plan, upload, compare-and-replace, then optionally stage.
 //! Implements PLUGINS.md §6.2 steps 2–8 and the git.md outcome table through the broker port only:
 //! no repository => skipped with zero reads; no `.gitignore` => skipped, never created; conflict/unknown

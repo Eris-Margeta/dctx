@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Hit text of the grep verb, shared by the index that writes it and the wire encoder that reads it.
 //! A grep record keeps its hits in `source_utf8`: one `L<n>: <line>` row per hit, then at most one omission note.
 //! Depends on [`super::answer::AnswerRecord`] only. No file is read here.

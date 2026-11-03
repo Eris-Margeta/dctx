@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Grant calculation `G(t) = M ∩ U ∩ O ∩ H ∩ S(t) ∩ A` with explicit denies and quota minima.
 //! Implements PLUGINS.md §4.1 and Authority.tla `Effective`: semantic containment per capability kind,
 //! the minimum of numeric quotas, and no cross-kind implication (write never implies read or spawn).

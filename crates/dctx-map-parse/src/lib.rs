@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Per-file syntax facts for dctx map mode.
 //! Implements SPEC-MAP-MODE sections 5.1–5.3 and 6.2 and PARSERS-v1.
 //! Default parser is `PureParser` over the dctx-lex crates. The syntax-tree-sitter

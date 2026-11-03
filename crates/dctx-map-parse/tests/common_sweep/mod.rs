@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Read-only corpus discovery and the lexers.rs store acceptance helper.
 //! Implements SPEC-MAP-MODE sections 5 and 6.2 for the ignored corpus sweep.
 //! Uses only std filesystem reads and public parser/model records.

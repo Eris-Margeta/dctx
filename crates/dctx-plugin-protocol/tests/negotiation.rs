@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Version negotiation goldens: hello → hello-selected and the incompatible-offer hello-error, byte for byte.
 //! Implements W-NEGOTIATE (wire.md §Bootstrap) with refusal paths each next to a positive control.
 //! Depends on the corpus fixtures and the crate's negotiate module.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Flow collections, keys, colons and plain-scalar folding for the YAML walker.
 use super::*;
 use super::text::{Ahead, visual_columns};

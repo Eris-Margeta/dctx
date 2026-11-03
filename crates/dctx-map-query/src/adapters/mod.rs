@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Index and query orchestration over the landed map crates.
 //! Implements SPEC-MAP-MODE sections 4, 6 and 7.
 //! Connects filesystem sources and SQLite to pure request rules.

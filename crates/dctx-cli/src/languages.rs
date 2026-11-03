@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `dctx languages`: every supported language with its tag, file names, tier and symbol confidence.
 //! Driven only by the facade registry [`dctx::LANGUAGES`]: the text table, `--json` and `--markdown`, which is the README
 //! block between `<!-- languages:begin -->` and `<!-- languages:end -->`. A unit test diffs that block against [`markdown`].

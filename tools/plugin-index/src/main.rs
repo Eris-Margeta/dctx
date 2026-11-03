@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Local `plugin-index` command.
 //! Implements PLUGINS.md §7.2 PL-X. Reads only the paths the operator names.
 //! Depends on the `plugin-index` library. It validates and checks test-key fixtures.

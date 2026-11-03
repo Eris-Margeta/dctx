@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Content identity helpers for the facade.
 //! Implements contracts/API-PORTS-v1.md identity goldens and decision 077 (own SHA-256, never a git id).
 //! Depends on dctx-hash. Pack, map and `object_key` all use this digest.

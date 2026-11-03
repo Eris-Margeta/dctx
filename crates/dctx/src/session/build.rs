@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Session construction from explicit ports. Nothing is read from the home directory.
 //! Implements ARCHITECTURE-PROPOSAL §2: source, storage, policy, limits and cancellation are arguments.
 //! Depends on [`super::Session`] and the port traits. Hosts call [`Session::builder`].

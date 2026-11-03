@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Filesystem fixture. The checked-in tree has no `.git` directory.
 //! The fixture `.gitignore` names `secrets.env`, so that file is not in the checkout.
 //! The test writes both in a temp copy. `.gitignore` text is not applied unless the caller passes it as selection text.

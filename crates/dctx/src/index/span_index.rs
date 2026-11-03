@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! One newline/byte-offset index per source file, used to resolve node spans.
 //! Implements DCTX-COLD-SCAN C1 (`lex_dispatch` no longer rescans from byte 0).
 //! Depends on the standard library. `from_nodes` builds one index for each file.

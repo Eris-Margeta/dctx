@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Python, Go and Java fixture facts through the Parser port.
 //! Verifies SPEC-MAP-MODE sections 5 and 6.2: language, counts, precision and refusal.
 //! Checked-in source is parsed without executing code or reading dependencies.

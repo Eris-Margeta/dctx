@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Go regression tests for trailing floats and containment confidence.
 //! Spec: docs/reviews/dctx-lexers-a.md findings 1 and 11; SPEC-MAP-MODE §5.3.
 //! Depends on dctx-lex-go and dctx-map-model; used by the crate test suite.

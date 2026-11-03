@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Worker supervision: pre-exec admission, spawn, liveness sampling, cancellation, force and reap.
 //! Implements Lifecycle.tla over the process port (PP4, PP8): admission and spawn follow the decision 080
 //! disposition; liveness verdicts come from the progress feed; cancellation grace is the only timed

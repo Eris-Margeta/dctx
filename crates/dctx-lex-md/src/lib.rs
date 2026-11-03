@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Hand-written, zero-dependency Markdown structure extractor for dctx map mode.
 //! Implements decision 077 and ARCHITECTURE-PROPOSAL §3 (first-party structural extractors).
 //! Depends on std only; dctx-map-parse turns a `Document` into model facts.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed refusals for the public plugin index.
 //! Implements PLUGINS.md §5.3 and §7.2 PL-X, plus distribution.md authenticated bytes.
 //! Depends on thiserror. The domain, command, and CLI return these errors.

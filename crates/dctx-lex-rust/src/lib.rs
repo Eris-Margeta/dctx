@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Structural Rust extractor for dctx map mode, built on `syn` (decision 077).
 //! Implements docs/design/contracts/PARSERS-v1.md (Rust row) and PRODUCT-CONTRACTS C05.
 //! Uses syn/proc-macro2 for valid files and a conservative line scan for the rest;

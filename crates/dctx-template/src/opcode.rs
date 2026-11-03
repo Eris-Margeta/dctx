@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Render bytecode. Opcodes are data, never calls into the host.
 //! Implements contracts/DTS-v2.md RENDER ("no arbitrary evaluation").
 //! Depends on [`crate::model`] and [`crate::v1`]. Used by lowering, the binary codec and bounded render.

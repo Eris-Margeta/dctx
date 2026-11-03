@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Types and bounds for the DIRCTXTV compatibility codec (D3-LEGACY-REMOVAL §5 D3-02).
 //! Shares the snapshot fact node with dctx-core; carries no host paths or IO capabilities.
 //! Used by the pure decoder, encoder and the facade's explicit import operation.

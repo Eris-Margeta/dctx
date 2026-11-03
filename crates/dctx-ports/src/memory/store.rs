@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! In-memory `FactStore` and `Cache`: ephemeral storage and quota doubles with spy counters.
 //! Implements the `FactStore` publish-is-commit rule and the `Cache` settle-once accounting
 //! (committed + reserved ≤ capacity) so engine tests can observe publishes, reservations and refusals.

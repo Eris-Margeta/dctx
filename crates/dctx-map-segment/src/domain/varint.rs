@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Canonical unsigned base-128 integers, at most 10 bytes for a `u64`.
 //! Implements SEGMENTS-v1: reject overflow, overlong encodings, and unfinished sequences.
 //! Depends on [`super::error::SegmentError`]. Postings use it for document and position deltas.

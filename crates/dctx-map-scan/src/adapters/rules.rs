@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Layered filesystem loading for the pure ignore engine.
 //! Implements ADR-015b and SPEC-MAP-MODE section 6.1.
 //! Uses RuleSource for deterministic, injected rule files.

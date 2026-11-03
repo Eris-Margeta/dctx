@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `FactStore` port: load and publish the latest pack snapshot of a view.
 //! Implements the pack subset of contracts/API-PORTS-v1.md `FactStore` (pin/begin/commit): one
 //! publish is the commit point; a failed publish leaves the previous snapshot visible.

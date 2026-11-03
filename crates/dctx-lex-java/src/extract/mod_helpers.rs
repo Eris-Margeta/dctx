@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Fact draft assembly: ordinals, containment edges and precision labels.
 //! Implements SPEC-MAP-MODE 5.1–5.4 source order for Java, as dctx-lex-js finalizes facts.
 //! Depends on the draft types in `extract` and on lexer line maps.

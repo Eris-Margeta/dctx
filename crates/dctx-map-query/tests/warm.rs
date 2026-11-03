@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Reopened production-path freshness, privacy and warm-query evidence.
 //! Implements CM-6c and SPEC-MAP-MODE section 7 with actual filesystem reads counted.
 //! Tests use the same `Index::open/query/render` path as the CLI, never a prepared answer.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Type members: fields, compact constructors and member-shape classification.
 //! Implements SPEC-MAP-MODE 5.1 field and compact-constructor facts inside a Java type body.
 //! Depends on modifier visibility and the method finisher; sees through generic arguments.

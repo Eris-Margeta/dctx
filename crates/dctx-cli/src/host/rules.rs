@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Project ignore and omit rule loading for the facade selection policy.
 //! The session entry points that use these helpers stay in the host module.
 

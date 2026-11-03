@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Version-1 query.json upgrades into a segment generation.
 //! Implements the cache migration previously stored beside the sqlite file.
 //! Moves survive, and a second open does not reread unchanged source.

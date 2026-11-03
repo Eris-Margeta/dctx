@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Read-only map verbs through the facade session.
 //! Implements SPEC-MAP-MODE sections 4 and 9.1 and ARCHITECTURE-PROPOSAL §7 row DX-D2.
 //! Depends on map-query for request bounds and on the `dctx` facade for the snapshot and the query.

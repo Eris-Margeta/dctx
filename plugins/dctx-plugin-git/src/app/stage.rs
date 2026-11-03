@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The staging request: `program.run git.add-ignore` with handles only, and how its answer is reported.
 //! Implements PLUGINS.md §6.2 steps 7–8 and git.md "Missing Git / denied stage / nonzero exit =>
 //! warning/rules-written-not-staged ... Crash/uncertain staging => `EffectUnknown`, no automatic retry"

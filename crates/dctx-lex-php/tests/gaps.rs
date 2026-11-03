@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Gap oracles for PHP template regions, literal frames and scoped aliases.
 //! Implements DX-G10 / PHP1–PHP3. Positive controls sit beside every refusal.
 //! Existing fixtures and the public extractor API stay unchanged.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Tauri commands for the desktop plugin surface (PLUGINS.md §7.3 PL-APP).
 //! Delegates lifecycle rules and command error strings to dctx-desktop-api.
 //! Depends on distribution types, the protocol capability decoder and plugin_ports.

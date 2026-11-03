@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Canonical-path store for Unix targets other than Linux.
 //! `symlink_metadata` checks are not descriptor anchoring. Same-user code can still
 //! replace a directory with a symlink in the gap before the next create, open, or rename.

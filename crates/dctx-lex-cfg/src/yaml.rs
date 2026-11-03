@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! YAML block mappings, sequences, flow collections, anchors and multi-document files.
 //! Implements the configuration extractor for `.yaml` and `.yml` (PARSERS-v1).
 //! Anchors and aliases are recorded and never expanded. The draft in `path` owns facts.

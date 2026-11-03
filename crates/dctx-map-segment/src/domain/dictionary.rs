@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Sorted unique UTF-8 dictionary. Exact lookup is a binary search.
 //! Implements SEGMENTS-v1 kind 1. An empty section is zero bytes, not a zero count.
 //! Depends on the cursor and the record cap. Facts, nodes and postings store ids into this table.

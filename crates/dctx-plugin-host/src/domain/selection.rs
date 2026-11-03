@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Source selection decisions `S(t)` and provenance checks.
 //! Implements PLUGINS.md §4.3 and Authority.tla `Decisions`/`Read`: only `Include` authorizes content,
 //! `DebugVisible` is metadata only, unknown paths fail closed to `Exclude`. Depends on protocol scalars.

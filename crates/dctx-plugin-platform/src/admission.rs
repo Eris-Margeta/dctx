@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Platform admission gates, separate from installation and broker consent.
 //! Implements Lifecycle `EnableOrRefuse` and PP4; signatures never imply confinement.
 //! Linux building blocks cannot mint a proven-launch disposition on their own.

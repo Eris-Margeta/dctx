@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Cache ledger. Segment bytes and snapshot leases live in one shared root.
 //! Implements API-PORTS-v1 `Cache.reserve` and CACHE-v1 auto-clean, purge, and collection.
 //! Depends on the [`dctx_ports::Cache`] port, `dctx-adapter-cache`, and [`cache_bind`].

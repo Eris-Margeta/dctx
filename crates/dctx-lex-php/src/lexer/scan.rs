@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Byte scanner with explicit PHP/HTML modes and opaque comments and literals.
 //! Implements PHP lexical boundaries for decision 077 without executing source.
 //! Produces tokens consumed by delimiter pairing and structural extraction.

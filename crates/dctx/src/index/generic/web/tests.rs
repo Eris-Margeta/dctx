@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Tests for web files: script blocks keep original lines and spans, headings become doc sections, unclosed tags are safe.
 
 use super::lexed;

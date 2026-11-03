@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure legacy snapshot envelopes and explicitly supplied output settings.
 //! Implements D3-LEGACY-REMOVAL §5 D3-03 and the pinned D3-COMPATIBILITY bytes.
 //! Depends on v1 marker rendering and core versions; no configuration discovery.

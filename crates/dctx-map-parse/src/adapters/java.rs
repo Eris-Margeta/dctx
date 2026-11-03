@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Java facts from dctx-lex-java for `PureParser` and the tree-sitter fallback.
 //! Implements SPEC-MAP-MODE sections 5 and 6.2 and the PARSERS-v1 Java row.
 //! The lexer emits model nodes; this adapter copies nodes, edges and references.

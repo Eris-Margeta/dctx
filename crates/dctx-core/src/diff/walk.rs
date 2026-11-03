@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Recursive snapshot walk: file counts, added and removed subtrees, and node comparison.
 //! Implements the child-matching half of the pack diff (relative path identity, decision 078).
 //! Depends on [`super`] and [`crate::datatypes`]; pure, no IO.

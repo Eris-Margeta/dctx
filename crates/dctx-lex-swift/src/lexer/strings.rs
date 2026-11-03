@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Swift quoted, multiline and extended-delimiter string scanning.
 //! Implements nested interpolation under the same PARSERS-v1 depth ceiling.
 //! Literal text remains opaque; interpolation expressions become ordinary tokens.

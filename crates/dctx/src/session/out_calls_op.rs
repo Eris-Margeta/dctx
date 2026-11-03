@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Unresolved outbound calls for a neighbors page (DCX-54c): the call names in the requested node's own span that no
 //! resolved outbound `calls` record names, as `calls:out:?<name>` records after the resolved ones.
 //! Reads the node's file once through the same verified read as `read` and `sites`; a file that cannot be read adds nothing.

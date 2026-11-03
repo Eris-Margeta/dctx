@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Compile and reload a DTS plugin plan.
 //! Implements PLUGINS.md §3.5: locks, ceilings, acyclic order, sticky disable.
 //! Depends on [`crate::grant`], [`crate::model`] and [`crate::source`]. [`crate::lower`] calls it.

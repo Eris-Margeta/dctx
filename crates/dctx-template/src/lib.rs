@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure DTS v1 renderer and v2 `ContextPlan` compiler.
 //! Implements ARCHITECTURE-PROPOSAL §2 and §7 row DX-B2, contracts/DTS-v2.md, and PLUGINS.md §3.5.
 //! Depends on dctx-core for decisions and token estimates, and on dctx-hash for SHA-256.

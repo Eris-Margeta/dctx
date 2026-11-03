@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The decision 077 liveness feed: progress evidence, not wall-clock deadlines.
 //! Implements PLUGINS.md §3.4 and Lifecycle.tla `Advance`, `ResolveDependency`, `Observe`, `Probe`,
 //! `Classify`, `ObserveWait` and `ElapsedObservation` (PP8). Useful progress is an advancing counter, a new

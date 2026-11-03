@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Public API coverage for the desktop engine seam.
 //! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4a: oversized refusal, settings parse, recent list, round trip.
 //! Depends on `dctx_desktop_api`. Temp directories stand in for the injected config and storage dirs.

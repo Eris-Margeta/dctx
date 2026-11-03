@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Durable parse outcomes for the query index's content cache.
 //! Implements SPEC-MAP-MODE section 7: syntax failures are content facts,
 //! while interrupted work remains retryable. Used by refresh and publication.

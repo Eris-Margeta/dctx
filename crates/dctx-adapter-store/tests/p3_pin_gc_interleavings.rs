@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! P3: reachable segments survive pin, compact, purge, and shared-root schedules.
 //! A lease keeps bytes after the pointer is gone. GC unlinks them only after release.
 //! Omitting leases from the mark set is the falsifying mutation and does unlink.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Verilog/SystemVerilog: modules, interfaces, packages, classes, functions and tasks.
 //! Verilog is a block-family language: `module`, `macromodule`, `interface`, `package`, `class`, `function` and `task`
 //! open a block and `endmodule`, `endinterface`, `endpackage`, `endclass`, `endfunction`, `endtask` close it, while

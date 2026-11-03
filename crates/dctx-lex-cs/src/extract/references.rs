@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Token cursor, statements and call references.
 //! Implements SPEC-MAP-MODE 5.3 `calls` for C#. Bare member reads (`obj.Field`
 //! with no call) are abstained: the model has no field-read relation to invent.

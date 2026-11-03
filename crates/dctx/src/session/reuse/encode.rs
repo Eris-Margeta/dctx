@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use super::bytes::{decision_byte, freshness_byte, push_count, push_str, push_u32, push_u64};
 use super::{MAGIC, VERSION};
 use crate::domain::{DctxError, ScanLimits};

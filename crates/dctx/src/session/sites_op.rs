@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Call-site lines for a neighbors page. Reads each caller's file once through the same verified read as `read`.
 //! Implements the `sites` field of inbound `calls` records and the caller order: direct callers with more call sites come first.
 //! A file that cannot be read or verified leaves its records without sites, ranked as one site.

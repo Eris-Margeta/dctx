@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure legacy diff envelopes over an injected tree and change report.
 //! Implements D3-LEGACY-REMOVAL §5 D3-03, including the pinned closing-tag glue.
 //! Depends on core diff/version types and the shared v1 component traversal.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PP8 lifecycle progress under decision 077 with a fake clock and fake process: progress, not timers.
 //! Slow advancing work survives; silent, heartbeat-only, dead-dependency and exited workers are probed,
 //! classified and cancelled; cancellation closes admission; reap refusal stays visible as reap pending.

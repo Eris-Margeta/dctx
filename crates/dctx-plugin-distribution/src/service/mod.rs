@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The distribution facade shared by CLI and app: policy, ports, lock and registry IO.
 //! Implements PLUGINS.md §5.1 "facade operations shared with the app" and §5.3 "operation lock".
 //! Depends on ports and domain; submodules hold download, install and management operations.

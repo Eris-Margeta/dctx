@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Serializable generation of the query graph.
 //! Implements DX-C5 persistence: one journal, chunked into fact summaries.
 //! Segment publication and cache load are the only callers.

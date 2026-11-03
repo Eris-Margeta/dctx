@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Public ignore engine and compiled pattern API.
 //! Implements SPEC-MAP-MODE section 6.1 and ADR-015b.
 //! Pure matching consumes rules supplied by filesystem adapters.

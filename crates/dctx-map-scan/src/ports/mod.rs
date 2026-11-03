@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! IO boundaries for scan adapters.
 //! Implements ADR-014/015b explicit failures and content privacy.
 //! Uses standard IO types; pure matching never performs IO.

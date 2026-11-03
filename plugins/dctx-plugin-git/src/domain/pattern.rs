@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! One `.gitignore` line classified as blank, comment or rule (negation, directory-only, last component).
 //! Implements the gitignore line grammar used by G-COVERAGE: `#` comments, unescaped trailing spaces
 //! dropped, `!` negation, trailing `/` directory-only; escapes stay for the glob tokenizer. Pure; no IO.

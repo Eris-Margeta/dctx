@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Byte accounting, injected clock and automatic cleaning for the comparison cache.
 //! Implements CACHE-v1 admission (committed bytes ≤ cap) and time-then-LRU reclamation.
 //! Depends on [`crate::domain::retention`] and the bridge tables. Used by fact and pack writes.

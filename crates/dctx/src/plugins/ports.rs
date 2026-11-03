@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Real platform ports and fake host ports behind one broker.
 //! Implements PLUGINS.md §7.3: the same hook corpus passes through both.
 //! Depends on `dctx-plugin-host` ports and `dctx-plugin-platform`. The session runner owns the adapters.

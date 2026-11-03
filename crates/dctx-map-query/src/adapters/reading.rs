@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Exact, privacy-checked source windows for the read verb.
 //! Implements SPEC-MAP-MODE sections 4 and 7 with hash validation.
 //! Reads through the Source port and refuses stale spans or omitted content.

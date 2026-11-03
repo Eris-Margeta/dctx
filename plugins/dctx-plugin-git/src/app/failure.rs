@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed invoke failures: a host error passed through, or a plugin refusal with its known effect state.
 //! Implements PLUGINS.md §3.2 error objects `{code,phase,retryable,effect_state,receipt_ids,details}` and the
 //! S-REPLAY rule (partial/unknown effects are never retryable). Depends on dctx-plugin-protocol.

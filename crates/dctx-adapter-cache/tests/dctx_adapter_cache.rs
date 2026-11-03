@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Filesystem ledger, object unlink and auto-clean.
 //! Restart, expiry, the system cap and the interval all go through a temp directory.
 //! The fake clock supplies wall time. Nothing here starts a background cleaner.

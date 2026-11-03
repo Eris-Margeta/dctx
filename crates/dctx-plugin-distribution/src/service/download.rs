@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded streaming fetch with origin, peer and redirect checks.
 //! Implements PLUGINS.md §5.3 download policy and I-ORIGIN: check every URL and redirect, bind the check
 //! to the connected peer, stop reading past the ceiling, report interruption as a typed failure.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Docstring decoding, comment summaries and body fingerprints.
 //! Implements SPEC-MAP-MODE 5.2 (fingerprints) and 5.4 (summaries) for Python.
 //! Uses dctx-hash SHA-256; the walker calls these when it labels a fact.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Deterministic in-memory port doubles: fake HTTPS network, fault-injecting store, fixed clock.
 //! Implements the "fake network" and interruption seams of PLUGINS.md §7.2 row PL-I.
 //! Depends on ports only; used by this crate's tests and by PL-CLI/PL-APP tests. Never a production adapter.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed failures for indexing, querying and bounded rendering.
 //! Implements the explicit-refusal rules of SPEC-MAP-MODE sections 3 and 7.
 //! Wraps public dependency errors for library and CLI callers.

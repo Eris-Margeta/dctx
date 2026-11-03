@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `Cache` port: byte admission before anything is written to managed storage.
 //! Implements contracts/API-PORTS-v1.md `Cache.reserve` and CACHE-v1 accounting: every
 //! reservation is settled exactly once, by `commit` with the bytes used or by `abort`.

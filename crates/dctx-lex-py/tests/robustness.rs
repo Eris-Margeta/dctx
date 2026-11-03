@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Refusals, damaged input, limits and deterministic fuzz checks for the Python extractor.
 //! Covers the Python structural extractor contract (decision 077/decision 078).
 //! Uses common fact invariants and the complete inline fixture corpus with proptest.

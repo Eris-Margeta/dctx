@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pinned facts for the `legacy_parity` corpus (DX-D3-01, D3-LEGACY-REMOVAL.md §3 and §5).
 //! `fixtures/` records the tree the legacy walker and content reader store when every
 //! timestamp is the injected value below. This test never calls a legacy module.

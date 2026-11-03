@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! JSON and Markdown baseline reports for DX-A1.
 //! Implements ARCHITECTURE-PROPOSAL §7 Stage 0 evidence, without a pass/fail threshold.
 //! Depends on serde; `run` writes `reports/baseline.json` and `reports/baseline.md`.

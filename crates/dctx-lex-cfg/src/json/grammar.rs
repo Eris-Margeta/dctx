@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Objects, arrays, scalars and fact creation for the JSON walker.
 use super::*;
 

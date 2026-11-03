@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Strings, `%`-literals, regexes, symbols and character literals.
 //! Expression position decides whether `/` and `%` open a literal or act as operators.
 //! Dispatch, comments and the shared operator table live in the parent module.

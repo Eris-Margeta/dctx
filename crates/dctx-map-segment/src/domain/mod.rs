@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Segment domain: envelope, dictionary, postings, adjacency and ranking.
 //! Implements SEGMENTS-v1 and ARCHITECTURE-PROPOSAL §3. No IO and no git.
 //! Depends on `dctx-hash` through the checksum module. The crate root re-exports this API.

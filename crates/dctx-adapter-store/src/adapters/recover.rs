@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Recovery to the newest valid pointer closure.
 //! Implements SEGMENTS-v1: a crash leaves the old or new committed generation, never a staged object.
 //! Depends on [`super::store`] inspection. Publication installs the bytes this module trusts.

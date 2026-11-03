@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Sparse prefix ranges over a sorted dictionary. Exact lookup stays a sorted range.
 //! Implements SEGMENTS-v1 kind 2. This is not an FST; a later measured FST would be a new schema.
 //! Depends on [`super::dictionary`] for the strings it points at. The builder emits one range per first character.

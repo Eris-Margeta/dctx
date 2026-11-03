@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Language dispatch for the pure-Rust parser and the optional tree-sitter oracle.
 //! Implements SPEC-MAP-MODE section 6.2 and PARSERS-v1 for Rust, JavaScript,
 //! TypeScript, Markdown, Python, Go, Java, C/C++, configuration, C#, Kotlin, Ruby, PHP and Swift.

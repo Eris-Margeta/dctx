@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! JSON output and lookup helpers for bounded answer rendering.
 
 use std::fmt::Write as _;

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed refusals for the DX-A1 baseline runner.
 //! Implements ARCHITECTURE-PROPOSAL §7 Stage 0 with explicit errors.
 //! Depends on std and dctx-map-query; the binary and library return these.

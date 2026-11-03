@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Injected desktop plugin operations (PLUGINS.md §5, §7.3 PL-APP).
 //! Uses Distribution, its ports and the facade bundled catalog; mirrors CLI management.
 //! Tauri supplies storage roots through Store, clock, network, trust and confinement.

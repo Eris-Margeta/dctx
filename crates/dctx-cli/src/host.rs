@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Facade session for pack, map, template and the persisted cache ledger.
 //! Implements ARCHITECTURE-PROPOSAL §2 and §4: the CLI injects the clock, policy and cache root.
 //! Depends on the `dctx` facade, `dctx-core` selection and `dctx-adapter-cache`.

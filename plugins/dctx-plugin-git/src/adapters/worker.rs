@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The worker lifecycle: hello -> initialize -> ready -> invoke* -> shutdown, over inherited stdio.
 //! Implements PLUGINS.md §3.1 lifecycle and wire.md §Bootstrap and lifecycle for the dctx/git worker:
 //! highest common version, identity from the launch record, required APIs checked before selection,

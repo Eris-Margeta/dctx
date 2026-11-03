@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Terminal menus and snapshot actions, per D3-LEGACY-REMOVAL §5 D3-04.
 //! Uses the same compatibility host as the alias and managed cache requests for purge.
 //! Menu copy lives in help; terminal IO uses std without child processes.

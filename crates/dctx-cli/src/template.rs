@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Template build and list through the facade compiler.
 //! Implements ARCHITECTURE-PROPOSAL §2 template compilation and §4 explicit outputs.
 //! Depends on [`dctx::Session::compile_template`] and [`dctx::Session::load_template`].

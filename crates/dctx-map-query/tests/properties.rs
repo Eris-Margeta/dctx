@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Properties P1–P7 for the map engine.
 //! Implements ARCHITECTURE-PROPOSAL §7 DX-C5 against the public query API.
 //! Each refusal has a positive control that the same operation accepts a smaller input.

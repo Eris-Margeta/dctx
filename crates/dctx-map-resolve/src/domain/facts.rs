@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Parser-neutral per-file definitions and raw references.
 //! Implements SPEC-MAP-MODE sections 6.2 and 6.3 for CM-6 adapters.
 //! Uses model nodes and identities; consumed by the pure resolver.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pinned legacy formatter envelopes and compiled-template bytes (DX-D3-01).
 //! Fixtures are the bytes the legacy formatter and `CompiledTemplate::serialize` produce
 //! for a fixed tree and the `pin` template. This file calls only `dctx_template`.

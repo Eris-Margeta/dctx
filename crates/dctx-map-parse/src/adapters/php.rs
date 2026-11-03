@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PHP facts from dctx-lex-php for `PureParser` and the tree-sitter fallback.
 //! Implements SPEC-MAP-MODE sections 5 and 6.2 and the PARSERS-v1 PHP row.
 //! The lexer emits model nodes; this adapter copies nodes, edges and references.

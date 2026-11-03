@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Plugin host integration: real and fake ports, commit flags and ignore revalidation.
 //! The library default starts no host. Map queries do not schedule a hook.
 //! Engines reach the host only through session methods. A platform launch stays closed.

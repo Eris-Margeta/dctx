@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Reference and type scans: calls, uses-type, angles and statement ends.
 //! Call names keep `.` for both `.` and `?.`. Bare reads and `::` abstain.
 //! Angle brackets close only when the interior still looks like a type.

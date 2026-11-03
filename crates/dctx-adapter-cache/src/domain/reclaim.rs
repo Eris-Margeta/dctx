@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Reclaimable generations: superseded views retire at publish, admission evicts before it refuses.
 //! Implements CACHE-v1 reclamation for P-C10 and P-C11: a view that a newer view replaced, and that no
 //! reader lease holds, stops being retained at once, and its bytes may be evicted in age order across roots.

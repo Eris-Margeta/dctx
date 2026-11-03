@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Irreversible restriction of an already-loaded trusted private worker entry.
 //! Implements Landlock ABI4 plus seccomp, pipe-only descriptors and parent-death handling.
 //! This is not arbitrary ELF admission: the caller/bootstrap and its loaded runtime are trusted.

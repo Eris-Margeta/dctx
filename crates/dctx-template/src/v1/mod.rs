@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! DTS v1 variables, partials, layout and marker rendering.
 //! Implements ADR-003 and the byte-level behaviour of dctx-core's template module.
 //! Depends on [`crate::error`]. Used by v2 RENDER lowering and by [`crate::render_markers`].

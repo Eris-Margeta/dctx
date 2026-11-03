@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Compiled plugin binding, admitted ceilings, liveness and the plan shape.
 //! Implements PLUGINS.md §3.5 and plugin-api/dts.md (admitted limits and liveness).
 //! Depends on [`super`] value types and [`super::super::error`]; used by the binary and plan codecs.

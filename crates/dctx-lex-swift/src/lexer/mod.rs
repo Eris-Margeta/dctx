@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Swift token vocabulary and delimiter pairing for PARSERS-v1.
 //! Depends on the bounded scanner and domain diagnostics.
 //! Used by the structural declaration and reference walkers.

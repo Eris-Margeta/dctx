@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Recent-project directory discovery and command wrappers.
 //! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4 (second half, DX-E4b).
 //! Depends on `dctx_desktop_api::RecentStore`, the desktop config directory and `chrono` for the timestamp.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Admission ceilings from CACHE-v1, in bytes and milliseconds.
 //! Implements ARCHITECTURE-PROPOSAL §4 defaults: 2 GiB hard, 1.5 GiB soft, 1.2 GiB target.
 //! Depends on [`crate::error::CacheError`]. `Lifecycle::new` rejects an unordered quota.

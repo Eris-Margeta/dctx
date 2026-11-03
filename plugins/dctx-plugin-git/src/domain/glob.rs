@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Single path-component gitignore globs and a sound "can these two globs match a common name" test.
 //! Implements the supported-ignore-semantics subset of plugin-api git.md (G-COVERAGE): `*`, `?`, classes
 //! and backslash escapes; unsupported forms are reported, never assumed harmless. Pure; no IO.

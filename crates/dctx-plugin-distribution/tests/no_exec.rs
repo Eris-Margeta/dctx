@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Structural evidence for "no code runs during install": the crate source contains no process,
 //! dynamic-loading or shell primitive, and no port offers execution. PLUGINS.md §5.3, I-INTEGRITY.
 
@@ -34,7 +35,8 @@ fn no_execution_primitives_in_the_crate() {
         for needle in forbidden {
             assert!(!source.contains(needle), "{file} contains {needle}");
         }
-        assert!(source.starts_with("//!"), "{file} lacks its header doc");
+        let body = source.strip_prefix("// SPDX-License-Identifier: Apache-2.0\n").unwrap_or(source);
+        assert!(body.starts_with("//!"), "{file} lacks its header doc");
     }
 }
 

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! One bounded answer for each of the five current map verbs.
 //! Implements ARCHITECTURE-PROPOSAL §3 and SPEC-MAP-MODE §4 for Stage 0.
 //! Depends on dctx-map-query; the measure adapter stores the JSON answers.

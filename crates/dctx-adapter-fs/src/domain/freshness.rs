@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Freshness results for authorized files.
 //! Implements DX-B3 metadata pre-filter and strict digest validation (decision 078).
 //! Depends on [`super::stamp`] and [`crate::ContentDigest`]. Adapters fill these values.

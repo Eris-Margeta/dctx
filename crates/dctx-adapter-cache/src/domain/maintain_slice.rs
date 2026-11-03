@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded retirement, sweep and tombstone actions.
 //! Implements CACHE-v1 maintenance cursor persistence, unlink grace and blockers.
 //! Depends on reachability and lifecycle state; maintenance entry points run each slice.

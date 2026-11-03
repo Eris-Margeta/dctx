@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Text and bounded JSON for plugin commands.
 //! Implements PLUGINS.md §5.1 "`--json` equivalents" and escaped display text.
 //! Depends on std. Used by the plugin entry and the operation results.

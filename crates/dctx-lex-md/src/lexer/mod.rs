@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Markdown lexer pipeline: front matter, block scan, then outline with references.
 //! Implements the extraction steps behind `extract_with` (decision 077, ARCHITECTURE-PROPOSAL §3).
 //! Pure functions over a validated UTF-8 source; no IO and no panics on any input.

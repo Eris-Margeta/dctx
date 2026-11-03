@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Token stream for C and C++ after line-splice removal.
 //! Implements PARSERS-v1 lexing: comments, strings, raw strings, characters,
 //! preprocessor lines and bracket nesting bounded by `Limits`.

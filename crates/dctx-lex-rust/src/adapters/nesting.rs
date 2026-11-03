@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Nesting-cost bound checked on the token tree before syn's recursive descent runs.
 //! Implements PARSERS-v1 "no unbounded recursion". Cost of a token = tokens since the last
 //! point where syn returns to a loop (`;`, `=>`, a `,` outside `<...>`/`|...|`, a finished

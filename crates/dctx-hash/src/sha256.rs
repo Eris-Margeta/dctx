@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Streaming and one-shot FIPS 180-4 SHA-256.
 //! Implements the strict-profile content digest (decision 078, ARCHITECTURE-PROPOSAL).
 //! Depends on `compress` and `algorithm`. Callers use [`Sha256`] from the crate root.

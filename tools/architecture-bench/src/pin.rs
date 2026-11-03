@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Content pins for the dctx worktree and the generated fixture.
 //! Implements ARCHITECTURE-PROPOSAL §7 Stage 0 reproducible corpus hashes.
 //! Depends on dctx-hash and the manifest skip lists; the measure adapter stores the digest.

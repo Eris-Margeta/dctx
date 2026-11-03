@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #![allow(clippy::drop_non_drop)]
 //! Property test of Install.tla `PP9Integrity` over random install/activate/fault/revoke/rollback runs:
 //! the active version is always complete, recorded and below or at the high-water mark, admission never

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Default parser precision and the optional tree-sitter differential oracle.
 //! Implements PARSERS-v1 coverage labels for the public Parser port.
 //! Uses checked-in fixtures; the oracle module compiles only with syntax-tree-sitter.

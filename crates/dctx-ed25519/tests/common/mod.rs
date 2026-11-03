@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared acceptance oracle for the PL-ED integration tests.
 //! Uses ed25519-dalek 2.2.0 `VerifyingKey::verify_strict`.
 //! Length and key-decoding errors count as rejection, never as skipped cases.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! P-C10, P-C11 and P-C12: reclaim on publish, evict before refusing, shared read lock.
 //! A superseded view is unlinked at publish unless a reader lease holds it; admission evicts reclaimable
 //! generations oldest first across roots; readers share the lock and never see a reclaimed generation.

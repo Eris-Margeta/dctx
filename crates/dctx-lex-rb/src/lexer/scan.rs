@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Code, strings, `%`-literals, regex and symbols for the Ruby lexer.
 //! Implements expression-position rules so `/` and `%` are not misread as operators.
 //! Heredoc bodies and bracket depth live in the sibling modules; this is the driver.

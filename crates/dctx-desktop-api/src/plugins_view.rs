@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Serializable plugin rows for the desktop (PLUGINS.md §7.3 PL-APP).
 //! Projects public distribution records and the facade's bundled catalog into display data.
 //! Depends on serde and distribution types; used by `plugins_ops` and later Tauri commands.

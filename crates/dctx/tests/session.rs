@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Cancellation, pack publication, continuation and cache administration.
 //! A cancelled snapshot leaves no generation. A pin blocks collection until it is dropped.
 //! Purge without confirmation changes nothing.

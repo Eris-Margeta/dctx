@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Persistent graph facts, pack snapshots and a content-addressed comparison cache.
 //! Implements SPEC-MAP-MODE sections 6.4, 7 and 8, and ARCHITECTURE-PROPOSAL §3 option B (DX-C2).
 //! Depends on map-model, dctx-hash and the `FactStore` port. Used by indexing, query and pack rollback.

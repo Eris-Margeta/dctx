@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Corruption checks for the safe segment decoder.
 //! Implements SEGMENTS-v1: truncation, lengths, checksums, overflow, and unknown versions.
 //! Depends on the builder and `dctx-hash`. [`super::decode`] is the subject under test.

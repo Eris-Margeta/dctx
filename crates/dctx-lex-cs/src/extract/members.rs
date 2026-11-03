@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Fields, properties, methods and constructors inside a type body.
 //! Implements SPEC-MAP-MODE 5.1 member facts for C#. Signatures stop at the name
 //! or the parameter list; bodies are scanned for calls, not nested statements.

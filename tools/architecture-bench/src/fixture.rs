@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Deterministic CC0 text fixture for the second DX-A1 corpus.
 //! Implements ARCHITECTURE-PROPOSAL §7 Stage 0 scratch generation.
 //! Depends on the manifest types; the measure adapter writes the bytes.

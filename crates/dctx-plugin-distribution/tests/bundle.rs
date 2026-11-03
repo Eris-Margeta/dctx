@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Offline `.dctx-plugin` install: same trust gates with zero network use; malformed, hostile,
 //! undeclared, wrong-target and oversized containers are refused before anything is published.
 //! distribution.md §offline bundle, requirements I-BUNDLE and I-OFFLINE.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! In-memory cache ledger: quotas, roots, objects, manifests, leases and cursors.
 //! Implements ARCHITECTURE-PROPOSAL §4, CACHE-v1 and the DX-A2 lifecycle model (P3, P4, P8).
 //! Depends on dctx-core timestamps and reservations. The facade drives startup, `auto_clean`, gc, status and purge.

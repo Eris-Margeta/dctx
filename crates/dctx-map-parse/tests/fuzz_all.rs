@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Cross-language robustness gate for the pure Parser port.
 //! Exercises SPEC-MAP-MODE sections 5 and 6.2: refusals, determinism and store rules.
 //! Uses local fixtures and seeded, bounded proptest inputs without executing source.

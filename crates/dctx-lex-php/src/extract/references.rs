@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PHP imports, trait uses, literal includes and unresolved call/member sites.
 //! Implements decision 077 abstention: no runtime evaluation or dynamic target edges.
 //! Facts retain source spellings and scopes for a later authorized resolver.

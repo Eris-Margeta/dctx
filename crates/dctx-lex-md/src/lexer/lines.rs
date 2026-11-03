@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Source lines with byte offsets, column-aware indentation, and front matter.
 //! Implements `CommonMark` line and tab rules (tab stops of four) as far as headings need.
 //! Pure string scanning; used by the block scanner.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Budget-aware pagination around the model's whole-record renderer.
 //! Implements SPEC-MAP-MODE section 3 without skipping budget-cut records.
 //! Used by library and CLI; source records are shortened only at line boundaries.

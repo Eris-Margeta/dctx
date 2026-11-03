@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Validated path/name identities and deterministic short aliases.
 //! Implements SPEC-MAP-MODE section 5.2, independent of source positions.
 //! The alias uses `dctx-hash`. Content identity is [`super::ContentId`], never a git object id.

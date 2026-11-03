@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PP1 authority, PP2 privacy and PP4 binding through the broker with fake ports.
 //! Each refusal is paired with its positive control; counts are spy observations (properties.md).
 //! Traces to Authority.tla `Admit`, `Commit`, `Read`, `Narrow`, `ChangeSelection`, `Halt`, `Consent`.

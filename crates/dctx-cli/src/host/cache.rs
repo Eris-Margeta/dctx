@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Cache root discovery, the persisted facade ledger and the piggy-back auto-clean slice.
 //! The session entry points that use these helpers stay in the host module.
 

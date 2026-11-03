@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Quota, admission, compaction and disk-full tests for the cache lifecycle.
 //! Implements CACHE-v1 accounting: one global cap, root ceilings inside it, and no double counting.
 //! Depends on the public ledger API. The property names P4 live in `p4_global_reservations`.

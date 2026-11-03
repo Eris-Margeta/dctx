@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pack engine: scan → load previous → diff/version → reserve → publish, all through ports.
 //! Implements the pack operation of contracts/API-PORTS-v1.md (`Session.pack`): one publish is the
 //! commit point; cancellation or a refusal before it leaves the previous snapshot and cache unchanged.

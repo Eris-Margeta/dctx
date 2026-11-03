@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! SQLite map store and the DX-C2 comparison bridge.
 //! Implements spec sections 6.4, 7 and 8, plus `FactStore` and content-addressed facts.
 //! Uses model facts, dctx-hash and the bridge tables. Consumed by query and pack rollback.

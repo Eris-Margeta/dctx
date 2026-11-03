@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed refusals of the installer, trust and discovery client.
 //! Implements the "typed errors, nonzero status" rule of PLUGINS.md §5.1 and distribution.md.
 //! Depends on dctx-ed25519 for the verifier's reason; used by every domain module and service.

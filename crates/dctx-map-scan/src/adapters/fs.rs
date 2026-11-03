@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Standard filesystem traversal adapter.
 //! Implements SPEC-MAP-MODE section 13a filesystem boundary.
 //! Supplies entry kinds without following links to the walker.

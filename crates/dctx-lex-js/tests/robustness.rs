@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Malformed-input, limit and determinism properties through the public API.
 //! Implements PARSERS-v1 "no panic, no unbounded recursion" with proptest fuzzing
 //! of arbitrary bytes and JS-shaped text, plus typed refusals with positive controls.

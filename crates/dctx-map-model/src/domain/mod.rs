@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! IO-free graph vocabulary, content identity and answer contracts.
 //! Implements SPEC-MAP-MODE sections 3 through 5 and ARCHITECTURE-PROPOSAL DX-B1.
 //! Depends on `dctx-hash` for algorithm-tagged digests. Shared by every map crate.

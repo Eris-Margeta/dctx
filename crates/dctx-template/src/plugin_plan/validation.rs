@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Plugin locks, hooks, configuration and deny validation.
 //! Implements PLUGINS.md §3.5: locks, ceilings and sticky disable.
 //! Depends on grant rules, host catalogs and source values; used by the plugin plan compiler and loader.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! DTS keys, scalar values, lists and section header grammar.
 //! Implements ARCHITECTURE-PROPOSAL §2 and PLUGINS.md §3.5.
 //! Depends on source raw values and typed template errors; used by the DTS source parser.

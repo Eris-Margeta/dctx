@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Block structure: documents, mappings, sequences and block scalars for the YAML walker.
 use super::*;
 use super::text::documents;

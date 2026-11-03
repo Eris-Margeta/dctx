@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Strict JSON for one bounded index page.
 //! Implements semantics.md S-BOUNDS and distribution.md's 4 MiB / depth 32 / 4096-member cap.
 //! Depends on [`crate::IndexError`]. Index and pin parsers consume [`parse`].

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Property checks for display text and duplicate identity.
 //! Implements the PL-X refusal that hostile summaries and duplicate ids do not pass.
 //! Depends on proptest and the pure validator. A plain summary is the positive control.

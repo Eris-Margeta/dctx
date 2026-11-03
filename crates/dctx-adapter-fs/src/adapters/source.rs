@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Confined source session: rules, inventory, authorized read, and validation.
 //! Implements ARCHITECTURE-PROPOSAL §7 DX-B3 and decision 078.
 //! Depends on [`super::rules`], [`super::walk`], and `dctx-hash`. Engines use [`FsSource`].

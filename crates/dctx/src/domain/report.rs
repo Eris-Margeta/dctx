@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pack and cache reports. Diagnostic paths stay inside the engine; callers see counts.
 //! Implements contracts/API-PORTS-v1.md cache administration, CACHE-v1 auto-clean and the pack report.
 //! Depends on [`super::error::DctxError`], dctx-hash and the cache adapter's product figures.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Current-generation pointer: `DCTXPTR` plus a manifest digest.
 //! Implements SEGMENTS-v1 "Current pointer sketch". The rename of this file is the visibility point.
 //! Depends on [`super::bytes::sha256`]. Recovery trusts a pointer only together with its closure.

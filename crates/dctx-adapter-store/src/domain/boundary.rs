@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Publication cuts where a crash must leave only an old or new valid generation.
 //! Implements SEGMENTS-v1 steps and the `p2_publish_crash_matrix` flush/rename/pointer cuts.
 //! Depends on no IO. [`crate::SegmentStore::publish`] calls [`Boundary::ALL`] in order.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Call references of the brace family: Scala, Dart, Zig, Solidity, Gleam, Groovy and Perl.
 //! Each function symbol's span is scanned on the comment- and string-masked source for `name(` call sites.
 //! The references are raw: `refs.rs` resolves them (same file first, then a unique project name) and drops ambiguous ones.

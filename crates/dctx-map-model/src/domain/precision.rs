@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Parser coverage and completion, kept separate from edge confidence.
 //! Implements PARSERS-v1 and API-PORTS-v1 precision labels.
 //! Depends only on the standard library. Answers and provenance carry a [`Precision`].

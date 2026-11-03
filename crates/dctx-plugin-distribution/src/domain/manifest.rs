@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The signed release manifest as the installer reads it, kept beside its exact bytes.
 //! Implements manifest.schema.json's closed top level and `artifacts` items, and distribution.md
 //! "preserve exact bytes; reject invalid schema and duplicate keys even when a signature verifies".

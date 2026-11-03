@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! In-memory port implementations: ephemeral adapters and spies for engine tests.
 //! Implements every port of this crate without IO; the source and stores log what they were asked.
 //! Depends only on the port traits and dctx-core. Used by dctx-pack's tests and by hosts that

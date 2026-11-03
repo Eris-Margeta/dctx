@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Host refusal: the single typed error every broker, ledger, budget and lifecycle rule returns.
 //! Implements the PLUGINS.md §3.2 error object fields (`code`, `phase`, `effect_state`, `receipt_ids`) and
 //! the S-REPLAY rule that partial/unknown effects are never retryable. Depends on dctx-plugin-protocol.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Privacy permissions for each file handling decision.
 //! Implements ADR-014 and SPEC-MAP-MODE section 6.1.
 //! Pure values used by ignore engines and future walkers.

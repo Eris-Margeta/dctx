@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Calls, module-level constants and the nodes and references they emit.
 //! Implements SPEC-MAP-MODE 5.1 constants and 5.3 call references for Python.
 //! Declarations and imports call these while they walk a span.

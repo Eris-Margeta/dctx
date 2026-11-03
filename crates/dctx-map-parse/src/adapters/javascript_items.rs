@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! JavaScript/TypeScript declarations, test blocks and JSDoc summaries.
 //! Implements SPEC-MAP-MODE sections 5.1, 5.2 and 5.4.
 //! Consumed by the syntax walker using public model constructors.

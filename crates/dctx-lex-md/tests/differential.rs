@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Differential test against the tree-sitter Markdown adapter of dctx-map-parse (the oracle).
 //! Checks decision 077 parity: doc ids, tree, lines, summaries, body fingerprints and references.
 //! Uses dctx-map-parse only as a dev-dependency; the oracle fixture is shared, not copied.

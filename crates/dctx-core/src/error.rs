@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed domain errors shared by the core, the ports and the engines.
 //! Implements the minimum stable error codes of contracts/API-PORTS-v1.md ("Typed error set").
 //! Depends on nothing. Messages never carry denied paths or file contents.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pack snapshot facts: the selected tree, its version, content digests and its own identity.
 //! Implements decision 077/decision 078 snapshot identity: SHA-256 (dctx-hash) over a canonical encoding of
 //! paths, kinds, decisions, metadata and content digests; no VCS id, no clock in the digest.

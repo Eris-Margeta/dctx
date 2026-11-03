@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared records from common.schema.json: versions, ranges, hooks, limits, identity, waits, resources,
 //! diagnostics, config values, extensions and command records.
 //! Implements plugin-api common.schema.json `$defs` exactly (closed objects, bounded arrays/maps).

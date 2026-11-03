@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PP3/PP5 crash recovery through the facade's owner-only filesystem audit adapter.
 //! Cuts surround real synced frames and observed file writes in a temporary directory.
 //! The broker reopens the original action; uncertainty, conflicts and archives survive restart.

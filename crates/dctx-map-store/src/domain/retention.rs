@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure cache admission, expiry and pressure rules for the comparison bridge.
 //! Implements CACHE-v1 stage-0 ratios: 2 GiB cap, 1.5 GiB soft watermark, 1.2 GiB target.
 //! Depends on no IO. The SQLite ledger applies these decisions to stored charges.

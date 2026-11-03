@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Token stream for Go source, including automatic semicolon insertion.
 //! Implements PARSERS-v1 lexing: comments, raw and interpreted strings, runes
 //! and bracket nesting bounded by `Limits`. The structural walker consumes this.

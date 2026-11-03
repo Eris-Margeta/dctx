@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Native plugin admission and platform security primitives (PLUGINS §4.2, PL-A).
 //! The Linux primitives enforce restrictions but do not constitute a qualified launcher.
 //! All general native launches fail closed until one-shot exec and lifecycle gates are met.

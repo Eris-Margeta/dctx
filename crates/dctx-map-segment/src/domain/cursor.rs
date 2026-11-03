@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Little-endian cursor and writer. Every read checks the remaining length first.
 //! Implements SEGMENTS-v1: explicit little-endian integers, no native layout and no unchecked casts.
 //! Depends on [`super::error::SegmentError`] and [`super::limits::offset_of`]. Section codecs use it.

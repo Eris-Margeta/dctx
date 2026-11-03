@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! REL-P closed target selection and refusal before filesystem access.
 //! Exercises the pure platform mapper and the product command dispatcher on one host.
 //! Imports the binary module directly to test crate-private seams without a public API.

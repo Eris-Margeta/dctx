@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Sans-IO frame codec: u32 little-endian length prefix followed by exactly that many body bytes.
 //! Implements plugin-api wire.md §Bytes and requirements W-FRAME: zero/oversized lengths refused before
 //! allocation, split prefixes/bodies reassembled, truncation at EOF refused, 64 KiB bootstrap cap then the

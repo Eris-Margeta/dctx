@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Query records keep pre-index byte spans for JSON line shapes.
 //! Implements DCTX-COLD-SCAN C1: compact, pretty, CRLF, UTF-8, and no final newline.
 //! Depends on the public Session and an in-memory source. The oracle is the old scan.

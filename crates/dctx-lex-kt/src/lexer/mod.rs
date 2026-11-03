@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Token stream for Kotlin source, including templates and newline statement ends.
 //! Implements PARSERS-v1 lexing: comments, strings and brackets are bounded by `Limits`.
 //! The structural walker consumes this. `>` is always one character.

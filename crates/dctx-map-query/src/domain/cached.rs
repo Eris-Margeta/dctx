@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Lossless, serializable per-file facts retained between index refreshes.
 //! Implements SPEC-MAP-MODE section 7 where store retry metadata is incomplete.
 //! Uses public parser/model types; query adapters persist these values.

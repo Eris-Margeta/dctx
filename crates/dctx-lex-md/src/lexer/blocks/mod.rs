@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Block scanner: containers, paragraphs, headings, code and HTML blocks, line by line.
 //! Implements the `CommonMark` 0.31 block algorithm (§3.2, §4, §5) reduced to structure.
 //! Uses line and marker rules plus `leaves`; the outline step consumes its `Blocks`.

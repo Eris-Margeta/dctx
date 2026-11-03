@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure host domain: bindings, grants, selection, authority, receipts, budgets, liveness, lifecycle, hooks.
 //! Implements the PL-M models docs/formal/dctx-plugins/*.tla as synchronous IO-free state machines.
 //! Depends on dctx-plugin-protocol records and dctx-hash only. Used by `service` and the facade (PL-F).

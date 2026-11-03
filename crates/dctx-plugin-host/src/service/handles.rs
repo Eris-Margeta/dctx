@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Host-issued handles, preconditions and private uploads, each bound to its full context.
 //! Implements PLUGINS.md §3.3 handle rules and Authority.tla `CheckBinding`: an output handle binds plugin,
 //! invocation, policy epoch and generation; uploads bind resource, precondition and invocation. Tokens are

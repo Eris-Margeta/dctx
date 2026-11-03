@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The grep verb's file access: each indexed file is re-read and re-hashed before it is searched.
 //! Implements `dctx map grep` over the pinned generation. Matching and grouping live in the index.
 //! A file the policy no longer admits is skipped; a file whose bytes changed refuses the query.

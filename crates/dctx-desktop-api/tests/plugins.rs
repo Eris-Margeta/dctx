@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Public desktop plugin behavior for PLUGINS.md §4/§5/§7.3 and decision 6.
 //! Uses only injected distribution fakes, catalog metadata and public desktop operations.
 //! No filesystem, network or worker execution; verifies consent, sticky disable and views.

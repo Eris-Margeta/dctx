@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed protocol refusal: the single error every codec and session check returns.
 //! Implements the validation layers of plugin-api README.md §Files and the predicate names of semantics.md/requirements.md.
 //! Depends on `records::failure` for the closed error code set; used by every module and by host/worker callers.

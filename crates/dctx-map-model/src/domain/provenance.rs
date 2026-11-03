@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Who produced a fact, and which bytes that claim is bound to.
 //! Implements ARCHITECTURE-PROPOSAL §3 tier rules and IDENTITY-v1 provenance.
 //! Depends on [`super::ContentId`] and [`super::Precision`]. Answers and summaries read it.

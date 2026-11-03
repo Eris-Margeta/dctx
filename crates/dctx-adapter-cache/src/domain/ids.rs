@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Caller-facing identifiers for roots, objects, leases and sessions.
 //! Implements CACHE-v1 ownership: a root id is assigned when a caller opens it.
 //! Depends on nothing else. The ledger uses these as map keys.

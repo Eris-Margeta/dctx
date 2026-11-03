@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Ranking and selection for the five verbs. Page fitting stays with the session.
 //! Implements contracts/API-PORTS-v1.md record order: score descending, id ascending.
 //! Depends on the in-memory generation. Map, find and neighbors do not read the source.

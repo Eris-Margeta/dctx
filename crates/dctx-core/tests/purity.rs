@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Source-level forbidden-IO check for the pure core (ARCHITECTURE-PROPOSAL §2: "Public imports and
 //! source-level forbidden-IO checks enforce this distinction"). Every module under `src/`
 //! must not name filesystem, environment, process, network, thread, wall-clock or stdout APIs.

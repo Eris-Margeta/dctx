@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Iterative glob matcher for ignore and omit patterns (`**`, `*`, `?`, literals).
 //! Implements the pattern syntax of the pack selection rules (ARCHITECTURE-PROPOSAL §2, DTS SELECT).
 //! Depends on nothing; pure byte matching with no IO.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! DTS v2 source grammar. Version comes only from `[DTS] version`.
 //! Implements ARCHITECTURE-PROPOSAL §2 and PLUGINS.md §3.5, which this crate freezes.
 //! Depends on [`crate::v1`] and [`crate::model`]. [`crate::lower`] checks the draft against the host.

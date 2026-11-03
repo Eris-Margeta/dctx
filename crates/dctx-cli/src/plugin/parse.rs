@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Argument parser for `dctx plugin` and the `dctx git` alias.
 //! Implements PLUGINS.md §5.1 command shapes and §3.5 reserved routing.
 //! Depends only on std. Used by the plugin entry before any registry or network call.

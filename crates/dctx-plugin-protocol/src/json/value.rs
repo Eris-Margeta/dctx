@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! JSON value tree produced by the strict decoder and consumed by record codecs.
 //! Implements the value layer of plugin-api wire.md §Bytes and semantics.md S-BOUNDS.
 //! Depends on nothing; used by `json::decode`, `json::encode`, `json::fields` and records.

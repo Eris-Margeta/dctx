@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Operations the Source adapter may ask of a filesystem.
 //! Implements DX-B3: content reads are distinct from metadata and rule loads.
 //! Depends on `std::path`. [`crate::adapters::StdFs`] and test spies implement it.

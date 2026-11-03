@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Versioned, algorithm-tagged content identity.
 //! Implements `ObjectKey`'s identity layer in ARCHITECTURE-PROPOSAL (algorithm, digest, byte length).
 //! Depends on no other module. [`crate::Sha256`] produces [`ContentDigest`] values.

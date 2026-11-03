@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Deterministic traversal with decisions before content access.
 //! Implements SPEC-MAP-MODE section 13a and ADR-009/015.
 //! Uses filesystem ports, pure ignore rules and SHA-256 scan records.

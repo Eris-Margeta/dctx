@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Random schedules for P3 and P4, and a source scan for process and version-control use.
 //! Implements the DX-A2 invariants across publish, lease, gc, restart and admission.
 //! Depends on `proptest` and the public ledger. Production sources are included as text.

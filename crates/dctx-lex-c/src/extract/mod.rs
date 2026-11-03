@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Structural walker: scopes, fact emission and source order.
 //! Implements SPEC-MAP-MODE 5.1–5.4 for C and C++. A declaration owns the spans
 //! lexically inside it. Macros are recorded and never expanded.

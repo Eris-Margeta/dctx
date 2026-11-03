@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `std::fs` adapter that does not follow symlinks.
 //! Implements DX-B3 confinement for the strict filesystem profile.
 //! Depends on [`crate::ports`]. [`super::source::FsSource::open`] uses it.

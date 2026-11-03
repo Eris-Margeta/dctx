@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Versioned `ContextPlan` binary: magic `DCTXIR`, seven sections, trailing SHA-256.
 //! Implements contracts/DTS-v2.md compiled IR and IDENTITY-v1 domain separation.
 //! Depends on [`dctx_hash`] and [`crate::model`]. [`crate::lower`] seals plans through [`seal`].

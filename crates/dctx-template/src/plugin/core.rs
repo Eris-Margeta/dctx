@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Plugin catalog value types, policy ranks and group shape.
 //! Implements PLUGINS.md §3.5 and plugin-api/dts.md (exact locks, typed config).
 //! Depends on [`super::super::error`]; [`crate::plugin_plan`] checks a template against a host.

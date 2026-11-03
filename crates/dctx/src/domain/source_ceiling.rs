@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The walk ceilings of one snapshot: 1 GiB of source (`DCTX_MAX_SOURCE_BYTES`), 1,000,000 records
 //! (`DCTX_MAX_RECORDS`) and 100,000 entries (`DCTX_MAX_ENTRIES`). Each default can be moved by its variable.
 //! Files are read one at a time and dropped, so the ceiling bounds work and disk reads, not resident memory.

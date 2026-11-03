@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The worker's side of one framed session: strict decode, session tracking of both directions, sending.
 //! Implements wire.md §Bytes and §Bootstrap and lifecycle via dctx-plugin-protocol's `FrameReader`,
 //! `write_frame` and `Session` (W-STATE, W-BINDING, W-PROGRESS). Only inherited stdio streams are used.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `Clock` port: injected wall-clock time.
 //! Implements contracts/API-PORTS-v1.md `Clock.wall`: engines never read the system clock,
 //! so a frozen clock replays a run exactly (P6).

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Token stream for Ruby source, including heredocs, `%`-literals, interpolation,
 //! character literals and globals.
 //! Implements PARSERS-v1 lexing bounded by `Limits`. The structural walker consumes this.

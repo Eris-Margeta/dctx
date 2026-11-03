@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Fake-clock expiry: overlays, root registration, missing grace, pins and last-use.
 //! Implements CACHE-v1 TTLs. One day is `86_400_000` ms. A backward step does not expire state.
 //! Depends on [`FakeClock`] and explicit `gc`. Startup cadence is covered beside these clocks.

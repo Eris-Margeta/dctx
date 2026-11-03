@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Canonical JSON writer used for every encoded frame body and every digest input.
 //! Implements plugin-api wire.md §Bytes "Canonical bytes": keys sorted by byte order, no whitespace,
 //! decimal integers, `\"`/`\\` and lowercase `\u00xx` control escapes, other Unicode as raw UTF-8.

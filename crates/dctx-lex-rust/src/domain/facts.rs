@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! File-local Rust facts: declarations, raw imports and raw call references.
 //! Implements PARSERS-v1 `ParseResult` and the ARCHITECTURE-PROPOSAL §3 precision labels.
 //! Pure data without paths or resolved targets; resolvers and indexers consume it.

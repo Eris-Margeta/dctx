@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Extraction pipeline: bound, decode, lex, check nesting, parse with syn, else line scan.
 //! Implements PARSERS-v1 "Refuse oversized input before allocating an AST" and C05.
 //! Uses proc-macro2/syn on a dedicated bounded-stack worker thread per file, so the

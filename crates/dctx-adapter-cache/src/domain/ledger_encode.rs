@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Deterministic encoding of lifecycle ledger state.
 //! Implements CACHE-v1 scalar flags, writer locks, recovery pointers and id sets.
 //! Depends on ledger primitives and domain map codecs; restart frames this body.

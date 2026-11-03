@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! String and f-string scanners, including prefixes and format specifications.
 //! Implements PARSERS-v1 lexical rules for quotes, escapes and interpolations.
 //! Called from the code scanner; an unterminated string is reported and kept.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Snapshot scan: walks a `Source` into the pack tree the legacy walker and content reader build.
 //! Implements PRODUCT-CONTRACTS P1 (decide before any metadata/content access, never recurse into
 //! excluded directories, read only Include files under Include ancestors) and decision 077 content identity.

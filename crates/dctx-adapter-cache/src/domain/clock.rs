@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Injected wall clock, monotonic slice time and boot identity.
 //! Implements CACHE-v1: a backward step clamps and sets a diagnostic; it does not expire state.
 //! Depends on `dctx_core::ids::Timestamp` and `dctx_ports::Clock`. `Lifecycle::observe` consumes samples.

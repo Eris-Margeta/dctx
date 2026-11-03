@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Checked-in corpus recipe for the DX-A1 baseline.
 //! Implements ARCHITECTURE-PROPOSAL §7 Stage 0 manifest/hash contract.
 //! Depends on serde; the runner loads `corpus/manifest.json` through this module.

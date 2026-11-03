@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pack snapshot codec and the `FactStore` load/publish path.
 //! Implements the frozen `FactStore` port: one commit point per view, previous snapshot on failure.
 //! Depends on dctx-hash for the payload checksum and on the bridge ledger for the byte cap.

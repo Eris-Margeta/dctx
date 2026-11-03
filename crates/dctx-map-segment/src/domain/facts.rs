@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Fact keys and file-local records. Spans are checked against the object byte length.
 //! Implements SEGMENTS-v1 kind 3 and IDENTITY-v1 `FactKey` field order. Schema inside the key is 1.
 //! Depends on [`super::kinds`] and [`super::dictionary`]. The record codec writes these values.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Binary checks of `dctx pack --for "<text>" --budget N` (v1 card 9, agent task context).
 //! The page never exceeds the budget (estimate ceil(2 * UTF-8 bytes / 7), the `map --budget` one), names the
 //! symbols the card text names, keeps whole lines, is deterministic, and never prints a sensitive file.

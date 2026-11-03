@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Unit coverage for unresolved receipt evidence in PLUGINS.md §4.4.
 //! Uses in-memory durable frames to check intent/completion replay.
 //! Runs with the library and integration tests that include the audit adapter.

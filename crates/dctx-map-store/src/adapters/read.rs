@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Reconstructs typed model facts from deterministic SQLite rows.
 //! Implements the file read boundary for map spec section 8.
 //! Used by SQLite callers and replacement-invariant tests.

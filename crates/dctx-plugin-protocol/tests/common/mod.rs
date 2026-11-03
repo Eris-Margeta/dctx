@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared fixture access for the PL-C contract corpus under docs/design/plugin-api (exact file bytes).
 //! Implements the corpus rules of fixtures/README.md: catalog-driven cases, bodies framed as-is.
 //! Depends on dctx-plugin-protocol's own strict decoder; used by every integration test in this crate.

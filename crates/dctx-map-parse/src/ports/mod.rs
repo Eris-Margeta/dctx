@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Syntax parser boundary for authorized file contents.
 //! Implements SPEC-MAP-MODE section 6.2 without filesystem access.
 //! Uses domain facts; adapters implement this port for indexers.

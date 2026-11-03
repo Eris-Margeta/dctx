@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! What the body lines of an OCaml declaration add: the constructors and record fields of a `type` (`t::Leaf`, `t::name`), and the
 //! functions a `let` defines inside its own body (`outer::loop`), which [`Nested`] follows by indentation. Pure functions of masked
 //! lines; spans and the declaration list belong to `layout::ocaml`. Never panics on odd input.

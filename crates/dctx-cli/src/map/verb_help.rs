@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `dctx map <verb> --help`: one short page per map verb with its usage, what it answers and one `Example:` line.
 //! The full option list stays in `args::HELP` (`dctx map --help`); every verb page points there.
 //! Used by the parent module before parsing, and by `failure` to name a verb's help in a hint.

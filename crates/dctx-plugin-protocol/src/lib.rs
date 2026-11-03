@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Std-only codec and typed records for the frozen dctx plugin API v1 wire contract (PLUGINS.md §7.1 PL-P).
 //! Implements docs/design/plugin-api/{wire.md, semantics.md, *.schema.json}: u32 LE frames, strict bounded
 //! JSON, canonical encoding, closed records, version negotiation and a pure session tracker.

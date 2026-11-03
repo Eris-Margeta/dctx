@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Raw imports (use trees, file modules, extern crates) and raw call references.
 //! Implements PARSERS-v1 "use/reexports" and "raw call references" with C05 labels:
 //! path calls are `Name`, method calls stay `Unresolved`. Macro arguments are read as

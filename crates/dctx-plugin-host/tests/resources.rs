@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PP7 bounded resources and backpressure: exact budgets, frame overhead, queues that cancel the sender.
 //! Traces to Resources.tla `Receive`/`Drain` and Lifecycle.tla `Halt` on overflow. Each refusal has a
 //! positive control; a quota property test checks the minimum ceiling and non-wrapping sums.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded parallel parsing of files whose authorized content changed.
 //! Implements SPEC-MAP-MODE section 7 without reparsing unchanged files.
 //! Uses the public stateless parser; the indexer assembles and commits results.

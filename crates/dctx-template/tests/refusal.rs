@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Refusals and the neighboring case that is accepted.
 
 use dctx_core::FileHandlingDecision;

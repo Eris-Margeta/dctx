@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Record rendering for bounded answer rendering.
 
 use dctx_core::FileHandlingDecision;

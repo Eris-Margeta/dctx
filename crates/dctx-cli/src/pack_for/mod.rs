@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `dctx pack [PATH] --for "<text>" [--budget N]`: task context for an agent card (v1 card 9).
 //! Takes the names the text mentions (see `terms`), runs `map find` on each, then `map neighbors` and `map read` on the
 //! best hit of the first terms, and keeps whole lines in that priority order while the page stays inside the budget.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `dctx map hubs`: the most-called symbols and per-directory counts of the place.
 //! Parses its own few flags, so the five verbs and their bounds in `args` stay as they are.
 //! Takes no target (or `.`), counts incoming calls and imports edges, and fits the 2,000-token cap.

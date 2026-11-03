@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Target preparation of the map verbs, before any scan: a stable id stays as given, a place-relative file becomes `m:<path>`.
 //! Moved unchanged from the parent module; refusals are argument errors (exit 2), mapped by the parent with a hint.
 

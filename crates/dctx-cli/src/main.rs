@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Command routing and legacy argument parsing (D3-LEGACY-REMOVAL §5 D3-04).
 //! Snapshot and TUI operations use the CLI host library and pure pack/render APIs.
 //! Plugin and map commands retain their explicit routes and facade sessions.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Little-endian reads and SHA-256 helpers for manifests and pointers.
 //! Implements IDENTITY-v1 structured hashing (kind 10 is the manifest object).
 //! Depends on `dctx-hash` and [`super::error::StoreError`]. Codecs in this crate call it.

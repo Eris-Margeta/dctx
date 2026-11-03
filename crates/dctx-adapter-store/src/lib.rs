@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Filesystem publication of immutable map segments and manifest generations.
 //! Implements ARCHITECTURE-PROPOSAL §7 DX-C3, SEGMENTS-v1 publication, and `CacheLifecycle` P2/P3/P8.
 //! Depends on `dctx-map-segment` for codec validation and `dctx-hash` for manifest digests.

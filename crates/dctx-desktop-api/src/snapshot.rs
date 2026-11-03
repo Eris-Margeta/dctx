@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Snapshot response built through the `dctx` facade.
 //! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4a and the `generate_snapshot` limits.
 //! Depends on the `dctx` session, the desktop rule loader, the filtered source and [`crate::settings::DesktopConfig`].

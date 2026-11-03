@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Declaration dispatch, attributes and Swift type scopes.
 //! Implements SPEC-MAP-MODE symbol extraction from balanced token shapes.
 //! Uses the assembly walker; dynamic dispatch and macro expansion are abstained.

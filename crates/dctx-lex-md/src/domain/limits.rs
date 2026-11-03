@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Input bounds and the typed refusals returned when a file exceeds them.
 //! Implements the bounded-parser rule of ARCHITECTURE-PROPOSAL §3 (adversarial limits).
 //! Pure data; checked by `extract_with` and the block scanner.

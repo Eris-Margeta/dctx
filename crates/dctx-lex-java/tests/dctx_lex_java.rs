@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Golden fixtures, refusal controls and deterministic fuzz for the Java extractor.
 //! Implements PARSERS-v1 validation: partial facts, typed refusals and stable output.
 //! Uses the public `JavaLexer` API only.

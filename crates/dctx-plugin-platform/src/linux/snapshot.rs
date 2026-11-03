@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Immutable byte snapshots for S-ARTIFACT/S-FILE using approved rustix memfd seals.
 //! Hashes the actual bounded copy with dctx-hash before publishing any readable handle.
 //! A sealed executable snapshot is not permission or a mechanism to launch that image.

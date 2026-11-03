@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pack as a library operation. The engine is `dctx-pack`; this module only builds the report.
 //! Implements contracts/API-PORTS-v1.md `Session.pack`. One publish is the commit point.
 //! Depends on [`super::Session`] and `dctx-pack`. A git revision is refused before the scan.

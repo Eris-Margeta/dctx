@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded output sink. The facade writes a finished page or it writes nothing.
 //! Implements contracts/API-PORTS-v1.md `BoundedSink`: a refusal does not emit a partial record.
 //! Depends on [`super::error::DctxError`]. Query and pack take a sink; they never write to stdout.

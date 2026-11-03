@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Startup and explicit maintenance. One slice, then the cursor is persisted.
 //! Implements CACHE-v1: at most 128 objects and a 25 ms target, checked between objects.
 //! Depends on retire and sweep in [`super::Lifecycle`]. The host calls this; nothing here starts a thread.

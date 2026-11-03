@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! JSX element modes: opaque tag and text segments, code inside `{}` containers.
 //! Implements the PARSERS-v1 JSX/TSX rule: keep declarations and calls in containers,
 //! never lex JSX text or attribute strings as code. Used by `scan::Lexer::run`.

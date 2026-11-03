@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Extracted Markdown facts: headings with their tree, raw references and code blocks.
 //! Mirrors the doc-node and raw-reference shape of dctx-map-parse (SPEC-MAP-MODE 5.1–5.4).
 //! Pure data; byte spans index the original UTF-8 source, lines are one-based inclusive.

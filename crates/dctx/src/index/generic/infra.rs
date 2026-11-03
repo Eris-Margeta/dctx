@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Infra and config formats: Terraform/HCL, shell, protobuf, GraphQL and Dockerfile stages (here), SQL, Makefile and Pascal
 //! (in `lines`); member-level parsers (locals keys, shell variables, protobuf and GraphQL members, Dockerfile `ARG`/`ENV`) sit in
 //! `members`. Every symbol is a guess. A declaration is picked from one masked line; brace-bodied formats follow brace

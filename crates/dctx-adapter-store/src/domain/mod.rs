@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure publication rules: names, manifests, pointers, and the cache lifecycle model.
 //! Implements SEGMENTS-v1 manifest/pointer bytes and CacheLifecycle.tla (DX-A2) for P2/P3/P8.
 //! Depends on `dctx-hash` and `dctx-map-segment` checksums. The store adapter executes these rules.

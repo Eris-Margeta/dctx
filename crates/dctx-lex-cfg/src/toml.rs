@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! TOML structural walk: tables, arrays of tables, dotted keys and inline tables.
 //! Implements the configuration extractor for `.toml` (PARSERS-v1, SPEC-MAP-MODE 5).
 //! Malformed spans become diagnostics. The draft in `path` owns facts.

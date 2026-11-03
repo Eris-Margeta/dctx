@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Code-mode scan: identifiers, numbers, operators and bracket depth.
 //! Implements PARSERS-v1 tokenisation for Python source outside of strings.
 //! Owns the main lexer loop; strings and indentation are sibling modules.

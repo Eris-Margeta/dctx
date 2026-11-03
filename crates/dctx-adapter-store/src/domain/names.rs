@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Relative object names under one store root.
 //! Implements SEGMENTS-v1 immutable digest names and the ban on `.git` paths (decision 078).
 //! Depends on [`super::error::StoreError`]. The filesystem adapters refuse any other shape.

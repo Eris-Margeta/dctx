@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Call, selector and type-name references inside already-recognised spans.
 //! Implements SPEC-MAP-MODE 5.3 calls and uses-type. Index-versus-instantiation
 //! (`F[T](x)`) and bare field selectors are abstained. Called by declaration parsing.

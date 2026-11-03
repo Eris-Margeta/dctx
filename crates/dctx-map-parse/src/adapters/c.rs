@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! C/C++ facts from dctx-lex-c for `PureParser` and the tree-sitter fallback.
 //! Implements SPEC-MAP-MODE sections 5 and 6.2 and the PARSERS-v1 C/C++ row.
 //! The lexer emits model nodes; this adapter copies nodes, edges and references.

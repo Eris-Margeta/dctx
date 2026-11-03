@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed facade errors and the stable code set.
 //! Implements contracts/API-PORTS-v1.md ("Typed error set") plus stale and identity refusals.
 //! Depends on dctx-core and dctx-template only to translate their errors. Callers match [`DctxError`].

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Minimal JSON value, parser and serializer for the MCP stdio server (no new dependency).
 //! Numbers keep their source text so a request id is echoed back exactly as received.
 

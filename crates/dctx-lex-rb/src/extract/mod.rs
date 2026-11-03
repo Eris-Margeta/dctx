@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Structural walker: scopes, fact assembly and the per-file entry.
 //! Implements SPEC-MAP-MODE 5.1–5.4 for Ruby. A declaration owns the spans lexically
 //! inside it. Declarations, attributes and references are sibling modules.

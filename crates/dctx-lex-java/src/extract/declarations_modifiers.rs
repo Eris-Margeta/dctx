@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Modifiers, annotations, test methods and method completion.
 //! Implements SPEC-MAP-MODE 5.1 visibility and `JUnit` `@Test` method facts.
 //! Depends on generic declarators for parameters and thrown types.

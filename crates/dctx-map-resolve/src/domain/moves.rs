@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Fingerprint-based move and rename detection between complete snapshots.
 //! Implements SPEC-MAP-MODE section 5.2 using parser-normalized body hashes.
 //! Uses model nodes and moved-answer statuses; callers persist the revision.

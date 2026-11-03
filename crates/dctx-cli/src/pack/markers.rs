@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Source document and legacy marker tree construction for `dctx pack`.
 
 use std::path::Path;

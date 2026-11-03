@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Token stream for C# source: strings, XML doc comments and preprocessor lines.
 //! Implements PARSERS-v1 lexing. Literals are masked, brackets are paired, and
 //! nesting past the caller limit is a typed refusal. The structural walker consumes it.

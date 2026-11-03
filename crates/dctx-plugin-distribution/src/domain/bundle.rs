@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The `.dctx-plugin` v1 offline bundle: magic, bounded table and concatenated payloads.
 //! Implements distribution.md §Discovery, fetch and offline bundle (layout table) and I-BUNDLE:
 //! checked lengths before allocation, unique safe names without case aliases, exact totals, digests.

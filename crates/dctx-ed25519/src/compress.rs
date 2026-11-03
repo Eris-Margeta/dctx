@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! SHA-512 compression and round constants from FIPS 180-4 §4.2.3, §6.4.2.
 //! Operates on one 1024-bit block with explicit modulo-2^64 word arithmetic.
 //! Private implementation consumed by the streaming SHA-512 module.

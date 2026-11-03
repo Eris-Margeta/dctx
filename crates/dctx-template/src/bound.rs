@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded answer rendering and permission narrowing.
 //! Implements PRODUCT-CONTRACTS P1, P5 and P6: denied bytes stay out, envelopes fit, order is canonical.
 //! Depends on [`crate::model`], [`crate::opcode`] and dctx-core glob matching. Callers use [`render_plan`].

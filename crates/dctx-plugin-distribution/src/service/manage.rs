@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Management operations: activate/update, rollback, enable, disable, remove, verify, admit and recover.
 //! Implements PLUGINS.md §5.1 commands and §5.3 crash recovery (I-ATOMIC, I-MANAGEMENT, I-CONSENT):
 //! every mutation holds the operation lock and switches the registry atomically; verify quarantines

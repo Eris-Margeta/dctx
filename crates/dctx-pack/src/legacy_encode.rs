@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Exact legacy writer layout over fact trees and caller sinks (D3-LEGACY-REMOVAL §5 D3-02).
 //! Writes little-endian metadata in tree order, then bodies or legacy zero padding.
 //! Depends on `legacy_codec` and `std::io::Write`; never opens a file or changes the tree.

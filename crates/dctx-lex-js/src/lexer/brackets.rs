@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bracket partners over the token stream, with conservative recovery.
 //! Implements the PARSERS-v1 bounded-depth rule and reports unbalanced brackets.
 //! Used by `lexer::lex`; the walker reads partners to skip and scope groups.

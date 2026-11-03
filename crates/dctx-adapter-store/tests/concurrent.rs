@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! One writer, two readers, and a budget-1 GC agree on complete generations.
 //! Readers skip an empty store and otherwise decode the generation they pinned.
 //! The std adapter reopens those bytes. A second process lock is busy until unlock.

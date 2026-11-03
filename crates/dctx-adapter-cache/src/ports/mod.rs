@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Ports this adapter implements and consumes.
 //! Implements API-PORTS-v1 `Cache`, `Clock` and `Cancellation`, plus the ledger and object-store ports.
 //! Depends on `dctx-ports` and the domain ledger. Filesystem adapters in `crate::adapters` implement the new ports.

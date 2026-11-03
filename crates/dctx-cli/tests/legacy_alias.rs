@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Binary compatibility checks for D3-LEGACY-REMOVAL §5 D3-04.
 //! Each child receives a private HOME/XDG/cache and empty PATH; no Git is available.
 //! Pinned renderer fixtures are immutable oracles; timestamps come from std `FileTimes`.

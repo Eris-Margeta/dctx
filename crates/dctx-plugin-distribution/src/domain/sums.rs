@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `SHA256SUMS`: a generated convenience mirror that must agree with the signed manifest.
 //! Implements PLUGINS.md §5.2 and distribution.md "SHA256SUMS mirrors each authenticated target
 //! filename/hash; any disagreement refuses the release". It is never a trust source by itself.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure selection, confinement, and freshness values.
 //! Implements ADR-014, ADR-015b, and DX-B3 source identity (decision 078).
 //! Depends on `dctx-hash` for digest types only. Adapters perform all filesystem IO.

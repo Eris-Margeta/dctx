@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `import` and `from ... import` statements, including relative modules and aliases.
 //! Implements SPEC-MAP-MODE 5.3 import references for Python.
 //! Called from statement dispatch; emits `imports` edges through the reference scan.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Single-path lookup that stops at the selection decision.
 //! Implements ADR-014 for `read` and `validate` without scanning sibling content.
 //! Depends on [`super::link`] and [`super::path`]. Content reads happen only after this returns.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pack diff rules: compare two snapshot trees into added/removed/modified entries and stats.
 //! Modification is size or modification-time change (file metadata, decision 078; no VCS state).
 //! Depends on [`crate::datatypes`]; pure function over two trees.

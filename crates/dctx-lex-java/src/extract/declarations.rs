@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Declaration entry points: package, imports, modules and type dispatch.
 //! Implements SPEC-MAP-MODE 5.1 for a Java compilation unit.
 //! Uses the type, member, modifier and generic walkers, plus the reference scan.

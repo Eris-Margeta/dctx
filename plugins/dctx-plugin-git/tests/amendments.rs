@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Historical differences with named expected outcomes: the old core `git_safety.rs` (85c0f7a, ADR-005)
 //! modelled on strings next to the plugin, per PLUGINS.md §6.1 "A table records each deliberate amendment,
 //! so parity does not freeze historical bugs" (G-PARITY). Plus the trace-git-* scenario pairs.

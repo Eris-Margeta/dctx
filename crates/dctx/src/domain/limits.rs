@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Operation limits, verb caps and the safety ceiling.
 //! Implements contracts/API-PORTS-v1.md budgets: `ceil(2 * utf8_bytes / 7)` and verb hard caps.
 //! Depends on dctx-core's estimate and on [`super::request::Verb`]. The session intersects these

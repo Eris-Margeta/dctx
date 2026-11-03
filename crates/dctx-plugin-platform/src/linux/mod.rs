@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Linux security building blocks for PL-A, not a complete native launch provider.
 //! Landlock/seccomp entry is only for already-loaded trusted code in a disposable process.
 //! Handle-relative opens and sealed snapshots serve brokers after host authorization.

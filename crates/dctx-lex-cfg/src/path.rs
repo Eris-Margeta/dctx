@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Dotted-path assembly, ownership edges and cross-file reference policy.
 //! Implements SPEC-MAP-MODE 5.1–5.4 for configuration keys.
 //! JSON, TOML and YAML walkers emit into a [`Draft`]; callers consume `LexedFile`.

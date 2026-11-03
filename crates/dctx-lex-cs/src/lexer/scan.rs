@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Character scanner for C# source: comments, literals, holes and directives.
 //! Implements the lexical mask of PARSERS-v1 so strings cannot declare types.
 //! Used only by [`super::lex`]. Bracket pairing and its depth refusal live in the parent.

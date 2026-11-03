@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Native filesystem controls for PLUGINS.md §5.4 / PP7 and PP9.
 //! Exercises allocation ceilings, publication crash cuts, interprocess ownership and root swaps.
 //! Uses only std and the parent store; subprocesses exit without destructors at real IO cuts.

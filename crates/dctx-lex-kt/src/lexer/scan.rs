@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Kotlin scanner: comments, strings, templates, raw strings and newline ends.
 //! Implements the string and comment masking that keeps literals from producing
 //! declarations, plus `${}` holes scanned as real tokens. Used only by `lexer::lex`.

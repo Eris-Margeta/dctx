@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed failure records: the closed 18-code error set, phases, effect states and the wire error object.
 //! Implements common.schema.json `error_code`, `phase`, `effect_state`, `error` and the S-REPLAY rule that
 //! partial/unknown effects are never retryable. Depends on json, scalars and refusal.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Same-binary plugin worker entry (`dctx --internal-plugin-worker`).
 //! Implements PLUGINS.md §2: the entry runs before CLI configuration and speaks the external protocol
 //! on inherited stdio. Manual invocation gets no broker grants and no project path.

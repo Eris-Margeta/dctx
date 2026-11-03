@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Store coordination and auto-clean that unlinks before dropping a charge.
 //! Implements review F05 and F08: one observed revision, and pending bytes until unlink succeeds.
 //! Depends on [`super::FsLedgerStore`] and [`super::FsObjectStore`]. The facade calls [`auto_clean`].

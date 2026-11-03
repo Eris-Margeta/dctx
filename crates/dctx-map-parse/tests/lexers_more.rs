@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! C/C++, configuration and C# fixture facts through the Parser port.
 //! Verifies SPEC-MAP-MODE sections 5 and 6.2: detection, precision and refusal.
 //! Uses checked-in source without executing it or reading dependencies.

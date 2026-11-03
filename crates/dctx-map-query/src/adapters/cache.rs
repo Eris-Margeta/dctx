@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Loads and repairs a segment journal beside the sqlite comparison store.
 //! Implements SPEC-MAP-MODE sections 7 and 8 without query-owned SQL tables.
 //! A missing generation may still import a version-1 `query.json` cache.

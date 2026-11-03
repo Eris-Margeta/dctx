@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared extraction, lookup and fact-invariant helpers for integration tests.
 //! Covers the Python structural extractor contract (decision 077/decision 078).
 //! Uses dctx-lex-py and dctx-map-model; fixtures remain inline in fixtures.rs.

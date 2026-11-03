@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The signed discovery index: verification, release selection, search and safe display.
 //! Implements PLUGINS.md §5.3 discovery and distribution.md I-INDEX: 4 MiB/depth 32/4096 members,
 //! index-domain signature with the pinned index key, unique IDs and case-folded repositories,

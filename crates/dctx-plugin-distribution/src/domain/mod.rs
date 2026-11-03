@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure distribution domain: names, digests, manifests, signatures, trust, bundles, origins, consent,
 //! the discovery index and the registry state machine. No IO; see PLUGINS.md §5 and Install.tla.
 //! Depends on dctx-hash, dctx-ed25519 and the protocol's strict JSON. Used by `service`.

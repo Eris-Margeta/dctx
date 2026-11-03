@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Gap oracles for store confinement and bounded corrupt reads.
 //! Implements DX-G01 S1 and S2. Depends on the public store API.
 //! Unix symlink fixtures use `tempfile`. Every refusal has a positive control beside it.

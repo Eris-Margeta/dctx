@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Cold scan and warm digest-verification profiles, and byte-identical stdout.
 //! Covers DCTX-SERIOUS-GAPS G7 and DCTX-COLD-SCAN C5.
 //! Depends on the compiled dctx-cli and temporary Rust sources. No network.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Discovery client: signed index verification, PL-X hostile fixtures, escaped search and install
 //! from a verified index whose manifest digest and publisher pin are still checked independently.
 //! PLUGINS.md §5.3 discovery, requirements I-INDEX and I-IDENTITY.

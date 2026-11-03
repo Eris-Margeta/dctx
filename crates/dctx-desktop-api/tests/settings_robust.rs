@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Settings round-trip and recent-project parse refusals for the desktop seam.
 //! Implements review dctx-facade-desktop.md F17 and F18 (ARCHITECTURE-PROPOSAL §7 DX-E4a).
 //! Depends on `dctx_desktop_api` settings load/save and `RecentStore::get`.

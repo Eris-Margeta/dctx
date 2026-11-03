@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Filesystem, clock and offline network adapters for desktop plugin management.
 //! Implements PLUGINS.md §5.4 and §7.3 PL-APP, following the CLI filesystem store.
 //! Depends on distribution ports and std; plugin_commands binds the desktop config root.

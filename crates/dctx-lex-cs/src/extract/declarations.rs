@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Usings, namespaces and type declarations.
 //! Implements SPEC-MAP-MODE 5.1 for C# compilation units and type bodies.
 //! The member walker and the type grammar live in sibling modules.

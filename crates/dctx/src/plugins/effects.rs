@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Scripted broker effects for one hook invocation.
 //! Implements PLUGINS.md §3.3 file and `git.add-ignore` calls through the host broker.
 //! Depends on [`super::ports::LiveSession`]. [`super::boundary`] decides whether the hook succeeded.

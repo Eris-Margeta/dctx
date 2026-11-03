@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Ruby fixture facts through the Parser port, without executing source.
 //! Verifies SPEC-MAP-MODE sections 5 and 6.2: detection, precision and refusal.
 //! Every `ParsedFile` is checked for store ownership, unique ids and valid spans.

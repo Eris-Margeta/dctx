@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Effective policy: host grant, then selection, then the DTS plan. Each step can only narrow.
 //! Implements ARCHITECTURE-PROPOSAL §2 (host ∩ organization ∩ session) and DTS v2.
 //! Depends on dctx-core selection and dctx-template plans. The session holds a [`PolicyView`].

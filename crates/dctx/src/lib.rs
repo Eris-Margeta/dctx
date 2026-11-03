@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Stable dctx library facade for pack, map, templates, cache and an optional plugin host.
 //! Implements ARCHITECTURE-PROPOSAL §2 and §4 (DX-D1, DX-D3): explicit ports, no home-directory discovery.
 //! Depends on dctx-core, dctx-ports, dctx-adapter-cache, dctx-lex-js and dctx-lex-md.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Filesystem port the publication adapter drives.
 //! Implements SEGMENTS-v1 temp write, sync, immutable rename, and atomic pointer replace.
 //! Depends on [`crate::domain::Boundary`] and [`crate::domain::StoreError`]. [`crate::adapters`] implement it.

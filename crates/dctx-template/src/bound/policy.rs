@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Path policy functions for bound answer rendering.
 
 use dctx_core::FileHandlingDecision;

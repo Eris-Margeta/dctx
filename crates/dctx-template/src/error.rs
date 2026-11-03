@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed refusals for DTS parse, compile, load and render.
 //! Implements contracts/DTS-v2.md ("typed errors; no fallback rendering") and API error names.
 //! Depends on nothing. Used by every module in this crate and by callers of [`TemplateError`].

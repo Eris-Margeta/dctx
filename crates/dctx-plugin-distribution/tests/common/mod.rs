@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared signed-fixture builder and fake world for the PL-I integration tests.
 //! Test keys are generated here from fixed seeds with the dev-only ed25519-dalek signer; they are
 //! conspicuously nonproduction and never leave the test process. Verification is always dctx-ed25519.

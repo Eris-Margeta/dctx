@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Contextual views over retained, content-keyed facts.
 //! Implements DX-B5, IDENTITY-v1 views and properties P6 and P7.
 //! Depends on materialization, resolution and the reverse index.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Round trips for facts, postings, adjacency, and ranking inputs.
 //! Implements SEGMENTS-v1 and the DX-C1 exit checks. Depends on the builder and decoder.
 //! Insertion order is not part of the bytes. Equal drafts encode to equal files.

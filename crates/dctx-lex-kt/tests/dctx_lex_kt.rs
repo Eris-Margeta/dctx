@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Golden fixtures, store invariants and deterministic fuzz for the Kotlin extractor.
 //! Implements PARSERS-v1: partial facts for malformed input, no panic on arbitrary bytes.
 //! Every accepted node is owned by the file, with a span inside that file.

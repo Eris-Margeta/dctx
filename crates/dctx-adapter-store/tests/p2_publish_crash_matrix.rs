@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! P2: a crash at every publication cut leaves one valid generation.
 //! Concurrent readers may observe the old or new closure, with matching bytes.
 //! The pointer-first mutation is not recovered as a new generation.

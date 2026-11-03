@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Declaration dispatch, namespace scopes and class-like PHP declarations.
 //! Implements decision 077 structural facts without inferring runtime declarations.
 //! Uses the bounded token cursor and fact assembly in the parent module.

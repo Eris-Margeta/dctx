@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The `dctx git` command surface: verbs `status` and `protect`, and the sole flag `protect --stage`.
 //! Implements plugin-api git.md "Command verbs are status/protect ... Unknown verbs/flags refuse; no Git
 //! passthrough" (G-PROFILE). Pure; used by `app::command`.

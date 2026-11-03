@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Stamp fast path equivalence gate (DCX-P-C8).
 //! Two hundred random edits to a real directory; after each one a warm session (one persistent cache, stat
 //! stamps trusted) and a cold session (empty cache, everything read and hashed) must answer every verb with

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded listing of names the ledger does not own.
 //! Implements review F14: orphan walks have count, depth and byte budgets.
 //! Depends on [`super::LEDGER_FILE`] and [`super::lock::LOCK_FILE`]. Load refuses when a budget trips.

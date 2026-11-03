@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Restart reconciliation and bounded startup cleanup.
 //! Implements CACHE-v1 recovery: an OS lock proves a session is alive, and startup is one slice.
 //! Depends on the writer steps and [`RestartEvidence`]. P8 is `p8_recovery_progress`.

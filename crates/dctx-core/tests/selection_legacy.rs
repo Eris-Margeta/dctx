@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Legacy ignore behavior through the pure selection API (D3-LEGACY-REMOVAL §3/§5 D3-07).
 //! Depends only on dctx-core's pure policy, rules and domain decisions.
 //! Integration evidence retained when the legacy `IgnoreEngine` is removed.

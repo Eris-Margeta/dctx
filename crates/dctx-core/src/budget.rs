@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Budgets and limits: estimated tokens, output budgets, pack limits and cache reservations.
 //! Implements `estimated_tokens = ceil(2 * utf8_bytes / 7)` and the byte ceiling `floor(7B/2)`
 //! of contracts/API-PORTS-v1.md ("Requests, budgets and results"); an estimate, not a tokenizer.

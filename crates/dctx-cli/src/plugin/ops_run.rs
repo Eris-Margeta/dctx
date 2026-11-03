@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Plugin verification and command admission for PLUGINS.md §5.1.
 //! Depends on distribution admission, trust and bundled worker availability.
 //! Used by the plugin operations dispatcher for verify, run and git.

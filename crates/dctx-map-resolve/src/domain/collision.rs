@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit alias, name and body collisions.
 //! Implements ARCHITECTURE-PROPOSAL §7 DX-B5 disambiguation.
 //! Depends on facts, nodes and stable ids. Resolution never picks a winner.

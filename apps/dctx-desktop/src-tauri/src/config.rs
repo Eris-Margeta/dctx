@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Desktop directory discovery and settings command wrappers.
 //! Implements ARCHITECTURE-PROPOSAL §7 row DX-E4 (second half, DX-E4b).
 //! Depends on `dctx_desktop_api` for settings and on `dirs` for the config and cache directories.

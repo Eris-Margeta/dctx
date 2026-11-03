@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Fact assembly: pre-order sorting, duplicate ordinals, containment edges and labels.
 //! Implements SPEC-MAP-MODE 5.1–5.4 exactly as dctx-map-parse finalizes its facts.
 //! Uses model constructors; the walker feeds drafts, `extract` returns the result.

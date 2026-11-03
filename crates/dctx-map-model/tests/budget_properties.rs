@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Public-API properties for indivisible, bounded map answers.
 //! Verifies SPEC-MAP-MODE section 3 with arbitrary Unicode and JSON escapes.
 //! Uses proptest and `serde_json`; never accesses a filesystem or clock.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Project rule files for a desktop snapshot.
 //! Implements ADR-014 and decision 078: plain-text `.gitignore`, `.dctxignore` and `.dctxomitcontent`
 //! are host inputs. The facade does not discover them.

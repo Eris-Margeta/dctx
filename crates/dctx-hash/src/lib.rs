@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! First-party SHA-256 content digests for dctx.
 //! Implements the strict-profile content identity in ARCHITECTURE-PROPOSAL (`ObjectKey`) and decision 078.
 //! Depends on no production crates. Callers use [`Sha256`] and [`ContentDigest`].

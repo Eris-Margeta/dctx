@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Six-hex stable-id alias digest.
 //! Implements SPEC-MAP-MODE section 5.2 by calling `dctx-hash` (decision 077, decision 078).
 //! Not content identity and not a git object id. [`super::ContentId`] owns identity.

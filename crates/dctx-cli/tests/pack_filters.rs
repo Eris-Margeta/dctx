@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pack filter acceptance for `dctx pack`.
 //! Implements ADR-011 and ADR-009: each flag narrows one fixture to exact paths.
 //! Depends on the compiled `dctx-cli` binary and a private temporary directory.

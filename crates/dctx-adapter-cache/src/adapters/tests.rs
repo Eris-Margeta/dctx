@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 use super::*;
 use crate::{CacheError, Lifecycle, Quota, LEDGER_VERSION};
 use std::fs;

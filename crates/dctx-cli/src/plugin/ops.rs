@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! §5.1 operations over the distribution facade and the dctx facade catalog.
 //! Implements search, install, list, info, enable, disable, remove, update, verify and run.
 //! Depends on `dctx_plugin_distribution::Distribution` and the bundled git catalog.

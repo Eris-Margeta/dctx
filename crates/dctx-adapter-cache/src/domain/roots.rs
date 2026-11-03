@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Root registration, last-use tracking, pinning and availability grace.
 //! Implements the CACHE-v1 root table on [`super::Lifecycle`]. The facade registers roots and probes them.
 //! In-memory use moves on every touch; the persisted stamp coalesces once per `LAST_USE_COALESCE_MS` window.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Static ES module syntax: `import` bindings and `export` clauses as raw references.
 //! Implements SPEC-MAP-MODE 5.3 imports/reexports with dctx-map-parse spellings
 //! (`module::name`, namespace aliases, side-effect imports); `import x = ..` abstains.

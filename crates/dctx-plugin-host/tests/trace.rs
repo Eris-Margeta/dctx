@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Model correspondence: every PL-M action the host refines is reached by a real host transition.
 //! Drives broker, budget, ledger, supervisor, liveness feed and hook run over fakes and asserts that the
 //! union of their traces covers `ModelAction::ALL` (docs/formal/dctx-plugins/README.md correspondence).

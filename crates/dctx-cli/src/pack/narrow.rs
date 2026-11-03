@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Narrowing of the scanned tree to the selected filters.
 
 use std::path::Path;

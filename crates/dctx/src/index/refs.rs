@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Call and import edges for the facade index.
 //! Implements SPEC-MAP-MODE 5.3 and 6.3 over the lexers' raw references, using the generation's own nodes.
 //! The resolver in dctx-map-resolve is not a dependency of this crate, so the same lookup order lives here.

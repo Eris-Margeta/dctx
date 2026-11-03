@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PP4 binding/confinement admission and spawn counts with a fake process port (decision 080).
 //! Third-party and official-override builds need proven confinement; only the authenticated bundled-git
 //! origin may run with brokered, audited effects while OS confinement is pending. Traces to

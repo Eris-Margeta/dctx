@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Selection policy: the layered ignore/omit rule sets and the single decision point.
 //! Implements PRODUCT-CONTRACTS C03 (decision precedes any content read) over the
 //! three rule layers (hardcoded → global → local), last match wins inside a set.

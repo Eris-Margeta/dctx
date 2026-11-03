@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Literal search over the files of one generation, grouped by the innermost enclosing symbol.
 //! Implements the `dctx map grep` verb: no regex, ASCII case folding on request, one record per symbol.
 //! Depends on the in-memory generation and an injected verified reader. It never opens a file itself.

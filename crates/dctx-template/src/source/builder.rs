@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! DTS section builder and template body resolution.
 //! Implements ARCHITECTURE-PROPOSAL §2 and PLUGINS.md §3.5.
 //! Depends on source drafts, field parsers and v1 rendering; used by the DTS source parser.

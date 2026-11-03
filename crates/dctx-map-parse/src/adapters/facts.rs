@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Source-ordered fact assembly with duplicate-id finalization.
 //! Implements SPEC-MAP-MODE sections 5.1–5.4 for every language adapter.
 //! Uses public model constructors; language adapters supply source facts.

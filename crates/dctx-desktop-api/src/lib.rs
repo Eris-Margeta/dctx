@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Desktop engine seam for snapshots, settings, recent projects and plugin management.
 //! Implements ARCHITECTURE-PROPOSAL §7 DX-E4a and PLUGINS.md §7.3 PL-APP's backend.
 //! Depends on the dctx facade, distribution, bundled catalog and serde. Tauri glue stays in the app.

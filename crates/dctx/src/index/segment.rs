@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Canonical generation payload. Walk order and the clock are not part of the digest.
 //! Implements decision 077 snapshot identity: own SHA-256 over paths, decisions, metadata and content digests.
 //! Depends on [`super`] index rows and [`crate::domain::digest_text`]. The session seals this payload.

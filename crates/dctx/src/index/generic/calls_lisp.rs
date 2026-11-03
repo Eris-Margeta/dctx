@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Call references of the lisp outline family: Clojure, Common Lisp, Scheme and Emacs Lisp (Nix has none).
 //! Each function symbol's span is scanned on the comment- and string-masked source for `(name ...)` forms.
 //! The references are raw: `refs.rs` resolves them (same file first, then a unique project name) and drops the rest.

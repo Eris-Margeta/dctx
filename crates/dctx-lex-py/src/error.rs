@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed refusals for Python extraction. No facts are returned with any of these.
 //! Implements PARSERS-v1 refusal rows: dialect, identity, UTF-8, size, depth and facts.
 //! Returned by the lexer and the walker; `PyLexer::extract` surfaces them unchanged.

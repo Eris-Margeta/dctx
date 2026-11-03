@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Cache command persistence through the library surface.
 //! Implements ARCHITECTURE-PROPOSAL §4 `cache config` and corrupt-ledger refusal.
 //! Depends on `dctx-cli` [`run_in`]. The binary's `dctx .` path is not invoked.

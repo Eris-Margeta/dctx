@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Call references of the block outline family: Lua, Elixir, Julia, R, OCaml, Haskell, Erlang, Verilog and Fortran.
 //! Lua, Elixir, Julia and R call with parentheses: an identifier followed by `(` (one space allowed) inside a function span.
 //! OCaml and Haskell call by juxtaposition: any identifier in a body is a candidate; `refs.rs` resolves each, so a cross-file

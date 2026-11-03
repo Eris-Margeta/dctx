@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Nix outlines: the attribute names at depth 1 of the file's top-level attribute set (`name = ...;`).
 //! The set is the first `{` outside `let` bindings, parentheses and brackets that is not a function argument pattern
 //! (`{ pkgs, ... }:`, `args@{ ... }:`). An attribute is a function (`fn`) when its value starts with `<ident>:` or `{ ... }:`,

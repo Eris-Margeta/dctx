@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed domain records for the frozen plugin API v1 wire contract (no IO).
 //! Implements common/capabilities/bootstrap/requests/invocation/results/events schemas and wire.schema.json.
 //! Depends on json and refusal; used by negotiate, session and external host/worker crates.

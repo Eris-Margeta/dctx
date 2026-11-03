@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Turns drafts into packed section payloads.
 //! Implements SEGMENTS-v1 kind order for one fact or view role.
 //! Depends on the section codecs. [`super::builder`] calls [`sections`] and does not decode.

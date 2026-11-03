@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Functions, methods, operators and declarator names.
 //! Implements SPEC-MAP-MODE 5.1 signatures. A name that is a macro is abstained.
 //! File-scope variables are symbols with no symbol kind; function bodies are not.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Owned rule-file texts the facade can rebuild a selection from.
 //! Implements PLUGINS.md §6.2: a `.gitignore` edit is rule-file input, and only the host reloads it.
 //! Depends on [`dctx_core::selection`]. The session stores this beside the compiled policy.

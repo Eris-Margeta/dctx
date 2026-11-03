@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Install transaction: resolved → downloaded → verified → staged → installed-inactive.
 //! Implements PLUGINS.md §5.1 install (index, `--url`, `--file`), §5.3 transaction and I-INTEGRITY,
 //! I-OFFLINE, I-BUNDLE, I-IDENTITY: one trust gate for every source, size/hash while streaming,

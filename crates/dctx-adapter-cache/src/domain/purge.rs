@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit purge. Confirmation is part of the request; a dry-run does not take the ledger `&mut`.
 //! Implements CACHE-v1 purge: managed references drop, active handles keep their physical bytes.
 //! A leased generation keeps those bytes and loses logical retention when the last lease releases.

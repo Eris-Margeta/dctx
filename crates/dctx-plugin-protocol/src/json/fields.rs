@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Closed-object reader, bounded value readers and object builder shared by every record codec.
 //! Implements the structural layer of plugin-api README.md (closed shapes, `additionalProperties:false`)
 //! and the integer/string/array bounds of semantics.md S-BOUNDS. Depends on `json::value` and refusal.

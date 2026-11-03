@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Deny-default syscall policy for already-loaded, single-threaded Rust computation.
 //! PL-R Linux profile: no opens, exec, clone, detach, network, tracing or namespace APIs.
 //! Syscall numbers are the exact x86-64/AArch64 Linux tables reviewed in seccompiler 0.5.0.

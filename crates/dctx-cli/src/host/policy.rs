@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The persisted cache policy beside the ledger and the auto-clean report over it.
 //! The session entry points that use these helpers stay in the host module.
 

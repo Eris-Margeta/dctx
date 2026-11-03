@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Session construction, capabilities, policy narrowing and template refusals.
 //! The facade reports the build, not the host grants. A missing clock is an error.
 //! Templates narrow an explicit ceiling. Empty grants do not become a hidden allow.

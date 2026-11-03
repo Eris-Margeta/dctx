@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Byte-level v1 marker rendering and the shipped default template.
 //! Covers D3-03's opt-in legacy layouts without changing the body-only API.
 //! Uses injected nodes and templates; SVG and pattern decisions have positive controls.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Dotted config keys (`server.port`, `database.url`) for find (DCX-56b): the query shape, the config symbol that defines
 //! the key, and the code lines that read it. Wired into find by `session::dotted_op` (DCX-56c).
 

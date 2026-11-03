@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! v1 privacy gate: no map verb, export or pack ever serves the bytes of a sensitive file, and no snapshot reads one.
 //! Covers env files, PEM keys, SSH private keys, credentials files, `.npmrc` and `secrets.yaml` (ADR-014; no override).
 //! Ordinary files with look-alike names (`src/credentials.py`) stay readable, so the deny is not over-broad.

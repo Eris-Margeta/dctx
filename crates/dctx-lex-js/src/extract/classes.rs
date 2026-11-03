@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Classes: declarations, expressions, heritage and members (methods, fields, signatures).
 //! Implements SPEC-MAP-MODE 5.1 class/method facts with dctx-map-parse spans: JS method
 //! spans include decorators, TS spans start at modifiers; arrow-valued fields are methods.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! dctx plugin host domain and brokers (PLUGINS.md §7.2 row PL-H).
 //! Pure state machines refine the PL-M models (docs/formal/dctx-plugins): `Authority` (grants, epochs,
 //! selection, binding), `Receipts` (intent, replay, uncertainty), `Resources` (quotas, backpressure),

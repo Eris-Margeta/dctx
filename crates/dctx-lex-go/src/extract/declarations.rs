@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Package, import, const and var declarations, plus import-string decoding.
 //! Implements the Go declaration grammar used by SPEC-MAP-MODE 5.1 for package,
 //! import and value specs. Function and type specs are child modules.

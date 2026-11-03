@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Session-stage corpus cases plus replay, out-of-order and refusal positive controls.
 //! Implements W-STATE, W-BINDING, W-RESULT, W-PROGRESS, W-LIMITS (wire.md §Bootstrap and lifecycle) by
 //! driving a Session with the real fixture messages; each catalog context is injected by prior messages.

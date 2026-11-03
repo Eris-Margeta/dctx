@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Declared reason and diagnostic codes of the dctx/git manifest, and the staging verdicts they report.
 //! Implements manifest-git.json `reason_codes`/`diagnostic_codes` and the git.md outcome table
 //! ("Required visible truth"): a successful edit keeps its receipt whatever staging does (G-STAGE).

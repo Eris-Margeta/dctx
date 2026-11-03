@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! CLI help, including the build's feature and precision limits.
 //! Implements ARCHITECTURE-PROPOSAL §2 capabilities and §4 command list.
 //! Depends on [`dctx::Capabilities`]. `dctx --help` and `dctx --version --verbose` print [`text`] or [`limits`].

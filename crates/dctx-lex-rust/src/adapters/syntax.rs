@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! syn visitor that records declarations in pre-order with their lexical scopes.
 //! Implements the PARSERS-v1 Rust row: items, modules, functions/methods, impls with trait
 //! and type, consts/statics, type aliases, `macro_rules`, tests and doc first lines.

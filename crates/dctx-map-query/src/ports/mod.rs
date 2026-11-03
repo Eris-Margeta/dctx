@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Source and revision boundaries for query freshness.
 //! Implements SPEC-MAP-MODE section 7 without choosing a filesystem.
 //! Used by index and query adapters to obtain current source facts.

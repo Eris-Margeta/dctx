@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bundled `dctx/git` row derived from the facade catalog.
 //! Implements PLUGINS.md §5.4 and §7.3 PL-CLI: listed and enabled, capabilities disclosed,
 //! unavailable when the git worker feature is off. Depends on `dctx::bundled_git_plugin` and the

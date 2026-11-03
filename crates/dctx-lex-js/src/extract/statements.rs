@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Statement lists: boundaries (including ASI), declarations, functions and variables.
 //! Implements SPEC-MAP-MODE 5.1 declarations with dctx-map-parse naming and visibility:
 //! `export` makes a declaration public, `declare` does not, `export default` names `default`.

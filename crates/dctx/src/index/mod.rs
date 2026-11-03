@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! In-memory map generation. SQL, tree-sitter nodes and storage paths stay out of this index.
 //! Implements the strict half of SPEC-MAP-MODE over an explicit [`crate::ports`] source.
 //! Depends on the domain types and dctx-map-model ids. The session owns each [`Generation`].

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Same-stamp edits are invisible to the metadata pre-filter and visible in strict mode.
 //! Implements DX-C5 and the DX-B3 strict freshness check.
 //! Metadata mode is the positive control: a preserved stamp is not reread.

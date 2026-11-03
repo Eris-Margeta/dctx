@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Length-delimited fact records. Keys are stored in strictly increasing canonical bytes.
 //! Implements SEGMENTS-v1 `record_length:u32 || payload` for kind 3.
 //! Depends on [`super::facts`] for the field order. The segment decoder calls [`decode`] after the checksum.

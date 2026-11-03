@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! SQLite comparison bridge: `FactStore` snapshots and content-addressed blob facts.
 //! Implements ARCHITECTURE-PROPOSAL §3 option B and §7 row DX-C2.
 //! Depends on the v1 map connection. [`super::SqliteStore`] publishes through it.

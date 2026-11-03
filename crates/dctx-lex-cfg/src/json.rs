@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! JSON and JSONC structural walk.
 //! Implements the configuration extractor for `.json` and `.jsonc` (PARSERS-v1).
 //! Comments are summaries in JSONC and diagnostics in JSON. Object trailing

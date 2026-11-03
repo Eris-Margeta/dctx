@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! JSON v1 conversion retained for the future wire adapter.
 //! Implements SPEC-MAP-MODE sections 4.1 and 4.2. This is not domain storage.
 //! Depends on serde and `serde_json` through the `wire-json` feature. The text renderer calls it.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Frozen clock and cancellation doubles for deterministic replay.
 //! Implements `Clock` with a fixed instant and `Cancellation` as a shared flag or a
 //! cancel-after-N-checkpoints trigger, so tests can cancel at every boundary.

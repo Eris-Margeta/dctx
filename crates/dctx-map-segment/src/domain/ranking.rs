@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Fixed-point lexical score for one document. Ranking revision 1.
 //! Implements SEGMENTS-v1 deterministic scoring. Arithmetic stays in `u128` and then saturates to `i64`.
 //! Depends on [`super::kinds::Field`] weights. Query code supplies the hits; this module does not read VCS state.

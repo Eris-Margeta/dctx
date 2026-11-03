@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Capability ceilings, grants and liveness policies carried by initialize.
 //! Implements capabilities.schema.json, common.schema.json `grant` and dts.schema.json `$defs/liveness`.
 //! A capability is a requested ceiling, never consent (S-CAPABILITY). Depends on json, scalars, refusal.

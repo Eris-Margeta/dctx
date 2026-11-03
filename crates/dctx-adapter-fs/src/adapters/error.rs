@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Typed failures for the filesystem Source adapter.
 //! Implements DX-B3: escapes are refused and IO stays attached to a path.
 //! Depends on [`crate::domain::StaleReason`] and `dctx-hash`. Callers match on [`SourceError`].

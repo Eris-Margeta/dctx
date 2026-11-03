@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pack prefix stability (DCX-P-C3): the default legacy page keeps its bytes across a bare touch
 //! and across an edit to one late file, so a prompt cache can reuse the shared prefix.
 //! Twenty equal-size files, fixed clock, the public facade with the built-in default template.

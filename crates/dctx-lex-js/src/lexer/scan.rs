@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Code-mode scanner: whitespace, comments, words, numbers, strings, templates, regex.
 //! Implements the PARSERS-v1 lexical corpus rules (interpolation, escapes, regex/division).
 //! Owns the mode stack shared with `jsx`; used only by `lexer::lex`.

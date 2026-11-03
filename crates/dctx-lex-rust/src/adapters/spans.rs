@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Byte spans, lines and source text of syn nodes via proc-macro2 span locations.
 //! Implements PARSERS-v1 "Each fact has a byte span [start,end) inside the input".
 //! Spans are built from a node's small head and its closing token, never by printing a

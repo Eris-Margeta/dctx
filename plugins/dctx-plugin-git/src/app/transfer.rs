@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Bounded chunked transfers through the broker: whole-file `file.read` and `file.stage` uploads.
 //! Implements PLUGINS.md §3.3 "later chunks must bind that token" and §6.2 step 6 "Upload the replacement
 //! through bounded file.stage chunks"; chunk size fits the negotiated frame after base64 (wire.md §Bytes).

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Read-continuation cursors and the byte-span slicing behind the read verb.
 //! A resume id carries the node id and the absolute line window; `slice_span` serves a window of
 //! the node bytes and marks the cap when a prefix was cut. `OMITTED_LINE` and `TRUNCATED_MARK`

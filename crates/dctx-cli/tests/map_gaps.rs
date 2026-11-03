@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Binary checks for map targets, single-record verbs, cursors and line ranges.
 //! Covers DCTX-SERIOUS-GAPS G2, G3, G4 and G5.
 //! Depends on the compiled dctx-cli and temporary source files. No network and no git.

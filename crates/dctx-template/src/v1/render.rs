@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Marker rendering for v1 partials and layouts.
 //! Implements the dctx-core formatter's tree, file and layout substitution, without IO.
 //! Depends on [`super::parse`]. Used by parity tests and by the bounded plan renderer.

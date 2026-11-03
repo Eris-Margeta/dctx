@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Iterative ignore wildcards that do not cross `/`.
 //! Implements the plain pattern language shared with ADR-015b rule lines.
 //! Depends on no allocator beyond the match stack. [`super::rule`] calls it for glob rules.

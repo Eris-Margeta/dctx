@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Regression tests for review findings 2 and 11 on the Python lexer.
 //! Covers same-quote f-strings and containment confidence after damage.
 //! Uses the public extractor and the shared fact invariants.

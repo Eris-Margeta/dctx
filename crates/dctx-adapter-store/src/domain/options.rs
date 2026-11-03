@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Requests, durability mode, and maintenance budgets for one store.
 //! Implements CACHE-v1 admission (emergency metadata inside the cap) and SEGMENTS-v1 publication input.
 //! Depends on [`super::error::StoreError`] and [`crate::SegmentRole`]. [`crate::SegmentStore`] consumes these.

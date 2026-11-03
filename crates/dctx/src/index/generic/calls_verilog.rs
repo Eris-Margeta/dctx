@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Call references of Verilog/SystemVerilog, used for `fn` and module-scope `type` spans.
 //! A call is `<name>(` with at most one space before the parenthesis inside a module, function or task span; a keyword,
 //! a digit-led word, a `.member(` or `$system(` word and the span's own name never call. A line that reads

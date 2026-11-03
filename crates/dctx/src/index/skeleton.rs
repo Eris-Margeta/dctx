@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The `skeleton` verb: every declaration signature of one file, no bodies, in source order.
 //! Implements the Trail-Code `skeleton` parity verb (DCX-15) over the in-memory generation.
 //! The file's module record comes first, then each symbol by start line. Nothing reads the source.

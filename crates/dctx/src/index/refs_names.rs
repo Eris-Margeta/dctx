@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Spelling helpers for reference resolution: call and import segments, and module keys of a path.
 //! Implements the name side of SPEC-MAP-MODE 6.3 for every first-party lexer's spelling (`a.b`, `a::b`, `a->b`, `./a/b`).
 //! Pure string functions; the resolver in `refs` owns the tables.

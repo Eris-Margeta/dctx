@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Gates decision 078 production SHA-256 and unsafe integration-test code.
 //! Closes audit findings F5 and F6 for scan, parse, and the query tests.
 //! Reads manifests and sources only. The sha2 oracle stays a dctx-hash dev-dependency.

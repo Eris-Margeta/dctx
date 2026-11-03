@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Opt-in monotonic stage and per-file scan counters.
 //! Implements DCTX-SERIOUS-GAPS G7 and DCTX-COLD-SCAN C5.
 //! Depends on `std::time::Instant`. The walk and the session record samples on this thread.

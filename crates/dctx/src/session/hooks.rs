@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Sequences plugin hooks around pack, index and cache. Engines call these methods only.
 //! Implements PLUGINS.md §3.1 and §6.2. A `.gitignore` change is revalidated before content reads.
 //! Depends on [`crate::plugins`] and the session policy. The engines do not import the host.

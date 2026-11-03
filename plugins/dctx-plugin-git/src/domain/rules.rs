@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The restored ADR-005 rule set: four required literals, the automated-rules header and the host marker.
 //! Implements PLUGINS.md §6.1 and plugin-api git.md "Required literals, in order": the marker carries the
 //! **host** dctx version, never the plugin version. Pure; no IO.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared extension and Ruby basename dispatch.
 //! The literal list is the same one locked in `src/domain/facts.rs`,
 //! `crates/dctx/src/index/extract.rs` and `crates/dctx/tests/map_languages.rs`.

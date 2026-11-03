@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Read verification, span serving and the read page that fits the output budget.
 //! `read_verified` rehashes the source before it is served: a sensitive name is never read, and a
 //! byte change refuses the query. A body that does not fit keeps the first lines that do.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Capability selectors and typed config checks.
 //! Implements plugin-api/dts.md allow table and S-CONFIG / S-CAPABILITY.
 //! Depends on [`crate::plugin`] and [`crate::error`]. [`crate::plugin_plan`] applies the results.

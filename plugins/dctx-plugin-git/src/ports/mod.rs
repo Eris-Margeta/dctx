@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! The broker port: every effect the plugin needs, as host requests (never direct filesystem or process).
 //! Implements PLUGINS.md §3.3 for the four git-profile methods (`file.read`, `file.stage`, `file.replace`,
 //! `program.run` git.add-ignore) plus progress events. Depends on dctx-plugin-protocol records only.

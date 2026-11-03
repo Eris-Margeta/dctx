@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PP3/PP5 restart witnesses using durable fake evidence and observed external effects.
 //! Crash cuts exercise intent/effect/completion ordering through the broker, not execution counters.
 //! Recovery retains complete keys, conflicts, uncertainty and archives; IO is injected.

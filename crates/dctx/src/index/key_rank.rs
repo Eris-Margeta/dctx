@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Find order for a SCREAMING_CASE query (`HOME`, `DJANGO_SETTINGS_MODULE`): a config key or constant, so the page
 //! leads with the places that read it. The best symbol named exactly the key comes first ([`EXACT_FIRST`]), then one read
 //! site per code file (the key quoted, after `.`, `$` or `${`, never inside a longer name), code before shell and

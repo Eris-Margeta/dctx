@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Proves map mode never spawns Git and never opens ignored or omitted paths.
 //! Implements decision 078 and SPEC-MAP-MODE sections 6.1 and 7.
 //! Uses `FileSource`, the snapshot port, and a child PATH trap via `Command::env`.

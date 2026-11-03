@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Freshness, symlink confinement, and same-stamp digest checks.
 //! Implements DX-B3 race, escape, and strict-digest contracts (decision 078).
 //! Depends on `dctx-adapter-fs` and `tempfile`. These tests drive [`FsSource`].

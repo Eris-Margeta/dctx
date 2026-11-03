@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `DiskFull` is the filesystem refusal. Cache admission is a different error.
 //! A full disk leaves the previous generation readable, and a cleared budget can publish.
 //! Durable mode refuses a filesystem that cannot sync. Ephemeral mode does not survive a crash.

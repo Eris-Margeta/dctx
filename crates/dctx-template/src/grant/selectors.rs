@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Selector grammar, screening and expansion into catalog records.
 //! Implements plugin-api/dts.md allow table and S-CONFIG / S-CAPABILITY.
 //! Depends on grant scalar screening and manifest records; used by plugin plan admission.

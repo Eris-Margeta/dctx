@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Deterministic fake ports with spy counters for host property tests and facade (PL-F) tests.
 //! Implements the "fake process, filesystem and audit ports" of PLUGINS.md §7.2 PL-H and the
 //! properties.md rule that counts are spy observations. No real IO, threads or wall-clock time.

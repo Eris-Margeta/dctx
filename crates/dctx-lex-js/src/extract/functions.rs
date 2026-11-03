@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Functions: declarations, TS signatures, function expressions and arrows.
 //! Implements SPEC-MAP-MODE 5.1 function facts with dctx-map-parse spans and signatures
 //! (`function f()` up to the body; whole text for TS overloads and `declare`).

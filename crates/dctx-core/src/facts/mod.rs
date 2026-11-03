@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pack facts bounded context: source entries, read grants, content records and snapshots.
 //! Implements the pack data of ARCHITECTURE-PROPOSAL §2 ("domain functions take facts and return facts").
 //! Depends on [`crate::ids`], [`crate::datatypes`], [`crate::domain`] and `dctx-hash`; pure.

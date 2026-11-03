@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Run one hook boundary through the host session and return a truthful commit result.
 //! Implements PLUGINS.md §3.1 and PP10. Required failures before publish block the engine.
 //! Depends on [`super::plan`], the request gate and the host supervisor. The session calls [`run_plan`].

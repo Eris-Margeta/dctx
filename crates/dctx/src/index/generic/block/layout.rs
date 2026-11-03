@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Layout-driven declarations of OCaml: `let`, `type`, `exception`, `val` and `module X = struct` at the level of their scope, and
 //! `class X = object` with its `method`s and instance variables. Nesting follows `struct ... end`, `sig ... end` and `object ... end`;
 //! a declaration runs to the last line indented under it. Bodies are never entered. Haskell, which shares the helpers below, is in `haskell.rs`.

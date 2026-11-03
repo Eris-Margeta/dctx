@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Swift member boundaries, enum cases, bindings and doc summaries.
 //! Implements lexical signatures and tier-zero summaries from SPEC-MAP-MODE.
 //! Used by declaration dispatch; balanced parameter groups stay opaque here.

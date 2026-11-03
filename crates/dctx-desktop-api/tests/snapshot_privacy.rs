@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Privacy regressions for desktop snapshot findings F01, F02, F03, F04 and F14.
 //! Each refusal sits beside a positive control. `SourceSpy` records every list,
 //! metadata and content read that reaches the confined source and fails the test

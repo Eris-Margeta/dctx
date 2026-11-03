@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Find for a dotted config key (DCX-56c): `find server.port` lists the config symbol that defines the key, then the code
 //! lines that read it, then the other matches. Read lines come from the same verified literal search as the find fallback.
 //! Depends on [`crate::index::dotted_key`] for the query shape, the definitions and the read test.

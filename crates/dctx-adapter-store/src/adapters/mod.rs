@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Store adapters: in-memory crash disk and std filesystem.
 //! Implements DX-C3 publication over the [`crate::ports::StoreFs`] port.
 //! Depends on [`crate::domain`] rules. Callers use [`SegmentStore`].

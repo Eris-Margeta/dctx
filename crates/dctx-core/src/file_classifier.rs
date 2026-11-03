@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Binary file detection and content handling (extension first, then content sniffing).
 //! Implements the pack rule that binaries appear in the tree with their content omitted.
 //! Depends on its media, packages and sniff modules; pure over a path and bytes already read.

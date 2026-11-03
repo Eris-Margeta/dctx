@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Standalone dctx/git worker entry: speaks the plugin protocol on inherited stdin/stdout only.
 //! Implements PLUGINS.md §2/§6.4 "src/main.rs — standalone worker entry only"; the launch identity comes
 //! from the host's verified install record as arguments. Diagnostics go to stderr, never to stdout.

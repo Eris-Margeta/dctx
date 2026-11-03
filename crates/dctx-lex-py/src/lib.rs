@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Hand-written, zero-dependency Python structural extractor.
 //! Implements decision 077, PARSERS-v1 and SPEC-MAP-MODE 5–6.2 for Python 3.
 //! Depends on dctx-map-model facts and dctx-hash; never on tree-sitter.

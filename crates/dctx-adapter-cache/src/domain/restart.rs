@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Restart reconciliation and the versioned ledger image.
 //! Implements CACHE-v1 and DX-A2 Recover: an OS lock plus session identity prove the holder is alive.
 //! Depends on writer locks, leases and `dctx-hash`. Startup passes [`RestartEvidence`] on the first slice.

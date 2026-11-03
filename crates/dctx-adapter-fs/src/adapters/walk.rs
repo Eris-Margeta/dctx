@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Inventory walk: selection, then metadata or an authorized hash.
 //! Implements DX-B3. Escapes refuse the walk; races become stale records.
 //! Depends on [`super::read`] and [`crate::domain`]. Ignored directories are not listed.

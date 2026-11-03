@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Validated traversal options and continuation commands.
 //! Implements SPEC-MAP-MODE sections 3 and 4 with explicit hard bounds.
 //! Uses model budgets; the CLI and library share these request rules.

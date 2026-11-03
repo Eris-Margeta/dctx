@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Replacement, isolation and bundled FTS5 evidence for map storage.
 //! Tests map spec sections 6.4, 7 and 8 through the public port.
 //! Uses generated file facts and deterministic raw-row snapshots.

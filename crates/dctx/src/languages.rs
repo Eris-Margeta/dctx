@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Language registry: every language the structural index recognises, with its tag, file names, tier and confidence.
 //! The single source for `dctx languages`, the README language table and [`crate::Capabilities::languages`].
 //! Tags are the tags of the index's extension dispatch; `index/languages_tests.rs` locks this table to that dispatch,

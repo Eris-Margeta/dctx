@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! PP3 durable intent/effect/completion evidence through the actual host broker.
 //! Injected storage cuts distinguish written bytes from synced bytes; disk controls check
 //! owner-only files and persisted evidence. PP5 full action-key recovery remains H-RECOVER.

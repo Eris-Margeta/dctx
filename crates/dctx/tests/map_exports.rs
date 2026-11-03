@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `map m:<file>` puts a file's explicit export list first (DCX-55c) from the index alone.
 //! The list is read once at snapshot time and stored on the module node, so the outline rereads nothing,
 //! and the stored list never shows up as a module signature.

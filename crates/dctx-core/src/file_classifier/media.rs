@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Extension classification for images, SVG, video, audio and fonts.
 //! Implements the pack rule that these types are omitted (SVG as its own case).
 //! Depends on [`super::FileContentHandling`]; pure over a lowercased extension.

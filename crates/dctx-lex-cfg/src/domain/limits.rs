@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Input ceilings and the typed refusals returned instead of partial facts.
 //! Implements PARSERS-v1 "Capabilities": caller limits can only narrow ceilings.
 //! Used by the public extractor and the JSON, TOML and YAML walkers.

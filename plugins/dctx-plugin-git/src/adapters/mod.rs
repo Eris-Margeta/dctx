@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Adapters: the framed stdio worker. The only IO is the inherited protocol reader/writer pair;
 //! there is no filesystem, process, network or environment access here (decision 079/decision 080, PLUGINS.md §4.2).
 //! Depends on dctx-plugin-protocol's stream codec and session tracker; used by main.rs and the tests.

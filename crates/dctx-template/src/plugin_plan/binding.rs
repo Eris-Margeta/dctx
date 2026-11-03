@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Binding source declarations and distribution catalog entries.
 //! Implements PLUGINS.md §3.5: locks, ceilings and sticky disable.
 //! Depends on host catalogs, grant admission and binding validation; used by the plugin plan compiler and loader.

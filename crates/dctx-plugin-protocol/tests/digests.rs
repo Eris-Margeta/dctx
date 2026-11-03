@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Canonical-byte digest goldens recomputed with the public `dctx_hash::Sha256` API (one-shot and incremental).
 //! Implements wire.md §Bytes canonical inputs and S-REPLAY argument digests against fixtures/digests.json.
 //! Depends on dctx-hash (dev-only) and the corpus; the protocol crate itself stays std-only.

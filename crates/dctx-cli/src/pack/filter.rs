@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Filter selection for `dctx pack`.
 
 use dctx_core::datatypes::IgnoreRule;

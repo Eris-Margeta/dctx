@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Export: the whole graph of a generation as one deterministic document (the `dctx map export` verb).
 //! Two formats: a graph JSON (`nodes` and `edges`) and a Mermaid `flowchart LR` of the calls and imports edges.
 //! Nodes are sorted by stable id and edges by (src, edge, dst, confidence), so equal generations give equal bytes.

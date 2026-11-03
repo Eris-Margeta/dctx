@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Unchecked DTS section types before host validation.
 //! Implements ARCHITECTURE-PROPOSAL §2 and PLUGINS.md §3.5.
 //! Depends on the plan model and v1 template types; used by the DTS source parser.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Reverse index from exports and imports to the files that use them.
 //! Implements ARCHITECTURE-PROPOSAL §7 DX-B5 dependent invalidation.
 //! Depends on resolved edges and raw references. Indexers rerun those files.

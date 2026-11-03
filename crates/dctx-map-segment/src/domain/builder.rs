@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Builds one fact or view segment from owned drafts.
 //! Implements SEGMENTS-v1 packing: required sections, optional prefix and postings, no gaps.
 //! Depends on [`super::compile`] and [`super::directory`]. Callers pass the bytes to [`super::decode`].

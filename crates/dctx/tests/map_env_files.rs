@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Map mode never serves the bytes of env-shaped files (`.env`, `.env.*`, `*.env`, `.envrc`).
 //! A canary in each of them must appear in no read, map, find, grep or export answer.
 //! The fixtures here are throwaway in-memory canaries, not the planted fake secrets of other tests.

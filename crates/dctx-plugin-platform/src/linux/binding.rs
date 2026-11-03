@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Handle-relative Linux resource binding, implementing PL-R bindings and S-FILE.
 //! openat2 refuses symlinks, magic links and mount transitions in one resolution.
 //! Object metadata detects namespace substitution; only a checked sealed digest binds bytes.

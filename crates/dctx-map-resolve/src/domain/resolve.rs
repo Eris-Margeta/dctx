@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Deterministic conversion of syntactic references into file-owned edges.
 //! Implements SPEC-MAP-MODE sections 5.3 and 6.3, retaining retry inputs.
 //! Uses the symbol table and model confidence matrix; called by indexers.

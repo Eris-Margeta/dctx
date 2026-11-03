@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Members inside a type: bodies, enum constants, properties and constructors.
 //! Constructor `val` and `var` parameters belong to the type, not the constructor.
 //! Accessor keywords extend a property span and are not call targets.

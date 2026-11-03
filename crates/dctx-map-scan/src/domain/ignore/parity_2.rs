@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Original dctx-core ignore test assertions, group 3.
 //! Verifies SPEC-MAP-MODE section 6.1 compatibility.
 //! Uses the scan engine and temporary rule directories.

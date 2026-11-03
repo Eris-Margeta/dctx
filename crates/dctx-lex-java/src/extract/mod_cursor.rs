@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Token cursor: spelling, brackets, declaration keywords and fact emission.
 //! Implements the Java token walk for SPEC-MAP-MODE 5.1–5.3 scopes, symbols and references.
 //! Depends on the draft in `extract` and on lexer partners and line starts.

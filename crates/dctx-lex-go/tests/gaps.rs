@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Gap oracles for compound Go types, graph ownership and hostile limits.
 //! Implements the P11 rows GO1–GO3 in docs/reviews/dctx-test-gaps.md.
 //! Depends on the public Go extractor. Run as the `dctx-lex-go` integration tests.

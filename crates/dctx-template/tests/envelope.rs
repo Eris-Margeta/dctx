@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Whole-record envelopes, continuation, JSON escaping and denied bytes.
 
 use dctx_core::FileHandlingDecision;

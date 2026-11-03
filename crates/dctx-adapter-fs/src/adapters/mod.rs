@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Filesystem adapters for the Source port.
 //! Implements DX-B3 confinement, rule loading, and stale races.
 //! Depends on [`crate::domain`] and [`crate::ports`]. [`FsSource`] is the public entry.

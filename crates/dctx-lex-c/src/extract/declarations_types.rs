@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Type declarations and the draft ledger that finishes a `LexedFile`.
 //! Implements SPEC-MAP-MODE 5.1 for struct, class, union and enum containment.
 //! Anonymous types contribute no symbol. A friend is a type reference only.

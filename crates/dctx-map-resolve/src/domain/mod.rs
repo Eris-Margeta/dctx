@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Pure facts, symbol tables, reference resolution and moves.
 //! Implements SPEC-MAP-MODE sections 5.2, 5.3 and 6.3.
 //! DX-B5 view resolution shares content-keyed facts across layouts.

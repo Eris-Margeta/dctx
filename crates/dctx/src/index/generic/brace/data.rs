@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Data declarations of the brace family: Scala `val` and `var`, Dart constants and fields, Zig `const` and `var` values and
 //! struct fields, Solidity state variables and struct fields, Gleam constants, Groovy fields, and the values of enums. Every
 //! function takes one masked, trimmed line and answers with names and wire kinds (`const`, `var`, `field`); the caller owns

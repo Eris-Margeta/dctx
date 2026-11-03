@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Recognises one declaration head at the start of a masked code line.
 //! Implements the conservative recovery of PARSERS-v1 "malformed syntax returns partial".
 //! Pure; the line scan supplies masked lines and tracks scopes around the result.

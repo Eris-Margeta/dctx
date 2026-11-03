@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Shared operation outcomes and response encoding for PLUGINS.md §5.1.
 //! Depends on distribution errors, facade capabilities and render primitives.
 //! Used by the dispatcher and each plugin operation module.

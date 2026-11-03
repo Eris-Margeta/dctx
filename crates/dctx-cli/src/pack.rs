@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Explicit pack. Output is stdout, the clipboard, or `--output`.
 //! Implements ADR-011 filters and ADR-009 binary omission on the source page.
 //! Depends on the facade host, the `dctx-pack` scan, and [`FilterConfig`].

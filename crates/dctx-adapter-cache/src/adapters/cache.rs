@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! `Cache` port and the filesystem object store.
 //! Implements API-PORTS-v1 `Cache.reserve/commit/abort` and CACHE-v1 unlink inside the cache root.
 //! Depends on [`crate::Lifecycle`] for admission and on std filesystem calls for reclaimed names.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 //! Documented macOS Seatbelt candidate path; never executes sandbox-exec as a fallback.
 //! PL-R macOS requires an approved safe API, immutable loader resources and one-shot launch.
 //! The deny-all baseline is a review artifact, not a qualified runnable worker profile.
