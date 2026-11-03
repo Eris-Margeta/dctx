@@ -255,6 +255,7 @@ mod tests {
         ));
         assert!(json.contains("\"files\":[\"Dockerfile\",\"Containerfile\"]"));
         assert!(markdown.contains("| Rust | `rust` | `.rs` | full | structural |\n"));
+        assert!(markdown.contains("| Markdown | `markdown` | `.md`, `.markdown` | docs | structural |\n"));
         assert!(text.contains("Perl") && json.contains("Perl") && markdown.contains("Perl"), "Perl is listed");
         assert!(markdown.contains("| Perl | `perl` | `.pl`, `.pm`, `.t`, `.psgi` | full | guess |
 "));
