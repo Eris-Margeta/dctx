@@ -59,7 +59,7 @@ fn missing_clock_is_invalid_and_place_is_the_one_supplied() {
     assert_eq!(ready.place(), "fixture");
     assert_eq!(ready.epoch(), 1);
     let caps = ready.capabilities();
-    assert_eq!(caps.facade_version, "1.0.0");
+    assert_eq!(caps.facade_version, "1.1.0");
     assert_eq!(caps.wire_version, 2);
     assert_eq!(caps.dts_version, 2);
     assert!(!caps.git);
