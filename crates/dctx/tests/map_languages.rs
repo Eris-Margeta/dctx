@@ -230,6 +230,11 @@ const FIXTURES: &[Fixture] = &[
         symbol: "ElispMain",
     },
     Fixture {
+        extensions: &["f90", "f95", "f03", "f08", "f", "for"],
+        source: "subroutine FortranMain()\n  return\nend subroutine FortranMain\n",
+        symbol: "FortranMain",
+    },
+    Fixture {
         extensions: &["nix"],
         source: "{\n  NixMain = 1;\n}\n",
         symbol: "NixMain",
@@ -339,6 +344,7 @@ const SHARED_EXTENSIONS: &[&str] = &[
     "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java", "c", "h",
     "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts", "rb", "rake", "gemspec",
     "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam",
+    "f90", "f95", "f03", "f08", "f", "for",
     "pl", "pm", "t", "psgi",
     "erl", "hrl",
     "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",

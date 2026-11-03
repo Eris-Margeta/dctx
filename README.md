@@ -180,6 +180,7 @@ Details: [Map mode guide](docs/guides/MAP-MODE.md). The three-way benchmark agai
 | Zig | `zig` | `.zig` | full | guess |
 | Solidity | `solidity` | `.sol` | full | guess |
 | Gleam | `gleam` | `.gleam` | full | guess |
+| Fortran | `fortran` | `.f90`, `.f95`, `.f03`, `.f08`, `.f`, `.for` | full | guess |
 | Perl | `perl` | `.pl`, `.pm`, `.t`, `.psgi` | full | guess |
 | Groovy | `groovy` | `.groovy`, `.gradle` | full | guess |
 | PowerShell | `powershell` | `.ps1`, `.psm1`, `.psd1` | full | guess |

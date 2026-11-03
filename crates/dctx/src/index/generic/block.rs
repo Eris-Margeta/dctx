@@ -1,5 +1,5 @@
 //! Block-structured declarations: Elixir, Lua and Julia (blocks closed by `end`), R and Erlang (their own scanner),
-//! Verilog (construct blocks closed by `endmodule` and friends), and through [`layout`] OCaml and Haskell.
+//! Fortran (blocks closed by `end`), Verilog (construct blocks closed by `endmodule` and friends), and through [`layout`] OCaml and Haskell.
 //! The `end` languages share one scanner: a table says which words open or close a block and how a declaration line reads.
 //! A declaration's frame is the first block opened on its line, so its end line is where that block closes; bodies are never entered.
 //! Heuristic by design: one declaration per line, nesting as `Parent::child` inside a module or struct.
@@ -11,6 +11,7 @@ mod haskell;
 mod julia;
 mod layout;
 mod ocaml_body;
+mod fortran;
 mod lua;
 mod r;
 mod verilog;
@@ -49,9 +50,9 @@ struct Block {
     nested: bool,
 }
 
-/// True for the eight tags of this family.
+/// True for the nine tags of this family.
 pub(super) fn handles(language: &str) -> bool {
-    matches!(language, "elixir" | "lua" | "ocaml" | "r" | "julia" | "haskell" | "erlang" | "verilog")
+    matches!(language, "elixir" | "lua" | "ocaml" | "r" | "julia" | "haskell" | "erlang" | "verilog" | "fortran")
 }
 
 /// Symbols of `text`, or none for an unknown tag.
@@ -65,6 +66,7 @@ pub(super) fn symbols(tag: &str, text: &str) -> Vec<Symbol> {
         "haskell" => haskell::haskell(text),
         "erlang" => erlang::decls(text),
         "verilog" => scan(&verilog::SCAN, text),
+        "fortran" => scan(&fortran::SCAN, text),
         _ => return Vec::new(),
     };
     to_symbols(text, decls)

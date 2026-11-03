@@ -53,6 +53,8 @@ pub enum Language {
     Groovy,
     /// PowerShell scripts and modules (`.ps1`, `.psm1`, `.psd1`).
     Powershell,
+    /// Fortran source (`.f`, `.for`, `.f90`, `.f95`, `.f03`, `.f08`; any case).
+    Fortran,
     /// Verilog/SystemVerilog source (`.v`, `.vh`, `.sv`, `.svh`).
     Verilog,
     /// Plain-text documents (`.txt`, `.rst`, `.adoc`, `.asciidoc`, `.org`, `.tex`). Headings live in the facade.
@@ -150,6 +152,12 @@ const EXTENSIONS: &[(&str, Language)] = &[
     ("zig", Language::Zig),
     ("sol", Language::Solidity),
     ("gleam", Language::Gleam),
+    ("f90", Language::Fortran),
+    ("f95", Language::Fortran),
+    ("f03", Language::Fortran),
+    ("f08", Language::Fortran),
+    ("f", Language::Fortran),
+    ("for", Language::Fortran),
     ("pl", Language::Perl),
     ("pm", Language::Perl),
     ("t", Language::Perl),
@@ -382,6 +390,7 @@ mod tests {
             "rs", "js", "mjs", "cjs", "jsx", "ts", "mts", "cts", "tsx", "md", "markdown", "py", "pyi", "go", "java",
             "c", "h", "cc", "cpp", "cxx", "hpp", "hh", "json", "jsonc", "toml", "yaml", "yml", "cs", "kt", "kts",
             "rb", "rake", "gemspec", "php", "phtml", "inc", "swift", "scala", "sc", "dart", "zig", "sol", "gleam",
+            "f90", "f95", "f03", "f08", "f", "for",
             "pl", "pm", "t", "psgi",
             "erl", "hrl",
             "groovy",

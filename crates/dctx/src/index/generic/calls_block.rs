@@ -1,4 +1,4 @@
-//! Call references of the block outline family: Lua, Elixir, Julia, R, OCaml, Haskell, Erlang and Verilog.
+//! Call references of the block outline family: Lua, Elixir, Julia, R, OCaml, Haskell, Erlang, Verilog and Fortran.
 //! Lua, Elixir, Julia and R call with parentheses: an identifier followed by `(` (one space allowed) inside a function span.
 //! OCaml and Haskell call by juxtaposition: any identifier in a body is a candidate; `refs.rs` resolves each, so a cross-file
 //! callee links while a plain local does not. `decl_pair.rs` pairs a declaration (`.mli` prototype, header, `.d.ts`) with its definition.
@@ -54,6 +54,16 @@ const VERILOG_LINE: Syntax = Syntax { line: &["//"], block: None, nested: false,
 const VERILOG_BLOCK: Syntax = Syntax { line: &[], block: Some(("/*", "*/")), nested: false, quotes: b"", triple: false };
 /// Verilog: `"` strings.
 const VERILOG_STRING: Syntax = Syntax { line: &[], block: None, nested: false, quotes: b"\"", triple: false };
+/// Fortran: `!` comments and quoted strings.
+const FORTRAN: Syntax = Syntax { line: &["!"], block: None, nested: false, quotes: b"\"'", triple: false };
+/// Fortran words that precede `(` without calling anything (compared case-insensitively).
+const FORTRAN_NOT_CALLS: &[&str] = &[
+    "if", "else", "elseif", "while", "where", "forall", "select", "case", "do", "end", "function", "subroutine", "program", "module",
+    "interface", "type", "class", "result", "real", "integer", "complex", "logical", "character", "double", "dimension", "intent",
+    "allocatable", "allocate", "deallocate", "parameter", "write", "read", "print", "open", "close", "pointer", "kind", "len", "only",
+    "use", "implicit", "external", "save", "optional", "target", "procedure", "bind", "associate", "return", "stop", "assignment",
+    "operator", "pure", "elemental", "recursive", "contains", "data", "common", "equivalence", "format", "inquire", "rewind",
+];
 /// Erlang words that look like a call but are keywords, operators or guards.
 const ERLANG_NOT_CALLS: &[&str] = &[
     "after", "and", "andalso", "band", "begin", "bnot", "bor", "bsl", "bsr", "bxor", "case", "catch", "cond", "div", "end", "fun", "if",
@@ -71,6 +81,7 @@ fn masked_of(language: &str, text: &str) -> Option<String> {
         // Erlang: `%` comments, quoted strings and single-quoted atoms, plus `$c` char literals as pairs.
         "erlang" => super::block::masked(text),
         "haskell" => mask(text, &HASKELL),
+        "fortran" => mask(text, &FORTRAN),
         "verilog" => mask(&mask(&mask(text, &VERILOG_LINE), &VERILOG_BLOCK), &VERILOG_STRING),
         _ => return None,
     })
@@ -103,6 +114,8 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
         let own = tail(language, &symbol.name);
         let names = if language == "erlang" {
             erlang_call_names(body, own)
+        } else if language == "fortran" {
+            fortran_call_names(body, own)
         } else if verilog {
             super::calls_verilog::call_names(body, own)
         } else if juxtaposed {
@@ -117,6 +130,37 @@ pub(super) fn references(language: &str, path: &str, text: &str, symbols: &[Symb
         }
     }
     refs
+}
+
+/// Called names in a Fortran `body`: `call name` and `name(`, case-insensitively not the function's own name or a keyword.
+fn fortran_call_names<'a>(body: &'a str, own: &str) -> Vec<&'a str> {
+    let bytes = body.as_bytes();
+    let mut found: Vec<&str> = Vec::new();
+    let mut after_call = false;
+    let mut at = 0usize;
+    while at < bytes.len() {
+        if !is_word(bytes[at], false) {
+            at += 1;
+            continue;
+        }
+        let end = word_end(bytes, at, false);
+        let word = &body[at..end];
+        let next = bytes[end..].iter().find(|byte| !matches!(byte, b' ' | b'\t')).copied();
+        let called = after_call || next == Some(b'(');
+        let skipped = word.starts_with(|c: char| c.is_ascii_digit())
+            || word.eq_ignore_ascii_case(own)
+            || FORTRAN_NOT_CALLS.iter().any(|keyword| word.eq_ignore_ascii_case(keyword));
+        if word.eq_ignore_ascii_case("call") && !after_call {
+            after_call = true;
+        } else {
+            if called && !skipped && !found.contains(&word) {
+                found.push(word);
+            }
+            after_call = false;
+        }
+        at = end;
+    }
+    found
 }
 
 /// Last segment of a qualified symbol name: `Mod::f`, and `Base.show` in Julia (a dot is part of an R name).
@@ -327,6 +371,8 @@ mod tests {
         assert_eq!(pairs("r", r), [pair("r_run", "r_help")]);
         let erlang = "-module(shop).\n\nshop_run(X) ->\n    shop_help(X).\n\nshop_help(Y) ->\n    lists:sum(Y).\n";
         assert_eq!(pairs("erlang", erlang), [pair("shop_run", "shop_help"), pair("shop_help", "lists:sum")]);
+        let fortran = "module geom\ncontains\n  function area(r)\n    area = square(r)\n  end function\n  function square(x)\n    square = x * x\n  end function\n  subroutine report()\n    call log_it()\n  end subroutine\n  subroutine log_it()\n  end subroutine\nend module\n";
+        assert_eq!(pairs("fortran", fortran), [pair("geom::area", "square"), pair("geom::report", "log_it")]);
         let ocaml = "let ml_help x = x + 1\nlet ml_run y = ml_help y\n";
         assert_eq!(defined_refs("ocaml", "a.src", ocaml).into_iter().map(|reference| (reference.scope, reference.name)).collect::<Vec<_>>(), [pair("ml_run", "ml_help")]);
         let haskell = "hsHelp :: Int -> Int\nhsHelp x = x + 1\n\nhsRun :: Int -> Int\nhsRun y = hsHelp y\n";
@@ -397,7 +443,7 @@ mod tests {
     fn odd_input_stays_quiet() {
         assert!(refs_of("unknown", "a.src", "function f() g() end").is_empty());
         for sample in ["", "function f(", "let f x =", "f <- function(", "def f() = \u{e9}\u{1F600}(1)\n", "\u{0}\r\n\r\nlet g = h ()\r\n"] {
-            for tag in ["lua", "elixir", "julia", "r", "erlang", "ocaml", "haskell", "verilog"] {
+            for tag in ["lua", "elixir", "julia", "r", "erlang", "ocaml", "haskell", "verilog", "fortran"] {
                 let _ = refs_of(tag, "a.src", sample);
             }
         }

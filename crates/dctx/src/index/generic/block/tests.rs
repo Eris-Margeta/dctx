@@ -1,9 +1,9 @@
-//! Tests for the block family: Elixir, Lua, OCaml, R, Julia, Haskell, Erlang and Verilog.
+//! Tests for the block family: Elixir, Lua, OCaml, R, Julia, Haskell, Erlang, Verilog and Fortran.
 
 use super::super::{handles, symbols};
 use crate::index::extract::{extract_structural_refs, language_of};
 
-const TAGS: &[&str] = &["elixir", "lua", "ocaml", "r", "julia", "haskell", "erlang", "verilog"];
+const TAGS: &[&str] = &["elixir", "lua", "ocaml", "r", "julia", "haskell", "erlang", "verilog", "fortran"];
 
 fn named(tag: &str, text: &str) -> Vec<(String, String)> {
     symbols(tag, text).into_iter().map(|symbol| (symbol.name, symbol.kind)).collect()
@@ -32,6 +32,32 @@ fn every_block_language_finds_its_types_and_functions() {
     assert_eq!(named("haskell", haskell), [pair("add", "fn"), pair("Shape", "type")]);
     let verilog = "module test\n  function test_fn\nendmodule\n";
     assert_eq!(named("verilog", verilog), [pair("test", "type"), pair("test::test_fn", "fn")]);
+}
+
+#[test]
+fn fortran_lists_modules_types_procedures_and_programs() {
+    let text = "module geom\n  type :: point\n    real :: x\n  end type point\n  interface area\n    module procedure area_p\n  end interface\ncontains\n  pure function square(x) result(y)\n    if (x > 0) then\n      y = x\n    end if\n  end function square\n  subroutine report(r)\n    select type (r)\n    type is (real)\n    end select\n    call log_it(r)\n  end subroutine report\n  real function Twice(v)\n  end function\nend module geom\n\nprogram main\n  call report(2.0)\nend program main\n";
+    assert_eq!(
+        named("fortran", text),
+        [
+            pair("geom", "type"),
+            pair("geom::point", "type"),
+            pair("geom::area", "type"),
+            pair("geom::square", "fn"),
+            pair("geom::report", "fn"),
+            pair("geom::Twice", "fn"),
+            pair("main", "fn"),
+        ]
+    );
+    let found = symbols("fortran", text);
+    assert_eq!(found[0].lines, [1, 22]);
+    assert_eq!(found[1].lines, [2, 4]);
+    assert_eq!(found[3].lines, [9, 13]);
+    assert_eq!(found[4].lines, [14, 19]);
+    assert_eq!(found[6].lines, [24, 26]);
+    let upper = "SUBROUTINE SHOUT(N)\n  CALL WHISPER(N)\nEND SUBROUTINE SHOUT\nSUBROUTINE WHISPER(N)\nENDSUBROUTINE\n";
+    assert_eq!(named("fortran", upper), [pair("SHOUT", "fn"), pair("WHISPER", "fn")]);
+    assert!(named("fortran", "! subroutine hidden()\ns = 'function fake(x)'\n").is_empty());
 }
 
 #[test]
@@ -82,6 +108,7 @@ fn denylisted_keywords_are_never_symbols() {
             ("julia", format!("function {word}(x)\nend\nstruct {word}\nend\n")),
             ("haskell", format!("{word} :: Int\ndata {word} = A\n")),
             ("erlang", format!("{word}(X) -> X.\n")),
+            ("fortran", format!("subroutine {word}()\nend subroutine\nmodule {word}\nend module\n")),
             ("verilog", format!("module {word};\nendmodule\nfunction {word}();\nendfunction\n")),
         ] {
             let found = named(tag, &text);
@@ -147,6 +174,10 @@ fn extensions_dispatch_to_the_block_family() {
         ("a.hs", "haskell"),
         ("a.erl", "erlang"),
         ("a.hrl", "erlang"),
+        ("a.f90", "fortran"),
+        ("a.F90", "fortran"),
+        ("a.f", "fortran"),
+        ("a.for", "fortran"),
         ("a.v", "verilog"),
         ("a.vh", "verilog"),
         ("a.sv", "verilog"),
