@@ -142,7 +142,8 @@ fn for_path_matches_the_shared_literal() {
             "erl", "hrl",
             "groovy",
             "gradle",
-            "ps1", "psm1", "psd1",
+            "ps1", "psm1", "psd1", "v", "vh", "sv", "svh",
+            "txt", "rst", "adoc", "asciidoc", "org", "tex", "ex", "exs", "lua", "ml", "mli", "r", "jl", "hs", "tf", "tfvars", "hcl", "sql", "sh", "bash", "zsh", "bats", "mk", "proto", "pas", "pp", "dpr", "graphql", "gql", "vue", "svelte", "astro", "html", "htm",
             "clj", "cljs", "cljc", "edn", "lisp", "lsp", "cl", "scm", "ss", "el", "nix",
         ]
     );
