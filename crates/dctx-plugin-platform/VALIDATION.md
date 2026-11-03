@@ -1,6 +1,6 @@
 # PL-Ab validation — 2026-10-16
 
-Remote machine `the host project`, native x86_64, Linux
+A remote Linux build host, native x86_64, kernel
 `6.12.111+deb13-cloud-amd64`. These are primitive/trusted-entry results, not a
 third-party launch qualification. NativeProvider continues to refuse all launch
 kinds on every target; the README lists the unmet guarantees.
@@ -39,7 +39,7 @@ formatted only owned source files. No root manifest/lock or generated governance
 file was edited.
 
 The remote runner reported that it could not append its external telemetry log
-under the local state directory (EPERM); build/test/lint command outputs and exit statuses
+in its state directory (EPERM); build/test/lint command outputs and exit statuses
 were returned normally. The crate-local opensrc research cache remains ignored
 and excluded from packaging because automatic policy review rejected deletion:
 `effect-not-in-packet,outside-requires-done-and-grant`. Orchestrator cleanup is

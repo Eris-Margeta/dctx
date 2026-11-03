@@ -33,7 +33,7 @@ New since run 6:
 - DCX-56b: dotted config key matching (`dotted_key`), not yet wired into `find`.
 - DCX-61: PowerShell symbols and command-position call edges.
 
-All landed checks passed together on build-host before the run. Raw results are in `research/bench-3way-20261030/tasks/results/run5-53f8b6b/` and `research/bench-3way-20261030/results/run7-53f8b6b/`.
+All landed checks passed together on the Linux benchmark host before the run. Raw results are in `research/bench-3way-20261030/tasks/results/run5-53f8b6b/` and `research/bench-3way-20261030/results/run7-53f8b6b/`.
 
 **Task-level protocol** (70 questions, 354 gold facts; generator, mapping and scorer unchanged):
 
@@ -54,7 +54,7 @@ New since run 5:
 - DCX-64: Erlang (not in the mixed corpus).
 - DCX-55b and DCX-54b: `export_list` and `out_calls`, which are not yet wired into answers.
 
-All landed checks plus these four passed together on build-host before the run. Raw results are in `research/bench-3way-20261030/results/run6-82ec474/` and `research/bench-3way-20261030/tasks/results/run4-82ec474/`.
+All landed checks plus these four passed together on the Linux benchmark host before the run. Raw results are in `research/bench-3way-20261030/results/run6-82ec474/` and `research/bench-3way-20261030/tasks/results/run4-82ec474/`.
 
 - Call-edge coverage on the mixed corpus: **9 of 10** (run 5: 8). OCaml now has edges through the `.mli` pairing. Shell still has none, because the probe samples bats `@test` blocks that call only external commands. Trail-Code has 7 and graphify 5.
 - Callers P / R, first page: 0.995 / 0.851, unchanged (all pages 0.968).
@@ -62,7 +62,7 @@ All landed checks plus these four passed together on build-host before the run. 
 
 ## Latest: run 5 and task-level re-run 3 (main `a906884`, 30 October, 16:39 and 17:05 UTC)
 
-dctx `a906884` adds four cards on top of run 4. DCX-50 spreads callers over files, makes bare calls skip methods, and ranks data-file keys below code. DCX-51 puts exported declarations first in outlines, gives read sites for config keys, adds line numbers to find, and ranks exact-word concepts first. DCX-52 orders callers by call-site count and fits pages to the budget. DCX-53 adds deeper Scala, Zig, Lua, Elixir and OCaml symbols. All 36 landed checks passed together on build-host before the run. The binary's sha256 starts with `76d8e9b59821`. Raw results are in `research/bench-3way-20261030/results/run5-a906884/` and `research/bench-3way-20261030/tasks/results/run3-a906884/`.
+dctx `a906884` adds four cards on top of run 4. DCX-50 spreads callers over files, makes bare calls skip methods, and ranks data-file keys below code. DCX-51 puts exported declarations first in outlines, gives read sites for config keys, adds line numbers to find, and ranks exact-word concepts first. DCX-52 orders callers by call-site count and fits pages to the budget. DCX-53 adds deeper Scala, Zig, Lua, Elixir and OCaml symbols. All 36 landed checks passed together on the Linux benchmark host before the run. The binary's sha256 starts with `76d8e9b59821`. Raw results are in `research/bench-3way-20261030/results/run5-a906884/` and `research/bench-3way-20261030/tasks/results/run3-a906884/`.
 
 **Task-level protocol** (70 questions, 354 gold facts; generator, mapping and scorer unchanged):
 
@@ -187,7 +187,7 @@ The dctx binary's sha256 is `72c6a31f0ee807ddd8840c7d8b85c9d1652dcb1001b948fec9d
 - DCX-31d `9c578fa`: Scala spans and calls.
 - DCX-29 `8ac04e4`: parser id bump, so caches from before call edges are rebuilt.
 
-All 20 card checks passed together on build-host before the run. Raw results are in `research/bench-3way-20261030/results/run3-9c578fa/`.
+All 20 card checks passed together on the Linux benchmark host before the run. Raw results are in `research/bench-3way-20261030/results/run3-9c578fa/`.
 
 | | Run 1 | Run 2 | Run 3 |
 |---|---|---|---|
@@ -256,7 +256,7 @@ All corpora and the edit-stability, network and coverage tables are in
 
 ## Method
 
-- Host build-host (Debian 13, Xeon E5-2680 v2), shared with other jobs. Load was 3.2 at the start, so absolute
+- Host: a Linux benchmark host (Debian 13, Xeon E5-2680 v2), shared with other jobs. Load was 3.2 at the start, so absolute
   latencies are noisy. Every measured command ran as `nice -n 10 taskset -c 24-31 unshare -Urn env -i …`, with no
   network, scratch HOME and caches, and `DO_NOT_TRACK=1`. One heavy process ran at a time. The network audit is a
   ptrace socket tracer, because strace is not installed.
@@ -285,7 +285,7 @@ Call and import edges (`19e90a1`), byte-stable answers (`ce18608`), `.env` omiss
 outline symbols for 25 formats and plain-text sections (`9c61ac9`, `e0821e3`, `839bd45`, `a32dad3`),
 neighbors depth 4 (`0de5ce1`), `hubs` (`6bc0cbc`), `grep` (`5691234`), `skeleton` (`2243c38`), `path` (`670e9e3`),
 `export` (`ac8408c`), `dctx mcp` (`50bbce4`) and a 1 GiB source ceiling (`5d26781`). Every card's own check, and
-then all 15 checks together on `ac8408c`, passed on build-host before the benchmark ran.
+then all 15 checks together on `ac8408c`, passed on the Linux benchmark host before the benchmark ran.
 
 ## Next
 
@@ -295,6 +295,6 @@ then all 15 checks together on `ac8408c`, passed on build-host before the benchm
    receivers and re-exports.
 4. Re-run the 70-question task protocol with a frozen model.
 
-## Independent benchmark (v1 card 6), 31.10.2026, run uncapped on build-host
+## Independent benchmark (v1 card 6), 31.10.2026, run uncapped on the Linux benchmark host
 
 Seeded selection of 3 repos the tools never saw (zoxide, requests, gin), gold from language servers and repo history, published regardless of outcome. Tasks: dctx 22/28 points, 31/36 facts, 6.85 facts per 1k tokens (Trail-Code 19/28, graphify 14/28). Callers against LSP gold, first page: dctx P 0.730 / R 0.341, Trail-Code P 0.731 / R 0.313, graphify P 0.920 / R 0.264. Honest read: dctx leads on task answers and token efficiency; caller recall on unseen repos is far below the in-house corpus (0.851), so the caller floors above hold only for the curated corpora. Full table and raw JSON: `docs/research/bench-independent/results/20261031T191225Z/`.

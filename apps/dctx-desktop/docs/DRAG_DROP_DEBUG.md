@@ -188,9 +188,9 @@ Drag leave - counter: 0
 [Drop]
 Drop event fired on DOM
 ✅ File drop event (tauri://file-drop): {...}
-  Payload: ["/Users/you/Desktop"]
-  Setting path: /Users/you/Desktop
-Dropped: /Users/you/Desktop
+  Payload: ["/path/to/Desktop"]
+  Setting path: /path/to/Desktop
+Dropped: /path/to/Desktop
 ```
 
 ## Still Not Working?

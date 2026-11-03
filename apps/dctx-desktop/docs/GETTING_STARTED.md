@@ -144,7 +144,7 @@ Create `~/.config/dctx-desktop/config.toml`:
 file_count_limit = 50000
 
 # Last used directory (auto-saved in future)
-last_directory = "/Users/you/projects"
+last_directory = "/path/to/projects"
 
 # Window size
 window_width = 1400

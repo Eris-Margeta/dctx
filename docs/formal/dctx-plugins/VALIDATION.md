@@ -11,7 +11,7 @@ sh docs/formal/dctx-plugins/check.sh
 ```
 
 Exit status: **0**. TLC 2.19 (08 August 2024, revision 5a47802), Java 21 on
-the authorized `the host project` VM. The nonempty-check predicate also returned zero.
+the authorized Linux VM. The nonempty-check predicate also returned zero.
 
 ```text
 PASS PP1-PP10: 8 baselines, 59 mutants, 37 reachability witnesses; 104 total
@@ -37,12 +37,12 @@ and baseline links are in [MUTATIONS.md](MUTATIONS.md).
 VM evidence directory (remote, not a local checkout path):
 
 ```text
-/path/to/workdir/the host project/build/dctx/PL-M/docs/formal/dctx-plugins/.runs/run.dCuuGM
+<evidence-directory>/docs/formal/dctx-plugins/.runs/<run-id>
 ```
 
 It contains `results.tsv`, `sha256.txt`, Java/settings records and the full
 TLC log for every configuration, including every counterexample. No `--pull`
-was used. The remote wrapper reported that its optional state log was
+was used. The remote wrapper reported that its optional external state log was
 not writable in the worker sandbox; this did not affect the command's zero
 exit or these owned evidence files.
 

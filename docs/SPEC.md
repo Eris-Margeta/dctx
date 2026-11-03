@@ -168,7 +168,7 @@ public corpus, ranked candidates MAY arrive as a plugin overlay with provenance
    Policy MAY later add named classes (`aws`, `gcp`, `ssh`, `jwt`). dctx never scans contents
    to decide. **Gate:** the adversarial corpus's planted `.env` value is
    absent from `pack` output and from the map cache; the path is listed. Checked for every
-   shape and every command by `lanes/DCX/checks/V1-1.zsh` (TC-F08 is closed).
+   shape and every command by `<repo>/scripts/checks/V1-1.zsh` (TC-F08 is closed).
 4. **No VCS in the core.** The core never reads `.git/`, never spawns `git`, never uses
    VCS object ids. Identity is dctx's own digest (§5). VCS-aware behaviour is a plugin.
    Landed (`crates/dctx-map-query/tests/no_git.rs`).

@@ -307,13 +307,13 @@ Migrate cache state by validating one known source manifest/artifact at a time, 
 7. **P7 — correct sharing:** a FactKey identifies one byte/extraction contract; path/context-dependent edges are resolved per compatible view.
 8. **P8 — progress:** with finite inputs, available capacity, fair maintenance and eventually released leases, publication/GC either completes or returns a typed refusal; a crashed writer cannot block forever.
 
-Model writer/publication/read-lease/GC interleavings before storage replacement, with crash points and non-vacuous mutation checks. Property tests cover P1–P8, with positive controls for every refusal path. This follows the project code guidelines and Rust standards; it is a future acceptance requirement, not a claim that the current implementation has already been formally verified.
+Model writer/publication/read-lease/GC interleavings before storage replacement, with crash points and non-vacuous mutation checks. Property tests cover P1–P8, with positive controls for every refusal path. This follows the [code guidelines](../standards/CODE-GUIDELINES.md) and [Rust standards](../standards/RUST-STANDARDS.md); it is a future acceptance requirement, not a claim that the current implementation has already been formally verified.
 
-## 5. Integration with a host application
+## 5. Integration with the Rust core
 
 **Recommend direct library linking through the existing kernel-owned `CodeMap` port.** The kernel's domain must not depend on dctx storage or frontend types. Its adapter depends on the stable `dctx` facade, maps typed requests/results to the kernel's bounded records, and injects root permissions, source capabilities, cache path, clock and budgets. This gives Eris one running kernel binary with no `dctx` subprocess, shared warm snapshots and no JSON encode/decode on the hot path. The standalone CLI remains useful to people and external workers.
 
-**R-60 is real and should be evolved, not described as missing.** Its packet specifies a process-first `dctx-codemap`, a fake, five verbs, re-declared JSON records, timeouts and bounded pipes. The inspected domain exposes those verbs and typed errors; DctxCli invokes `dctx map … --json --place …` without a shell, handles missing binary, timeout, output flood, busy and malformed envelopes, then kills/reaps on failure. That is a legitimate isolation adapter. It also repeats startup, process management and serialization and requires an independently compatible executable.
+**R-60 is real and should be evolved, not described as missing.** Its packet specifies a process-first `dctx-codemap`, a fake, five verbs, re-declared JSON records, timeouts and bounded pipes. The inspected domain exposes those verbs and typed errors; `DctxCli` invokes `dctx map … --json --place …` without a shell, handles missing binary, timeout, output flood, busy and malformed envelopes, then kills/reaps on failure. That is a legitimate isolation adapter. It also repeats startup, process management and serialization and requires an independently compatible executable.
 
 | Property | Current process adapter | Proposed linked adapter |
 |---|---|---|
@@ -335,7 +335,7 @@ Make these changes in successor packets to R-60 (do not rewrite its historical r
 
 The integration exit is one kernel process serving all five verbs from a pinned dctx revision, with a process-spawn spy proving **zero child processes**, plus fake/process/library contract parity for budgets, moved/gone, stale, denied and malformed-input behavior. Formal state-machine checks cover cooperative timeout/cancellation and index lifecycle; the linked failure limitations must remain visible to the operator. Do not claim the library gives the process adapter's hard containment.
 
-No new dependencies are added by this proposal. The the host project Rust dependency policy currently approves a specific list; the successor packet must record L1's explicit dctx facade/version/feature closure acceptance before implementation. Likewise mmap, PyO3, napi-rs, `syn`, GPUI and any Git crate are proposed capabilities requiring their normal dependency dossiers/review. This document is the concrete design for that decision, not a request to approve an unspecified library now.
+No new dependencies are added by this proposal. The [Rust dependency policy](../standards/RUST-STANDARDS.md) currently approves a specific list; the successor packet must record L1's explicit dctx facade/version/feature closure acceptance before implementation. Likewise mmap, PyO3, napi-rs, `syn`, GPUI and any Git crate are proposed capabilities requiring their normal dependency dossiers/review. This document is the concrete design for that decision, not a request to approve an unspecified library now.
 
 ## 6. Public structure
 

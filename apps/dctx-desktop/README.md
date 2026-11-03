@@ -87,7 +87,7 @@ bun run tauri:build
 
 1. **Drag & Drop**: Drag a folder from Finder/Explorer onto the window
 2. **Browse Button**: Click "📂 Browse Files" and use native picker
-3. **Manual Entry**: Type the full path (e.g., `/Users/you/projects/my-app`)
+3. **Manual Entry**: Type the full path (e.g., `/path/to/my-app`)
 
 ### 2. Generate Snapshot
 
@@ -137,7 +137,7 @@ default_template = "default"
 
 **Example desktop config** (`~/.config/dctx-desktop/config.toml`):
 ```toml
-last_directory = "/Users/you/projects/my-app"
+last_directory = "/path/to/my-app"
 window_width = 1200
 window_height = 800
 file_count_limit = 10000

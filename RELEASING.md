@@ -37,16 +37,17 @@ Use this explicit `--write` procedure instead of the old no-argument write
 instruction in `docs/ADR-006-Versioning-Strategy.md:32`; the unified desktop
 inventory in `docs/ADR-013-Monorepo-Structure.md:265` is historical.
 
-Refresh the lockfile on the remote builder after changing package versions:
+Refresh the lockfile on a Linux build host after changing package versions:
 
 ```zsh
-/path/to/bin/remote.sh build-host --src "$PWD" --name dctx-DCX-05 --pull Cargo.lock -- cargo check -p dctx-cli
+<repo>/scripts/remote.sh <linux-build-host> --src "$PWD" --name dctx-release --pull Cargo.lock -- cargo check -p dctx-cli
 git diff -- Cargo.lock
 ```
 
 Review every lockfile change; do not accept unrelated dependency upgrades. For
-remote infrastructure exit 255 or 75, retry once on build-host, then use `mint` with
-the same arguments. Never run Cargo directly on this Mac.
+remote infrastructure exit 255 or 75, retry once on the Linux build host, then use
+a fallback build host with the same arguments. Run Cargo on the build host rather
+than the local workstation.
 
 Move completed Unreleased entries into `## [X.Y.Z] — YYYY-MM-DD` using the actual
 release date, and open a fresh `## [Unreleased]` section above it when work resumes. The extractor
@@ -71,7 +72,7 @@ zsh -n tools/sync-version.sh
 zsh tools/sync-version.sh --check
 zsh tools/extract-changelog.sh "$(cat VERSION)"  # must be the dated candidate entry
 ruby -r yaml -e 'w = YAML.load_file(".github/workflows/release.yml"); abort "missing matrix" unless w.dig("jobs", "build", "strategy", "matrix", "include").size == 4'
-/path/to/bin/remote.sh build-host --src "$PWD" --name dctx-DCX-05 -- cargo build --locked --release -p dctx-cli --bin dctx-cli --target x86_64-unknown-linux-gnu
+<repo>/scripts/remote.sh <linux-build-host> --src "$PWD" --name dctx-release -- cargo build --locked --release -p dctx-cli --bin dctx-cli --target x86_64-unknown-linux-gnu
 ```
 
 The Ruby command parses YAML; also inspect every matrix tuple, target installation,
@@ -115,14 +116,14 @@ must be assessed independently of successful compilation and `--version`.
 
 ## Publication gate
 
-Before any future production/public release, load the production security gate
-and `security-audit` and complete the full relevant audit for the exact candidate
+Before any future production/public release, complete the required production
+security review and full relevant audit for the exact candidate
 revision and configuration, including independent review, validators and required
 sandbox/runtime evidence. The focused DCX-03 static sweep and ordinary CI do not
 satisfy this prerequisite. Keep findings, residual risks and coverage limits private.
 
 Follow the owner policy: select an explicit
-`/path/to/<project-root>/.private/security-audits/<release-id>/run-<N>`
+`<project-root>/.private/security-audits/<release-id>/run-<N>`
 evidence directory, verify the entire tree is ignored before writing in a Git
 project, and use owner-only permissions (exclude it from staging/export for a
 non-Git project). Use the separate overlay instead of the vendor default path.

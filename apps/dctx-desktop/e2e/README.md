@@ -11,8 +11,7 @@ bun install
 bun run e2e
 ```
 
-This uses `node e2e/runner.mjs` instead of HQ's `npx e2e`: that bin needs the
-separate private `e2e-runner` package. Playwright is pinned to 1.64.0.
+This uses `node e2e/runner.mjs`. Playwright is pinned to 1.64.0.
 The runner uses only local dependencies and never invokes Git (decision 078).
 It starts Vite at `http://127.0.0.1:1420`, refuses an existing server and closes
 Vite at the end. Set `E2E_PORT` to use another port for concurrent worktrees,

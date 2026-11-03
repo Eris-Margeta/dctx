@@ -140,9 +140,9 @@ Commonly Missed by Humans:
 
 ---
 
-## Large Directory Test: ~/workdir (Failed)
+## Large Directory Test (Failed)
 
-When testing on a large development directory (~/workdir), the bash approach **failed catastrophically**:
+When testing on a large development directory, the bash approach **failed catastrophically**:
 
 | Metric | Value |
 |--------|-------|

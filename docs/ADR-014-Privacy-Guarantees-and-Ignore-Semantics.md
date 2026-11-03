@@ -148,7 +148,7 @@ We will implement a three-tier rule system with formal privacy guarantees:
 
 **Verification:** `crates/dctx/tests/map_sensitive_files.rs`, the unit tests next to
 `is_secret_shaped_name`, `PolicyView::decide` and the pack scan, and the end-to-end check
-`lanes/DCX/checks/V1-1.zsh` (a git-tracked fixture with one canary per shape, run against every command).
+`<repo>/scripts/checks/V1-1.zsh` (a git-tracked fixture with one canary per shape, run against every command).
 
 ### `.git` (hard guard, v1)
 Any path with a `.git` segment, at any depth, is excluded by `PolicyView::decide` before the rule layers are
@@ -167,7 +167,7 @@ refused for listings and reads. Tests: `crates/dctx/src/adapters/fs.rs` and `cra
 This environment switch (dctx-cli `host::project_rules`) makes `pack` and the map verbs ignore every ignore file
 (global ignore, `.gitignore`, nested `.gitignore`, `.dctxignore`); omit files and the built-in rules still load.
 It does not touch the SENSITIVE deny, the `.git` guard or the symlink rules above: those do not come from rule
-files. `lanes/DCX/checks/V1-1.zsh` reruns its canary checks with the switch set.
+files. `<repo>/scripts/checks/V1-1.zsh` reruns its canary checks with the switch set.
 
 ---
 

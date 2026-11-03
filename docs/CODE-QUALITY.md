@@ -1,9 +1,9 @@
 # Code quality: DCX-04 first tranche
 
-Measured on build-host (Linux), 2026-10-22. Status: **escalated split** (`s: esc`),
+Measured on a Linux build host, 2026-10-22. Status: **escalated split** (`s: esc`),
 not a pedantic-clean workspace. Default workspace features were checked, excluding
 `dctx-desktop`; `dctx-desktop-api` and the Git plugin were included. Cargo was
-never run on the Mac. No dependency, version, manifest or runtime behavior changes.
+never run on the local workstation. No dependency, version, manifest or runtime behavior changes.
 
 ## Completed
 
@@ -28,12 +28,12 @@ never run on the Mac. No dependency, version, manifest or runtime behavior chang
 
 ## Reproduce the checks
 
-Run from `/path/to/project` using zsh. Every Cargo command below is
-prefixed with:
+Run from `<repo>` using zsh. Every Cargo command below is executed on a Linux
+build host with this prefix:
 
 ```sh
-/path/to/bin/remote.sh build-host \
-  --src /path/to/project --name dctx-DCX-04 --
+<repo>/scripts/remote.sh <linux-build-host> \
+  --src <repo> --name dctx-code-quality --
 ```
 
 | Arguments after the prefix | Exit | Meaning |
@@ -50,7 +50,7 @@ Early strict doc attempts exited 101 for the links described above. A diagnostic
 run also used `--keep-going` to expose the final broken link. The exact required
 command subsequently passed without that flag. No infrastructure exit 255/75
 occurred, so retry/fallback was unnecessary. Local checks are `test -s
-docs/CODE-QUALITY.md` and `git diff --check` (Mac/zsh).
+docs/CODE-QUALITY.md` and `git diff --check` (local workstation/zsh).
 
 ## Remaining work and explicit split
 
@@ -177,8 +177,8 @@ Full diagnostic counts by lint (without the `clippy::` prefix):
 | `implicit_hasher` | 1 |
 | `overly_complex_bool_expr` | 1 |
 
-The complete per-diagnostic queue is retained locally at
-`/path/to/lanes/DCX/w-DCX-04/pedantic-after-summary.json`
+The complete per-diagnostic queue is retained in the private working notes as
+`pedantic-after-summary.json`
 (SHA-256 `00e555f9919fd2bfbb0f576760bd0aefa4753d69bc3a975fd921d1ddd85cf896`). Each entry records lint, message, path and line. Raw
 before/after JSON and strict-check logs are alongside it. Re-run the JSON
 inventory after each follow-up because line numbers and toolchain lints drift.
@@ -186,5 +186,5 @@ inventory after each follow-up because line numbers and toolchain lints drift.
 Coverage limits: Linux default features only; desktop, optional-feature matrices,
 other targets, doc-test execution and a semantic review of every existing public
 comment were not covered by the documentation gates. Full workspace tests are
-left to the exact-commit CI run, recorded in the lane result. This work makes no
+left to the exact-commit CI run, recorded in the check results. This work makes no
 security audit, release, publication or production-readiness claim.

@@ -1,6 +1,4 @@
-# ==========================================
-# VALTER PROJECT IDENTITY (The Island Root)
-# ==========================================
+# dctx project metadata
 
 # 1. CORE METADATA
 # Main data that is shown in the DASHBOARD table
@@ -13,10 +11,6 @@ last_updated: "2026-01-12"
 
 operator: "Eris Margeta"
 client: "Open Source / Community"
-
-structure:
-  work_orders: "./docs/"
-  docs:        "./docs/DOCUMENTS/"
 
 tech_stack:
   backend: "Rust (Core & CLI)"

@@ -67,7 +67,7 @@ Desktop-specific overrides and additions:
 # Desktop-specific settings
 
 # Last used directory (auto-saved)
-last_directory = "/Users/you/projects/my-app"
+last_directory = "/path/to/my-app"
 
 # Window size
 window_width = 1200

@@ -1,6 +1,6 @@
 # Code guidelines for the harness and every place (decision 073, decision 074)
 
-Binding for the oracle, place agents and workers, in every language. Rust specifics: the host project/docs/RUST-STANDARDS.md.
+Binding for the oracle, place agents and workers, in every language. Rust specifics: `RUST-STANDARDS.md`.
 
 ## Written for the hierarchy that reads it
 
