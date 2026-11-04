@@ -13,6 +13,7 @@ excluded from cargo steps, because the Linux runner has no Tauri system librarie
 | Toolchain | print `rustc`, `cargo`, `cargo clippy` and `cargo nextest` versions |
 | Licence headers and manifests | `bash scripts/spdx_check.sh` (every crate declares Apache-2.0; LICENSE and NOTICE present) |
 | Third-party licences | `python3 scripts/third_party.py --out $RUNNER_TEMP/THIRD_PARTY.md`, then `diff` against the committed `THIRD_PARTY.md` (fails on a licence outside the allow-list or a stale file) |
+| Third-party npm licences | `python3 scripts/npm_licenses.py --check` (checks npm licence expressions and that `THIRD_PARTY_NPM.md` is current) |
 | Clippy | `cargo clippy --workspace --exclude dctx-desktop --all-targets -- -D warnings` (two allowed lints) |
 | Tests | `cargo nextest run --workspace --exclude dctx-desktop --no-fail-fast`, started with inherited descriptors closed |
 | Release build | `cargo build --release --locked -p dctx-cli` |
