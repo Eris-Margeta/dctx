@@ -11,6 +11,7 @@
 # The Linux build host has no Tauri system libraries, so cargo runs on the workspace without dctx-desktop,
 # exactly as CI and docs/STYLE.md do. The committed bench floors are checked by scripts/bench_floors.py.
 set -u
+[ -d "$HOME/.cargo/bin" ] && PATH="$HOME/.cargo/bin:$PATH"
 ROOT=$(cd "$(dirname "$0")/.." && pwd -P)
 quick=0; scan_only=0; arg=""
 usage() { sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'; exit "${1:-2}"; }

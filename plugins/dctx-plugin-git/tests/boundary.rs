@@ -48,8 +48,9 @@ fn worker_sources_have_no_direct_effects_and_carry_headers() {
         for token in FORBIDDEN {
             assert!(!source.contains(token), "{name} contains {token}");
         }
-        assert!(source.starts_with("//!"), "{name} lacks its //! header");
-        let lines = source.lines().count();
+        let body = source.strip_prefix("// SPDX-License-Identifier: Apache-2.0\n").unwrap_or(source);
+        assert!(body.starts_with("//!"), "{name} lacks its //! header");
+        let lines = body.lines().count();
         assert!(lines <= 300, "{name} has {lines} lines");
     }
     assert!(SOURCES[0].1.contains("#![forbid(unsafe_code)]") && SOURCES[1].1.contains("#![forbid(unsafe_code)]"));

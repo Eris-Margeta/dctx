@@ -35,6 +35,15 @@ jobs:
           cargo clippy --version
           cargo nextest --version
 
+      - name: Licence headers and manifests
+        run: bash scripts/spdx_check.sh
+
+      - name: Third-party licences
+        # Fails on a dependency licence outside the allow-list, or when THIRD_PARTY.md is stale.
+        run: |
+          python3 scripts/third_party.py --out "$RUNNER_TEMP/THIRD_PARTY.md"
+          diff -u THIRD_PARTY.md "$RUNNER_TEMP/THIRD_PARTY.md"
+
       - name: Clippy
         run: >
           cargo clippy --workspace --exclude dctx-desktop --all-targets --
@@ -55,3 +64,10 @@ jobs:
               close_fds=True,
           ))
           PY
+
+      - name: Release build
+        run: cargo build --release --locked -p dctx-cli
+
+      - name: Release gates
+        # code-scan, determinism, unrelated-edit and network gates on the release binary (cargo gates ran above).
+        run: scripts/release-check.sh --quick "$CARGO_TARGET_DIR/release/dctx-cli"
