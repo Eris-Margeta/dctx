@@ -335,3 +335,7 @@ GEMINI.md
 /docs/research/trail-code-2026-10/data/env.txt
 .env*
 !.env.example
+
+# TLC counterexample traces
+*_TTrace_*.tla
+*_TTrace_*.bin

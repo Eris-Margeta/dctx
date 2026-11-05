@@ -29,7 +29,6 @@ resolve_jar() {
   for c in \
     "$here/tools/tla2tools.jar" \
     /opt/tla/tla2tools.jar \
-    /opt/tla/tla2tools.jar \
     /usr/share/java/tla2tools.jar
   do
     if jar_ok "$c"; then
@@ -37,16 +36,6 @@ resolve_jar() {
       return 0
     fi
   done
-  if [ -d /path/to/workdir ]; then
-    for c in /opt/tla/tla2tools.jar \
-             /opt/tla/tla2tools.jar
-    do
-      if jar_ok "$c"; then
-        printf '%s\n' "$c"
-        return 0
-      fi
-    done
-  fi
   dest="${TLA2TOOLS_CACHE:-/var/tmp/dctx-tla2tools.jar}"
   if ! jar_ok "$dest"; then
     rm -f "$dest"

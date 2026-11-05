@@ -14,7 +14,7 @@ test -s docs/formal/dctx-plugins/check.sh
 sh docs/formal/dctx-plugins/check.sh
 ```
 
-`check.sh` follows the host project's Java/TLC pattern. It uses an existing
+`check.sh` uses an existing
 `tla2tools.jar` at the VM's standard installation locations, or the absolute
 `TLA2TOOLS_JAR` environment setting. It downloads nothing. Java, GNU timeout
 and sha256sum are VM prerequisites. `TLC_TIMEOUT` defaults to 300 seconds per
@@ -36,7 +36,7 @@ an explicit temporal property instead.
 Each invocation retains full TLC stdout/stderr, counterexamples, state metadata,
 per-case results, tool/source SHA-256 digests and Java/settings records under
 `.runs/run.*` **inside this owned directory on the VM**. The runner prints that
-path and each baseline's state count. Nothing is pulled into `.agent/`. A failed
+path and each baseline's state count. A failed
 run stops at the first unexpected outcome. An unchanged rerun is not part of
 this workflow; the kernel can independently execute the acceptance predicate.
 

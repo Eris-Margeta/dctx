@@ -1,6 +1,6 @@
 #!/bin/sh
 # TLC gate for PL-M / PLUGINS section 7.1: baselines, mutants and reachability.
-# Uses the VM's Java/TLC installation.
+# Uses the local Java/TLC installation (set TLA2TOOLS_JAR or install tla2tools.jar).
 # Keeps source hashes, complete counterexamples and metadata inside this directory.
 set -eu
 here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -17,8 +17,7 @@ if [ -z "$jar" ]; then
   for candidate in /opt/tla2tools.jar /opt/tla/tla2tools.jar \
     /opt/tlaplus/tla2tools.jar /usr/local/lib/tla2tools.jar \
     /usr/local/share/tla2tools.jar /usr/local/share/tlaplus/tla2tools.jar \
-    /usr/share/java/tla2tools.jar \
-    /opt/tla/tla2tools.jar; do
+    /usr/share/java/tla2tools.jar; do
     if [ -f "$candidate" ]; then jar=$candidate; break; fi
   done
 fi
@@ -78,14 +77,14 @@ while read -r cfg module outcome property extra; do
       baselines=$((baselines + 1))
       ;;
     mutant|witness)
-      if [ "$code" -eq 12 ] && grep -Fq "Invariant $property is violated." "$log" \
+      if [ "$code" -eq 12 ] && grep -Eq "Invariant $property (is|was) violated\." "$log" \
           && grep -Eq '^State 2:' "$log"; then
         good=true
       fi
       if [ "$outcome" = mutant ]; then mutants=$((mutants + 1)); else witnesses=$((witnesses + 1)); fi
       ;;
     temporal)
-      if [ "$code" -eq 13 ] && grep -Fq 'Temporal properties were violated.' "$log" \
+      if [ "$code" -eq 13 ] && grep -Eq 'Temporal properties were violated\.|Temporal property PP8Progress (is|was) violated\.' "$log" \
           && grep -Fq 'PROPERTY PP8Progress' "$cfg" \
           && grep -Eq 'Back to state|Stuttering' "$log"; then
         good=true
