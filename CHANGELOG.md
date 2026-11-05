@@ -10,6 +10,11 @@ dctx Enterprise.
 
 ## [Unreleased]
 
+- **Self-hosted CI** (`.github/workflows/ci.yml`): the job run step by step on a self-hosted Linux runner (16 cores) from a clean
+  `git archive` of the commit; results and badge recorded in `docs/ci/RESULTS.md` — 2279 run, 2279 passed, 0 skipped.
+- **Third-party npm licence inventory**: `scripts/npm_licenses.py` indexes every repository `package-lock.json` into
+  `THIRD_PARTY_NPM.md`; `npm_licenses.py --check` runs in CI and fails on a disallowed licence or a stale report.
+
 ## [1.1.0] - 2026-11-04
 
 Release **1.1.0** (`v1.1.0-rc1`). It folds in the 1.0.1 line, which was never released on its own.
