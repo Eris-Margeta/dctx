@@ -1,0 +1,437 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Byte-stability report · dctx</title>
+<script>/* Runs before first paint: theme and motion preference, so there is no flash. */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  d.className = d.className.replace('no-js', 'js');
+  try { t = localStorage.getItem('dctx-theme'); m = localStorage.getItem('dctx-motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
+})();</script>
+<link rel="stylesheet" href="/assets/site.2dbe17bb.css">
+<link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="Protocol, raw answers and limits of the 33/33 measurement.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="generator" content="dctx website builder">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://www.dctx.internet.technology/docs/stability/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="dctx">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Byte-stability report · dctx">
+<meta property="og:description" content="Protocol, raw answers and limits of the 33/33 measurement.">
+<meta property="og:url" content="https://www.dctx.internet.technology/docs/stability/">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-stability.dark.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Byte-stability report">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-stability.light.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Byte-stability report">
+<meta property="article:modified_time" content="2026-11-06T23:06:49Z">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Byte-stability report · dctx">
+<meta name="twitter:description" content="Protocol, raw answers and limits of the 33/33 measurement.">
+<meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/docs-stability.dark.png">
+<meta name="twitter:image:alt" content="dctx: Byte-stability report">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="license" href="https://www.apache.org/licenses/LICENSE-2.0">
+<link rel="author" href="https://tejl.com/">
+<link rel="help" href="/docs/">
+<link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
+<link rel="alternate" type="text/markdown" href="/docs/stability/index.md" title="Byte-stability report as Markdown">
+<link rel="prev" href="/docs/benchmark/">
+<link rel="next" href="/docs/benchmark-oct/">
+<script src="/assets/page.9bdcd125.js" defer></script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://www.dctx.internet.technology/#organization",
+   "name": "TEJL",
+   "url": "https://tejl.com/",
+   "logo": "https://www.dctx.internet.technology/assets/tejl-logo-off-black.svg",
+   "email": "info@tejl.com",
+   "sameAs": [
+    "https://tejl.hr/"
+   ],
+   "founder": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   }
+  },
+  {
+   "@type": "Person",
+   "@id": "https://www.dctx.internet.technology/#author",
+   "name": "Eris Margeta",
+   "url": "https://tejl.com/",
+   "sameAs": [
+    "https://github.com/Eris-Margeta"
+   ],
+   "jobTitle": "Founder",
+   "worksFor": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://www.dctx.internet.technology/#website",
+   "url": "https://www.dctx.internet.technology/",
+   "name": "dctx",
+   "inLanguage": "en",
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.dctx.internet.technology/search/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://www.dctx.internet.technology/#software",
+   "name": "dctx",
+   "softwareVersion": "1.1.0",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Linux (x86_64 tested)",
+   "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
+   "url": "https://www.dctx.internet.technology/",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "codeRepository": "https://github.com/Eris-Margeta/dctx",
+   "programmingLanguage": "Rust",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-1-0",
+   "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.dctx.internet.technology/docs/"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "@id": "https://www.dctx.internet.technology/docs/stability/#breadcrumb",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "dctx",
+     "item": "https://www.dctx.internet.technology/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Documentation",
+     "item": "https://www.dctx.internet.technology/docs/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Byte-stability report",
+     "item": "https://www.dctx.internet.technology/docs/stability/"
+    }
+   ]
+  },
+  {
+   "@type": "WebPage",
+   "@id": "https://www.dctx.internet.technology/docs/stability/#webpage",
+   "url": "https://www.dctx.internet.technology/docs/stability/",
+   "name": "Byte-stability report",
+   "description": "Protocol, raw answers and limits of the 33/33 measurement.",
+   "inLanguage": "en",
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "breadcrumb": {
+    "@id": "https://www.dctx.internet.technology/docs/stability/#breadcrumb"
+   }
+  },
+  {
+   "@type": "TechArticle",
+   "@id": "https://www.dctx.internet.technology/docs/stability/#article",
+   "headline": "STAB-01: byte stability on 0495f5f",
+   "description": "Protocol, raw answers and limits of the 33/33 measurement.",
+   "url": "https://www.dctx.internet.technology/docs/stability/",
+   "inLanguage": "en",
+   "about": {
+    "@id": "https://www.dctx.internet.technology/#software"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "mainEntityOfPage": {
+    "@id": "https://www.dctx.internet.technology/docs/stability/#webpage"
+   },
+   "wordCount": 1071,
+   "encoding": {
+    "@type": "MediaObject",
+    "contentUrl": "https://www.dctx.internet.technology/docs/stability/index.md",
+    "encodingFormat": "text/markdown"
+   },
+   "dateModified": "2026-11-06T23:06:49Z"
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr">
+ <div class="wrap hdr-in">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.1.0</span></a>
+  <nav class="nav" aria-label="Primary"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
+  <div class="hdr-end">
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
+  </div>
+ </div>
+</header>
+<main id="main">
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/docs/readme/">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/">Three-way benchmark</a></li><li><a href="/docs/stability/" aria-current="page">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/stability/" aria-current="page">Byte-stability report</a></li></ol></nav><h1 id="stab-01-byte-stability-on-0495f5f">STAB-01: byte stability on <code>0495f5f</code></h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/docs/research/stability-20261105/REPORT.md">Edit on GitHub</a> &middot; <a href="/docs/stability/index.md" type="text/markdown">Markdown</a> &middot; <code>docs/research/stability-20261105/REPORT.md</code> &middot; 1,071 words &middot; updated <time datetime="2026-11-06">6 November 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#protocol-and-pins">Protocol and pins</a></li><li><a href="#m7-and-acceptance-limits">M7 and acceptance limits</a></li><li><a href="#exact-commands-and-exits">Exact commands and exits</a></li></ul></details>
+<p>Measured <strong>2026-11-06 UTC</strong> on Linux from commit
+<code>0495f5f87717df5385209d306b92328a8cd96cf6</code>. The directory date is the card's
+requested evidence destination. No engine changes were made.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Measurement</th>
+<th class="al-right">Text</th>
+<th class="al-right">JSON</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Answers identical after unrelated edit</td>
+<td class="al-right">33/33</td>
+<td class="al-right">33/33</td>
+</tr>
+<tr>
+<td>Answers identical over five separate invocations</td>
+<td class="al-right">33/33</td>
+<td class="al-right">33/33</td>
+</tr>
+<tr>
+<td>Baseline → post-edit common-prefix ratio, minimum / mean</td>
+<td class="al-right">1.0 / 1.0</td>
+<td class="al-right">1.0 / 1.0</td>
+</tr>
+<tr>
+<td>Consecutive same-request transitions, five per case</td>
+<td class="al-right">165</td>
+<td class="al-right">165</td>
+</tr>
+<tr>
+<td>Same-request M7, minimum / mean</td>
+<td class="al-right">1.0 / 1.0</td>
+<td class="al-right">1.0 / 1.0</td>
+</tr>
+<tr>
+<td>Consecutive changing-question transitions</td>
+<td class="al-right">195</td>
+<td class="al-right">195</td>
+</tr>
+<tr>
+<td>Changing-question M7, minimum / median / mean</td>
+<td class="al-right">0.007795889 / 0.107142857 / 0.214830257</td>
+<td class="al-right">0.008776458 / 0.067594433 / 0.182446794</td>
+</tr>
+<tr>
+<td>Changing-question M7, total prefix bytes / total current bytes</td>
+<td class="al-right">0.061846978</td>
+<td class="al-right">0.079892615</td>
+</tr>
+</tbody>
+</table></div>
+<p>All <strong>405 CLI invocations exited 0</strong>, with empty stderr: 396 measurement invocations
+(66 cases × six runs), three target-resolution invocations, and six snapshot
+controls. All 33 default text headers were exactly <code># &lt;place&gt; &lt;verb&gt;</code>; all 33
+default JSON answers omitted snapshot, generation and <code>freshness.age_s</code>.
+<code>--meta --json</code> controls confirmed that each corpus's snapshot changed after the edit.</p>
+<h2 id="protocol-and-pins">Protocol and pins<a class="hd" href="#protocol-and-pins" aria-label="Link to Protocol and pins">#</a></h2>
+<p>The original producer is
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/trail-code-2026-10/scripts/phase_query.py"><code>phase_query.py</code></a>, with byte comparisons
+in <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/trail-code-2026-10/scripts/aggregate.py"><code>aggregate.py</code></a>, section 7. It runs
+five warm queries, appends a comment to an unrelated file in another directory,
+reruns queries, and restores the file. Its original evidence remains at
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/trail-code-2026-10/data/stability.csv"><code>data/stability.csv</code></a>.</p>
+<p>The original <code>/path/to/workdir/dctx-vs-trail</code> host tree is absent. The repository contains
+the scripts and historical results, but no original seven-corpus checkout set or
+the host's <code>scripts/corpora.json</code>. Checked alternate <code>bench3</code> and <code>perf-20261101</code>
+corpora paths were also absent. This run uses the card's fallback: three corpora
+extracted exclusively from tracked files at the pinned current commit. No fetch or
+network access was used. The new denominator differs from the historical 0/63;
+Trail-Code's historical 59/70 was not rerun.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Corpus</th>
+<th>Exact tracked prefix extracted</th>
+<th class="al-right">Files</th>
+<th>Symbol / file</th>
+<th>Unrelated file edited</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>parser-mixed</td>
+<td><code>crates/dctx-map-parse/tests/fixtures/</code></td>
+<td class="al-right">17</td>
+<td><code>helper</code>, <code>rust/src/support.rs</code></td>
+<td><code>ts/module.ts</code></td>
+</tr>
+<tr>
+<td>lexer-go</td>
+<td><code>crates/dctx-lex-go/</code></td>
+<td class="al-right">19</td>
+<td><code>Add</code>, <code>tests/fixtures/basic.go</code></td>
+<td><code>src/lib.rs</code></td>
+</tr>
+<tr>
+<td>map-query</td>
+<td><code>crates/dctx-map-query/src/</code></td>
+<td class="al-right">30</td>
+<td><code>render_answer_at</code>, <code>adapters/output.rs</code></td>
+<td><code>domain/ranking.rs</code></td>
+</tr>
+</tbody>
+</table></div>
+<p>Each prefix is copied in full using <code>git ls-tree -r --name-only &lt;pin&gt; -- &lt;prefix&gt;</code>
+and <code>git show &lt;pin&gt;:&lt;path&gt;</code>, retaining paths relative to the prefix. Every file's
+size and SHA-256, and the CLI binary SHA-256, are in <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/corpora.json"><code>corpora.json</code></a>.
+Work copies and isolated cache/config directories live in a disposable <code>/tmp</code>
+directory. The live worktree's corpus files are never edited.</p>
+<p>The original applicable map query shapes are retained: <code>find --limit 10</code>, inbound
+<code>neighbors --edge calls</code> at depths 1 and 2, outbound neighbors, <code>map --depth 2
+--limit 40</code>, <code>read</code>, and <code>explain</code>. Each now runs in <strong>both</strong> formats. The current
+bounded <code>skeleton</code>, <code>grep</code>, <code>hubs</code>, and <code>path</code> verbs add four shapes per corpus,
+again in both formats: 11 × 2 × 3 = 66 cases. Stable target IDs are resolved by
+<code>find --json --limit 40</code>, matching exact path and symbol. <code>path</code> tests a file's
+containment edge to that symbol. <code>grep</code> is confined to the target file.</p>
+<p>Default budgets and default output are used, without <code>--meta</code> in the measured
+answers. There are five warm sweeps, separated by 1.05 seconds, then a sixth sweep
+after appending exactly <code>\n// STAB-01 unrelated comment\n</code> to the named unrelated
+file. The comment is outside declarations and contains none of the queried names.
+It changes snapshot identity without changing the selected declarations, calls,
+search hits or hub counts. Original bytes are restored in a <code>finally</code> block and
+verified. Configuration and caches are isolated using <code>XDG_CONFIG_HOME</code>,
+<code>XDG_CACHE_HOME</code> and <code>DCTX_CACHE_DIR</code>; inherited <code>DCTX_*</code> overrides are removed.</p>
+<p>Every JSON case has records except outbound neighbors for the two leaf functions
+<code>helper</code> and <code>Add</code>. Their empty answers are included. All three inbound-neighbor
+cases have records, all paths are found, and <code>render_answer_at</code> has nine returned
+outbound neighbors plus eleven more in the bounded page. No cursor pages were
+followed. Whole-graph <code>export</code> has no unrelated graph input and is outside this
+bounded-answer protocol. The historical legacy snapshot overview, Trail-only grep
+and no-refresh shapes are outside the map-answer comparison.</p>
+<h2 id="m7-and-acceptance-limits">M7 and acceptance limits<a class="hd" href="#m7-and-acceptance-limits" aria-label="Link to M7 and acceptance limits">#</a></h2>
+<p>For each transition, M7 = longest common <strong>byte</strong> prefix of previous and current
+stdout / <strong>current</strong> stdout byte length. Both block lengths and the prefix length
+are stored in <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/turn-prefixes.csv"><code>turn-prefixes.csv</code></a>; there are no empty blocks.
+No whitespace, JSON fields, paths, timestamps or newlines are normalized.</p>
+<p>The same-request trace is each case's five warm answers followed by its post-edit
+answer: five consecutive transitions per case, 330 total. The additional
+changing-question trace uses actual invocation order, separately per corpus and
+format: the 11 query shapes in the order above, repeated over six sweeps; 65
+transitions per stream, 390 total. Text and JSON are separate context-block streams.
+These are recorded tool-answer traces, with one answer treated as one injected
+block; there is no provider cache-hit or task-acceptance measurement.</p>
+<p>The local unrelated-edit and five-run JSON gates pass. The low changing-question
+ratios show why this result cannot establish §12.1's T0–T3 invariant or its recorded
+tier-context M7 ≥ 0.9 gate. Tier layering remains <strong>target</strong>. No cross-platform,
+thread-count, changed-answer-content, or full original benchmark gate is claimed.
+No unrelated-edit instability was observed, so there is no instability reproducer.</p>
+<p>The three text <code>read</code> pages actually include their selected source bodies. Text
+<code>explain</code> still consists of header and id/kind/path, so §11's richer text-page
+contract remains a target. Other text fields, JSON compaction and provenance-trailer
+contracts were not promoted to landed by this measurement.</p>
+<h2 id="exact-commands-and-exits">Exact commands and exits<a class="hd" href="#exact-commands-and-exits" aria-label="Link to Exact commands and exits">#</a></h2>
+<p>Run from <code>/path/to/workdir/codex/STAB-01R</code>:</p>
+<div class="hl"><pre><code><span class="t-nb">export</span><span class="t-w"> </span><span class="t-nv">PATH</span><span class="t-o">=</span><span class="t-nv">$HOME</span>/.cargo/bin:<span class="t-nv">$PATH</span>
+<span class="t-nb">export</span><span class="t-w"> </span><span class="t-nv">CARGO_TARGET_DIR</span><span class="t-o">=</span><span class="t-nv">$PWD</span>/.target-stab
+cargo<span class="t-w"> </span>--offline<span class="t-w"> </span>build<span class="t-w"> </span>--locked<span class="t-w"> </span>-p<span class="t-w"> </span>dctx-cli<span class="t-w"> </span>&gt;<span class="t-w"> </span>/tmp/stab-01-build.log<span class="t-w"> </span><span class="t-m">2</span>&gt;<span class="t-p">&amp;</span><span class="t-m">1</span>
+</code></pre></div>
+
+<p>Exit <strong>101</strong>: configured <code>sccache</code> failed with <code>Operation not permitted</code>, before
+compilation. A retry after <code>unset RUSTC_WRAPPER</code>, with output redirected to
+<code>/tmp/stab-01-build-no-wrapper.log</code>, also exited <strong>101</strong>: Cargo's user config still
+specified <code>build.rustc-wrapper = "sccache"</code>.</p>
+<div class="hl"><pre><code><span class="t-nb">export</span><span class="t-w"> </span><span class="t-nv">PATH</span><span class="t-o">=</span><span class="t-nv">$HOME</span>/.cargo/bin:<span class="t-nv">$PATH</span>
+<span class="t-nb">export</span><span class="t-w"> </span><span class="t-nv">CARGO_TARGET_DIR</span><span class="t-o">=</span><span class="t-nv">$PWD</span>/.target-stab
+<span class="t-nb">export</span><span class="t-w"> </span><span class="t-nv">RUSTC_WRAPPER</span><span class="t-o">=</span>
+cargo<span class="t-w"> </span>--offline<span class="t-w"> </span>build<span class="t-w"> </span>--locked<span class="t-w"> </span>-p<span class="t-w"> </span>dctx-cli<span class="t-w"> </span>&gt;<span class="t-w"> </span>/tmp/stab-01-build-direct.log<span class="t-w"> </span><span class="t-m">2</span>&gt;<span class="t-p">&amp;</span><span class="t-m">1</span>
+python3<span class="t-w"> </span>docs/research/stability-20261105/measure.py<span class="t-w"> </span>&gt;<span class="t-w"> </span>/tmp/stab-01-measure.log<span class="t-w"> </span><span class="t-m">2</span>&gt;<span class="t-p">&amp;</span><span class="t-m">1</span>
+python3<span class="t-w"> </span>docs/research/stability-20261105/verify.py
+git<span class="t-w"> </span>diff<span class="t-w"> </span>--check
+</code></pre></div>
+
+<p>Exits: build <strong>0</strong>; measurement <strong>0</strong>; independent raw-data audit <strong>0</strong>;
+<code>git diff --check</code> <strong>0</strong>. Build logs and <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/measurement.txt"><code>measurement.txt</code></a> are
+preserved here. <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/commands.md"><code>commands.md</code></a> lists every query shape and setup/control
+command; <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/runs.jsonl"><code>runs.jsonl</code></a> records all 405 exact argv arrays, shell-quoted
+commands, working directories, environment overrides, exits, full stdout/stderr,
+byte counts and SHA-256 hashes. <code>measure.py</code> records a fresh run only when no
+<code>runs.jsonl</code> exists; use a fresh copy of the evidence directory to repeat it.</p>
+<p><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/stability.csv"><code>stability.csv</code></a> is the new measurement. The adjacent
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/stability-original.csv"><code>stability-original.csv</code></a> is a byte-for-byte copy of the
+historical CSV, SHA-256
+<code>46b54db2fb469dc4df70eaa0bf22b458a8089f437cdee3294efe071314280266</code>.
+Placing both here keeps all writes within the card's own set; the historical
+source file was neither overwritten nor modified.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/benchmark/" rel="prev"><span>Previous</span>Three-way benchmark</a><a class="next" href="/docs/benchmark-oct/" rel="next"><span>Next</span>Earlier two-way study</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#protocol-and-pins">Protocol and pins</a></li><li class="l2"><a href="#m7-and-acceptance-limits">M7 and acceptance limits</a></li><li class="l2"><a href="#exact-commands-and-exits">Exact commands and exits</a></li></ul></nav></div>
+</main>
+<footer class="ftr">
+ <div class="wrap">
+  <div class="ftr-grid">
+   <div class="ftr-brand">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
+    <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p class="mono small">dctx 1.1.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+   </div>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
+  </div>
+  <div class="ftr-bottom">
+   <div>
+    <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+   </div>
+   <div class="credit">
+    <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>
+    <a class="credit-logo" href="https://tejl.com/" aria-label="TEJL, publisher of dctx"><img src="/assets/tejl-logo-off-black.svg" width="818" height="422" alt="" loading="lazy" decoding="async"></a>
+   </div>
+  </div>
+ </div>
+</footer>
+</body>
+</html>

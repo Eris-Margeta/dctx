@@ -8,7 +8,7 @@
   "license": {"name": "Apache-2.0", "url": "https://www.apache.org/licenses/LICENSE-2.0"},
   "contact": {"name": "TEJL", "url": "https://tejl.com/", "email": "info@tejl.com"}
  },
- "servers": [{"url": "https://dctx.internet.technology"}],
+ "servers": [{"url": "https://www.dctx.internet.technology"}],
  "paths": {
   "/api/v1/health": {
    "get": {

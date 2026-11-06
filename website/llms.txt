@@ -1,0 +1,33 @@
+# dctx
+
+> The context engine for AI-assisted software development. Fewer tokens. Stable prefixes. Exact source. One policy for every workflow.
+
+dctx 1.1.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short: https://www.dctx.internet.technology/llms-small.txt
+
+## Docs
+- [README](https://www.dctx.internet.technology/docs/readme/index.md): install, quick start, map mode
+- [Specification](https://www.dctx.internet.technology/docs/spec/index.md): constraints and roadmap
+- [Map mode](https://www.dctx.internet.technology/docs/map-mode/index.md): every map verb
+- [Agent snippet](https://www.dctx.internet.technology/docs/agents/index.md): AGENTS.md text
+- [All documents](https://www.dctx.internet.technology/docs/): with Markdown twins
+
+## CLI
+- [CLI reference](https://www.dctx.internet.technology/cli/): help, env, exit codes, MCP tools
+- [Languages](https://www.dctx.internet.technology/languages/): 50 languages by tier
+
+## Examples
+- [Examples](https://www.dctx.internet.technology/examples/): every command, exact output
+- [Templates](https://www.dctx.internet.technology/templates/): built-in templates
+- [Playground](https://www.dctx.internet.technology/playground/): API: /api/v1/openapi.json
+
+## Evidence
+- [Benchmarks](https://www.dctx.internet.technology/benchmarks/): tables and caveats
+- [Stability report](https://www.dctx.internet.technology/docs/stability/index.md): 33/33 protocol
+
+## Project
+- [Security](https://www.dctx.internet.technology/security/index.md): private reports
+- [Contributing](https://www.dctx.internet.technology/docs/contributing/index.md): DCO
+
+## Optional
+- [Changelog](https://www.dctx.internet.technology/changelog/): releases
+- [llms-full.txt](https://www.dctx.internet.technology/llms-full.txt): everything

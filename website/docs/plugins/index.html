@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plugins guide · dctx</title>
+<script>/* Runs before first paint: theme and motion preference, so there is no flash. */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  d.className = d.className.replace('no-js', 'js');
+  try { t = localStorage.getItem('dctx-theme'); m = localStorage.getItem('dctx-motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
+})();</script>
+<link rel="stylesheet" href="/assets/site.2dbe17bb.css">
+<link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="The plugin boundary, capabilities, consent and current limits.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="generator" content="dctx website builder">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://www.dctx.internet.technology/docs/plugins/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="dctx">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Plugins guide · dctx">
+<meta property="og:description" content="The plugin boundary, capabilities, consent and current limits.">
+<meta property="og:url" content="https://www.dctx.internet.technology/docs/plugins/">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-plugins.dark.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Plugins guide">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-plugins.light.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Plugins guide">
+<meta property="article:modified_time" content="2026-10-18T06:32:07+02:00">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Plugins guide · dctx">
+<meta name="twitter:description" content="The plugin boundary, capabilities, consent and current limits.">
+<meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/docs-plugins.dark.png">
+<meta name="twitter:image:alt" content="dctx: Plugins guide">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="license" href="https://www.apache.org/licenses/LICENSE-2.0">
+<link rel="author" href="https://tejl.com/">
+<link rel="help" href="/docs/">
+<link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
+<link rel="alternate" type="text/markdown" href="/docs/plugins/index.md" title="Plugins guide as Markdown">
+<link rel="prev" href="/docs/agents/">
+<link rel="next" href="/docs/exit-codes/">
+<script src="/assets/page.9bdcd125.js" defer></script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://www.dctx.internet.technology/#organization",
+   "name": "TEJL",
+   "url": "https://tejl.com/",
+   "logo": "https://www.dctx.internet.technology/assets/tejl-logo-off-black.svg",
+   "email": "info@tejl.com",
+   "sameAs": [
+    "https://tejl.hr/"
+   ],
+   "founder": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   }
+  },
+  {
+   "@type": "Person",
+   "@id": "https://www.dctx.internet.technology/#author",
+   "name": "Eris Margeta",
+   "url": "https://tejl.com/",
+   "sameAs": [
+    "https://github.com/Eris-Margeta"
+   ],
+   "jobTitle": "Founder",
+   "worksFor": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://www.dctx.internet.technology/#website",
+   "url": "https://www.dctx.internet.technology/",
+   "name": "dctx",
+   "inLanguage": "en",
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.dctx.internet.technology/search/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://www.dctx.internet.technology/#software",
+   "name": "dctx",
+   "softwareVersion": "1.1.0",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Linux (x86_64 tested)",
+   "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
+   "url": "https://www.dctx.internet.technology/",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "codeRepository": "https://github.com/Eris-Margeta/dctx",
+   "programmingLanguage": "Rust",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-1-0",
+   "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.dctx.internet.technology/docs/"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "@id": "https://www.dctx.internet.technology/docs/plugins/#breadcrumb",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "dctx",
+     "item": "https://www.dctx.internet.technology/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Documentation",
+     "item": "https://www.dctx.internet.technology/docs/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Plugins guide",
+     "item": "https://www.dctx.internet.technology/docs/plugins/"
+    }
+   ]
+  },
+  {
+   "@type": "WebPage",
+   "@id": "https://www.dctx.internet.technology/docs/plugins/#webpage",
+   "url": "https://www.dctx.internet.technology/docs/plugins/",
+   "name": "Plugins guide",
+   "description": "The plugin boundary, capabilities, consent and current limits.",
+   "inLanguage": "en",
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "breadcrumb": {
+    "@id": "https://www.dctx.internet.technology/docs/plugins/#breadcrumb"
+   }
+  },
+  {
+   "@type": "TechArticle",
+   "@id": "https://www.dctx.internet.technology/docs/plugins/#article",
+   "headline": "Plugins",
+   "description": "The plugin boundary, capabilities, consent and current limits.",
+   "url": "https://www.dctx.internet.technology/docs/plugins/",
+   "inLanguage": "en",
+   "about": {
+    "@id": "https://www.dctx.internet.technology/#software"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "mainEntityOfPage": {
+    "@id": "https://www.dctx.internet.technology/docs/plugins/#webpage"
+   },
+   "wordCount": 982,
+   "encoding": {
+    "@type": "MediaObject",
+    "contentUrl": "https://www.dctx.internet.technology/docs/plugins/index.md",
+    "encodingFormat": "text/markdown"
+   },
+   "dateModified": "2026-10-18T06:32:07+02:00"
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr">
+ <div class="wrap hdr-in">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.1.0</span></a>
+  <nav class="nav" aria-label="Primary"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
+  <div class="hdr-end">
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
+  </div>
+ </div>
+</header>
+<main id="main">
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/docs/readme/">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/" aria-current="page">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/">Three-way benchmark</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/plugins/" aria-current="page">Plugins guide</a></li></ol></nav><h1 id="plugins">Plugins</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/PLUGINS.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/docs/guides/PLUGINS.md">Edit on GitHub</a> &middot; <a href="/docs/plugins/index.md" type="text/markdown">Markdown</a> &middot; <code>docs/guides/PLUGINS.md</code> &middot; 982 words &middot; updated <time datetime="2026-10-18">18 October 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#bundled-git-plugin-and-consent">Bundled Git plugin and consent</a></li><li><a href="#cli-reference">CLI reference</a></li><li><a href="#desktop-settings--plugins">Desktop: Settings &gt; Plugins</a></li><li><a href="#strict-build">Strict build</a></li><li><a href="#trust-and-signatures">Trust and signatures</a></li><li><a href="#what-is-not-yet-available">What is not yet available</a></li></ul></details>
+<p>A plugin adds commands or hooks through a bounded, versioned JSON protocol over
+stdio. The host brokers its requested effects; installation, enablement,
+capability consent and execution admission are separate steps. Bundled code can
+run as a worker of the same executable; independently installed artifacts use
+the plugin protocol. Availability is limited as described below.
+dctx, the bundled Git plugin and this guide are Apache-2.0 (decision 078).</p>
+<h2 id="bundled-git-plugin-and-consent">Bundled Git plugin and consent<a class="hd" href="#bundled-git-plugin-and-consent" aria-label="Link to Bundled Git plugin and consent">#</a></h2>
+<p>The default CLI includes <code>dctx/git</code> version <code>1.0.0</code>, with alias <code>dctx git</code> and
+the verbs <code>status</code> and <code>protect</code>. The catalog defaults to enabled. A fresh CLI
+without a consent record reports <code>enabled</code> with <code>needs-consent</code>; shipping the
+worker does not grant its capabilities or guarantee that it can launch.
+<code>dctx git</code> is a plugin alias, not a general Git passthrough.</p>
+<p>The <a href="https://github.com/Eris-Margeta/dctx/blob/main/crates/dctx-cli/src/plugin/bundled.rs">bundled manifest capabilities</a>
+disclose these grants:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Capability</th>
+<th>Bound</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Required <code>file.read</code></td>
+<td>Project <code>.gitignore</code>, at most 1,048,576 bytes.</td>
+</tr>
+<tr>
+<td>Required <code>file.write</code></td>
+<td>Existing project <code>.gitignore</code> only (<code>create=false</code>); growth at most 4,096 bytes, total at most 1,052,672 bytes.</td>
+</tr>
+<tr>
+<td>Optional <code>program.run</code></td>
+<td>Program <code>git</code>, operation <code>git.add-ignore</code>, resource <code>git-admin:stage-ignore</code>, output at most 65,536 bytes.</td>
+</tr>
+<tr>
+<td>Outputs / network</td>
+<td>Neither requested.</td>
+</tr>
+</tbody>
+</table></div>
+<p>This narrow optional Git recipe belongs to the plugin boundary. The map/core
+does not run Git, read <code>.git/</code> or use Git hashes for identity (decision 078).</p>
+<p>Review the requested capabilities before approving:</p>
+<div class="hl"><pre><code>dctx<span class="t-w"> </span>plugin<span class="t-w"> </span>list
+dctx<span class="t-w"> </span>plugin<span class="t-w"> </span>info<span class="t-w"> </span>dctx/git<span class="t-w"> </span>--json
+dctx<span class="t-w"> </span>plugin<span class="t-w"> </span><span class="t-nb">enable</span><span class="t-w"> </span>dctx/git<span class="t-w"> </span>--approve
+dctx<span class="t-w"> </span>plugin<span class="t-w"> </span>disable<span class="t-w"> </span>dctx/git
+</code></pre></div>
+
+<p><code>--approve</code> records consent for the displayed capability set. New installations
+remain inactive until enabled; combined <code>install --enable</code> requires <code>--approve</code>.
+Capability expansion can require fresh consent. Explicit disable persists
+across updates. <code>enable --project PATH</code> scopes consent to a project; omitting it
+uses user scope. <code>disable --project PATH</code> is accepted/reported, but the current
+CLI disable operation is user-wide.</p>
+<p>The desktop presents these states:</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>State</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enabled</code></td>
+<td>Enabled in the registry; execution still requires admission.</td>
+</tr>
+<tr>
+<td><code>needs-consent</code></td>
+<td>Review and approve the requested capabilities.</td>
+</tr>
+<tr>
+<td><code>disabled</code></td>
+<td>Disabled by the user.</td>
+</tr>
+<tr>
+<td><code>failed</code></td>
+<td>A failure is reported; inspect the last failure message.</td>
+</tr>
+</tbody>
+</table></div>
+<p>The CLI additionally separates enablement (<code>inactive</code>, <code>enabled</code>, <code>disabled</code>)
+from consent (<code>inactive</code>, <code>needs-consent</code>, <code>granted</code>, <code>disabled</code>) and reports
+worker availability. A strict build lists the bundled catalog as disabled,
+with consent <code>unavailable</code> and worker <code>excluded</code>.</p>
+<h2 id="cli-reference">CLI reference<a class="hd" href="#cli-reference" aria-label="Link to CLI reference">#</a></h2>
+<p>These are the command shapes from the plugin help renderer
+(<a href="https://github.com/Eris-Margeta/dctx/blob/main/crates/dctx-cli/src/plugin/render.rs"><code>render.rs</code></a>) and
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/crates/dctx-cli/src/plugin/parse.rs"><code>parse.rs</code></a>:</p>
+<div class="hl"><pre><code>dctx plugin search [query] [--refresh] [--json]
+dctx plugin install &lt;owner/repo&gt;[@version] [--enable --approve] [--json]
+dctx plugin install --url &lt;https-url&gt; --id &lt;publisher/name&gt; [--json]
+dctx plugin install --file &lt;bundle&gt; --id &lt;publisher/name&gt; [--json]
+dctx plugin list [--json]
+dctx plugin info &lt;id&gt; [--json]
+dctx plugin enable &lt;id&gt; [--project &lt;path&gt;] [--approve] [--json]
+dctx plugin disable &lt;id&gt; [--project &lt;path&gt;] [--json]
+dctx plugin remove &lt;id&gt; [--json]
+dctx plugin update [&lt;id&gt;] [--version &lt;version&gt;] [--check] [--json]
+dctx plugin verify [&lt;id&gt;] [--refresh-trust] [--json]
+dctx plugin run &lt;id&gt; -- &lt;args&gt;
+dctx git &lt;status|protect&gt;
+</code></pre></div>
+
+<p><code>dctx plugin</code>, <code>dctx plugin help</code>, <code>--help</code> and <code>-h</code> show plugin help.
+Search accepts one query argument; quote phrases. Search and list use cached
+metadata; <code>search --refresh</code> requests a fetch. List and help start no worker,
+fetch nothing and do not create a project <code>.dctx/</code> directory.</p>
+<p>Install accepts exactly one source: repository locator, HTTPS manifest URL or
+offline bundle. URL/file sources require <code>--id</code>; the parser also accepts
+<code>--enable --approve</code> with those sources. <code>update --check</code> reports a candidate
+without downloading; omitting the ID in update/verify selects the bundled plugin.
+<code>verify --refresh-trust</code> requests a revocation freshness check. Bundled updates
+come with the containing CLI/app release. <code>remove</code> masks the bundled copy when
+applicable. The current product's offline limits still apply to these commands.</p>
+<p><code>run</code> requires the <code>--</code> separator. The Git alias rejects that separator.
+The parser recognizes <code>--json</code> for plugin and alias requests, including <code>run</code>,
+and strips it before forwarding plugin arguments.</p>
+<h2 id="desktop-settings--plugins">Desktop: Settings &gt; Plugins<a class="hd" href="#desktop-settings--plugins" aria-label="Link to Desktop: Settings &gt; Plugins">#</a></h2>
+<p>Open <strong>Settings &gt; Plugins</strong> to inspect bundled/installed source, version,
+state, requested capabilities and the last failure. <strong>Refresh plugins</strong> reloads
+the list. <strong>Enable</strong> and <strong>Disable</strong> call the host management API.
+<strong>Grant consent</strong> opens a review dialog with plugin ID, version, artifact
+SHA-256, capability descriptions and exact grants/bounds. <strong>Confirm grant</strong>
+records user-wide consent for all projects; <strong>Cancel</strong> closes the dialog.
+<strong>Check for update</strong> reports cached information and explicitly states that
+online discovery is unavailable. These behaviors are implemented in
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/apps/dctx-desktop/src/plugins.ts"><code>plugins.ts</code></a>; opening settings does
+not itself execute plugin code or fetch from a network.</p>
+<h2 id="strict-build">Strict build<a class="hd" href="#strict-build" aria-label="Link to Strict build">#</a></h2>
+<p>The <a href="https://github.com/Eris-Margeta/dctx/blob/main/crates/dctx/Cargo.toml"><code>dctx</code> library</a> includes the optional
+<code>plugin-runtime</code> feature in its defaults. Hosts requiring the engine without
+that runtime must disable defaults and select <code>pack</code>, <code>map</code>, <code>templates</code>, <code>fs</code>,
+<code>segments</code>, <code>cache</code> as needed. The runtime adds the host, platform and protocol
+dependencies; sessions still require an explicit host.</p>
+<p>For the <a href="https://github.com/Eris-Margeta/dctx/blob/main/crates/dctx-cli/Cargo.toml">CLI</a>, select
+<code>--no-default-features --features strict</code> when building. Cargo features are
+additive: selecting <code>strict</code> alone leaves defaults enabled. This composition
+excludes <code>dctx-plugin-host</code>, <code>dctx-plugin-platform</code> and <code>dctx-plugin-git</code> from
+normal dependencies. Management metadata/protocol/distribution code remains;
+strict does not mean that every crate whose name contains <code>plugin</code> disappears.</p>
+<h2 id="trust-and-signatures">Trust and signatures<a class="hd" href="#trust-and-signatures" aria-label="Link to Trust and signatures">#</a></h2>
+<p>Distribution verifies detached Ed25519 signatures over domain-separated exact
+manifest/index bytes, checks SHA-256 artifact integrity, and uses pinned
+publisher keys, revocation freshness and rollback checks. A key downloaded
+beside an artifact is not an independent trust anchor. Verification does not
+grant capabilities or establish confinement. The production verifier never
+signs or generates keys; signing belongs only in separate release tooling
+(test fixtures use test keys). <strong>Unverified:</strong> a completed production release
+signing tool in this checkout; the design describes it as separate work.
+The product CLI currently supplies no index key and no TLS network adapter.</p>
+<h2 id="what-is-not-yet-available">What is not yet available<a class="hd" href="#what-is-not-yet-available" aria-label="Link to What is not yet available">#</a></h2>
+<ul>
+<li>Qualified native plugin launch on any OS. Linux has restricted-process
+  building blocks, but arbitrary third-party ELF launch remains unsupported;
+  macOS lacks the reviewed Seatbelt/initial-exec composition; Windows and other
+  targets are unsupported. The platform provider also refuses bundled launch
+  and the Git recipe. A consent record cannot bypass these admission failures.</li>
+<li>Online discovery, downloads and updates in the current product wiring.
+  Search can inspect cached metadata and the distribution engine supports
+  verified offline bundles, but network refresh needs a configured trust key
+  and network adapter. The desktop explicitly reports offline update discovery.</li>
+<li>Public plugin publication through this CLI. There is no <code>plugin publish</code>
+  command. The default discovery URL is <code>https://example.invalid/dctx/index.json</code>;
+  a live public registry/release publication is <strong>unverified</strong>. Local index
+  tooling and signed fixture tests do not establish public availability.</li>
+</ul>
+<p>Sources: <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/design/PLUGINS.md">plugin design</a>,
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/crates/dctx-plugin-platform/README.md">native platform limits</a>,
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/crates/dctx-plugin-distribution/src/domain/signature.rs">Ed25519 verification</a>,
+and the <a href="/docs/crate-map/">crate map</a>.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/agents/" rel="prev"><span>Previous</span>Agent snippet</a><a class="next" href="/docs/exit-codes/" rel="next"><span>Next</span>CLI exit codes</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#bundled-git-plugin-and-consent">Bundled Git plugin and consent</a></li><li class="l2"><a href="#cli-reference">CLI reference</a></li><li class="l2"><a href="#desktop-settings--plugins">Desktop: Settings &gt; Plugins</a></li><li class="l2"><a href="#strict-build">Strict build</a></li><li class="l2"><a href="#trust-and-signatures">Trust and signatures</a></li><li class="l2"><a href="#what-is-not-yet-available">What is not yet available</a></li></ul></nav></div>
+</main>
+<footer class="ftr">
+ <div class="wrap">
+  <div class="ftr-grid">
+   <div class="ftr-brand">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
+    <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p class="mono small">dctx 1.1.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+   </div>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
+  </div>
+  <div class="ftr-bottom">
+   <div>
+    <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+   </div>
+   <div class="credit">
+    <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>
+    <a class="credit-logo" href="https://tejl.com/" aria-label="TEJL, publisher of dctx"><img src="/assets/tejl-logo-off-black.svg" width="818" height="422" alt="" loading="lazy" decoding="async"></a>
+   </div>
+  </div>
+ </div>
+</footer>
+</body>
+</html>

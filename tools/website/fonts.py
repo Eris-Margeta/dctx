@@ -4,7 +4,8 @@
     tools/website/.venv/bin/python tools/website/fonts.py presentation/video/fonts
 
 Inputs are the Geist and JetBrains Mono variable fonts (both SIL OFL 1.1). Outputs go to
-tools/website/fonts/ and are committed: the website build copies them, content-hashed,
+tools/website/fonts/ and are committed (four weights: fewer requests;
+CSS maps 500 to 400 and 700 to 600): the website build copies them, content-hashed,
 into website/assets/ and never runs this script. Needs fontTools with WOFF2 (brotli).
 """
 from __future__ import annotations
@@ -26,8 +27,8 @@ UNICODES = ("U+0020-007E,U+00A0-00FF,U+0131,U+0152-0153,U+02C6,U+02DA,U+02DC,U+2
             "U+20AC,U+2122,U+2190-21FF,U+2212,U+2260,U+2264-2265,U+2500-257F,U+25A0-25FF,U+2713")
 FEATURES = "kern,liga,calt,tnum,case,ccmp,locl,mark,mkmk"
 FAMILIES = {
-    "geist": ("Geist-Variable.ttf", "Geist-OFL.txt", (400, 500, 600, 700)),
-    "jetbrains-mono": ("JetBrainsMono-Variable.ttf", "JetBrainsMono-OFL.txt", (400, 500, 700)),
+    "geist": ("Geist-Variable.ttf", "Geist-OFL.txt", (400, 600)),
+    "jetbrains-mono": ("JetBrainsMono-Variable.ttf", "JetBrainsMono-OFL.txt", (400, 500)),
 }
 LICENCE_NAMES = {"geist": "OFL-Geist.txt", "jetbrains-mono": "OFL-JetBrainsMono.txt"}
 

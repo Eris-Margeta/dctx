@@ -43,6 +43,7 @@ COMMANDS: list[tuple[str, str, list[str], str]] = [
     ("pack", "pack", ["pack", "."], "The whole project as one block. `.env` is listed by name and never read; `target/` (ignored by .gitignore) and the binary `assets/logo.png` are left out."),
     ("pack-stamps", "pack", ["pack", ".", "--tree-stamps=on"], "The 1.0.0 tree lines with MOD and SIZE. MOD is a modification time in milliseconds and differs on every checkout, so its digits are replaced with … here."),
     ("pack-ext-rs", "pack", ["pack", ".", "--ext", "rs"], "Only the Rust files."),
+    ("pack-debug-ignored", "pack", ["pack", ".", "--debug-ignored"], "Ignored paths are listed with [IGNORED] and never read: the content of target/ does not appear."),
     ("pack-for", "pack", ["pack", ".", "--for", "greet store", "--budget", "600"], "Task context for an agent: find, neighbors and read of the names in the text, cut to the budget."),
     ("map-map", "map", ["map", "map", "src/util.rs", "--depth", "2"], "Outline of one file."),
     ("find", "map", ["map", "find", "greet"], ""),
@@ -119,6 +120,8 @@ def capture(binary: str, version: str) -> dict:
             for text in (out, err):
                 if SENTINEL in text:
                     raise SystemExit(f"capture: {rid} printed the .env value; the privacy claim is false")
+                if "kiosk build output" in text:
+                    raise SystemExit(f"capture: {rid} printed the content of an ignored file")
                 if tmp in text:
                     raise SystemExit(f"capture: {rid} printed a temporary path")
             nbytes = len(out.encode("utf-8"))

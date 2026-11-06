@@ -252,3 +252,26 @@ release:
 # Test on Linux via Docker
 test-linux:
     docker run --rm -v "$PWD":/app -w /app rust:latest cargo test --all
+
+# Website: build, then check (isolated rebuild, capture drift, links, budgets). Needs tools/website/.venv.
+site:
+    tools/website/.venv/bin/python tools/website/build.py
+    DCTX_BIN=target/release/dctx-cli tools/website/.venv/bin/python tools/website/check.py
+
+# Re-record the CLI outputs the website shows (after a CLI change), then rebuild.
+site-capture:
+    DCTX_BIN=target/release/dctx-cli python3 tools/website/capture.py
+    tools/website/.venv/bin/python tools/website/build.py
+
+# Preview the built site on this machine.
+site-serve:
+    python3 -m http.server 8089 --bind 127.0.0.1 --directory website
+
+# One-time: regenerate the subset WOFF2 fonts from the variable TTFs.
+site-fonts:
+    tools/website/.venv/bin/python tools/website/fonts.py presentation/video/fonts
+
+# Playground server: tests, then the Docker build context in tools/playground/dist/.
+play:
+    cargo test --locked --manifest-path tools/playground/Cargo.toml
+    tools/playground/build-dist.sh

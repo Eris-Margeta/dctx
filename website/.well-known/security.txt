@@ -1,0 +1,6 @@
+Contact: mailto:info@tejl.com
+Contact: https://github.com/Eris-Margeta/dctx/blob/main/SECURITY.md
+Expires: 2027-11-01T00:00:00.000Z
+Preferred-Languages: en, hr
+Canonical: https://www.dctx.internet.technology/.well-known/security.txt
+Policy: https://www.dctx.internet.technology/security/

@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CLI reference · dctx</title>
+<script>/* Runs before first paint: theme and motion preference, so there is no flash. */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  d.className = d.className.replace('no-js', 'js');
+  try { t = localStorage.getItem('dctx-theme'); m = localStorage.getItem('dctx-motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
+})();</script>
+<link rel="stylesheet" href="/assets/site.2dbe17bb.css">
+<link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="Every dctx command, flag, environment variable, exit code and MCP tool, captured from the dctx binary.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="generator" content="dctx website builder">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://www.dctx.internet.technology/cli/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="dctx">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="CLI reference · dctx">
+<meta property="og:description" content="Every dctx command, flag, environment variable, exit code and MCP tool, captured from the dctx binary.">
+<meta property="og:url" content="https://www.dctx.internet.technology/cli/">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/cli.dark.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: CLI reference">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/cli.light.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: CLI reference">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="CLI reference · dctx">
+<meta name="twitter:description" content="Every dctx command, flag, environment variable, exit code and MCP tool, captured from the dctx binary.">
+<meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/cli.dark.png">
+<meta name="twitter:image:alt" content="dctx: CLI reference">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="license" href="https://www.apache.org/licenses/LICENSE-2.0">
+<link rel="author" href="https://tejl.com/">
+<link rel="help" href="/docs/">
+<link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
+<script src="/assets/page.9bdcd125.js" defer></script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://www.dctx.internet.technology/#organization",
+   "name": "TEJL",
+   "url": "https://tejl.com/",
+   "logo": "https://www.dctx.internet.technology/assets/tejl-logo-off-black.svg",
+   "email": "info@tejl.com",
+   "sameAs": [
+    "https://tejl.hr/"
+   ],
+   "founder": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   }
+  },
+  {
+   "@type": "Person",
+   "@id": "https://www.dctx.internet.technology/#author",
+   "name": "Eris Margeta",
+   "url": "https://tejl.com/",
+   "sameAs": [
+    "https://github.com/Eris-Margeta"
+   ],
+   "jobTitle": "Founder",
+   "worksFor": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://www.dctx.internet.technology/#website",
+   "url": "https://www.dctx.internet.technology/",
+   "name": "dctx",
+   "inLanguage": "en",
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.dctx.internet.technology/search/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://www.dctx.internet.technology/#software",
+   "name": "dctx",
+   "softwareVersion": "1.1.0",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Linux (x86_64 tested)",
+   "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
+   "url": "https://www.dctx.internet.technology/",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "codeRepository": "https://github.com/Eris-Margeta/dctx",
+   "programmingLanguage": "Rust",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-1-0",
+   "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.dctx.internet.technology/docs/"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "@id": "https://www.dctx.internet.technology/cli/#breadcrumb",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "dctx",
+     "item": "https://www.dctx.internet.technology/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "CLI reference",
+     "item": "https://www.dctx.internet.technology/cli/"
+    }
+   ]
+  },
+  {
+   "@type": "WebPage",
+   "@id": "https://www.dctx.internet.technology/cli/#webpage",
+   "url": "https://www.dctx.internet.technology/cli/",
+   "name": "CLI reference",
+   "description": "Every dctx command, flag, environment variable, exit code and MCP tool, captured from the dctx binary.",
+   "inLanguage": "en",
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "breadcrumb": {
+    "@id": "https://www.dctx.internet.technology/cli/#breadcrumb"
+   }
+  },
+  {
+   "@type": "TechArticle",
+   "@id": "https://www.dctx.internet.technology/cli/#article",
+   "headline": "dctx CLI reference",
+   "url": "https://www.dctx.internet.technology/cli/",
+   "inLanguage": "en",
+   "about": {
+    "@id": "https://www.dctx.internet.technology/#software"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "mainEntityOfPage": {
+    "@id": "https://www.dctx.internet.technology/cli/#webpage"
+   },
+   "description": "Every dctx command, flag, environment variable, exit code and MCP tool."
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr">
+ <div class="wrap hdr-in">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.1.0</span></a>
+  <nav class="nav" aria-label="Primary"><ul><li><a href="/docs/">Docs</a></li><li><a href="/cli/" aria-current="page">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
+  <div class="hdr-end">
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/docs/">Docs</a></li><li><a href="/cli/" aria-current="page">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
+  </div>
+ </div>
+</header>
+<main id="main">
+<div class="wrap"><div class="page-head"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/cli/" aria-current="page">CLI reference</a></li></ol></nav><span class="eyebrow">Reference</span><h1>CLI reference</h1>
+<p class="lede">Captured from <code>dctx 1.1.0</code> when this site was built; a check fails the build when the binary prints anything else. Help text is shown verbatim, so it is the CLI's own wording, including the legacy snapshot options it still lists.</p></div>
+<ul class="toc-row"><li><a href="#help">dctx --help</a></li><li><a href="#help-snapshot-options">Snapshot Options</a></li><li><a href="#help-filter-options">Filter Options</a></li><li><a href="#help-template-commands">Template Commands</a></li><li><a href="#help-examples">Examples</a></li><li><a href="#help-feature-and-precision-limits">Feature and precision limits</a></li><li><a href="#map-help">dctx map --help</a></li><li><a href="#map">map</a></li><li><a href="#find">find</a></li><li><a href="#neighbors">neighbors</a></li><li><a href="#explain">explain</a></li><li><a href="#read">read</a></li><li><a href="#skeleton">skeleton</a></li><li><a href="#grep">grep</a></li><li><a href="#hubs">hubs</a></li><li><a href="#path">path</a></li><li><a href="#export">export</a></li><li><a href="#languages">languages</a></li><li><a href="#env">environment</a></li><li><a href="#exit-codes">exit codes</a></li><li><a href="#mcp">MCP tools</a></li><li><a href="#tokens">token estimate</a></li></ul>
+<h2 id="dctx-help">dctx --help</h2>
+<section class="help-sec" id="help"><h3>Usage</h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx [PATH] [OPTIONS]
+       dctx pack [PATH] [--output PATH] [--clipboard] [--json]
+       dctx pack [PATH] --for &lt;TEXT&gt; [--budget TOKENS]
+       dctx map &lt;map|find|neighbors|explain|read|skeleton|grep|hubs|path&gt; [--json]
+       dctx mcp [PATH]
+       dctx languages [--json|--markdown]
+       dctx cache status [--json] [--root PATH]
+       dctx cache gc [--dry-run] [--root PATH] [--max-bytes N] [--legacy]
+       dctx cache purge --root PATH [--dry-run] [--yes]
+       dctx cache purge --all [--dry-run] [--yes]
+       dctx cache config [auto on|off] [--max-bytes N] [--ttl-days N]
+       dctx cache auto [--json]
+       dctx template build &lt;PATH&gt; [--output PATH]
+       dctx template list [--dir PATH]
+       dctx plugin search|install|list|info|enable|disable|remove|update|verify
+       dctx git &lt;status|protect&gt;
+
+`dctx languages` lists every supported language with its tier: full (symbols and call edges), outline (symbols only) or docs (sections).
+`dctx mcp` serves the map verbs as MCP tools over stdio (JSON-RPC 2.0, one message per line) for Claude Code, Cursor and Codex.
+Explicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not create a project text file.
+`dctx pack --for &lt;TEXT&gt;` prints task context for an agent card instead: map find, neighbors and read of the names in TEXT, cut to `--budget` estimated tokens (default 3000).
+`dctx .` remains the legacy snapshot alias and still writes its documented project text.
+`dctx plugin list` and `dctx --help` do not create a project `.dctx/` directory or start a plugin.
+`dctx git` routes to the bundled dctx/git plugin. It is not a Git passthrough.
+Cache purge requires `--root PATH` or `--all`, and `--yes` unless `--dry-run` is set.
+`dctx cache gc --legacy` reads only exports the caller already registered. It does not search the home directory.
+`dctx cache config` shows the persisted policy. `auto on|off` enables auto-clean, `--max-bytes` tightens the system cap, and `--ttl-days` sets idle overlay and preview lifetime.
+`dctx cache auto` prints the last auto-clean time, the bytes it reclaimed and the next due time.
+pack, map, template, plugin and the TUI run one bounded auto-clean when it is due. They print nothing unless bytes were reclaimed.
+`--no-auto-clean` and `DCTX_AUTO_CLEAN=0` disable that slice. `DCTX_CACHE_DIR` selects the cache root.</code></pre></div></section><section class="help-sec" id="help-snapshot-options"><h3>Snapshot Options</h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>  -c, --clipboard       Copy to clipboard
+  -d, --diff            Output diff only (if available)
+  -t, --tree            Tree-Only mode (skips file content)
+  -r, --reset           Force V1 reset
+  -h, --help            Show help
+  -v, --version         Show version
+  --verbose             With --version, also show feature and precision limits</code></pre></div></section><section class="help-sec" id="help-filter-options"><h3>Filter Options</h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>  --ext &lt;extensions&gt;    Only include files with these extensions
+  --binary              Include binary files (excluded by default)
+  --empty               Show only empty files (0 bytes)
+  --non-empty           Show only non-empty files
+  --large &lt;MB&gt;          Show only files larger than X megabytes
+  --small &lt;MB&gt;          Show only files smaller than X megabytes
+  --hidden              Show ONLY hidden files and folders (starting with .)
+  --debug-ignored       Show ignored files in the tree without reading them
+  -V, --debug-verbose   Show ignore decision traces
+  --tree-stamps=on|off  MOD: timestamps on tree lines: off (default) keeps the output prefix stable across a touch, on = the 1.0.0 text</code></pre></div></section><section class="help-sec" id="help-template-commands"><h3>Template Commands</h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>  template build &lt;PATH&gt;  Compile a template through the facade
+  template list          List explicit compiled plans; no home-directory scan</code></pre></div></section><section class="help-sec" id="help-examples"><h3>Examples</h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>  dctx .                      Legacy snapshot of the current directory
+  dctx pack .                 Pack to stdout and write no project text file
+  dctx pack . --output out.txt
+  dctx languages --json
+  dctx cache status --json
+  dctx cache gc --dry-run
+  dctx cache purge --root /path --dry-run
+  dctx cache config auto off --max-bytes 1000000 --ttl-days 7
+  dctx cache auto
+  dctx template build policy.dctx_template</code></pre></div></section><section class="help-sec" id="help-feature-and-precision-limits"><h3>Feature and precision limits</h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>facade_version: 1.1.0
+profile: enhanced
+wire_version: 2
+segment_version: 1
+storage: buffered-segments
+features: pack,map,templates,fs,segments,cache,syntax-rust
+parsers: dctx-structural/2,dctx-lex-js:1,dctx-lex-md:1,dctx-lex-rust/syn-3.0.9
+languages: rust,javascript,typescript,python,go,java,c,csharp,kotlin,ruby,php,swift,web,scala,dart,zig,solidity,gleam,fortran,perl,groovy,powershell,elixir,lua,ocaml,r,julia,haskell,erlang,verilog,hcl,sql,clojure,lisp,scheme,elisp,config,shell,make,docker,proto,pascal,graphql,nix,markdown,text,rst,asciidoc,org,tex
+unsafe_boundary: syn-dependency
+native_code: false
+git: false
+subprocess: none
+precision: the structural extractor reports declarations, imports, headings and conservative calls.
+It does not promise exact semantic calls, name or type resolution, or macro expansion.
+A syntax-rust build adds syn for supported Rust syntax only, still without type checking.
+token estimate: ceil(2 * UTF-8 bytes / 7) is an estimate, not a tokenizer guarantee.
+cache cap: 2 GiB hard, 1.5 GiB soft watermark, 1.2 GiB eviction target.
+cache ttl: idle overlays and previews 7 days, unpinned roots 30 days, staging 1 day.
+auto-clean interval: 1 day.</code></pre></div></section>
+<h2 id="map-help">dctx map --help</h2>
+<div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx map &lt;map|find|neighbors|explain|read|skeleton|grep&gt; &lt;TARGET&gt; [OPTIONS]
+       dctx map hubs [--limit N] [--json] [--place PATH] [--budget TOKENS] [--meta]
+         Most-called symbols (incoming calls and imports, 1..60 lines, default 20) and per-directory file and symbol counts. No TARGET.
+       dctx map path &lt;FROM&gt; &lt;TO&gt; [--json] [--place PATH] [--budget TOKENS] [--meta]
+         Shortest edge path (calls, imports, contains; either direction; at most 8 hops), one `edge:out|in&lt;TAB&gt;id&lt;TAB&gt;kind&lt;TAB&gt;path` line per hop, or `no path`.
+       dctx map export [--format json|mermaid] [--output PATH] [--place PATH]
+         The whole graph as one deterministic document (default json: nodes and edges; mermaid: a flowchart of calls and imports). No TARGET, no token cap; --output writes a file.
+  TARGET                  Required. map accepts a stable id or a place-relative file.
+                          skeleton takes a file (or m:&lt;path&gt;) and prints its declaration signatures, no bodies,
+                          in source order: id, kind, L&lt;start&gt;-&lt;end&gt;, signature.
+                          A file path is read as m:&lt;path&gt;. Omitting TARGET does not scan.
+  --json                  Facade JSON v2, including the precision label
+  --place PATH            Place or worktree root (default: current directory)
+  --meta                  Restore the snapshot digest and generation in the text header and the snapshot, generation and age_s JSON fields.
+                          Without it the answer bytes do not change across unrelated edits or time.
+  --profile               Stderr stage timings and the five slowest files. DCTX_PROFILE=1 is the same switch.
+  DCTX_MAX_SOURCE_BYTES   Env: total source bytes one scan may read, 1..17179869184 (default 1073741824 = 1 GiB).
+  DCTX_MAX_RECORDS        Env: files, symbols and edges one index may hold, 1..100000000 (default 1000000). A bigger place is refused while it is scanned.
+  DCTX_MAX_ENTRIES        Env: files and directories one scan may visit, 1..100000000 (default 100000).
+  DCTX_FRESHNESS          Env: strict_live hashes every file on a warm start; the default (stamp) trusts a file whose size, mtime and inode are unchanged and older than 2 s.
+  --budget TOKENS         Output tokens, 1..2000 (explain max: 1000).
+                          Read with no --budget uses the 2,000-token hard cap.
+  --depth N               Map: 1..3; neighbors: 1..4. Explain and read take no depth.
+  --limit N               Map, find and neighbors page size. Explain and read accept only 1.
+  --offset N              Refused. Pass the previous page&#x27;s next value to --cursor.
+  --cursor TOKEN          Opaque continuation. A stale token is rejected.
+  --kind fn,type,doc      Find kinds
+  --in PATH               Find or grep within a relative path
+  grep LITERAL            Exhaustive literal search of indexed files, hits grouped by enclosing symbol
+  -i, --ignore-case       Grep: ASCII case-insensitive match
+  --edge calls,imports    Neighbor edge filter
+  --dir in|out|both       Neighbor direction
+  --lines A-B --full      Read those absolute source lines inside the node; full permits 400
+  --rev SHA               Refused: this build does not link git
+Precision: structural declarations, imports, headings and conservative calls.
+Not exact semantic calls, type resolution or macro expansion.
+Token estimate ceil(2 * UTF-8 bytes / 7) is not a tokenizer guarantee.
+Example: dctx map find &#x27;ignore rules&#x27; --json
+Example: dctx map map crates/dctx-cli/src/lib.rs --depth 2
+Example: dctx map map m:crates/dctx-cli/src/lib.rs --cursor &#x27;&lt;next from the previous page&gt;&#x27;
+Each verb&#x27;s own page and example: dctx map &lt;verb&gt; --help
+Exit codes: 0 ok, 1 no result (an id not in the index, a binary file), 2 usage, 3 index error; see docs/CLI-EXIT-CODES.md.</code></pre></div>
+<h2 id="verbs">Map verbs</h2>
+<section class="help-sec" id="map"><h3><code>dctx map map</code></h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx map map &lt;TARGET&gt; [--depth 1..3] [--limit N] [--cursor TOKEN] [--json] [--place PATH] [--meta]
+  Outline of a file (m:&lt;path&gt; or a place-relative path) or a symbol and what it contains.
+Example: dctx map map src/lib.rs --depth 2
+Every option and its bounds: dctx map --help</code></pre></div><p class="note"><a href="/examples/">Examples on the sample</a></p></section><section class="help-sec" id="find"><h3><code>dctx map find</code></h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx map find &lt;QUERY&gt; [--kind fn,type,doc] [--in PATH] [--limit 1..40] [--cursor TOKEN] [--json] [--place PATH] [--meta]
+  Ranked symbols, modules, headings and config keys whose name or summary matches QUERY.
+Example: dctx map find &#x27;ignore rules&#x27; --json
+Every option and its bounds: dctx map --help</code></pre></div><p class="note"><a href="/examples/">Examples on the sample</a></p></section><section class="help-sec" id="neighbors"><h3><code>dctx map neighbors</code></h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx map neighbors &lt;TARGET&gt; [--dir in|out|both] [--edge calls,imports] [--depth 1..4] [--limit N] [--json] [--place PATH] [--meta]
+  Edges of one node: callers with --dir in --edge calls, callees with --dir out.
+Example: dctx map neighbors &#x27;s:src/lib.rs#run&#x27; --dir in --edge calls
+Every option and its bounds: dctx map --help</code></pre></div><p class="note"><a href="/examples/">Examples on the sample</a></p></section><section class="help-sec" id="explain"><h3><code>dctx map explain</code></h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx map explain &lt;TARGET&gt; [--budget 1..1000] [--json] [--place PATH] [--meta]
+  One node with its signature and summary, no body.
+Example: dctx map explain &#x27;s:src/lib.rs#run&#x27;
+Every option and its bounds: dctx map --help</code></pre></div><p class="note"><a href="/examples/">Examples on the sample</a></p></section><section class="help-sec" id="read"><h3><code>dctx map read</code></h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx map read &lt;TARGET&gt; [--lines A-B] [--full] [--budget TOKENS] [--cursor TOKEN] [--json] [--place PATH] [--meta]
+  The verified source text of one node; a long node pages with --cursor.
+Example: dctx map read &#x27;s:src/lib.rs#run&#x27; --lines 10-40
+Every option and its bounds: dctx map --help</code></pre></div><p class="note"><a href="/examples/">Examples on the sample</a></p></section><section class="help-sec" id="skeleton"><h3><code>dctx map skeleton</code></h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx map skeleton &lt;FILE&gt; [--budget TOKENS] [--json] [--place PATH] [--meta]
+  Declaration signatures of one file in source order, no bodies.
+Example: dctx map skeleton src/lib.rs
+Every option and its bounds: dctx map --help</code></pre></div><p class="note"><a href="/examples/">Examples on the sample</a></p></section><section class="help-sec" id="grep"><h3><code>dctx map grep</code></h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx map grep &lt;LITERAL&gt; [-i] [--in PATH] [--limit N] [--json] [--place PATH] [--meta]
+  Exhaustive literal search of indexed files, hits grouped by enclosing symbol.
+Example: dctx map grep TODO --in src
+Every option and its bounds: dctx map --help</code></pre></div><p class="note"><a href="/examples/">Examples on the sample</a></p></section><section class="help-sec" id="hubs"><h3><code>dctx map hubs</code></h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx map hubs [--limit 1..60] [--budget TOKENS] [--json] [--place PATH] [--meta]
+  Most-called symbols and per-directory file and symbol counts. No TARGET.
+Example: dctx map hubs --limit 10
+Every option and its bounds: dctx map --help</code></pre></div><p class="note"><a href="/examples/">Examples on the sample</a></p></section><section class="help-sec" id="path"><h3><code>dctx map path</code></h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx map path &lt;FROM&gt; &lt;TO&gt; [--budget TOKENS] [--json] [--place PATH] [--meta]
+  Shortest edge path (calls, imports, contains; at most 8 hops) between two nodes, or `no path`.
+Example: dctx map path &#x27;s:src/main.rs#main&#x27; &#x27;s:src/lib.rs#run&#x27;
+Every option and its bounds: dctx map --help</code></pre></div><p class="note"><a href="/examples/">Examples on the sample</a></p></section><section class="help-sec" id="export"><h3><code>dctx map export</code></h3><div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx map export [--format json|mermaid] [--output PATH] [--place PATH]
+  The whole graph as one deterministic document. No TARGET, no token cap.
+Example: dctx map export --format mermaid --output graph.mmd
+Every option and its bounds: dctx map --help</code></pre></div><p class="note"><a href="/examples/">Examples on the sample</a></p></section>
+<h2 id="languages">dctx languages</h2>
+<div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>Usage: dctx languages [--json | --markdown]
+
+Lists every language the map index recognises: name, tag, file names, tier and symbol confidence.
+Tiers: full = symbols and call edges (lexical, not type-resolved); outline = symbols only, no call edges promised;
+docs = headed sections. Confidence `guess` marks heuristic outlines, whose records carry confidence `guess`.
+
+Options:
+  --json        One JSON document with the tiers and the languages
+  --markdown    The README language table
+  -h, --help    Show this help
+
+Example: dctx languages --json</code></pre></div>
+<p>50 languages: 36 full, 8 outline, 6 docs. The table with every tag and file name is on <a href="/languages/">/languages/</a>.</p>
+<h2 id="env">Environment variables</h2>
+<div class="table-wrap"><table><thead><tr><th scope="col">Variable</th><th scope="col">Help text</th><th scope="col">Printed by</th></tr></thead><tbody><tr><td><code>DCTX_MAX_SOURCE_BYTES</code></td><td>DCTX_MAX_SOURCE_BYTES   Env: total source bytes one scan may read, 1..17179869184 (default 1073741824 = 1 GiB).</td><td><code>dctx map --help</code></td></tr><tr><td><code>DCTX_MAX_RECORDS</code></td><td>DCTX_MAX_RECORDS        Env: files, symbols and edges one index may hold, 1..100000000 (default 1000000). A bigger place is refused while it is scanned.</td><td><code>dctx map --help</code></td></tr><tr><td><code>DCTX_MAX_ENTRIES</code></td><td>DCTX_MAX_ENTRIES        Env: files and directories one scan may visit, 1..100000000 (default 100000).</td><td><code>dctx map --help</code></td></tr><tr><td><code>DCTX_FRESHNESS</code></td><td>DCTX_FRESHNESS          Env: strict_live hashes every file on a warm start; the default (stamp) trusts a file whose size, mtime and inode are unchanged and older than 2 s.</td><td><code>dctx map --help</code></td></tr><tr><td><code>DCTX_CACHE_DIR</code></td><td>--no-auto-clean and DCTX_AUTO_CLEAN=0 disable that slice. DCTX_CACHE_DIR selects the cache root.</td><td><code>dctx --help</code></td></tr><tr><td><code>DCTX_AUTO_CLEAN</code></td><td>--no-auto-clean and DCTX_AUTO_CLEAN=0 disable that slice. DCTX_CACHE_DIR selects the cache root.</td><td><code>dctx --help</code></td></tr><tr><td><code>DCTX_PROFILE</code></td><td>--profile               Stderr stage timings and the five slowest files. DCTX_PROFILE=1 is the same switch.</td><td><code>dctx map --help</code></td></tr></tbody></table></div>
+<h2 id="exit-codes">Exit codes</h2>
+<div class="table-wrap"><table><caption><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/CLI-EXIT-CODES.md#L5" title="Source: docs/CLI-EXIT-CODES.md">CLI-EXIT-CODES.md</a> &middot; <a href="/docs/exit-codes/">full contract</a></caption><thead><tr><th scope="col">Code</th><th scope="col">Meaning</th><th scope="col">Examples</th></tr></thead><tbody><tr><td>0</td><td>ok: the command answered</td><td>a <code>find</code> page, including one with no hits; <code>--help</code></td></tr><tr><td>1</td><td>no result: the command ran, but the named target or input has no answer</td><td><code>map read m:nope.py</code> (an id not in the index); <code>map read logo.png</code> (a binary file); <code>pack</code> of a directory with no packable file</td></tr><tr><td>2</td><td>usage: the arguments are wrong</td><td>an unknown command or flag; a missing target; <code>--depth 9</code>; an empty <code>find</code> query; a stale <code>--cursor</code>; <code>m:../outside</code>; a non-UTF-8 argument</td></tr><tr><td>3</td><td>index error: the place, source, cache or index could not be opened, read, built or written</td><td><code>--place /no/such/dir</code>; a corrupt or busy cache; a source over <code>DCTX_MAX_SOURCE_BYTES</code>; an <code>--output</code> file that cannot be written</td></tr></tbody></table></div>
+<h2 id="mcp">MCP tools</h2>
+<p><code>dctx mcp</code> answers <code>tools/list</code> with 10 tools (captured over stdio; <code>*</code> marks a required argument). <a href="/examples/#mcp">The full exchange</a>.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">Tool</th><th scope="col">Description</th><th scope="col">Arguments</th></tr></thead><tbody><tr><td><code>map</code></td><td>Structural map of a file, directory or node: its symbols and their relations.</td><td><code>target</code>* <span class="muted">string</span> Stable id (m:, s:, ...) or a place-relative file path<br><code>depth</code> <span class="muted">integer</span> Levels to expand, 1..3<br><code>limit</code> <span class="muted">integer</span> Page size<br><code>budget</code> <span class="muted">integer</span> Output token budget, 1..2000<br><code>cursor</code> <span class="muted">string</span> The next token of an earlier page, to continue it<br><code>json</code> <span class="muted">boolean</span> Return facade JSON v2 instead of text</td></tr><tr><td><code>find</code></td><td>Find symbols, modules and docs by name or words.</td><td><code>query</code>* <span class="muted">string</span> Words or a name to look for<br><code>kind</code> <span class="muted">array</span> Kinds: fn, method, struct, enum, trait, impl, const, type, macro, class, interface, symbol, module, package, place, doc, test<br><code>in</code> <span class="muted">string</span> Only within this place-relative path<br><code>limit</code> <span class="muted">integer</span> Page size<br><code>budget</code> <span class="muted">integer</span> Output token budget, 1..2000<br><code>cursor</code> <span class="muted">string</span> The next token of an earlier page, to continue it<br><code>json</code> <span class="muted">boolean</span> Return facade JSON v2 instead of text</td></tr><tr><td><code>neighbors</code></td><td>Nodes connected to a node by calls or imports, up to 4 hops.</td><td><code>id</code>* <span class="muted">string</span> Stable node id from a find or map answer<br><code>edge</code> <span class="muted">array</span> Edge kinds, for example calls, imports<br><code>dir</code> <span class="muted">string</span> Direction: in, out or both<br><code>depth</code> <span class="muted">integer</span> Hops, 1..4<br><code>limit</code> <span class="muted">integer</span> Page size<br><code>budget</code> <span class="muted">integer</span> Output token budget, 1..2000<br><code>cursor</code> <span class="muted">string</span> The next token of an earlier page, to continue it<br><code>json</code> <span class="muted">boolean</span> Return facade JSON v2 instead of text</td></tr><tr><td><code>explain</code></td><td>Describe one node: its kind, place, signature and relations.</td><td><code>id</code>* <span class="muted">string</span> Stable node id<br><code>budget</code> <span class="muted">integer</span> Output token budget, 1..2000<br><code>cursor</code> <span class="muted">string</span> The next token of an earlier page, to continue it<br><code>json</code> <span class="muted">boolean</span> Return facade JSON v2 instead of text</td></tr><tr><td><code>read</code></td><td>Read the source of one node, or of absolute lines inside it.</td><td><code>id</code>* <span class="muted">string</span> Stable node id<br><code>lines</code> <span class="muted">string</span> Absolute source lines inside the node, as A-B<br><code>full</code> <span class="muted">boolean</span> Permit up to 400 lines<br><code>budget</code> <span class="muted">integer</span> Output token budget, 1..2000<br><code>cursor</code> <span class="muted">string</span> The next token of an earlier page, to continue it<br><code>json</code> <span class="muted">boolean</span> Return facade JSON v2 instead of text</td></tr><tr><td><code>hubs</code></td><td>Most-called symbols and per-directory file and symbol counts of the place.</td><td><code>limit</code> <span class="muted">integer</span> Hub lines, 1..60 (default 20)<br><code>budget</code> <span class="muted">integer</span> Output token budget, 1..2000<br><code>json</code> <span class="muted">boolean</span> Return facade JSON v2 instead of text</td></tr><tr><td><code>grep</code></td><td>Exhaustive literal search of indexed files, hits grouped by enclosing symbol.</td><td><code>query</code>* <span class="muted">string</span> The literal text to search for<br><code>ignore_case</code> <span class="muted">boolean</span> ASCII case-insensitive match<br><code>in</code> <span class="muted">string</span> Only within this place-relative path<br><code>limit</code> <span class="muted">integer</span> Page size<br><code>budget</code> <span class="muted">integer</span> Output token budget, 1..2000<br><code>cursor</code> <span class="muted">string</span> The next token of an earlier page, to continue it<br><code>json</code> <span class="muted">boolean</span> Return facade JSON v2 instead of text</td></tr><tr><td><code>skeleton</code></td><td>Skeleton of a file or directory: its symbols and their relations, without depth expansion.</td><td><code>target</code>* <span class="muted">string</span> Stable id (m:, s:, ...) or a place-relative file path<br><code>budget</code> <span class="muted">integer</span> Output token budget, 1..2000<br><code>json</code> <span class="muted">boolean</span> Return facade JSON v2 instead of text</td></tr><tr><td><code>path</code></td><td>Shortest edge path between two nodes (calls, imports, contains), at most 8 hops.</td><td><code>from</code>* <span class="muted">string</span> Start node id (s:...) or place-relative file<br><code>to</code>* <span class="muted">string</span> End node id (s:...) or place-relative file<br><code>meta</code> <span class="muted">boolean</span> Include hop metadata<br><code>budget</code> <span class="muted">integer</span> Output token budget, 1..2000<br><code>cursor</code> <span class="muted">string</span> The next token of an earlier page, to continue it<br><code>json</code> <span class="muted">boolean</span> Return facade JSON v2 instead of text</td></tr><tr><td><code>export</code></td><td>Whole graph as one deterministic document: graph JSON or a Mermaid flowchart.</td><td><code>format</code>* <span class="muted">string</span> Output format: json or mermaid<br><code>budget</code> <span class="muted">integer</span> Output token budget, 1..2000</td></tr></tbody></table></div>
+<h2 id="tokens">Token estimate</h2>
+<p>Every byte and token count on this site uses the estimate dctx itself prints:</p>
+<div class="code"><div class="code-head"><span>verbatim</span><button class="copy" type="button" hidden>Copy</button></div><pre><code>token estimate: ceil(2 * UTF-8 bytes / 7) is an estimate, not a tokenizer guarantee.</code></pre></div>
+</div>
+</main>
+<footer class="ftr">
+ <div class="wrap">
+  <div class="ftr-grid">
+   <div class="ftr-brand">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
+    <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p class="mono small">dctx 1.1.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+   </div>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
+  </div>
+  <div class="ftr-bottom">
+   <div>
+    <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+   </div>
+   <div class="credit">
+    <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>
+    <a class="credit-logo" href="https://tejl.com/" aria-label="TEJL, publisher of dctx"><img src="/assets/tejl-logo-off-black.svg" width="818" height="422" alt="" loading="lazy" decoding="async"></a>
+   </div>
+  </div>
+ </div>
+</footer>
+</body>
+</html>

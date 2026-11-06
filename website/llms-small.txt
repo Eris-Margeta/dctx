@@ -1,0 +1,92 @@
+# dctx
+
+> The context engine for AI-assisted software development. Fewer tokens. Stable prefixes. Exact source. One policy for every workflow.
+
+dctx 1.1.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short: https://www.dctx.internet.technology/llms-small.txt
+
+## Docs
+- [README](https://www.dctx.internet.technology/docs/readme/index.md): install, quick start, map mode
+- [Specification](https://www.dctx.internet.technology/docs/spec/index.md): constraints and roadmap
+- [Map mode](https://www.dctx.internet.technology/docs/map-mode/index.md): every map verb
+- [Agent snippet](https://www.dctx.internet.technology/docs/agents/index.md): AGENTS.md text
+- [All documents](https://www.dctx.internet.technology/docs/): with Markdown twins
+
+## CLI
+- [CLI reference](https://www.dctx.internet.technology/cli/): help, env, exit codes, MCP tools
+- [Languages](https://www.dctx.internet.technology/languages/): 50 languages by tier
+
+## Examples
+- [Examples](https://www.dctx.internet.technology/examples/): every command, exact output
+- [Templates](https://www.dctx.internet.technology/templates/): built-in templates
+- [Playground](https://www.dctx.internet.technology/playground/): API: /api/v1/openapi.json
+
+## Evidence
+- [Benchmarks](https://www.dctx.internet.technology/benchmarks/): tables and caveats
+- [Stability report](https://www.dctx.internet.technology/docs/stability/index.md): 33/33 protocol
+
+## Project
+- [Security](https://www.dctx.internet.technology/security/index.md): private reports
+- [Contributing](https://www.dctx.internet.technology/docs/contributing/index.md): DCO
+
+## Optional
+- [Changelog](https://www.dctx.internet.technology/changelog/): releases
+- [llms-full.txt](https://www.dctx.internet.technology/llms-full.txt): everything
+
+## Quick start
+
+```zsh
+dctx pack .            # whole project as one structured context block on stdout
+dctx pack . --clipboard  # … straight to the clipboard
+dctx                   # interactive menu
+```
+
+## Map mode
+
+```zsh
+# Run from this repository's root; map needs a file target.
+dctx map map crates/dctx-cli/src/lib.rs --depth 2
+dctx map find "SnapshotConfig"
+# Use a stable ID returned by map/find for neighbors, explain and read.
+dctx map neighbors 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --edge calls --dir in
+dctx map explain 's:crates/dctx-cli/src/lib.rs#SnapshotConfig'
+dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
+```
+
+## Map verbs
+
+- dctx map map: Outline of a file (m:<path> or a place-relative path) or a symbol and what it contains.
+- dctx map find: Ranked symbols, modules, headings and config keys whose name or summary matches QUERY.
+- dctx map neighbors: Edges of one node: callers with --dir in --edge calls, callees with --dir out.
+- dctx map explain: One node with its signature and summary, no body.
+- dctx map read: The verified source text of one node; a long node pages with --cursor.
+- dctx map skeleton: Declaration signatures of one file in source order, no bodies.
+- dctx map grep: Exhaustive literal search of indexed files, hits grouped by enclosing symbol.
+- dctx map hubs: Most-called symbols and per-directory file and symbol counts. No TARGET.
+- dctx map path: Shortest edge path (calls, imports, contains; at most 8 hops) between two nodes, or `no path`.
+- dctx map export: The whole graph as one deterministic document. No TARGET, no token cap.
+
+## Facts
+
+- 140/140 points on the 70-question protocol (Trail-Code 122, graphify 96); the protocol was designed by the dctx team: https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md
+- Cold index 0.13-1.20 s on 6 corpora, median of 3 (run 7): https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json
+- 50 languages: 36 full, 8 outline, 6 docs: https://www.dctx.internet.technology/languages/
+- 33/33 text and 33/33 JSON answers byte-identical after unrelated edits: https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md
+- 0 socket attempts by dctx in every traced benchmark variant: https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md
+
+## Install
+
+```zsh
+git clone https://github.com/Eris-Margeta/dctx
+cd dctx
+cargo build --locked --release -p dctx-cli
+./target/release/dctx-cli --version   # dctx 1.1.0 (<git sha>)
+```
+
+## Exit codes
+
+- 0: ok: the command answered
+- 1: no result: the command ran, but the named target or input has no answer
+- 2: usage: the arguments are wrong
+- 3: index error: the place, source, cache or index could not be opened, read, built or written
+
+Everything, including every document and every captured example: https://www.dctx.internet.technology/llms-full.txt

@@ -1,52 +1,83 @@
 <!doctype html>
-<html lang="en" class="js-off">
+<html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>dctx 1.1: three more languages, a prefix-stable pack, and a measured lead. · dctx</title>
+<script>/* Runs before first paint: theme and motion preference, so there is no flash. */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  d.className = d.className.replace('no-js', 'js');
+  try { t = localStorage.getItem('dctx-theme'); m = localStorage.getItem('dctx-motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
+})();</script>
+<link rel="stylesheet" href="/assets/site.2dbe17bb.css">
+<link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
 <meta name="description" content="Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.">
 <meta name="robots" content="index, follow, max-image-preview:large">
-<link rel="canonical" href="https://dctx.internet.technology/news/dctx-1-1/">
-<meta property="og:url" content="https://dctx.internet.technology/news/dctx-1-1/">
+<meta name="generator" content="dctx website builder">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0b0a12" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://www.dctx.internet.technology/news/dctx-1-1/">
 <meta property="og:type" content="article">
 <meta property="og:site_name" content="dctx">
 <meta property="og:locale" content="en_US">
 <meta property="og:title" content="dctx 1.1: three more languages, a prefix-stable pack, and a measured lead. · dctx">
 <meta property="og:description" content="Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.">
-<meta property="og:image" content="https://dctx.internet.technology/assets/og.png">
+<meta property="og:url" content="https://www.dctx.internet.technology/news/dctx-1-1/">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/news-dctx-1-1.dark.png">
+<meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="dctx: context, engineered. A code tree flows into a compact, stable block of tokens.">
+<meta property="og:image:alt" content="dctx: dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/news-dctx-1-1.light.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.">
+<meta property="article:published_time" content="2026-11-04">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="dctx 1.1: three more languages, a prefix-stable pack, and a measured lead. · dctx">
+<meta name="twitter:description" content="Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.">
+<meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/news-dctx-1-1.dark.png">
+<meta name="twitter:image:alt" content="dctx: dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="license" href="https://www.apache.org/licenses/LICENSE-2.0">
+<link rel="author" href="https://tejl.com/">
+<link rel="help" href="/docs/">
+<link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
 <link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
-<script>try{var t=localStorage.getItem('dctx-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
-<link rel="stylesheet" href="/assets/site.css">
-<script src="/assets/site.js" defer></script>
+<link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
+<script src="/assets/page.9bdcd125.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
  "@graph": [
   {
    "@type": "Organization",
-   "@id": "https://dctx.internet.technology/#organization",
+   "@id": "https://www.dctx.internet.technology/#organization",
    "name": "TEJL",
    "url": "https://tejl.com/",
-   "logo": "https://dctx.internet.technology/assets/tejl-logo-off-black.svg",
+   "logo": "https://www.dctx.internet.technology/assets/tejl-logo-off-black.svg",
    "email": "info@tejl.com",
    "sameAs": [
     "https://tejl.hr/"
    ],
    "founder": {
-    "@id": "https://dctx.internet.technology/#author"
+    "@id": "https://www.dctx.internet.technology/#author"
    }
   },
   {
    "@type": "Person",
-   "@id": "https://dctx.internet.technology/#author",
+   "@id": "https://www.dctx.internet.technology/#author",
    "name": "Eris Margeta",
    "url": "https://tejl.com/",
    "sameAs": [
@@ -54,74 +85,104 @@
    ],
    "jobTitle": "Founder",
    "worksFor": {
-    "@id": "https://dctx.internet.technology/#organization"
+    "@id": "https://www.dctx.internet.technology/#organization"
    }
   },
   {
    "@type": "WebSite",
-   "@id": "https://dctx.internet.technology/#website",
-   "url": "https://dctx.internet.technology/",
+   "@id": "https://www.dctx.internet.technology/#website",
+   "url": "https://www.dctx.internet.technology/",
    "name": "dctx",
    "inLanguage": "en",
    "publisher": {
-    "@id": "https://dctx.internet.technology/#organization"
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.dctx.internet.technology/search/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://www.dctx.internet.technology/#software",
+   "name": "dctx",
+   "softwareVersion": "1.1.0",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Linux (x86_64 tested)",
+   "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
+   "url": "https://www.dctx.internet.technology/",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "codeRepository": "https://github.com/Eris-Margeta/dctx",
+   "programmingLanguage": "Rust",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-1-0",
+   "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.dctx.internet.technology/docs/"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
    }
   },
   {
    "@type": "BreadcrumbList",
-   "@id": "https://dctx.internet.technology/news/dctx-1-1/#breadcrumb",
+   "@id": "https://www.dctx.internet.technology/news/dctx-1-1/#breadcrumb",
    "itemListElement": [
     {
      "@type": "ListItem",
      "position": 1,
      "name": "dctx",
-     "item": "https://dctx.internet.technology/"
+     "item": "https://www.dctx.internet.technology/"
     },
     {
      "@type": "ListItem",
      "position": 2,
      "name": "News",
-     "item": "https://dctx.internet.technology/news/"
+     "item": "https://www.dctx.internet.technology/news/"
     },
     {
      "@type": "ListItem",
      "position": 3,
      "name": "dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.",
-     "item": "https://dctx.internet.technology/news/dctx-1-1/"
+     "item": "https://www.dctx.internet.technology/news/dctx-1-1/"
     }
    ]
   },
   {
    "@type": "WebPage",
-   "@id": "https://dctx.internet.technology/news/dctx-1-1/#webpage",
-   "url": "https://dctx.internet.technology/news/dctx-1-1/",
+   "@id": "https://www.dctx.internet.technology/news/dctx-1-1/#webpage",
+   "url": "https://www.dctx.internet.technology/news/dctx-1-1/",
    "name": "dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.",
    "description": "Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.",
    "inLanguage": "en",
    "isPartOf": {
-    "@id": "https://dctx.internet.technology/#website"
+    "@id": "https://www.dctx.internet.technology/#website"
    },
    "breadcrumb": {
-    "@id": "https://dctx.internet.technology/news/dctx-1-1/#breadcrumb"
+    "@id": "https://www.dctx.internet.technology/news/dctx-1-1/#breadcrumb"
    }
   },
   {
    "@type": "BlogPosting",
-   "@id": "https://dctx.internet.technology/news/dctx-1-1/#article",
+   "@id": "https://www.dctx.internet.technology/news/dctx-1-1/#article",
    "headline": "dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.",
    "description": "Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.",
    "datePublished": "2026-11-04",
    "inLanguage": "en",
    "mainEntityOfPage": {
-    "@id": "https://dctx.internet.technology/news/dctx-1-1/#webpage"
+    "@id": "https://www.dctx.internet.technology/news/dctx-1-1/#webpage"
    },
    "author": {
-    "@id": "https://dctx.internet.technology/#author"
+    "@id": "https://www.dctx.internet.technology/#author"
    },
    "publisher": {
-    "@id": "https://dctx.internet.technology/#organization"
+    "@id": "https://www.dctx.internet.technology/#organization"
    },
-   "image": "https://dctx.internet.technology/assets/og.png"
+   "image": "https://www.dctx.internet.technology/assets/og/news-dctx-1-1.dark.png"
   }
  ]
 }
@@ -129,23 +190,24 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="site-header">
- <div class="wrap nav">
-  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
-  <nav aria-label="Primary"><ul class="nav-links"><li><a href="/#why">Why dctx</a></li><li><a href="/#install">Install</a></li><li><a href="/#benchmark">Benchmark</a></li><li><a href="/docs/">Docs</a></li><li><a href="/news/" aria-current="page">News</a></li><li><a href="/changelog/">Changelog</a></li></ul></nav>
-  <div class="nav-end">
-   <a class="btn btn-ghost btn-sm btn-gh" href="https://github.com/Eris-Margeta/dctx">Source code</a>
-   <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
-   <details class="menu"><summary class="icon-btn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
-    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/#why">Why dctx</a></li><li><a href="/#install">Install</a></li><li><a href="/#benchmark">Benchmark</a></li><li><a href="/docs/">Docs</a></li><li><a href="/news/" aria-current="page">News</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li></ul></nav></details>
+<header class="hdr">
+ <div class="wrap hdr-in">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.1.0</span></a>
+  <nav class="nav" aria-label="Primary"><ul><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
+  <div class="hdr-end">
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
   </div>
  </div>
 </header>
 <main id="main">
-<div class="wrap"><article><div class="page-head"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/news/">News</a></li><li><a href="/news/dctx-1-1/" aria-current="page">dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.</a></li></ol></nav><span class="eyebrow">Release</span>
+<div class="wrap"><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/news/">News</a></li><li><a href="/news/dctx-1-1/" aria-current="page">dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.</a></li></ol></nav><span class="eyebrow">Release</span>
 <h1>dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.</h1><p class="lede">Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.</p>
-<p class="meta"><time datetime="2026-11-04">4 November 2026</time><span>The dctx project</span></p></div>
-<div class="prose">
+<p class="meta"><time datetime="2026-11-04">4 November 2026</time><span>The dctx project</span></p>
+
 <p>dctx 1.1.0 was released on 4 November 2026. It folds in the 1.0.1 line and follows the first v1 release of 31 October.</p>
 <h2>What is new</h2>
 <ul>
@@ -157,31 +219,25 @@
 <p>On our own 70-question protocol, run on 31 October against Trail-Code 0.28.0 and graphify 0.9.97 in code-only mode, dctx scored 140 of 140 points with 29,340 estimated tokens; Trail-Code scored 122 with 88,923 and graphify 96 with 197,203. Cold indexing of the six corpora took dctx 0.13&ndash;1.20 s.</p>
 <p>That protocol was designed by the dctx team and can favour dctx. An independently selected protocol is pending, and we will publish its result whatever it shows.</p>
 <p>On 6 November, 33 of 33 text answers and 33 of 33 JSON answers stayed byte-identical after unrelated edits across three pinned corpora. Three weeks earlier, answer headers that changed after unrelated edits were one of the findings that <a href="/news/specification-and-benchmark/">our first benchmark</a> held against us.</p>
-<p><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md">Benchmark write-up</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md">Stability report</a> &middot; <a href="/changelog/#v1-1-0">Full changelog</a></p>
-<p><a href="/news/">&larr; All news</a></p></div></article></div>
+<p><a href="/docs/benchmark/">Benchmark write-up</a> &middot; <a href="/docs/stability/">Stability report</a> &middot; <a href="/changelog/#v1-1-0">Full changelog</a></p>
+<p><a href="/news/">&larr; All news</a></p></article></div>
 </main>
-<footer class="site-footer">
+<footer class="ftr">
  <div class="wrap">
-  <div class="foot-grid">
-   <div>
+  <div class="ftr-grid">
+   <div class="ftr-brand">
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p class="mono small">dctx 1.1.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
    </div>
-   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul>
-    <li><a href="/#why">Why dctx</a></li><li><a href="/#install">Install</a></li><li><a href="/#benchmark">Benchmark</a></li>
-    <li><a href="/#privacy">Security and privacy</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></nav>
-   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul>
-    <li><a href="/docs/">Documentation</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Specification</a></li>
-    <li><a href="/news/">News</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/feed.xml">Atom feed</a></li></ul></nav>
-   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul>
-    <li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li>
-    <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/SECURITY.md">Report a vulnerability</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li>
-    <li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
   </div>
-  <div class="foot-bottom">
+  <div class="ftr-bottom">
    <div>
     <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
-    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="https://github.com/Eris-Margeta/dctx/blob/main/TRADEMARK.md">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
    </div>
    <div class="credit">
     <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>

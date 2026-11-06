@@ -1,5 +1,5 @@
 # Dokploy Compose app "dctx": the static site and the playground behind one nginx.
-# The Dokploy domain dctx.internet.technology points at dctx-site:80; nginx serves the site and
+# The Dokploy domain www.dctx.internet.technology points at dctx-site:80; nginx serves the site and
 # proxies /api/ to dctx-play:8080. The site works with dctx-play stopped (the playground page
 # then shows its recorded runs). See tools/playground/DEPLOY.md.
 services:

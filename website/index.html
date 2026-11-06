@@ -1,52 +1,88 @@
 <!doctype html>
-<html lang="en" class="js-off">
+<html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>dctx: the context engine for AI-assisted development</title>
-<meta name="description" content="dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, with no telemetry and no network. Apache-2.0.">
+<script>/* Runs before first paint: theme and motion preference, so there is no flash. */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  d.className = d.className.replace('no-js', 'js');
+  try { t = localStorage.getItem('dctx-theme'); m = localStorage.getItem('dctx-motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
+})();</script>
+<link rel="stylesheet" href="/assets/site.2dbe17bb.css">
+<link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, offline, with no telemetry. Apache-2.0.">
 <meta name="robots" content="index, follow, max-image-preview:large">
-<link rel="canonical" href="https://dctx.internet.technology/">
-<meta property="og:url" content="https://dctx.internet.technology/">
+<meta name="generator" content="dctx website builder">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0b0a12" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://www.dctx.internet.technology/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="dctx">
 <meta property="og:locale" content="en_US">
 <meta property="og:title" content="dctx: the context engine for AI-assisted development">
-<meta property="og:description" content="dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, with no telemetry and no network. Apache-2.0.">
-<meta property="og:image" content="https://dctx.internet.technology/assets/og.png">
+<meta property="og:description" content="dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, offline, with no telemetry. Apache-2.0.">
+<meta property="og:url" content="https://www.dctx.internet.technology/">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/home.gif">
+<meta property="og:image:type" content="image/gif">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="dctx: context, engineered. A code tree flows into a compact, stable block of tokens.">
+<meta property="og:image:alt" content="dctx: a repository flows through ignore rules into a graph, then into one bounded, stable page.">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/home.dark.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: a repository flows through ignore rules into a graph, then into one bounded, stable page.">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/home.light.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: a repository flows through ignore rules into a graph, then into one bounded, stable page.">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="dctx: the context engine for AI-assisted development">
+<meta name="twitter:description" content="dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, offline, with no telemetry. Apache-2.0.">
+<meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/home.dark.png">
+<meta name="twitter:image:alt" content="dctx: a repository flows through ignore rules into a graph, then into one bounded, stable page.">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="license" href="https://www.apache.org/licenses/LICENSE-2.0">
+<link rel="author" href="https://tejl.com/">
+<link rel="help" href="/docs/">
+<link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
 <link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
-<script>try{var t=localStorage.getItem('dctx-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
-<link rel="stylesheet" href="/assets/site.css">
-<script src="/assets/site.js" defer></script>
+<link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
+<link rel="me" href="https://github.com/Eris-Margeta">
+<script src="/assets/home.c675c76d.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
  "@graph": [
   {
    "@type": "Organization",
-   "@id": "https://dctx.internet.technology/#organization",
+   "@id": "https://www.dctx.internet.technology/#organization",
    "name": "TEJL",
    "url": "https://tejl.com/",
-   "logo": "https://dctx.internet.technology/assets/tejl-logo-off-black.svg",
+   "logo": "https://www.dctx.internet.technology/assets/tejl-logo-off-black.svg",
    "email": "info@tejl.com",
    "sameAs": [
     "https://tejl.hr/"
    ],
    "founder": {
-    "@id": "https://dctx.internet.technology/#author"
+    "@id": "https://www.dctx.internet.technology/#author"
    }
   },
   {
    "@type": "Person",
-   "@id": "https://dctx.internet.technology/#author",
+   "@id": "https://www.dctx.internet.technology/#author",
    "name": "Eris Margeta",
    "url": "https://tejl.com/",
    "sameAs": [
@@ -54,51 +90,61 @@
    ],
    "jobTitle": "Founder",
    "worksFor": {
-    "@id": "https://dctx.internet.technology/#organization"
+    "@id": "https://www.dctx.internet.technology/#organization"
    }
   },
   {
    "@type": "WebSite",
-   "@id": "https://dctx.internet.technology/#website",
-   "url": "https://dctx.internet.technology/",
+   "@id": "https://www.dctx.internet.technology/#website",
+   "url": "https://www.dctx.internet.technology/",
    "name": "dctx",
    "inLanguage": "en",
    "publisher": {
-    "@id": "https://dctx.internet.technology/#organization"
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.dctx.internet.technology/search/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
    }
   },
   {
    "@type": "SoftwareApplication",
-   "@id": "https://dctx.internet.technology/#software",
+   "@id": "https://www.dctx.internet.technology/#software",
    "name": "dctx",
    "softwareVersion": "1.1.0",
    "applicationCategory": "DeveloperApplication",
    "operatingSystem": "Linux (x86_64 tested)",
    "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
-   "url": "https://dctx.internet.technology/",
+   "url": "https://www.dctx.internet.technology/",
    "license": "https://www.apache.org/licenses/LICENSE-2.0",
    "isAccessibleForFree": true,
    "codeRepository": "https://github.com/Eris-Margeta/dctx",
    "programmingLanguage": "Rust",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-1-0",
+   "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.dctx.internet.technology/docs/"
+   },
    "author": {
-    "@id": "https://dctx.internet.technology/#author"
+    "@id": "https://www.dctx.internet.technology/#author"
    },
    "publisher": {
-    "@id": "https://dctx.internet.technology/#organization"
+    "@id": "https://www.dctx.internet.technology/#organization"
    }
   },
   {
    "@type": "WebPage",
-   "@id": "https://dctx.internet.technology/#webpage",
-   "url": "https://dctx.internet.technology/",
+   "@id": "https://www.dctx.internet.technology/#webpage",
+   "url": "https://www.dctx.internet.technology/",
    "name": "dctx",
-   "description": "dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, with no telemetry and no network. Apache-2.0.",
+   "description": "dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, offline, with no telemetry. Apache-2.0.",
    "inLanguage": "en",
    "isPartOf": {
-    "@id": "https://dctx.internet.technology/#website"
+    "@id": "https://www.dctx.internet.technology/#website"
    },
    "about": {
-    "@id": "https://dctx.internet.technology/#software"
+    "@id": "https://www.dctx.internet.technology/#software"
    }
   }
  ]
@@ -107,215 +153,136 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="site-header">
- <div class="wrap nav">
-  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
-  <nav aria-label="Primary"><ul class="nav-links"><li><a href="/#why">Why dctx</a></li><li><a href="/#install">Install</a></li><li><a href="/#benchmark">Benchmark</a></li><li><a href="/docs/">Docs</a></li><li><a href="/news/">News</a></li><li><a href="/changelog/">Changelog</a></li></ul></nav>
-  <div class="nav-end">
-   <a class="btn btn-ghost btn-sm btn-gh" href="https://github.com/Eris-Margeta/dctx">Source code</a>
-   <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
-   <details class="menu"><summary class="icon-btn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
-    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/#why">Why dctx</a></li><li><a href="/#install">Install</a></li><li><a href="/#benchmark">Benchmark</a></li><li><a href="/docs/">Docs</a></li><li><a href="/news/">News</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li></ul></nav></details>
+<header class="hdr">
+ <div class="wrap hdr-in">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.1.0</span></a>
+  <nav class="nav" aria-label="Primary"><ul><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
+  <div class="hdr-end">
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
   </div>
  </div>
 </header>
 <main id="main">
 
 <section class="hero" aria-labelledby="hero-title">
- <div class="wrap">
-  <ul class="badge-row" aria-label="Project facts">
-   <li><a class="badge" href="/changelog/#v1-1-0">Version <b>1.1.0</b></a></li>
-   <li><span class="badge">Apache-2.0</span></li>
-   <li><span class="badge">No telemetry</span></li>
-   <li><span class="badge">Written in Rust</span></li>
-  </ul>
-  <h1 id="hero-title">Context, <span class="accent">engineered.</span></h1>
-  <p class="lede">dctx is the context engine for AI-assisted software development. It gives a model the fewest, most relevant bytes of your source code, in an order that stays the same between turns: smaller prompts, prompt caches that hit, and answers built on exact source instead of guesses.</p>
-  <div class="actions">
-   <a class="btn btn-primary" href="#install">Install from source
-    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5"/></svg></a>
-   <a class="btn btn-ghost" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification</a>
-  </div>
-  <figure class="hero-art"><img src="/assets/dctx-header.svg" width="1280" height="400" fetchpriority="high"
-   alt="Diagram: many file nodes of a code tree flow into one compact, stable block of tokens, labelled deterministic bytes and stable prefix."></figure>
- </div>
-</section>
-
-<section class="section-alt" aria-labelledby="facts-h" style="padding-block:clamp(40px,6vw,64px)">
- <div class="wrap">
-  <h2 id="facts-h" class="visually-hidden">dctx at a glance</h2>
-  <dl class="facts">
-   <div class="fact"><dt>140/140</dt><dd>points on our 70-question protocol, against Trail-Code 122 and graphify 96.</dd></div>
-   <div class="fact"><dt>0.13&ndash;1.20&nbsp;s</dt><dd>cold index of six benchmark corpora (median of three runs).</dd></div>
-   <div class="fact"><dt>50</dt><dd>language families: 36 full, 8 outline, 6 documentation formats.</dd></div>
-   <div class="fact"><dt>33/33</dt><dd>text and 33/33 JSON answers byte-identical after unrelated edits.</dd></div>
-   <div class="fact"><dt>0</dt><dd>network calls. No telemetry, and dctx never calls a model.</dd></div>
-  </dl>
-  <p class="note">Measured on one Linux x86_64 machine; details and caveats in <a href="#benchmark">the benchmark</a> and the <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md">stability report</a>.</p>
- </div>
-</section>
-
-<section id="why" aria-labelledby="why-h">
- <div class="wrap">
-  <div class="section-head">
-   <span class="eyebrow">Why dctx</span>
-   <h2 id="why-h">Every token in front of a model is paid for three times.</h2>
-   <p>dctx exists to cut all three costs. The specification turns that belief into five testable constraints: every answer is bounded, deterministic, prefix-stable, non-redundant and honest about its precision.</p>
-  </div>
-  <div class="grid grid-3">
-   <article class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></div>
-    <h3>Prefill</h3><p>A model processes every input token before it answers; you pay for each one and wait for it. dctx answers with exact spans inside an estimated token budget, never whole files by default.</p></article>
-   <article class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/></svg></div>
-    <h3>Cache misses</h3><p>Providers serve a repeated prompt prefix for a fraction of the price, but one changed byte breaks it. The same tree and question give dctx the same bytes, and an unrelated edit leaves map answers unchanged.</p></article>
-   <article class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></div>
-    <h3>Attention</h3><p>Answers get worse as irrelevant tokens pile up. dctx ranks syntax-owned spans, never cuts a record in half, and labels every answer with its precision and freshness.</p></article>
-  </div>
- </div>
-</section>
-
-<section class="section-alt" id="features" aria-labelledby="features-h">
- <div class="wrap">
-  <div class="section-head">
-   <span class="eyebrow">What you get</span>
-   <h2 id="features-h">One engine for every way software is built.</h2>
-   <p>The command line, the MCP server, the library and the desktop preview share one core, one privacy boundary and the same output.</p>
-  </div>
-  <div class="grid grid-3">
-   <article class="card"><span class="k">dctx map</span><h3>Map mode for agents</h3><p>Ten verbs (map, find, neighbors, explain, read, skeleton, grep, hubs, path, export) with stable ids, cursor paging and lexical call and import edges. Up to 2,000 estimated tokens per answer.</p></article>
-   <article class="card"><span class="k">dctx mcp</span><h3>MCP server</h3><p>A stdio MCP server exposes the map verbs as tools, so any MCP-capable agent can query the same bounded, deterministic answers.</p></article>
-   <article class="card"><span class="k">dctx pack</span><h3>Whole-project context</h3><p>The whole project, or only what changed, as one structured block on stdout or the clipboard. Tree lines carry no timestamps, so a bare <code>touch</code> leaves the page byte-identical.</p></article>
-   <article class="card"><span class="k">No embeddings</span><h3>Zero RAG defects</h3><p>No chunking, no vector store. dctx answers from a lexical graph of syntax-owned spans and verifies source bytes before it emits them.</p></article>
-   <article class="card"><span class="k">Ed25519</span><h3>Verified plugins and index</h3><p>Plugin distribution and index verification use Ed25519 signatures. Plugins run out of process with explicit capabilities and consent.</p></article>
-   <article class="card"><span class="k">Preview &middot; 0.11</span><h3>dctx Desktop</h3><p>The same engine in a window, for people who prefer one. Free for everyone, including companies. Preview, source only: there is no download yet, so build it from the repository.</p></article>
-  </div>
-  <details class="disclose" id="languages">
-   <summary>Supported languages: 36 full, 8 outline, 6 documentation formats</summary>
-   <div>
-    <p><strong>Full</strong> (symbols and lexical call edges): Rust, JavaScript, TypeScript/TSX, Python, Go, Java, C/C++, C#, Kotlin, Ruby, PHP, Swift, Vue/Svelte/Astro/HTML script blocks, Scala, Dart, Zig, Solidity, Gleam, Fortran, Perl, Groovy, PowerShell, Elixir, Lua, OCaml, R, Julia, Haskell, Erlang, Verilog/SystemVerilog, Terraform/HCL, SQL, Clojure, Common Lisp, Scheme, Emacs Lisp.</p>
-    <p><strong>Outline</strong> (symbols only): JSON/JSONC/TOML/YAML, Shell, Makefile, Dockerfile, Protobuf, Pascal, GraphQL, Nix.</p>
-    <p><strong>Docs</strong> (headed sections): Markdown, plain text, reStructuredText, AsciiDoc, Org, LaTeX.</p>
-    <p class="note">Call edges come from names, scopes and imports, never from a type checker; heuristic families are labelled <code>guess</code>. Run <code>dctx languages</code> for the tier and confidence of every format.</p>
+ <div class="wrap hero-grid">
+  <div class="hero-copy">
+   <ul class="chips" aria-label="Project facts">
+    <li><a href="/changelog/#v1-1-0">dctx <b>1.1.0</b></a></li><li>Apache-2.0</li><li>Rust</li><li>Linux x86_64 tested</li><li>no telemetry</li>
+   </ul>
+   <h1 id="hero-title">Context, <span class="accent">engineered.</span></h1>
+   <p class="lede">dctx gives a model the fewest, most relevant bytes of your code, in an order that stays the same between turns. Deterministic, bounded and offline.</p>
+   <div class="install"><span class="p" aria-hidden="true">$</span><code>git clone https://github.com/Eris-Margeta/dctx &amp;&amp; cd dctx &amp;&amp; cargo build --locked --release -p dctx-cli</code></div>
+   <div class="actions">
+    <a class="btn btn-primary" href="/docs/readme/">Read the docs</a><a class="btn" href="/cli/">CLI reference</a><a class="btn" href="/playground/">Playground</a><a class="btn" href="https://github.com/Eris-Margeta/dctx">GitHub</a>
    </div>
-  </details>
+   <h2 class="eyebrow" id="scene-h">On the sample project <a href="/examples/">kiosk</a></h2>
+   <ol class="steps" aria-label="What the animation shows"><li><b>repository</b><span>13 files on disk</span></li><li><b>policy</b><span>11 listed, 10 read</span></li><li><b>graph</b><span>41 nodes, 13 call/import edges</span></li><li><b>bounded page</b><span>223 of 600 tokens</span></li></ol>
+   <div class="code"><div class="code-head"><span>Quick start (README)</span><button class="copy" type="button" hidden>Copy</button></div><pre><code><span class="p">$ </span>dctx pack .<span class="t-c1">            # whole project as one structured context block on stdout</span>
+<span class="p">$ </span>dctx pack . --clipboard<span class="t-c1">  # … straight to the clipboard</span>
+<span class="p">$ </span>dctx<span class="t-c1">                   # interactive menu</span></code></pre></div>
+  </div>
+  <div class="hero-side">
+   <div class="stage" data-scene aria-labelledby="scene-h">
+    <picture><source srcset="/assets/og/scene.dark.png" media="(prefers-color-scheme: dark)"><img src="/assets/og/scene.light.png" width="1200" height="630" alt="The kiosk sample as dctx sees it: 41 nodes and 13 call and import edges, the query find greet lighting s:src/util.rs#greet, and its 223-token page inside a 600-token budget." fetchpriority="high"></picture>
+    <canvas aria-hidden="true"></canvas>
+    <div class="stage-cap"><span data-cap>4 bounded page &middot; 223 of 600 tokens</span><button class="tbtn" type="button" data-replay hidden>Replay</button></div>
+   </div>
+   <div class="term term-hero" data-play="scene"><div class="term-bar"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span class="title">~/kiosk  ·  dctx 1.1.0</span><button class="tbtn" type="button" data-replay hidden>Replay</button></div><div class="scroll"><pre><span class="ln cmd"><span class="p">$ </span>dctx pack . --for &#x27;greet store&#x27; --budget 600</span><span class="ln out hdrl"># dctx pack --for budget=600 terms=2</span><span class="ln out hdrl">## find greet</span><span class="ln out"><span class="cm"></span><span class="id">s:src/util.rs#greet</span>	fn	L2-4</span><span class="ln out"><span class="cm"></span><span class="id">s:web/app.ts#renderGreeting</span>	fn	L10-12</span><span class="ln out hdrl">## find store</span><span class="ln out"><span class="cm"></span><span class="id">s:src/store.rs#Order</span>	struct	L4-8</span><span class="ln out"><span class="cm"></span><span class="id">s:src/store.rs#checksum</span>	fn	L22-24</span><span class="ln out"><span class="cm"></span><span class="id">s:src/store.rs#encode</span>	fn	L17-19</span><span class="ln out hdrl">## neighbors s:src/util.rs#greet</span><span class="ln out"><span class="cm">calls:in:</span><span class="id">s:src/main.rs#main</span>	fn	src/main.rs	L7</span><span class="ln out"><span class="cm">calls:out:</span><span class="id">s:src/util.rs#title_case</span>	fn	src/util.rs</span><span class="ln out"><span class="cm">contains:in:</span><span class="id">m:src/util.rs</span>	module	src/util.rs</span><span class="ln out hdrl">## neighbors s:src/store.rs#Order</span><span class="ln out"><span class="cm">contains:in:</span><span class="id">m:src/store.rs</span>	module	src/store.rs</span><span class="ln out hdrl">## read s:src/util.rs#greet</span><span class="ln out"><span class="cm"></span><span class="id">s:src/util.rs#greet</span>	fn	src/util.rs</span><span class="ln out">pub fn greet(name: &amp;str) -&gt; String {</span><span class="ln out">    format!(&quot;Hello, {}!&quot;, title_case(name))</span><span class="ln out">}</span><span class="ln out hdrl">## read s:src/store.rs#Order</span><span class="ln out"><span class="cm"></span><span class="id">s:src/store.rs#Order</span>	struct	src/store.rs</span><span class="ln out">pub struct Order {</span><span class="ln out">    pub id: u32,</span><span class="ln out">    pub item: String,</span><span class="ln out">    pub qty: u32,</span><span class="ln out">}</span><span class="ln out hdrl"># end body_tokens=223 budget=600 dropped=0</span><span class="ln meta"># <b>exit 0</b> &middot; 822 bytes &middot; ~235 est. tokens</span><span class="ln gap"></span><span class="ln cmd"><span class="p">$ </span>dctx map find greet</span><span class="ln out hdrl"># kiosk find</span><span class="ln out"><span class="cm"></span><span class="id">s:src/util.rs#greet</span>	fn	L2-4</span><span class="ln out"><span class="cm"></span><span class="id">s:web/app.ts#renderGreeting</span>	fn	L10-12</span><span class="ln meta"># <b>exit 0</b> &middot; 79 bytes &middot; ~23 est. tokens</span><span class="ln gap"></span><span class="ln cmd"><span class="p">$ </span>dctx map neighbors &#x27;s:src/util.rs#greet&#x27; --edge calls --dir in</span><span class="ln out hdrl"># kiosk neighbors</span><span class="ln out"><span class="cm">calls:in:</span><span class="id">s:src/main.rs#main</span>	fn	src/main.rs	L7</span><span class="ln meta"># <b>exit 0</b> &middot; 64 bytes &middot; ~19 est. tokens</span><span class="ln gap"></span><span class="ln cmd"><span class="p">$ </span>dctx map read &#x27;s:src/util.rs#greet&#x27; --json</span><span class="ln out hdrl"># one JSON line; pretty-printed here</span><span class="ln out">{</span><span class="ln out"> &quot;v&quot;: 2,</span><span class="ln out"> &quot;place&quot;: &quot;kiosk&quot;,</span><span class="ln out"> &quot;verb&quot;: &quot;read&quot;,</span><span class="ln out"> &quot;freshness&quot;: {</span><span class="ln out">  &quot;mode&quot;: &quot;strict&quot;,</span><span class="ln out hdrl">… 33 more lines · <a href="/examples/#read-json">full output</a></span><span class="ln meta"># <b>exit 0</b> &middot; 559 bytes &middot; ~160 est. tokens</span></pre></div></div>
+  </div>
+ </div>
+ <div class="wrap facts-row"><dl class="facts"><div><dt>140/140</dt><dd>points on the 70-question protocol (Trail-Code 122, graphify 96). <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L40" title="Source: docs/BENCHMARK-20261030.md">run 7</a></dd></div><div><dt>0.13&ndash;1.20&nbsp;s</dt><dd>cold index of 6 benchmark corpora, median of 3 runs. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json" title="Source: docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json">run 7</a></dd></div><div><dt>50</dt><dd>language families: 36 full, 8 outline, 6 docs. <a class="src" href="/languages/">dctx languages</a></dd></div><div><dt>33/33</dt><dd>text and 33/33 JSON answers byte-identical after unrelated edits. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md#L7" title="Source: docs/research/stability-20261105/REPORT.md">report</a></dd></div><div><dt>0</dt><dd>socket attempts by dctx in every traced benchmark variant. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L24" title="Source: docs/BENCHMARK-20261030.md">network</a></dd></div></dl></div>
+ <script type="application/json" id="scene-data">{"w":1200,"h":630,"files":[{"p":".env","s":"listed-not-read","x":337.0,"y":492.0},{"p":".gitignore","s":"packed","x":464.5,"y":157.0},{"p":"Cargo.toml","s":"packed","x":561.8,"y":433.5},{"p":"README.md","s":"packed","x":489.8,"y":357.6},{"p":"assets/logo.png","s":"binary","x":211.6,"y":405.5},{"p":"config.toml","s":"packed","x":104.4,"y":194.6},{"p":"src/main.rs","s":"packed","x":314.8,"y":278.9},{"p":"src/store.rs","s":"packed","x":500.7,"y":536.2},{"p":"src/util.rs","s":"packed","x":80.2,"y":236.6},{"p":"target/debug/kiosk.d","s":"ignored","x":453.6,"y":323.4},{"p":"tools/report.py","s":"packed","x":499.4,"y":115.0},{"p":"web/app.ts","s":"packed","x":388.9,"y":83.1},{"p":"web/format.ts","s":"packed","x":310.6,"y":136.8}],"nodes":[{"id":"d:README.md#Configuration","k":"heading","x":34.0,"y":285.3},{"id":"d:README.md#Orders","k":"heading","x":10.4,"y":266.8},{"id":"d:README.md#Run","k":"heading","x":29.3,"y":243.4},{"id":"d:README.md#kiosk","k":"heading","x":32.1,"y":213.5},{"id":"m:.gitignore","k":"module","x":80,"y":560},{"id":"m:Cargo.toml","k":"module","x":690,"y":110},{"id":"m:README.md","k":"module","x":70,"y":260},{"id":"m:assets/logo.png","k":"module","x":620,"y":585},{"id":"m:config.toml","k":"module","x":360,"y":545},{"id":"m:src/main.rs","k":"module","x":360,"y":300},{"id":"m:src/store.rs","k":"module","x":560,"y":430},{"id":"m:src/util.rs","k":"module","x":150,"y":420},{"id":"m:tools/report.py","k":"module","x":650,"y":255},{"id":"m:web/app.ts","k":"module","x":190,"y":150},{"id":"m:web/format.ts","k":"module","x":450,"y":95},{"id":"s:Cargo.toml#dependencies","k":"struct","x":690.9,"y":66.0},{"id":"s:Cargo.toml#package","k":"struct","x":711.3,"y":53.9},{"id":"s:Cargo.toml#package.description","k":"fn","x":718.5,"y":76.5},{"id":"s:Cargo.toml#package.edition","k":"fn","x":742.0,"y":80.1},{"id":"s:Cargo.toml#package.license","k":"fn","x":733.3,"y":102.1},{"id":"s:Cargo.toml#package.name","k":"fn","x":749.2,"y":119.8},{"id":"s:Cargo.toml#package.version","k":"fn","x":728.5,"y":131.3},{"id":"s:config.toml#orders","k":"struct","x":396.0,"y":570.2},{"id":"s:config.toml#orders.folder","k":"fn","x":387.7,"y":598.2},{"id":"s:config.toml#screen","k":"struct","x":360.0,"y":589.0},{"id":"s:config.toml#screen.currency","k":"fn","x":332.3,"y":598.2},{"id":"s:config.toml#screen.title","k":"fn","x":324.0,"y":570.2},{"id":"s:src/main.rs#main","k":"fn","x":360.0,"y":256.0},{"id":"s:src/store.rs#Order","k":"struct","x":603.3,"y":422.4},{"id":"s:src/store.rs#checksum","k":"fn","x":616.8,"y":449.2},{"id":"s:src/store.rs#encode","k":"fn","x":589.8,"y":462.4},{"id":"s:src/store.rs#save","k":"fn","x":574.5,"y":488.2},{"id":"s:src/util.rs#greet","k":"fn","x":118.4,"y":450.6},{"id":"s:src/util.rs#title_case","k":"fn","x":92.2,"y":436.0},{"id":"s:tools/report.py#main","k":"fn","x":690.5,"y":237.7},{"id":"s:tools/report.py#read_orders","k":"fn","x":709.7,"y":260.8},{"id":"s:web/app.ts#Line","k":"interface","x":147.1,"y":140.3},{"id":"s:web/app.ts#renderGreeting","k":"fn","x":145.0,"y":110.3},{"id":"s:web/app.ts#renderReceipt","k":"fn","x":175.0,"y":108.6},{"id":"s:web/format.ts#formatName","k":"fn","x":457.2,"y":51.6},{"id":"s:web/format.ts#formatPrice","k":"fn","x":487.0,"y":47.7}],"edges":[[9,10,"imports"],[9,11,"imports"],[12,34,"calls"],[13,39,"imports"],[13,40,"imports"],[27,31,"calls"],[27,32,"calls"],[30,29,"calls"],[31,30,"calls"],[32,33,"calls"],[34,35,"calls"],[37,39,"calls"],[38,40,"calls"]],"tree":[[5,15],[5,16],[5,17],[5,18],[5,19],[5,20],[5,21],[6,0],[6,1],[6,2],[6,3],[8,22],[8,23],[8,24],[8,25],[8,26],[9,27],[10,28],[10,29],[10,30],[10,31],[11,32],[11,33],[12,34],[12,35],[13,36],[13,37],[13,38],[14,39],[14,40]],"hit":32,"nbrs":[27,33],"bars":[{"w":221.9,"n":32,"h":1},{"w":80.1,"n":32,"h":1},{"w":172.6,"n":32,"h":0},{"w":234.2,"n":37,"h":0},{"w":80.1,"n":37,"h":1},{"w":221.9,"n":28,"h":0},{"w":209.6,"n":29,"h":0},{"w":209.6,"n":30,"h":0},{"w":197.2,"n":32,"h":1},{"w":283.5,"n":32,"h":0},{"w":314.3,"n":32,"h":0},{"w":289.7,"n":32,"h":0},{"w":203.4,"n":28,"h":1},{"w":295.8,"n":28,"h":0},{"w":166.4,"n":32,"h":1},{"w":215.7,"n":32,"h":0},{"w":221.9,"n":32,"h":0},{"w":265.0,"n":32,"h":0},{"w":6.2,"n":32,"h":0},{"w":172.6,"n":28,"h":1},{"w":271.2,"n":28,"h":0},{"w":110.9,"n":28,"h":0},{"w":98.6,"n":28,"h":0},{"w":129.4,"n":28,"h":0},{"w":104.8,"n":28,"h":0},{"w":6.2,"n":28,"h":0},{"w":258.9,"n":28,"h":1}],"frame":{"x":745,"y":112,"w":330,"h":379},"counts":{"disk":13,"listed":11,"read":10,"nodes":41,"edges":13,"body_tokens":223,"budget":600,"dropped":0}}</script>
+</section>
+
+<section class="sec" aria-labelledby="how-h">
+ <div class="wrap">
+  <div class="sec-head"><h2 id="how-h">How it works</h2><p>Four steps, every one checkable. The scene above runs them on the 13-file sample.</p></div>
+  <div class="cols cols-2">
+   <ol class="how">
+    <li><div><b>Select before reading.</b><p>Ignore rules and the built-in deny decide which files exist for dctx before a byte is read, hashed, parsed or cached. In the sample, <code>target/</code> and the binary <code>assets/logo.png</code> are left out, and <code>.env</code> is listed by name only. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L241" title="Source: README.md">README</a></p></div></li>
+    <li><div><b>Index syntax, not chunks.</b><p>Files become syntax-owned symbols, modules and headings with lexical call and import edges. No embeddings and no vector store; edges carry a confidence label. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L61" title="Source: README.md">README</a></p></div></li>
+    <li><div><b>Answer within a budget.</b><p>Every answer fits an estimated token budget (up to 2,000; explain up to 1,000) and never splits a record. <code>pack --for</code> on the sample used 223 of 600 tokens and dropped 0. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L131" title="Source: README.md">README</a></p></div></li>
+    <li><div><b>Same bytes every time.</b><p>The same tree and question give the same bytes, so prompt caches hit. Default answers carry no timestamps, digests or ages; <code>--meta</code> restores them. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L132" title="Source: README.md">README</a></p></div></li>
+   </ol>
+   <div>
+    <p>A conforming implementation must satisfy five constraints. Status as the specification states it:</p>
+    <div class="table-wrap"><table><caption><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md#L99" title="Source: docs/SPEC.md">SPEC §2</a></caption><thead><tr><th scope="col">Constraint</th><th scope="col">Definition</th><th scope="col">Status</th></tr></thead><tbody><tr><td><b>Bounded</b></td><td>Every answer has a declared byte and estimated-token ceiling, reserved before records are written; records are never split</td><td>landed</td></tr><tr><td><b>Deterministic</b></td><td>Same source snapshot, policy, plan, ranking revision and request ⇒ identical bytes, on every OS and thread count</td><td>landed on Linux</td></tr><tr><td><b>Prefix-stable</b></td><td>Context injected across turns is layered so that bytes that did not need to change do not change (§12)</td><td>tier layering remains target</td></tr><tr><td><b>Non-redundant</b></td><td>Within one session a record already delivered is not re-sent unless its content changed (§12.4)</td><td>target</td></tr><tr><td><b>Honest</b></td><td>Every answer states its freshness, precision and provenance; the engine never asserts what it does not know</td><td>landed</td></tr></tbody></table></div>
+   </div>
+  </div>
  </div>
 </section>
 
-<section id="install" aria-labelledby="install-h">
+<section class="sec" aria-labelledby="verbs-h">
  <div class="wrap">
-  <div class="section-head">
-   <span class="eyebrow">Install</span>
-   <h2 id="install-h">Build it from source in a minute.</h2>
-   <p>dctx needs a recent stable Rust toolchain with Cargo. Linux x86_64 is the only tested platform; macOS and Windows builds are untested. There is no crates.io package or prebuilt binary yet.</p>
-  </div>
-  <ol class="steps">
-   <li><div><h3>Build the CLI</h3>
-<div class="code"><div class="code-head"><span>zsh</span><button class="copy" type="button" aria-live="polite" hidden>Copy</button></div><pre><code><span class="p">$ </span>git clone https://github.com/Eris-Margeta/dctx
+  <div class="sec-head"><h2 id="verbs-h">Commands</h2><p>The meaning of each command is its own help text, captured from dctx 1.1.0.</p></div>
+  <div class="table-wrap"><table class="verbs"><thead><tr><th scope="col">Command</th><th scope="col">What it does (from <code>--help</code>)</th><th scope="col"></th></tr></thead><tbody><tr><td><a href="/cli/#help"><code>dctx pack</code></a></td><td>Explicit <code>dctx pack</code> writes stdout, the clipboard, or <code>--output</code>. It does not create a project text file.</td><td><a href="/examples/#pack">example</a></td></tr><tr><td><a href="/cli/#help"><code>dctx pack --for</code></a></td><td><code>dctx pack --for &lt;TEXT&gt;</code> prints task context for an agent card instead: map find, neighbors and read of the names in TEXT, cut to <code>--budget</code> estimated tokens (default 3000).</td><td><a href="/examples/#pack-for">example</a></td></tr><tr><td><a href="/cli/#map"><code>dctx map map</code></a></td><td>Outline of a file (m:&lt;path&gt; or a place-relative path) or a symbol and what it contains.</td><td><a href="/examples/#map-map">example</a></td></tr><tr><td><a href="/cli/#find"><code>dctx map find</code></a></td><td>Ranked symbols, modules, headings and config keys whose name or summary matches QUERY.</td><td><a href="/examples/#find">example</a></td></tr><tr><td><a href="/cli/#neighbors"><code>dctx map neighbors</code></a></td><td>Edges of one node: callers with --dir in --edge calls, callees with --dir out.</td><td><a href="/examples/#neighbors-in">example</a></td></tr><tr><td><a href="/cli/#explain"><code>dctx map explain</code></a></td><td>One node with its signature and summary, no body.</td><td><a href="/examples/#explain">example</a></td></tr><tr><td><a href="/cli/#read"><code>dctx map read</code></a></td><td>The verified source text of one node; a long node pages with --cursor.</td><td><a href="/examples/#read-json">example</a></td></tr><tr><td><a href="/cli/#skeleton"><code>dctx map skeleton</code></a></td><td>Declaration signatures of one file in source order, no bodies.</td><td><a href="/examples/#skeleton">example</a></td></tr><tr><td><a href="/cli/#grep"><code>dctx map grep</code></a></td><td>Exhaustive literal search of indexed files, hits grouped by enclosing symbol.</td><td><a href="/examples/#grep">example</a></td></tr><tr><td><a href="/cli/#hubs"><code>dctx map hubs</code></a></td><td>Most-called symbols and per-directory file and symbol counts. No TARGET.</td><td><a href="/examples/#hubs">example</a></td></tr><tr><td><a href="/cli/#path"><code>dctx map path</code></a></td><td>Shortest edge path (calls, imports, contains; at most 8 hops) between two nodes, or <code>no path</code>.</td><td><a href="/examples/#path">example</a></td></tr><tr><td><a href="/cli/#export"><code>dctx map export</code></a></td><td>The whole graph as one deterministic document. No TARGET, no token cap.</td><td><a href="/examples/#export-mermaid">example</a></td></tr><tr><td><a href="/cli/#mcp"><code>dctx mcp</code></a></td><td><code>dctx mcp</code> serves the map verbs as MCP tools over stdio (JSON-RPC 2.0, one message per line) for Claude Code, Cursor and Codex.</td><td><a href="/examples/#mcp">example</a></td></tr><tr><td><a href="/cli/#languages"><code>dctx languages</code></a></td><td><code>dctx languages</code> lists every supported language with its tier: full (symbols and call edges), outline (symbols only) or docs (sections).</td><td><a href="/languages/">table</a></td></tr><tr><td><a href="/cli/#help"><code>dctx template</code></a></td><td>Compile a template through the facade; List explicit compiled plans; no home-directory scan</td><td><a href="/templates/">templates</a></td></tr><tr><td><a href="/cli/#help"><code>dctx cache</code></a></td><td><code>dctx cache config</code> shows the persisted policy. <code>auto on|off</code> enables auto-clean, <code>--max-bytes</code> tightens the system cap, and <code>--ttl-days</code> sets idle overlay and preview lifetime.</td><td></td></tr></tbody></table></div>
+ </div>
+</section>
+
+<section class="sec" id="install" aria-labelledby="install-h">
+ <div class="wrap cols cols-2">
+  <div>
+   <div class="sec-head"><h2 id="install-h">Install</h2></div>
+   <p>A recent stable Rust toolchain with Cargo. Linux x86_64 is the only tested platform; macOS and Windows builds are untested. There is no crates.io package or prebuilt binary. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L71" title="Source: README.md">README</a></p>
+   <div class="code"><div class="code-head"><span>From source</span><button class="copy" type="button" hidden>Copy</button></div><pre><code><span class="p">$ </span>git clone https://github.com/Eris-Margeta/dctx
 <span class="p">$ </span>cd dctx
 <span class="p">$ </span>cargo build --locked --release -p dctx-cli
-<span class="p">$ </span>alias dctx=&quot;$PWD/target/release/dctx-cli&quot;</code></pre></div>
-    <p class="note">The built executable is named <code>dctx-cli</code>; the alias lets you type <code>dctx</code>. <code>cargo install --locked --path crates/dctx-cli</code> installs it into Cargo's bin directory instead.</p></div></li>
-   <li><div><h3>Pack a project for a chat assistant</h3>
-<div class="code"><div class="code-head"><span>zsh</span><button class="copy" type="button" aria-live="polite" hidden>Copy</button></div><pre><code><span class="p">$ </span>dctx pack .<span class="c">              # whole project as one context block</span>
-<span class="p">$ </span>dctx pack . --clipboard<span class="c">  # straight to the clipboard</span>
-<span class="p">$ </span>dctx . -d -c<span class="c">             # only what changed since the last snapshot</span></code></pre></div></div></li>
-   <li><div><h3>Give an agent a map</h3>
-<div class="code"><div class="code-head"><span>zsh</span><button class="copy" type="button" aria-live="polite" hidden>Copy</button></div><pre><code><span class="p">$ </span>dctx map find &quot;SnapshotConfig&quot;
-<span class="p">$ </span>dctx map read &#x27;s:crates/dctx-cli/src/lib.rs#SnapshotConfig&#x27; --json
-<span class="p">$ </span>dctx mcp<span class="c">                 # stdio MCP server with the map verbs as tools</span></code></pre></div>
-    <p class="note">Ids come from <code>map</code> and <code>find</code>. See the <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MAP-MODE.md">map mode guide</a> for every verb.</p></div></li>
-  </ol>
- </div>
-</section>
-
-<section class="section-alt" id="benchmark" aria-labelledby="bench-h">
- <div class="wrap">
-  <div class="section-head">
-   <span class="eyebrow">Measured in the open</span>
-   <h2 id="bench-h">More correct answers, with fewer tokens.</h2>
-   <p>Run 7 on 31 October 2026, against Trail-Code 0.28.0 and graphify 0.9.97 in code-only mode. Tokens are estimated as stdout bytes / 3.5 for every tool.</p>
+<span class="p">$ </span>./target/release/dctx-cli --version<span class="t-c1">   # dctx 1.1.0 (&lt;git sha&gt;)</span></code></pre></div>
+   <div class="code"><div class="code-head"><span>Using Cargo</span><button class="copy" type="button" hidden>Copy</button></div><pre><code><span class="p">$ </span>cargo install --locked --path crates/dctx-cli
+<span class="p">$ </span>dctx-cli --version
+<span class="p">$ </span>alias dctx=dctx-cli</code></pre></div>
   </div>
-  <div class="table-wrap">
-   <table>
-    <caption>70-question protocol, six pinned corpora, one Linux x86_64 runner</caption>
-    <thead><tr><th scope="col">Tool</th><th scope="col" class="num">Points /140</th><th scope="col" class="num">Gold facts /354</th><th scope="col" class="num">Tokens</th><th scope="col" class="num">Tool calls</th></tr></thead>
-    <tbody>
-     <tr class="lead"><th scope="row">dctx <code>53f8b6b</code></th><td class="num">140</td><td class="num">353</td><td class="num">29,340</td><td class="num">105</td></tr>
-     <tr><th scope="row">Trail-Code 0.28.0</th><td class="num">122</td><td class="num">312</td><td class="num">88,923</td><td class="num">70</td></tr>
-     <tr><th scope="row">graphify 0.9.97, code-only</th><td class="num">96</td><td class="num">238</td><td class="num">197,203</td><td class="num">91</td></tr>
-    </tbody>
-   </table>
-  </div>
-  <div class="caveat">
-   <p><strong>Read this before quoting the table.</strong> The protocol was designed by the dctx team, so it can favour dctx. An independently selected protocol (repositories picked by seed, gold answers from language servers, questions written without seeing dctx output) is pending, and its result will be published whatever it shows.</p>
-  </div>
-  <div class="grid grid-2">
-   <div class="card"><h3>Cold index</h3><p>dctx took 0.13&ndash;1.20 s on the six corpora (median of three runs), against 1.04&ndash;52.83 s for Trail-Code and 4.59&ndash;59.56 s for graphify, on an Intel Xeon E5-2680 v2 runner.</p></div>
-   <div class="card"><h3>Byte stability</h3><p>On 6 November 2026, 33/33 text and 33/33 JSON answers stayed identical after unrelated comment edits across three pinned corpora, and over five runs.</p></div>
-  </div>
-  <p class="note">Questions, gold facts, scorer, raw results and scripts: <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md">benchmark write-up</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030">raw data</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md">stability report</a>.</p>
- </div>
-</section>
-
-<section id="privacy" aria-labelledby="privacy-h">
- <div class="wrap grid grid-2" style="align-items:start;gap:var(--s12)">
   <div>
-   <span class="eyebrow">Security and privacy</span>
-   <h2 id="privacy-h">Ignored means never read.</h2>
-   <p class="lede">Selection happens before any byte is read, hashed, parsed or cached, and is checked again before output leaves the engine.</p>
-   <p>The release check counts network connect and send calls under <code>strace -f</code> for every map verb, <code>pack</code>, <code>cache status</code> and <code>mcp</code>, and fails on any. dctx decides by file name: a secret pasted into an ordinary source file is not detected.</p>
+   <div class="sec-head"><h2 id="project-h">Project</h2></div>
+   <dl class="kv">
+    <dt>licence</dt><dd>Apache-2.0, including commercial use. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE" title="Source: LICENSE">LICENSE</a></dd>
+    <dt>maintenance</dt><dd>Optional agreements fund security response and long-term support. <a href="/maintenance/">Terms</a></dd>
+    <dt>security</dt><dd>Report a vulnerability privately. <a href="/security/">Policy</a> &middot; <a href="/.well-known/security.txt">security.txt</a></dd>
+    <dt>trademark</dt><dd>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta. <a href="/trademark/">Policy</a></dd>
+    <dt>history</dt><dd>Started in 2025 as <code>dircontxt</code> in C; rewritten in Rust in 2026. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L65" title="Source: README.md">README</a></dd>
+    <dt>source</dt><dd><a href="https://github.com/Eris-Margeta/dctx">github.com/Eris-Margeta/dctx</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/tree/main/crates">crates</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/blob/main/CHANGELOG.md">CHANGELOG.md</a></dd>
+   </dl>
   </div>
-  <ul class="checks">
-   <li><strong>Ignore rules first.</strong> <code>.gitignore</code>, <code>.dctxignore</code> and a global ignore exclude files before they are opened; <code>.dctxomitcontent</code> lists a file without reading it.</li>
-   <li><strong>A built-in deny with no override.</strong> Env files, private keys, credential and secrets files are listed by name but never read.</li>
-   <li><strong><code>.git</code> is closed.</strong> Never listed or read by the map verbs, never read by <code>pack</code>.</li>
-   <li><strong>No symlink escapes.</strong> Files open with <code>O_NOFOLLOW</code>; symlinked directories are never entered.</li>
-   <li><strong>Local only.</strong> No telemetry, no model calls, no network for pack and map.</li>
-  </ul>
  </div>
 </section>
 
-<section class="section-alt" id="open-source" aria-labelledby="oss-h">
- <div class="wrap grid grid-2" style="align-items:center;gap:var(--s12)">
+<section class="sec" id="privacy" aria-labelledby="privacy-h">
+ <div class="wrap cols cols-2">
   <div>
-   <span class="eyebrow">Open source</span>
-   <h2 id="oss-h">Free for any use. Paid maintenance keeps it healthy.</h2>
-   <p>dctx is Apache-2.0, including for commercial use. No feature is held back behind a paid edition. Companies that depend on it can fund security response times and long-term support through a maintenance agreement.</p>
-   <div class="actions" style="justify-content:flex-start">
-    <a class="btn btn-primary" href="/maintenance/">Maintenance agreements</a>
-    <a class="btn btn-ghost" href="/docs/">Documentation</a>
-   </div>
+   <div class="sec-head"><h2 id="privacy-h">Ignored means never read</h2></div>
+   <ul class="checks"><li><strong>Ignore rules first.</strong> <code>.gitignore</code>, <code>.dctxignore</code> and a global ignore exclude files before they are opened. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L239" title="Source: README.md">README</a></li><li><strong>A built-in deny with no override.</strong> Env files, private keys, credential and secret files are listed by name but never read. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L245" title="Source: README.md">README</a></li><li><strong><code>.git</code> is closed.</strong> Never listed or read by the map verbs, never read by <code>pack</code>. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L246" title="Source: README.md">README</a></li><li><strong>No symlink escapes.</strong> Files open with <code>O_NOFOLLOW</code>; symlinked directories are never entered. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L247" title="Source: README.md">README</a></li><li><strong>Local only.</strong> No telemetry, no model calls, no network for pack and map. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L266" title="Source: README.md">README</a></li></ul>
+   <p class="note">dctx decides by file name: a secret pasted into an ordinary source file is not detected. On the sample, <a href="/examples/#grep"><code>map grep example</code></a> does not find the <code>.env</code> value, which contains that word. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md#L249" title="Source: README.md">README</a></p>
   </div>
-  <div class="card">
-   <h3>Where it comes from</h3>
-   <p>dctx started in 2025 as <code>dircontxt</code>, written in pure C, to give a model the whole project in one structured, versioned block. It was rewritten in Rust in 2026 and grew a privacy-first core, a plugin host, a desktop app and map mode for agents.</p>
-   <p><a href="/changelog/">Read the changelog</a></p>
+  <div>
+   <div class="sec-head"><h2 id="bench-h">Benchmark</h2></div>
+   <div class="table-wrap"><table><caption>Run 7, 31 October 2026. Tokens are estimated as stdout bytes / 3.5 for every tool. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L40" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">Tool</th><th scope="col" class="num">Points /140</th><th scope="col" class="num">Gold facts /354</th><th scope="col" class="num">Tokens</th><th scope="col" class="num">Facts per 1k tokens</th></tr></thead><tbody><tr><td>dctx <code>53f8b6b</code></td><td class="num"><strong>140</strong> (run 6: 136)</td><td class="num"><strong>353</strong> (342)</td><td class="num"><strong>29,340</strong></td><td class="num"><strong>12.0</strong></td></tr><tr><td>Trail-Code 0.28.0</td><td class="num">122</td><td class="num">312</td><td class="num">88,923</td><td class="num">3.51</td></tr><tr><td>graphify 0.9.97, code-only</td><td class="num">96</td><td class="num">238</td><td class="num">197,203</td><td class="num">1.21</td></tr></tbody></table></div>
+   <p class="caveat">The 70-question protocol was designed by the dctx team, so it can favour dctx. On an independent protocol (3 seeded repositories the tools never saw, gold from language servers, 31 October): Tasks: dctx 22/28 points, 31/36 facts, 6.85 facts per 1k tokens (Trail-Code 19/28, graphify 14/28). <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L298" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK</a> <a href="/benchmarks/#independent">All tables and caveats</a></p>
   </div>
  </div>
 </section>
 
 </main>
-<footer class="site-footer">
+<footer class="ftr">
  <div class="wrap">
-  <div class="foot-grid">
-   <div>
+  <div class="ftr-grid">
+   <div class="ftr-brand">
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p class="mono small">dctx 1.1.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
    </div>
-   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul>
-    <li><a href="/#why">Why dctx</a></li><li><a href="/#install">Install</a></li><li><a href="/#benchmark">Benchmark</a></li>
-    <li><a href="/#privacy">Security and privacy</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></nav>
-   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul>
-    <li><a href="/docs/">Documentation</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Specification</a></li>
-    <li><a href="/news/">News</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/feed.xml">Atom feed</a></li></ul></nav>
-   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul>
-    <li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li>
-    <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/SECURITY.md">Report a vulnerability</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li>
-    <li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
   </div>
-  <div class="foot-bottom">
+  <div class="ftr-bottom">
    <div>
     <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
-    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="https://github.com/Eris-Margeta/dctx/blob/main/TRADEMARK.md">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
    </div>
    <div class="credit">
     <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>

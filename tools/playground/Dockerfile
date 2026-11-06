@@ -14,7 +14,7 @@ RUN cargo build --locked --release --target x86_64-unknown-linux-musl -p dctx-cl
  && cp -R tools/website/sample /out/samples/kiosk \
  && cp -R crates/dctx-lex-go/tests/fixtures /out/samples/lexer-go \
  && cp -R crates/dctx-map-parse/tests/fixtures /out/samples/parser-mixed \
- && printf 'kiosk\tkiosk: the website sample (Rust, TypeScript, Python, TOML, Markdown)\nlexer-go\tGo lexer fixtures (crates/dctx-lex-go/tests/fixtures)\nparser-mixed\tParser test fixtures: C, C#, Go, Java, JavaScript, Kotlin, Markdown, PHP, Python, Ruby, Rust, Swift, TOML, TypeScript, YAML (crates/dctx-map-parse/tests/fixtures)\n' > /out/samples/index.tsv \
+ && cp tools/playground/samples.tsv /out/samples/index.tsv \
  && chmod -R a+rX /out/samples
 
 FROM gcr.io/distroless/static-debian12:nonroot
