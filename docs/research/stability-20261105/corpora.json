@@ -1,0 +1,494 @@
+{
+  "binary_sha256": "e1020b4eabd2e490eb1bc3359b34bfc0214762dc882dd422659919095f68b426",
+  "commit": "0495f5f87717df5385209d306b92328a8cd96cf6",
+  "corpora": [
+    {
+      "edit": "ts/module.ts",
+      "id": "s:rust/src/support.rs#helper",
+      "name": "parser-mixed",
+      "source": "crates/dctx-map-parse/tests/fixtures/",
+      "symbol": "helper",
+      "target": "rust/src/support.rs"
+    },
+    {
+      "edit": "src/lib.rs",
+      "id": "s:tests/fixtures/basic.go#Add",
+      "name": "lexer-go",
+      "source": "crates/dctx-lex-go/",
+      "symbol": "Add",
+      "target": "tests/fixtures/basic.go"
+    },
+    {
+      "edit": "domain/ranking.rs",
+      "id": "s:adapters/output.rs#render_answer_at",
+      "name": "map-query",
+      "source": "crates/dctx-map-query/src/",
+      "symbol": "render_answer_at",
+      "target": "adapters/output.rs"
+    }
+  ],
+  "files": [
+    {
+      "bytes": 77,
+      "corpus": "parser-mixed",
+      "path": "Sample.cs",
+      "sha256": "0524d1d32068d38123b415d38a21907def99784562945a9548e7eb6c26451974",
+      "source": "crates/dctx-map-parse/tests/fixtures/Sample.cs"
+    },
+    {
+      "bytes": 108,
+      "corpus": "parser-mixed",
+      "path": "Sample.java",
+      "sha256": "82cc22ce1e71939cd24ae6119705cf3f6569a697abdcff717689336668e68ebc",
+      "source": "crates/dctx-map-parse/tests/fixtures/Sample.java"
+    },
+    {
+      "bytes": 361,
+      "corpus": "parser-mixed",
+      "path": "headings.md",
+      "sha256": "4235b7b344907dc9bd52e71ff153fcff8f20c558b1e165d744bf8e3ceb99cf05",
+      "source": "crates/dctx-map-parse/tests/fixtures/headings.md"
+    },
+    {
+      "bytes": 884,
+      "corpus": "parser-mixed",
+      "path": "js/module.mjs",
+      "sha256": "c9c881659be8598407c85655efd7b61350462f010192d58d93fbdd94df679a38",
+      "source": "crates/dctx-map-parse/tests/fixtures/js/module.mjs"
+    },
+    {
+      "bytes": 97,
+      "corpus": "parser-mixed",
+      "path": "rust/Cargo.toml",
+      "sha256": "cb00a4e83c3bfbd2a4a447e90f7a0f7eb95841f3a7dc78f19dade425bcfb5320",
+      "source": "crates/dctx-map-parse/tests/fixtures/rust/Cargo.toml"
+    },
+    {
+      "bytes": 799,
+      "corpus": "parser-mixed",
+      "path": "rust/src/lib.rs",
+      "sha256": "addaadf586a0e42c48a0d3bf5301fecb750e6f41602c121cee650c3c5c696455",
+      "source": "crates/dctx-map-parse/tests/fixtures/rust/src/lib.rs"
+    },
+    {
+      "bytes": 268,
+      "corpus": "parser-mixed",
+      "path": "rust/src/support.rs",
+      "sha256": "c567ace11eb76cbb8a21fe2882c2b9aec034f8a7d9cd76d0351a576601f3e18e",
+      "source": "crates/dctx-map-parse/tests/fixtures/rust/src/support.rs"
+    },
+    {
+      "bytes": 68,
+      "corpus": "parser-mixed",
+      "path": "sample.c",
+      "sha256": "cefc2a3199d56c5cfb1136673967a00df17f05caa8e56d58d44a1faefad5bd46",
+      "source": "crates/dctx-map-parse/tests/fixtures/sample.c"
+    },
+    {
+      "bytes": 145,
+      "corpus": "parser-mixed",
+      "path": "sample.go",
+      "sha256": "ec1b51c3d0c3eb6719fd3ca4cc953290238ebca78b32885783f631eb37219b68",
+      "source": "crates/dctx-map-parse/tests/fixtures/sample.go"
+    },
+    {
+      "bytes": 161,
+      "corpus": "parser-mixed",
+      "path": "sample.kt",
+      "sha256": "f05068f5c9610be757b16153599da8fac767934e813253ad125350b211c88e48",
+      "source": "crates/dctx-map-parse/tests/fixtures/sample.kt"
+    },
+    {
+      "bytes": 160,
+      "corpus": "parser-mixed",
+      "path": "sample.php",
+      "sha256": "b502148588f8d6cb01eb91289224f00df742ba2d6f1e44c61d81bc2794573969",
+      "source": "crates/dctx-map-parse/tests/fixtures/sample.php"
+    },
+    {
+      "bytes": 154,
+      "corpus": "parser-mixed",
+      "path": "sample.py",
+      "sha256": "78ecfa066735f70d948dd50ee92bee5596f9a550e8f64612c5c13b990084b4b0",
+      "source": "crates/dctx-map-parse/tests/fixtures/sample.py"
+    },
+    {
+      "bytes": 145,
+      "corpus": "parser-mixed",
+      "path": "sample.rb",
+      "sha256": "8ba3c97a78582cafe5cada08581330d4c18781f8d841e18e09f78632bb36d32f",
+      "source": "crates/dctx-map-parse/tests/fixtures/sample.rb"
+    },
+    {
+      "bytes": 261,
+      "corpus": "parser-mixed",
+      "path": "sample.swift",
+      "sha256": "0d4cdb153f25dd116d038079024faff9f5e7c0edf3d757f1862dc720b1f92a67",
+      "source": "crates/dctx-map-parse/tests/fixtures/sample.swift"
+    },
+    {
+      "bytes": 48,
+      "corpus": "parser-mixed",
+      "path": "sample.toml",
+      "sha256": "39388273cbbbc04d26d66b947deeb297f1f6feed1b554a489185ee47566c9a31",
+      "source": "crates/dctx-map-parse/tests/fixtures/sample.toml"
+    },
+    {
+      "bytes": 46,
+      "corpus": "parser-mixed",
+      "path": "sample.yaml",
+      "sha256": "a1e0e9ccfdc6a80e27ee1a4eda064a656d5c772b421d950a0a67fc6025d5a2d4",
+      "source": "crates/dctx-map-parse/tests/fixtures/sample.yaml"
+    },
+    {
+      "bytes": 684,
+      "corpus": "parser-mixed",
+      "path": "ts/module.ts",
+      "sha256": "0f14f80aec6350fee34e04d75394f5a23a5b4fdb2f76afcd6f6cb10f22d628c0",
+      "source": "crates/dctx-map-parse/tests/fixtures/ts/module.ts"
+    },
+    {
+      "bytes": 304,
+      "corpus": "lexer-go",
+      "path": "Cargo.toml",
+      "sha256": "14c30d6bfaf8520f506310ec42eebf38a629b756427276f7f32f9816f2b67ae5",
+      "source": "crates/dctx-lex-go/Cargo.toml"
+    },
+    {
+      "bytes": 1483,
+      "corpus": "lexer-go",
+      "path": "README.md",
+      "sha256": "e3a8b75b833753129a2020cbb65aeeb9415e30f57ee26be76531c4614b0d8bf7",
+      "source": "crates/dctx-lex-go/README.md"
+    },
+    {
+      "bytes": 4766,
+      "corpus": "lexer-go",
+      "path": "src/domain/facts.rs",
+      "sha256": "6bcd40f30bee19f1087bccd24aa3497721ec5552697b2cdd6271a138834c9de8",
+      "source": "crates/dctx-lex-go/src/domain/facts.rs"
+    },
+    {
+      "bytes": 3939,
+      "corpus": "lexer-go",
+      "path": "src/domain/limits.rs",
+      "sha256": "c88efade565c082837c054c99fc043e8f86cb2174d39019743c2fa68613d0b0b",
+      "source": "crates/dctx-lex-go/src/domain/limits.rs"
+    },
+    {
+      "bytes": 1652,
+      "corpus": "lexer-go",
+      "path": "src/domain/mod.rs",
+      "sha256": "01b8c61920b89f574b5a8244d6a3dcb292344b56c726f79a7a5590c3a44ed432",
+      "source": "crates/dctx-lex-go/src/domain/mod.rs"
+    },
+    {
+      "bytes": 10406,
+      "corpus": "lexer-go",
+      "path": "src/extract/declarations.rs",
+      "sha256": "7c3a32fe41f85035d9bec80c4314fd86bff22bbb65c62ecfef7ba5956179a68a",
+      "source": "crates/dctx-lex-go/src/extract/declarations.rs"
+    },
+    {
+      "bytes": 6353,
+      "corpus": "lexer-go",
+      "path": "src/extract/declarations_funcs.rs",
+      "sha256": "d1f3767c9382948858d7f3a3e3694de838e954369cb38d2f2e7fc1e4d5cdcca6",
+      "source": "crates/dctx-lex-go/src/extract/declarations_funcs.rs"
+    },
+    {
+      "bytes": 4943,
+      "corpus": "lexer-go",
+      "path": "src/extract/declarations_types.rs",
+      "sha256": "9f1e540f0b38f8dca3875f750d3d7e4bcd643ef804161de25b35f084fb79224e",
+      "source": "crates/dctx-lex-go/src/extract/declarations_types.rs"
+    },
+    {
+      "bytes": 11040,
+      "corpus": "lexer-go",
+      "path": "src/extract/mod.rs",
+      "sha256": "727d31bcb5882923ab40fb3c9027bec590676232c40e5213d8154de3a1fa2e54",
+      "source": "crates/dctx-lex-go/src/extract/mod.rs"
+    },
+    {
+      "bytes": 10012,
+      "corpus": "lexer-go",
+      "path": "src/extract/mod_helpers.rs",
+      "sha256": "5ac37b4fc58825665bc7ab68246a172311b1667a2062276d08adccc02916303c",
+      "source": "crates/dctx-lex-go/src/extract/mod_helpers.rs"
+    },
+    {
+      "bytes": 11166,
+      "corpus": "lexer-go",
+      "path": "src/extract/references.rs",
+      "sha256": "c51559b45ccd49a0f2b12c6e81195ac0c686277a7f1805ece93e02f2e14c5086",
+      "source": "crates/dctx-lex-go/src/extract/references.rs"
+    },
+    {
+      "bytes": 8092,
+      "corpus": "lexer-go",
+      "path": "src/lexer/mod.rs",
+      "sha256": "20319a19bfd73bb0ee87112dd2f49b633c34ed846661ec1050b852aac5ad6ecd",
+      "source": "crates/dctx-lex-go/src/lexer/mod.rs"
+    },
+    {
+      "bytes": 12026,
+      "corpus": "lexer-go",
+      "path": "src/lexer/scan.rs",
+      "sha256": "febdd0a2215d4c4124edf494efa6e1abb846715b387bcdc7eb946a1d95b2ba94",
+      "source": "crates/dctx-lex-go/src/lexer/scan.rs"
+    },
+    {
+      "bytes": 3917,
+      "corpus": "lexer-go",
+      "path": "src/lib.rs",
+      "sha256": "08d249b01a7911ad55a251feb72259f5b954e107fee9a662a92b770ea5d29c50",
+      "source": "crates/dctx-lex-go/src/lib.rs"
+    },
+    {
+      "bytes": 11526,
+      "corpus": "lexer-go",
+      "path": "tests/dctx_lex_go.rs",
+      "sha256": "4b24175024abf29f3f9b3da7a22cd35b814428ae832c661a1974d4bc0fd8e2f8",
+      "source": "crates/dctx-lex-go/tests/dctx_lex_go.rs"
+    },
+    {
+      "bytes": 887,
+      "corpus": "lexer-go",
+      "path": "tests/fixtures/basic.go",
+      "sha256": "b3d4f03638fe3d93b5b6f5f3729cc1d43cd57fad88c1d519c0b1b8c6e7ddd330",
+      "source": "crates/dctx-lex-go/tests/fixtures/basic.go"
+    },
+    {
+      "bytes": 137,
+      "corpus": "lexer-go",
+      "path": "tests/fixtures/incomplete.go",
+      "sha256": "9637a70e358130508909b6b271c1156fe1e4ad4a78c372c4d0496ecbf95f5690",
+      "source": "crates/dctx-lex-go/tests/fixtures/incomplete.go"
+    },
+    {
+      "bytes": 11171,
+      "corpus": "lexer-go",
+      "path": "tests/gaps.rs",
+      "sha256": "84b2d404682c16d26e82f82a4b2c3445e122c732eb6930d06fd85bef8285e6d8",
+      "source": "crates/dctx-lex-go/tests/gaps.rs"
+    },
+    {
+      "bytes": 5115,
+      "corpus": "lexer-go",
+      "path": "tests/review_lexers_a.rs",
+      "sha256": "8739f3da311a641b77854d42574baf8d49c52207ad8493445bae1d3aaf192c8a",
+      "source": "crates/dctx-lex-go/tests/review_lexers_a.rs"
+    },
+    {
+      "bytes": 14117,
+      "corpus": "map-query",
+      "path": "adapters/cache.rs",
+      "sha256": "1b52dec1b0b50d13aad2b192ce320c9bcaca6aa5411244bb8f2224e3ca4b6823",
+      "source": "crates/dctx-map-query/src/adapters/cache.rs"
+    },
+    {
+      "bytes": 529,
+      "corpus": "map-query",
+      "path": "adapters/database.rs",
+      "sha256": "11b981fb7b4b6fa905c4b2ece7c014f190711de7df25971d84a72f0729442284",
+      "source": "crates/dctx-map-query/src/adapters/database.rs"
+    },
+    {
+      "bytes": 9958,
+      "corpus": "map-query",
+      "path": "adapters/index.rs",
+      "sha256": "32cf530192c399e298b67bcc5998313f95dbc5ce99ebb821afa362f6a31bf389",
+      "source": "crates/dctx-map-query/src/adapters/index.rs"
+    },
+    {
+      "bytes": 8956,
+      "corpus": "map-query",
+      "path": "adapters/inventory.rs",
+      "sha256": "f0710c4e0fd1fcf1f719320ae4210ce92c9ebb78f75e868cdeebcf6a1b2c9f6e",
+      "source": "crates/dctx-map-query/src/adapters/inventory.rs"
+    },
+    {
+      "bytes": 3305,
+      "corpus": "map-query",
+      "path": "adapters/journal.rs",
+      "sha256": "a6943a3828c5941b426a620908f7f7d4c3e88ae2cb9af358509c09884d24f8b5",
+      "source": "crates/dctx-map-query/src/adapters/journal.rs"
+    },
+    {
+      "bytes": 572,
+      "corpus": "map-query",
+      "path": "adapters/mod.rs",
+      "sha256": "12d0b471d2068e29f8408dd69ccf087262e92766fda875493cf7b6fcefbd3ec0",
+      "source": "crates/dctx-map-query/src/adapters/mod.rs"
+    },
+    {
+      "bytes": 7382,
+      "corpus": "map-query",
+      "path": "adapters/output.rs",
+      "sha256": "65674def17a19a91ff660d77d1f53b8ffce063befe966ed859b080da87644f00",
+      "source": "crates/dctx-map-query/src/adapters/output.rs"
+    },
+    {
+      "bytes": 4322,
+      "corpus": "map-query",
+      "path": "adapters/parsing.rs",
+      "sha256": "f0a9b13c8fb78a927168de9442215991c9f03873590bc61d89ba458811667202",
+      "source": "crates/dctx-map-query/src/adapters/parsing.rs"
+    },
+    {
+      "bytes": 440,
+      "corpus": "map-query",
+      "path": "adapters/publication.rs",
+      "sha256": "6430a6562beb2063567f603376710904fe6bc3f741f534c71d68058294bfdf96",
+      "source": "crates/dctx-map-query/src/adapters/publication.rs"
+    },
+    {
+      "bytes": 10138,
+      "corpus": "map-query",
+      "path": "adapters/query.rs",
+      "sha256": "3c68389e2d38334ad00445fd6884913baceeb2eb72599357b64577a6a167db05",
+      "source": "crates/dctx-map-query/src/adapters/query.rs"
+    },
+    {
+      "bytes": 2597,
+      "corpus": "map-query",
+      "path": "adapters/reading.rs",
+      "sha256": "8ee32602cba603402063ef94f3362f17f3e755f55cc14672b95c0b64d2d0915d",
+      "source": "crates/dctx-map-query/src/adapters/reading.rs"
+    },
+    {
+      "bytes": 8492,
+      "corpus": "map-query",
+      "path": "adapters/rebuild.rs",
+      "sha256": "8dc3a32902292ef5f8a27fc5f80229a0aa534339e12864f044903b5714e79b6b",
+      "source": "crates/dctx-map-query/src/adapters/rebuild.rs"
+    },
+    {
+      "bytes": 4443,
+      "corpus": "map-query",
+      "path": "adapters/recovery.rs",
+      "sha256": "964e28bcc923bb7936352883eac0f1675b4cb973275a1a25d769f3f9b0f92eeb",
+      "source": "crates/dctx-map-query/src/adapters/recovery.rs"
+    },
+    {
+      "bytes": 3279,
+      "corpus": "map-query",
+      "path": "adapters/refresh.rs",
+      "sha256": "dffed5f2611f3c4dbc399f0e74e10c995a329affea6363b7725662fb9ec81173",
+      "source": "crates/dctx-map-query/src/adapters/refresh.rs"
+    },
+    {
+      "bytes": 6979,
+      "corpus": "map-query",
+      "path": "adapters/resolving.rs",
+      "sha256": "7fca3e81bdd6676e586452cd029358b1f7edf39d5281991f18dab8af641b6f67",
+      "source": "crates/dctx-map-query/src/adapters/resolving.rs"
+    },
+    {
+      "bytes": 3340,
+      "corpus": "map-query",
+      "path": "adapters/revision.rs",
+      "sha256": "afc640447f00d493f890a3d21ad5d076c8cdb634fd50ab4cabb383bd01de97be",
+      "source": "crates/dctx-map-query/src/adapters/revision.rs"
+    },
+    {
+      "bytes": 12236,
+      "corpus": "map-query",
+      "path": "adapters/segment.rs",
+      "sha256": "5fe82631a755f78b49ae3c974f1f3dc9a72f77d110f0b8081e45b098a8929106",
+      "source": "crates/dctx-map-query/src/adapters/segment.rs"
+    },
+    {
+      "bytes": 9695,
+      "corpus": "map-query",
+      "path": "adapters/source.rs",
+      "sha256": "d91541e423d907689968f5949b46d48dcff3d219514854a079f6848bb118d089",
+      "source": "crates/dctx-map-query/src/adapters/source.rs"
+    },
+    {
+      "bytes": 6711,
+      "corpus": "map-query",
+      "path": "adapters/traversal.rs",
+      "sha256": "d234667e030f3753520220affd377b2b05b9aab71c6f6418a9668e091658b686",
+      "source": "crates/dctx-map-query/src/adapters/traversal.rs"
+    },
+    {
+      "bytes": 181,
+      "corpus": "map-query",
+      "path": "adapters/view.rs",
+      "sha256": "317fcc1a746e0240d6c9f10087b410bf14ed2cf85101a76a8d49e0bc2d3e0f01",
+      "source": "crates/dctx-map-query/src/adapters/view.rs"
+    },
+    {
+      "bytes": 7198,
+      "corpus": "map-query",
+      "path": "domain/bridge.rs",
+      "sha256": "bf97c3e59e18fe8bc275d6498ca8a6fab0adea16ac049567816f0d2d4b4e6521",
+      "source": "crates/dctx-map-query/src/domain/bridge.rs"
+    },
+    {
+      "bytes": 1848,
+      "corpus": "map-query",
+      "path": "domain/cached.rs",
+      "sha256": "63c809a8bb76663ab6d7330f77b20ceb07da8409163a3ae3d64748478056b9fb",
+      "source": "crates/dctx-map-query/src/domain/cached.rs"
+    },
+    {
+      "bytes": 2088,
+      "corpus": "map-query",
+      "path": "domain/error.rs",
+      "sha256": "e94cce0c1c4379a4cb7b078c50a48bc1fbe19103e9f35d526533ddee2ba4c387",
+      "source": "crates/dctx-map-query/src/domain/error.rs"
+    },
+    {
+      "bytes": 611,
+      "corpus": "map-query",
+      "path": "domain/mod.rs",
+      "sha256": "2597b5f4e4fa5d3d48a142144f5bf3f609ce10336886e1a6f2b4a5a73aec18af",
+      "source": "crates/dctx-map-query/src/domain/mod.rs"
+    },
+    {
+      "bytes": 3146,
+      "corpus": "map-query",
+      "path": "domain/overlay.rs",
+      "sha256": "b1814bf2503e4c96bf038b3c5b4b11136eadc541ecf4baa956b174c563a9bcc1",
+      "source": "crates/dctx-map-query/src/domain/overlay.rs"
+    },
+    {
+      "bytes": 1548,
+      "corpus": "map-query",
+      "path": "domain/parse_status.rs",
+      "sha256": "f515b36e70c227a4325342dd1fa7a2abd95aff3a2bd03856a38bb4e2e04881d8",
+      "source": "crates/dctx-map-query/src/domain/parse_status.rs"
+    },
+    {
+      "bytes": 3551,
+      "corpus": "map-query",
+      "path": "domain/ranking.rs",
+      "sha256": "e994d2fa6f1af20b7219cc741eaeb7ee76eef41215c25688994304f159008bac",
+      "source": "crates/dctx-map-query/src/domain/ranking.rs"
+    },
+    {
+      "bytes": 7703,
+      "corpus": "map-query",
+      "path": "domain/request.rs",
+      "sha256": "f951b34ee8cafbea267d0fe30683faa5b5c3fc76390ac82fd9b2981be217c851",
+      "source": "crates/dctx-map-query/src/domain/request.rs"
+    },
+    {
+      "bytes": 752,
+      "corpus": "map-query",
+      "path": "lib.rs",
+      "sha256": "051f3aa5ac5aa79e4121854610475cb772db668f7faf10b3051dd51baecaf3c2",
+      "source": "crates/dctx-map-query/src/lib.rs"
+    },
+    {
+      "bytes": 4277,
+      "corpus": "map-query",
+      "path": "ports/mod.rs",
+      "sha256": "29f19edcdf549ab41d57d8fd0bc84ede66483c8ae7446a631434a7e255b9b642",
+      "source": "crates/dctx-map-query/src/ports/mod.rs"
+    }
+  ]
+}
