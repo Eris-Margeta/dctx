@@ -31,7 +31,7 @@
   <a href="#map-mode-context-for-agents">Map mode</a> •
   <a href="#security--privacy">Security & Privacy</a> •
   <a href="docs/SPEC.md">Specification</a> •
-  <a href="https://dctx.app">Website</a>
+  <a href="https://dctx.internet.technology/">Website</a>
 </p>
 
 ---
@@ -374,7 +374,7 @@ dctx/
 ├── docs/          # Specification, design records, contracts, formal models, guides
 ├── presentation/  # Slides and the dctx film
 ├── tools/         # Benchmarks, plugin tooling, test scripts
-└── website/       # dctx.app
+└── website/       # dctx.internet.technology
 ```
 
 Start with [docs/SPEC.md](docs/SPEC.md), then [docs/CRATE-MAP.md](docs/CRATE-MAP.md).
