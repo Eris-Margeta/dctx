@@ -36,6 +36,12 @@ through `tools/playground/musl-cc.sh`, which the script picks up by itself).
 
 ## 2. Upload (site, nginx config, playground context)
 
+The nginx config was not syntax-checked on the build host (no nginx there). Check it first on any Docker host:
+
+```sh
+docker run --rm -v "$PWD/tools/playground/nginx.conf:/etc/nginx/conf.d/default.conf:ro" --add-host dctx-play:127.0.0.1 nginx:1.27-alpine nginx -t
+```
+
 ```sh
 SHA=$(git rev-parse --short HEAD)
 rsync -a --delete --chmod=D755,F644 --exclude .gitignore website/ "$DEPLOY:/srv/sites/dctx.next/"
@@ -67,7 +73,7 @@ tools/website/.venv/bin/python -c 'import json;print(json.load(open("website/bui
 curl -sI https://www.dctx.internet.technology/assets/$(ls website/assets | grep '^site\.' ) | grep -i cache-control   # immutable
 curl -sI https://www.dctx.internet.technology/llms.txt | grep -i content-type   # text/plain; charset=utf-8
 curl -s https://www.dctx.internet.technology/api/v1/health         # {"ok":true,"dctx":"1.1.0",...}
-tools/playground/smoke.sh https://www.dctx.internet.technology     # 16 checks: recorded bytes, files, MCP, form, 400/413/429
+tools/playground/smoke.sh https://www.dctx.internet.technology     # 16 checks: recorded bytes, files, MCP, form, 400/413/429 (SMOKE_ALL=1 replays all 20 examples; local only)
 ssh "$DEPLOY" "docker stats --no-stream | grep dctx-play; docker image ls | grep dctx-play"   # memory under 192 MiB; image size
 ```
 

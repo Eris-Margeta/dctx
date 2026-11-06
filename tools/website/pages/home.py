@@ -134,7 +134,7 @@ def body(scene: dict) -> str:
  <div class="wrap hero-grid">
   <div class="hero-copy">
    <ul class="chips" aria-label="Project facts">
-    <li><a href="/changelog/#v{VERSION.replace('.', '-')}">dctx <b>{VERSION}</b></a></li><li>Apache-2.0</li><li>Rust</li><li>Linux x86_64 tested</li><li>no telemetry</li>
+    <li><a href="/changelog/#v{VERSION.replace('.', '-')}">dctx <b>{VERSION}</b></a></li><li>Apache-2.0</li><li>Rust</li><li>Linux x86_64 tested</li><li><a href="/cli/#mcp"><b>{len(data.mcp_tools())}</b> MCP tools</a></li><li>no telemetry</li>
    </ul>
    <h1 id="hero-title">Context, <span class="accent">engineered.</span></h1>
    <p class="lede">dctx gives a model the fewest, most relevant bytes of your code, in an order that stays the same between turns. Deterministic, bounded and offline.</p>

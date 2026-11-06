@@ -229,8 +229,9 @@ fn check_map(args: &[String]) -> Result<(), String> {
                 }
             }
             Positional::Text => {
-                if value.is_empty() || value.len() > 200 {
-                    return Err("the query must be 1 to 200 bytes".into());
+                // An empty query is dctx's own usage error (exit 2); the playground lets it answer.
+                if value.len() > 200 {
+                    return Err("the query is at most 200 bytes".into());
                 }
             }
         }
@@ -511,6 +512,7 @@ mod tests {
             "map export --format json",
             "map find greet --json --meta",
             "map read m:nope.rs",
+            "map find ''",
             "languages --markdown",
             "languages",
             "--help",

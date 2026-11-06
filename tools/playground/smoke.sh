@@ -38,6 +38,29 @@ sys.exit(0 if live["stdout"] == record["stdout"] and live["exit"] == record["exi
 PY
 done
 
+if [ "${SMOKE_ALL:-0}" = 1 ]; then
+  # Every recorded example (not the three with scrubbed values, not help pages), one address each:
+  # only for a server that trusts X-Forwarded-For directly (local runs), since it sends many runs.
+  python3 - "$demo" "$base" <<'PY' && ok "every recorded example: same bytes live" || bad "a recorded example differs live"
+import json, sys, urllib.request
+records = [r for r in json.load(open(sys.argv[1]))["records"]
+           if r["group"] in ("pack", "map", "json", "graph", "errors") and "scrubbed" not in r]
+bad = []
+for i, r in enumerate(records):
+    body = json.dumps({"cmd": r["argv"][1:], "sample": "kiosk"}).encode()
+    req = urllib.request.Request(sys.argv[2] + "/api/v1/run", body, {"Content-Type": "application/json", "X-Forwarded-For": f"203.0.113.{i + 1}"})
+    try:
+        live = json.load(urllib.request.urlopen(req))
+    except OSError as error:
+        bad.append(f"{r['id']} ({error})")
+        continue
+    if (live["stdout"], live["stderr"], live["exit"]) != (r["stdout"], r["stderr"], r["exit"]):
+        bad.append(r["id"])
+print(f"{len(records) - len(bad)} of {len(records)} identical", "differ: " + ", ".join(bad) if bad else "")
+sys.exit(1 if bad else 0)
+PY
+fi
+
 files=$(curl -sf -H 'Content-Type: application/json' -H 'X-Forwarded-For: 198.51.100.20' --data-binary '{"cmd":["map","skeleton","src/a.rs"],"files":[{"path":"src/a.rs","content":"pub fn alpha() {}\nfn beta() { alpha() }\n"}]}' "$base/api/v1/run")
 case "$files" in *'s:src/a.rs#alpha'*'"exit":0'*) ok "pasted files: skeleton" ;; *) bad "pasted files: $files" ;; esac
 
