@@ -1,511 +1,317 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="en" class="js-off">
 <head>
-<meta charset="UTF-8">
-<script>try{var t=localStorage.getItem('dctx-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
-
+<meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>dctx — Context, engineered. The context engine for AI-assisted development</title>
-<meta name="description" content="dctx is the context engine for AI-assisted software development: fewer tokens, stable prompt prefixes, exact source and one signed policy for every developer. Open source. No telemetry. Paid maintenance available.">
-<link rel="canonical" href="https://dctx.app/">
-<meta name="robots" content="index, follow">
-<meta name="theme-color" content="#fbfbf9" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0d0e12" media="(prefers-color-scheme: dark)">
+<title>dctx: the context engine for AI-assisted development</title>
+<meta name="description" content="dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, with no telemetry and no network. Apache-2.0.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<link rel="canonical" href="https://dctx.internet.technology/">
+<meta property="og:url" content="https://dctx.internet.technology/">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0a12" media="(prefers-color-scheme: dark)">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="dctx">
 <meta property="og:locale" content="en_US">
-<meta property="og:url" content="https://dctx.app/">
-<meta property="og:title" content="dctx — Context, engineered.">
-<meta property="og:description" content="The context engine for AI-assisted software development. Fewer tokens, stable prompt prefixes, exact source, one policy for every developer.">
-<meta name="twitter:title" content="dctx — Context, engineered.">
-<meta name="twitter:description" content="The context engine for AI-assisted software development. Fewer tokens, stable prompt prefixes, exact source, one policy for every developer.">
-<meta name="author" content="Eris Margeta Kurdali">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2314161c'/%3E%3Cpath d='M11 9H8v14h3M21 9h3v14h-3' fill='none' stroke='%23fff' stroke-width='2.4'/%3E%3Ccircle cx='16' cy='16' r='2.6' fill='%237c5cff'/%3E%3C/svg%3E">
-<script>(function(d){d.classList.add('js');var rm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches,off=rm;try{var m=localStorage.getItem('dctx-motion');off=m==='off'||(m!=='on'&&rm);}catch(e){}if(!off){d.classList.add('motion');setTimeout(function(){if(!window.__dctxMotion){d.classList.remove('motion');}},2500);}})(document.documentElement);</script>
-<link rel="stylesheet" href="assets/motion.css">
-<script src="assets/site.js" defer></script>
+<meta property="og:title" content="dctx: the context engine for AI-assisted development">
+<meta property="og:description" content="dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, with no telemetry and no network. Apache-2.0.">
+<meta property="og:image" content="https://dctx.internet.technology/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: context, engineered. A code tree flows into a compact, stable block of tokens.">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
+<script>try{var t=localStorage.getItem('dctx-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link rel="stylesheet" href="/assets/site.css">
+<script src="/assets/site.js" defer></script>
 <script type="application/ld+json">
 {
-  "@context": "https://schema.org",
-  "@graph": [
-    { "@type": "Person", "@id": "https://tejl.hr/#eris-margeta-kurdali", "name": "Eris Margeta Kurdali" },
-    { "@type": "Organization", "@id": "https://tejl.hr/#organization", "name": "TEJL Studio", "url": "https://tejl.hr/", "sameAs": ["https://tejl.com/"] },
-    { "@type": "WebSite", "@id": "https://dctx.app/#website", "url": "https://dctx.app/", "name": "dctx", "inLanguage": "en",
-      "description": "The context engine for AI-assisted software development.",
-      "author": { "@id": "https://tejl.hr/#eris-margeta-kurdali" },
-      "creator": { "@id": "https://tejl.hr/#organization" },
-      "maintainer": { "@id": "https://tejl.hr/#organization" } },
-    { "@type": "SoftwareApplication", "@id": "https://dctx.app/#software", "name": "dctx",
-      "applicationCategory": "DeveloperApplication", "operatingSystem": "Linux, macOS, Windows",
-      "license": "https://www.apache.org/licenses/LICENSE-2.0",
-      "codeRepository": "https://github.com/Eris-Margeta/dctx",
-      "author": { "@id": "https://tejl.hr/#eris-margeta-kurdali" },
-      "creator": { "@id": "https://tejl.hr/#organization" } }
-  ]
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://dctx.internet.technology/#organization",
+   "name": "TEJL",
+   "url": "https://tejl.com/",
+   "logo": "https://dctx.internet.technology/assets/tejl-logo-off-black.svg",
+   "email": "info@tejl.com",
+   "sameAs": [
+    "https://tejl.hr/"
+   ]
+  },
+  {
+   "@type": "Person",
+   "@id": "https://dctx.internet.technology/#author",
+   "name": "Eris Margeta"
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://dctx.internet.technology/#website",
+   "url": "https://dctx.internet.technology/",
+   "name": "dctx",
+   "inLanguage": "en",
+   "publisher": {
+    "@id": "https://dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://dctx.internet.technology/#software",
+   "name": "dctx",
+   "softwareVersion": "1.1.0",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Linux (x86_64 tested)",
+   "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
+   "url": "https://dctx.internet.technology/",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "codeRepository": "https://github.com/Eris-Margeta/dctx",
+   "programmingLanguage": "Rust",
+   "author": {
+    "@id": "https://dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "WebPage",
+   "@id": "https://dctx.internet.technology/#webpage",
+   "url": "https://dctx.internet.technology/",
+   "name": "dctx",
+   "description": "dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context for agents and chat, with no telemetry and no network. Apache-2.0.",
+   "inLanguage": "en",
+   "isPartOf": {
+    "@id": "https://dctx.internet.technology/#website"
+   },
+   "about": {
+    "@id": "https://dctx.internet.technology/#software"
+   }
+  }
+ ]
 }
 </script>
-<link rel="stylesheet" href="assets/base.css">
-<link rel="stylesheet" href="assets/theme.css">
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<div class="progress" aria-hidden="true"></div>
-
-<header class="site-header" id="top">
-  <div class="wrap">
-    <nav class="nav" aria-label="Primary">
-      <a class="brand" href="#top" aria-label="dctx home">
-        <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#121419"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#7c5cff"/></svg>
-        dctx
-      </a>
-      <ul class="nav-links" id="nav-links">
-        <li class="nav-pill" aria-hidden="true"></li>
-        <li><a href="#belief">Philosophy</a></li>
-        <li><a href="#platform">Platform</a></li>
-        <li><a href="#benchmark">Benchmark</a></li>
-        <li><a href="#security">Security</a></li>
-        <li><a href="maintenance/index.html">Maintenance</a></li>
-        <li><a href="news/index.html">News</a></li>
-        <li><a href="changelog/index.html">Changelog</a></li>
-      </ul>
-      <div class="nav-cta">
-        <a class="btn btn-ghost" href="https://github.com/Eris-Margeta/dctx">GitHub</a>
-        <a class="btn btn-primary" href="mailto:info@tejl.com?subject=dctx%20maintenance">Talk to us</a>
-      </div>
-      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="nav-links" aria-label="Open menu"><span></span><span></span><span></span></button>
-    </nav>
+<header class="site-header">
+ <div class="wrap nav">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
+  <nav aria-label="Primary"><ul class="nav-links"><li><a href="/#why">Why dctx</a></li><li><a href="/#install">Install</a></li><li><a href="/#benchmark">Benchmark</a></li><li><a href="/docs/">Docs</a></li><li><a href="/news/">News</a></li><li><a href="/changelog/">Changelog</a></li></ul></nav>
+  <div class="nav-end">
+   <a class="btn btn-ghost btn-sm btn-gh" href="https://github.com/Eris-Margeta/dctx">Source code</a>
+   <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="icon-btn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/#why">Why dctx</a></li><li><a href="/#install">Install</a></li><li><a href="/#benchmark">Benchmark</a></li><li><a href="/docs/">Docs</a></li><li><a href="/news/">News</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li></ul></nav></details>
   </div>
+ </div>
 </header>
-
 <main id="main">
 
-<!-- Hero -->
 <section class="hero" aria-labelledby="hero-title">
-  <canvas class="hero-field" id="hero-field" aria-hidden="true"></canvas>
-  <div class="wrap hero-grid">
-    <div>
-      <a class="announce hero-in" href="news/desktop-free-forever/index.html"><span class="announce-tag">New</span>dctx Desktop is now free, forever<span aria-hidden="true">&rarr;</span></a>
-      <span class="eyebrow hero-in" style="--d:120ms">The context engine for AI-assisted development</span>
-      <h1 id="hero-title" style="margin-top:22px">Context,<br><span class="accent">engineered.</span></h1>
-      <p class="lede hero-in" style="--d:520ms">dctx gives every model and every developer in your company the smallest, most relevant set of source code &mdash; exact, verifiable and deterministic. Smaller prompts. Higher cache hits. Sharper answers.</p>
-      <div class="hero-actions hero-in" style="--d:720ms">
-        <a class="btn btn-primary" href="mailto:info@tejl.com?subject=dctx%20maintenance">
-          Ask about maintenance
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5"/></svg>
-        </a>
-        <a class="btn btn-ghost" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification</a>
-      </div>
-      <ul class="trust" aria-label="Guarantees">
-        <li><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3 3 7-7"/></svg>Runs on your machines</li>
-        <li><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3 3 7-7"/></svg>No telemetry</li>
-        <li><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3 3 7-7"/></svg>Never calls a model</li>
-        <li><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m3 8.5 3 3 7-7"/></svg>Open source, Apache-2.0</li>
-      </ul>
-    </div>
-    <div class="hero-visual">
-      <div class="window" role="img" aria-label="Illustration of a terminal: a bounded dctx map search returns five ranked records with stable ids, line ranges and precision fields, in 412 of 600 estimated tokens">
-        <div class="window-bar"><i></i><i></i><i></i><span>~/acme/payments — dctx · illustration</span></div>
-<pre class="term" id="term"><span class="ln cmd"><span class="p">$</span> <span class="c">dctx map find "settlement batch"</span> <span class="k">--budget 600</span></span><span class="ln"><span class="dim"># precision: structural · complete</span></span><span class="ln rec"><span class="id">s:settle/batch.rs#Batch</span>          struct  L12–48</span><span class="ln rec"><span class="id">s:settle/batch.rs#Batch::close</span>   fn      L51–97</span><span class="ln rec"><span class="id">s:settle/run.rs#run_nightly</span>      fn      L8–40</span><span class="ln rec"><span class="id">m:settle/ledger.rs</span>               module  14 symbols</span><span class="ln rec"><span class="id">d:docs/settlement.md#lifecycle</span>   doc     §3</span><span class="ln"><span class="dim"># 5 records · <span data-count="412" data-dur="900">412</span> of 600 tokens · next: read &lt;id&gt;</span></span><span class="ln"> </span><span class="ln cmd"><span class="p">$</span> <span class="c">dctx map read</span> <span class="id">s:settle/batch.rs#Batch::close</span></span><span class="ln"><span class="ok"><span class="ok-mark">✓</span> source digest checked</span> <span class="dim">· whole node L51–97 · 47 lines</span></span></pre>
-      </div>
-      <div class="chip-float chip-2"><span class="dot"></span>Deterministic output</div>
-      <div class="chip-float chip-1">Estimated budget <b>≤ 2,000</b> tokens per answer</div>
-    </div>
+ <div class="wrap">
+  <ul class="badge-row" aria-label="Project facts">
+   <li><a class="badge" href="/changelog/#v1-1-0">Version <b>1.1.0</b></a></li>
+   <li><span class="badge">Apache-2.0</span></li>
+   <li><span class="badge">No telemetry</span></li>
+   <li><span class="badge">Written in Rust</span></li>
+  </ul>
+  <h1 id="hero-title">Context, <span class="accent">engineered.</span></h1>
+  <p class="lede">dctx is the context engine for AI-assisted software development. It gives a model the fewest, most relevant bytes of your source code, in an order that stays the same between turns: smaller prompts, prompt caches that hit, and answers built on exact source instead of guesses.</p>
+  <div class="actions">
+   <a class="btn btn-primary" href="#install">Install from source
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5"/></svg></a>
+   <a class="btn btn-ghost" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification</a>
   </div>
+  <figure class="hero-art"><img src="/assets/dctx-header.svg" width="1280" height="400" fetchpriority="high"
+   alt="Diagram: many file nodes of a code tree flow into one compact, stable block of tokens, labelled deterministic bytes and stable prefix."></figure>
+ </div>
 </section>
 
-<!-- The prompt compiler -->
-<section class="compiler" id="compiler" aria-labelledby="compiler-h">
-  <div class="compiler-track">
-    <div class="compiler-stage">
-      <div class="wrap compiler-grid">
-        <div class="compiler-copy">
-          <div class="section-head" style="margin-bottom:0">
-            <span class="eyebrow">The prompt compiler</span>
-            <div class="h-row" style="margin-top:18px"><h2 id="compiler-h">From a whole repository to the bytes that matter.</h2></div>
-          </div>
-          <ol class="phases">
-            <li><i class="bar" aria-hidden="true"></i><b>Select</b><span>Ignore rules decide first. Ignored files are never opened, hashed or cached.</span></li>
-            <li><i class="bar" aria-hidden="true"></i><b>Rank</b><span>Syntax-owned spans, scored deterministically. No embeddings.</span></li>
-            <li><i class="bar" aria-hidden="true"></i><b>Bound</b><span>An estimated token budget per answer, in a deterministic order that prompt caches can reuse.</span></li>
-          </ol>
-          <p class="illus">Illustration. Real sizes depend on your repository and your budget.</p>
-        </div>
-        <div class="compiler-visual">
-          <canvas id="compiler-canvas" aria-hidden="true"></canvas>
-          <p class="compiler-static">dctx selects what policy allows, ranks exact spans, and sends a bounded answer in a stable order.</p>
-          <span class="tag">Illustration</span>
-          <div class="meter" aria-hidden="true">
-            <div class="meter-block"><small id="meter-in-label">Tokens in the repository</small><strong id="meter-in">1,240,000</strong></div>
-            <div class="meter-block sent"><small>Answer</small><strong id="meter-out">Selecting…</strong></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+<section class="section-alt" aria-labelledby="facts-h" style="padding-block:clamp(40px,6vw,64px)">
+ <div class="wrap">
+  <h2 id="facts-h" class="visually-hidden">dctx at a glance</h2>
+  <dl class="facts">
+   <div class="fact"><dt>140/140</dt><dd>points on our 70-question protocol, against Trail-Code 122 and graphify 96.</dd></div>
+   <div class="fact"><dt>0.13&ndash;1.20&nbsp;s</dt><dd>cold index of six benchmark corpora (median of three runs).</dd></div>
+   <div class="fact"><dt>50</dt><dd>language families: 36 full, 8 outline, 6 documentation formats.</dd></div>
+   <div class="fact"><dt>33/33</dt><dd>text and 33/33 JSON answers byte-identical after unrelated edits.</dd></div>
+   <div class="fact"><dt>0</dt><dd>network calls. No telemetry, and dctx never calls a model.</dd></div>
+  </dl>
+  <p class="note">Measured on one Linux x86_64 machine; details and caveats in <a href="#benchmark">the benchmark</a> and the <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md">stability report</a>.</p>
+ </div>
 </section>
 
-<!-- Facts -->
-<section class="seam-b" aria-label="dctx at a glance" style="padding-bottom: clamp(48px, 7vw, 88px)">
-  <div class="wrap">
-    <div class="facts" data-parallax="-0.035">
-      <div class="fact"><strong>0</strong><span>telemetry. The CLI has no network client and never calls a model.</span></div>
-      <div class="fact"><strong data-count="14" data-dur="1200">14</strong><span>language families with structural extractors, from Rust and TypeScript to Swift, Markdown and config files, plus 25 more formats in an outline tier in the development line.</span></div>
-      <div class="fact"><strong data-count="2000" data-dur="1800">2,000</strong><span>estimated tokens at most per map answer; the default is 500. Ranked records are never cut in half.</span></div>
-      <div class="fact"><strong>1</strong><span>library facade, <code>crates/dctx</code>, behind the CLI and the desktop app.</span></div>
-    </div>
+<section id="why" aria-labelledby="why-h">
+ <div class="wrap">
+  <div class="section-head">
+   <span class="eyebrow">Why dctx</span>
+   <h2 id="why-h">Every token in front of a model is paid for three times.</h2>
+   <p>dctx exists to cut all three costs. The specification turns that belief into five testable constraints: every answer is bounded, deterministic, prefix-stable, non-redundant and honest about its precision.</p>
   </div>
+  <div class="grid grid-3">
+   <article class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></div>
+    <h3>Prefill</h3><p>A model processes every input token before it answers; you pay for each one and wait for it. dctx answers with exact spans inside an estimated token budget, never whole files by default.</p></article>
+   <article class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/></svg></div>
+    <h3>Cache misses</h3><p>Providers serve a repeated prompt prefix for a fraction of the price, but one changed byte breaks it. The same tree and question give dctx the same bytes, and an unrelated edit leaves map answers unchanged.</p></article>
+   <article class="card"><div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></div>
+    <h3>Attention</h3><p>Answers get worse as irrelevant tokens pile up. dctx ranks syntax-owned spans, never cuts a record in half, and labels every answer with its precision and freshness.</p></article>
+  </div>
+ </div>
 </section>
 
-<!-- Belief -->
-<section class="section dark" id="belief" aria-labelledby="belief-h">
-  <span class="seam" aria-hidden="true"></span>
-  <span class="seam seam-end" aria-hidden="true"></span>
-  <span class="bloom" aria-hidden="true"></span>
-  <span class="light" aria-hidden="true"></span>
-  <span class="orb orb-a" data-parallax="-0.12" aria-hidden="true"></span>
-  <span class="orb orb-b" data-parallax="0.08" aria-hidden="true"></span>
-  <div class="wrap belief">
-    <div class="reveal">
-      <span class="eyebrow">Our core belief</span>
-      <div class="h-row" style="margin-top:18px"><h2 id="belief-h">Prompt&#8209;processing efficiency is the&nbsp;product.</h2></div>
-      <p class="quote" style="margin-top:28px">Every token in front of a model is paid for three times &mdash; in <em>prefill</em>, in <em>cache misses</em> and in <em>attention</em>. dctx is engineered to cut all three.</p>
-    </div>
-    <div class="reveal belief-cards">
-      <span class="rail" aria-hidden="true"></span>
-      <div class="grid-2" data-stagger style="grid-template-columns:minmax(0,1fr)">
-        <div class="card spot">
-          <i class="tick" aria-hidden="true"></i>
-          <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></div>
-          <h3>Prefill</h3>
-          <p>A model must process every input token before it answers &mdash; you pay for each one and wait for it. dctx answers with exact spans and diffs instead of whole files, inside a hard budget.</p>
-        </div>
-        <div class="card spot">
-          <i class="tick" aria-hidden="true"></i>
-          <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 12a8 8 0 0 1 13.7-5.6L20 8.7M20 4v4.7h-4.7M20 12a8 8 0 0 1-13.7 5.6L4 15.3M4 20v-4.7h4.7"/></svg></div>
-          <h3>Cache hits</h3>
-          <p>Providers serve repeated prompt prefixes at a fraction of the price and latency, but one changed byte breaks the cache. dctx answers are deterministic and canonically ordered: the same tree and question give the same bytes. Since the 0.26 development line, map answers carry no snapshot digest and no clock; in our benchmark every answer except the repository overview stayed byte-identical after an unrelated edit. <code>--meta</code> adds the snapshot fields back when you want them.</p>
-        </div>
-        <div class="card spot">
-          <i class="tick" aria-hidden="true"></i>
-          <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg></div>
-          <h3>Attention</h3>
-          <p>Answers get worse as irrelevant tokens pile up. dctx ranks and bounds every answer and labels it with its precision and freshness, so a model reasons over facts, not guesses.</p>
-        </div>
-      </div>
-    </div>
+<section class="section-alt" id="features" aria-labelledby="features-h">
+ <div class="wrap">
+  <div class="section-head">
+   <span class="eyebrow">What you get</span>
+   <h2 id="features-h">One engine for every way software is built.</h2>
+   <p>The command line, the MCP server, the library and the desktop app share one core, one privacy boundary and the same output.</p>
   </div>
+  <div class="grid grid-3">
+   <article class="card"><span class="k">dctx map</span><h3>Map mode for agents</h3><p>Ten verbs (map, find, neighbors, explain, read, skeleton, grep, hubs, path, export) with stable ids, cursor paging and lexical call and import edges. Up to 2,000 estimated tokens per answer.</p></article>
+   <article class="card"><span class="k">dctx mcp</span><h3>MCP server</h3><p>A stdio MCP server exposes the map verbs as tools, so any MCP-capable agent can query the same bounded, deterministic answers.</p></article>
+   <article class="card"><span class="k">dctx pack</span><h3>Whole-project context</h3><p>The whole project, or only what changed, as one structured block on stdout or the clipboard. Tree lines carry no timestamps, so a bare <code>touch</code> leaves the page byte-identical.</p></article>
+   <article class="card"><span class="k">No embeddings</span><h3>Zero RAG defects</h3><p>No chunking, no vector store. dctx answers from a lexical graph of syntax-owned spans and verifies source bytes before it emits them.</p></article>
+   <article class="card"><span class="k">Ed25519</span><h3>Verified plugins and index</h3><p>Plugin distribution and index verification use Ed25519 signatures. Plugins run out of process with explicit capabilities and consent.</p></article>
+   <article class="card"><span class="k">Preview &middot; 0.11</span><h3>dctx Desktop</h3><p>The same engine in a window, for people who prefer one. Free for everyone, including companies. The desktop app is a preview on its own version line.</p></article>
+  </div>
+  <details class="disclose" id="languages">
+   <summary>Supported languages: 36 full, 8 outline, 6 documentation formats</summary>
+   <div>
+    <p><strong>Full</strong> (symbols and lexical call edges): Rust, JavaScript, TypeScript/TSX, Python, Go, Java, C/C++, C#, Kotlin, Ruby, PHP, Swift, Vue/Svelte/Astro/HTML script blocks, Scala, Dart, Zig, Solidity, Gleam, Fortran, Perl, Groovy, PowerShell, Elixir, Lua, OCaml, R, Julia, Haskell, Erlang, Verilog/SystemVerilog, Terraform/HCL, SQL, Clojure, Common Lisp, Scheme, Emacs Lisp.</p>
+    <p><strong>Outline</strong> (symbols only): JSON/JSONC/TOML/YAML, Shell, Makefile, Dockerfile, Protobuf, Pascal, GraphQL, Nix.</p>
+    <p><strong>Docs</strong> (headed sections): Markdown, plain text, reStructuredText, AsciiDoc, Org, LaTeX.</p>
+    <p class="note">Call edges come from names, scopes and imports, never from a type checker; heuristic families are labelled <code>guess</code>. Run <code>dctx languages</code> for the tier and confidence of every format.</p>
+   </div>
+  </details>
+ </div>
 </section>
 
-<!-- Platform: spectrum -->
-<section class="section seam-a" id="platform" aria-labelledby="platform-h">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">One platform</span>
-      <div class="h-row"><h2 id="platform-h">One engine for every way your teams build software.</h2></div>
-      <p>From an engineer reading unfamiliar code to a fleet of autonomous agents in CI, every workflow draws from the same engine, the same index and the same policy.</p>
-    </div>
-    <div class="spectrum">
-      <span class="pulse" aria-hidden="true"></span>
-      <div class="step"><div class="node"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m8 9-4 3 4 3m8-6 4 3-4 3M14 5l-4 14"/></svg></div><div><h3>Hand-coding</h3><p>Outlines, symbol search and exact reads in an unfamiliar codebase.</p></div></div>
-      <div class="step"><div class="node"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10h4m-4 4h7"/><path d="M15 10h2" stroke-dasharray="1 2"/></svg></div><div><h3>Tab completion</h3><p>A Rust library facade for the editor's own context budget. Python, Node and C bindings are planned.</p></div></div>
-      <div class="step"><div class="node"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="8" y="3" width="12" height="14" rx="2"/><path d="M16 17v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h2"/></svg></div><div><h3>Copy-paste chat</h3><p>The whole project, or only what changed, in one structured block.</p></div></div>
-      <div class="step"><div class="node"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="5" y="8" width="14" height="11" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9.5 16h5"/></svg></div><div><h3>Agents</h3><p>Bounded, copyable, deterministic answers through ten map verbs in the shell; <code>dctx mcp</code> serves the core ones to MCP clients.</p></div></div>
-      <div class="step"><div class="node"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 20V10l5 3V10l5 3V6l8 4v10z"/><path d="M3 20h18"/></svg></div><div><h3>Software factories</h3><p>Specified: one signed organization policy and receipts. The policy lattice is planned.</p></div></div>
-    </div>
+<section id="install" aria-labelledby="install-h">
+ <div class="wrap">
+  <div class="section-head">
+   <span class="eyebrow">Install</span>
+   <h2 id="install-h">Build it from source in a minute.</h2>
+   <p>dctx needs a recent stable Rust toolchain with Cargo. Linux x86_64 is the only tested platform; macOS and Windows builds are untested. There is no crates.io package or prebuilt binary yet.</p>
   </div>
+  <ol class="steps">
+   <li><div><h3>Build the CLI</h3>
+<div class="code"><div class="code-head"><span>zsh</span><button class="copy" type="button" aria-live="polite" hidden>Copy</button></div><pre><code><span class="p">$ </span>git clone https://github.com/Eris-Margeta/dctx
+<span class="p">$ </span>cd dctx
+<span class="p">$ </span>cargo build --locked --release -p dctx-cli
+<span class="p">$ </span>alias dctx=&quot;$PWD/target/release/dctx-cli&quot;</code></pre></div>
+    <p class="note">The built executable is named <code>dctx-cli</code>; the alias lets you type <code>dctx</code>. <code>cargo install --locked --path crates/dctx-cli</code> installs it into Cargo's bin directory instead.</p></div></li>
+   <li><div><h3>Pack a project for a chat assistant</h3>
+<div class="code"><div class="code-head"><span>zsh</span><button class="copy" type="button" aria-live="polite" hidden>Copy</button></div><pre><code><span class="p">$ </span>dctx pack .<span class="c">              # whole project as one context block</span>
+<span class="p">$ </span>dctx pack . --clipboard<span class="c">  # straight to the clipboard</span>
+<span class="p">$ </span>dctx . -d -c<span class="c">             # only what changed since the last snapshot</span></code></pre></div></div></li>
+   <li><div><h3>Give an agent a map</h3>
+<div class="code"><div class="code-head"><span>zsh</span><button class="copy" type="button" aria-live="polite" hidden>Copy</button></div><pre><code><span class="p">$ </span>dctx map find &quot;SnapshotConfig&quot;
+<span class="p">$ </span>dctx map read &#x27;s:crates/dctx-cli/src/lib.rs#SnapshotConfig&#x27; --json
+<span class="p">$ </span>dctx mcp<span class="c">                 # stdio MCP server with the map verbs as tools</span></code></pre></div>
+    <p class="note">Ids come from <code>map</code> and <code>find</code>. See the <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MAP-MODE.md">map mode guide</a> for every verb.</p></div></li>
+  </ol>
+ </div>
 </section>
 
-<!-- Director value -->
-<section class="section alt" aria-labelledby="value-h">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">For leadership</span>
-      <div class="h-row"><h2 id="value-h">What it means for your organization.</h2></div>
-    </div>
-    <div class="grid-2" data-stagger="alt">
-      <div class="card spot tilt"><span class="num" data-decode="01 · COST">01 · COST</span><h3 style="margin-top:12px">Pay for the tokens that matter.</h3><p>Smaller, bounded prompts and stable prefixes that providers can cache. Spend follows the work, not the size of the repository.</p></div>
-      <div class="card spot tilt"><span class="num" data-decode="02 · SECURITY">02 · SECURITY</span><h3 style="margin-top:12px">Source code stays on your machines.</h3><p>Ignored files are never opened. No telemetry, no network client, no model calls. Plugin distributions are verified with the audited <code>ed25519-dalek</code> crate.</p></div>
-      <div class="card spot tilt"><span class="num" data-decode="03 · CONTROL">03 · CONTROL</span><h3 style="margin-top:12px">One policy for every developer.</h3><p>Set budgets, privacy rules, parsers and plugins once for the whole organization; teams and individuals can only narrow it. <span class="pill road">Roadmap</span></p></div>
-      <div class="card spot tilt"><span class="num" data-decode="04 · PREDICTABILITY">04 · PREDICTABILITY</span><h3 style="margin-top:12px">Same input, same bytes.</h3><p>Deterministic answers with explicit precision and freshness make agent runs reproducible and auditable.</p></div>
-    </div>
+<section class="section-alt" id="benchmark" aria-labelledby="bench-h">
+ <div class="wrap">
+  <div class="section-head">
+   <span class="eyebrow">Measured in the open</span>
+   <h2 id="bench-h">More correct answers, with fewer tokens.</h2>
+   <p>Run 7 on 31 October 2026, against Trail-Code 0.28.0 and graphify 0.9.97 in code-only mode. Tokens are estimated as stdout bytes / 3.5 for every tool.</p>
   </div>
+  <div class="table-wrap">
+   <table>
+    <caption>70-question protocol, six pinned corpora, one Linux x86_64 runner</caption>
+    <thead><tr><th scope="col">Tool</th><th scope="col" class="num">Points /140</th><th scope="col" class="num">Gold facts /354</th><th scope="col" class="num">Tokens</th><th scope="col" class="num">Tool calls</th></tr></thead>
+    <tbody>
+     <tr class="lead"><th scope="row">dctx <code>53f8b6b</code></th><td class="num">140</td><td class="num">353</td><td class="num">29,340</td><td class="num">105</td></tr>
+     <tr><th scope="row">Trail-Code 0.28.0</th><td class="num">122</td><td class="num">312</td><td class="num">88,923</td><td class="num">70</td></tr>
+     <tr><th scope="row">graphify 0.9.97, code-only</th><td class="num">96</td><td class="num">238</td><td class="num">197,203</td><td class="num">91</td></tr>
+    </tbody>
+   </table>
+  </div>
+  <div class="caveat">
+   <p><strong>Read this before quoting the table.</strong> The protocol was designed by the dctx team, so it can favour dctx. An independently selected protocol (repositories picked by seed, gold answers from language servers, questions written without seeing dctx output) is pending, and its result will be published whatever it shows.</p>
+  </div>
+  <div class="grid grid-2">
+   <div class="card"><h3>Cold index</h3><p>dctx took 0.13&ndash;1.20 s on the six corpora (median of three runs), against 1.04&ndash;52.83 s for Trail-Code and 4.59&ndash;59.56 s for graphify, on an Intel Xeon E5-2680 v2 runner.</p></div>
+   <div class="card"><h3>Byte stability</h3><p>On 6 November 2026, 33/33 text and 33/33 JSON answers stayed identical after unrelated comment edits across three pinned corpora, and over five runs.</p></div>
+  </div>
+  <p class="note">Questions, gold facts, scorer, raw results and scripts: <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md">benchmark write-up</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030">raw data</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md">stability report</a>.</p>
+ </div>
 </section>
 
-<!-- Zero RAG defects -->
-<section class="section" id="quality" aria-labelledby="quality-h">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">Accuracy</span>
-      <div class="h-row"><h2 id="quality-h">Zero RAG defects, measured row by row.</h2></div>
-      <p>Retrieval over embedded chunks fails in predictable ways. dctx does not use embeddings: it answers from a lexical index of syntax-owned spans and checks bytes before it emits them. The specification names ten defect classes; this is where each one stands in the current development line.</p>
-    </div>
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th scope="col">Failure in chunk retrieval</th><th scope="col">What goes wrong</th><th scope="col">How dctx prevents it</th><th scope="col">Status</th></tr></thead>
-        <tbody>
-          <tr><td>Fragmentation</td><td>Functions cut in half; signature without body</td><td>Records are whole syntax spans; long reads continue with a marked continuation</td><td class="tag"><span class="pill live">Available</span></td></tr>
-          <tr><td>Non-determinism</td><td>Same question, different chunks</td><td>Integer scores, canonical order, frozen ranking revision</td><td class="tag"><span class="pill live">Available</span></td></tr>
-          <tr><td>Staleness</td><td>Old code served as current</td><td><code>read</code> checks the exact bytes against the content digest first</td><td class="tag"><span class="pill live">Available</span></td></tr>
-          <tr><td>Shifting references</td><td>Ids change when a file is added</td><td>Path and qualified-name ids; explicit moved, gone and ambiguous outcomes</td><td class="tag"><span class="pill live">Available</span></td></tr>
-          <tr><td>Semantic drift</td><td>&ldquo;Similar&rdquo; but wrong code</td><td>Lexical ranking over split identifiers, plus call and import edges labelled with their confidence; no type resolution</td><td class="tag"><span class="pill part">Partial</span></td></tr>
-          <tr><td>Authority leaks</td><td>Secrets and ignored files reach the prompt</td><td>Selection before content; <code>map</code> and <code>pack</code> never print env-shaped files (<code>.env</code>, <code>.env.*</code>, <code>*.env</code>, <code>.envrc</code>)</td><td class="tag"><span class="pill live">Available</span></td></tr>
-          <tr><td>Unbounded context</td><td>Top-k chunks crowd out instructions</td><td>Hard per-verb caps for map; the legacy tree and <code>pack</code> are unbounded</td><td class="tag"><span class="pill part">Partial</span></td></tr>
-          <tr><td>Opaque provenance</td><td>Inference presented as fact</td><td>Parser and coverage on every record; every call and import edge carries its confidence</td><td class="tag"><span class="pill live">Available</span></td></tr>
-          <tr><td>Hidden tool cost</td><td>The tool's own output goes uncounted</td><td>A token benchmark that counts dctx's own bytes</td><td class="tag"><span class="pill road">Roadmap</span></td></tr>
-          <tr><td>Summary drift</td><td>Model-written summaries describe old code</td><td>The engine never calls a model; imported summaries are planned, checked by fingerprint</td><td class="tag"><span class="pill live">Available</span></td></tr>
-        </tbody>
-      </table>
-    </div>
+<section id="privacy" aria-labelledby="privacy-h">
+ <div class="wrap grid grid-2" style="align-items:start;gap:var(--s12)">
+  <div>
+   <span class="eyebrow">Security and privacy</span>
+   <h2 id="privacy-h">Ignored means never read.</h2>
+   <p class="lede">Selection happens before any byte is read, hashed, parsed or cached, and is checked again before output leaves the engine.</p>
+   <p>The release check counts network connect and send calls under <code>strace -f</code> for every map verb, <code>pack</code>, <code>cache status</code> and <code>mcp</code>, and fails on any. dctx decides by file name: a secret pasted into an ordinary source file is not detected.</p>
   </div>
+  <ul class="checks">
+   <li><strong>Ignore rules first.</strong> <code>.gitignore</code>, <code>.dctxignore</code> and a global ignore exclude files before they are opened; <code>.dctxomitcontent</code> lists a file without reading it.</li>
+   <li><strong>A built-in deny with no override.</strong> Env files, private keys, credential and secrets files are listed by name but never read.</li>
+   <li><strong><code>.git</code> is closed.</strong> Never listed or read by the map verbs, never read by <code>pack</code>.</li>
+   <li><strong>No symlink escapes.</strong> Files open with <code>O_NOFOLLOW</code>; symlinked directories are never entered.</li>
+   <li><strong>Local only.</strong> No telemetry, no model calls, no network for pack and map.</li>
+  </ul>
+ </div>
 </section>
 
-<!-- Benchmark -->
-<section class="section alt" id="benchmark" aria-labelledby="bench-h">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">Measured, in the open</span>
-      <div class="h-row"><h2 id="bench-h">We benchmarked dctx against Trail-Code. Both won something.</h2></div>
-      <p>A dedicated machine, pinned versions, no network during runs, seven corpora and an adversarial privacy corpus. The report, raw data and scripts are public, including the rows we lost.</p>
-    </div>
-    <div class="bench-grid">
-      <div class="bench-col">
-        <h3><span class="pill live">dctx led</span></h3>
-        <ul>
-          <li><b>0.09 – 6.05 s cold index</b>versus 2.44 – 94.9 s: 2.8 to 69 times faster on all seven corpora</li>
-          <li><b>1.6 – 27× less peak memory</b>8 – 567 MiB versus 181 – 2,111 MiB while indexing</li>
-          <li><b>One 9.2 MB binary</b>versus 405.6 MB of Node.js packages plus a Node runtime</li>
-          <li><b>30 – 260 ms warm queries</b>on small and medium repositories, versus 0.6 – 1.4 s</li>
-          <li><b>Bounded answers, zero sockets</b>map answers never exceeded their cap; no network in any audited run</li>
-        </ul>
-      </div>
-      <div class="bench-col">
-        <h3><span class="pill road">Trail-Code led</span></h3>
-        <ul>
-          <li><b>Call graph</b>dctx emits no call or import edges yet (recall 0 on 140 targets)</li>
-          <li><b>Answers to agent questions</b>122 of 140 points versus 69 of 140</li>
-          <li><b>Cache-friendly output</b>dctx answer headers change after unrelated edits</li>
-          <li><b>Incremental re-indexing</b>dctx re-indexes after every edit and stores a full new generation</li>
-          <li><b>Breadth</b>23 languages and an MCP server today</li>
-        </ul>
-      </div>
-    </div>
-    <p class="bench-note">Benchmark of dctx 0.25 against Trail-Code 0.23.1, October 2026. Every gap above is a numbered item on the <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">roadmap</a>. <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/trail-code-2026-10/REPORT.md">Read the full report</a>.</p>
-    <div class="bench-pending" role="note">
-      <span class="pill live">New run</span>
-      <p><b>Three-way run 7, 31 October 2026: dctx (development line), Trail-Code 0.28.0, graphify 0.9.97 (code path, no LLM).</b> Same host, six pinned corpora, no network.</p>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th scope="col">Measured</th><th scope="col">dctx</th><th scope="col">Trail-Code 0.28.0</th><th scope="col">graphify 0.9.97</th></tr></thead>
-          <tbody>
-            <tr><td>Callers precision / recall (80 targets, tool-independent gold)</td><td><b>0.995 / 0.851</b></td><td>0.986 / 0.436</td><td>0.989 / 0.196</td></tr>
-            <tr><td>Agent questions, October protocol (70 questions)</td><td><b>140 / 140</b>, 12.0 facts per 1k tokens</td><td>122 / 140, 3.5 per 1k</td><td>96 / 140, 1.2 per 1k</td></tr>
-            <tr><td>Cold index, six corpora</td><td><b>0.13 &ndash; 1.09 s</b></td><td>1.42 &ndash; 55.5 s</td><td>4.3 &ndash; 61.5 s</td></tr>
-            <tr><td>Peak memory while indexing</td><td><b>19 &ndash; 90 MB</b></td><td>121 &ndash; 1,015 MB</td><td>74 &ndash; 393 MB</td></tr>
-            <tr><td>Warm search, callers and skeleton</td><td><b>43 &ndash; 195 ms</b></td><td>0.97 &ndash; 2.0 s</td><td>0.41 &ndash; 2.1 s</td></tr>
-            <tr><td>Answers identical after an unrelated edit</td><td>all but the overview</td><td>all but the overview</td><td>half or fewer</td></tr>
-            <tr><td>Languages with symbols, mixed corpus of 10</td><td><b>10</b></td><td>7</td><td>5</td></tr>
-            <tr><td>Languages with call edges, same corpus (first 25 symbols of the 6 largest files)</td><td><b>9</b></td><td>7</td><td>5</td></tr>
-            <tr><td>Canary from a git-tracked <code>.env</code></td><td><b>none</b></td><td><b>none</b></td><td><b>none</b></td></tr>
-            <tr><td>Network attempts (default environment)</td><td><b>0</b></td><td>1, blocked</td><td><b>0</b></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md">Read the three-way report</a>, including the rows we lost.</p>
-    </div>
+<section class="section-alt" id="open-source" aria-labelledby="oss-h">
+ <div class="wrap grid grid-2" style="align-items:center;gap:var(--s12)">
+  <div>
+   <span class="eyebrow">Open source</span>
+   <h2 id="oss-h">Free for any use. Paid maintenance keeps it healthy.</h2>
+   <p>dctx is Apache-2.0, including for commercial use. No feature is held back behind a paid edition. Companies that depend on it can fund security response times and long-term support through a maintenance agreement.</p>
+   <div class="actions" style="justify-content:flex-start">
+    <a class="btn btn-primary" href="/maintenance/">Maintenance agreements</a>
+    <a class="btn btn-ghost" href="/docs/">Documentation</a>
+   </div>
   </div>
-</section>
-
-<!-- Security -->
-<section class="section dark" id="security" aria-labelledby="security-h">
-  <span class="seam" aria-hidden="true"></span>
-  <span class="seam seam-end" aria-hidden="true"></span>
-  <span class="bloom" aria-hidden="true"></span>
-  <span class="light" aria-hidden="true"></span>
-  <span class="orb orb-a" data-parallax="-0.1" aria-hidden="true"></span>
-  <span class="orb orb-b" data-parallax="0.07" aria-hidden="true"></span>
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">Security &amp; privacy</span>
-      <div class="h-row"><h2 id="security-h">Built for codebases you cannot afford to leak.</h2></div>
-    </div>
-    <div class="grid-3" data-anim="depth">
-      <div class="card spot">
-        <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M3 3l18 18M10.6 5.1A10 10 0 0 1 12 5c5 0 9 4.5 10 7a12 12 0 0 1-3 4.2M6.6 6.6A12 12 0 0 0 2 12c1 2.5 5 7 10 7a10 10 0 0 0 5.4-1.6"/></svg></div>
-        <h3>Ignored means never read</h3>
-        <p>Files excluded by <code>.gitignore</code>, <code>.dctxignore</code> or policy are classified before a single byte is opened, hashed or cached &mdash; enforced by read-spy tests.</p>
-      </div>
-      <div class="card spot">
-        <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
-        <h3>No network, no VCS in the core</h3>
-        <p>The core never opens a socket, never runs git and never reads <code>.git/</code>. Identity comes from dctx's own content digest.</p>
-      </div>
-      <div class="card spot">
-        <div class="icon"><svg class="draw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z"/><path d="m9 12 2 2 4-4"/></svg></div>
-        <h3>Plugins behind a boundary</h3>
-        <p>Outside effects are designed to run in out-of-process plugins with explicit capabilities, consent and receipts, and distributions verify with Ed25519. Until a qualified launcher exists, the host refuses native plugin launch on every OS, the bundled Git plugin included.</p>
-      </div>
-    </div>
-    <p class="notice"><b>Fixed in the development line:</b> <code>dctx pack</code> and map mode no longer print env-shaped files such as <code>.env</code>. Release 0.25.0 still includes them unless they are ignored: add <code>.env*</code> to <code>.dctxignore</code> there.</p>
+  <div class="card">
+   <h3>Where it comes from</h3>
+   <p>dctx started in 2025 as <code>dircontxt</code>, written in pure C, to give a model the whole project in one structured, versioned block. It was rewritten in Rust in 2026 and grew a privacy-first core, a plugin host, a desktop app and map mode for agents.</p>
+   <p><a href="/changelog/">Read the changelog</a></p>
   </div>
-</section>
-
-<!-- Organization control -->
-<section class="section seam-a" id="control" aria-labelledby="control-h">
-  <div class="wrap policy">
-    <div class="reveal">
-      <span class="eyebrow">Organization control</span>
-      <div class="h-row" style="margin-top:18px"><h2 id="control-h">One signed policy, from the board to the terminal.</h2></div>
-      <p style="color:var(--muted);font-size:1.1rem;margin:18px 0 0">The specification extends the language that defines dctx output templates to selection, budgets, parsers, cache limits, plugins and privacy for every mode. Seven layers; each can only narrow the one above it.</p>
-      <ul class="policy-points">
-        <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg><span><b>Narrowing only.</b> A team or developer that tries to widen a company rule gets a precise error, never a silent override.</span></li>
-        <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg><span><b>Signed bundles.</b> Distribute one verified policy file through your device management to every machine.</span></li>
-        <li><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m4 10.5 3.5 3.5L16 6"/></svg><span><b>Explainable.</b> <code>dctx policy explain</code> will show every effective value and the layer that set it.</span></li>
-      </ul>
-      <p style="margin:22px 0 0"><span class="pill road">Roadmap</span> <span style="color:var(--faint);font-size:.9rem;margin-left:6px">Output templates and organization ceilings in the template compiler exist today. The seven-layer signed lattice and <code>dctx policy</code> are specified, not shipped.</span></p>
-    </div>
-    <div class="reveal">
-      <ol class="layers" aria-label="Policy layers, from widest to narrowest">
-        <li><b>Built-in</b><span>Hard limits shipped with dctx</span></li>
-        <li data-key="org"><b>Organization</b><span>Your security &amp; platform team</span></li>
-        <li data-key="tenant"><b>Tenant</b><span>A product team</span></li>
-        <li><b>Machine</b><span>Device management</span></li>
-        <li><b>User</b><span>The developer</span></li>
-        <li><b>Project</b><span>The repository</span></li>
-        <li><b>Session</b><span>One run</span></li>
-      </ol>
-      <p class="narrow-note">Every layer can only narrow the one above it.</p>
-<pre class="code" style="margin-top:24px" aria-label="Illustrative organization policy in the planned syntax"><span class="ln" data-key="org"><span class="s">[POLICY:acme]</span></span><span class="ln" data-key="org">privacy.ignore     += <span class="v">["*.pem", "*.key", "secrets/", ".env*"]</span></span><span class="ln" data-key="org">telemetry           = <span class="v">"none"</span></span><span class="ln" data-key="org">budget.map.max_tokens = <span class="v">1500</span></span><span class="ln" data-key="org">agents.hosts.allow  = <span class="v">["shell", "mcp"]</span></span><span class="ln"> </span><span class="ln" data-key="tenant"><span class="s">[TENANT:payments]</span></span><span class="ln" data-key="tenant">languages           = <span class="v">["rust", "typescript"]</span></span><span class="ln" data-key="tenant">budget.map.max_tokens = <span class="v">1200</span>   <span class="k">; may only narrow</span></span></pre>
-      <p class="narrow-note">Illustrative. The policy syntax is specified, not final.</p>
-    </div>
-  </div>
-</section>
-
-<!-- Lineage -->
-<section class="section alt" id="story" aria-labelledby="story-h">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">Our story</span>
-      <div class="h-row"><h2 id="story-h">Started in C. Engineered for what comes next.</h2></div>
-      <p>dctx began as a practical answer to the context problem while we were still moving our own work to AI. The goal has never changed.</p>
-    </div>
-    <div class="timeline">
-      <span class="tdot" aria-hidden="true"></span>
-      <div class="era"><span class="wm-clip" aria-hidden="true"><span class="wm" data-parallax="0.06">25</span></span><span class="year" data-decode="2025">2025</span><h3>dircontxt, in pure C</h3><p>One command gave a model the whole project &mdash; structured, versioned, with diffs and a strict ignore system &mdash; instead of pasting forty files. Version 1.0 shipped in November 2025.</p></div>
-      <div class="era"><span class="wm-clip" aria-hidden="true"><span class="wm" data-parallax="0.06">26</span></span><span class="year" data-decode="2026">2026</span><h3>dctx, in Rust</h3><p>A privacy-first core, a template system, a plugin host, a desktop app, and map mode: bounded, deterministic answers for agents.</p></div>
-      <div class="era now"><span class="wm-clip" aria-hidden="true"><span class="wm" data-parallax="0.06">.26</span></span><span class="year" data-decode="NEXT">NEXT</span><h3>dctx 0.26 and the roadmap</h3><p>0.25.0 is the current release. The 0.26 development line adds call and import edges, prefix-stable answers, an MCP server and an outline tier for 25 more formats. Next: incremental indexing and the signed policy lattice. <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Read the specification</a>.</p></div>
-    </div>
-  </div>
-</section>
-
-<!-- Maintenance -->
-<section class="section" id="maintenance" aria-labelledby="maintenance-h">
-  <div class="wrap">
-    <div class="section-head reveal" style="margin-left:auto;margin-right:auto;text-align:center">
-      <span class="eyebrow">Maintenance</span>
-      <div class="h-row" style="justify-content:center"><h2 id="maintenance-h">Free to use. Maintained in the open.</h2></div>
-      <p style="margin-left:auto;margin-right:auto">dctx is Apache-2.0 and free for any use, including commercial use. Organizations that depend on it can sign a maintenance agreement for security response, long-term support and priority work. Paying never changes the license and never closes a feature.</p>
-      <p style="margin-top:24px"><a class="btn btn-primary" href="maintenance/index.html">See maintenance tiers</a> <a class="btn btn-ghost" href="mailto:info@tejl.com?subject=dctx%20maintenance">Pricing on request</a></p>
-    </div>
-  </div>
-</section>
-
-<!-- FAQ -->
-<section class="section alt" id="faq" aria-labelledby="faq-h">
-  <div class="wrap">
-    <div class="section-head reveal">
-      <span class="eyebrow">Questions</span>
-      <div class="h-row"><h2 id="faq-h">Answers for decision makers.</h2></div>
-    </div>
-    <div class="faq reveal">
-      <details><summary>Does any of our source code leave our network?</summary><div class="faq-body"><p>No. dctx runs on your machines. The CLI has no telemetry, no network client and never calls a model. What reaches a model is exactly what your developers or agents choose to send, already bounded by your policy.</p></div></details>
-      <details><summary>How is dctx different from retrieval-augmented generation?</summary><div class="faq-body"><p>dctx does not use embeddings or vector search. It builds a lexical index of your code from syntax, answers with whole spans whose bytes are checked against their digest, in a deterministic order, and labels every answer with its precision and freshness. That removes the typical failure modes of chunk retrieval and keeps prompts cache-friendly.</p></div></details>
-      <details><summary>Which languages does it understand?</summary><div class="faq-body"><p>Fourteen language families with structural extractors: Rust, JavaScript, TypeScript and TSX, Python, Go, Java, C and C++, C#, Kotlin, Ruby, PHP, Swift, Markdown, and JSON, TOML and YAML configuration. The 0.26 development line adds an outline tier, labelled <code>guess</code>, for Scala, Dart, Zig, Solidity, Gleam, Groovy, Elixir, Lua, OCaml, R, Julia, Haskell, Terraform/HCL, SQL, shell, Makefiles, Dockerfiles, protobuf, Pascal and GraphQL, and headed sections for .txt, .rst, .adoc, .org and .tex documents. This is declaration structure, not full compiler semantics; other files are reported as opaque, never guessed at.</p></div></details>
-      <details><summary>Does it work with the AI tools our teams already use?</summary><div class="faq-body"><p>Yes. dctx works through the shell that every coding agent already has, through the clipboard for chat assistants, and as a library. The 0.26 development line adds <code>dctx mcp</code>, a stdio MCP server over the map verbs; agent hooks are on the roadmap.</p></div></details>
-      <details><summary>Is dctx free to use commercially?</summary><div class="faq-body"><p>Yes. dctx is Apache-2.0 open source and free for any use, including commercial use. Companies that depend on it can sign a maintenance agreement for security response times, long-term support and priority work. Paying never changes the license and never closes a feature.</p></div></details>
-    </div>
-  </div>
-</section>
-
-<!-- CTA -->
-<section class="section" aria-labelledby="cta-h">
-  <div class="wrap">
-    <div class="cta reveal">
-      <span class="glow" aria-hidden="true"></span>
-      <div>
-        <h2 id="cta-h">Make every token count.</h2>
-        <p>Talk to us about rolling dctx out across your engineering organization, or start with the open-source CLI today.</p>
-      </div>
-      <div class="actions">
-        <a class="btn btn-white" href="mailto:info@tejl.com?subject=dctx%20maintenance">Talk to us</a>
-        <a class="btn btn-ghost" href="https://github.com/Eris-Margeta/dctx">Get the CLI</a>
-      </div>
-    </div>
-  </div>
+ </div>
 </section>
 
 </main>
-
 <footer class="site-footer">
-  <div class="wrap">
-    <div class="foot-grid">
-      <div>
-        <a class="brand" href="#top" aria-label="dctx, back to top">
-          <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#121419"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#7c5cff"/></svg>
-          dctx
-        </a>
-        <p>The context engine for AI-assisted software development. Context, engineered.</p>
-      </div>
-      <nav class="foot-col" aria-label="Product">
-        <h3>Product</h3>
-        <ul>
-          <li><a href="#belief">Philosophy</a></li>
-          <li><a href="#platform">Platform</a></li>
-          <li><a href="#security">Security</a></li>
-          <li><a href="#benchmark">Benchmark</a></li>
-          <li><a href="maintenance/index.html">Maintenance</a></li>
-        </ul>
-      </nav>
-      <nav class="foot-col" aria-label="Resources">
-        <h3>Resources</h3>
-        <ul>
-          <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Specification</a></li>
-          <li><a href="news/index.html">News</a></li>
-          <li><a href="changelog/index.html">Changelog</a></li>
-          <li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li>
-          <li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li>
-        </ul>
-      </nav>
-      <nav class="foot-col" aria-label="Company">
-        <h3>Company</h3>
-        <ul>
-          <li><a href="mailto:info@tejl.com?subject=dctx%20maintenance">Maintenance enquiries</a></li>
-          <li><a href="mailto:info@tejl.com">Contact</a></li>
-          <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li>
-        </ul>
-      </nav>
-    </div>
-    <div class="foot-bottom">
-      <div class="foot-tools">
-        <small>&copy; 2026 dctx. Apache-2.0.</small>
-        <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch colour theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg><span>Theme</span></button>
-        <button class="motion-toggle" id="motion-toggle" type="button" aria-pressed="false"><span class="sw" aria-hidden="true"></span>Reduce motion</button>
-      </div>
-      <div class="tejl-credit">
-        <div class="tejl-credit-text">
-          <span>Design &amp; development: TEJL Studio</span>
-          <span>Web studio contact: <a href="tel:+385998361079">+385 99 836 1079</a></span>
-          <span><a href="https://tejl.hr/" target="_blank" rel="noopener">tejl.hr</a> &middot; <a href="https://tejl.com/" target="_blank" rel="noopener">tejl.com</a></span>
-        </div>
-        <a class="tejl-credit-logo" href="https://tejl.hr/" target="_blank" rel="noopener" aria-label="TEJL Studio — tejl.hr">
-          <img src="assets/tejl-logo-off-black.svg" width="818" height="422" alt="" aria-hidden="true">
-        </a>
-      </div>
-    </div>
+ <div class="wrap">
+  <div class="foot-grid">
+   <div>
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
+    <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+   </div>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul>
+    <li><a href="/#why">Why dctx</a></li><li><a href="/#install">Install</a></li><li><a href="/#benchmark">Benchmark</a></li>
+    <li><a href="/#privacy">Security and privacy</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul>
+    <li><a href="/docs/">Documentation</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Specification</a></li>
+    <li><a href="/news/">News</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/feed.xml">Atom feed</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul>
+    <li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li>
+    <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/SECURITY.md">Report a vulnerability</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li>
+    <li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
   </div>
+  <div class="foot-bottom">
+   <div>
+    <p>&copy; 2025&ndash;2026 Eris Margeta. dctx is open source under Apache-2.0.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="https://github.com/Eris-Margeta/dctx/blob/main/TRADEMARK.md">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+   </div>
+   <div class="credit">
+    <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>
+    <a class="credit-logo" href="https://tejl.com/" aria-label="TEJL, publisher of dctx"><img src="/assets/tejl-logo-off-black.svg" width="818" height="422" alt="" loading="lazy" decoding="async"></a>
+   </div>
+  </div>
+ </div>
 </footer>
-
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
-
-
 </body>
 </html>
