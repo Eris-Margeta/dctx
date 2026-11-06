@@ -10,6 +10,12 @@ dctx Enterprise.
 
 ## [Unreleased]
 
+- **Docs**: byte stability re-measured on 2026-11-06 — 33/33 text and 33/33 JSON map answers identical
+  after unrelated edits and over five runs (see docs/research/stability-20261105/REPORT.md);
+  SPEC and README status texts updated, historical 0/63 kept.
+- **Formal**: the plugin TLC gate accepts the newer TLC wording 'Temporal property X was violated.' /
+  'Invariant X was violated.' (all 8 baselines, 59 mutants, 37 witnesses pass); host-specific
+  tla2tools.jar paths removed; TLC trace files ignored.
 - **Self-hosted CI** (`.github/workflows/ci.yml`): the job run step by step on a self-hosted Linux runner (16 cores) from a clean
   `git archive` of the commit; results and badge recorded in `docs/ci/RESULTS.md` — 2279 run, 2279 passed, 0 skipped.
 - **Third-party npm licence inventory**: `scripts/npm_licenses.py` indexes every repository `package-lock.json` into
