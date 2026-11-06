@@ -10,6 +10,12 @@ dctx Enterprise.
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-06
+
+Release **1.1.0** (`v1.1.0`; release candidate `v1.1.0-rc1` 2026-11-04). It folds in the 1.0.1 line, which was never released on its own.
+
+### Since rc1 (docs, CI, tooling and SPDX licence headers only; no change to dctx output)
+
 - **Docs**: byte stability re-measured on 2026-11-06 — 33/33 text and 33/33 JSON map answers identical
   after unrelated edits and over five runs (see docs/research/stability-20261105/REPORT.md);
   SPEC and README status texts updated, historical 0/63 kept.
@@ -20,10 +26,6 @@ dctx Enterprise.
   `git archive` of the commit; results and badge recorded in `docs/ci/RESULTS.md` — 2279 run, 2279 passed, 0 skipped.
 - **Third-party npm licence inventory**: `scripts/npm_licenses.py` indexes every repository `package-lock.json` into
   `THIRD_PARTY_NPM.md`; `npm_licenses.py --check` runs in CI and fails on a disallowed licence or a stale report.
-
-## [1.1.0] - 2026-11-04
-
-Release **1.1.0** (`v1.1.0-rc1`). It folds in the 1.0.1 line, which was never released on its own.
 
 ### Added
 
