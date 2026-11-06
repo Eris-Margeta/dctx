@@ -31,7 +31,7 @@
   <a href="#map-mode-context-for-agents">Map mode</a> •
   <a href="#security--privacy">Security & Privacy</a> •
   <a href="docs/SPEC.md">Specification</a> •
-  <a href="https://dctx.internet.technology/">Website</a>
+  <a href="https://www.dctx.internet.technology/">Website</a>
 </p>
 
 ---
