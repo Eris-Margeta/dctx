@@ -1,0 +1,91 @@
+   Compiling unicode-ident v1.0.27
+   Compiling proc-macro2 v1.0.107
+   Compiling quote v1.0.47
+   Compiling dctx-hash v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-hash)
+   Compiling serde_core v1.0.228
+   Compiling zmij v1.0.23
+   Compiling serde_json v1.0.149
+   Compiling serde v1.0.228
+   Compiling version_check v0.9.5
+   Compiling itoa v1.0.18
+   Compiling memchr v2.8.3
+   Compiling thiserror v2.0.18
+   Compiling cfg-if v1.0.5
+   Compiling typenum v1.20.1
+   Compiling zerocopy v0.8.63
+   Compiling shlex v2.0.1
+   Compiling semver v1.0.28
+   Compiling find-msvc-tools v0.1.14
+   Compiling vcpkg v0.2.15
+   Compiling libc v0.2.191
+   Compiling once_cell v1.21.4
+   Compiling bitflags v2.13.2
+   Compiling pkg-config v0.3.34
+   Compiling dctx-plugin-protocol v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-plugin-protocol)
+   Compiling cpufeatures v0.2.17
+   Compiling subtle v2.6.1
+   Compiling signature v2.2.0
+   Compiling rustix v1.1.5
+   Compiling fallible-streaming-iterator v0.1.9
+   Compiling fallible-iterator v0.3.0
+   Compiling dctx-lex-md v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-md)
+   Compiling smallvec v1.16.3
+   Compiling linux-raw-sys v0.12.1
+   Compiling dctx-cli v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-cli)
+   Compiling dctx-core v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-core)
+   Compiling ed25519 v2.2.3
+   Compiling rustc_version v0.4.1
+   Compiling generic-array v0.14.7
+   Compiling ahash v0.8.12
+   Compiling cc v1.8.0
+   Compiling curve25519-dalek v4.1.3
+   Compiling dctx-ports v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-ports)
+   Compiling dctx-template v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-template)
+   Compiling syn v3.0.9
+   Compiling dctx-pack v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-pack)
+   Compiling syn v2.0.119
+   Compiling block-buffer v0.10.4
+   Compiling crypto-common v0.1.7
+   Compiling libsqlite3-sys v0.30.1
+   Compiling digest v0.10.7
+   Compiling dctx-plugin-host v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-plugin-host)
+   Compiling dctx-plugin-git v1.1.0 (/path/to/workdir/codex/STAB-01R/plugins/dctx-plugin-git)
+   Compiling seccompiler v0.5.0
+   Compiling sha2 v0.10.9
+   Compiling serde_derive v1.0.228
+   Compiling thiserror-impl v2.0.18
+   Compiling enumflags2_derive v0.7.12
+   Compiling curve25519-dalek-derive v0.1.1
+   Compiling enumflags2 v0.7.12
+   Compiling ed25519-dalek v2.2.0
+   Compiling dctx-lex-rust v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-rust)
+   Compiling landlock v0.4.7
+   Compiling dctx-adapter-cache v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-adapter-cache)
+   Compiling dctx-map-segment v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-map-segment)
+   Compiling dctx-adapter-fs v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-adapter-fs)
+   Compiling dctx-map-scan v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-map-scan)
+   Compiling dctx-ed25519 v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-ed25519)
+   Compiling dctx-plugin-distribution v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-plugin-distribution)
+   Compiling dctx-plugin-platform v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-plugin-platform)
+   Compiling hashbrown v0.14.5
+   Compiling dctx-adapter-store v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-adapter-store)
+   Compiling hashlink v0.9.1
+   Compiling dctx-map-model v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-map-model)
+   Compiling dctx-lex-java v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-java)
+   Compiling dctx-lex-swift v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-swift)
+   Compiling dctx-lex-js v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-js)
+   Compiling dctx-lex-kt v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-kt)
+   Compiling dctx-lex-c v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-c)
+   Compiling dctx-lex-php v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-php)
+   Compiling dctx-lex-cfg v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-cfg)
+   Compiling dctx-lex-py v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-py)
+   Compiling dctx-lex-cs v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-cs)
+   Compiling dctx-lex-rb v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-rb)
+   Compiling dctx-lex-go v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-lex-go)
+   Compiling dctx-map-resolve v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-map-resolve)
+   Compiling dctx-map-parse v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-map-parse)
+   Compiling dctx v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx)
+   Compiling rusqlite v0.32.1
+   Compiling dctx-map-store v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-map-store)
+   Compiling dctx-map-query v1.1.0 (/path/to/workdir/codex/STAB-01R/crates/dctx-map-query)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 23.07s

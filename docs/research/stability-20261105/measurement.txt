@@ -1,0 +1,59 @@
+parser-mixed: 22 answer cases, all commands exited 0
+lexer-go: 22 answer cases, all commands exited 0
+map-query: 22 answer cases, all commands exited 0
+{
+  "cases": 66,
+  "commands": 405,
+  "commit": "0495f5f87717df5385209d306b92328a8cd96cf6",
+  "exits": {
+    "0": 405
+  },
+  "files": 66,
+  "formats": {
+    "json": {
+      "M7_mean": 1.0,
+      "M7_min": 1.0,
+      "cases": 33,
+      "identical_after_edit": 33,
+      "identical_five_runs": 33
+    },
+    "text": {
+      "M7_mean": 1.0,
+      "M7_min": 1.0,
+      "cases": 33,
+      "identical_after_edit": 33,
+      "identical_five_runs": 33
+    }
+  },
+  "historical_sha256": "46b54db2fb469dc4df70eaa0bf22b458a8089f437cdee3294efe071314280266",
+  "traces": {
+    "changing-question/json": {
+      "mean": 0.18244679358762136,
+      "median": 0.06759443339960239,
+      "minimum": 0.008776458440887971,
+      "transitions": 195,
+      "weighted": 0.07989261466309974
+    },
+    "changing-question/text": {
+      "mean": 0.21483025659446645,
+      "median": 0.10714285714285714,
+      "minimum": 0.007795889440113395,
+      "transitions": 195,
+      "weighted": 0.061846978410767514
+    },
+    "same-request/json": {
+      "mean": 1.0,
+      "median": 1.0,
+      "minimum": 1.0,
+      "transitions": 165,
+      "weighted": 1.0
+    },
+    "same-request/text": {
+      "mean": 1.0,
+      "median": 1.0,
+      "minimum": 1.0,
+      "transitions": 165,
+      "weighted": 1.0
+    }
+  }
+}

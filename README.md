@@ -143,7 +143,7 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 - **Find**: quote a multi-word concept as one argument; a name that spells the whole phrase ranks just under an exact name. For config keys with no symbol match, `find` falls back to literal hits, and a SCREAMING_CASE key (`HOME`, `DJANGO_SETTINGS_MODULE`) always lists the code that reads it after the best exact symbol.
 - **Outline of a file**: `map map <file>` lists exported top-level declarations first, then the rest in source order, with impl blocks, constants and tests last; without `--budget` its page is 1,000 tokens so `--limit 40` is not cut early. Map and find text lines are `<id>\t<kind>\tL<start>-<end>`, since the id already names the path.
 - **MCP**: `dctx mcp` runs a stdio MCP server that exposes the map verbs as tools, including skeleton, path and export.
-- **Byte-stable answers**: the text header is `# <place> <verb>`, and JSON leaves out the snapshot digest, generation and age. `--meta` restores them.
+- **Byte-stable answers**: on 6 Nov 2026, build `0495f5f` preserved 33/33 text and 33/33 JSON answers after unrelated comment edits across three pinned local corpora (11 query shapes each); all were identical over five runs, with paired-answer common-prefix ratio 1.0. The tested text headers are `# <place> <verb>`; default JSON omits snapshot digest, generation and age, which `--meta` restores. [Protocol, raw answers and limits](docs/research/stability-20261105/REPORT.md). Prefix-stable tier layering remains a target.
 - **Source limit**: `DCTX_MAX_SOURCE_BYTES` sets the total source bytes one scan may read (1 to 17179869184; default 1 GiB).
 
 

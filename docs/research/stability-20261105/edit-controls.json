@@ -1,0 +1,401 @@
+[
+  {
+    "after_meta": {
+      "freshness": {
+        "age_s": 0,
+        "mode": "strict",
+        "state": "verified"
+      },
+      "generation": 1,
+      "more": 1,
+      "next": "v1|1|find|s:sample.swift#helper",
+      "place": "parser-mixed",
+      "precision": {
+        "completion": "complete",
+        "coverage": "structural",
+        "parser": "dctx-structural/2"
+      },
+      "records": [
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:rust/src/support.rs#helper",
+          "kind": "fn",
+          "lines": [
+            8,
+            10
+          ],
+          "path": "rust/src/support.rs",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "pub fn helper()",
+          "summary_source": "sig",
+          "target": null
+        },
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:sample.kt#helper",
+          "kind": "fn",
+          "lines": [
+            13,
+            13
+          ],
+          "path": "sample.kt",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "fun helper()",
+          "summary_source": "sig",
+          "target": null
+        },
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:sample.php#helper",
+          "kind": "fn",
+          "lines": [
+            10,
+            10
+          ],
+          "path": "sample.php",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "function helper()",
+          "summary_source": "sig",
+          "target": null
+        },
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:sample.rb#helper",
+          "kind": "fn",
+          "lines": [
+            11,
+            13
+          ],
+          "path": "sample.rb",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "def helper(value)",
+          "summary_source": "sig",
+          "target": null
+        },
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:sample.swift#helper",
+          "kind": "fn",
+          "lines": [
+            10,
+            10
+          ],
+          "path": "sample.swift",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "func helper()",
+          "summary_source": "sig",
+          "target": null
+        }
+      ],
+      "snapshot": "v1:sha256:3836d8c6dca420ec16002920ff53e1b65707fbde20245c13955084862604e694:12551",
+      "v": 2,
+      "verb": "find"
+    },
+    "after_sha256": "1c26b8f25b945d2a411f10cab2178716cb6734ebbd21d446c005f32b0a360526",
+    "before_meta": {
+      "freshness": {
+        "age_s": 0,
+        "mode": "strict",
+        "state": "verified"
+      },
+      "generation": 1,
+      "more": 1,
+      "next": "v1|1|find|s:sample.swift#helper",
+      "place": "parser-mixed",
+      "precision": {
+        "completion": "complete",
+        "coverage": "structural",
+        "parser": "dctx-structural/2"
+      },
+      "records": [
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:rust/src/support.rs#helper",
+          "kind": "fn",
+          "lines": [
+            8,
+            10
+          ],
+          "path": "rust/src/support.rs",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "pub fn helper()",
+          "summary_source": "sig",
+          "target": null
+        },
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:sample.kt#helper",
+          "kind": "fn",
+          "lines": [
+            13,
+            13
+          ],
+          "path": "sample.kt",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "fun helper()",
+          "summary_source": "sig",
+          "target": null
+        },
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:sample.php#helper",
+          "kind": "fn",
+          "lines": [
+            10,
+            10
+          ],
+          "path": "sample.php",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "function helper()",
+          "summary_source": "sig",
+          "target": null
+        },
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:sample.rb#helper",
+          "kind": "fn",
+          "lines": [
+            11,
+            13
+          ],
+          "path": "sample.rb",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "def helper(value)",
+          "summary_source": "sig",
+          "target": null
+        },
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:sample.swift#helper",
+          "kind": "fn",
+          "lines": [
+            10,
+            10
+          ],
+          "path": "sample.swift",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "func helper()",
+          "summary_source": "sig",
+          "target": null
+        }
+      ],
+      "snapshot": "v1:sha256:24bebe8107e4b8164a9d3bd1a8ba81fdb2dc3633d05e82c9d232ae975ed0da02:12551",
+      "v": 2,
+      "verb": "find"
+    },
+    "before_sha256": "0f14f80aec6350fee34e04d75394f5a23a5b4fdb2f76afcd6f6cb10f22d628c0",
+    "corpus": "parser-mixed",
+    "edit": "ts/module.ts",
+    "restored": true
+  },
+  {
+    "after_meta": {
+      "freshness": {
+        "age_s": 1,
+        "mode": "strict",
+        "state": "verified"
+      },
+      "generation": 1,
+      "more": 0,
+      "next": null,
+      "place": "lexer-go",
+      "precision": {
+        "completion": "complete",
+        "coverage": "structural",
+        "parser": "dctx-structural/2"
+      },
+      "records": [
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:tests/fixtures/basic.go#Add",
+          "kind": "fn",
+          "lines": [
+            43,
+            45
+          ],
+          "path": "tests/fixtures/basic.go",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "Add adds a and b.",
+          "summary_source": "doc",
+          "target": null
+        }
+      ],
+      "snapshot": "v1:sha256:f9acba5c5083164fca9bdb7f1688201b5dc75fc8f0969a3adf5841af4c6ea143:90318",
+      "v": 2,
+      "verb": "find"
+    },
+    "after_sha256": "137e8398f885fe814654de83eb97db29338731a904f19b73c7dce99770aad508",
+    "before_meta": {
+      "freshness": {
+        "age_s": 0,
+        "mode": "strict",
+        "state": "verified"
+      },
+      "generation": 1,
+      "more": 0,
+      "next": null,
+      "place": "lexer-go",
+      "precision": {
+        "completion": "complete",
+        "coverage": "structural",
+        "parser": "dctx-structural/2"
+      },
+      "records": [
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:tests/fixtures/basic.go#Add",
+          "kind": "fn",
+          "lines": [
+            43,
+            45
+          ],
+          "path": "tests/fixtures/basic.go",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "Add adds a and b.",
+          "summary_source": "doc",
+          "target": null
+        }
+      ],
+      "snapshot": "v1:sha256:61b833f1ec7e3eb6d27c6a555f36de5478e806ce171e9fb5f5da99d77d36cc83:90318",
+      "v": 2,
+      "verb": "find"
+    },
+    "before_sha256": "08d249b01a7911ad55a251feb72259f5b954e107fee9a662a92b770ea5d29c50",
+    "corpus": "lexer-go",
+    "edit": "src/lib.rs",
+    "restored": true
+  },
+  {
+    "after_meta": {
+      "freshness": {
+        "age_s": 1,
+        "mode": "strict",
+        "state": "verified"
+      },
+      "generation": 1,
+      "more": 0,
+      "next": null,
+      "place": "map-query",
+      "precision": {
+        "completion": "complete",
+        "coverage": "syntax",
+        "parser": "dctx-lex-rust/syn-3.0.9"
+      },
+      "records": [
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:adapters/output.rs#render_answer_at",
+          "kind": "fn",
+          "lines": [
+            21,
+            62
+          ],
+          "path": "adapters/output.rs",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "Renders with an explicit place retained in every continuation command.",
+          "summary_source": "doc",
+          "target": null
+        }
+      ],
+      "snapshot": "v1:sha256:d275ce37b13cfa237da72c3b2dccb4893bd1143ee3b970eb6b95e44034d62272:78359",
+      "v": 2,
+      "verb": "find"
+    },
+    "after_sha256": "faae42d82054d6054cc31732dc8b37f0d00cf26c0bf41858dcc9bd1dad73f229",
+    "before_meta": {
+      "freshness": {
+        "age_s": 0,
+        "mode": "strict",
+        "state": "verified"
+      },
+      "generation": 1,
+      "more": 0,
+      "next": null,
+      "place": "map-query",
+      "precision": {
+        "completion": "complete",
+        "coverage": "syntax",
+        "parser": "dctx-lex-rust/syn-3.0.9"
+      },
+      "records": [
+        {
+          "confidence": null,
+          "direction": null,
+          "edge": null,
+          "id": "s:adapters/output.rs#render_answer_at",
+          "kind": "fn",
+          "lines": [
+            21,
+            62
+          ],
+          "path": "adapters/output.rs",
+          "signature": null,
+          "source_utf8": null,
+          "span": null,
+          "summary": "Renders with an explicit place retained in every continuation command.",
+          "summary_source": "doc",
+          "target": null
+        }
+      ],
+      "snapshot": "v1:sha256:6903a049e9bf8322ebe8fd46c46d3322b949616dab7b0853c8b6bf02f0d3769b:78359",
+      "v": 2,
+      "verb": "find"
+    },
+    "before_sha256": "e994d2fa6f1af20b7219cc741eaeb7ee76eef41215c25688994304f159008bac",
+    "corpus": "map-query",
+    "edit": "domain/ranking.rs",
+    "restored": true
+  }
+]

@@ -100,7 +100,7 @@ MUST satisfy the five **PPE** constraints:
 |---|---|---|
 | **PPE-1 Bounded** | Every answer has a declared byte and estimated-token ceiling, reserved before records are written; records are never split | landed (`dctx_core::budget`, API-PORTS-v1 `BoundedSink`) |
 | **PPE-2 Deterministic** | Same source snapshot, policy, plan, ranking revision and request ⇒ identical bytes, on every OS and thread count | landed on Linux (every text verb identical over 5 runs; property P6, canonical payload); cross-OS gate open (§11) |
-| **PPE-3 Prefix-stable** | Context injected across turns is layered so that bytes that did not need to change do not change (§12) | target — **violated today**: the default text header carries the snapshot digest and JSON carries `age_s`, so 0 of 63 answers survived an unrelated edit (§31.0) |
+| **PPE-3 Prefix-stable** | Context injected across turns is layered so that bytes that did not need to change do not change (§12) | tier layering remains target (§12.1); on 2026-11-06, `0495f5f` preserved 33/33 text and 33/33 JSON answers after unrelated comment edits on three pinned local corpora; all identical over five runs, paired-answer M7 = 1.0 ([protocol and limits](research/stability-20261105/REPORT.md)); historical baseline 0/63 (§31.0) |
 | **PPE-4 Non-redundant** | Within one session a record already delivered is not re-sent unless its content changed (§12.4) | target |
 | **PPE-5 Honest** | Every answer states its freshness, precision and provenance; the engine never asserts what it does not know | landed (`precision.*`, `freshness.*` in the wire format) |
 
@@ -342,12 +342,16 @@ Two formats: the **text page** (default; one record per line; ids first) and **J
 - no timestamps, snapshot digests, absolute paths, process ids, random values or
   locale-dependent text in the default output; provenance (snapshot digest,
   generation, age) is a **trailer line** behind `--provenance`, or a JSON field behind
-  `--json --provenance` (target, P0: today the first line of every text answer is
-  `# <place> <verb> v1:sha256:<digest>:<bytes> g=<n>` and JSON carries `age_s`, TC-F03);
+  `--json --provenance` (P0 header prerequisite measured on 2026-11-06: all 33 tested
+  text answers start with `# <place> <verb>`; all 33 tested default JSON answers omit
+  snapshot, generation and `age_s`, and are identical over five runs and after an
+  unrelated comment edit. Shipped opt-in flag: `--meta`; the specified provenance
+  trailer and `--provenance` interface remain target. [Evidence](research/stability-20261105/REPORT.md), TC-F03);
 - the text page carries content: `find` and `map` records are
   `id<TAB>kind<TAB>path:L1-L2<TAB>summary`; `explain` prints signature, summary and edge
-  counts by kind; `read` prints the source span (target, P0: today text `read` and
-  `explain` print only the id line, 152 to 247 bytes, TC-F04);
+  counts by kind; `read` prints the source span (P0 status, 2026-11-06: text `read`
+  carried source in all three measured cases; text `explain` still printed only
+  id/kind/path. Richer text fields remain target; [evidence](research/stability-20261105/REPORT.md), TC-F04);
 - JSON v2 omits `null` fields (target, P0: today thirteen keys per record, many null,
   so a JSON `find` fit 4 records where the text page fit 10);
 - canonical order (score desc, id asc; adjacency grouped by edge kind);
@@ -887,7 +891,7 @@ this section names the row it must move.
 | Warm `find`: small and medium corpora / largest corpus (core) | 0.03–0.26 s / 1.45 s | 0.69–1.40 s / 1.65 s (`callers` 0.83 s) | `data/queries_warm.csv` |
 | First query after a one-line edit: core / django | 7.48 s / 2.70 s | 5.45 s / 11.30 s | `data/freshness.csv` |
 | Cache growth after about five edits (core) | 158 MB → 946 MB; `gc --dry-run` reclaimed 0 bytes | constant 65 MB | report §6 |
-| Text answers identical after an unrelated edit | 0 of 63 | 59 of 70 | `data/stability.csv` |
+| Text answers identical after an unrelated edit | Historical: 0 of 63 (`17dff0b`); 2026-11-06: 33 of 33 (`0495f5f`, three pinned local corpora, unrelated comment edits); JSON 33 of 33, also identical over five runs; paired-answer M7 = 1.0 | Historical: 59 of 70 (not rerun) | Historical: `data/stability.csv`; [new CSV](research/stability-20261105/stability.csv), [protocol and limits](research/stability-20261105/REPORT.md) |
 | Budget cap honoured | 2,000-token cap never exceeded (worst answer 6,996 bytes); 35 of 84 small budgets fail with exit 1 | no cap; one answer 142,197 bytes | report §13 |
 | Install footprint | one 9,207,072-byte binary | 405,601,700 bytes of `node_modules` plus Node | report §3 |
 | Sockets in audited runs | 0 | 30 in a daily update check that ignores the documented opt-out | report §11 |
