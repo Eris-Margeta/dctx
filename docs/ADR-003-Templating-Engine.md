@@ -57,6 +57,7 @@ These variables are populated by the Rust core:
 
 6. TEMPLATE DEFINITION V1:
 
+```text
 # ==============================================================================
 # DCTX TEMPLATE DEFINITION V1
 # ==============================================================================
@@ -136,3 +137,4 @@ instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}
 {{end_marker_open}}{{tree_end_marker}}{{end_marker_close}}
 
 {{{comp.files}}}
+```
