@@ -339,3 +339,4 @@ GEMINI.md
 # TLC counterexample traces
 *_TTrace_*.tla
 *_TTrace_*.bin
+/tools/website/.venv/

@@ -1,0 +1,723 @@
+{
+ "schema": 1,
+ "version": "1.1.0",
+ "env": {
+  "DCTX_AUTO_CLEAN": "0",
+  "LC_ALL": "C.UTF-8",
+  "COLUMNS": "100"
+ },
+ "place": "kiosk",
+ "sample": {
+  "files": [
+   {
+    "path": ".env",
+    "bytes": 29,
+    "status": "listed-not-read"
+   },
+   {
+    "path": ".gitignore",
+    "bytes": 8,
+    "status": "packed"
+   },
+   {
+    "path": "Cargo.toml",
+    "bytes": 185,
+    "status": "packed"
+   },
+   {
+    "path": "README.md",
+    "bytes": 473,
+    "status": "packed"
+   },
+   {
+    "path": "assets/logo.png",
+    "bytes": 69,
+    "status": "binary"
+   },
+   {
+    "path": "config.toml",
+    "bytes": 78,
+    "status": "packed"
+   },
+   {
+    "path": "src/main.rs",
+    "bytes": 331,
+    "status": "packed"
+   },
+   {
+    "path": "src/store.rs",
+    "bytes": 698,
+    "status": "packed"
+   },
+   {
+    "path": "src/util.rs",
+    "bytes": 404,
+    "status": "packed"
+   },
+   {
+    "path": "target/debug/kiosk.d",
+    "bytes": 42,
+    "status": "ignored"
+   },
+   {
+    "path": "tools/report.py",
+    "bytes": 484,
+    "status": "packed"
+   },
+   {
+    "path": "web/app.ts",
+    "bytes": 596,
+    "status": "packed"
+   },
+   {
+    "path": "web/format.ts",
+    "bytes": 350,
+    "status": "packed"
+   }
+  ]
+ },
+ "summary": {
+  "files_on_disk": 13,
+  "files_listed": 11,
+  "files_read": 10,
+  "pack_bytes": 5548,
+  "pack_files": 11,
+  "for_body_tokens": 223,
+  "for_budget": 600,
+  "for_dropped": 0,
+  "mcp_tools": [
+   "map",
+   "find",
+   "neighbors",
+   "explain",
+   "read",
+   "hubs",
+   "grep",
+   "skeleton",
+   "path",
+   "export"
+  ]
+ },
+ "records": [
+  {
+   "id": "version",
+   "group": "pack",
+   "argv": [
+    "dctx",
+    "--version"
+   ],
+   "stdout": "dctx 1.1.0 (<git sha>)\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 23,
+   "est_tokens": 7,
+   "scrubbed": "(<git sha>)"
+  },
+  {
+   "id": "pack",
+   "group": "pack",
+   "argv": [
+    "dctx",
+    "pack",
+    "."
+   ],
+   "stdout": "[DCTX_LLM_CONTEXT_SNAPSHOT_V1]\n[DIRECTORY:kiosk]\n<INSTRUCTIONS>\n1. Manifest: The <DIRECTORY_TREE> section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: <FILE_CONTENT_START ID=\\\"UNIQUE_ID\\\">\n   - The content is between this marker and </FILE_CONTENT_END ID=\\\"UNIQUE_ID\\\">\n</INSTRUCTIONS>\n<DIRECTORY_TREE>\n[D]  (ID:ROOT)\n  [F] .env (ID:F001)\n  [F] .gitignore (ID:F002)\n  [F] Cargo.toml (ID:F003)\n  [F] README.md (ID:F004)\n  [F] config.toml (ID:F005)\n  [D] src (ID:D006)\n    [F] src/main.rs (ID:F007)\n    [F] src/store.rs (ID:F008)\n    [F] src/util.rs (ID:F009)\n  [D] tools (ID:D010)\n    [F] tools/report.py (ID:F011)\n  [D] web (ID:D012)\n    [F] web/app.ts (ID:F013)\n    [F] web/format.ts (ID:F014)\n</DIRECTORY_TREE>\n<FILE_CONTENT_START ID=\"F001\" PATH=\".env\" LINES=\"0\">\n[Content omitted by pattern rules]\n</FILE_CONTENT_END ID=\"F001\">\n<FILE_CONTENT_START ID=\"F002\" PATH=\".gitignore\" LINES=\"2\">\ntarget/\n\n</FILE_CONTENT_END ID=\"F002\">\n<FILE_CONTENT_START ID=\"F003\" PATH=\"Cargo.toml\" LINES=\"9\">\n[package]\nname = \"kiosk\"\nversion = \"0.1.0\"\nedition = \"2021\"\ndescription = \"A tiny order kiosk: the sample project for the dctx website examples.\"\nlicense = \"Apache-2.0\"\n\n[dependencies]\n\n</FILE_CONTENT_END ID=\"F003\">\n<FILE_CONTENT_START ID=\"F004\" PATH=\"README.md\" LINES=\"19\">\n# kiosk\n\nA tiny order kiosk. It is the example project that every command on the dctx website runs on.\n\n## Run\n\n    cargo run -- ada\n\nprints `Hello, Ada!` and saves order 1 to `orders/1.tsv`.\n\n## Orders\n\nEach order is one tab-separated line: id, item, quantity and a checksum of the item name.\n`python3 tools/report.py orders/` sums the quantities.\n\n## Configuration\n\n`config.toml` holds the currency and the screen title. Secrets live in `.env`, which is never committed.\n\n</FILE_CONTENT_END ID=\"F004\">\n<FILE_CONTENT_START ID=\"F005\" PATH=\"config.toml\" LINES=\"7\">\n[screen]\ntitle = \"kiosk example\"\ncurrency = \"EUR\"\n\n[orders]\nfolder = \"orders\"\n\n</FILE_CONTENT_END ID=\"F005\">\n<FILE_CONTENT_START ID=\"F007\" PATH=\"src/main.rs\" LINES=\"11\">\n//! kiosk: greet a customer, take one order, save it.\nmod store;\nmod util;\n\nfn main() {\n    let name = std::env::args().nth(1).unwrap_or_else(|| \"guest\".to_string());\n    println!(\"{}\", util::greet(&name));\n    let order = store::Order { id: 1, item: \"coffee\".to_string(), qty: 2 };\n    store::save(&order).expect(\"save order\");\n}\n\n</FILE_CONTENT_END ID=\"F007\">\n<FILE_CONTENT_START ID=\"F008\" PATH=\"src/store.rs\" LINES=\"25\">\nuse std::io;\n\n/// One order as the kiosk records it.\npub struct Order {\n    pub id: u32,\n    pub item: String,\n    pub qty: u32,\n}\n\n/// Write the order to orders/<id>.tsv.\npub fn save(order: &Order) -> io::Result<()> {\n    std::fs::create_dir_all(\"orders\")?;\n    std::fs::write(format!(\"orders/{}.tsv\", order.id), encode(order))\n}\n\n/// One tab-separated line with a checksum of the item name.\nfn encode(order: &Order) -> String {\n    format!(\"{}\\t{}\\t{}\\t{:08x}\\n\", order.id, order.item, order.qty, checksum(&order.item))\n}\n\n/// FNV-1a over the bytes of the text.\nfn checksum(text: &str) -> u32 {\n    text.bytes().fold(0x811c9dc5, |hash, byte| (hash ^ u32::from(byte)).wrapping_mul(0x0100_0193))\n}\n\n</FILE_CONTENT_END ID=\"F008\">\n<FILE_CONTENT_START ID=\"F009\" PATH=\"src/util.rs\" LINES=\"14\">\n/// The greeting shown on the kiosk screen.\npub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}\n\n/// Upper-case the first letter of a name, leave the rest as typed.\npub fn title_case(name: &str) -> String {\n    let mut chars = name.chars();\n    match chars.next() {\n        Some(first) => first.to_uppercase().chain(chars).collect(),\n        None => String::new(),\n    }\n}\n\n</FILE_CONTENT_END ID=\"F009\">\n<FILE_CONTENT_START ID=\"F011\" PATH=\"tools/report.py\" LINES=\"19\">\n\"\"\"Sum the quantities of every saved order: python3 tools/report.py orders/\"\"\"\nimport sys\nfrom pathlib import Path\n\n\ndef read_orders(folder):\n    for path in sorted(Path(folder).glob(\"*.tsv\")):\n        order_id, item, qty, _checksum = path.read_text().rstrip(\"\\n\").split(\"\\t\")\n        yield order_id, item, int(qty)\n\n\ndef main(folder=\"orders\"):\n    total = sum(qty for _, _, qty in read_orders(folder))\n    print(f\"{total} items\")\n\n\nif __name__ == \"__main__\":\n    main(*sys.argv[1:])\n\n</FILE_CONTENT_END ID=\"F011\">\n<FILE_CONTENT_START ID=\"F013\" PATH=\"web/app.ts\" LINES=\"20\">\nimport { formatName, formatPrice } from \"./format\";\n\ninterface Line {\n  item: string;\n  cents: number;\n  qty: number;\n}\n\n/** The greeting banner of the kiosk web screen. */\nexport function renderGreeting(name: string): string {\n  return `Hello, ${formatName(name)}!`;\n}\n\n/** One receipt line per order line, then the total. */\nexport function renderReceipt(lines: Line[]): string[] {\n  const rows = lines.map((l) => `${l.qty} x ${l.item}  ${formatPrice(l.cents * l.qty)}`);\n  const total = lines.reduce((sum, l) => sum + l.cents * l.qty, 0);\n  return [...rows, `total  ${formatPrice(total)}`];\n}\n\n</FILE_CONTENT_END ID=\"F013\">\n<FILE_CONTENT_START ID=\"F014\" PATH=\"web/format.ts\" LINES=\"10\">\n/** Price in cents to a display string, e.g. 250 -> \"2.50 EUR\". */\nexport function formatPrice(cents: number, currency = \"EUR\"): string {\n  return `${(cents / 100).toFixed(2)} ${currency}`;\n}\n\n/** The customer's name as the screen shows it. */\nexport function formatName(name: string): string {\n  return name.trim() === \"\" ? \"guest\" : name.trim();\n}\n\n</FILE_CONTENT_END ID=\"F014\">pack bytes=5548 files=11 retention=stdout version=V1\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 5601,
+   "est_tokens": 1601,
+   "note": "The whole project as one block. `.env` is listed by name and never read; `target/` (ignored by .gitignore) and the binary `assets/logo.png` are left out."
+  },
+  {
+   "id": "pack-stamps",
+   "group": "pack",
+   "argv": [
+    "dctx",
+    "pack",
+    ".",
+    "--tree-stamps=on"
+   ],
+   "stdout": "[DCTX_LLM_CONTEXT_SNAPSHOT_V1]\n[DIRECTORY:kiosk]\n<INSTRUCTIONS>\n1. Manifest: The <DIRECTORY_TREE> section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID, MOD:TIMESTAMP)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: <FILE_CONTENT_START ID=\\\"UNIQUE_ID\\\">\n   - The content is between this marker and </FILE_CONTENT_END ID=\\\"UNIQUE_ID\\\">\n</INSTRUCTIONS>\n<DIRECTORY_TREE>\n[D]  (ID:ROOT, MOD:…)\n  [F] .env (ID:F001, MOD:…, SIZE:29)\n  [F] .gitignore (ID:F002, MOD:…, SIZE:8)\n  [F] Cargo.toml (ID:F003, MOD:…, SIZE:185)\n  [F] README.md (ID:F004, MOD:…, SIZE:473)\n  [F] config.toml (ID:F005, MOD:…, SIZE:78)\n  [D] src (ID:D006, MOD:…)\n    [F] src/main.rs (ID:F007, MOD:…, SIZE:331)\n    [F] src/store.rs (ID:F008, MOD:…, SIZE:698)\n    [F] src/util.rs (ID:F009, MOD:…, SIZE:404)\n  [D] tools (ID:D010, MOD:…)\n    [F] tools/report.py (ID:F011, MOD:…, SIZE:484)\n  [D] web (ID:D012, MOD:…)\n    [F] web/app.ts (ID:F013, MOD:…, SIZE:596)\n    [F] web/format.ts (ID:F014, MOD:…, SIZE:350)\n</DIRECTORY_TREE>\n<FILE_CONTENT_START ID=\"F001\" PATH=\".env\" LINES=\"0\">\n[Content omitted by pattern rules]\n</FILE_CONTENT_END ID=\"F001\">\n<FILE_CONTENT_START ID=\"F002\" PATH=\".gitignore\" LINES=\"2\">\ntarget/\n\n</FILE_CONTENT_END ID=\"F002\">\n<FILE_CONTENT_START ID=\"F003\" PATH=\"Cargo.toml\" LINES=\"9\">\n[package]\nname = \"kiosk\"\nversion = \"0.1.0\"\nedition = \"2021\"\ndescription = \"A tiny order kiosk: the sample project for the dctx website examples.\"\nlicense = \"Apache-2.0\"\n\n[dependencies]\n\n</FILE_CONTENT_END ID=\"F003\">\n<FILE_CONTENT_START ID=\"F004\" PATH=\"README.md\" LINES=\"19\">\n# kiosk\n\nA tiny order kiosk. It is the example project that every command on the dctx website runs on.\n\n## Run\n\n    cargo run -- ada\n\nprints `Hello, Ada!` and saves order 1 to `orders/1.tsv`.\n\n## Orders\n\nEach order is one tab-separated line: id, item, quantity and a checksum of the item name.\n`python3 tools/report.py orders/` sums the quantities.\n\n## Configuration\n\n`config.toml` holds the currency and the screen title. Secrets live in `.env`, which is never committed.\n\n</FILE_CONTENT_END ID=\"F004\">\n<FILE_CONTENT_START ID=\"F005\" PATH=\"config.toml\" LINES=\"7\">\n[screen]\ntitle = \"kiosk example\"\ncurrency = \"EUR\"\n\n[orders]\nfolder = \"orders\"\n\n</FILE_CONTENT_END ID=\"F005\">\n<FILE_CONTENT_START ID=\"F007\" PATH=\"src/main.rs\" LINES=\"11\">\n//! kiosk: greet a customer, take one order, save it.\nmod store;\nmod util;\n\nfn main() {\n    let name = std::env::args().nth(1).unwrap_or_else(|| \"guest\".to_string());\n    println!(\"{}\", util::greet(&name));\n    let order = store::Order { id: 1, item: \"coffee\".to_string(), qty: 2 };\n    store::save(&order).expect(\"save order\");\n}\n\n</FILE_CONTENT_END ID=\"F007\">\n<FILE_CONTENT_START ID=\"F008\" PATH=\"src/store.rs\" LINES=\"25\">\nuse std::io;\n\n/// One order as the kiosk records it.\npub struct Order {\n    pub id: u32,\n    pub item: String,\n    pub qty: u32,\n}\n\n/// Write the order to orders/<id>.tsv.\npub fn save(order: &Order) -> io::Result<()> {\n    std::fs::create_dir_all(\"orders\")?;\n    std::fs::write(format!(\"orders/{}.tsv\", order.id), encode(order))\n}\n\n/// One tab-separated line with a checksum of the item name.\nfn encode(order: &Order) -> String {\n    format!(\"{}\\t{}\\t{}\\t{:08x}\\n\", order.id, order.item, order.qty, checksum(&order.item))\n}\n\n/// FNV-1a over the bytes of the text.\nfn checksum(text: &str) -> u32 {\n    text.bytes().fold(0x811c9dc5, |hash, byte| (hash ^ u32::from(byte)).wrapping_mul(0x0100_0193))\n}\n\n</FILE_CONTENT_END ID=\"F008\">\n<FILE_CONTENT_START ID=\"F009\" PATH=\"src/util.rs\" LINES=\"14\">\n/// The greeting shown on the kiosk screen.\npub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}\n\n/// Upper-case the first letter of a name, leave the rest as typed.\npub fn title_case(name: &str) -> String {\n    let mut chars = name.chars();\n    match chars.next() {\n        Some(first) => first.to_uppercase().chain(chars).collect(),\n        None => String::new(),\n    }\n}\n\n</FILE_CONTENT_END ID=\"F009\">\n<FILE_CONTENT_START ID=\"F011\" PATH=\"tools/report.py\" LINES=\"19\">\n\"\"\"Sum the quantities of every saved order: python3 tools/report.py orders/\"\"\"\nimport sys\nfrom pathlib import Path\n\n\ndef read_orders(folder):\n    for path in sorted(Path(folder).glob(\"*.tsv\")):\n        order_id, item, qty, _checksum = path.read_text().rstrip(\"\\n\").split(\"\\t\")\n        yield order_id, item, int(qty)\n\n\ndef main(folder=\"orders\"):\n    total = sum(qty for _, _, qty in read_orders(folder))\n    print(f\"{total} items\")\n\n\nif __name__ == \"__main__\":\n    main(*sys.argv[1:])\n\n</FILE_CONTENT_END ID=\"F011\">\n<FILE_CONTENT_START ID=\"F013\" PATH=\"web/app.ts\" LINES=\"20\">\nimport { formatName, formatPrice } from \"./format\";\n\ninterface Line {\n  item: string;\n  cents: number;\n  qty: number;\n}\n\n/** The greeting banner of the kiosk web screen. */\nexport function renderGreeting(name: string): string {\n  return `Hello, ${formatName(name)}!`;\n}\n\n/** One receipt line per order line, then the total. */\nexport function renderReceipt(lines: Line[]): string[] {\n  const rows = lines.map((l) => `${l.qty} x ${l.item}  ${formatPrice(l.cents * l.qty)}`);\n  const total = lines.reduce((sum, l) => sum + l.cents * l.qty, 0);\n  return [...rows, `total  ${formatPrice(total)}`];\n}\n\n</FILE_CONTENT_END ID=\"F013\">\n<FILE_CONTENT_START ID=\"F014\" PATH=\"web/format.ts\" LINES=\"10\">\n/** Price in cents to a display string, e.g. 250 -> \"2.50 EUR\". */\nexport function formatPrice(cents: number, currency = \"EUR\"): string {\n  return `${(cents / 100).toFixed(2)} ${currency}`;\n}\n\n/** The customer's name as the screen shows it. */\nexport function formatName(name: string): string {\n  return name.trim() === \"\" ? \"guest\" : name.trim();\n}\n\n</FILE_CONTENT_END ID=\"F014\">pack bytes=5954 files=11 retention=stdout version=V1\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 5857,
+   "est_tokens": 1674,
+   "note": "The 1.0.0 tree lines with MOD and SIZE. MOD is a modification time in milliseconds and differs on every checkout, so its digits are replaced with … here.",
+   "scrubbed": "MOD:…"
+  },
+  {
+   "id": "pack-ext-rs",
+   "group": "pack",
+   "argv": [
+    "dctx",
+    "pack",
+    ".",
+    "--ext",
+    "rs"
+   ],
+   "stdout": "[DCTX_LLM_CONTEXT_SNAPSHOT_V1]\n[DIRECTORY:kiosk]\n<INSTRUCTIONS>\n1. Manifest: The <DIRECTORY_TREE> section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: <FILE_CONTENT_START ID=\\\"UNIQUE_ID\\\">\n   - The content is between this marker and </FILE_CONTENT_END ID=\\\"UNIQUE_ID\\\">\n</INSTRUCTIONS>\n<DIRECTORY_TREE>\n[D]  (ID:ROOT)\n  [D] src (ID:D001)\n    [F] src/main.rs (ID:F002)\n    [F] src/store.rs (ID:F003)\n    [F] src/util.rs (ID:F004)\n</DIRECTORY_TREE>\n<FILE_CONTENT_START ID=\"F002\" PATH=\"src/main.rs\" LINES=\"11\">\n//! kiosk: greet a customer, take one order, save it.\nmod store;\nmod util;\n\nfn main() {\n    let name = std::env::args().nth(1).unwrap_or_else(|| \"guest\".to_string());\n    println!(\"{}\", util::greet(&name));\n    let order = store::Order { id: 1, item: \"coffee\".to_string(), qty: 2 };\n    store::save(&order).expect(\"save order\");\n}\n\n</FILE_CONTENT_END ID=\"F002\">\n<FILE_CONTENT_START ID=\"F003\" PATH=\"src/store.rs\" LINES=\"25\">\nuse std::io;\n\n/// One order as the kiosk records it.\npub struct Order {\n    pub id: u32,\n    pub item: String,\n    pub qty: u32,\n}\n\n/// Write the order to orders/<id>.tsv.\npub fn save(order: &Order) -> io::Result<()> {\n    std::fs::create_dir_all(\"orders\")?;\n    std::fs::write(format!(\"orders/{}.tsv\", order.id), encode(order))\n}\n\n/// One tab-separated line with a checksum of the item name.\nfn encode(order: &Order) -> String {\n    format!(\"{}\\t{}\\t{}\\t{:08x}\\n\", order.id, order.item, order.qty, checksum(&order.item))\n}\n\n/// FNV-1a over the bytes of the text.\nfn checksum(text: &str) -> u32 {\n    text.bytes().fold(0x811c9dc5, |hash, byte| (hash ^ u32::from(byte)).wrapping_mul(0x0100_0193))\n}\n\n</FILE_CONTENT_END ID=\"F003\">\n<FILE_CONTENT_START ID=\"F004\" PATH=\"src/util.rs\" LINES=\"14\">\n/// The greeting shown on the kiosk screen.\npub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}\n\n/// Upper-case the first letter of a name, leave the rest as typed.\npub fn title_case(name: &str) -> String {\n    let mut chars = name.chars();\n    match chars.next() {\n        Some(first) => first.to_uppercase().chain(chars).collect(),\n        None => String::new(),\n    }\n}\n\n</FILE_CONTENT_END ID=\"F004\">pack bytes=2348 files=3 retention=stdout version=V1\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 2400,
+   "est_tokens": 686,
+   "note": "Only the Rust files."
+  },
+  {
+   "id": "pack-for",
+   "group": "pack",
+   "argv": [
+    "dctx",
+    "pack",
+    ".",
+    "--for",
+    "greet store",
+    "--budget",
+    "600"
+   ],
+   "stdout": "# dctx pack --for budget=600 terms=2\n## find greet\ns:src/util.rs#greet\tfn\tL2-4\ns:web/app.ts#renderGreeting\tfn\tL10-12\n## find store\ns:src/store.rs#Order\tstruct\tL4-8\ns:src/store.rs#checksum\tfn\tL22-24\ns:src/store.rs#encode\tfn\tL17-19\n## neighbors s:src/util.rs#greet\ncalls:in:s:src/main.rs#main\tfn\tsrc/main.rs\tL7\ncalls:out:s:src/util.rs#title_case\tfn\tsrc/util.rs\ncontains:in:m:src/util.rs\tmodule\tsrc/util.rs\n## neighbors s:src/store.rs#Order\ncontains:in:m:src/store.rs\tmodule\tsrc/store.rs\n## read s:src/util.rs#greet\ns:src/util.rs#greet\tfn\tsrc/util.rs\npub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}\n## read s:src/store.rs#Order\ns:src/store.rs#Order\tstruct\tsrc/store.rs\npub struct Order {\n    pub id: u32,\n    pub item: String,\n    pub qty: u32,\n}\n# end body_tokens=223 budget=600 dropped=0\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 822,
+   "est_tokens": 235,
+   "note": "Task context for an agent: find, neighbors and read of the names in the text, cut to the budget."
+  },
+  {
+   "id": "map-map",
+   "group": "map",
+   "argv": [
+    "dctx",
+    "map",
+    "map",
+    "src/util.rs",
+    "--depth",
+    "2"
+   ],
+   "stdout": "# kiosk map\ns:src/util.rs#greet\tfn\tL2-4\ns:src/util.rs#title_case\tfn\tL7-13\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 74,
+   "est_tokens": 22,
+   "note": "Outline of one file."
+  },
+  {
+   "id": "find",
+   "group": "map",
+   "argv": [
+    "dctx",
+    "map",
+    "find",
+    "greet"
+   ],
+   "stdout": "# kiosk find\ns:src/util.rs#greet\tfn\tL2-4\ns:web/app.ts#renderGreeting\tfn\tL10-12\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 79,
+   "est_tokens": 23
+  },
+  {
+   "id": "neighbors-in",
+   "group": "map",
+   "argv": [
+    "dctx",
+    "map",
+    "neighbors",
+    "s:src/util.rs#greet",
+    "--edge",
+    "calls",
+    "--dir",
+    "in"
+   ],
+   "stdout": "# kiosk neighbors\ncalls:in:s:src/main.rs#main\tfn\tsrc/main.rs\tL7\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 64,
+   "est_tokens": 19,
+   "note": "Callers, with the call-site line."
+  },
+  {
+   "id": "explain",
+   "group": "map",
+   "argv": [
+    "dctx",
+    "map",
+    "explain",
+    "s:src/util.rs#greet"
+   ],
+   "stdout": "# kiosk explain\ns:src/util.rs#greet\tfn\tsrc/util.rs\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 51,
+   "est_tokens": 15
+  },
+  {
+   "id": "skeleton",
+   "group": "map",
+   "argv": [
+    "dctx",
+    "map",
+    "skeleton",
+    "src/store.rs"
+   ],
+   "stdout": "# kiosk skeleton\nm:src/store.rs\tmodule\tL1-24\tsrc/store.rs\ns:src/store.rs#Order\tstruct\tL4-8\tpub struct Order\ns:src/store.rs#save\tfn\tL11-14\tpub fn save(order: &Order)\ns:src/store.rs#encode\tfn\tL17-19\tfn encode(order: &Order)\ns:src/store.rs#checksum\tfn\tL22-24\tfn checksum(text: &str)\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 280,
+   "est_tokens": 80,
+   "note": "Declaration signatures, no bodies, in source order."
+  },
+  {
+   "id": "grep",
+   "group": "map",
+   "argv": [
+    "dctx",
+    "map",
+    "grep",
+    "example",
+    "-i"
+   ],
+   "stdout": "# kiosk grep\ns:Cargo.toml#package.description\tfn\tCargo.toml\n  L5: description = \"A tiny order kiosk: the sample project for the dctx website examples.\"\nd:README.md#kiosk\theading\tREADME.md\n  L3: A tiny order kiosk. It is the example project that every command on the dctx website runs on.\ns:config.toml#screen.title\tfn\tconfig.toml\n  L2: title = \"kiosk example\"\n3 hits in 3 symbols\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 380,
+   "est_tokens": 109,
+   "note": "Exhaustive literal search. The `.env` value contains `example` too; it is never read, so it is not a hit."
+  },
+  {
+   "id": "hubs",
+   "group": "map",
+   "argv": [
+    "dctx",
+    "map",
+    "hubs",
+    "--limit",
+    "10"
+   ],
+   "stdout": "# kiosk hubs\ns:src/store.rs#checksum\tfn\tsrc/store.rs\t1\ns:src/store.rs#encode\tfn\tsrc/store.rs\t1\ns:src/store.rs#save\tfn\tsrc/store.rs\t1\ns:src/util.rs#greet\tfn\tsrc/util.rs\t1\ns:src/util.rs#title_case\tfn\tsrc/util.rs\t1\ns:tools/report.py#main\tfn\ttools/report.py\t1\ns:tools/report.py#read_orders\tfn\ttools/report.py\t1\ns:web/format.ts#formatName\tfn\tweb/format.ts\t1\ns:web/format.ts#formatPrice\tfn\tweb/format.ts\t1\n./\t4 files\t12 symbols\nassets/\t1 files\t0 symbols\nsrc/\t3 files\t7 symbols\ntools/\t1 files\t2 symbols\nweb/\t2 files\t5 symbols\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 519,
+   "est_tokens": 149
+  },
+  {
+   "id": "path",
+   "group": "map",
+   "argv": [
+    "dctx",
+    "map",
+    "path",
+    "s:src/main.rs#main",
+    "s:src/store.rs#save"
+   ],
+   "stdout": "# kiosk path\nstart\ts:src/main.rs#main\tfn\tsrc/main.rs\ncalls:out\ts:src/store.rs#save\tfn\tsrc/store.rs\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 99,
+   "est_tokens": 29
+  },
+  {
+   "id": "find-json",
+   "group": "json",
+   "argv": [
+    "dctx",
+    "map",
+    "find",
+    "greet",
+    "--json"
+   ],
+   "stdout": "{\"v\":2,\"place\":\"kiosk\",\"verb\":\"find\",\"freshness\":{\"mode\":\"strict\",\"state\":\"verified\"},\"precision\":{\"coverage\":\"structural\",\"completion\":\"complete\",\"parser\":\"dctx-structural/2\"},\"records\":[{\"id\":\"s:src/util.rs#greet\",\"kind\":\"fn\",\"path\":\"src/util.rs\",\"lines\":[2,4],\"summary\":\"The greeting shown on the kiosk screen.\",\"summary_source\":\"doc\",\"signature\":null,\"span\":null,\"source_utf8\":null,\"edge\":null,\"direction\":null,\"target\":null,\"confidence\":null},{\"id\":\"s:web/app.ts#renderGreeting\",\"kind\":\"fn\",\"path\":\"web/app.ts\",\"lines\":[10,12],\"summary\":\"The greeting banner of the kiosk web screen.\",\"summary_source\":\"doc\",\"signature\":null,\"span\":null,\"source_utf8\":null,\"edge\":null,\"direction\":null,\"target\":null,\"confidence\":null}],\"more\":0,\"next\":null}\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 745,
+   "est_tokens": 213
+  },
+  {
+   "id": "neighbors-in-json",
+   "group": "json",
+   "argv": [
+    "dctx",
+    "map",
+    "neighbors",
+    "s:src/util.rs#greet",
+    "--edge",
+    "calls",
+    "--dir",
+    "in",
+    "--json"
+   ],
+   "stdout": "{\"v\":2,\"place\":\"kiosk\",\"verb\":\"neighbors\",\"freshness\":{\"mode\":\"strict\",\"state\":\"verified\"},\"precision\":{\"coverage\":\"structural\",\"completion\":\"complete\",\"parser\":\"dctx-structural/2\"},\"records\":[{\"id\":\"calls:in:s:src/main.rs#main\",\"kind\":\"fn\",\"path\":\"src/main.rs\",\"lines\":[5,10],\"edge\":\"calls\",\"direction\":\"in\",\"confidence\":\"name\",\"sites\":[7]}],\"more\":0,\"next\":null}\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 365,
+   "est_tokens": 105
+  },
+  {
+   "id": "read-json",
+   "group": "json",
+   "argv": [
+    "dctx",
+    "map",
+    "read",
+    "s:src/util.rs#greet",
+    "--json"
+   ],
+   "stdout": "{\"v\":2,\"place\":\"kiosk\",\"verb\":\"read\",\"freshness\":{\"mode\":\"strict\",\"state\":\"verified\"},\"precision\":{\"coverage\":\"structural\",\"completion\":\"complete\",\"parser\":\"dctx-structural/2\"},\"records\":[{\"id\":\"s:src/util.rs#greet\",\"kind\":\"fn\",\"path\":\"src/util.rs\",\"lines\":[2,4],\"summary\":\"The greeting shown on the kiosk screen.\",\"summary_source\":\"doc\",\"signature\":null,\"span\":[44,126],\"source_utf8\":\"pub fn greet(name: &str) -> String {\\n    format!(\\\"Hello, {}!\\\", title_case(name))\\n}\",\"edge\":null,\"direction\":null,\"target\":null,\"confidence\":null}],\"more\":0,\"next\":null}\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 559,
+   "est_tokens": 160,
+   "note": "The verified source bytes of one node."
+  },
+  {
+   "id": "find-json-meta",
+   "group": "json",
+   "argv": [
+    "dctx",
+    "map",
+    "find",
+    "greet",
+    "--json",
+    "--meta"
+   ],
+   "stdout": "{\"v\":2,\"place\":\"kiosk\",\"snapshot\":\"v1:sha256:f16c3ff84e6f319715b62e37a45bcd6146e7d7c9d152729a8fcaafe33e83d7d4:6838\",\"generation\":1,\"verb\":\"find\",\"freshness\":{\"mode\":\"strict\",\"state\":\"verified\",\"age_s\":…},\"precision\":{\"coverage\":\"structural\",\"completion\":\"complete\",\"parser\":\"dctx-structural/2\"},\"records\":[{\"id\":\"s:src/util.rs#greet\",\"kind\":\"fn\",\"path\":\"src/util.rs\",\"lines\":[2,4],\"summary\":\"The greeting shown on the kiosk screen.\",\"summary_source\":\"doc\",\"signature\":null,\"span\":null,\"source_utf8\":null,\"edge\":null,\"direction\":null,\"target\":null,\"confidence\":null},{\"id\":\"s:web/app.ts#renderGreeting\",\"kind\":\"fn\",\"path\":\"web/app.ts\",\"lines\":[10,12],\"summary\":\"The greeting banner of the kiosk web screen.\",\"summary_source\":\"doc\",\"signature\":null,\"span\":null,\"source_utf8\":null,\"edge\":null,\"direction\":null,\"target\":null,\"confidence\":null}],\"more\":0,\"next\":null}\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 865,
+   "est_tokens": 248,
+   "note": "With --meta the answer also carries the snapshot digest, the generation and the index age. The age changes every second, which is why the default leaves these fields out; its digits are replaced with … here.",
+   "scrubbed": "\"age_s\":…"
+  },
+  {
+   "id": "export-mermaid",
+   "group": "graph",
+   "argv": [
+    "dctx",
+    "map",
+    "export",
+    "--format",
+    "mermaid"
+   ],
+   "stdout": "flowchart LR\n  n0[\"d:README.md#Configuration\"]\n  n1[\"d:README.md#Orders\"]\n  n2[\"d:README.md#Run\"]\n  n3[\"d:README.md#kiosk\"]\n  n4[\"m:.gitignore\"]\n  n5[\"m:Cargo.toml\"]\n  n6[\"m:README.md\"]\n  n7[\"m:assets/logo.png\"]\n  n8[\"m:config.toml\"]\n  n9[\"m:src/main.rs\"]\n  n10[\"m:src/store.rs\"]\n  n11[\"m:src/util.rs\"]\n  n12[\"m:tools/report.py\"]\n  n13[\"m:web/app.ts\"]\n  n14[\"m:web/format.ts\"]\n  n15[\"s:Cargo.toml#dependencies\"]\n  n16[\"s:Cargo.toml#package\"]\n  n17[\"s:Cargo.toml#package.description\"]\n  n18[\"s:Cargo.toml#package.edition\"]\n  n19[\"s:Cargo.toml#package.license\"]\n  n20[\"s:Cargo.toml#package.name\"]\n  n21[\"s:Cargo.toml#package.version\"]\n  n22[\"s:config.toml#orders\"]\n  n23[\"s:config.toml#orders.folder\"]\n  n24[\"s:config.toml#screen\"]\n  n25[\"s:config.toml#screen.currency\"]\n  n26[\"s:config.toml#screen.title\"]\n  n27[\"s:src/main.rs#main\"]\n  n28[\"s:src/store.rs#Order\"]\n  n29[\"s:src/store.rs#checksum\"]\n  n30[\"s:src/store.rs#encode\"]\n  n31[\"s:src/store.rs#save\"]\n  n32[\"s:src/util.rs#greet\"]\n  n33[\"s:src/util.rs#title_case\"]\n  n34[\"s:tools/report.py#main\"]\n  n35[\"s:tools/report.py#read_orders\"]\n  n36[\"s:web/app.ts#Line\"]\n  n37[\"s:web/app.ts#renderGreeting\"]\n  n38[\"s:web/app.ts#renderReceipt\"]\n  n39[\"s:web/format.ts#formatName\"]\n  n40[\"s:web/format.ts#formatPrice\"]\n  n9 -->|imports| n10\n  n9 -->|imports| n11\n  n12 -->|calls| n34\n  n13 -->|imports| n39\n  n13 -->|imports| n40\n  n27 -->|calls| n31\n  n27 -->|calls| n32\n  n30 -->|calls| n29\n  n31 -->|calls| n30\n  n32 -->|calls| n33\n  n34 -->|calls| n35\n  n37 -->|calls| n39\n  n38 -->|calls| n40\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 1542,
+   "est_tokens": 441,
+   "note": "Paste into any Mermaid renderer."
+  },
+  {
+   "id": "export-json",
+   "group": "graph",
+   "argv": [
+    "dctx",
+    "map",
+    "export",
+    "--format",
+    "json"
+   ],
+   "stdout": "{\"nodes\":[\n{\"id\":\"d:README.md#Configuration\",\"kind\":\"heading\",\"path\":\"README.md\",\"lines\":[16,18]},\n{\"id\":\"d:README.md#Orders\",\"kind\":\"heading\",\"path\":\"README.md\",\"lines\":[11,15]},\n{\"id\":\"d:README.md#Run\",\"kind\":\"heading\",\"path\":\"README.md\",\"lines\":[5,10]},\n{\"id\":\"d:README.md#kiosk\",\"kind\":\"heading\",\"path\":\"README.md\",\"lines\":[1,18]},\n{\"id\":\"m:.gitignore\",\"kind\":\"module\",\"path\":\".gitignore\",\"lines\":[1,1]},\n{\"id\":\"m:Cargo.toml\",\"kind\":\"module\",\"path\":\"Cargo.toml\",\"lines\":[1,8]},\n{\"id\":\"m:README.md\",\"kind\":\"module\",\"path\":\"README.md\",\"lines\":[1,18]},\n{\"id\":\"m:assets/logo.png\",\"kind\":\"module\",\"path\":\"assets/logo.png\",\"lines\":[1,3]},\n{\"id\":\"m:config.toml\",\"kind\":\"module\",\"path\":\"config.toml\",\"lines\":[1,6]},\n{\"id\":\"m:src/main.rs\",\"kind\":\"module\",\"path\":\"src/main.rs\",\"lines\":[1,10]},\n{\"id\":\"m:src/store.rs\",\"kind\":\"module\",\"path\":\"src/store.rs\",\"lines\":[1,24]},\n{\"id\":\"m:src/util.rs\",\"kind\":\"module\",\"path\":\"src/util.rs\",\"lines\":[1,13]},\n{\"id\":\"m:tools/report.py\",\"kind\":\"module\",\"path\":\"tools/report.py\",\"lines\":[1,18]},\n{\"id\":\"m:web/app.ts\",\"kind\":\"module\",\"path\":\"web/app.ts\",\"lines\":[1,19]},\n{\"id\":\"m:web/format.ts\",\"kind\":\"module\",\"path\":\"web/format.ts\",\"lines\":[1,9]},\n{\"id\":\"s:Cargo.toml#dependencies\",\"kind\":\"struct\",\"path\":\"Cargo.toml\",\"lines\":[8,8]},\n{\"id\":\"s:Cargo.toml#package\",\"kind\":\"struct\",\"path\":\"Cargo.toml\",\"lines\":[1,6]},\n{\"id\":\"s:Cargo.toml#package.description\",\"kind\":\"fn\",\"path\":\"Cargo.toml\",\"lines\":[5,5]},\n{\"id\":\"s:Cargo.toml#package.edition\",\"kind\":\"fn\",\"path\":\"Cargo.toml\",\"lines\":[4,4]},\n{\"id\":\"s:Cargo.toml#package.license\",\"kind\":\"fn\",\"path\":\"Cargo.toml\",\"lines\":[6,6]},\n{\"id\":\"s:Cargo.toml#package.name\",\"kind\":\"fn\",\"path\":\"Cargo.toml\",\"lines\":[2,2]},\n{\"id\":\"s:Cargo.toml#package.version\",\"kind\":\"fn\",\"path\":\"Cargo.toml\",\"lines\":[3,3]},\n{\"id\":\"s:config.toml#orders\",\"kind\":\"struct\",\"path\":\"config.toml\",\"lines\":[5,6]},\n{\"id\":\"s:config.toml#orders.folder\",\"kind\":\"fn\",\"path\":\"config.toml\",\"lines\":[6,6]},\n{\"id\":\"s:config.toml#screen\",\"kind\":\"struct\",\"path\":\"config.toml\",\"lines\":[1,3]},\n{\"id\":\"s:config.toml#screen.currency\",\"kind\":\"fn\",\"path\":\"config.toml\",\"lines\":[3,3]},\n{\"id\":\"s:config.toml#screen.title\",\"kind\":\"fn\",\"path\":\"config.toml\",\"lines\":[2,2]},\n{\"id\":\"s:src/main.rs#main\",\"kind\":\"fn\",\"path\":\"src/main.rs\",\"lines\":[5,10]},\n{\"id\":\"s:src/store.rs#Order\",\"kind\":\"struct\",\"path\":\"src/store.rs\",\"lines\":[4,8]},\n{\"id\":\"s:src/store.rs#checksum\",\"kind\":\"fn\",\"path\":\"src/store.rs\",\"lines\":[22,24]},\n{\"id\":\"s:src/store.rs#encode\",\"kind\":\"fn\",\"path\":\"src/store.rs\",\"lines\":[17,19]},\n{\"id\":\"s:src/store.rs#save\",\"kind\":\"fn\",\"path\":\"src/store.rs\",\"lines\":[11,14]},\n{\"id\":\"s:src/util.rs#greet\",\"kind\":\"fn\",\"path\":\"src/util.rs\",\"lines\":[2,4]},\n{\"id\":\"s:src/util.rs#title_case\",\"kind\":\"fn\",\"path\":\"src/util.rs\",\"lines\":[7,13]},\n{\"id\":\"s:tools/report.py#main\",\"kind\":\"fn\",\"path\":\"tools/report.py\",\"lines\":[12,14]},\n{\"id\":\"s:tools/report.py#read_orders\",\"kind\":\"fn\",\"path\":\"tools/report.py\",\"lines\":[6,9]},\n{\"id\":\"s:web/app.ts#Line\",\"kind\":\"interface\",\"path\":\"web/app.ts\",\"lines\":[3,7]},\n{\"id\":\"s:web/app.ts#renderGreeting\",\"kind\":\"fn\",\"path\":\"web/app.ts\",\"lines\":[10,12]},\n{\"id\":\"s:web/app.ts#renderReceipt\",\"kind\":\"fn\",\"path\":\"web/app.ts\",\"lines\":[15,19]},\n{\"id\":\"s:web/format.ts#formatName\",\"kind\":\"fn\",\"path\":\"web/format.ts\",\"lines\":[7,9]},\n{\"id\":\"s:web/format.ts#formatPrice\",\"kind\":\"fn\",\"path\":\"web/format.ts\",\"lines\":[2,4]}],\"edges\":[\n{\"src\":\"m:Cargo.toml\",\"edge\":\"contains\",\"dst\":\"s:Cargo.toml#dependencies\",\"confidence\":\"exact\"},\n{\"src\":\"m:Cargo.toml\",\"edge\":\"contains\",\"dst\":\"s:Cargo.toml#package\",\"confidence\":\"exact\"},\n{\"src\":\"m:Cargo.toml\",\"edge\":\"contains\",\"dst\":\"s:Cargo.toml#package.description\",\"confidence\":\"exact\"},\n{\"src\":\"m:Cargo.toml\",\"edge\":\"contains\",\"dst\":\"s:Cargo.toml#package.edition\",\"confidence\":\"exact\"},\n{\"src\":\"m:Cargo.toml\",\"edge\":\"contains\",\"dst\":\"s:Cargo.toml#package.license\",\"confidence\":\"exact\"},\n{\"src\":\"m:Cargo.toml\",\"edge\":\"contains\",\"dst\":\"s:Cargo.toml#package.name\",\"confidence\":\"exact\"},\n{\"src\":\"m:Cargo.toml\",\"edge\":\"contains\",\"dst\":\"s:Cargo.toml#package.version\",\"confidence\":\"exact\"},\n{\"src\":\"m:README.md\",\"edge\":\"contains\",\"dst\":\"d:README.md#Configuration\",\"confidence\":\"exact\"},\n{\"src\":\"m:README.md\",\"edge\":\"contains\",\"dst\":\"d:README.md#Orders\",\"confidence\":\"exact\"},\n{\"src\":\"m:README.md\",\"edge\":\"contains\",\"dst\":\"d:README.md#Run\",\"confidence\":\"exact\"},\n{\"src\":\"m:README.md\",\"edge\":\"contains\",\"dst\":\"d:README.md#kiosk\",\"confidence\":\"exact\"},\n{\"src\":\"m:config.toml\",\"edge\":\"contains\",\"dst\":\"s:config.toml#orders\",\"confidence\":\"exact\"},\n{\"src\":\"m:config.toml\",\"edge\":\"contains\",\"dst\":\"s:config.toml#orders.folder\",\"confidence\":\"exact\"},\n{\"src\":\"m:config.toml\",\"edge\":\"contains\",\"dst\":\"s:config.toml#screen\",\"confidence\":\"exact\"},\n{\"src\":\"m:config.toml\",\"edge\":\"contains\",\"dst\":\"s:config.toml#screen.currency\",\"confidence\":\"exact\"},\n{\"src\":\"m:config.toml\",\"edge\":\"contains\",\"dst\":\"s:config.toml#screen.title\",\"confidence\":\"exact\"},\n{\"src\":\"m:src/main.rs\",\"edge\":\"contains\",\"dst\":\"s:src/main.rs#main\",\"confidence\":\"exact\"},\n{\"src\":\"m:src/main.rs\",\"edge\":\"imports\",\"dst\":\"m:src/store.rs\",\"confidence\":\"exact\"},\n{\"src\":\"m:src/main.rs\",\"edge\":\"imports\",\"dst\":\"m:src/util.rs\",\"confidence\":\"exact\"},\n{\"src\":\"m:src/store.rs\",\"edge\":\"contains\",\"dst\":\"s:src/store.rs#Order\",\"confidence\":\"exact\"},\n{\"src\":\"m:src/store.rs\",\"edge\":\"contains\",\"dst\":\"s:src/store.rs#checksum\",\"confidence\":\"exact\"},\n{\"src\":\"m:src/store.rs\",\"edge\":\"contains\",\"dst\":\"s:src/store.rs#encode\",\"confidence\":\"exact\"},\n{\"src\":\"m:src/store.rs\",\"edge\":\"contains\",\"dst\":\"s:src/store.rs#save\",\"confidence\":\"exact\"},\n{\"src\":\"m:src/util.rs\",\"edge\":\"contains\",\"dst\":\"s:src/util.rs#greet\",\"confidence\":\"exact\"},\n{\"src\":\"m:src/util.rs\",\"edge\":\"contains\",\"dst\":\"s:src/util.rs#title_case\",\"confidence\":\"exact\"},\n{\"src\":\"m:tools/report.py\",\"edge\":\"calls\",\"dst\":\"s:tools/report.py#main\",\"confidence\":\"name\"},\n{\"src\":\"m:tools/report.py\",\"edge\":\"contains\",\"dst\":\"s:tools/report.py#main\",\"confidence\":\"exact\"},\n{\"src\":\"m:tools/report.py\",\"edge\":\"contains\",\"dst\":\"s:tools/report.py#read_orders\",\"confidence\":\"exact\"},\n{\"src\":\"m:web/app.ts\",\"edge\":\"contains\",\"dst\":\"s:web/app.ts#Line\",\"confidence\":\"exact\"},\n{\"src\":\"m:web/app.ts\",\"edge\":\"contains\",\"dst\":\"s:web/app.ts#renderGreeting\",\"confidence\":\"exact\"},\n{\"src\":\"m:web/app.ts\",\"edge\":\"contains\",\"dst\":\"s:web/app.ts#renderReceipt\",\"confidence\":\"exact\"},\n{\"src\":\"m:web/app.ts\",\"edge\":\"imports\",\"dst\":\"s:web/format.ts#formatName\",\"confidence\":\"exact\"},\n{\"src\":\"m:web/app.ts\",\"edge\":\"imports\",\"dst\":\"s:web/format.ts#formatPrice\",\"confidence\":\"exact\"},\n{\"src\":\"m:web/format.ts\",\"edge\":\"contains\",\"dst\":\"s:web/format.ts#formatName\",\"confidence\":\"exact\"},\n{\"src\":\"m:web/format.ts\",\"edge\":\"contains\",\"dst\":\"s:web/format.ts#formatPrice\",\"confidence\":\"exact\"},\n{\"src\":\"s:src/main.rs#main\",\"edge\":\"calls\",\"dst\":\"s:src/store.rs#save\",\"confidence\":\"name\"},\n{\"src\":\"s:src/main.rs#main\",\"edge\":\"calls\",\"dst\":\"s:src/util.rs#greet\",\"confidence\":\"name\"},\n{\"src\":\"s:src/store.rs#encode\",\"edge\":\"calls\",\"dst\":\"s:src/store.rs#checksum\",\"confidence\":\"name\"},\n{\"src\":\"s:src/store.rs#save\",\"edge\":\"calls\",\"dst\":\"s:src/store.rs#encode\",\"confidence\":\"name\"},\n{\"src\":\"s:src/util.rs#greet\",\"edge\":\"calls\",\"dst\":\"s:src/util.rs#title_case\",\"confidence\":\"name\"},\n{\"src\":\"s:tools/report.py#main\",\"edge\":\"calls\",\"dst\":\"s:tools/report.py#read_orders\",\"confidence\":\"name\"},\n{\"src\":\"s:web/app.ts#renderGreeting\",\"edge\":\"calls\",\"dst\":\"s:web/format.ts#formatName\",\"confidence\":\"name\"},\n{\"src\":\"s:web/app.ts#renderReceipt\",\"edge\":\"calls\",\"dst\":\"s:web/format.ts#formatPrice\",\"confidence\":\"name\"}]}\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 7527,
+   "est_tokens": 2151
+  },
+  {
+   "id": "mcp",
+   "group": "mcp",
+   "argv": [
+    "dctx",
+    "mcp",
+    "."
+   ],
+   "stdout": "{\"jsonrpc\":\"2.0\",\"id\":1,\"result\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{\"tools\":{}},\"serverInfo\":{\"name\":\"dctx\",\"version\":\"1.1.0\"}}}\n{\"jsonrpc\":\"2.0\",\"id\":2,\"result\":{\"tools\":[{\"name\":\"map\",\"description\":\"Structural map of a file, directory or node: its symbols and their relations.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"target\":{\"type\":\"string\",\"description\":\"Stable id (m:, s:, ...) or a place-relative file path\"},\"depth\":{\"type\":\"integer\",\"description\":\"Levels to expand, 1..3\"},\"limit\":{\"type\":\"integer\",\"description\":\"Page size\"},\"budget\":{\"type\":\"integer\",\"description\":\"Output token budget, 1..2000\"},\"cursor\":{\"type\":\"string\",\"description\":\"The next token of an earlier page, to continue it\"},\"json\":{\"type\":\"boolean\",\"description\":\"Return facade JSON v2 instead of text\"}},\"required\":[\"target\"],\"additionalProperties\":false}},{\"name\":\"find\",\"description\":\"Find symbols, modules and docs by name or words.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"description\":\"Words or a name to look for\"},\"kind\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"Kinds: fn, method, struct, enum, trait, impl, const, type, macro, class, interface, symbol, module, package, place, doc, test\"},\"in\":{\"type\":\"string\",\"description\":\"Only within this place-relative path\"},\"limit\":{\"type\":\"integer\",\"description\":\"Page size\"},\"budget\":{\"type\":\"integer\",\"description\":\"Output token budget, 1..2000\"},\"cursor\":{\"type\":\"string\",\"description\":\"The next token of an earlier page, to continue it\"},\"json\":{\"type\":\"boolean\",\"description\":\"Return facade JSON v2 instead of text\"}},\"required\":[\"query\"],\"additionalProperties\":false}},{\"name\":\"neighbors\",\"description\":\"Nodes connected to a node by calls or imports, up to 4 hops.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"description\":\"Stable node id from a find or map answer\"},\"edge\":{\"type\":\"array\",\"items\":{\"type\":\"string\"},\"description\":\"Edge kinds, for example calls, imports\"},\"dir\":{\"type\":\"string\",\"description\":\"Direction: in, out or both\"},\"depth\":{\"type\":\"integer\",\"description\":\"Hops, 1..4\"},\"limit\":{\"type\":\"integer\",\"description\":\"Page size\"},\"budget\":{\"type\":\"integer\",\"description\":\"Output token budget, 1..2000\"},\"cursor\":{\"type\":\"string\",\"description\":\"The next token of an earlier page, to continue it\"},\"json\":{\"type\":\"boolean\",\"description\":\"Return facade JSON v2 instead of text\"}},\"required\":[\"id\"],\"additionalProperties\":false}},{\"name\":\"explain\",\"description\":\"Describe one node: its kind, place, signature and relations.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"description\":\"Stable node id\"},\"budget\":{\"type\":\"integer\",\"description\":\"Output token budget, 1..2000\"},\"cursor\":{\"type\":\"string\",\"description\":\"The next token of an earlier page, to continue it\"},\"json\":{\"type\":\"boolean\",\"description\":\"Return facade JSON v2 instead of text\"}},\"required\":[\"id\"],\"additionalProperties\":false}},{\"name\":\"read\",\"description\":\"Read the source of one node, or of absolute lines inside it.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"id\":{\"type\":\"string\",\"description\":\"Stable node id\"},\"lines\":{\"type\":\"string\",\"description\":\"Absolute source lines inside the node, as A-B\"},\"full\":{\"type\":\"boolean\",\"description\":\"Permit up to 400 lines\"},\"budget\":{\"type\":\"integer\",\"description\":\"Output token budget, 1..2000\"},\"cursor\":{\"type\":\"string\",\"description\":\"The next token of an earlier page, to continue it\"},\"json\":{\"type\":\"boolean\",\"description\":\"Return facade JSON v2 instead of text\"}},\"required\":[\"id\"],\"additionalProperties\":false}},{\"name\":\"hubs\",\"description\":\"Most-called symbols and per-directory file and symbol counts of the place.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"limit\":{\"type\":\"integer\",\"description\":\"Hub lines, 1..60 (default 20)\"},\"budget\":{\"type\":\"integer\",\"description\":\"Output token budget, 1..2000\"},\"json\":{\"type\":\"boolean\",\"description\":\"Return facade JSON v2 instead of text\"}},\"required\":[],\"additionalProperties\":false}},{\"name\":\"grep\",\"description\":\"Exhaustive literal search of indexed files, hits grouped by enclosing symbol.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"query\":{\"type\":\"string\",\"description\":\"The literal text to search for\"},\"ignore_case\":{\"type\":\"boolean\",\"description\":\"ASCII case-insensitive match\"},\"in\":{\"type\":\"string\",\"description\":\"Only within this place-relative path\"},\"limit\":{\"type\":\"integer\",\"description\":\"Page size\"},\"budget\":{\"type\":\"integer\",\"description\":\"Output token budget, 1..2000\"},\"cursor\":{\"type\":\"string\",\"description\":\"The next token of an earlier page, to continue it\"},\"json\":{\"type\":\"boolean\",\"description\":\"Return facade JSON v2 instead of text\"}},\"required\":[\"query\"],\"additionalProperties\":false}},{\"name\":\"skeleton\",\"description\":\"Skeleton of a file or directory: its symbols and their relations, without depth expansion.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"target\":{\"type\":\"string\",\"description\":\"Stable id (m:, s:, ...) or a place-relative file path\"},\"budget\":{\"type\":\"integer\",\"description\":\"Output token budget, 1..2000\"},\"json\":{\"type\":\"boolean\",\"description\":\"Return facade JSON v2 instead of text\"}},\"required\":[\"target\"],\"additionalProperties\":false}},{\"name\":\"path\",\"description\":\"Shortest edge path between two nodes (calls, imports, contains), at most 8 hops.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"from\":{\"type\":\"string\",\"description\":\"Start node id (s:...) or place-relative file\"},\"to\":{\"type\":\"string\",\"description\":\"End node id (s:...) or place-relative file\"},\"meta\":{\"type\":\"boolean\",\"description\":\"Include hop metadata\"},\"budget\":{\"type\":\"integer\",\"description\":\"Output token budget, 1..2000\"},\"cursor\":{\"type\":\"string\",\"description\":\"The next token of an earlier page, to continue it\"},\"json\":{\"type\":\"boolean\",\"description\":\"Return facade JSON v2 instead of text\"}},\"required\":[\"from\",\"to\"],\"additionalProperties\":false}},{\"name\":\"export\",\"description\":\"Whole graph as one deterministic document: graph JSON or a Mermaid flowchart.\",\"inputSchema\":{\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\",\"description\":\"Output format: json or mermaid\"},\"budget\":{\"type\":\"integer\",\"description\":\"Output token budget, 1..2000\"}},\"required\":[\"format\"],\"additionalProperties\":false}}]}}\n{\"jsonrpc\":\"2.0\",\"id\":3,\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"# kiosk find\\ns:src/util.rs#greet\\tfn\\tL2-4\\ns:web/app.ts#renderGreeting\\tfn\\tL10-12\\n\"}]}}\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 6438,
+   "est_tokens": 1840,
+   "note": "Four JSON-RPC lines on stdin: initialize, notifications/initialized, tools/list and a tools/call of find.",
+   "stdin": "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{},\"clientInfo\":{\"name\":\"dctx-website\",\"version\":\"1\"}}}\n{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}\n{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"find\",\"arguments\":{\"query\":\"greet\"}}}\n"
+  },
+  {
+   "id": "error-gone",
+   "group": "errors",
+   "argv": [
+    "dctx",
+    "map",
+    "read",
+    "m:nope.rs"
+   ],
+   "stdout": "# kiosk read\ngone\tm:nope.rs\n",
+   "stderr": "❌ Error: map: m:nope.rs is not in the index\nhint: the file may be missing, ignored, sensitive or renamed; list current ids with `dctx map find <name>`\n",
+   "exit": 1,
+   "bytes": 28,
+   "est_tokens": 8,
+   "note": "An id that is not in the index: the `gone` page on stdout, exit 1, two lines on stderr."
+  },
+  {
+   "id": "error-env",
+   "group": "errors",
+   "argv": [
+    "dctx",
+    "map",
+    "read",
+    "m:.env"
+   ],
+   "stdout": "# kiosk read\ngone\tm:.env\n",
+   "stderr": "❌ Error: map: m:.env is not in the index\nhint: the file may be missing, ignored, sensitive or renamed; list current ids with `dctx map find <name>`\n",
+   "exit": 1,
+   "bytes": 25,
+   "est_tokens": 8,
+   "note": "A sensitive file is not in the index at all."
+  },
+  {
+   "id": "error-usage",
+   "group": "errors",
+   "argv": [
+    "dctx",
+    "map",
+    "find",
+    ""
+   ],
+   "stdout": "",
+   "stderr": "❌ Error: map: this verb requires a target\nhint: pass a non-empty name or phrase, for example: dctx map find alpha\n",
+   "exit": 2,
+   "bytes": 0,
+   "est_tokens": 0,
+   "note": "An empty query is a usage error, exit 2."
+  },
+  {
+   "id": "languages-md",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "languages",
+    "--markdown"
+   ],
+   "stdout": "| Language | Tag | Files | Tier | Confidence |\n|---|---|---|---|---|\n| Rust | `rust` | `.rs` | full | structural |\n| JavaScript | `javascript` | `.js`, `.mjs`, `.cjs`, `.jsx` | full | structural |\n| TypeScript/TSX | `typescript` | `.ts`, `.mts`, `.cts`, `.tsx` | full | structural |\n| Python | `python` | `.py`, `.pyi` | full | structural |\n| Go | `go` | `.go` | full | structural |\n| Java | `java` | `.java` | full | structural |\n| C/C++ | `c` | `.c`, `.h`, `.cc`, `.cpp`, `.cxx`, `.hpp`, `.hh` | full | structural |\n| C# | `csharp` | `.cs` | full | structural |\n| Kotlin | `kotlin` | `.kt`, `.kts` | full | structural |\n| Ruby | `ruby` | `.rb`, `.rake`, `.gemspec`, `Rakefile`, `Gemfile` | full | structural |\n| PHP | `php` | `.php`, `.phtml`, `.inc` | full | structural |\n| Swift | `swift` | `.swift` | full | structural |\n| Vue/Svelte/Astro/HTML script blocks | `web` | `.vue`, `.svelte`, `.astro`, `.html`, `.htm` | full | structural |\n| Scala | `scala` | `.scala`, `.sc` | full | guess |\n| Dart | `dart` | `.dart` | full | guess |\n| Zig | `zig` | `.zig` | full | guess |\n| Solidity | `solidity` | `.sol` | full | guess |\n| Gleam | `gleam` | `.gleam` | full | guess |\n| Fortran | `fortran` | `.f90`, `.f95`, `.f03`, `.f08`, `.f`, `.for` | full | guess |\n| Perl | `perl` | `.pl`, `.pm`, `.t`, `.psgi` | full | guess |\n| Groovy | `groovy` | `.groovy`, `.gradle` | full | guess |\n| PowerShell | `powershell` | `.ps1`, `.psm1`, `.psd1` | full | guess |\n| Elixir | `elixir` | `.ex`, `.exs` | full | guess |\n| Lua | `lua` | `.lua` | full | guess |\n| OCaml | `ocaml` | `.ml`, `.mli` | full | guess |\n| R | `r` | `.r` | full | guess |\n| Julia | `julia` | `.jl` | full | guess |\n| Haskell | `haskell` | `.hs` | full | guess |\n| Erlang | `erlang` | `.erl`, `.hrl` | full | guess |\n| Verilog/SystemVerilog | `verilog` | `.v`, `.vh`, `.sv`, `.svh` | full | guess |\n| Terraform/HCL | `hcl` | `.tf`, `.tfvars`, `.hcl` | full | guess |\n| SQL | `sql` | `.sql`, `*.sql.in` | full | guess |\n| Clojure | `clojure` | `.clj`, `.cljs`, `.cljc`, `.edn` | full | guess |\n| Common Lisp | `lisp` | `.lisp`, `.lsp`, `.cl` | full | guess |\n| Scheme | `scheme` | `.scm`, `.ss` | full | guess |\n| Emacs Lisp | `elisp` | `.el` | full | guess |\n| JSON/JSONC/TOML/YAML | `config` | `.json`, `.jsonc`, `.toml`, `.yaml`, `.yml` | outline | structural |\n| Shell | `shell` | `.sh`, `.bash`, `.zsh`, `.bats` | outline | guess |\n| Makefile | `make` | `.mk`, `Makefile`, `GNUmakefile` | outline | guess |\n| Dockerfile | `docker` | `Dockerfile`, `Containerfile` | outline | guess |\n| Protobuf | `proto` | `.proto` | outline | guess |\n| Pascal | `pascal` | `.pas`, `.pp`, `.dpr` | outline | guess |\n| GraphQL | `graphql` | `.graphql`, `.gql` | outline | guess |\n| Nix | `nix` | `.nix` | outline | guess |\n| Markdown | `markdown` | `.md`, `.markdown` | docs | structural |\n| Plain text | `text` | `.txt` | docs | structural |\n| reStructuredText | `rst` | `.rst` | docs | structural |\n| AsciiDoc | `asciidoc` | `.adoc`, `.asciidoc` | docs | structural |\n| Org | `org` | `.org` | docs | structural |\n| LaTeX | `tex` | `.tex` | docs | structural |\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 3107,
+   "est_tokens": 888
+  },
+  {
+   "id": "help",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "--help"
+   ],
+   "stdout": "Usage: dctx [PATH] [OPTIONS]\n       dctx pack [PATH] [--output PATH] [--clipboard] [--json]\n       dctx pack [PATH] --for <TEXT> [--budget TOKENS]\n       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]\n       dctx mcp [PATH]\n       dctx languages [--json|--markdown]\n       dctx cache status [--json] [--root PATH]\n       dctx cache gc [--dry-run] [--root PATH] [--max-bytes N] [--legacy]\n       dctx cache purge --root PATH [--dry-run] [--yes]\n       dctx cache purge --all [--dry-run] [--yes]\n       dctx cache config [auto on|off] [--max-bytes N] [--ttl-days N]\n       dctx cache auto [--json]\n       dctx template build <PATH> [--output PATH]\n       dctx template list [--dir PATH]\n       dctx plugin search|install|list|info|enable|disable|remove|update|verify\n       dctx git <status|protect>\n\n`dctx languages` lists every supported language with its tier: full (symbols and call edges), outline (symbols only) or docs (sections).\n`dctx mcp` serves the map verbs as MCP tools over stdio (JSON-RPC 2.0, one message per line) for Claude Code, Cursor and Codex.\nExplicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not create a project text file.\n`dctx pack --for <TEXT>` prints task context for an agent card instead: map find, neighbors and read of the names in TEXT, cut to `--budget` estimated tokens (default 3000).\n`dctx .` remains the legacy snapshot alias and still writes its documented project text.\n`dctx plugin list` and `dctx --help` do not create a project `.dctx/` directory or start a plugin.\n`dctx git` routes to the bundled dctx/git plugin. It is not a Git passthrough.\nCache purge requires `--root PATH` or `--all`, and `--yes` unless `--dry-run` is set.\n`dctx cache gc --legacy` reads only exports the caller already registered. It does not search the home directory.\n`dctx cache config` shows the persisted policy. `auto on|off` enables auto-clean, `--max-bytes` tightens the system cap, and `--ttl-days` sets idle overlay and preview lifetime.\n`dctx cache auto` prints the last auto-clean time, the bytes it reclaimed and the next due time.\npack, map, template, plugin and the TUI run one bounded auto-clean when it is due. They print nothing unless bytes were reclaimed.\n`--no-auto-clean` and `DCTX_AUTO_CLEAN=0` disable that slice. `DCTX_CACHE_DIR` selects the cache root.\n\nSnapshot Options:\n  -c, --clipboard       Copy to clipboard\n  -d, --diff            Output diff only (if available)\n  -t, --tree            Tree-Only mode (skips file content)\n  -r, --reset           Force V1 reset\n  -h, --help            Show help\n  -v, --version         Show version\n  --verbose             With --version, also show feature and precision limits\n\nFilter Options:\n  --ext <extensions>    Only include files with these extensions\n  --binary              Include binary files (excluded by default)\n  --empty               Show only empty files (0 bytes)\n  --non-empty           Show only non-empty files\n  --large <MB>          Show only files larger than X megabytes\n  --small <MB>          Show only files smaller than X megabytes\n  --hidden              Show ONLY hidden files and folders (starting with .)\n  --debug-ignored       Show ignored files in the tree without reading them\n  -V, --debug-verbose   Show ignore decision traces\n  --tree-stamps=on|off  MOD: timestamps on tree lines: off (default) keeps the output prefix stable across a touch, on = the 1.0.0 text\n\nTemplate Commands:\n  template build <PATH>  Compile a template through the facade\n  template list          List explicit compiled plans; no home-directory scan\n\nExamples:\n  dctx .                      Legacy snapshot of the current directory\n  dctx pack .                 Pack to stdout and write no project text file\n  dctx pack . --output out.txt\n  dctx languages --json\n  dctx cache status --json\n  dctx cache gc --dry-run\n  dctx cache purge --root /path --dry-run\n  dctx cache config auto off --max-bytes 1000000 --ttl-days 7\n  dctx cache auto\n  dctx template build policy.dctx_template\n\nFeature and precision limits:\nfacade_version: 1.1.0\nprofile: enhanced\nwire_version: 2\nsegment_version: 1\nstorage: buffered-segments\nfeatures: pack,map,templates,fs,segments,cache,syntax-rust\nparsers: dctx-structural/2,dctx-lex-js:1,dctx-lex-md:1,dctx-lex-rust/syn-3.0.9\nlanguages: rust,javascript,typescript,python,go,java,c,csharp,kotlin,ruby,php,swift,web,scala,dart,zig,solidity,gleam,fortran,perl,groovy,powershell,elixir,lua,ocaml,r,julia,haskell,erlang,verilog,hcl,sql,clojure,lisp,scheme,elisp,config,shell,make,docker,proto,pascal,graphql,nix,markdown,text,rst,asciidoc,org,tex\nunsafe_boundary: syn-dependency\nnative_code: false\ngit: false\nsubprocess: none\nprecision: the structural extractor reports declarations, imports, headings and conservative calls.\nIt does not promise exact semantic calls, name or type resolution, or macro expansion.\nA syntax-rust build adds syn for supported Rust syntax only, still without type checking.\ntoken estimate: ceil(2 * UTF-8 bytes / 7) is an estimate, not a tokenizer guarantee.\ncache cap: 2 GiB hard, 1.5 GiB soft watermark, 1.2 GiB eviction target.\ncache ttl: idle overlays and previews 7 days, unpinned roots 30 days, staging 1 day.\nauto-clean interval: 1 day.\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 5245,
+   "est_tokens": 1499
+  },
+  {
+   "id": "map-help",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "map",
+    "--help"
+   ],
+   "stdout": "Usage: dctx map <map|find|neighbors|explain|read|skeleton|grep> <TARGET> [OPTIONS]\n       dctx map hubs [--limit N] [--json] [--place PATH] [--budget TOKENS] [--meta]\n         Most-called symbols (incoming calls and imports, 1..60 lines, default 20) and per-directory file and symbol counts. No TARGET.\n       dctx map path <FROM> <TO> [--json] [--place PATH] [--budget TOKENS] [--meta]\n         Shortest edge path (calls, imports, contains; either direction; at most 8 hops), one `edge:out|in<TAB>id<TAB>kind<TAB>path` line per hop, or `no path`.\n       dctx map export [--format json|mermaid] [--output PATH] [--place PATH]\n         The whole graph as one deterministic document (default json: nodes and edges; mermaid: a flowchart of calls and imports). No TARGET, no token cap; --output writes a file.\n  TARGET                  Required. map accepts a stable id or a place-relative file.\n                          skeleton takes a file (or m:<path>) and prints its declaration signatures, no bodies,\n                          in source order: id, kind, L<start>-<end>, signature.\n                          A file path is read as m:<path>. Omitting TARGET does not scan.\n  --json                  Facade JSON v2, including the precision label\n  --place PATH            Place or worktree root (default: current directory)\n  --meta                  Restore the snapshot digest and generation in the text header and the snapshot, generation and age_s JSON fields.\n                          Without it the answer bytes do not change across unrelated edits or time.\n  --profile               Stderr stage timings and the five slowest files. DCTX_PROFILE=1 is the same switch.\n  DCTX_MAX_SOURCE_BYTES   Env: total source bytes one scan may read, 1..17179869184 (default 1073741824 = 1 GiB).\n  DCTX_MAX_RECORDS        Env: files, symbols and edges one index may hold, 1..100000000 (default 1000000). A bigger place is refused while it is scanned.\n  DCTX_MAX_ENTRIES        Env: files and directories one scan may visit, 1..100000000 (default 100000).\n  DCTX_FRESHNESS          Env: strict_live hashes every file on a warm start; the default (stamp) trusts a file whose size, mtime and inode are unchanged and older than 2 s.\n  --budget TOKENS         Output tokens, 1..2000 (explain max: 1000).\n                          Read with no --budget uses the 2,000-token hard cap.\n  --depth N               Map: 1..3; neighbors: 1..4. Explain and read take no depth.\n  --limit N               Map, find and neighbors page size. Explain and read accept only 1.\n  --offset N              Refused. Pass the previous page's next value to --cursor.\n  --cursor TOKEN          Opaque continuation. A stale token is rejected.\n  --kind fn,type,doc      Find kinds\n  --in PATH               Find or grep within a relative path\n  grep LITERAL            Exhaustive literal search of indexed files, hits grouped by enclosing symbol\n  -i, --ignore-case       Grep: ASCII case-insensitive match\n  --edge calls,imports    Neighbor edge filter\n  --dir in|out|both       Neighbor direction\n  --lines A-B --full      Read those absolute source lines inside the node; full permits 400\n  --rev SHA               Refused: this build does not link git\nPrecision: structural declarations, imports, headings and conservative calls.\nNot exact semantic calls, type resolution or macro expansion.\nToken estimate ceil(2 * UTF-8 bytes / 7) is not a tokenizer guarantee.\nExample: dctx map find 'ignore rules' --json\nExample: dctx map map crates/dctx-cli/src/lib.rs --depth 2\nExample: dctx map map m:crates/dctx-cli/src/lib.rs --cursor '<next from the previous page>'\nEach verb's own page and example: dctx map <verb> --help\nExit codes: 0 ok, 1 no result (an id not in the index, a binary file), 2 usage, 3 index error; see docs/CLI-EXIT-CODES.md.\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 3806,
+   "est_tokens": 1088
+  },
+  {
+   "id": "help-map",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "map",
+    "map",
+    "--help"
+   ],
+   "stdout": "Usage: dctx map map <TARGET> [--depth 1..3] [--limit N] [--cursor TOKEN] [--json] [--place PATH] [--meta]\n  Outline of a file (m:<path> or a place-relative path) or a symbol and what it contains.\nExample: dctx map map src/lib.rs --depth 2\nEvery option and its bounds: dctx map --help\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 284,
+   "est_tokens": 82
+  },
+  {
+   "id": "help-find",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "map",
+    "find",
+    "--help"
+   ],
+   "stdout": "Usage: dctx map find <QUERY> [--kind fn,type,doc] [--in PATH] [--limit 1..40] [--cursor TOKEN] [--json] [--place PATH] [--meta]\n  Ranked symbols, modules, headings and config keys whose name or summary matches QUERY.\nExample: dctx map find 'ignore rules' --json\nEvery option and its bounds: dctx map --help\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 307,
+   "est_tokens": 88
+  },
+  {
+   "id": "help-neighbors",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "map",
+    "neighbors",
+    "--help"
+   ],
+   "stdout": "Usage: dctx map neighbors <TARGET> [--dir in|out|both] [--edge calls,imports] [--depth 1..4] [--limit N] [--json] [--place PATH] [--meta]\n  Edges of one node: callers with --dir in --edge calls, callees with --dir out.\nExample: dctx map neighbors 's:src/lib.rs#run' --dir in --edge calls\nEvery option and its bounds: dctx map --help\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 333,
+   "est_tokens": 96
+  },
+  {
+   "id": "help-explain",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "map",
+    "explain",
+    "--help"
+   ],
+   "stdout": "Usage: dctx map explain <TARGET> [--budget 1..1000] [--json] [--place PATH] [--meta]\n  One node with its signature and summary, no body.\nExample: dctx map explain 's:src/lib.rs#run'\nEvery option and its bounds: dctx map --help\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 227,
+   "est_tokens": 65
+  },
+  {
+   "id": "help-read",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "map",
+    "read",
+    "--help"
+   ],
+   "stdout": "Usage: dctx map read <TARGET> [--lines A-B] [--full] [--budget TOKENS] [--cursor TOKEN] [--json] [--place PATH] [--meta]\n  The verified source text of one node; a long node pages with --cursor.\nExample: dctx map read 's:src/lib.rs#run' --lines 10-40\nEvery option and its bounds: dctx map --help\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 295,
+   "est_tokens": 85
+  },
+  {
+   "id": "help-skeleton",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "map",
+    "skeleton",
+    "--help"
+   ],
+   "stdout": "Usage: dctx map skeleton <FILE> [--budget TOKENS] [--json] [--place PATH] [--meta]\n  Declaration signatures of one file in source order, no bodies.\nExample: dctx map skeleton src/lib.rs\nEvery option and its bounds: dctx map --help\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 231,
+   "est_tokens": 66
+  },
+  {
+   "id": "help-grep",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "map",
+    "grep",
+    "--help"
+   ],
+   "stdout": "Usage: dctx map grep <LITERAL> [-i] [--in PATH] [--limit N] [--json] [--place PATH] [--meta]\n  Exhaustive literal search of indexed files, hits grouped by enclosing symbol.\nExample: dctx map grep TODO --in src\nEvery option and its bounds: dctx map --help\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 255,
+   "est_tokens": 73
+  },
+  {
+   "id": "help-hubs",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "map",
+    "hubs",
+    "--help"
+   ],
+   "stdout": "Usage: dctx map hubs [--limit 1..60] [--budget TOKENS] [--json] [--place PATH] [--meta]\n  Most-called symbols and per-directory file and symbol counts. No TARGET.\nExample: dctx map hubs --limit 10\nEvery option and its bounds: dctx map --help\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 242,
+   "est_tokens": 70
+  },
+  {
+   "id": "help-path",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "map",
+    "path",
+    "--help"
+   ],
+   "stdout": "Usage: dctx map path <FROM> <TO> [--budget TOKENS] [--json] [--place PATH] [--meta]\n  Shortest edge path (calls, imports, contains; at most 8 hops) between two nodes, or `no path`.\nExample: dctx map path 's:src/main.rs#main' 's:src/lib.rs#run'\nEvery option and its bounds: dctx map --help\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 289,
+   "est_tokens": 83
+  },
+  {
+   "id": "help-export",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "map",
+    "export",
+    "--help"
+   ],
+   "stdout": "Usage: dctx map export [--format json|mermaid] [--output PATH] [--place PATH]\n  The whole graph as one deterministic document. No TARGET, no token cap.\nExample: dctx map export --format mermaid --output graph.mmd\nEvery option and its bounds: dctx map --help\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 258,
+   "est_tokens": 74
+  },
+  {
+   "id": "languages-help",
+   "group": "reference",
+   "argv": [
+    "dctx",
+    "languages",
+    "--help"
+   ],
+   "stdout": "Usage: dctx languages [--json | --markdown]\n\nLists every language the map index recognises: name, tag, file names, tier and symbol confidence.\nTiers: full = symbols and call edges (lexical, not type-resolved); outline = symbols only, no call edges promised;\ndocs = headed sections. Confidence `guess` marks heuristic outlines, whose records carry confidence `guess`.\n\nOptions:\n  --json        One JSON document with the tiers and the languages\n  --markdown    The README language table\n  -h, --help    Show this help\n\nExample: dctx languages --json\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 549,
+   "est_tokens": 157
+  },
+  {
+   "id": "template-default",
+   "group": "templates",
+   "argv": [
+    "dctx",
+    "template",
+    "build",
+    "default.dctx_template"
+   ],
+   "stdout": "template source_version=1 plan_bytes=2199 digest=226e23e2b6c615dbf0f018624c87c4d2af6db7625b020750856313db1dfa51d7 views=1 retention=stdout\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 139,
+   "est_tokens": 40,
+   "note": "Compiles the built-in default template; prints the plan size and digest. Nothing is written without --output."
+  },
+  {
+   "id": "template-stamped",
+   "group": "templates",
+   "argv": [
+    "dctx",
+    "template",
+    "build",
+    "stamped.dctx_template"
+   ],
+   "stdout": "template source_version=1 plan_bytes=2251 digest=e592337f7e2efac5242e5a6ccc10b7a2687c49d7b73acc30734f83157d930da5 views=1 retention=stdout\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 139,
+   "est_tokens": 40
+  }
+ ]
+}
