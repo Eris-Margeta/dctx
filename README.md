@@ -108,12 +108,10 @@ Alternatively, the Unix [installer](tools/install.sh) builds the CLI and copies 
 ```zsh
 dctx pack .            # whole project as one structured context block on stdout
 dctx pack . --clipboard  # … straight to the clipboard
-dctx . -d -c           # only what changed since the last snapshot
-dctx . -t -c           # tree only, no file contents
 dctx                   # interactive menu
 ```
 
-`dctx pack` writes to stdout, the clipboard or `--output`; it creates a text export only when you request a file. Its tree lines carry the `ID` only, with no modification time and no size, so the page stays byte-identical across a bare `touch` and an edit keeps everything before the edited file as a shared prefix (what a prompt cache reuses); `--tree-stamps=on` brings back the 1.0.0 tree lines with `MOD:` and `SIZE:`. The legacy `dctx .` snapshot commands still write project text exports and cache state. Running without arguments opens an interactive terminal menu.
+`dctx pack` writes to stdout, the clipboard or `--output`; it creates a text export only when you request a file. Its tree lines carry the `ID` only, with no modification time and no size, so the page stays byte-identical across a bare `touch` and an edit keeps everything before the edited file as a shared prefix (what a prompt cache reuses); `--tree-stamps=on` brings back the 1.0.0 tree lines with `MOD:` and `SIZE:`. Running without arguments opens an interactive terminal menu.
 
 ---
 
@@ -239,7 +237,6 @@ dctx plugin info dctx/git
 | Rule file | Behaviour |
 |---|---|
 | `.gitignore`, `.dctxignore`, global ignore | Excluded from normal selection; `--debug-ignored` can show ignored path metadata without reading content |
-| `.dctxomitcontent` | Listed in the tree; content replaced with `[Content omitted]` and never read |
 
 Selection happens before any byte is read, hashed, parsed or cached, and is checked again before output leaves the engine.
 
@@ -252,7 +249,7 @@ On top of the rule files there is a strict built-in deny with no override (no fl
 dctx decides by file name only; a secret pasted into an ordinary source file is not detected. The shipped `pack`, `dctx map` and `dctx mcp` path is guarded by `crates/dctx/tests/map_sensitive_files.rs`, `crates/dctx/tests/git_and_symlink_privacy.rs`, `crates/dctx/tests/map_env_files.rs`, the unit tests in `crates/dctx/src/adapters/fs.rs`, `crates/dctx/src/domain/policy.rs` and `crates/dctx-pack/src/snapshot.rs`, and an end-to-end check that runs every command against a git-tracked canary fixture (`<repo>/scripts/checks/V1-1.zsh`).
 
 ```zsh
-dctx . --debug-ignored     # see ignored paths in the tree without reading them
+dctx pack . --debug-ignored  # see ignored paths in the tree without reading them
 ```
 
 ```gitignore

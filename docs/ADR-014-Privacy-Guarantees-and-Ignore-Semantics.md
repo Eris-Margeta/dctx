@@ -108,7 +108,6 @@ We will implement a three-tier rule system with formal privacy guarantees:
 - Always visible in directory tree (with metadata)
 - Content section shows: `[Content omitted by pattern rules]`
 - File is listed but never read into memory
-- Configuration: `.dctxomitcontent` (project) or `~/.config/dctx/omitcontent` (global)
 
 ### Debug Mode (`--debug-ignored`)
 **Purpose:** Allow users to verify their ignore rules are working correctly.
