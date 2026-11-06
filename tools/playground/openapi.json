@@ -1,0 +1,98 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "dctx playground API",
+  "version": "1.1.0",
+  "summary": "Runs the real dctx binary on a bundled sample or on pasted text files.",
+  "description": "Every run gets a fresh directory, an empty environment and resource limits (wall clock, CPU, memory, files, output). Nothing is stored. Commands are checked against a whitelisted grammar and never reach a shell. GET /api/v1/health lists the limits in force.",
+  "license": {"name": "Apache-2.0", "url": "https://www.apache.org/licenses/LICENSE-2.0"},
+  "contact": {"name": "TEJL", "url": "https://tejl.com/", "email": "info@tejl.com"}
+ },
+ "servers": [{"url": "https://dctx.internet.technology"}],
+ "paths": {
+  "/api/v1/health": {
+   "get": {
+    "summary": "Version, sample count and limits",
+    "responses": {"200": {"description": "Healthy", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Health"}}}}}
+   }
+  },
+  "/api/v1/samples": {
+   "get": {
+    "summary": "The bundled sample projects",
+    "responses": {"200": {"description": "Samples", "content": {"application/json": {"schema": {"type": "array", "items": {"$ref": "#/components/schemas/Sample"}}}}}}
+   }
+  },
+  "/api/v1/run": {
+   "post": {
+    "summary": "Run one dctx command",
+    "description": "cmd is argv without the leading dctx. The first word is pack, map or languages; map verbs and flags are those of `dctx map --help`. Refused: --place, --output, --clipboard, --rev, --profile, cache, template, plugin, git and the legacy snapshot. Paths are relative to the place and may not contain `..`.",
+    "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RunRequest"},
+     "example": {"cmd": ["map", "find", "greet", "--json"], "sample": "kiosk"}}}},
+    "responses": {
+     "200": {"description": "The command ran (any exit code)", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/RunResult"}}}},
+     "400": {"$ref": "#/components/responses/Error"},
+     "413": {"$ref": "#/components/responses/Error"},
+     "415": {"$ref": "#/components/responses/Error"},
+     "429": {"$ref": "#/components/responses/Error"},
+     "503": {"$ref": "#/components/responses/Error"}
+    }
+   }
+  },
+  "/api/v1/mcp": {
+   "post": {
+    "summary": "Send up to four JSON-RPC messages to one `dctx mcp` process",
+    "requestBody": {"required": true, "content": {"application/json": {"schema": {"$ref": "#/components/schemas/McpRequest"},
+     "example": {"requests": [{"jsonrpc": "2.0", "id": 1, "method": "tools/list"}], "sample": "kiosk"}}}},
+    "responses": {
+     "200": {"description": "One response per request that has an id", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/McpResult"}}}},
+     "400": {"$ref": "#/components/responses/Error"},
+     "429": {"$ref": "#/components/responses/Error"},
+     "503": {"$ref": "#/components/responses/Error"}
+    }
+   }
+  },
+  "/api/v1/run-form": {
+   "post": {
+    "summary": "The same as /run for an HTML form, answered with an HTML page",
+    "requestBody": {"required": true, "content": {"application/x-www-form-urlencoded": {"schema": {"type": "object", "properties": {
+     "cmd": {"type": "string", "description": "A command line such as `map find greet`; quotes work, shell syntax is refused"},
+     "source": {"type": "string", "enum": ["sample", "files"]},
+     "sample": {"type": "string"},
+     "files": {"type": "string", "description": "Files, each starting with a line `--- path ---`"}}, "required": ["cmd"]}}}},
+    "responses": {"200": {"description": "Result page", "content": {"text/html": {}}}, "400": {"description": "Refusal page", "content": {"text/html": {}}}}
+   }
+  },
+  "/api/v1/metrics.json": {
+   "get": {
+    "summary": "Counters: runs, cache hits, timeouts, refusals by reason, median run time",
+    "responses": {"200": {"description": "Counters", "content": {"application/json": {}}}}
+   }
+  },
+  "/api/v1/openapi.json": {"get": {"summary": "This document", "responses": {"200": {"description": "OpenAPI 3.1"}}}}
+ },
+ "components": {
+  "schemas": {
+   "Health": {"type": "object", "properties": {"ok": {"type": "boolean"}, "dctx": {"type": "string"}, "sha": {"type": "string"}, "samples": {"type": "integer"}, "limits": {"type": "object"}}},
+   "Sample": {"type": "object", "properties": {"id": {"type": "string"}, "title": {"type": "string"}, "files": {"type": "integer"}, "bytes": {"type": "integer"}}},
+   "File": {"type": "object", "required": ["path", "content"], "additionalProperties": false, "properties": {
+    "path": {"type": "string", "pattern": "^[A-Za-z0-9._/-]{1,120}$"}, "content": {"type": "string", "maxLength": 98304}}},
+   "RunRequest": {"type": "object", "required": ["cmd"], "additionalProperties": false, "properties": {
+    "cmd": {"type": "array", "items": {"type": "string", "maxLength": 400}, "maxItems": 24},
+    "sample": {"type": "string", "default": "kiosk"},
+    "files": {"type": "array", "items": {"$ref": "#/components/schemas/File"}, "maxItems": 48}}},
+   "RunResult": {"type": "object", "properties": {
+    "stdout": {"type": "string"}, "stderr": {"type": "string"},
+    "exit": {"type": ["integer", "null"], "description": "null when the run was killed"},
+    "killed": {"type": ["string", "null"], "enum": ["timeout", "signal", null]},
+    "truncated": {"type": "boolean"}, "bytes": {"type": "integer", "description": "stdout bytes before truncation"},
+    "est_tokens": {"type": "integer", "description": "ceil(2 * bytes / 7)"}, "ms": {"type": "integer"}}},
+   "McpRequest": {"type": "object", "required": ["requests"], "additionalProperties": false, "properties": {
+    "requests": {"type": "array", "minItems": 1, "maxItems": 4, "items": {"type": "object"}},
+    "sample": {"type": "string", "default": "kiosk"},
+    "files": {"type": "array", "items": {"$ref": "#/components/schemas/File"}, "maxItems": 48}}},
+   "McpResult": {"type": "object", "properties": {"responses": {"type": "array"}, "stderr": {"type": "string"}, "exit": {"type": ["integer", "null"]}, "killed": {"type": ["string", "null"]}, "truncated": {"type": "boolean"}, "ms": {"type": "integer"}}},
+   "Error": {"type": "object", "properties": {"error": {"type": "string"}, "reason": {"type": "string"}}}
+  },
+  "responses": {"Error": {"description": "Refused, with the reason", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}}
+ }
+}

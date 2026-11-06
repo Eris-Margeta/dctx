@@ -340,3 +340,4 @@ GEMINI.md
 *_TTrace_*.tla
 *_TTrace_*.bin
 /tools/website/.venv/
+/tools/playground/target/

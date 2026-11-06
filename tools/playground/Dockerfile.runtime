@@ -1,0 +1,11 @@
+# Runtime image of the dctx playground, built from tools/playground/dist/ (see build-dist.sh).
+# No shell, no package manager, no compiler: two static binaries and the samples.
+FROM gcr.io/distroless/static-debian12:nonroot
+COPY --chown=0:0 bin/dctx /usr/local/bin/dctx
+COPY --chown=0:0 bin/dctx-play /usr/local/bin/dctx-play
+COPY --chown=0:0 samples/ /samples/
+COPY --chown=0:0 openapi.json /openapi.json
+USER 65532:65532
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD ["/usr/local/bin/dctx-play", "--health"]
+ENTRYPOINT ["/usr/local/bin/dctx-play", "--listen", "0.0.0.0:8080", "--samples", "/samples", "--dctx", "/usr/local/bin/dctx", "--work", "/run/play"]
