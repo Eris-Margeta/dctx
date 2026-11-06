@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://dctx.internet.technology/sitemap.xml
+Sitemap: https://www.dctx.internet.technology/sitemap.xml

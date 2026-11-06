@@ -18,7 +18,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "website"
-ORIGIN = "https://dctx.internet.technology"
+ORIGIN = "https://www.dctx.internet.technology"
 REPO = "https://github.com/Eris-Margeta/dctx"
 BLOB = REPO + "/blob/main/"
 TREE = REPO + "/tree/main/"

@@ -17,7 +17,7 @@ from pathlib import Path
 from urllib.parse import unquote, urljoin, urlsplit
 
 ROOT = Path(__file__).resolve().parents[2]
-ORIGIN = "https://dctx.internet.technology"
+ORIGIN = "https://www.dctx.internet.technology"
 
 
 def git(*args: str) -> bytes:
