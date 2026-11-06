@@ -117,6 +117,48 @@ class Document(HTMLParser):
             self._json.append(data)
 
 
+REQUIRED = {
+    "Organization": ("name", "url", "founder"),
+    "Person": ("name", "url", "sameAs", "jobTitle", "worksFor"),
+    "WebSite": ("url", "name", "publisher"),
+    "SoftwareApplication": ("name", "softwareVersion", "author", "url", "license"),
+    "BlogPosting": ("headline", "datePublished", "author", "publisher", "mainEntityOfPage"),
+    "WebPage": ("url", "name"),
+}
+
+
+def check_json_ld(label: str, line: int, data: object, errors: list[str]) -> None:
+    """Offline structured-data check: @graph ids resolve, required fields are present."""
+    graph = data.get("@graph") if isinstance(data, dict) else None
+    if not isinstance(graph, list):
+        errors.append(f"{label}:{line}: JSON-LD has no @graph list")
+        return
+    ids = {n.get("@id") for n in graph if isinstance(n, dict)}
+
+    def refs(value: object):
+        if isinstance(value, dict):
+            if set(value) == {"@id"}:
+                yield value["@id"]
+            else:
+                for inner in value.values():
+                    yield from refs(inner)
+        elif isinstance(value, list):
+            for inner in value:
+                yield from refs(inner)
+
+    for node in graph:
+        if not isinstance(node, dict):
+            errors.append(f"{label}:{line}: JSON-LD graph node is not an object")
+            continue
+        kind = node.get("@type")
+        for field in REQUIRED.get(kind, ()):
+            if field not in node:
+                errors.append(f"{label}:{line}: JSON-LD {kind} {node.get('@id')} lacks {field!r}")
+        for target in refs({k: v for k, v in node.items() if k != "@id"}):
+            if target not in ids:
+                errors.append(f"{label}:{line}: JSON-LD @id {target} does not resolve in this page's graph")
+
+
 def check_documents(site: Path, errors: list[str]) -> tuple[int, int, int, int]:
     documents: dict[Path, Document] = {}
     pages = references = fragments = blocks = 0
@@ -141,7 +183,7 @@ def check_documents(site: Path, errors: list[str]) -> tuple[int, int, int, int]:
         for line, data in document.json_ld:
             blocks += 1
             try:
-                json.loads(data)
+                check_json_ld(label, line, json.loads(data), errors)
             except ValueError as error:
                 errors.append(f"{label}:{line}: invalid JSON-LD: {error}")
 

@@ -22,6 +22,7 @@ ORIGIN = "https://dctx.internet.technology"
 REPO = "https://github.com/Eris-Margeta/dctx"
 BLOB = REPO + "/blob/main/"
 TREE = REPO + "/tree/main/"
+# Single source of the public version. NOTE: tag v1.1.0 must be cut before publish (only v1.1.0-rc1 exists).
 VERSION = "1.1.0"
 CONTACT = "info@tejl.com"
 ORG_ID = ORIGIN + "/#organization"
@@ -45,8 +46,10 @@ def ld(graph: list) -> str:
 def base_graph() -> list:
     return [
         {"@type": "Organization", "@id": ORG_ID, "name": "TEJL", "url": "https://tejl.com/",
-         "logo": ORIGIN + "/assets/tejl-logo-off-black.svg", "email": CONTACT, "sameAs": ["https://tejl.hr/"]},
-        {"@type": "Person", "@id": PERSON_ID, "name": "Eris Margeta"},
+         "logo": ORIGIN + "/assets/tejl-logo-off-black.svg", "email": CONTACT, "sameAs": ["https://tejl.hr/"],
+         "founder": {"@id": PERSON_ID}},
+        {"@type": "Person", "@id": PERSON_ID, "name": "Eris Margeta", "url": "https://tejl.com/",
+         "sameAs": ["https://github.com/Eris-Margeta"], "jobTitle": "Founder", "worksFor": {"@id": ORG_ID}},
         {"@type": "WebSite", "@id": SITE_ID, "url": ORIGIN + "/", "name": "dctx", "inLanguage": "en",
          "publisher": {"@id": ORG_ID}},
     ]
@@ -165,7 +168,7 @@ FOOTER = f"""<footer class="site-footer">
   </div>
   <div class="foot-bottom">
    <div>
-    <p>&copy; 2025&ndash;2026 Eris Margeta. dctx is open source under Apache-2.0.</p>
+    <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
     <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="{BLOB}TRADEMARK.md">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
    </div>
    <div class="credit">
@@ -250,7 +253,7 @@ HOME = f"""
   <div class="section-head">
    <span class="eyebrow">What you get</span>
    <h2 id="features-h">One engine for every way software is built.</h2>
-   <p>The command line, the MCP server, the library and the desktop app share one core, one privacy boundary and the same output.</p>
+   <p>The command line, the MCP server, the library and the desktop preview share one core, one privacy boundary and the same output.</p>
   </div>
   <div class="grid grid-3">
    <article class="card"><span class="k">dctx map</span><h3>Map mode for agents</h3><p>Ten verbs (map, find, neighbors, explain, read, skeleton, grep, hubs, path, export) with stable ids, cursor paging and lexical call and import edges. Up to 2,000 estimated tokens per answer.</p></article>
@@ -258,7 +261,7 @@ HOME = f"""
    <article class="card"><span class="k">dctx pack</span><h3>Whole-project context</h3><p>The whole project, or only what changed, as one structured block on stdout or the clipboard. Tree lines carry no timestamps, so a bare <code>touch</code> leaves the page byte-identical.</p></article>
    <article class="card"><span class="k">No embeddings</span><h3>Zero RAG defects</h3><p>No chunking, no vector store. dctx answers from a lexical graph of syntax-owned spans and verifies source bytes before it emits them.</p></article>
    <article class="card"><span class="k">Ed25519</span><h3>Verified plugins and index</h3><p>Plugin distribution and index verification use Ed25519 signatures. Plugins run out of process with explicit capabilities and consent.</p></article>
-   <article class="card"><span class="k">Preview &middot; 0.11</span><h3>dctx Desktop</h3><p>The same engine in a window, for people who prefer one. Free for everyone, including companies. The desktop app is a preview on its own version line.</p></article>
+   <article class="card"><span class="k">Preview &middot; 0.11</span><h3>dctx Desktop</h3><p>The same engine in a window, for people who prefer one. Free for everyone, including companies. Preview, source only: there is no download yet, so build it from the repository.</p></article>
   </div>
   <details class="disclose" id="languages">
    <summary>Supported languages: 36 full, 8 outline, 6 documentation formats</summary>
@@ -443,7 +446,7 @@ NEWS = [
 <li>Your global dctx settings and ignore rules, applied exactly as on the command line.</li>
 <li>Everything runs on your machine. No account, no telemetry, no network.</li>
 </ul>
-<p>The source is in the open repository under Apache-2.0, next to the CLI and the core. The desktop app is a preview on its own version line (0.11).</p>
+<p>The source is in the open repository under Apache-2.0, next to the CLI and the core. The desktop app is a preview on its own version line (0.11), source only: there is no download yet, so build it from the repository.</p>
 <h2>What does not change</h2>
 <p>dctx remains open source. The repository is ongoing work, and we publish what we measure, including where we still have work to do, as in <a href="/news/specification-and-benchmark/">our first public benchmark</a>.</p>
 <p>Organisations that depend on dctx can sign a <a href="/maintenance/">maintenance agreement</a> for security response times, long-term support and priority work. Paying never changes the license, and it funds the work that keeps the desktop app free.</p>
@@ -500,7 +503,7 @@ def news_pages() -> None:
         path = f"/news/{n['slug']}/"
         art = {"@type": "BlogPosting", "@id": ORIGIN + path + "#article", "headline": n["title"],
                "description": n["summary"], "datePublished": n["date"], "inLanguage": "en",
-               "mainEntityOfPage": {"@id": ORIGIN + path + "#webpage"}, "author": {"@id": ORG_ID},
+               "mainEntityOfPage": {"@id": ORIGIN + path + "#webpage"}, "author": {"@id": PERSON_ID},
                "publisher": {"@id": ORG_ID}, "image": ORIGIN + "/assets/og.png"}
         body = f"""<div class="wrap"><article><div class="page-head">{{{{crumbs}}}}<span class="eyebrow">{n['kind']}</span>
 <h1>{e(n['title'])}</h1><p class="lede">{e(n['summary'])}</p>
