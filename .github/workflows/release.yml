@@ -3,16 +3,23 @@ name: Release
 on:
   push:
     tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to build and publish (for example v1.2.0)'
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref }}
   cancel-in-progress: false
 
 env:
   CARGO_TERM_COLOR: always
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   preflight:
@@ -23,14 +30,16 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           persist-credentials: false
       - name: Validate release version and notes
         shell: bash
         run: |
           set -euo pipefail
-          test "${GITHUB_REF_NAME#v}" = "$(cat VERSION)"
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]
+          test "${RELEASE_TAG#v}" = "$(cat VERSION)"
           ./tools/sync-version.sh --check
-          ./tools/extract-changelog.sh "$GITHUB_REF_NAME" > release-notes.md
+          ./tools/extract-changelog.sh "$RELEASE_TAG" > release-notes.md
           test -s release-notes.md
       - name: Check optional publishing credentials
         id: secrets
@@ -68,6 +77,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           persist-credentials: false
       - name: Install Rust target
         shell: bash
@@ -125,6 +135,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           persist-credentials: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -136,7 +147,7 @@ jobs:
         run: |
           set -euo pipefail
           (cd artifacts && sha256sum dctx-*.tar.gz dctx-*.zip > SHA256SUMS && sha256sum --check SHA256SUMS)
-          ./tools/extract-changelog.sh "$GITHUB_REF_NAME" > release-notes.md
+          ./tools/extract-changelog.sh "$RELEASE_TAG" > release-notes.md
           test -s release-notes.md
       - name: Create release with changelog notes
         shell: bash
@@ -145,9 +156,9 @@ jobs:
         run: |
           set -euo pipefail
           extra=()
-          if [[ "$GITHUB_REF_NAME" == *-* ]]; then extra+=(--prerelease); fi
-          gh release create "$GITHUB_REF_NAME" artifacts/* --verify-tag \
-            --title "dctx $GITHUB_REF_NAME" --notes-file release-notes.md "${extra[@]}"
+          if [[ "$RELEASE_TAG" == *-* ]]; then extra+=(--prerelease); fi
+          gh release create "$RELEASE_TAG" artifacts/* --verify-tag \
+            --title "dctx $RELEASE_TAG" --notes-file release-notes.md "${extra[@]}"
 
   npm-publish:
     needs: [preflight, release]
@@ -159,6 +170,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           persist-credentials: false
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -168,8 +180,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download "$GITHUB_REF_NAME" --dir artifacts --pattern 'dctx-*' --pattern SHA256SUMS
-          python3 tools/release/prepare-npm.py "$GITHUB_REF_NAME" artifacts
+          gh release download "$RELEASE_TAG" --dir artifacts --pattern 'dctx-*' --pattern SHA256SUMS
+          python3 tools/release/prepare-npm.py "$RELEASE_TAG" artifacts
       - name: Publish platform packages, then shim
         shell: bash
         env:
@@ -177,7 +189,7 @@ jobs:
         run: |
           set -euo pipefail
           npm_tag=latest
-          if [[ "$GITHUB_REF_NAME" == *-* ]]; then npm_tag=next; fi
+          if [[ "$RELEASE_TAG" == *-* ]]; then npm_tag=next; fi
           for package in packaging/npm/cli-* packaging/npm/dctx; do
             (cd "$package" && npm publish --provenance --access public --tag "$npm_tag")
           done
@@ -189,6 +201,7 @@ jobs:
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           persist-credentials: false
       - name: Install Rust
         run: rustup update stable && rustup default stable
