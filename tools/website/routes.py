@@ -72,6 +72,26 @@ POLICIES = [
     ("/maintenance/", "MAINTENANCE.md", "Maintenance", "dctx is free under Apache-2.0. Maintenance agreements fund security response, long-term support and priority work."),
 ]
 
+# The three llms files, the entry points of AI evaluators. Each is the facts block (data/facts.json) and
+# the route table, then the output of the dctx binary itself over the documents below, recorded by
+# `capture.py --llms` into data/llms.json. Mode "outline": `dctx map map FILE --depth 2` per file;
+# "pack": one `dctx pack . --include /FILE ...`. Files are taken in this order while the dctx output
+# stays within the budget (estimated tokens, ceil(2 * UTF-8 bytes / 7)); the rest are listed as left out.
+LLMS_START = ["docs/WHY-DCTX.md", "README.md", "docs/MODALITIES.md"]
+LLMS_EXTRA = ["CHANGELOG.md", "crates/dctx-template/templates/default.dctx_template",
+              "crates/dctx-template/templates/stamped.dctx_template"]
+
+
+def llms_tiers() -> list[tuple[str, str, int, list[str]]]:
+    """(file name, mode, budget, candidate files in priority order)."""
+    start = [f for f in LLMS_START if (ROOT / f).is_file()]
+    rest = [f for _, f, *_ in DOCS] + [f for _, f, *_ in POLICIES] + LLMS_EXTRA
+    full = start + [f for f in dict.fromkeys(rest) if f not in start]
+    return [("llms-small.txt", "outline", 2_500, start),
+            ("llms.txt", "pack", 20_000, start),
+            ("llms-full.txt", "pack", 110_000, full)]
+
+
 NAV = [("/start/", "Start", "start"), ("/docs/", "Docs", "docs"), ("/cli/", "CLI", "cli"), ("/examples/", "Examples", "examples"),
        ("/templates/", "Templates", "templates"), ("/playground/", "Playground", "playground"),
        ("/benchmarks/", "Benchmarks", "benchmarks"), ("/changelog/", "Changelog", "changelog")]

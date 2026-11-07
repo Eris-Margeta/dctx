@@ -16,7 +16,7 @@ import data
 import facts as factsrc
 from common import REPO, VERSION, e, line_of, read, rec, src
 from components import code, output_examples, term, transcript
-from pages.paths import md_inline, notice, responsibilities, selector
+from pages.paths import md_inline, notice, responsibilities, scopes, selector
 from routes import has_why
 
 HERO_RECORDS = ["pack-for", "find", "neighbors-in", "read-json"]
@@ -77,8 +77,8 @@ def rust_dependency() -> str:
 
 
 def modalities() -> str:
-    items = "".join(f'<li><h3><a href="{m["href"]}">{e(m["name"])}</a></h3><p>{md_inline(m["line"][:1].upper() + m["line"][1:])}</p>'
-                    f'<p class="status">{e(m["status"])}</p></li>' for m in factsrc.load()["modalities"])
+    items = "".join(f'<li><h3><a href="{m["link"]}">{e(m["name"])}</a></h3><p>{md_inline(m["line"][:1].upper() + m["line"][1:])}</p>'
+                    f'<p class="status">{e(m["status"])}</p></li>' for m in factsrc.load()["ways"])
     return f'<ul class="mods">{items}</ul>'
 
 
@@ -203,8 +203,9 @@ def body(scene: dict) -> str:
     <h3>Project libraries <span class="state">publishing soon</span></h3>
     <p>{md_inline(f["install"]["project"])}</p>
     {code("Cargo.toml (Rust facade, from Git today)", rust_dependency())}
-    <p>{md_inline(f["scopes"]["text"])}</p>
-    <p class="note">{md_inline(f["scopes"]["status"])} <a href="/docs/modalities/">Compare modes, installs and status</a></p>
+    <h4>Two scopes, one binary</h4>
+    {scopes()}
+    <p class="note"><a href="/docs/modalities/">Compare modes, installs and status</a></p>
    </div>
   </div>
   {anim("two_scopes")}

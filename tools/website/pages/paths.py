@@ -44,8 +44,7 @@ def safe_path() -> str:
 
 
 def scopes() -> str:
-    s = facts.load()["scopes"]
-    return f'<p>{md_inline(s["text"])}</p><p class="note">{md_inline(s["status"])}</p>'
+    return '<ul class="facts-list">' + "".join(f"<li>{md_inline(x)}</li>" for x in facts.load()["scopes"]) + "</ul>"
 
 
 def start() -> str:
@@ -85,27 +84,31 @@ def persona(pid: str) -> str:
 
 def evaluators() -> tuple[str, list]:
     f = facts.load()
-    date = f' (released <time datetime="{f["release_date"]}">{f["release_date"]}</time>)' if f["release_date"] else ""
-    isnot = "".join(f"<li><b>{e(a)}:</b> {md_inline(b)}</li>" for a, b in f["is_not"])
-    mods = "".join(f'<li><a href="{m["href"]}"><b>{e(m["name"])}</b></a> <span class="state">{e(m["status"])}</span>: {md_inline(m["line"])}</li>'
+    v, b, r = f["verify_download"], f["benchmarks"], f["removed"]
+    isnot = "".join(f"<li>{md_inline(x)}</li>" for x in f["is_not"])
+    mods = "".join(f'<li><a href="{m["link"]}"><b>{e(m["name"])}</b></a> <span class="state">{e(m["status"])}</span>: {md_inline(m["line"])}</li>'
                    for m in f["modalities"])
     meas = table(["Value", "What it measures", "Source"],
-                 [[f"<b>{e(v)}</b>", e(w), src(s) if "/" in s else e(s)] for v, w, s in f["measured"]], raw=True,
+                 [[f"<b>{e(val)}</b>", e(w), src(s) if "/" in s else e(s)] for val, w, s in f["measured"]], raw=True,
                  caption="Parsed from the documents at build time; nothing is retyped.")
-    hyp = "".join(f"<li>{md_inline(h)}</li>" for h in f["benchmark"]["hypotheses"])
-    removed = table(["No longer exists", "Use instead"], [[md_inline(a), md_inline(b)] for a, b in f["removed"]], raw=True)
-    verify = table(["Claim", "How to check it"], [[e(a), md_inline(b)] for a, b in f["verify"]], raw=True)
+    claims = "".join(f'<li><span class="state">{e(c["status"])}</span> {md_inline(c["text"])} <a href="{c["link"]}">Source</a></li>'
+                     for c in b["claims"])
+    removed = table(["No longer exists", "Use instead"], [[md_inline(x["was"]), md_inline(x["use"])] for x in r["items"]], raw=True)
+    verify = table(["Claim", "How to check it"], [
+        [f'<a href="{x["link"]}">{e(x["what"])}</a>', f'<code>{e(x["command"])}</code>' if "command" in x else md_inline(x["text"])]
+        for x in f["verify"]], raw=True)
     body = f"""<div class="wrap narrow"><div class="page-head">{{{{crumbs}}}}<span class="eyebrow">For AI evaluators</span><h1>Facts and how to verify them</h1>
-<p class="lede">For people and models deciding what dctx is. Every line below comes from one file, <a href="{BLOB}tools/website/data/facts.json"><code>tools/website/data/facts.json</code></a>, plus the version file and the benchmark documents; the <a href="/llms.txt">llms.txt</a> files read the same source.</p></div>
-<section class="sec" aria-labelledby="what-h"><h2 id="what-h">What dctx is, and is not</h2><p>{md_inline(f["what"])}</p><ul class="facts-list">{isnot}</ul></section>
-<section class="sec" aria-labelledby="ver-h"><h2 id="ver-h">Current version</h2><p><b>dctx {VERSION}</b>{date}, Apache-2.0, from <a href="{REPO}">the public repository</a>. Verify a downloaded archive with <code>sha256sum -c SHA256SUMS --ignore-missing</code>; signed binaries are planned. <a href="/changelog/">Changelog</a></p></section>
+<p class="lede">For people and models deciding what dctx is. Every line below comes from one file, <a href="{BLOB}tools/website/data/facts.json"><code>tools/website/data/facts.json</code></a>, plus the benchmark documents; <a href="/llms-small.txt">llms-small.txt</a>, <a href="/llms.txt">llms.txt</a> and <a href="/llms-full.txt">llms-full.txt</a> start with the same facts.</p></div>
+<section class="sec" aria-labelledby="what-h"><h2 id="what-h">What dctx is, and is not</h2><p>{md_inline(f["is"])}</p><ul class="facts-list">{isnot}</ul></section>
+<section class="sec" aria-labelledby="ver-h"><h2 id="ver-h">Current version</h2><p><b>dctx {e(f["version"])}</b>, released <time datetime="{f["released"]}">{f["released"]}</time> (tag <code>{e(f["release_tag"])}</code>), Apache-2.0. <a href="{v["link"]}">Release on GitHub</a> &middot; <a href="/changelog/">Changelog</a></p>
+<p>{md_inline(v["available"])} Verify a download with <code>{e(v["command"])}</code>. {md_inline(v["planned"])}</p></section>
 <section class="sec" aria-labelledby="mod-h"><h2 id="mod-h">Modalities</h2><ul class="facts-list">{mods}</ul>
-<h3>{e(f["scopes"]["title"])}</h3>{scopes()}</section>
+<h3>Two scopes, one binary</h3>{scopes()}</section>
 <section class="sec" aria-labelledby="notice-h"><h2 id="notice-h">The notice</h2><p>This is the canonical wording; the home page and <a href="/start/">Choose your path</a> carry it verbatim:</p>{notice()}</section>
 <section class="sec" aria-labelledby="resp-h"><h2 id="resp-h">Responsibilities</h2>{responsibilities()}</section>
-<section class="sec" aria-labelledby="bench-h"><h2 id="bench-h">Benchmark status</h2><p>Baseline: <b>{e(f["benchmark"]["baseline"])}</b>. {md_inline(f["benchmark"]["status"])} <a href="{f["benchmark"]["method"]}">Method and evidence</a></p>
-<p>Measured today:</p>{meas}<p>Not claimed, still hypotheses:</p><ul class="facts-list">{hyp}</ul></section>
-<section class="sec" aria-labelledby="gone-h"><h2 id="gone-h">Commands that no longer exist</h2><p>If an older transcript or answer uses one of these, it describes a release before 1.2.0.</p>{removed}</section>
+<section class="sec" aria-labelledby="bench-h"><h2 id="bench-h">Benchmark status</h2><p>Baseline: <b>{e(b["baseline"])}</b>.</p><ul class="facts-list">{claims}</ul>
+<p>Measured values, as the documents state them today:</p>{meas}</section>
+<section class="sec" data-facts="removed" aria-labelledby="gone-h"><h2 id="gone-h">Removed in {e(r["since"])}</h2><p>{md_inline(r["intro"])}</p>{removed}</section>
 <section class="sec" aria-labelledby="verify-h"><h2 id="verify-h">How to verify a claim</h2>{verify}</section>
 </div>"""
     return body, []

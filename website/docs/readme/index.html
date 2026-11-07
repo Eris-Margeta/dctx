@@ -751,20 +751,20 @@ credentials/
 <p>The dependency policy retains the <strong>Ed25519 signature verifier</strong> (<code>ed25519-dalek</code>) for plugin/index verification. Signed organization policy bundles are planned; their presence in the specification does not mean the CLI can enroll or verify them today. See the <a href="/docs/spec/#27-dependencies-and-build-profiles">dependency policy</a>.</p>
 <hr />
 <h2 id="cli-reference">CLI Reference<a class="hd" href="#cli-reference" aria-label="Link to CLI Reference">#</a></h2>
-<div class="hl"><pre><code>Usage: dctx [PATH] [OPTIONS]
+<div class="hl"><pre><code>Usage: dctx &lt;COMMAND&gt; [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json] [--tree-stamps=on|off]
        dctx pack [PATH] --for &lt;TEXT&gt; [--budget TOKENS]
-       dctx map &lt;map|find|neighbors|explain|read&gt; &lt;TARGET&gt; [--json]
+       dctx map &lt;map|find|neighbors|explain|read|skeleton|grep|hubs|path|export&gt; [--json]
+       dctx mcp [PATH]
        dctx cache status|gc|purge|config|auto
        dctx template build &lt;PATH&gt; | template list
-       dctx plugin search|install|list|info|enable|disable|remove|update|verify|run
+       dctx plugin search|install|list|info|enable|disable|remove|update|verify
        dctx git &lt;status|protect&gt;
 
-Snapshot options:
+Pack options:
   -c, --clipboard       Copy to clipboard
-  -d, --diff            Output the diff only (if available)
-  -t, --tree            Tree only (skips file content)
-  -r, --reset           Force V1 reset
+  -o, --output &lt;path&gt;   Write the page to one file
+  --json                Summary report instead of the source page
   --tree-stamps=on|off  MOD: and SIZE: on tree lines (default off; on = the 1.0.0 text)
 
 Filter options:
@@ -817,7 +817,7 @@ Filter options:
     <p class="mono small">dctx 1.2.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
    </div>
    <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
-   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
    <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="https://github.com/sponsors/Eris-Margeta">Sponsor</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
   </div>
   <div class="ftr-bottom">

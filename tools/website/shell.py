@@ -56,7 +56,7 @@ def footer() -> str:
     <p class="mono small">dctx {VERSION} &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
    </div>
    {col("f-product", "Product", [("/start/", "Choose your path"), ("/docs/", "Documentation"), ("/cli/", "CLI reference"), ("/examples/", "Examples"), ("/templates/", "Templates"), ("/playground/", "Playground"), ("/languages/", "Languages"), ("/benchmarks/", "Benchmarks")])}
-   {col("f-res", "Resources", [("/docs/spec/", "Specification"), ("/changelog/", "Changelog"), ("/news/", "News"), ("/news/feed.xml", "News feed (Atom)"), ("/changelog/feed.xml", "Release feed (Atom)"), ("/for-ai-evaluators/", "For AI evaluators"), ("/llms.txt", "llms.txt"), ("/llms-small.txt", "llms-small.txt"), ("/llms-full.txt", "llms-full.txt"), ("/search/", "Search")])}
+   {col("f-res", "Resources", [("/docs/spec/", "Specification"), ("/changelog/", "Changelog"), ("/news/", "News"), ("/news/feed.xml", "News feed (Atom)"), ("/changelog/feed.xml", "Release feed (Atom)"), ("/for-ai-evaluators/", "For AI evaluators"), ("/llms-small.txt", "llms-small.txt"), ("/llms.txt", "llms.txt"), ("/llms-full.txt", "llms-full.txt"), ("/search/", "Search")])}
    {col("f-proj", "Project", [(REPO, "Source code"), (REPO + "/issues", "Issues"), ("/security/", "Security policy"), ("/.well-known/security.txt", "security.txt"), ("https://github.com/sponsors/Eris-Margeta", "Sponsor"), ("/maintenance/", "Maintenance"), ("/trademark/", "Trademark"), (BLOB + "LICENSE", "License (Apache-2.0)"), (f"mailto:{CONTACT}?subject=dctx", "Contact")])}
   </div>
   <div class="ftr-bottom">

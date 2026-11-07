@@ -583,20 +583,20 @@ The dependency policy retains the **Ed25519 signature verifier** (`ed25519-dalek
 ## CLI Reference
 
 ```
-Usage: dctx [PATH] [OPTIONS]
+Usage: dctx <COMMAND> [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json] [--tree-stamps=on|off]
        dctx pack [PATH] --for <TEXT> [--budget TOKENS]
-       dctx map <map|find|neighbors|explain|read> <TARGET> [--json]
+       dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path|export> [--json]
+       dctx mcp [PATH]
        dctx cache status|gc|purge|config|auto
        dctx template build <PATH> | template list
-       dctx plugin search|install|list|info|enable|disable|remove|update|verify|run
+       dctx plugin search|install|list|info|enable|disable|remove|update|verify
        dctx git <status|protect>
 
-Snapshot options:
+Pack options:
   -c, --clipboard       Copy to clipboard
-  -d, --diff            Output the diff only (if available)
-  -t, --tree            Tree only (skips file content)
-  -r, --reset           Force V1 reset
+  -o, --output <path>   Write the page to one file
+  --json                Summary report instead of the source page
   --tree-stamps=on|off  MOD: and SIZE: on tree lines (default off; on = the 1.0.0 text)
 
 Filter options:
