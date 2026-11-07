@@ -97,9 +97,9 @@ def render():
         out.append(f"| {labels[key]} | {row['score']} | {row['facts_found']} | {num(row['tokens'])} | {row['calls']} |")
     out += [
         "",
-        "That protocol is ours, so it can favour dctx. An independently selected protocol (repositories picked by seed, "
-        "callers gold from language servers, questions written without seeing dctx output) is pending: v1 card 6 publishes it, "
-        "and its table will be added here whatever the result.",
+        "That protocol is ours, so it can favour dctx. A separate [independent benchmark](docs/research/bench-independent/README.md) "
+        "uses seeded repository selection and language-server caller gold. It reports lower caller recall on unseen repositories; "
+        "the curated-corpus results above do not establish the same accuracy elsewhere.",
         "",
     ]
     parts = []
@@ -110,7 +110,7 @@ def render():
     out += [
         f"Cold index of the {len(CORPORA)} benchmark corpora ({', '.join(CORPORA)}; median of {agg['index'][CORPORA[0]]['dctx']['n_reps']} runs) "
         f"took {parts[0]}, against {parts[1]} and {parts[2]}, on one Linux x86_64 runner ({meta['host_kernel']}, {meta['cpu_model']}). "
-        "Linux x86_64 is the only tested platform.",
+        "These performance measurements cover Linux x86_64 only; [CI covers Linux, macOS and Windows](docs/TESTING.md).",
         "",
     ]
     steps = [row for row in agg["network"] if row["tool"] == "dctx"]

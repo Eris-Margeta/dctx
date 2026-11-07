@@ -43,9 +43,9 @@ We must verify that new configuration keys are correctly merged into existing us
 
 ## 5. Decision: Test Environment Structure
 Tests must not run in the project root.
-*   **Isolation:** Create a dedicated sandbox: `/tmp/dctx-test-env-<timestamp>/`.
-*   **Mocking:** Override `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, and `HOME` to point to the sandbox.
-*   **Modular Test Data:** Use a dedicated `tests/fixtures/` folder (or generate on the fly) to populate the sandbox.
+*   **Isolation:** Create a dedicated temporary test environment: `/tmp/dctx-test-env-<timestamp>/`.
+*   **Mocking:** Override `XDG_CONFIG_HOME`, `XDG_CACHE_HOME`, and `HOME` to point to the temporary test environment.
+*   **Modular Test Data:** Use a dedicated `tests/fixtures/` folder (or generate on the fly) to populate the temporary test environment.
 
 ## 6. Implementation Plan
 The `tools/test-integrity.sh` script will be rewritten to strictly adhere to this protocol. It will define helper functions like `assert_version_bump`, `assert_no_change`, and `assert_config_key`.

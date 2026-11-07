@@ -204,9 +204,9 @@ file_count_limit = 50000
 ### For Developers
 
 1. **Read developer guide**: [DEVELOPMENT.md](DEVELOPMENT.md)
-2. **Understand architecture**: [PHASE_11_COMPLETE.md](PHASE_11_COMPLETE.md)
+2. **Understand architecture**: [Core architecture](ADR/ADR-DESKTOP-002-core-dependency-architecture.md)
 3. **Browse the code**: Start with `src/main.ts` and `src-tauri/src/main.rs`
-4. **Make improvements**: See [CHANGELOG.md](CHANGELOG.md) → Roadmap
+4. **Make improvements**: See [CHANGELOG.md](../CHANGELOG.md) → Roadmap
 
 ---
 
@@ -240,7 +240,7 @@ cargo build --manifest-path src-tauri/Cargo.toml
 - **[DEVELOPMENT.md](DEVELOPMENT.md)** - Complete developer guide
 - **[CONFIG.md](CONFIG.md)** - Configuration system
 - **[DRAG_DROP_DEBUG.md](DRAG_DROP_DEBUG.md)** - Drag & drop troubleshooting
-- **[CHANGELOG.md](CHANGELOG.md)** - Version history and roadmap
+- **[CHANGELOG.md](../CHANGELOG.md)** - Version history and roadmap
 - **[DOCS_INDEX.md](DOCS_INDEX.md)** - Documentation navigation
 
 ---
@@ -262,7 +262,7 @@ cargo build --manifest-path src-tauri/Cargo.toml
 - Settings panel
 - Recent projects dropdown
 
-**See**: [CHANGELOG.md](CHANGELOG.md) for full roadmap
+**See**: [CHANGELOG.md](../CHANGELOG.md) for full roadmap
 
 ---
 

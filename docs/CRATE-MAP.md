@@ -1,6 +1,6 @@
 # Crate map
 
-Static checkout guide for humans and low-context workers (DX-MAP).
+Static checkout guide for contributors and coding assistants.
 40 non-fixture Cargo packages: 36 under `crates/`, one plugin, one desktop,
 and two standalone tools. Root `Cargo.toml` includes crates, plugins and desktop;
 each tool declares its own workspace. `bindings/README.md` describes planned
@@ -31,7 +31,7 @@ What the `dctx` binary (`crates/dctx-cli`) actually runs, as of v1. No refactor:
 - **Shipped:** `dctx-cli` and the `crates/dctx` facade session (index, find, grep, callers, callees, neighbors, skeleton, hubs, pack, read), with dctx-core (selection), dctx-hash, dctx-ports, dctx-pack, dctx-template, dctx-adapter-cache, dctx-adapter-fs (compatibility IO), dctx-map-model (records and rendering) and the `dctx-lex-*` extractors.
 - **Request types only:** `dctx-map-query`. The CLI imports `Request`, `Verb`, `Direction`, `Format`, `AnswerBudget` and `EdgeKind`; its `Index` engine is never called.
 - **Internal or legacy (compiled as dependencies of `dctx-map-query`, not run by the CLI):** the `dctx-map-query` `Index` engine, `dctx-map-store`, `dctx-map-scan`, `dctx-map-resolve`, `dctx-map-segment`, `dctx-adapter-store`; `dctx-map-parse` likewise. docs/SPEC-MAP-MODE.md sections 6–8 and 10 describe this engine.
-- **Unstable (no stability promise in v1):** dctx-plugin-host, dctx-plugin-platform, dctx-plugin-protocol, dctx-plugin-distribution and dctx-desktop-api. The default `dctx-cli` build enables the plugin runtime and the bundled git worker; `--no-default-features --features strict` builds without them.
+- **Unstable (no stability promise in v1):** dctx-plugin-host, dctx-plugin-platform, dctx-plugin-protocol, dctx-plugin-distribution and dctx-desktop-api. The default `dctx-cli` build enables the plugin runtime and the bundled Git plugin process; `--no-default-features --features strict` builds without them.
 
 ## Core, engines and adapters
 

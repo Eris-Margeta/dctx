@@ -398,7 +398,7 @@ that keeps it can ask for a delta later.
 digest changed, `-<id>` lines for removed records, and a header
 `base=<view> changed=<n> removed=<m> unchanged=<u>`. An unknown base yields the full
 answer with `base=none`, never an error. The engine stores record ids and digests per
-view (not bytes) in a small, owner-only, TTL-bound ledger. `dctx pack --since
+view (not bytes) in a small, user-private, TTL-bound ledger. `dctx pack --since
 <snapshot>` applies the same rule to whole files: unchanged files appear as one tree
 line with their digest.
 
@@ -511,7 +511,7 @@ session_selection` (product contract C03) and the plugin grant lattice
 | L1 organization | Security / platform team | Organization key (enrolled once) | Parser, plugin and agent-host allowlists; privacy rules; budgets; cache caps; learnings kinds |
 | L2 tenant | Team lead | Organization key or a delegated team key | Narrower languages, plugin set, default templates, budgets |
 | L3 machine | IT / device management | Machine key or a root-owned file | Cache root, offline mode, threads and memory, installer proxy |
-| L4 user | The developer | — (owner-only file) | Personal defaults, consented plugins, installed agent hosts |
+| L4 user | The developer | — (user-private file) | Personal defaults, consented plugins, installed agent hosts |
 | L5 project | The repository | Optional organization signature for "trusted project policy" | `.dctx/policy.dts`: selections, omit rules, templates, learnings location |
 | L6 session | The invocation | — | Flags, environment, library builder arguments |
 
@@ -563,7 +563,7 @@ is Ed25519 over `dctx-org-policy-v1 ‖ manifest bytes`, verified by `crates/dct
 - `dctx policy explain [field]` prints each effective value, the layer that set it and
   the signer fingerprint. Byte-stable.
 - Every operation records the effective policy digest, the per-layer digests and signer
-  fingerprints in the local, owner-only receipt log. `dctx policy receipts --since <t>`
+  fingerprints in the local, user-private receipt log. `dctx policy receipts --since <t>`
   lists them. Nothing is uploaded.
 
 ---
@@ -626,8 +626,8 @@ per-file rebuild: each process re-walks and re-hashes, and any change rebuilds f
 
 ## 20. Cold build
 
-Parallel parsing with a bounded worker pool (`std::thread::scope`, ≤ available
-parallelism); each worker owns its fact segments; a single sealer merges sorted outputs
+Parallel parsing with a bounded parser thread pool (`std::thread::scope`, ≤ available
+parallelism); each thread owns its fact segments; a single sealer merges sorted outputs
 and hashes incrementally without materializing a joined payload. Policy caps facts per
 file (`extraction.max_facts_per_file`, default 10,000); excess configuration and JSON
 leaves collapse into one `partial` module node.

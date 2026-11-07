@@ -4,9 +4,8 @@ All notable changes to dctx are recorded here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow
 [Semantic Versioning](https://semver.org/). Dates are ISO 8601.
 
-The open repository is ongoing work. Anything that still depends on third-party
-crates is not considered enterprise-ready; enterprise-ready builds are part of
-dctx Enterprise.
+For current functionality and limitations, see the [README](README.md).
+Historical entries describe the behavior and support scope of that release.
 
 ## [Unreleased]
 
@@ -39,7 +38,7 @@ dctx Enterprise.
 ### Fixed
 
 - Windows CLI test environments now map `APPDATA` to the fixture config directory and provide `LOCALAPPDATA` for cache/data; missing or empty Windows directory variables return clear errors.
-- Rust parser worker startup failures now stop indexing with a clear error instead of silently degrading source spans.
+- Rust parser subprocess startup failures now stop indexing with a clear error instead of silently degrading source spans.
 - `pack --for` keeps each section in source order when its budget runs out and recognizes file targets such as `src/lib.rs`.
 - `serve` (including `serve --mcp`) uses the stdio MCP server in the current directory, including fixture folders; `read` routes to `map read`.
 - Budget-cut reads move trailing closing delimiters and separators into the continuation, preserving every source line.
@@ -74,20 +73,20 @@ Release **1.1.0** (`v1.1.0`; release candidate `v1.1.0-rc1` 2026-11-04). It fold
 - **Verilog/SystemVerilog** (`.v`, `.vh`, `.sv`, `.svh`): `module`, `macromodule`, `interface`, `package` and `class`
   declarations as `type` outline symbols and `function`/`task` declarations as `fn` symbols (`guess` confidence, full tier),
   with module-scope call edges and `<module> <instance> (` instantiation links resolved through the call index.
-- **Prefix-stable `pack` output** (DCX-P-PACK): tree lines carry the `ID` only, with no `MOD:` and no `SIZE:`, so a
+- **Prefix-stable `pack` output**: tree lines carry the `ID` only, with no `MOD:` and no `SIZE:`, so a
   bare `touch` leaves the page byte-identical and an edit keeps everything before the edited file as a shared prefix
   for prompt caches. `--tree-stamps=on|off` (default `off`) selects the built-in tree template; `on` reproduces the
   1.0.0 bytes. The desktop tree-only export keeps its digest line last, behind a stable lead line.
-- **Stat stamps in the manifest** (DCX-P-STAMP): a stamp pass runs before the digest, with a racy-timestamp guard; a
+- **Stat stamps in the manifest**: a stamp pass runs before the digest, with a racy-timestamp guard; a
   touch-only change is decided by content. A gate replays 200 random edits against a cold rebuild.
-- **Record and entry caps** (DCX-P-CACHE): checked during the scan and set by `DCTX_MAX_RECORDS` and
+- **Record and entry caps**: checked during the scan and set by `DCTX_MAX_RECORDS` and
   `DCTX_MAX_ENTRIES`; the cache is reclaimed on publish, evicts before refusing, and readers share one lock.
-- **Open-source maintenance model** (DCX-OSS): `MAINTENANCE.md`, `TRADEMARK.md`, a DCO in
+- **Open-source maintenance model**: `MAINTENANCE.md`, `TRADEMARK.md`, a DCO in
   `CONTRIBUTING.md` and `FUNDING.yml`; the desktop app is open source too.
 
 ### Changed
 
-- **Id lookup** (DCX-P-IDX) uses a sorted hash index instead of a linear node scan.
+- **Id lookup** uses a sorted hash index instead of a linear node scan.
 - Large source files were split into submodules by pure moves (400-line rule): `pack.rs`, `path.rs`, `reuse.rs`,
   `bound.rs`, `plugin.rs`, `yaml.rs` and others. No behaviour change.
 - The version is **1.1.0** for every `crates/*` and `plugins/*` package; the desktop app stays on 0.11.0.
@@ -131,7 +130,7 @@ desktop app keeps its own version line (0.11.0) and its own release workflow.
 - LSP-grade type resolution.
 - A stable plugin ABI and desktop API (unstable, not a v1 contract).
 - Cross-repository queries.
-- Publishing to crates.io or GitHub (an owner decision).
+- Publishing to crates.io or GitHub (a maintainer decision).
 
 ### Added
 - **Call and import edges** in the map index: `dctx map neighbors --edge calls|imports`

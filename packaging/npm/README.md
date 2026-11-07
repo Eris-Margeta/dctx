@@ -15,7 +15,7 @@ python3 tools/release/prepare-npm.py v1.1.0 artifacts/
 The script verifies every archive before writing packages, sets all versions from
 the tag and copies LICENSE/NOTICE. Archive names use full Cargo target triples.
 Publish all five `cli-*` packages before `dctx`; the tag workflow does this with
-provenance. See [the owner runbook](../../docs/RELEASING.md) for credentials and recovery.
+provenance. See [the maintainer runbook](../../docs/RELEASING.md) for credentials and recovery.
 
 Run `python3 tools/release/test-packaging.py` on Linux x64 to verify fixture archives,
 all six npm tarballs, checksum rejection, argument forwarding, exit status and

@@ -11,6 +11,8 @@ The Cargo-built executable is `dctx-cli`; guides also use the alias `dctx`.
 | [Map mode](guides/MAP-MODE.md) | Structural outlines, symbol search, source reads and current limitations. |
 | [Plugins](guides/PLUGINS.md) | Installation, consent, trust and platform behavior. |
 | [Contributing](../CONTRIBUTING.md) | Development setup and checks. |
+| [Support](../SUPPORT.md) | Usage questions and community help through issues. |
+| [Testing](TESTING.md) | Cross-platform CI and local checks. |
 | [Security policy](../SECURITY.md) | Reporting vulnerabilities privately. |
 | [Developer guide](guides/DEVELOPER-GUIDE.md) | Contributor background; verify older commands against the current CLI. |
 | [Development practices](guides/DEVELOPMENT-PRACTICES.md) | Implementation patterns and historical troubleshooting. |
@@ -72,4 +74,4 @@ own status; inclusion here does not certify that its entire design is implemente
 
 These directories are retained because their contents have historical or evidence
 value. They are not obsolete merely because they are outside the Cargo workspace;
-this metadata and examples pass establishes no safe deletion of their contents.
+they preserve the evidence behind older designs and measurements.

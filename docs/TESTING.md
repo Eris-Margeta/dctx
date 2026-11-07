@@ -15,7 +15,7 @@ Test jobs allow 90 minutes; the Ubuntu quality job allows 60 minutes.
 | `windows-2022` | x64 | stable, MSRV |
 
 The workflow reads `workspace.package.rust-version` (or root `package.rust-version`)
-from `Cargo.toml`. Neither is declared yet, so it tests the proposed MSRV **1.91.0**.
+from `Cargo.toml`. The workspace declares MSRV **1.91**.
 Existing unit tests use [`Duration::from_mins`](https://doc.rust-lang.org/std/time/struct.Duration.html#method.from_mins),
 stable since Rust 1.91; a local Rust 1.90.0 run fails to compile those tests.
 Desktop packages are excluded.
@@ -77,11 +77,10 @@ date checks. `DCTX_DENY_LIST` enables the separate publish deny-list check when 
 external policy file is available; it is not supplied by this workflow.
 
 Every CLI integration test must create CLI child commands through the shared
-`crates/dctx-cli/tests/common/mod.rs` helper (`mod common;`), supplied by DCX-WIN-01.
+`crates/dctx-cli/tests/common/mod.rs` helper (`mod common;`).
 That helper owns a fresh temporary home/config/cache environment for each test
 and prevents inherited user configuration or caches from changing results. Keep
 the temporary environment alive until every child has exited. Do not spawn the
 CLI directly or mutate the parent process environment. CI closes inherited file
 descriptors before launching Cargo as required by native confinement tests; this
-does not replace per-test environment isolation. The helper is not yet in this
-card's starting HEAD and must land with the parallel card.
+does not replace per-test environment isolation. The helper is shared by the CLI integration tests.

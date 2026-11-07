@@ -1,5 +1,8 @@
 # dctx vs Trail-Code vs graphify: three-way benchmark (30 October 2026)
 
+> Historical measurements and plans from October 2026. Limitations in older runs
+> are retained as evidence; see the [README](../README.md) for current behavior.
+
 One command, same host, same corpora, same CPU set, no network, pinned versions. Raw aggregate, headline tables
 and the harness are in [`research/bench-3way-20261030/`](research/bench-3way-20261030/); the gap analysis behind
 the work is [`GAP-MATRIX-20261030.md`](GAP-MATRIX-20261030.md). Where another tool wins, the tables say so.
@@ -24,14 +27,14 @@ the work is [`GAP-MATRIX-20261030.md`](GAP-MATRIX-20261030.md). Where another to
 | Network | dctx and graphify made 0 socket attempts in every variant. Trail-Code made 49 blocked connect attempts when `DO_NOT_TRACK` is unset, and 0 with it set. |
 | Language coverage, mixed corpus (10 languages) | **Symbols: dctx 10 of 10, Trail-Code 7, graphify 5.** **Call edges, run 3: dctx 10 of 10, Trail-Code 7, graphify 5** (run 1: dctx 0). dctx's new outline tier is symbols only, labelled `guess`. Terraform and SQL get symbols only from dctx. |
 | Plain-text docs (.md/.rst/.txt/.adoc corpus) | dctx indexes the corpus into headed sections (0.18 s). graphify's code-only mode produced no index, and Trail-Code indexes no doc nodes. |
-| Privacy canary (git-tracked `.env` files) | Run 3: **clean for all three tools** (DCX-30). Run 1: **dctx still leaked on one path.** `pack`, `find` and `grep` are clean now; before tonight `pack` printed the canary. But an explicit `dctx map read m:.env` returns the file. Trail-Code and graphify leaked nothing. The fix is card DCX-30, which has not landed. |
+| Privacy canary (git-tracked `.env` files) | Run 3: **clean for all three tools** after sensitive-file read protection landed. In run 1, `pack` had stopped printing the canary, but explicit `dctx map read m:.env` still returned the file. Trail-Code and graphify leaked nothing in that run. |
 
 ## Run 7: 140 of 140 (main `53f8b6b`, 31 October, 06:20 UTC)
 
 New since run 6:
-- DCX-54c: `neighbors --dir out` also lists the calls the index cannot resolve, as `calls:out:?<name>` records after the resolved callees. These are receiver methods, builtins and external package calls.
-- DCX-56b: dotted config key matching (`dotted_key`), not yet wired into `find`.
-- DCX-61: PowerShell symbols and command-position call edges.
+- unresolved-call output: `neighbors --dir out` also lists the calls the index cannot resolve, as `calls:out:?<name>` records after the resolved callees. These are receiver methods, builtins and external package calls.
+- dotted config keys: dotted config key matching (`dotted_key`), not yet wired into `find`.
+- PowerShell edges: PowerShell symbols and command-position call edges.
 
 All landed checks passed together on the Linux benchmark host before the run. Raw results are in `research/bench-3way-20261030/tasks/results/run5-53f8b6b/` and `research/bench-3way-20261030/results/run7-53f8b6b/`.
 
@@ -45,24 +48,24 @@ All landed checks passed together on the Linux benchmark host before the run. Ra
 
 dctx scores every point on all ten question types. Callees went from 10 to 14 of 14 (37 of 38 facts). It uses a third of Trail-Code's tokens and a seventh of graphify's.
 
-**Three-way run 7**: callers P / R on the first page 0.995 / 0.851 (all pages 0.968), the same as run 6. The language coverage table is unchanged at 10 of 10 with symbols and 9 of 10 with call edges; shell is still `n`. Its per-language edge counts rise (for example Scala 1 to 8) because the probe counts every `calls` record, and since DCX-54c that includes the `calls:out:?` names. A count above zero says nothing new about resolved edges, so this run does not claim more resolved edges.
+**Three-way run 7**: callers P / R on the first page 0.995 / 0.851 (all pages 0.968), the same as run 6. The language coverage table is unchanged at 10 of 10 with symbols and 9 of 10 with call edges; shell is still `n`. Its per-language edge counts rise (for example Scala 1 to 8) because the probe counts every `calls` record, and the new unresolved-call output includes the `calls:out:?` names. A count above zero says nothing new about resolved edges, so this run does not claim more resolved edges.
 
 ## Run 6 (main `82ec474`, 31 October, 02:04 UTC)
 
 New since run 5:
-- DCX-57: a declaration-only symbol (`.mli`, C/C++ header, `.d.ts`) answers neighbors for its paired definition.
-- DCX-64: Erlang (not in the mixed corpus).
-- DCX-55b and DCX-54b: `export_list` and `out_calls`, which are not yet wired into answers.
+- declaration-definition pairing: a declaration-only symbol (`.mli`, C/C++ header, `.d.ts`) answers neighbors for its paired definition.
+- Erlang support: Erlang (not in the mixed corpus).
+- export-list extraction and outgoing-call extraction: `export_list` and `out_calls`, which are not yet wired into answers.
 
 All landed checks plus these four passed together on the Linux benchmark host before the run. Raw results are in `research/bench-3way-20261030/results/run6-82ec474/` and `research/bench-3way-20261030/tasks/results/run4-82ec474/`.
 
 - Call-edge coverage on the mixed corpus: **9 of 10** (run 5: 8). OCaml now has edges through the `.mli` pairing. Shell still has none, because the probe samples bats `@test` blocks that call only external commands. Trail-Code has 7 and graphify 5.
 - Callers P / R, first page: 0.995 / 0.851, unchanged (all pages 0.968).
-- Task protocol: **136 / 140**, unchanged. Trail-Code has 122 and graphify 96. The 4 lost points are still callees questions; card DCX-54c wires `out_calls` into neighbors.
+- Task protocol: **136 / 140**, unchanged. Trail-Code has 122 and graphify 96. The 4 lost points are still callees questions; the next unresolved-call output improvement wires `out_calls` into neighbors.
 
 ## Latest: run 5 and task-level re-run 3 (main `a906884`, 30 October, 16:39 and 17:05 UTC)
 
-dctx `a906884` adds four cards on top of run 4. DCX-50 spreads callers over files, makes bare calls skip methods, and ranks data-file keys below code. DCX-51 puts exported declarations first in outlines, gives read sites for config keys, adds line numbers to find, and ranks exact-word concepts first. DCX-52 orders callers by call-site count and fits pages to the budget. DCX-53 adds deeper Scala, Zig, Lua, Elixir and OCaml symbols. All 36 landed checks passed together on the Linux benchmark host before the run. The binary's sha256 starts with `76d8e9b59821`. Raw results are in `research/bench-3way-20261030/results/run5-a906884/` and `research/bench-3way-20261030/tasks/results/run3-a906884/`.
+dctx `a906884` adds four improvements on top of run 4. Caller-diversity improvements spread callers over files, makes bare calls skip methods, and ranks data-file keys below code. Declaration ranking puts exported declarations first in outlines, gives read sites for config keys, adds line numbers to find, and ranks exact-word concepts first. Caller paging orders callers by call-site count and fits pages to the budget. Language outline improvements add deeper Scala, Zig, Lua, Elixir and OCaml symbols. All 36 landed checks passed together on the Linux benchmark host before the run. The binary's sha256 starts with `76d8e9b59821`. Raw results are in `research/bench-3way-20261030/results/run5-a906884/` and `research/bench-3way-20261030/tasks/results/run3-a906884/`.
 
 **Task-level protocol** (70 questions, 354 gold facts; generator, mapping and scorer unchanged):
 
@@ -87,7 +90,7 @@ dctx `a906884` adds four cards on top of run 4. DCX-50 spreads callers over file
 | collision | **14** | 12 | 13 |
 | concept | **14** | 12 | 10 |
 
-dctx leads or ties on every type. The 4 points it still loses are all callees questions: ripgrep, pocketbase, django and core lose 1 each. In the three public corpora every missing fact is a call that the index could not resolve: a receiver method (`line_terminator`, `lookup_allowed`), a builtin (`callable`) or an external package (`Validate`). The core rows are sanitized. Card DCX-54 lists these calls.
+dctx leads or ties on every type. The 4 points it still loses are all callees questions: ripgrep, pocketbase, django and core lose 1 each. In the three public corpora every missing fact is a call that the index could not resolve: a receiver method (`line_terminator`, `lookup_allowed`), a builtin (`callable`) or an external package (`Validate`). The core rows are sanitized. Unresolved-call reporting exposes these calls.
 
 **Three-way run 5** (the same harness as runs 1-4):
 
@@ -109,7 +112,7 @@ The rest of run 5, against the same Trail-Code and graphify runs:
 - Network: dctx and graphify made 0 attempts. Trail-Code made 1 blocked connect when `DO_NOT_TRACK` was unset.
 
 Call-edge coverage on the mixed corpus is **8 of 10** by the probe; Trail-Code has 7 and graphify 5. The probe samples the first 25 symbols of the six largest files per language. It now follows every skeleton page, so its symbol counts are comparable with Trail-Code's full listing. Two languages miss for reasons outside the call resolver:
-- OCaml: the first 25 symbols all come from `cmdliner.mli`, an interface file with no bodies. On `cmdliner_arg.ml` itself, `str_of_pp` lists 3 callers with their call lines. Card DCX-57 makes an interface declaration answer for its definition.
+- OCaml: the first 25 symbols all come from `cmdliner.mli`, an interface file with no bodies. On `cmdliner_arg.ml` itself, `str_of_pp` lists 3 callers with their call lines. Declaration-definition pairing makes an interface declaration answer for its definition.
 - Shell: the first 25 symbols are bats `@test` blocks in `test/bats.bats`, which call external commands only.
 
 ## Task-level questions: the October protocol, re-run on 30 October
@@ -129,7 +132,7 @@ This is the same protocol as October: 70 questions over seven corpora, 354 gold 
 
 ### Task-level re-run 2 (dctx `5e1b12b`, 30 October, 13:12 UTC)
 
-dctx `5e1b12b` adds call-site lines on caller records (DCX-40), the config-key literal fallback (DCX-41) and multi-word concept ranking (DCX-42). Protocol, mapping and scorer are unchanged. The headline is in `research/bench-3way-20261030/tasks/results/run2-5e1b12b/`.
+dctx `5e1b12b` adds call-site lines on caller records (call-site lines), the config-key literal fallback (config-key fallback) and multi-word concept ranking (concept ranking). Protocol, mapping and scorer are unchanged. The headline is in `research/bench-3way-20261030/tasks/results/run2-5e1b12b/`.
 
 | Tool | Points /140 | Gold facts /354 | Tokens | Facts per 1k tokens |
 |---|---|---|---|---|
@@ -157,11 +160,11 @@ dctx now leads on five types and comes second overall, ahead of graphify. Trail-
 ## Run 4: callers recall wave (main `de06a3d`, 30 October, 09:17 UTC)
 
 The dctx binary's sha256 is `0a41481ffc6f9ecd5713be5af561bef9f1c13f980bfa69748d84540520b4086e`. New since run 3:
-- DCX-35 `42a3364`: compact neighbor records, so a page carries about 40 callers.
-- DCX-36 `2812e28`: Rust calls inside macro arguments.
-- DCX-37 `baebc3a`: receiver calls resolve to a lone method, and self-edges are listed in both directions.
-- DCX-34a/b/c `fff4f82`, `37db6a0`, `aa681ea`: deeper outline symbols.
-- DCX-38 `de06a3d`: per-root cache ceilings of 768 MiB.
+- compact neighbor records `42a3364`: compact neighbor records, so a page carries about 40 callers.
+- macro-argument calls `2812e28`: Rust calls inside macro arguments.
+- receiver calls `baebc3a`: receiver calls resolve to a lone method, and self-edges are listed in both directions.
+- brace, indent and ML outline improvements `fff4f82`, `37db6a0`, `aa681ea`: deeper outline symbols.
+- cache ceilings `de06a3d`: per-root cache ceilings of 768 MiB.
 
 All 28 checks passed together before the run. Raw results are in `research/bench-3way-20261030/results/run4-de06a3d/`.
 
@@ -175,19 +178,19 @@ All 28 checks passed together before the run. Raw results are in `research/bench
 
 Following up to 5 pages, dctx reaches P 0.996 / R 0.982.
 
-Call-edge coverage on the mixed corpus is **9 of 10** in this run. The DCX-34a brace rewrite cost Zig its call edges on real code (the fixture still passes), which DCX-39 is fixing. Trail-Code has 7 of 10 and graphify 5 of 10.
+Call-edge coverage on the mixed corpus is **9 of 10** in this run. The brace outlines brace rewrite cost Zig its call edges on real code (the fixture still passes), which Zig call-edge repair is fixing. Trail-Code has 7 of 10 and graphify 5 of 10.
 
 The coverage table's symbol counts come from bounded `map map` pages. They are therefore not comparable with Trail-Code's full graph counts.
 
 ## Run 3: all outline families with call edges, `.env` leak closed (main `9c578fa`, 30 October, 08:02 UTC)
 
 The dctx binary's sha256 is `72c6a31f0ee807ddd8840c7d8b85c9d1652dcb1001b948fec9de8eabaf277d6d`. New since run 2:
-- DCX-30 `45a2c06`: map mode never reads env-shaped files.
-- DCX-31b `df6ab96`: Lua, Elixir, Julia, R, OCaml and Haskell calls.
-- DCX-31d `9c578fa`: Scala spans and calls.
-- DCX-29 `8ac04e4`: parser id bump, so caches from before call edges are rebuilt.
+- sensitive-file read protection `45a2c06`: map mode never reads env-shaped files.
+- ML and do/end call edges `df6ab96`: Lua, Elixir, Julia, R, OCaml and Haskell calls.
+- Scala call edges `9c578fa`: Scala spans and calls.
+- parser cache invalidation `8ac04e4`: parser id bump, so caches from before call edges are rebuilt.
 
-All 20 card checks passed together on the Linux benchmark host before the run. Raw results are in `research/bench-3way-20261030/results/run3-9c578fa/`.
+All 20 focused checks passed together on the Linux benchmark host before the run. Raw results are in `research/bench-3way-20261030/results/run3-9c578fa/`.
 
 | | Run 1 | Run 2 | Run 3 |
 |---|---|---|---|
@@ -204,7 +207,7 @@ Callers precision and recall on the gold corpora are unchanged (0.993 / 0.461). 
 
 ## Run 2: call edges for the outline tier (main `99da638`, 30 October, 07:24 UTC)
 
-Same harness, corpora and tool versions. The dctx binary's sha256 is `81b35b3eb5112921c4f773b2682c247ec667bfc3487ce0670aa5e3ec5a372d14`. The new commits are DCX-31a (`8859210`, brace family) and DCX-31c (`99da638`, infra family). Raw results are in `research/bench-3way-20261030/results/run2-99da638/`.
+Same harness, corpora and tool versions. The dctx binary's sha256 is `81b35b3eb5112921c4f773b2682c247ec667bfc3487ce0670aa5e3ec5a372d14`. The new commits are brace-family call edges (`8859210`, brace family) and infrastructure call edges (`99da638`, infra family). Raw results are in `research/bench-3way-20261030/results/run2-99da638/`.
 
 | Mixed corpus, ≥1 call edge | Run 1 | Run 2 |
 |---|---|---|
@@ -212,7 +215,7 @@ Same harness, corpora and tool versions. The dctx binary's sha256 is `81b35b3eb5
 | Trail-Code | 7 of 10 | 7 of 10 (no Terraform, SQL or shell) |
 | graphify | 5 of 10 | 5 of 10 |
 
-dctx is the only tool with call edges for Terraform and SQL. Scala still has none on real code, although the fixture passes; that is a follow-up. Lua, Elixir and OCaml call edges are card DCX-31b, still in flight. Cold index (0.13–1.06 s), callers precision and recall, and the canary result are unchanged from run 1. The `map read m:.env` leak remains until DCX-30 lands.
+dctx is the only tool with call edges for Terraform and SQL. Scala still has none on real code, although the fixture passes; that is a follow-up. Lua, Elixir and OCaml call edges are still being implemented. Cold index (0.13–1.06 s), callers precision and recall, and the canary result are unchanged from run 1. The `map read m:.env` leak remains until sensitive-file read protection lands.
 
 ## Tables (run 1)
 
@@ -279,22 +282,22 @@ All corpora and the edit-stability, network and coverage tables are in
 - SWE-bench or agent-run numbers.
 - Equal language depth. dctx's 25 new formats are outline tier: symbols, not call edges.
 
-## What changed in dctx tonight (all on `main`, not pushed)
+## Changes included in the October baseline
 
 Call and import edges (`19e90a1`), byte-stable answers (`ce18608`), `.env` omission in pack (`6d4deec`),
 outline symbols for 25 formats and plain-text sections (`9c61ac9`, `e0821e3`, `839bd45`, `a32dad3`),
 neighbors depth 4 (`0de5ce1`), `hubs` (`6bc0cbc`), `grep` (`5691234`), `skeleton` (`2243c38`), `path` (`670e9e3`),
-`export` (`ac8408c`), `dctx mcp` (`50bbce4`) and a 1 GiB source ceiling (`5d26781`). Every card's own check, and
+`export` (`ac8408c`), `dctx mcp` (`50bbce4`) and a 1 GiB source ceiling (`5d26781`). Each feature's focused check, and
 then all 15 checks together on `ac8408c`, passed on the Linux benchmark host before the benchmark ran.
 
 ## Next
 
-1. DCX-30: map mode must never serve env-shaped files. This is the remaining privacy leak.
+1. sensitive-file read protection: map mode must never serve env-shaped files. This is the remaining privacy leak.
 2. Call edges for the outline tier, to close the 0-of-10 call-edge coverage on the mixed corpus.
 3. Recall on ripgrep and trailcode (0.25 and 0.33 against Trail-Code's 0.33 and 0.90): method calls through
    receivers and re-exports.
 4. Re-run the 70-question task protocol with a frozen model.
 
-## Independent benchmark (v1 card 6), 31.10.2026, run uncapped on the Linux benchmark host
+## Independent benchmark, 31.10.2026, run uncapped on the Linux benchmark host
 
 Seeded selection of 3 repos the tools never saw (zoxide, requests, gin), gold from language servers and repo history, published regardless of outcome. Tasks: dctx 22/28 points, 31/36 facts, 6.85 facts per 1k tokens (Trail-Code 19/28, graphify 14/28). Callers against LSP gold, first page: dctx P 0.730 / R 0.341, Trail-Code P 0.731 / R 0.313, graphify P 0.920 / R 0.264. Honest read: dctx leads on task answers and token efficiency; caller recall on unseen repos is far below the in-house corpus (0.851), so the caller floors above hold only for the curated corpora. Full table and raw JSON: `docs/research/bench-independent/results/20261031T191225Z/`.

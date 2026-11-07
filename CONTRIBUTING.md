@@ -39,22 +39,30 @@ runtime limitations.
 
 ## Validation
 
-Run focused tests for changed behavior, then the relevant broader checks. Current
-[main CI](.github/workflows/ci.yml) runs these Rust checks, excluding the desktop:
+Start with the CLI and facade checks (some tests validate documentation):
 
-```zsh
-cargo clippy --workspace --exclude dctx-desktop --all-targets -- -D warnings -A clippy::field_reassign_with_default -A clippy::assertions_on_constants
-cargo nextest run --workspace --exclude dctx-desktop --no-fail-fast
+```sh
+cargo test -p dctx-cli -p dctx --locked
 ```
 
-The test command requires the `cargo-nextest` tool. CI closes inherited descriptors
-before nextest because native confinement tests reject extra descriptors; the
-workflow contains that wrapper. Preserve those tests' confinement checks.
+For documentation changes, install the Python dependencies using
+[the website setup](tools/website/README.md), then run
+`tools/website/.venv/bin/python tools/check-markdown-links.py`. It checks local
+paths and heading anchors across public Markdown, including HTML and reference links.
+[Testing](docs/TESTING.md) documents the full Linux/macOS/Windows matrix and
+local commands. The current [CI workflow](.github/workflows/ci.yml) runs workspace
+tests on stable Rust and MSRV, plus formatting, Clippy, Rust documentation,
+licence, website and release checks. Run `cargo fmt --all -- --check` and document
+public APIs. Follow [Rust house style](docs/STYLE.md) for the plugin boundaries.
 
-Use `cargo fmt --all -- --check` to check formatting and document public APIs.
+When editing website source documents, regenerate `website/` and check it using
+[the website instructions](tools/website/README.md). Before committing, use
+`check.py --working-tree` to compare your regenerated files with an independent
+build; CI compares committed output. Capture CLI examples only if output changed.
+
 Desktop changes need their platform prerequisites and separate validation; see
 [the desktop guide](apps/dctx-desktop/README.md). The root `just ci` recipe also
-invokes desktop setup and is broader than the current main CI job.
+invokes desktop setup and is broader than the main CI jobs.
 
 ## Developer Certificate of Origin
 
@@ -82,5 +90,4 @@ In the PR, list the commands you ran, their results, and any checks you could no
 run. Include relevant OS/build features for platform-specific changes. Avoid
 unrelated formatting, generated governance files, local caches, credentials and
 private research artifacts. Maintainers may ask for a smaller change or additional
-validation before merging. Fork PRs do not run on the self-hosted CI runner;
-maintainers must arrange an appropriate review and validation path.
+validation before merging. Pull requests, including forks, run on GitHub-hosted CI runners.

@@ -1,16 +1,19 @@
 # Rust house style
 
-Keep the surrounding source layout, including wide lines when they keep a declaration, match arm, protocol record, or assertion readable as one unit. Prefer small, focused edits over unrelated layout changes. Preserve module headers, explicit boundary types, and behavior; use readable numeric separators and document fallible public operations.
+Run `cargo fmt --all` before submitting Rust changes; CI checks formatting.
+Keep changes focused and preserve module headers, explicit boundary types and
+behavior. Use readable numeric separators and document fallible public operations.
 
-## Formatting and the worker boundary
+## Formatting and the plugin process boundary
 
-Rustfmt is not adopted. Its default reflow expands compact source into many more lines and would break the existing plugin-git file-length boundary test. `plugins/dctx-plugin-git/tests/boundary.rs::worker_sources_have_no_direct_effects_and_carry_headers` embeds 23 worker source files and requires each to have at most 300 lines, alongside checks for module headers, unsafe-code policy, and forbidden direct effects. Keep that boundary intact when adding documentation or lint attributes. Split a module deliberately if needed; do not weaken the test to accommodate a formatter.
-
-Do not add `cargo fmt --check` to CI. Formatting is reviewed in context.
+The Git plugin's boundary tests enforce module headers, unsafe-code policy and
+forbidden direct effects. Preserve those checks when formatting or splitting
+modules. See `plugins/dctx-plugin-git/tests/boundary.rs` for the current limits;
+formatting is checked separately by CI.
 
 ## Pedantic style gate
 
-Run the style gate on the remote build host or the dctx CI runner:
+Run the style gate locally or in CI:
 
 ```sh
 cargo clippy --workspace --all-targets -- -W clippy::pedantic
@@ -46,9 +49,9 @@ Additional scoped exceptions in the map, storage, template and desktop API crate
 - `field_reassign_with_default` keeps configuration regressions anchored to the public defaults and makes successive validation transitions explicit. `similar_names` retains codec/fixture role names. `too_many_lines` keeps graph transactions, source-ordered dispatches and their acceptance fixtures together.
 - Public value-taking publication/lease operations keep their ownership contracts. `implicit_hasher` preserves the v1 template replacement API and its documented default-hasher iteration contract.
 
-The non-desktop workspace is checked with the same pedantic style gate and its item-scoped, reasoned exceptions. CI retains its existing warning-denied Clippy command and tests; it does not run rustfmt.
+The non-desktop workspace is checked with the same pedantic style gate and its item-scoped, reasoned exceptions. CI runs rustfmt, warning-denied Clippy and tests.
 
-The Linux build excludes `dctx-desktop`, as CI does, because the build host lacks its GLib/GObject/GIO development libraries. Use `--workspace --exclude dctx-desktop` for Clippy and rustdoc on that host. This exclusion does not establish full-workspace or desktop acceptance.
+CI excludes `dctx-desktop` and `dctx-desktop-api` from its workspace quality checks. Desktop builds require platform libraries; see the [desktop build guide](../apps/dctx-desktop/docs/BUILDING.md). These exclusions do not establish desktop acceptance.
 
 Additional exceptions for the facade, command, cache and plugin boundaries:
 
@@ -59,6 +62,6 @@ Additional exceptions for the facade, command, cache and plugin boundaries:
 - `needless_pass_by_value` keeps public reservation, quota and command ownership contracts, and private assembled transaction records consumed at mutation/rendering boundaries. `unused_self` keeps lifecycle, purge, store and fixture helpers with their owning operations.
 - `unnecessary_wraps` on the platform file-entry helper retains one shared fallible interface: Linux constructs a descriptor-relative path infallibly, while unsupported platforms refuse. `trivially_copy_pass_by_ref` on the hook encoder retains the borrowed callback interface used by the record encoders.
 - `unnecessary_debug_formatting` preserves quoted/escaped paths in command diagnostics. `naive_bytecount` keeps bounded line counting on standard iterators without another dependency. `too_many_lines` retains ordered command transactions, flag dispatch and cohesive regression fixtures.
-- `assertions_on_constants` applies only to the ignored Windows qualification placeholder's executor sentinel; the sentinel does not qualify Windows behavior. `no_effect_underscore_binding` retains the compile-time worker-entry linkage check without executing the worker in target-mapping tests.
+- `assertions_on_constants` applies only to the ignored Windows qualification placeholder's executor sentinel; the sentinel does not qualify Windows behavior. `no_effect_underscore_binding` retains the compile-time plugin-entry linkage check without executing the plugin process in target-mapping tests.
 
-Public fallible functions and ports document the errors/refusals they return. A currently infallible public `Result` keeps its API and documents where per-item refusals appear in the returned report. The Git worker's 23-file, 300-line boundary remains a separate acceptance test.
+Public fallible functions and ports document the errors/refusals they return. A currently infallible public `Result` keeps its API and documents where per-item refusals appear in the returned report. The Git plugin's source boundaries remain separate acceptance tests.

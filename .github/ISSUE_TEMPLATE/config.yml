@@ -1,5 +1,11 @@
 blank_issues_enabled: true
 contact_links:
+  - name: Documentation and quick start
+    url: https://github.com/Eris-Margeta/dctx/blob/main/docs/README.md
+    about: Installation, usage guides, architecture and testing.
+  - name: Usage questions and support
+    url: https://github.com/Eris-Margeta/dctx/blob/main/SUPPORT.md
+    about: Ask through issues; no Discussions account or setup is required.
   - name: Report a security vulnerability privately
     url: https://github.com/Eris-Margeta/dctx/blob/main/SECURITY.md
     about: Follow the security policy instead of opening a public issue.

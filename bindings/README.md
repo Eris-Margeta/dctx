@@ -100,4 +100,4 @@ All bindings wrap the core Rust library (`dctx-core`) without duplicating logic:
 
 ---
 
-For Rust usage, see the main [README](../README.md#use-as-library).
+For Rust usage, see the main [README](../README.md#use-as-a-library).

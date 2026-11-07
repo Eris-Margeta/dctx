@@ -144,7 +144,7 @@ file_count_limit = 10000
 theme = "system"
 ```
 
-**See**: [CONFIG.md](CONFIG.md) for full documentation
+**See**: [CONFIG.md](docs/CONFIG.md) for full documentation
 
 ---
 
@@ -248,7 +248,7 @@ bun run tauri:build
 
 **For full features**, use: `bun run tauri:dev`
 
-**See**: [DEVELOPMENT.md](DEVELOPMENT.md) for detailed guide
+**See**: [DEVELOPMENT.md](docs/DEVELOPMENT.md) for detailed guide
 
 ---
 
@@ -260,7 +260,7 @@ bun run tauri:build
 2. **Check console** - Open DevTools (Cmd+Option+I) and look for errors
 3. **Verify config** - Ensure `dragDropEnabled: true` in `tauri.conf.json`
 
-**See**: [DRAG_DROP_DEBUG.md](DRAG_DROP_DEBUG.md)
+**See**: [DRAG_DROP_DEBUG.md](docs/DRAG_DROP_DEBUG.md)
 
 ### Browse Button Not Working
 

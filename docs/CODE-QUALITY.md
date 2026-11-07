@@ -1,9 +1,8 @@
-# Code quality: DCX-04 first tranche
+# Code quality review: initial improvements
 
-Measured on a Linux build host, 2026-10-22. Status: **escalated split** (`s: esc`),
-not a pedantic-clean workspace. Default workspace features were checked, excluding
-`dctx-desktop`; `dctx-desktop-api` and the Git plugin were included. Cargo was
-never run on the local workstation. No dependency, version, manifest or runtime behavior changes.
+Measured on a Linux build host, 2026-10-22. The review completed an initial subset of improvements;
+the workspace was not pedantic-clean. Default workspace features were checked, excluding
+`dctx-desktop`; `dctx-desktop-api` and the Git plugin were included. No dependency, version, manifest or runtime behavior changes.
 
 ## Completed
 
@@ -28,15 +27,10 @@ never run on the local workstation. No dependency, version, manifest or runtime 
 
 ## Reproduce the checks
 
-Run from `<repo>` using zsh. Every Cargo command below is executed on a Linux
-build host with this prefix:
+Run these commands from the repository root. Results below are from the
+original Linux measurement, not a claim about current CI.
 
-```sh
-<repo>/scripts/remote.sh <linux-build-host> \
-  --src <repo> --name dctx-code-quality --
-```
-
-| Arguments after the prefix | Exit | Meaning |
+| Command | Exit | Meaning |
 | --- | ---: | --- |
 | `cargo clippy --workspace --exclude dctx-desktop --lib --message-format=json -- -W clippy::pedantic` | 0 | Inventory before and after; warning mode is not a clean gate. |
 | `env RUSTFLAGS=-Wmissing-docs cargo check --workspace --exclude dctx-desktop --lib --message-format=json` | 0 | Initial inventory: 54 missing-docs warnings. |

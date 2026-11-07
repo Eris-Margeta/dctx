@@ -10,7 +10,7 @@ Plugins need independent installation and effects without restoring Git or plugi
 
 ### Root Cause Analysis
 
-A separate process isolates crashes but supplies no security sandbox by itself; confinement and brokered authority require distinct platform evidence (`docs/design/PLUGINS.md`, `crates/dctx-plugin-platform/README.md`).
+A separate process isolates crashes but supplies no security isolation boundary by itself; confinement and brokered authority require distinct platform evidence (`docs/design/PLUGINS.md`, `crates/dctx-plugin-platform/README.md`).
 
 ## Decision
 
@@ -40,7 +40,7 @@ The following are the matrix's source-inspection statuses, not fresh test result
 
 | Property | Matrix status | Remaining acceptance obligation (same matrix) |
 | --- | --- | --- |
-| PP1 authority only narrows | partly | Independent current authority inputs through a running worker. |
+| PP1 authority only narrows | partly | Independent current authority inputs through a running plugin process. |
 | PP2 no excluded source access | partly | Real broker/Git/native privacy observations. |
 | PP3 effect audit | partly | Durable intent/completion with crash recovery around real effects. |
 | PP4 protocol binding | partly | Verified launch/runtime identity and real executable sessions. |
@@ -49,7 +49,7 @@ The following are the matrix's source-inspection statuses, not fresh test result
 | PP7 bounded resources | partly | Real child/host quotas and aggregate allocation evidence. |
 | PP8 lifecycle progress | partly | Native supervision, progress, cancellation and reap evidence. |
 | PP9 install integrity | partly | Product crash/concurrency and native storage qualification. |
-| PP10 hook order and result truth | partly | Real ordered workers and receipt-derived product results. |
+| PP10 hook order and result truth | partly | Real ordered plugin processes and receipt-derived product results. |
 
 ## Trade-offs
 

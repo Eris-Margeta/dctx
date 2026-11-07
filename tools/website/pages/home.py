@@ -103,7 +103,7 @@ def body(scene: dict) -> str:
     facts_html, _ = facts()
     c = scene["counts"]
     readme_build = data.readme_block("From source")
-    readme_cargo = data.readme_block("Using Cargo")
+    readme_cargo = data.readme_block("Installation")
     _, ind_line, ind_tasks = data.independent()
     steps = [
         ("repository", f'{c["disk"]} files on disk'),
@@ -188,9 +188,9 @@ def body(scene: dict) -> str:
  <div class="wrap cols cols-2">
   <div>
    <div class="sec-head"><h2 id="install-h">Install</h2></div>
-   <p>A recent stable Rust toolchain with Cargo. Linux x86_64 is the only tested platform; macOS and Windows builds are untested. There is no crates.io package or prebuilt binary. {src("README.md", "README", line_of("README.md", "## Installation"))}</p>
+   <p>Install a native binary through npm, Cargo or a release archive. Cargo needs Rust 1.91 or newer; CI covers Linux, macOS and Windows. {src("README.md", "README", line_of("README.md", "## Installation"))}</p>
    {code("From source", readme_build, "shell")}
-   {code("Using Cargo", readme_cargo, "shell")}
+   {code("npm, Cargo or release archives", readme_cargo, "shell")}
   </div>
   <div>
    <div class="sec-head"><h2 id="project-h">Project</h2></div>

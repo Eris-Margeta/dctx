@@ -1,9 +1,9 @@
 # Releasing dctx
 
-Owner runbook for `.github/workflows/release.yml` and `deploy-site.yml`. Desktop
+Maintainer runbook for `.github/workflows/release.yml` and `deploy-site.yml`. Desktop
 keeps its separate `desktop-v*` workflow. The existing [publication gate](../RELEASING.md#publication-gate)
 still applies. Do not use `just release` without reviewing
-its commit/tag/push prompts. Publication starts when the owner pushes a `v*` tag.
+its commit/tag/push prompts. Publication starts when a maintainer pushes a `v*` tag.
 
 1. **Prepare:** set stable `X.Y.Z` in `VERSION`; run `tools/sync-version.sh --write`
    and `--check`. This updates crate versions and exact registry requirements,
@@ -42,11 +42,11 @@ its commit/tag/push prompts. Publication starts when the owner pushes a `v*` tag
 
 Create these **repository Actions secrets** before enabling publication/deployment:
 
-| Secret | Owner/MAIN supplies |
+| Secret | Required credentials |
 | --- | --- |
 | `NPM_TOKEN` | npm granular publish token with write access to `dctx` and all five `@dctx/cli-*` packages; allow CI publication with the account's 2FA policy. Create/own the `@dctx` scope and verify all names before the first tag. |
 | `CARGO_REGISTRY_TOKEN` | crates.io API token permitted to create/publish all 36 names printed by `tools/release/publish-crates.sh --list`. Check availability beyond just `dctx` and `dctx-cli`. |
-| `DCTX_SITE_SSH_KEY` | Dedicated OpenSSH private deploy key, no passphrase. MAIN installs the public key with `restrict,command="rrsync -wo /srv/sites/dctx"`; that directory must be writable by the deploy account. |
+| `DCTX_SITE_SSH_KEY` | Dedicated OpenSSH private deploy key, no passphrase. The deploy administrator installs the public key with `restrict,command="rrsync -wo /srv/sites/dctx"`; that directory must be writable by the deploy account. |
 | `DCTX_SITE_HOST` | SSH destination `deploy-user@hostname` (port 22), without a path. |
 | `DCTX_SITE_KNOWN_HOSTS` | Complete OpenSSH known_hosts lines for that hostname, verified out of band; never discover/trust keys during a deploy. |
 
