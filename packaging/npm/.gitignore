@@ -3,3 +3,4 @@
 *.tgz
 !dctx/bin/
 !dctx/bin/dctx.js
+/artifacts/
