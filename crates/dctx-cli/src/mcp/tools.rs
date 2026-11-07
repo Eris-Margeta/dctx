@@ -154,10 +154,10 @@ fn accepted(tool: &Tool) -> Vec<&Prop> {
     tool.props
         .iter()
         .chain(COMMON.iter().filter(|extra| {
-            !own_names.contains(extra.name)
-                && !(tool.name == "hubs" && extra.name == "cursor")
-                && !(tool.name == "export" && extra.name != "budget")
-                && !(tool.name == "skeleton" && extra.name != "budget" && extra.name != "json")
+            !(own_names.contains(extra.name)
+                || tool.name == "hubs" && extra.name == "cursor"
+                || tool.name == "export" && extra.name != "budget"
+                || tool.name == "skeleton" && extra.name != "budget" && extra.name != "json")
         }))
         .collect()
 }

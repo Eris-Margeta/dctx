@@ -6,7 +6,8 @@
 //! A caller may inject a plugin host and a cache root. The library default starts none and spawns nothing.
 //! Disable `plugin-runtime` to exclude the host/platform/protocol dependencies and use typed refusal stubs.
 
-#![forbid(unsafe_code)]
+#![cfg_attr(not(windows), forbid(unsafe_code))]
+#![cfg_attr(windows, deny(unsafe_code))]
 #![deny(missing_docs)]
 #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 #![cfg_attr(not(test), deny(clippy::expect_used))]

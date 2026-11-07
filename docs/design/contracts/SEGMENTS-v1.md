@@ -156,6 +156,47 @@ an explicitly selected ephemeral/weaker-durability mode. POSIX rename alone is
 not a durability promise. Windows open-file replacement/unlink behavior gets
 its own adapter tests; failed deletion remains counted pending storage.
 
+### Native publication durability
+
+`StdFs` keeps the same encoded segments, manifests, pointers and publication
+order on every supported OS. Files are closed before their names are published.
+
+* **Linux and macOS:** file bytes use `File::sync_all`; publication uses the
+  existing same-filesystem `std::fs::rename`, followed by `sync_all` on the store
+  root directory. These existing calls and their ordering are unchanged. This
+  is the adapter's directory-sync boundary, not a recursive flush of all newly
+  created ancestor directories.
+* **Windows (local NTFS):** `File::sync_all` calls
+  [FlushFileBuffers](https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-flushfilebuffers)
+  on writable files. Every segment, manifest and pointer rename calls
+  [MoveFileExW](https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-movefileexw)
+  with `MOVEFILE_WRITE_THROUGH`; pointer replacement also sets
+  `MOVEFILE_REPLACE_EXISTING`. Immutable-name publication omits replacement and
+  refuses an occupied destination. `MOVEFILE_COPY_ALLOWED` is never set: a
+  cross-volume move must fail rather than become copy/delete. The write-through
+  rename satisfies this adapter's publication name-sync boundary, so the
+  separate `sync_dir` step does no further work on Windows. It does not flush
+  arbitrary directory creation or deletion, nor promise complete ancestor
+  namespace persistence after power loss. Filesystem/device flush guarantees
+  still apply; network shares and other Windows filesystems are not qualified
+  by the NTFS tests. Native operation failures propagate without falling back
+  to an unsynced rename or weaker mode.
+* **Other non-Unix platforms:** durable publication still refuses missing sync
+  or atomic-replacement capabilities before writing.
+
+Windows handles that withhold delete sharing can refuse replacement or unlink.
+Replacement failure leaves the old pointer and staged bytes intact; GC keeps
+failed unlinks pending and counted. In-process readers use immutable segment
+bytes and pins rather than keeping pointer file handles open. Validation of
+current and previous pointer closures remains the recovery authority.
+
+The only first-party unsafe native calls here are the small Windows
+`MoveFileExW` wrapper and the filesystem-source handle identity query. Each has
+an owned-buffer/handle safety argument, is private behind a safe interface and
+is allowed only in its Windows module. The rest of those crates denies unsafe;
+non-Windows builds and the segment codec continue to forbid it. Both bindings
+use the already-locked `windows-sys =0.61.2` (MIT OR Apache-2.0).
+
 ## Deterministic query and evolution gates
 
 Ranking is versioned deterministic fixed-point lexical scoring with field
@@ -172,4 +213,5 @@ uses its own versioned importer and must not be discarded by map recovery.
 Legacy SQLite remains in its own namespace. No in-place mutation of old readers'
 objects; schema/parser changes create new keys. Promotion needs A2 model checks,
 C1 roundtrip/fuzz/corruption tests, C3 crash/Windows tests and C5 five-verb parity.
-Mmap/FST are future reviewed capabilities; v1 never requires unsafe or mmap.
+Mmap/FST are future reviewed capabilities; the v1 codec requires neither unsafe
+nor mmap. Native Windows filesystem calls have the narrow boundary above.

@@ -829,6 +829,7 @@ dependencies = [
  "dctx-template",
  "proptest",
  "tempfile",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -861,6 +862,7 @@ dependencies = [
  "proptest",
  "tempfile",
  "thiserror 2.0.18",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]

@@ -53,6 +53,9 @@ dctx-plugin-host = { version = "=1.2.0", path = "../dctx-plugin-host", optional 
 dctx-plugin-platform = { version = "=1.2.0", path = "../dctx-plugin-platform", optional = true }
 dctx-plugin-protocol = { version = "=1.2.0", path = "../dctx-plugin-protocol", optional = true }
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "=0.61.2", features = ["Win32_Storage_FileSystem"] }
+
 [dev-dependencies]
 proptest = "1"
 tempfile = "=3.24.0"
