@@ -3,6 +3,7 @@
 //! Plugin and map commands retain their explicit routes and facade sessions.
 #![forbid(unsafe_code)]
 
+mod daemon;
 mod map;
 mod mcp;
 mod pack_for;
@@ -31,6 +32,9 @@ fn main() {
     {
         std::process::exit(i32::from(plugin::enter_worker(&raw[2..])));
     }
+    if raw.get(1).is_some_and(|arg| arg == "--internal-daemon") {
+        std::process::exit(if daemon::serve().is_ok() { 0 } else { 1 });
+    }
     let allow_auto_clean = host::auto_clean_allowed(&raw);
     let args = host::without_auto_flag(raw);
     let head = args.get(1).map(String::as_str);
@@ -40,10 +44,12 @@ fn main() {
     }
     // map, pack, mcp, languages and unknown commands follow docs/CLI-EXIT-CODES.md; cache and template use exit 1.
     let result = match head {
+        Some("daemon") => daemon::run(&args[2..]),
         Some("doctor") => doctor::run(&args[2..]),
         Some("map") => {
             maybe_auto_clean(allow_auto_clean);
-            map::run(&args[2..])
+            daemon::try_output(&args[1..], allow_auto_clean)
+                .map_or_else(|| map::run(&args[2..]), |output| output?.emit())
         }
         // The MCP server answers on stdout in JSON-RPC lines only, so it never auto-cleans.
         Some("rpc") => rpc::run(&args[2..]).map_err(|failure| failure.within("rpc")),
@@ -58,15 +64,18 @@ fn main() {
         }
         Some("read") => {
             maybe_auto_clean(allow_auto_clean);
-            map::run(&args[1..])
+            daemon::try_output(&args[1..], allow_auto_clean)
+                .map_or_else(|| map::run(&args[1..]), |output| output?.emit())
         }
         Some("pack") => {
             maybe_auto_clean(allow_auto_clean);
             // `--for`/`--budget` select the task-context page (map find, neighbors, read); everything else is the source page.
             if pack_for::requested(&args[2..]) {
-                pack_for::run(&args[1..])
+                daemon::try_output(&args[1..], allow_auto_clean)
+                    .map_or_else(|| pack_for::run(&args[1..]), |output| output?.emit())
             } else {
-                pack::run(&args[1..])
+                daemon::try_output(&args[1..], allow_auto_clean)
+                    .map_or_else(|| pack::run(&args[1..]), |output| output?.emit())
             }
         }
         Some("cache") => {

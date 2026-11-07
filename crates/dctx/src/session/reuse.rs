@@ -24,6 +24,8 @@ mod encode;
 mod entry;
 mod keys;
 mod reader;
+#[cfg(feature = "warm-index-cache")]
+mod warm;
 
 use bytes::{decision_of, freshness_of};
 use keys::{file_inventory, limits_match, parser_compatible};
@@ -81,7 +83,11 @@ impl Session {
         let Some(bytes) = self.load_retained()? else {
             return Ok(None);
         };
-        let Ok(decoded) = decode_generation(&bytes) else {
+        #[cfg(feature = "warm-index-cache")]
+        let decoded = warm::decode(&bytes);
+        #[cfg(not(feature = "warm-index-cache"))]
+        let decoded = decode_generation(&bytes);
+        let Ok(decoded) = decoded else {
             return Ok(None);
         };
         if decoded.source_key != source_key
@@ -189,6 +195,7 @@ impl Session {
     }
 }
 
+#[derive(Clone)]
 struct PersistedGeneration {
     source_key: String,
     view: String,

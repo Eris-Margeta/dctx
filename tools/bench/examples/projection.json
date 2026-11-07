@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "kind": "projection",
+  "calls": 23,
+  "startup_tokens": 50000,
+  "context_tokens": 2000,
+  "history_growth_tokens": 500,
+  "output_tokens_per_call": 200,
+  "cached_prefix_tokens": 50000,
+  "cache_hit_share": 0.8
+}

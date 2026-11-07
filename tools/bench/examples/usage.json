@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "kind": "usage",
+  "calls": [
+    {"input_tokens": 52000, "cached_input_tokens": 0, "output_tokens": 200},
+    {"input_tokens": 52500, "cached_input_tokens": 50000, "output_tokens": 200}
+  ]
+}
