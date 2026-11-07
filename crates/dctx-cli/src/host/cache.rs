@@ -189,6 +189,13 @@ pub fn piggyback_auto_clean() {
     let _ = piggyback_at(&root, true);
 }
 
+/// Applies the caller's maintenance choice to subsequent mapped sessions.
+/// A daemon uses this after the CLI has already run the maintenance slice, preserving
+/// `--no-auto-clean` without running maintenance twice or redirecting its diagnostics.
+pub fn set_session_auto_clean(allow: bool) {
+    MAP_AUTO_CLEAN.store(allow, Ordering::Relaxed);
+}
+
 /// Runs auto-clean at `root` when `allow` and the persisted policy are both on.
 /// Returns bytes reclaimed by this open. Zero when the slice is disabled or not due.
 /// # Errors

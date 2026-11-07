@@ -876,6 +876,7 @@ dependencies = [
  "dctx-adapter-cache",
  "dctx-adapter-fs",
  "dctx-core",
+ "dctx-daemon-transport",
  "dctx-hash",
  "dctx-map-query",
  "dctx-pack",
@@ -896,6 +897,14 @@ dependencies = [
  "criterion",
  "dctx-hash",
  "tempfile",
+]
+
+[[package]]
+name = "dctx-daemon-transport"
+version = "1.2.0"
+dependencies = [
+ "libc",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
