@@ -203,7 +203,14 @@ pub(crate) fn digest(bytes: &[u8]) -> Result<String> {
 pub(super) fn forbidden(name: &str) -> bool {
     matches!(
         name,
-        ".git" | ".agent" | ".aws" | ".ssh" | ".gnupg" | ".env" | "credentials" | "credentials.json"
+        ".git"
+            | ".agent"
+            | ".aws"
+            | ".ssh"
+            | ".gnupg"
+            | ".env"
+            | "credentials"
+            | "credentials.json"
     ) || name.starts_with(".env.")
         || name.ends_with(".pem")
         || name.ends_with(".key")

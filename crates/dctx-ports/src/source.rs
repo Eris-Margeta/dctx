@@ -25,6 +25,26 @@ pub trait Source {
     /// listed, or violates the source confinement policy.
     fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, DctxError>;
 
+    /// Kind of one address without reading its content. Filesystem adapters should
+    /// override this with a confined stat; the default inspects the parent's names.
+    /// # Errors
+    /// Returns source/confinement failures or `SourceUnavailable` for a missing address.
+    fn kind(&self, path: &RelativePath) -> Result<NodeType, DctxError> {
+        if path.is_root() {
+            return self.root_kind();
+        }
+        let parent = path
+            .as_str()
+            .rsplit_once('/')
+            .map_or("", |(parent, _)| parent);
+        let parent = RelativePath::parse(parent)?;
+        self.entries(&parent)?
+            .into_iter()
+            .find(|entry| entry.name == path.name())
+            .map(|entry| entry.kind)
+            .ok_or(DctxError::SourceUnavailable)
+    }
+
     /// Size and modification time of `path`.
     ///
     /// # Errors
@@ -59,6 +79,10 @@ impl<S: Source + ?Sized> Source for &S {
 
     fn entries(&self, dir: &RelativePath) -> Result<Vec<SourceEntry>, DctxError> {
         (**self).entries(dir)
+    }
+
+    fn kind(&self, path: &RelativePath) -> Result<NodeType, DctxError> {
+        (**self).kind(path)
     }
 
     fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, DctxError> {

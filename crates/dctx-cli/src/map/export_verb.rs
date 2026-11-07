@@ -140,7 +140,7 @@ mod tests {
         let run = |extra: &[&str]| {
             let mut args = strings(&["export", "--place", &place.display().to_string()]);
             args.extend(strings(extra));
-            super::super::execute_with(&args, |at| host::open_mapped_at(at, Some(&cache)))
+            super::super::execute_with(&args, |at, _| host::open_mapped_at(at, Some(&cache)))
         };
         let json = run(&["--format", "json"]).expect("json");
         assert!(

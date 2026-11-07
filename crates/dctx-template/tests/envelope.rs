@@ -111,7 +111,7 @@ budget = \"b\"
     assert!(!output.contains("BBBB"));
     assert!(output.contains("[DCTX_CONTINUED]\n"));
     let a = output.find("AAAA").expect("a");
-    assert!(output.find("src/b.txt").is_none());
+    assert!(!output.contains("src/b.txt"));
     assert!(a < output.find("[DCTX_CONTINUED]").expect("mark"));
 
     let both = source.replace("records = 1", "records = 2");
@@ -233,7 +233,7 @@ layout = \"JSON\"
 }
 
 #[test]
-fn plan_render_escapes_backslashes_and_the_end_marker() {
+fn plan_render_preserves_backslashes_and_the_end_marker() {
     let host = host_src();
     let plan = compile(layout(), &host).expect("plan");
     let output = render_plan(
@@ -244,7 +244,5 @@ fn plan_render_escapes_backslashes_and_the_end_marker() {
         &host,
     )
     .expect("render");
-    assert!(output.contains("a\\\\b"));
-    let at = output.find("</FILE>").expect("escaped marker");
-    assert_eq!(output.as_bytes()[at - 1], b'\\');
+    assert!(output.contains("a\\b</FILE>c"));
 }

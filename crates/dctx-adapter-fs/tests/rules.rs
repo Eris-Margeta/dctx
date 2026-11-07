@@ -227,18 +227,25 @@ fn not_found_from_the_port_is_absence_for_every_rule_file() {
 fn invalid_utf8_rule_files_refuse_instead_of_silently_using_defaults() {
     let root = tempfile::tempdir().unwrap();
     let global = tempfile::tempdir().unwrap();
+    // open() canonicalizes the project root (/var -> /private/var on macOS,
+    // verbatim paths on Windows). Compare the reported project path in that form.
+    let project = fs::canonicalize(root.path()).unwrap();
     write(root.path(), "keep.txt", "public");
     for path in [
         global.path().join("ignore"),
         global.path().join("omitcontent"),
-        root.path().join(".dctxignore"),
+        project.join(".gitignore"),
+        project.join(".dctxignore"),
     ] {
         fs::write(&path, [0xff]).unwrap();
         let error = FsSource::open(root.path(), options(global.path()))
             .err()
             .unwrap();
-        assert!(matches!(error, SourceError::Rule { path: failed, source }
-            if failed == path && source.kind() == io::ErrorKind::InvalidData));
+        assert!(
+            matches!(&error, SourceError::Rule { path: failed, source }
+            if failed == &path && source.kind() == io::ErrorKind::InvalidData),
+            "{error:?}"
+        );
         fs::write(&path, "# valid UTF-8\n").unwrap();
         let source = FsSource::open(root.path(), options(global.path())).unwrap();
         included(&source, "keep.txt");

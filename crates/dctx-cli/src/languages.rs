@@ -50,6 +50,23 @@ pub fn run(arguments: &[String]) -> Result<(), String> {
     Ok(())
 }
 
+/// Captures language output and the same failure as the CLI.
+/// # Errors
+/// Returns CLI usage failures for invalid arguments.
+pub fn output(arguments: &[String]) -> Result<crate::exit::CommandOutput, crate::exit::Failure> {
+    page(arguments)
+        .map(|stdout| crate::exit::CommandOutput {
+            stdout,
+            failure: None,
+        })
+        .map_err(|error| {
+            crate::exit::Failure::usage(
+                format!("languages: {error}"),
+                "run `dctx languages --help` for the formats and an example",
+            )
+        })
+}
+
 /// The page `dctx languages` prints for `arguments`.
 ///
 /// # Errors

@@ -26,7 +26,7 @@ Every failure prints two lines on stderr: `❌ Error: <what went wrong>` (prefix
 - `dctx pack` exits 1 only when no view filter is set (`--ext`, `--include`, `--exclude`, `--binary`, `--empty`, `--non-empty`, `--large`, `--small`, `--hidden`, `--debug-ignored`). A filter that matches nothing still prints an empty page and exits 0. The page and the `pack bytes=…` line are printed before the exit-1 message. `pack` exit 3 covers source, scan, render and output failures.
 - A reader that closes stdout early (`dctx pack . | head -1`) ends the run with exit 0 and no message, as `cat` does; every other failure keeps its code.
 - `dctx pack --for <TEXT>` exits 1 when no name in TEXT matched the index (the page is printed first), 2 for a bad flag or a `--budget` outside 100..100000 (or `--budget` without `--for`), and 3 when PATH is not a directory or the index fails.
-- `dctx mcp PATH` exits 3 when PATH cannot be entered and 2 for any other argument. Once serving, a failed tool call goes back to the client as a result with `isError: true`; the server exits 0 at end of input.
+- `dctx mcp [--profile default|lean | --tools NAME,...] [PATH]` exits 3 when PATH cannot be entered and 2 for invalid arguments (including unknown tool names/profiles). See the [MCP guide](guides/MCP.md). Once serving, a failed tool call goes back to the client as a result with `isError: true`; unknown or unselected tools return JSON-RPC `-32602`. The server exits 0 at end of input.
 - A facade refusal of the query (`InvalidRequest`, `BudgetTooSmall`, `StaleContinuation`, `Stale`, `UnsupportedCapability`, `UnsupportedVersion`) is 2; `PolicyDenied` and `PolicyUnavailable` are 1; every other facade error, and every error of the snapshot build, is 3. The mapping is `dctx_cli::exit::from_facade`.
 - `map hubs`, `map path` and `map export` report their facade errors as text: an `unknown id` end of `map path` is 1, anything else 3.
 
@@ -37,3 +37,17 @@ These commands keep their earlier behaviour, exit 1 for every failure, with no h
 - `dctx cache …` and `dctx template …`;
 - the legacy snapshot `dctx PATH` once its arguments parse (a bad snapshot flag is exit 2);
 - `dctx plugin …` and `dctx git …`, which return the plugin host's own codes.
+
+## Engine RPC
+
+`dctx rpc` uses the same operation paths and numeric taxonomy over
+[versioned NDJSON](protocol/README.md). Each reply carries `engine_version`
+and echoes its request id. An error contains the CLI code, diagnostic, hint and
+any stdout emitted before failure (including gone pages). Protocol/framing
+refusals use code 2 and leave the session usable. Cache status retains its
+legacy code-1 failures. An error reply does not change the server's process exit
+status: normal EOF exits 0, transport I/O errors exit 3, and broken stdout exits
+quietly with 0. The server performs no piggyback auto-clean.
+
+`pack --for TEXT --json` now emits the facade's context JSON page; its text
+member contains the same budgeted context page as plain `pack --for TEXT`.

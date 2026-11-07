@@ -20,7 +20,9 @@ fn empty_path_is_refused_before_a_scan() {
 #[test]
 fn relative_cache_roots_and_the_auto_clean_switch_are_refused() {
     assert!(ensure_cache_dir(Path::new("cache")).is_err());
-    assert!(ensure_cache_dir(Path::new("/tmp/../dctx-cache")).is_err());
+    let unsafe_root = std::env::temp_dir().join("../dctx-cache");
+    assert!(unsafe_root.is_absolute());
+    assert!(ensure_cache_dir(&unsafe_root).is_err());
     assert!(!auto_clean_enabled(&["--no-auto-clean".to_string()], None));
     assert!(!auto_clean_enabled(&[], Some("0")));
     assert!(auto_clean_enabled(&[], Some("1")));

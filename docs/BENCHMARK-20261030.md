@@ -1,9 +1,24 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
-# dctx vs Trail-Code vs graphify: three-way benchmark (30 October 2026)
+# dctx measurement: grep plus file reads first
 
-> Historical measurements and plans from October 2026. Limitations in older runs
-> are retained as evidence; see the [README](../README.md) for current behavior.
+The baseline for choosing dctx is **grep plus reading files**. Count the whole
+agent session before claiming a cost saving. Output bytes and estimated output
+tokens measure only the returned context; they exclude startup instructions,
+tool descriptions, conversation replay, model output and provider cache effects.
+
+## Grep plus file reads
+
+The headline baseline is grep plus reading files. A controlled benchmark against it, counting whole agent sessions, is being prepared and will be published with raw data; no result is claimed here yet.
+
+## Secondary historical evidence: other-tool protocols
+
+Everything below retains the October/November research record, including its
+older limitations and plans. These other-tool comparisons are historical notes,
+not the product's headline baseline or a recommendation between tools. All
+"tokens" in these tables mean estimated **tool stdout tokens**, calculated as
+`ceil(stdout_bytes / 3.5)`, never whole-session tokens. Task scores are fact
+coverage in raw outputs without a model, not agent completion rates.
 
 One command, same host, same corpora, same CPU set, no network, pinned versions. Raw aggregate, headline tables
 and the harness are in [`research/bench-3way-20261030/`](research/bench-3way-20261030/); the current goals are in the [specification](SPEC.md). Where another tool wins, the tables say so.
@@ -15,7 +30,7 @@ and the harness are in [`research/bench-3way-20261030/`](research/bench-3way-202
 - **graphify** `graphifyy` 0.9.97 from PyPI, LLM-free code path only (`extract --code-only`,
   `GRAPHIFY_BACKEND=none`). Its LLM pass over docs, PDFs and images was **not** run, and nothing here measures it.
 
-## Headline
+## Historical three-way summary
 
 | Area | Result |
 |---|---|
@@ -278,7 +293,7 @@ All corpora and the edit-stability, network and coverage tables are in
 
 ## Not claimed
 
-- Task-level answer quality with a frozen model. The fact-scoring protocol was re-run; Trail-Code leads it, 122 to 77.
+- Whole-session cost or task-level answer quality with a frozen model. Historical fact scores describe raw tool outputs only.
 - Anything about graphify's LLM semantic graph, or Trail-Code's learnings and LSP edges.
 - SWE-bench or agent-run numbers.
 - Equal language depth. dctx's 25 new formats are outline tier: symbols, not call edges.

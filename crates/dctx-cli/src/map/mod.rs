@@ -23,32 +23,37 @@ use crate::host;
 
 /// Runs one map verb and prints its page. A `gone` page is printed, then the run fails with exit 1 (docs/CLI-EXIT-CODES.md).
 pub(crate) fn run(arguments: &[String]) -> Result<(), Failure> {
+    output(arguments)?.emit()
+}
+
+/// Shared CLI/RPC output, preserving the page and the no-result exit code.
+pub(crate) fn output(arguments: &[String]) -> Result<exit::CommandOutput, Failure> {
     let answered =
-        answer_with(arguments, host::open_mapped).map_err(|failure| failure.within("map"))?;
-    print!("{}", answered.page);
-    match answered.missing {
-        Some(failure) => Err(failure.within("map")),
-        None => Ok(()),
-    }
+        answer_with(arguments, host::open_mapped_query).map_err(|failure| failure.within("map"))?;
+    Ok(exit::CommandOutput {
+        stdout: answered.page,
+        failure: answered.missing.map(|failure| failure.within("map")),
+    })
 }
 
 /// Same as [`run`], returning the page instead of printing it. A `gone` page is a page here, not an error.
 pub(crate) fn execute(arguments: &[String]) -> Result<String, String> {
-    execute_with(arguments, host::open_mapped)
-}
-
-/// Same as [`execute`] for `dctx pack --for`: the page, or the failure with its exit code. A `gone` page is a page here.
-pub(crate) fn answer(arguments: &[String]) -> Result<String, Failure> {
-    answer_with(arguments, host::open_mapped).map(|answered| answered.page)
+    execute_with(arguments, host::open_mapped_query)
 }
 
 fn execute_with(
     arguments: &[String],
-    open: impl FnOnce(&std::path::Path) -> Result<(dctx::Session, String), String>,
+    open: impl FnOnce(&std::path::Path, Option<&str>) -> Result<(dctx::Session, String), String>,
 ) -> Result<String, String> {
     answer_with(arguments, open)
         .map(|answered| answered.page)
-        .map_err(|failure| failure.message)
+        .map_err(|failure| {
+            if failure.hint.is_empty() {
+                failure.message
+            } else {
+                format!("{}\nhint: {}", failure.message, failure.hint)
+            }
+        })
 }
 
 /// One answered map verb: the page, and the exit-1 failure that follows a `gone` page.
@@ -75,7 +80,7 @@ impl Answered {
 )]
 fn answer_with(
     arguments: &[String],
-    open: impl FnOnce(&std::path::Path) -> Result<(dctx::Session, String), String>,
+    open: impl FnOnce(&std::path::Path, Option<&str>) -> Result<(dctx::Session, String), String>,
 ) -> Result<Answered, Failure> {
     if arguments.is_empty() || arguments == ["--help"] || arguments == ["-h"] {
         return Ok(Answered::page(args::HELP.to_string()));
@@ -126,15 +131,34 @@ fn answer_with(
         failure::targets(&options)?;
     }
     file_page::widen(&mut options).map_err(usage)?;
+    let mut request = facade_request(
+        &options.request,
+        options.format,
+        options.continuation.clone(),
+        options.budget_set,
+    );
+    request.meta = options.meta;
+    if options.grep {
+        request.verb = Verb::Grep;
+        request.ignore_case = options.ignore_case;
+    }
+    if options.skeleton {
+        skeleton::retarget(&mut request, options.budget_set);
+    }
+    let scope = if options.hubs || options.export.is_some() || options.to.is_some() {
+        None
+    } else {
+        request.source_scope()
+    };
     let profiling = profile_requested(options.profile);
     let (mut session, key) =
-        open(&options.place).map_err(|message| failure::place(&options.place, &message))?;
+        open(&options.place, scope).map_err(|message| failure::place(&options.place, &message))?;
     if profiling {
         session.enable_profile();
     }
-    // Reuse checks content with digest_text, the same comparison as read_verified, except for a file whose size, mtime
-    // (older than 2 s) and inode are all unchanged: that stamp is trusted. DCTX_FRESHNESS=strict_live hashes every file.
-    let built = if profiling {
+    let built = if scope.is_some() {
+        session.snapshot_for_query(&SnapshotRequest::strict(), &request, &key)
+    } else if profiling {
         session.snapshot_reusable_for_profile(&SnapshotRequest::strict(), &key)
     } else {
         session.snapshot_reusable(&SnapshotRequest::strict(), &key)
@@ -173,21 +197,6 @@ fn answer_with(
         return path_verb::answer(&mut session, &handle, &options)
             .map(Answered::page)
             .map_err(failure::answer);
-    }
-    let mut request = facade_request(
-        &options.request,
-        options.format,
-        options.continuation,
-        options.budget_set,
-    );
-    request.meta = options.meta;
-    if options.grep {
-        // The CLI parses grep as a find-shaped request; the facade knows the real verb.
-        request.verb = Verb::Grep;
-        request.ignore_case = options.ignore_case;
-    }
-    if options.skeleton {
-        skeleton::retarget(&mut request, options.budget_set);
     }
     let mut sink = VecSink::new();
     let queried = if profiling {
@@ -318,7 +327,7 @@ mod tests {
                 path.display().to_string(),
             ];
             arguments.extend(extra.iter().map(ToString::to_string));
-            execute_with(&arguments, |place| {
+            execute_with(&arguments, |place, _| {
                 host::open_mapped_at(place, Some(&cache))
             })
             .expect("grep")
@@ -431,7 +440,9 @@ mod tests {
         let path = fixture.path().join("place");
         let cache = fixture.path().join("cache");
         let execute = |arguments: &[String]| {
-            execute_with(arguments, |place| host::open_mapped_at(place, Some(&cache)))
+            execute_with(arguments, |place, _| {
+                host::open_mapped_at(place, Some(&cache))
+            })
         };
         std::fs::create_dir_all(path.join("nested")).expect("temp");
         std::fs::write(path.join("kept.rs"), b"fn kept() {}\n").expect("source");
@@ -501,7 +512,7 @@ mod tests {
                 "--place".into(),
                 path.display().to_string(),
             ],
-            |place| host::open_mapped_at(place, Some(&cache)),
+            |place, _| host::open_mapped_at(place, Some(&cache)),
         )
         .expect("find");
         assert!(page.contains("\"id\":\"s:kept.rs#kept\""), "{page}");

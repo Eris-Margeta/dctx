@@ -24,7 +24,9 @@ from common import ALIASES, BLOB, ORIGIN, ROOT, TREE, read, slugify
 # External link targets a rendered document may keep. Anything else is unlinked (text kept).
 ALLOWED_EXTERNAL = ("https://github.com/Eris-Margeta", "https://github.com/sponsors/Eris-Margeta", "https://tejl.com",
                     "https://tejl.hr", "https://schema.org", "https://www.apache.org/", "https://keepachangelog.com",
-                    "https://semver.org", "https://developercertificate.org", "https://docs.github.com/en/actions")
+                    "https://semver.org", "https://developercertificate.org", "https://docs.github.com/en/actions",
+                    "https://code.claude.com/docs/en/mcp", "https://cursor.com/docs/mcp",
+                    "https://developers.openai.com/codex/mcp/")
 HTML_TAGS = set("a abbr b blockquote br caption code col colgroup dd del details div dl dt em h1 h2 h3 h4 h5 h6 hr i img "
                 "ins kbd li ol p pre s samp small span strong sub summary sup table tbody td tfoot th thead tr u ul".split())
 

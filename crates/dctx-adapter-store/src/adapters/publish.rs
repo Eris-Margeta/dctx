@@ -2,7 +2,8 @@
 //! Temp write, validate, sync, immutable rename, then the generation pointer.
 //! Implements SEGMENTS-v1 publication order and the P2 crash cuts in [`crate::domain::Boundary`].
 //! Depends on [`super::store::SegmentStore`] and `dctx-map-segment` validation. Recovery reads the result.
-//! The pointer directory sync is the durable visibility point. A crash before it keeps the old generation.
+//! The pointer directory sync completes durable publication on Unix; on Windows the
+//! write-through pointer rename already does so. Recovery validates either committed closure.
 
 use crate::SegmentRole;
 use crate::domain::{

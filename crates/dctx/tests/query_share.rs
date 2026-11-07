@@ -47,7 +47,7 @@ fn queries_share_one_generation_and_keep_records_and_digest() {
         paged
             .cursors
             .iter()
-            .all(|cursor| cursor.starts_with("v1|1|map|"))
+            .all(|cursor| cursor.starts_with("v1|") && cursor.contains("|map|"))
     );
     assert_eq!(full.snapshot, digest);
     assert_eq!(paged.snapshot, digest);

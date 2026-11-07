@@ -155,10 +155,7 @@ fn continuation_pages_and_a_foreign_cursor_is_stale() {
     assert_eq!(error, DctxError::StaleContinuation);
     assert!(sink.is_empty());
 
-    request.continuation = Some(format!(
-        "v1|{}|find|s:src/lib.rs#alpha",
-        handle.generation()
-    ));
+    request.continuation = Some(format!("v1|{}|find|s:src/lib.rs#alpha", first.generation));
     let mut sink = VecSink::new();
     let error = session
         .query(&handle, &request, &mut sink)

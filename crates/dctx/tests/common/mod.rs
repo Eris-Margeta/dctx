@@ -102,6 +102,10 @@ impl Source for SharedSource {
         self.inner.lock().expect("source").entries(dir)
     }
 
+    fn kind(&self, path: &RelativePath) -> Result<NodeType, CoreError> {
+        self.inner.lock().expect("source").kind(path)
+    }
+
     fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, CoreError> {
         self.inner.lock().expect("source").metadata(path)
     }

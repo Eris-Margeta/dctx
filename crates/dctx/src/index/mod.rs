@@ -27,6 +27,7 @@ mod refs;
 mod refs_names;
 #[cfg(test)]
 mod refs_tests;
+pub(crate) mod scope;
 mod segment;
 pub(crate) mod sites;
 mod skeleton;
@@ -34,7 +35,7 @@ mod span_index;
 #[cfg(feature = "syntax-rust")]
 mod syn_extract;
 mod text_docs;
-mod walk;
+pub(crate) mod walk;
 
 pub(crate) use decl_pair::pair_record;
 pub(crate) use grep::{grep_records, text_records};
@@ -65,6 +66,8 @@ impl TextSpan {
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(crate) struct TextBlob {
     buf: String,
+    /// Directories where an unrepresentable child name made inventory incomplete.
+    pub partial_dirs: Vec<String>,
 }
 
 impl TextBlob {
@@ -231,6 +234,10 @@ pub(crate) struct IndexedFile {
     /// it (settled mtime, inode known). Never part of the generation digest or any answer: only the warm
     /// reuse check reads it, to skip hashing a file whose live stamp is equal.
     pub stamp: Option<dctx_core::facts::EntryStamp>,
+    /// Whether this file was parsed successfully by the Rust syntax parser.
+    pub syntax: bool,
+    /// Whether scanning this file lost content to an I/O or per-file limit.
+    pub partial: bool,
 }
 
 /// One graph node.

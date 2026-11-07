@@ -22,7 +22,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 BINARY = "dctx-cli"
-ALLOWED = ["Apache-2.0", "MIT", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unicode-3.0", "Unicode-DFS-2016", "Zlib", "MPL-2.0", "CC0-1.0"]
+ALLOWED = ["Apache-2.0", "Apache-2.0 WITH LLVM-exception", "BSL-1.0", "MIT", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unicode-3.0", "Unicode-DFS-2016", "Zlib", "MPL-2.0", "CC0-1.0"]
 ALLOWED_FOLDED = {name.lower() for name in ALLOWED}
 UNKNOWN = "see crate"
 
@@ -221,7 +221,7 @@ def render(rows, source):
 
 def self_test():
     """Asserts the evaluator and the walk on fixed cases; returns 0."""
-    allowed = ["MIT", "Apache-2.0", "MIT OR Apache-2.0", "MIT/Apache-2.0", "(MIT OR Apache-2.0) AND Unicode-3.0", "Unicode-DFS-2016",
+    allowed = ["MIT", "Apache-2.0", "BSL-1.0", "Apache-2.0 WITH LLVM-exception", "MIT OR Apache-2.0", "MIT/Apache-2.0", "(MIT OR Apache-2.0) AND Unicode-3.0", "Unicode-DFS-2016",
                "Apache-2.0 WITH LLVM-exception OR Apache-2.0 OR MIT", "Unlicense OR MIT", "Zlib OR Apache-2.0 OR MIT", "BSD-2-Clause",
                "BSD-3-Clause", "ISC", "MPL-2.0", "CC0-1.0", "mit or apache-2.0", "MIT AND (GPL-3.0 OR ISC)", "Apache-2.0+"]
     denied = ["", "   ", None, "GPL-3.0", "Unlicense", "MIT AND GPL-3.0", "ISC AND MIT AND OpenSSL", "(MIT", "MIT)", "MIT OR",

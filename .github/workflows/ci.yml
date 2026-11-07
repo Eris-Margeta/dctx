@@ -32,11 +32,11 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
         with:
           persist-credentials: false
 
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0 (GitHub API resolved)
         with:
           python-version: '3.12'
 
@@ -71,7 +71,7 @@ jobs:
           rustc --version --verbose
           cargo --version
 
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3 (GitHub API resolved)
         with:
           key: test-${{ matrix.os }}-${{ matrix.toolchain }}
           save-if: ${{ github.ref == 'refs/heads/main' }}
@@ -85,7 +85,7 @@ jobs:
           import sys
 
           sys.exit(subprocess.call(
-              ["cargo", "test", "--workspace", "--locked",
+              ["cargo", "test", "--workspace", "--locked", "--no-fail-fast",
                "--exclude", "dctx-desktop", "--exclude", "dctx-desktop-api"],
               close_fds=True,
           ))
@@ -99,13 +99,13 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
         with:
           # Website document dates are checked against full git history.
           fetch-depth: 0
           persist-credentials: false
 
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0 (GitHub API resolved)
         with:
           python-version: '3.12'
 
@@ -116,7 +116,7 @@ jobs:
           rustc --version --verbose
           cargo --version
 
-      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3 (GitHub API resolved)
         with:
           key: quality-ubuntu-24.04-stable
           workspaces: |
@@ -157,6 +157,23 @@ jobs:
         if: ${{ !cancelled() && hashFiles('deny.toml') != '' && steps.deny_install.outcome == 'success' }}
         # deny.toml configures licences; do not introduce new advisory/ban policies.
         run: cargo deny --locked check licenses
+
+      - name: Install cargo-audit
+        id: audit_install
+        if: ${{ !cancelled() }}
+        run: cargo install cargo-audit --version 0.22.2 --locked
+
+      - name: Audit dependencies (reviewed exceptions in .cargo/audit.toml)
+        if: ${{ !cancelled() && steps.audit_install.outcome == 'success' }}
+        run: cargo audit --file Cargo.lock
+
+      - name: Release supply-chain script tests
+        if: ${{ !cancelled() }}
+        run: python3 -m unittest discover -s tools/release -p 'test_supply_chain.py' -v
+
+      - name: Workflow validation
+        if: ${{ !cancelled() }}
+        run: bash tools/release/lint-workflows.sh
 
       - name: Release build
         id: release_build

@@ -14,7 +14,9 @@ mod reclaim;
 use crate::domain::{LEDGER_MAX_BYTES, Lifecycle, ObjectId, Quota};
 use crate::error::CacheError;
 use crate::ports::{LedgerStore, LoadedLedger};
-use std::fs::{self, File, OpenOptions};
+#[cfg(unix)]
+use std::fs::File;
+use std::fs::{self, OpenOptions};
 use std::io::{Read, Write};
 use std::path::{Component, Path, PathBuf};
 use std::sync::Mutex;

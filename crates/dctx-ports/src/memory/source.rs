@@ -197,6 +197,18 @@ impl Source for MemorySource {
         Ok(dirs.chain(files).collect())
     }
 
+    fn kind(&self, path: &RelativePath) -> Result<NodeType, DctxError> {
+        let key = path.as_str();
+        self.record(SourceCall::Metadata(key.to_string()));
+        if self.dirs.contains_key(key) {
+            Ok(NodeType::Directory)
+        } else if self.files.contains_key(key) {
+            Ok(NodeType::File)
+        } else {
+            Err(DctxError::SourceUnavailable)
+        }
+    }
+
     fn metadata(&self, path: &RelativePath) -> Result<EntryMeta, DctxError> {
         let key = path.as_str();
         self.record(SourceCall::Metadata(key.to_string()));

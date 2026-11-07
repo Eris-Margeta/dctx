@@ -9,8 +9,23 @@ use super::policy::store_policy;
 /// Ledger file the facade persists inside the cache root.
 const LEDGER_FILE: &str = "ledger.v1";
 
-/// Root id the facade registers when a command piggy-backs auto-clean.
-pub(super) const CLI_ROOT_ID: u64 = 1;
+/// Separate maintenance identity; never used for a source generation.
+const MAINTENANCE_ROOT_ID: u64 = 1;
+
+/// Stable, domain-separated identity of the canonical place, including non-Unicode paths.
+/// The full source key is still checked before reuse; a truncated digest cannot authorize
+/// another place's generation. All identities share the same ledger and aggregate cap.
+pub(super) fn place_root_id(canonical: &Path) -> Result<u64, String> {
+    let mut hash = dctx_hash::Sha256::new();
+    hash.update(b"dctx-cli-place-root-v1\0")
+        .and_then(|()| hash.update(canonical.as_os_str().as_encoded_bytes()))
+        .map_err(|error| error.to_string())?;
+    let digest = hash.finalize();
+    let mut bytes = [0; 8];
+    bytes.copy_from_slice(&digest.as_bytes()[..8]);
+    // Reserve zero and the maintenance identity.
+    Ok(u64::from_le_bytes(bytes).max(2))
+}
 
 /// Set when this process ran piggy-back auto-clean before the map query.
 pub(super) static MAP_AUTO_CLEAN: AtomicBool = AtomicBool::new(false);
@@ -60,18 +75,48 @@ pub fn session_cache(call: SessionCacheCall) -> Result<CacheReport, String> {
     }
 }
 
-/// `DCTX_CACHE_DIR` when it is set, otherwise the platform cache directory.
+/// Engine-major/minor namespace beneath [`cache_base_dir`]. Old unscoped data is ignored.
 /// # Errors
 /// Returns an invalid explicit cache root or failure to determine a supported system cache path.
 pub fn cache_root_dir() -> Result<PathBuf, String> {
-    if let Ok(raw) = std::env::var("DCTX_CACHE_DIR") {
+    Ok(cache_base_dir()?.join(engine_cache_namespace()))
+}
+
+/// The cache parent selected by `DCTX_CACHE_DIR` or the platform default, without creating it.
+/// # Errors
+/// Returns an invalid cache parent or a missing platform environment variable.
+pub fn cache_base_dir() -> Result<PathBuf, String> {
+    if let Some(raw) = std::env::var_os("DCTX_CACHE_DIR") {
         if !raw.is_empty() {
             let path = PathBuf::from(raw);
-            absolute_root(&path)?;
-            return Ok(path);
+            return validate_cache_base(path);
         }
     }
-    platform_cache_dir()
+    validate_cache_base(platform_cache_dir()?)
+}
+
+fn validate_cache_base(path: PathBuf) -> Result<PathBuf, String> {
+    absolute_root(&path)?;
+    match fs::symlink_metadata(&path) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {
+            return Err("cache parent is not a directory or is a symlink".into());
+        }
+        Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
+            return Err(format!("cache parent metadata: {error}"));
+        }
+        _ => {}
+    }
+    Ok(path)
+}
+
+/// The compatible engine version whose indexes this binary owns. Patch releases share it.
+#[must_use]
+pub fn engine_cache_namespace() -> &'static str {
+    concat!(
+        env!("CARGO_PKG_VERSION_MAJOR"),
+        ".",
+        env!("CARGO_PKG_VERSION_MINOR")
+    )
 }
 
 /// True when this argv and `DCTX_AUTO_CLEAN` allow a piggy-back slice.
@@ -214,7 +259,7 @@ fn open_cache_session(root: &Path, policy: AutoCleanConfig) -> Result<Session, S
         })
         .place("cache")
         .view("auto")
-        .cache_root(root, CLI_ROOT_ID)
+        .cache_root(root, MAINTENANCE_ROOT_ID)
         .auto_clean(policy)
         .build()
         .map_err(facade_error)
@@ -285,6 +330,46 @@ fn create_private_dir(root: &Path) -> Result<(), String> {
 mod tests {
     use super::*;
     use std::{collections::BTreeMap, ffi::OsString};
+
+    #[cfg(unix)]
+    #[test]
+    fn place_ids_preserve_non_unicode_path_bytes() {
+        use std::os::unix::ffi::OsStringExt;
+        let a = PathBuf::from(OsString::from_vec(b"/project/\xff".to_vec()));
+        let b = PathBuf::from(OsString::from_vec(b"/project/\xfe".to_vec()));
+        assert_eq!(a.to_string_lossy(), b.to_string_lossy());
+        let id = place_root_id(&a).expect("id");
+        assert_eq!(place_root_id(&a).expect("stable id"), id);
+        assert_ne!(place_root_id(&b).expect("distinct id"), id);
+        assert_ne!(id, MAINTENANCE_ROOT_ID);
+    }
+
+    #[test]
+    fn namespace_and_parent_validation_preserve_unscoped_data() {
+        let parent = tempfile::tempdir().expect("cache parent");
+        fs::write(parent.path().join("ledger.v1"), b"legacy").expect("legacy");
+        assert_eq!(
+            validate_cache_base(parent.path().to_path_buf()).expect("parent"),
+            parent.path()
+        );
+        assert_eq!(engine_cache_namespace(), "1.2");
+        assert!(!parent.path().join(engine_cache_namespace()).exists());
+        assert_eq!(
+            fs::read(parent.path().join("ledger.v1")).expect("unchanged"),
+            b"legacy"
+        );
+        assert!(validate_cache_base(parent.path().join("ledger.v1")).is_err());
+        assert!(validate_cache_base(PathBuf::from("relative")).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_symlink_parent_cannot_redirect_versioned_cache_writes() {
+        let parent = tempfile::tempdir().expect("parent");
+        let link = parent.path().join("link");
+        std::os::unix::fs::symlink(parent.path(), &link).expect("link");
+        assert!(validate_cache_base(link).is_err());
+    }
 
     #[test]
     fn windows_cache_uses_localappdata_and_refuses_missing_or_empty_values() {

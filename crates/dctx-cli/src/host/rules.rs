@@ -14,6 +14,14 @@ const MAX_RULE_DEPTH: u32 = 256;
 /// Local ignore order is the root `.gitignore`, then nested `.gitignore` files rewritten
 /// to root-relative lines, then `.dctxignore`. An excluded directory is not listed.
 pub(crate) fn project_rules(root: &Path) -> Result<RuleSources, String> {
+    project_rules_scoped(root, None)
+}
+
+/// Loads only ancestor rule files and the selected subtree's nested rules.
+pub(crate) fn project_rules_scoped(
+    root: &Path,
+    scope: Option<&str>,
+) -> Result<RuleSources, String> {
     let root = fs::canonicalize(root).map_err(|error| error.to_string())?;
     let global_omit = optional_omit(config_file("omitcontent")?);
     let local_omit = None;
@@ -26,7 +34,10 @@ pub(crate) fn project_rules(root: &Path) -> Result<RuleSources, String> {
         });
     }
     let global_ignore = required_ignore(config_file("ignore")?)?;
-    let local_ignore = local_ignore_text(&root, global_ignore.as_deref())?;
+    let local_ignore = match scope {
+        Some(scope) => scoped_ignore_text(&root, scope, global_ignore.as_deref())?,
+        None => local_ignore_text(&root, global_ignore.as_deref())?,
+    };
     Ok(RuleSources {
         global_ignore,
         global_omit,
@@ -54,6 +65,56 @@ pub(crate) fn local_ignore_text(
     } else {
         Ok(Some(local))
     }
+}
+
+fn scoped_ignore_text(
+    root: &Path,
+    scope: &str,
+    global_ignore: Option<&str>,
+) -> Result<Option<String>, String> {
+    let scope = dctx_core::ids::RelativePath::parse(scope).map_err(|error| error.to_string())?;
+    let mut local = String::new();
+    if let Some(text) = read_rule_file(&root.join(".gitignore"))? {
+        append_text(&mut local, &text);
+    }
+    let mut relative = String::new();
+    for (depth, name) in scope.as_str().split('/').enumerate() {
+        if !relative.is_empty() {
+            relative.push('/');
+        }
+        relative.push_str(name);
+        let path = root.join(&relative);
+        let meta = match fs::symlink_metadata(&path) {
+            Ok(meta) => meta,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => break,
+            Err(error) => return Err(format!("{}: {error}", path.display())),
+        };
+        // The source adapter also refuses links. Never read rule files through them.
+        if meta.file_type().is_symlink() || !meta.is_dir() {
+            break;
+        }
+        if depth > MAX_RULE_DEPTH as usize
+            || directory_excluded(global_ignore, &local, &relative, name)
+        {
+            break;
+        }
+        if let Some(text) = read_rule_file(&path.join(".gitignore"))? {
+            append_nested(&mut local, &relative, &text);
+        }
+        if relative == scope.as_str() {
+            collect_nested(
+                root,
+                &relative,
+                &mut local,
+                global_ignore,
+                u32::try_from(depth + 1).unwrap_or(u32::MAX),
+            )?;
+        }
+    }
+    if let Some(text) = read_rule_file(&root.join(".dctxignore"))? {
+        append_text(&mut local, &text);
+    }
+    Ok((!local.is_empty()).then_some(local))
 }
 
 fn index_ignored() -> bool {
@@ -351,5 +412,74 @@ mod tests {
             );
         }
         assert_eq!(resolve(false, &[("APPDATA", "config")]), Ok(None));
+    }
+    #[test]
+    fn scoped_rules_inherit_ancestors_and_match_full_policy() {
+        let temp = tempfile::tempdir().expect("fixture");
+        let root = temp.path();
+        fs::create_dir_all(root.join("src/nested/deeper")).expect("dirs");
+        fs::create_dir_all(root.join("sibling")).expect("sibling");
+        for (path, text) in [
+            (".gitignore", "*.private\nsrc/generated/\n"),
+            ("src/.gitignore", "*.py\n!kept.py\n"),
+            ("src/nested/.gitignore", "/blocked.rs\n!allowed.py\n"),
+            ("src/nested/deeper/.gitignore", "*.rs\n"),
+            (".dctxignore", "src/nested/final.rs\n"),
+        ] {
+            fs::write(root.join(path), text).expect("rules");
+        }
+        let full = local_ignore_text(root, None).expect("full");
+        for scope in ["src/nested", "src/nested/kept.py", "src/nested/deeper/a.rs"] {
+            let scoped = scoped_ignore_text(root, scope, None).expect("scoped");
+            let policy = |text: Option<&str>| {
+                SelectionPolicy::from_texts(&RuleTexts {
+                    local_ignore: text,
+                    ..RuleTexts::default()
+                })
+            };
+            let full = policy(full.as_deref());
+            let scoped = policy(scoped.as_deref());
+            for name in [
+                "kept.py",
+                "blocked.rs",
+                "allowed.py",
+                "final.rs",
+                "secret.private",
+                "deeper/a.rs",
+            ] {
+                let relative = format!("src/nested/{name}");
+                if !relative.starts_with(scope) && scope != "src/nested" {
+                    continue;
+                }
+                let context = ItemContext {
+                    relative_path: &relative,
+                    name,
+                    is_directory: false,
+                    debug_mode: false,
+                };
+                assert_eq!(
+                    scoped.decide(&context),
+                    full.decide(&context),
+                    "{scope}: {relative}"
+                );
+            }
+        }
+        // An unrelated invalid rule file proves that scoped loading doesn't visit it.
+        fs::write(root.join("sibling/.gitignore"), [0xff]).expect("invalid sibling");
+        assert!(local_ignore_text(root, None).is_err());
+        assert!(scoped_ignore_text(root, "src/nested/kept.py", None).is_ok());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn scoped_rules_never_follow_symlinked_ancestors() {
+        let temp = tempfile::tempdir().expect("fixture");
+        let root = temp.path().join("place");
+        let outside = temp.path().join("outside");
+        fs::create_dir_all(&root).expect("place");
+        fs::create_dir_all(&outside).expect("outside");
+        fs::write(outside.join(".gitignore"), [0xff]).expect("invalid outside rule");
+        std::os::unix::fs::symlink(&outside, root.join("link")).expect("link");
+        assert!(scoped_ignore_text(&root, "link/file.py", None).is_ok());
     }
 }

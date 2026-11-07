@@ -1,0 +1,20 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Eris Margeta
+[package]
+name = "catalog-bench"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.91"
+license = "Apache-2.0"
+publish = false
+description = "Standalone metadata-only huge-folder catalog experiment"
+
+[workspace]
+resolver = "2"
+
+[dependencies]
+ignore = "=0.4.24"
+memmap2 = "=0.9.9"
+
+[profile.release]
+debug = false
