@@ -10,6 +10,7 @@ dctx 1.2.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short:
 - [Specification](https://www.dctx.internet.technology/docs/spec/index.md): constraints and roadmap
 - [Map mode](https://www.dctx.internet.technology/docs/map-mode/index.md): every map verb
 - [Which mode?](https://www.dctx.internet.technology/docs/modalities/index.md): scope and startup cost
+- [How it works](https://www.dctx.internet.technology/how-it-works/): five animations
 - [All documents](https://www.dctx.internet.technology/docs/): with Markdown twins
 
 ## CLI

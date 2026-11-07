@@ -365,6 +365,7 @@ input:focus, select:focus, textarea:focus { outline: 2px solid color-mix(in srgb
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .credit-logo img { filter: invert(1) brightness(1.6); } }
 .notfound { padding: 64px 0; }
 
+<<<<<<<< HEAD:website/assets/site.938e7ffb.css
 /* Choose your path, the notice, modalities, responsibilities, the evaluator facts */
 .wrap.narrow { max-width: 1000px; }
 .callout { border: 1px solid var(--line); border-left: 4px solid var(--brand); background: var(--surface); border-radius: var(--r); padding: 16px 20px; margin: 0 0 20px; }
@@ -400,8 +401,29 @@ h3 .state { margin-left: 6px; font-weight: 500; }
 .anim-slot { margin: 20px 0; }
 .measure h2 { margin-bottom: 12px; }
 #philosophy h3 { margin: 0 0 12px; }
+========
+/* Explainer animations (src/anim.js, pages/animations.py): fixed aspect ratio and a fixed-height bar, so
+   nothing moves when the script starts; the prose is visible without JS or motion, and on phones, where canvas labels
+   are small; otherwise it is screen-reader text. */
+.anim { margin: 0 0 32px; max-width: 860px; }
+.anim-view { display: none; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); overflow: hidden; }
+.js .anim-view { display: block; }
+.anim-stage { position: relative; aspect-ratio: 520 / 300; }
+.anim-stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.anim-bar { display: flex; align-items: center; gap: 10px; height: 42px; padding: 0 10px; border-top: 1px solid var(--line); font: 500 12px/1.3 var(--mono); color: var(--muted); }
+.anim-step { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.anim-ctl { display: flex; gap: 6px; }
+.anim-ctl[hidden] { display: none; }
+.anim-ctl .tbtn { height: 28px; }
+.anim figcaption { margin-top: 10px; color: var(--muted); max-width: 72ch; }
+.anim figcaption b { color: var(--ink); }
+.anim-prose { margin-top: 8px; max-width: 72ch; }
+.anim-prose ol { margin: 6px 0 0; padding-left: 22px; }
+@media (min-width: 600px) { .js.motion .anim-prose { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; } }
+.how-list { list-style: none; margin: 0 0 28px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 16px; font: 500 13px/1.6 var(--mono); }
+>>>>>>>> web/C:website/assets/site.6362d224.css
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 }
-@media print { .hdr, .ftr, .sidebar, .toc, .stage, .copy { display: none !important; } body { background: #fff; color: #000; } }
+@media print { .hdr, .ftr, .sidebar, .toc, .stage, .copy, .anim-view { display: none !important; } body { background: #fff; color: #000; } .anim-prose { position: static !important; width: auto; height: auto; clip: auto; clip-path: none; white-space: normal; } }

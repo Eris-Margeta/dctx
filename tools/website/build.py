@@ -71,7 +71,7 @@ def build(out: Path, skip_og: bool = False) -> int:
     import shell
     from assets import Assets
     from common import ICON, READS, ROOT, VERSION, date_of, read_bytes
-    from pages import benchmarks, docs, examples, home, misc, paths, playground, reference
+    from pages import animations, benchmarks, docs, examples, home, misc, paths, playground, reference
     from pages.news_content import NEWS
     from routes import DOCS, POLICIES, build_routes, doc_path
 
@@ -139,6 +139,8 @@ def build(out: Path, skip_og: bool = False) -> int:
         elif r.path == "/benchmarks/":
             body, graph = benchmarks.benchmarks()
             emit(r, body, graph)
+        elif r.path == "/how-it-works/":
+            emit(r, animations.page(), script="how.js")
         elif r.kind == "changelog":
             emit(r, misc.changelog(linker))
         elif r.path == "/news/":
