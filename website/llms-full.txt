@@ -6,7 +6,7 @@
 
 - This is llms-full.txt: the facts, the route table, every document the budget allows, the captured CLI help and examples. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms.txt.
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: 929d17afec74f011b11bd767b949a90060528f1d (2026-11-07T20:27:40Z), the last commit that changed one of the documents.
+- Docs commit: eb310501bf4a163e6129105d523e342266c82c37 (2026-11-07T21:08:05Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/SPEC.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/ADR-018-Language-Coverage.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/CRATE-MAP.md --include /docs/CLI-EXIT-CODES.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /RELEASING.md --include /CONTRIBUTING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /CHANGELOG.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
 - Budget: 91,932 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 25 documents.
 
@@ -778,7 +778,7 @@ For structured consumption, `--json` puts the same source bytes in `source_utf8`
 
 ```text
 $ dctx map read 's:src/util.rs#greet' --json
-{"v":2,"place":"kiosk","verb":"read","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/2"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":[44,126],"source_utf8":"pub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}","edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
+{"v":2,"place":"kiosk","verb":"read","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"syntax","completion":"complete","parser":"dctx-lex-rust/syn-3.0.9"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":[44,126],"source_utf8":"pub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}","edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
 ```
 
 ### Pack for a task
@@ -5574,6 +5574,7 @@ Usage: dctx <COMMAND> [OPTIONS]
        dctx serve [--mcp] [PATH]
        dctx read <TARGET> [OPTIONS]
        dctx languages [--json|--markdown]
+       dctx doctor [--json]
        dctx cache status [--json] [--root PATH]
        dctx cache gc [--dry-run] [--root PATH] [--max-bytes N]
        dctx cache purge --root PATH [--dry-run] [--yes]
@@ -5596,13 +5597,14 @@ Explicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not cr
 Cache purge requires `--root PATH` or `--all`, and `--yes` unless `--dry-run` is set.
 `dctx cache config` shows the persisted policy. `auto on|off` enables auto-clean, `--max-bytes` tightens the system cap, and `--ttl-days` sets idle overlay and preview lifetime.
 `dctx cache auto` prints the last auto-clean time, the bytes it reclaimed and the next due time.
+`dctx doctor` lists visible binaries, ownership scopes, SHA-256 checksums and cache sizes without changing the cache or using the network.
 pack, map, template, plugin and the TUI run one bounded auto-clean when it is due. They print nothing unless bytes were reclaimed.
-`--no-auto-clean` and `DCTX_AUTO_CLEAN=0` disable that slice. `DCTX_CACHE_DIR` selects the cache root.
+`--no-auto-clean` and `DCTX_AUTO_CLEAN=0` disable that slice. `DCTX_CACHE_DIR` selects the cache parent; indexes live in its engine-major.minor subdirectory.
 
 General Options:
   -h, --help            Show help
   -v, --version         Show version
-  --verbose            With --version, also show feature and precision limits
+  --verbose            With --version, also show executable path, scope and limits
 
 Run `dctx pack --help` for pack options and filters.
 
@@ -6604,10 +6606,10 @@ exit 0, 365 bytes, ~105 est. tokens
 
 ### dctx map read 's:src/util.rs#greet' --json
 
-exit 0, 559 bytes, ~160 est. tokens
+exit 0, 561 bytes, ~161 est. tokens
 
 ```text
-{"v":2,"place":"kiosk","verb":"read","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/2"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":[44,126],"source_utf8":"pub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}","edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
+{"v":2,"place":"kiosk","verb":"read","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"syntax","completion":"complete","parser":"dctx-lex-rust/syn-3.0.9"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":[44,126],"source_utf8":"pub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}","edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
 ```
 
 ### dctx map find greet --json --meta

@@ -10,7 +10,7 @@ mod pack_for;
 mod plugin;
 mod rpc;
 
-use dctx_cli::{cache, exit, help, host, languages, pack, template, tui};
+use dctx_cli::{cache, doctor, exit, help, host, languages, pack, template, tui};
 use exit::Failure;
 use std::{env, ffi::OsString};
 
@@ -45,6 +45,7 @@ fn main() {
     // map, pack, mcp, languages and unknown commands follow docs/CLI-EXIT-CODES.md; cache and template use exit 1.
     let result = match head {
         Some("daemon") => daemon::run(&args[2..]),
+        Some("doctor") => doctor::run(&args[2..]),
         Some("map") => {
             maybe_auto_clean(allow_auto_clean);
             daemon::try_output(&args[1..], allow_auto_clean)
@@ -106,6 +107,10 @@ fn main() {
                         env!("DCTX_GIT_SHA")
                     );
                     if args.iter().any(|arg| arg == "--verbose") {
+                        match doctor::executable_details() {
+                            Ok(details) => print!("{details}"),
+                            Err(error) => eprintln!("dctx: {error}"),
+                        }
                         print!("{}", help::limits());
                     }
                 }

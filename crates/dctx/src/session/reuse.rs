@@ -37,7 +37,8 @@ const REUSE_ATTEMPTS: u32 = 32;
 const MAGIC: &[u8] = b"dctxgen1";
 // 2: module nodes carry the export list in `signature` (DCX-55c); a version-1 cache lacks it and is rebuilt.
 // 3: each file row ends with its stat stamp (DCX-P-C5); a version-2 cache lacks it and is rebuilt.
-const VERSION: u32 = 3;
+// 4: scoped queries retain per-file parser and completion provenance.
+const VERSION: u32 = 4;
 const MAX_STRING: usize = 1_048_576;
 const MAX_COUNT: usize = 1_000_000;
 const SYNTAX_PARSER: &str = "dctx-lex-rust/syn-3.0.9";
@@ -110,6 +111,7 @@ impl Session {
             deadline_ms: scan_limits.deadline_ms,
             started_ms: started,
             now_ms: started,
+            elapsed: None,
         })?;
         let Some(stored_files) = file_inventory(&decoded.generation.files) else {
             return Ok(None);
@@ -228,6 +230,11 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
     let taken_at = reader.u64()?;
     let id = reader.u64()?;
     let limits = [reader.u64()?, reader.u64()?, reader.u64()?, reader.u64()?];
+    let partial_count = reader.count()?;
+    let mut partial_dirs = Vec::with_capacity(partial_count);
+    for _ in 0..partial_count {
+        partial_dirs.push(reader.string()?);
+    }
     let file_count = reader.count()?;
     let mut files = Vec::with_capacity(file_count);
     for _ in 0..file_count {
@@ -273,9 +280,12 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
             size,
             modified,
             stamp,
+            syntax: reader.boolean()?,
+            partial: reader.boolean()?,
         });
     }
     let mut text = TextBlob::default();
+    text.partial_dirs = partial_dirs;
     let node_count = reader.count()?;
     let mut nodes = Vec::with_capacity(node_count);
     let mut by_id: HashMap<String, u32> = HashMap::with_capacity(node_count);

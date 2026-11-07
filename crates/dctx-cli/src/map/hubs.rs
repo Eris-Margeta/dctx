@@ -139,7 +139,7 @@ mod tests {
         let run = |extra: &[&str]| {
             let mut args = strings(&["hubs", "--place", &place.display().to_string()]);
             args.extend(strings(extra));
-            super::super::execute_with(&args, |at| host::open_mapped_at(at, Some(&cache)))
+            super::super::execute_with(&args, |at, _| host::open_mapped_at(at, Some(&cache)))
                 .expect("hubs")
         };
         let text = run(&[]);

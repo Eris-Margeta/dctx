@@ -37,6 +37,7 @@ fn excluded_git_is_not_read() {
         deadline_ms: None,
         started_ms: 0,
         now_ms: 0,
+        elapsed: None,
     })
     .expect("walk");
     assert!(
@@ -92,6 +93,7 @@ fn profiled_files_report_bytes_symbols_and_leave_finalization_out() {
         deadline_ms: None,
         started_ms: 0,
         now_ms: 0,
+        elapsed: None,
     })
     .expect("walk");
     assert_eq!(walked.files.len(), 5);
@@ -218,6 +220,7 @@ fn walk_capped(
         deadline_ms: None,
         started_ms: 0,
         now_ms: 0,
+        elapsed: None,
     })
 }
 

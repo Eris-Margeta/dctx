@@ -138,7 +138,7 @@ impl AnswerRecord {
 /// One successful query page, including a gone or ambiguous identity.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Answer {
-    /// Pinned generation.
+    /// Cursor generation: content-derived for scoped queries, otherwise the pinned generation.
     pub generation: u64,
     /// Own snapshot digest (`v1:sha256:…:length`).
     pub snapshot: String,
