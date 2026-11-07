@@ -1,0 +1,5 @@
+skeleton "m:sample.erl" "module" [1, 8] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.erl#copy" "fn" [4, 6] signature=Some("copy(Value) ->") summary="copy(Value) ->" source="sig" confidence=Some("guess")
+read Some([69, 149]) Some("copy(Value) ->\n    Nested = fun(Item) -> Item end,\n    Nested(?IDENTITY(Value)).")
+skeleton "s:sample.erl#helper" "fn" [7, 7] signature=Some("helper(Value) -> Value.") summary="helper(Value) -> Value." source="sig" confidence=Some("guess")
+read Some([150, 173]) Some("helper(Value) -> Value.")

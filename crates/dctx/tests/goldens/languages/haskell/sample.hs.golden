@@ -1,0 +1,7 @@
+skeleton "m:sample.hs" "module" [1, 7] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.hs#Boxed" "type" [2, 2] signature=Some("data Boxed a = Boxed a") summary="data Boxed a = Boxed a" source="sig" confidence=Some("guess")
+read Some([20, 42]) Some("data Boxed a = Boxed a")
+skeleton "s:sample.hs#copy" "fn" [3, 5] signature=Some("copy :: a -> a") summary="copy :: a -> a" source="sig" confidence=Some("guess")
+read Some([43, 110]) Some("copy :: a -> a\ncopy value = nested value\n  where nested item = item")
+skeleton "s:sample.hs#café" "fn" [6, 7] signature=Some("café :: Int") summary="café :: Int" source="sig" confidence=Some("guess")
+read Some([111, 133]) Some("café :: Int\ncafé = 1")

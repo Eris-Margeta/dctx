@@ -76,7 +76,7 @@ fn checked_parse(path: &str, source: &[u8]) -> ParsedFile {
     assert_eq!(facts.language, Language::Swift);
     assert_eq!(facts.precision.coverage().as_str(), "structural");
     assert_eq!(facts.precision.completion().as_str(), "complete");
-    assert_eq!(facts.precision.parser().as_str(), "dctx-lex-swift:1");
+    assert_eq!(facts.precision.parser().as_str(), "dctx-lex-swift:2");
     let repeated = PureParser.parse(path, source).unwrap();
     assert_store_accepts(&repeated, source);
     assert_eq!(facts, repeated);

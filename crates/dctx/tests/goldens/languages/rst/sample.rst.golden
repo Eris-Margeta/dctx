@@ -1,0 +1,5 @@
+skeleton "m:sample.rst" "module" [1, 10] signature=None summary="" source="" confidence=None
+skeleton "d:sample.rst#Fixture" "heading" [2, 10] signature=None summary="An original fixture with café." source="heading" confidence=None
+read Some([8, 79]) Some("Fixture\n=======\n\nAn original fixture with café.\n\nNested\n------\n\nText.\n")
+skeleton "d:sample.rst#Nested" "heading" [7, 10] signature=None summary="Text." source="heading" confidence=None
+read Some([58, 79]) Some("Nested\n------\n\nText.\n")

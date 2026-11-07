@@ -1,0 +1,6 @@
+(defmacro identity-value (value) value)
+(defun copy-value (value)
+  (cl-labels ((nested (item) item))
+    (nested value)))
+(defun café () 1)
+(defvar boxed 1)

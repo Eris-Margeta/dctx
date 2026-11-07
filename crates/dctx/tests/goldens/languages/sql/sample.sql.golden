@@ -1,0 +1,7 @@
+skeleton "m:sample.sql" "module" [1, 8] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.sql#Boxed" "type" [1, 4] signature=Some("CREATE TABLE Boxed (") summary="CREATE TABLE Boxed (" source="sig" confidence=Some("guess")
+read Some([0, 62]) Some("CREATE TABLE Boxed (\n  id INTEGER PRIMARY KEY,\n  value TEXT\n);")
+skeleton "s:sample.sql#copied" "type" [5, 6] signature=Some("CREATE VIEW copied AS") summary="CREATE VIEW copied AS" source="sig" confidence=Some("guess")
+read Some([63, 111]) Some("CREATE VIEW copied AS\n  SELECT value FROM Boxed;")
+skeleton "s:sample.sql#identity_value" "fn" [7, 8] signature=Some("CREATE FUNCTION identity_value(value INTEGER) RETURNS INTEGER") summary="CREATE FUNCTION identity_value(value INTEGER) RETURNS INTEGER" source="sig" confidence=Some("guess")
+read Some([112, 205]) Some("CREATE FUNCTION identity_value(value INTEGER) RETURNS INTEGER\nAS 'SELECT value' LANGUAGE SQL;")

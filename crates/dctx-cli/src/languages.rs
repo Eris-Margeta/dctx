@@ -269,6 +269,20 @@ mod tests {
     }
 
     #[test]
+    fn coverage_document_is_the_rendered_registry() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../docs/LANGUAGE-COVERAGE.md"
+        );
+        let document = std::fs::read_to_string(path).expect("LANGUAGE-COVERAGE.md");
+        assert_eq!(
+            readme_block(&document).expect("language table markers"),
+            markdown(),
+            "regenerate the coverage table with `dctx languages --markdown`"
+        );
+    }
+
+    #[test]
     fn readme_block_needs_one_ordered_marker_pair() {
         assert_eq!(
             readme_block("a\n<!-- languages:begin -->\n| x |\n<!-- languages:end -->\nb"),

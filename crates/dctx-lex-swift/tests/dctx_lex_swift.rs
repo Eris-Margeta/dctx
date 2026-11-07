@@ -319,7 +319,7 @@ fn typed_refusals_have_positive_controls() {
     });
     assert!(wide.extract("a.swift", b"struct S {}").is_ok());
     assert_eq!(PARSER_ID, "dctx-lex-swift");
-    assert_eq!(PARSER_REVISION, 1);
+    assert_eq!(PARSER_REVISION, 2);
     assert_eq!(
         body_fingerprint("abc"),
         "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"

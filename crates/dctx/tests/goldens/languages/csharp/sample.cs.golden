@@ -1,0 +1,11 @@
+skeleton "m:sample.cs" "module" [1, 10] signature=None summary="" source="" confidence=None
+skeleton "s:sample.cs#Sample" "fn" [1, 10] signature=Some("namespace Sample") summary="namespace Sample" source="sig" confidence=None
+read Some([0, 216]) Some("namespace Sample;\n[Obsolete]\npublic class Boxed<T> {\n    [Obsolete]\n    public U Copy<U>(U value) {\n        U Nested(U item) { return item; }\n        return Nested(value);\n    }\n    public int café() { return 1; }\n}")
+skeleton "s:sample.cs#Sample::Boxed" "class" [2, 10] signature=Some("[Obsolete] public class Boxed<T>") summary="[Obsolete] public class Boxed<T>" source="sig" confidence=None
+read Some([18, 216]) Some("[Obsolete]\npublic class Boxed<T> {\n    [Obsolete]\n    public U Copy<U>(U value) {\n        U Nested(U item) { return item; }\n        return Nested(value);\n    }\n    public int café() { return 1; }\n}")
+skeleton "s:sample.cs#Sample::Boxed::Copy" "method" [4, 8] signature=Some("[Obsolete] public U Copy<U>(U value)") summary="[Obsolete] public U Copy<U>(U value)" source="sig" confidence=None
+read Some([53, 177]) Some("    [Obsolete]\n    public U Copy<U>(U value) {\n        U Nested(U item) { return item; }\n        return Nested(value);\n    }")
+skeleton "s:sample.cs#Sample::Boxed::Copy::Nested" "fn" [6, 6] signature=Some("U Nested(U item)") summary="U Nested(U item)" source="sig" confidence=None
+read Some([100, 141]) Some("        U Nested(U item) { return item; }")
+skeleton "s:sample.cs#Sample::Boxed::café" "method" [9, 9] signature=Some("public int café()") summary="public int café()" source="sig" confidence=None
+read Some([178, 214]) Some("    public int café() { return 1; }")

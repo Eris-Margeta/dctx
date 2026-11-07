@@ -72,8 +72,8 @@ pub(super) fn markdown_symbols(bytes: &[u8]) -> Vec<Symbol> {
             graph: NodeKind::Doc,
             lines: heading.lines,
             span: [
-                u64::try_from(heading.span.start).unwrap_or(u64::MAX),
-                u64::try_from(heading.span.end).unwrap_or(u64::MAX),
+                u64::try_from(heading.section.start).unwrap_or(u64::MAX),
+                u64::try_from(heading.section.end).unwrap_or(u64::MAX),
             ],
             summary,
             summary_source: "heading".to_string(),

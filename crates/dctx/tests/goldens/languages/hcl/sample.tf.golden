@@ -1,0 +1,5 @@
+skeleton "m:sample.tf" "module" [1, 10] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.tf#café" "type" [1, 4] signature=Some("variable \"café\"") summary="variable \"café\"" source="sig" confidence=Some("guess")
+read Some([0, 58]) Some("variable \"café\" {\n  type = string\n  default = \"fixture\"\n}")
+skeleton "s:sample.tf#example_box.sample" "type" [5, 10] signature=Some("resource \"example_box\" \"sample\"") summary="resource \"example_box\" \"sample\"" source="sig" confidence=Some("guess")
+read Some([59, 148]) Some("resource \"example_box\" \"sample\" {\n  value = var.café\n  nested {\n    enabled = true\n  }\n}")

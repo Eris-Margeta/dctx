@@ -1,0 +1,5 @@
+skeleton "m:sample.txt" "module" [1, 9] signature=None summary="" source="" confidence=None
+skeleton "d:sample.txt#Fixture" "heading" [1, 9] signature=None summary="An original fixture with café." source="heading" confidence=None
+read Some([0, 71]) Some("Fixture\n=======\n\nAn original fixture with café.\n\nNested\n------\n\nText.\n")
+skeleton "d:sample.txt#Nested" "heading" [6, 9] signature=None summary="Text." source="heading" confidence=None
+read Some([50, 71]) Some("Nested\n------\n\nText.\n")

@@ -1,0 +1,5 @@
+skeleton "m:sample.svelte" "module" [1, 4] signature=None summary="" source="" confidence=None
+skeleton "s:sample.svelte#café" "fn" [2, 2] signature=Some("function café<T>(value: T): T") summary="function café<T>(value: T): T" source="sig" confidence=None
+read Some([19, 67]) Some("function café<T>(value: T): T { return value; }")
+skeleton "d:sample.svelte#Fixture" "heading" [4, 4] signature=None summary="Fixture" source="heading" confidence=None
+read Some([78, 94]) Some("<h1>Fixture</h1>")

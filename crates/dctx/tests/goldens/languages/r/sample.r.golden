@@ -1,0 +1,5 @@
+skeleton "m:sample.r" "module" [1, 5] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.r#copy" "fn" [1, 4] signature=Some("copy <- function(value)") summary="copy <- function(value)" source="sig" confidence=Some("guess")
+read Some([0, 79]) Some("copy <- function(value) {\n  nested <- function(item) { item }\n  nested(value)\n}")
+skeleton "s:sample.r#café" "fn" [5, 5] signature=Some("café <- function() { 1 }") summary="café <- function() { 1 }" source="sig" confidence=Some("guess")
+read Some([80, 105]) Some("café <- function() { 1 }")

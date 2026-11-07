@@ -1,0 +1,13 @@
+skeleton "m:sample.kt" "module" [1, 9] signature=None summary="" source="" confidence=None
+skeleton "s:sample.kt#Boxed" "class" [2, 9] signature=Some("@Deprecated(\"fixture\") class Boxed<T>(val value: T)") summary="@Deprecated(\"fixture\") class Boxed<T>(val value: T)" source="sig" confidence=None
+read Some([15, 209]) Some("@Deprecated(\"fixture\")\nclass Boxed<T>(val value: T) {\n    fun <U> copy(item: U): U {\n        fun nested(input: U): U { return input }\n        return nested(item)\n    }\n    fun café(): Int = 1\n}")
+skeleton "s:sample.kt#Boxed::Boxed" "method" [3, 3] signature=Some("(val value: T)") summary="(val value: T)" source="sig" confidence=None
+read Some([38, 68]) Some("class Boxed<T>(val value: T) {")
+skeleton "s:sample.kt#Boxed::value" "const" [3, 3] signature=Some("val value: T") summary="val value: T" source="sig" confidence=None
+read Some([38, 68]) Some("class Boxed<T>(val value: T) {")
+skeleton "s:sample.kt#Boxed::copy" "method" [4, 7] signature=Some("fun <U> copy(item: U): U") summary="fun <U> copy(item: U): U" source="sig" confidence=None
+read Some([69, 182]) Some("    fun <U> copy(item: U): U {\n        fun nested(input: U): U { return input }\n        return nested(item)\n    }")
+skeleton "s:sample.kt#Boxed::copy::nested" "fn" [5, 5] signature=Some("fun nested(input: U): U") summary="fun nested(input: U): U" source="sig" confidence=None
+read Some([100, 148]) Some("        fun nested(input: U): U { return input }")
+skeleton "s:sample.kt#Boxed::café" "method" [8, 8] signature=Some("fun café(): Int") summary="fun café(): Int" source="sig" confidence=None
+read Some([183, 207]) Some("    fun café(): Int = 1")

@@ -1,0 +1,8 @@
+CREATE TABLE Boxed (
+  id INTEGER PRIMARY KEY,
+  value TEXT
+);
+CREATE VIEW copied AS
+  SELECT value FROM Boxed;
+CREATE FUNCTION identity_value(value INTEGER) RETURNS INTEGER
+AS 'SELECT value' LANGUAGE SQL;

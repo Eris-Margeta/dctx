@@ -1,0 +1,7 @@
+skeleton "m:sample.groovy" "module" [1, 8] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.groovy#Boxed" "type" [2, 8] signature=Some("class Boxed<T>") summary="class Boxed<T>" source="sig" confidence=Some("guess")
+read Some([12, 140]) Some("class Boxed<T> {\n  def copy(value) {\n    def nested = { item -> item }\n    return nested(value)\n  }\n  def café() { return 1 }\n}")
+skeleton "s:sample.groovy#Boxed::copy" "fn" [3, 6] signature=Some("def copy(value)") summary="def copy(value)" source="sig" confidence=Some("guess")
+read Some([29, 111]) Some("  def copy(value) {\n    def nested = { item -> item }\n    return nested(value)\n  }")
+skeleton "s:sample.groovy#Boxed::café" "fn" [7, 7] signature=Some("def café() { return 1 }") summary="def café() { return 1 }" source="sig" confidence=Some("guess")
+read Some([112, 138]) Some("  def café() { return 1 }")

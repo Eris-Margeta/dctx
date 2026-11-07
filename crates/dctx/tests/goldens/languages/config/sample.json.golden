@@ -1,0 +1,13 @@
+skeleton "m:sample.json" "module" [1, 4] signature=None summary="" source="" confidence=None
+skeleton "s:sample.json#Boxed" "struct" [2, 2] signature=None summary="" source="sig" confidence=None
+read Some([2, 48]) Some("  \"Boxed\": { \"value\": 1, \"café\": \"fixture\" },")
+skeleton "s:sample.json#Boxed.café" "fn" [2, 2] signature=Some("fixture") summary="fixture" source="sig" confidence=None
+read Some([2, 48]) Some("  \"Boxed\": { \"value\": 1, \"café\": \"fixture\" },")
+skeleton "s:sample.json#Boxed.value" "fn" [2, 2] signature=Some("1") summary="1" source="sig" confidence=None
+read Some([2, 48]) Some("  \"Boxed\": { \"value\": 1, \"café\": \"fixture\" },")
+skeleton "s:sample.json#items" "struct" [3, 3] signature=None summary="" source="sig" confidence=None
+read Some([49, 80]) Some("  \"items\": [{ \"nested\": true }]")
+skeleton "s:sample.json#items.0" "struct" [3, 3] signature=None summary="" source="sig" confidence=None
+read Some([49, 80]) Some("  \"items\": [{ \"nested\": true }]")
+skeleton "s:sample.json#items.0.nested" "fn" [3, 3] signature=Some("true") summary="true" source="sig" confidence=None
+read Some([49, 80]) Some("  \"items\": [{ \"nested\": true }]")

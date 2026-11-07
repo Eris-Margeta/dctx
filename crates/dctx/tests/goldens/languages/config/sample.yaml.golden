@@ -1,0 +1,11 @@
+skeleton "m:sample.yaml" "module" [1, 5] signature=None summary="" source="" confidence=None
+skeleton "s:sample.yaml#Boxed" "struct" [1, 5] signature=None summary="" source="sig" confidence=None
+read Some([0, 62]) Some("Boxed:\n  value: 1\n  café: fixture\n  nested:\n    enabled: true")
+skeleton "s:sample.yaml#Boxed.value" "fn" [2, 2] signature=Some("1") summary="1" source="sig" confidence=None
+read Some([7, 17]) Some("  value: 1")
+skeleton "s:sample.yaml#Boxed.café" "fn" [3, 3] signature=Some("fixture") summary="fixture" source="sig" confidence=None
+read Some([18, 34]) Some("  café: fixture")
+skeleton "s:sample.yaml#Boxed.nested" "struct" [4, 5] signature=None summary="" source="sig" confidence=None
+read Some([35, 62]) Some("  nested:\n    enabled: true")
+skeleton "s:sample.yaml#Boxed.nested.enabled" "fn" [5, 5] signature=Some("true") summary="true" source="sig" confidence=None
+read Some([45, 62]) Some("    enabled: true")

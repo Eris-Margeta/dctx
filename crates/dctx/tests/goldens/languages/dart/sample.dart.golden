@@ -1,0 +1,7 @@
+skeleton "m:sample.dart" "module" [1, 8] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.dart#Boxed" "type" [2, 8] signature=Some("class Boxed<T>") summary="class Boxed<T>" source="sig" confidence=Some("guess")
+read Some([12, 149]) Some("class Boxed<T> {\n  U copy<U>(U value) {\n    U nested(U item) { return item; }\n    return nested(value);\n  }\n  int café() { return 1; }\n}")
+skeleton "s:sample.dart#Boxed::copy" "fn" [3, 6] signature=Some("U copy<U>(U value)") summary="U copy<U>(U value)" source="sig" confidence=Some("guess")
+read Some([29, 119]) Some("  U copy<U>(U value) {\n    U nested(U item) { return item; }\n    return nested(value);\n  }")
+skeleton "s:sample.dart#Boxed::café" "fn" [7, 7] signature=Some("int café() { return 1; }") summary="int café() { return 1; }" source="sig" confidence=Some("guess")
+read Some([120, 147]) Some("  int café() { return 1; }")

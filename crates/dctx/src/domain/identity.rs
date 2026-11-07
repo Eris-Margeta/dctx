@@ -9,7 +9,9 @@ use dctx_hash::Sha256;
 use super::error::{DctxError, Resource};
 
 /// Parser id recorded on strict structural answers.
-pub const STRUCTURAL_PARSER: &str = "dctx-structural/2";
+/// Revision 3 fixes BOM dispatch and Markdown section spans and retains named
+/// local functions in Kotlin, Swift and C#. Older cached graphs must rebuild.
+pub const STRUCTURAL_PARSER: &str = "dctx-structural/3";
 
 /// Algorithm-tagged object key of `bytes`.
 ///

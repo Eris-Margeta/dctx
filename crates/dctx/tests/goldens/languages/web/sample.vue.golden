@@ -1,0 +1,11 @@
+skeleton "m:sample.vue" "module" [1, 10] signature=None summary="" source="" confidence=None
+skeleton "d:sample.vue#Fixture" "heading" [1, 10] signature=None summary="Fixture" source="heading" confidence=None
+read Some([0, 236]) Some("<template><h1>Fixture</h1></template>\n<script lang=\"ts\">\nexport class Boxed<T> {\n    copy(value: T): T {\n        function nested(item: T): T { return item; }\n        return nested(value);\n    }\n}\nfunction café() { return 1; }\n</script>")
+skeleton "s:sample.vue#Boxed" "class" [3, 8] signature=Some("class Boxed<T>") summary="class Boxed<T>" source="sig" confidence=None
+read Some([57, 195]) Some("export class Boxed<T> {\n    copy(value: T): T {\n        function nested(item: T): T { return item; }\n        return nested(value);\n    }\n}")
+skeleton "s:sample.vue#Boxed::copy" "method" [4, 7] signature=Some("copy(value: T): T") summary="copy(value: T): T" source="sig" confidence=None
+read Some([81, 193]) Some("    copy(value: T): T {\n        function nested(item: T): T { return item; }\n        return nested(value);\n    }")
+skeleton "s:sample.vue#Boxed::copy::nested" "fn" [5, 5] signature=Some("function nested(item: T): T") summary="function nested(item: T): T" source="sig" confidence=None
+read Some([105, 157]) Some("        function nested(item: T): T { return item; }")
+skeleton "s:sample.vue#café" "fn" [9, 9] signature=Some("function café()") summary="function café()" source="sig" confidence=None
+read Some([196, 226]) Some("function café() { return 1; }")

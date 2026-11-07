@@ -272,7 +272,7 @@ fn a_2000_token_page_carries_at_least_36_callers_with_2kb_summaries() {
             precision: Precision {
                 coverage: "structural".to_string(),
                 completion: "complete".to_string(),
-                parser: "dctx-structural/2".to_string(),
+                parser: "dctx-structural/3".to_string(),
             },
             outcome: None,
         };

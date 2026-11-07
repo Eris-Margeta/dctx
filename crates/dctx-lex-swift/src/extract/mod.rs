@@ -60,6 +60,7 @@ pub(crate) fn extract(
         },
         counts: BTreeMap::new(),
         ranges: vec![(0, src.len() as u32)],
+        local_depth: 0,
     };
     walker.check()?;
     walker.walk(0, lex.tokens.len(), 0, false)?;
@@ -98,6 +99,7 @@ struct Walker<'a> {
     output: LexedFile,
     counts: BTreeMap<String, u32>,
     ranges: Vec<(u32, u32)>,
+    local_depth: u32,
 }
 
 impl Walker<'_> {
