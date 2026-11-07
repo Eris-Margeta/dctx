@@ -197,7 +197,9 @@ fn default_template_resolves_markers_and_renders_the_project() {
         .expect("instructions")
         .clone();
     assert!(instructions.contains("<DIRECTORY_TREE>"));
-    assert!(instructions.contains("\\\""));
+    assert!(instructions.contains(r#"<FILE_CONTENT_START ID="UNIQUE_ID">"#));
+    assert!(instructions.contains(r#"</FILE_CONTENT_END ID="UNIQUE_ID">"#));
+    assert!(!instructions.contains(r#"\""#));
     let compiled = template.compile("default").expect("compile");
     assert!(compiled.partial_file_block.contains("<FILE_CONTENT_START"));
     assert!(
