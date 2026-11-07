@@ -48,7 +48,13 @@ fn execute_with(
 ) -> Result<String, String> {
     answer_with(arguments, open)
         .map(|answered| answered.page)
-        .map_err(|failure| failure.message)
+        .map_err(|failure| {
+            if failure.hint.is_empty() {
+                failure.message
+            } else {
+                format!("{}\nhint: {}", failure.message, failure.hint)
+            }
+        })
 }
 
 /// One answered map verb: the page, and the exit-1 failure that follows a `gone` page.

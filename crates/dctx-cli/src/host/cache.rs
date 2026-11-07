@@ -9,8 +9,23 @@ use super::policy::store_policy;
 /// Ledger file the facade persists inside the cache root.
 const LEDGER_FILE: &str = "ledger.v1";
 
-/// Root id the facade registers when a command piggy-backs auto-clean.
-pub(super) const CLI_ROOT_ID: u64 = 1;
+/// Separate maintenance identity; never used for a source generation.
+const MAINTENANCE_ROOT_ID: u64 = 1;
+
+/// Stable, domain-separated identity of the canonical place, including non-Unicode paths.
+/// The full source key is still checked before reuse; a truncated digest cannot authorize
+/// another place's generation. All identities share the same ledger and aggregate cap.
+pub(super) fn place_root_id(canonical: &Path) -> Result<u64, String> {
+    let mut hash = dctx_hash::Sha256::new();
+    hash.update(b"dctx-cli-place-root-v1\0")
+        .and_then(|()| hash.update(canonical.as_os_str().as_encoded_bytes()))
+        .map_err(|error| error.to_string())?;
+    let digest = hash.finalize();
+    let mut bytes = [0; 8];
+    bytes.copy_from_slice(&digest.as_bytes()[..8]);
+    // Reserve zero and the maintenance identity.
+    Ok(u64::from_le_bytes(bytes).max(2))
+}
 
 /// Set when this process ran piggy-back auto-clean before the map query.
 pub(super) static MAP_AUTO_CLEAN: AtomicBool = AtomicBool::new(false);
@@ -214,7 +229,7 @@ fn open_cache_session(root: &Path, policy: AutoCleanConfig) -> Result<Session, S
         })
         .place("cache")
         .view("auto")
-        .cache_root(root, CLI_ROOT_ID)
+        .cache_root(root, MAINTENANCE_ROOT_ID)
         .auto_clean(policy)
         .build()
         .map_err(facade_error)
@@ -285,6 +300,19 @@ fn create_private_dir(root: &Path) -> Result<(), String> {
 mod tests {
     use super::*;
     use std::{collections::BTreeMap, ffi::OsString};
+
+    #[cfg(unix)]
+    #[test]
+    fn place_ids_preserve_non_unicode_path_bytes() {
+        use std::os::unix::ffi::OsStringExt;
+        let a = PathBuf::from(OsString::from_vec(b"/project/\xff".to_vec()));
+        let b = PathBuf::from(OsString::from_vec(b"/project/\xfe".to_vec()));
+        assert_eq!(a.to_string_lossy(), b.to_string_lossy());
+        let id = place_root_id(&a).expect("id");
+        assert_eq!(place_root_id(&a).expect("stable id"), id);
+        assert_ne!(place_root_id(&b).expect("distinct id"), id);
+        assert_ne!(id, MAINTENANCE_ROOT_ID);
+    }
 
     #[test]
     fn windows_cache_uses_localappdata_and_refuses_missing_or_empty_values() {
