@@ -8,6 +8,7 @@
 
 pub mod cache;
 mod clipboard;
+pub mod doctor;
 pub mod exit;
 pub mod help;
 pub mod host;

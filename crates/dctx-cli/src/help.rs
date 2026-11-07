@@ -84,6 +84,7 @@ Usage: dctx <COMMAND> [OPTIONS]
        dctx serve [--mcp] [PATH]
        dctx read <TARGET> [OPTIONS]
        dctx languages [--json|--markdown]
+       dctx doctor [--json]
        dctx cache status [--json] [--root PATH]
        dctx cache gc [--dry-run] [--root PATH] [--max-bytes N]
        dctx cache purge --root PATH [--dry-run] [--yes]
@@ -105,13 +106,14 @@ Explicit `dctx pack` writes stdout, the clipboard, or `--output`. It does not cr
 Cache purge requires `--root PATH` or `--all`, and `--yes` unless `--dry-run` is set.
 `dctx cache config` shows the persisted policy. `auto on|off` enables auto-clean, `--max-bytes` tightens the system cap, and `--ttl-days` sets idle overlay and preview lifetime.
 `dctx cache auto` prints the last auto-clean time, the bytes it reclaimed and the next due time.
+`dctx doctor` lists visible binaries, ownership scopes, SHA-256 checksums and cache sizes without changing the cache or using the network.
 pack, map, template, plugin and the TUI run one bounded auto-clean when it is due. They print nothing unless bytes were reclaimed.
-`--no-auto-clean` and `DCTX_AUTO_CLEAN=0` disable that slice. `DCTX_CACHE_DIR` selects the cache root.
+`--no-auto-clean` and `DCTX_AUTO_CLEAN=0` disable that slice. `DCTX_CACHE_DIR` selects the cache parent; indexes live in its engine-major.minor subdirectory.
 
 General Options:
   -h, --help            Show help
   -v, --version         Show version
-  --verbose            With --version, also show feature and precision limits
+  --verbose            With --version, also show executable path, scope and limits
 
 Run `dctx pack --help` for pack options and filters.
 

@@ -172,7 +172,11 @@ fn a_second_process_reuses_until_the_bytes_change() {
     assert!(!repo.repo().join(".dctx").exists());
     let listed: Vec<_> = fs::read_dir(repo.repo()).expect("list").flatten().collect();
     assert_eq!(listed.len(), 1);
-    assert!(repo.cache().join("ledger.v1").is_file());
+    assert!(repo
+        .cache()
+        .join(dctx_cli::host::engine_cache_namespace())
+        .join("ledger.v1")
+        .is_file());
 }
 
 /// Sets `path` an hour in the past, outside the 2 s racy window, so a stat stamp can vouch for it.
