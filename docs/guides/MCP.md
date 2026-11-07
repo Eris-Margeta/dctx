@@ -12,6 +12,7 @@ the same options. No separate server installation is needed.
 | --- | --- | --- |
 | Default | `dctx mcp [PATH]` | All 10 tools, original descriptions. Also `--profile default`. |
 | Lean | `dctx mcp --profile lean [PATH]` | `find`, `read`; shorter descriptions. |
+| Three-tool | `dctx mcp --profile three [PATH]` | `map`, `find`, `read`; shorter descriptions. |
 | Custom | `dctx mcp --tools find,read,grep [PATH]` | Only the named tools; shorter descriptions. |
 
 The available names are `map`, `find`, `neighbors`, `explain`, `read`, `hubs`,
@@ -20,14 +21,17 @@ the same implementation. See [Map mode](MAP-MODE.md) for query behavior,
 budgets, pagination, indexing and cache limits.
 
 Lean suits sessions that locate symbols or documentation and then read their
-source by ID. Include `grep` when exhaustive literal search within indexed
-files is needed. Use the default surface for graph navigation, outlines and
-exports. All modes retain every parameter, type, required field and property
+source by ID. The three-tool profile adds structural maps for clients with a
+three-tool budget: start with `map`, locate a symbol with `find`, then `read`
+its source. Select it in an MCP client configuration with arguments
+`["mcp", "--profile", "three", "/absolute/project/path"]`. Include `grep` when
+exhaustive literal search within indexed files is needed. Use the default surface
+for graph navigation, outlines and exports. All modes retain every parameter, type, required field and property
 description of each selected tool, including output budgets and continuation
 cursors where supported. Only tool availability and top-level descriptions
 change. A subset does not reduce indexing scope or raise cache limits.
 
-Choose either `--profile` or `--tools`, once. Both `--profile=lean` and
+Choose either `--profile` or `--tools`, once. Both `--profile=three` and
 `--tools=find,read` also work. Options may precede or follow `PATH`; use `--`
 before a path starting with `-`. Names are case-sensitive, comma-separated,
 without spaces. Unknown names/profiles, empty entries, duplicates, missing
@@ -40,10 +44,14 @@ error `-32602` without executing it. Restart the server to change the selection.
 
 ## Measured overhead
 
-Measurements below use a release build of dctx 1.2.0 (`fd82034`) on Linux
-x86-64, Python 3.13.5, on 2026-11-07. They come from the running binary's
-`tools/list`, not a checked-in schema approximation. Reproduce them from the
-repository root with the [stdlib measurement script](../../tools/mcp-measure/measure.py):
+Default and lean measurements use a release build of dctx 1.2.0 (`fd82034`) on
+Linux x86-64, Python 3.13.5, on 2026-11-07. The three-tool row was measured in
+the same environment and on the same date, from `e251de8` plus the profile
+change; the default and lean byte counts also matched in that run
+([raw profile measurement](../results/DCX-PROF3-01-mcp.json)). Counts come from
+the running binary's `tools/list`, not a checked-in schema approximation. Reproduce
+them from the repository root with the
+[stdlib measurement script](../../tools/mcp-measure/measure.py):
 
 ```sh
 RUSTC_WRAPPER= cargo build -p dctx-cli --release --locked --target-dir target
@@ -58,6 +66,7 @@ absolute path. See its [measurement notes](../../tools/mcp-measure/README.md).
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Full (`default`) | 10 | 6,091 | 1,522.75 | 4,894 | 6,136 | 6,278 | 1,569.50 |
 | Lean | 2 | 1,450 | 362.50 | 1,251 | 1,495 | 1,637 | 409.25 |
+| Three-tool (`three`) | 3 | 2,097 | 524.25 | 1,796 | 2,142 | 2,284 | 571.00 |
 
 Tool-definition bytes count the compact JSON `result.tools` array. Input-schema
 bytes sum only its `inputSchema` objects, already included in that array; do
@@ -69,12 +78,15 @@ include tool schemas, and add their own instructions and wrappers.
 
 MCP is the training wheels: it works, it is fully supported, and it costs you
 about 1,570 tokens of start-up per session with the full profile (about 409 with
-lean). The binary is the bike.
+lean, 571 with three). The binary is the bike.
 
 Those are startup estimates under the convention above. The binary is the
 single source of truth: MCP transports engine output and advertises its tools;
-it does not produce a separate answer. Lean reduces schema bytes by limiting
-the available tools, while preserving their full parameter schemas.
+it does not produce a separate answer. Lean and three reduce schema bytes by
+limiting the available tools, while preserving their full parameter schemas.
+The executable parity test compares complete response bytes with the default
+profile for all three tools in text and JSON modes, including argument errors
+and the `serve` aliases.
 
 ### Result wrapping
 

@@ -175,8 +175,9 @@ impl Surface {
         match name {
             "default" => Ok(Self::Full),
             "lean" => Ok(Self::Selected(vec!["find", "read"])),
+            "three" => Ok(Self::Selected(vec!["map", "find", "read"])),
             _ => Err(format!(
-                "unknown MCP profile: {name}; expected default or lean"
+                "unknown MCP profile: {name}; expected default, lean or three"
             )),
         }
     }
@@ -476,6 +477,10 @@ mod tests {
                 TOOLS.iter().map(|t| t.name).collect::<Vec<_>>(),
             ),
             (Surface::profile("lean").unwrap(), vec!["find", "read"]),
+            (
+                Surface::profile("three").unwrap(),
+                vec!["map", "find", "read"],
+            ),
             (
                 Surface::from_names("read,grep,find").unwrap(),
                 vec!["find", "read", "grep"],
