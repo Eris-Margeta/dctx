@@ -1,0 +1,367 @@
+{
+ "schema": 1,
+ "note": "The one facts source: the llms files (llms.py, facts_markdown), /for-ai-evaluators/, the home notice, the choose-your-path selector and /start/ pages (facts.py). Schema: tools/website/README.md. check.py fails if version differs from VERSION, if released differs from CHANGELOG.md or the release tag, or if a removed command appears outside the removed list. Honesty rule: only what ships in the current release is stated as existing; everything else says planned or publishing soon.",
+ "version": "1.2.0",
+ "released": "2026-11-07",
+ "release_tag": "v1.2.0",
+ "is": "dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output or MCP tools.",
+ "is_not": [
+  "No RAG: no embeddings, no vector search, and the engine never calls a model.",
+  "No network: pack, map, cache and mcp make no network calls; the release check counts socket calls under strace and fails on any.",
+  "No telemetry, not even opt-out.",
+  "No agent loop: dctx answers one command at a time; the agent or the human decides what to ask next."
+ ],
+ "verify_download": {
+  "available": "Each release on GitHub ships prebuilt archives for Linux x64/ARM64, macOS x64/ARM64 and Windows x64 with a SHA256SUMS file.",
+  "command": "sha256sum --check --ignore-missing SHA256SUMS",
+  "planned": "Signed release binaries and an SBOM are planned; there is no signature to verify yet.",
+  "link": "https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0"
+ },
+ "modalities": [
+  {
+   "name": "CLI",
+   "status": "available",
+   "line": "`dctx pack PATH` for one structured block (clipboard, file or stdout); `dctx map find|read|neighbors|skeleton|...` for bounded symbol answers.",
+   "link": "/cli/"
+  },
+  {
+   "name": "MCP server",
+   "status": "available",
+   "line": "`dctx mcp PATH` over stdio for Claude Code, Cursor and Codex; `--profile lean` exposes only find and read.",
+   "link": "/docs/modalities/#mcp-server-convenient-tools-with-startup-context"
+  },
+  {
+   "name": "Task context",
+   "status": "available",
+   "line": "`dctx pack --for TEXT --budget N`: find, neighbors and read of the names in TEXT, cut to an estimated-token budget.",
+   "link": "/docs/map-mode/"
+  },
+  {
+   "name": "CI and prompt cache",
+   "status": "available",
+   "line": "Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch.",
+   "link": "/docs/modalities/#ci--prompt-cache-prefix-stability"
+  },
+  {
+   "name": "Rust library",
+   "status": "available from Git",
+   "line": "The `dctx` facade crate as a tagged Git dependency; crates.io publishing soon.",
+   "link": "/docs/modalities/#rust-library-embed-the-facade"
+  },
+  {
+   "name": "npm CLI",
+   "status": "publishing soon",
+   "line": "`npx dctx` runs the native CLI from a Node toolchain once published; use the release archives today.",
+   "link": "/docs/modalities/#npm-cli-publishing-soon"
+  },
+  {
+   "name": "Desktop app",
+   "status": "preview",
+   "line": "A Tauri preview you build from source; a GPUI rebuild is planned.",
+   "link": "/docs/modalities/#desktop-app-tauri-preview-today"
+  },
+  {
+   "name": "Python and Node libraries",
+   "status": "planned",
+   "line": "Project-scoped packages with their own pinned binary; not available yet.",
+   "link": "/docs/modalities/#python-and-node-bindings-planned"
+  }
+ ],
+ "scopes": [
+  "System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.",
+  "Project binary (planned with the Python and Node libraries): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.",
+  "Same engine, different owner. Release signing is planned; today both are verified against SHA256SUMS."
+ ],
+ "notice": "dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.",
+ "benchmarks": {
+  "baseline": "grep plus reading files",
+  "claims": [
+   {
+    "status": "being prepared",
+    "text": "A whole-session benchmark against grep plus file reads (every model turn, startup and tool definitions counted) is being prepared and will be published with raw data. No session saving is claimed yet.",
+    "link": "/docs/benchmark/"
+   },
+   {
+    "status": "measured",
+    "text": "Byte stability: the same query on unchanged code returns the same bytes; 33 of 33 text and JSON answers were byte-identical after unrelated edits (Linux only).",
+    "link": "/docs/stability/"
+   },
+   {
+    "status": "historical",
+    "text": "The October and November in-house numbers (run 7: 140 of 140 task questions, cold index and warm latency) measure tool output only, as estimated stdout tokens and raw fact coverage without a model; they are not agent completion rates or session costs.",
+    "link": "/benchmarks/"
+   },
+   {
+    "status": "hypothesis",
+    "text": "That a pack template changes model answer quality or cost is a hypothesis pending an A/B test; nothing on this site measures it.",
+    "link": "/templates/"
+   }
+  ]
+ },
+ "removed": {
+  "since": "1.2.0",
+  "intro": "These existed before 1.2.0 and no longer work. A transcript that uses them describes an old version.",
+  "items": [
+   {
+    "was": "`dctx PATH` (the implicit snapshot command, for example `dctx .`)",
+    "use": "`dctx pack PATH`",
+    "patterns": [
+     "(?m)\\bdctx \\.(?:[ \\t]+-[a-zA-Z]|[ \\t]*$|`)",
+     "Usage: dctx \\[PATH\\]"
+    ]
+   },
+   {
+    "was": "the top-level snapshot flags `-d`/`--diff`, `-t`/`--tree` and `-r`/`--reset`",
+    "use": "`dctx pack PATH` with its filters",
+    "patterns": [
+     "-d, --diff",
+     "-t, --tree",
+     "-r, --reset"
+    ]
+   },
+   {
+    "was": "the project rule files `.legacyignore` and `.dctxomitcontent`",
+    "use": "`.gitignore` and `.dctxignore`",
+    "patterns": [
+     "\\.legacyignore",
+     "\\.dctxomitcontent"
+    ]
+   },
+   {
+    "was": "`dctx cache gc --legacy` and its export-selection flags",
+    "use": "`dctx cache gc`",
+    "patterns": [
+     "cache gc --legacy"
+    ]
+   }
+  ]
+ },
+ "verify": [
+  {
+   "what": "Test suite",
+   "command": "cargo test --workspace --locked --exclude dctx-desktop --exclude dctx-desktop-api",
+   "link": "https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md"
+  },
+  {
+   "what": "CI",
+   "text": "Every push and pull request runs the suite on Linux, macOS (ARM64 and x64) and Windows, on stable Rust and the minimum supported version 1.91.",
+   "link": "https://github.com/Eris-Margeta/dctx/actions"
+  },
+  {
+   "what": "No network calls",
+   "command": "scripts/release-check.sh --quick target/release/dctx-cli",
+   "link": "https://github.com/Eris-Margeta/dctx/blob/main/scripts/release-check.sh"
+  },
+  {
+   "what": "Byte stability",
+   "command": "python3 docs/research/stability-20261105/verify.py",
+   "link": "/docs/stability/"
+  },
+  {
+   "what": "Historical benchmark",
+   "command": "docs/research/bench-3way-20261030/run-3way.sh target/release/dctx-cli",
+   "link": "https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030"
+  },
+  {
+   "what": "Every output on this site",
+   "text": "Recorded from the real binary by tools/website/capture.py; tools/website/check.py re-records and fails on drift.",
+   "link": "https://github.com/Eris-Margeta/dctx/tree/main/tools/website"
+  }
+ ],
+ "notice_status": "A three-tool profile and receipts are planned. Until they ship, the safe path uses the lean MCP profile, `dctx mcp --profile lean`.",
+ "safe_path": [
+  [
+   "One project",
+   "Start with one project you know, not your whole disk."
+  ],
+  [
+   "The system binary",
+   "Install the release archive from GitHub Releases and verify it against SHA256SUMS."
+  ],
+  [
+   "The lean MCP profile",
+   "`dctx mcp --profile lean` exposes two tools, find and read, with compact descriptions."
+  ],
+  [
+   "Measure",
+   "Run the same task with grep plus file reads and with dctx; compare whole-session tokens and calls, not only answer size."
+  ]
+ ],
+ "ways": [
+  {
+   "name": "CLI",
+   "line": "pack a project or one task into a bounded page for chat, scripts and shell agents.",
+   "status": "available",
+   "link": "/docs/modalities/#human-one-off-pack-to-clipboard"
+  },
+  {
+   "name": "Agents, short session",
+   "line": "for a quick task grep plus a file read is often enough; add dctx only where a focused query saves turns.",
+   "status": "available",
+   "link": "/docs/modalities/#short-agent-task-grep-can-be-enough"
+  },
+  {
+   "name": "Agents, long session",
+   "line": "find, then read by stable id, with skeleton for orientation, in big files and long sessions.",
+   "status": "available",
+   "link": "/docs/map-mode/"
+  },
+  {
+   "name": "MCP and ACP",
+   "line": "`dctx mcp` serves the map verbs to Claude Code, Cursor and Codex; the lean profile keeps startup small.",
+   "status": "MCP available (stdio); ACP planned",
+   "link": "/docs/modalities/#mcp-server-convenient-tools-with-startup-context"
+  },
+  {
+   "name": "Libraries",
+   "line": "embed the engine in your own tool; the project pins its own binary and never re-implements engine logic.",
+   "status": "Rust from Git now; pip and npm publishing soon",
+   "link": "/docs/modalities/#rust-library-embed-the-facade"
+  },
+  {
+   "name": "CI and prompt cache",
+   "line": "byte-stable output keeps the prompt prefix the same between runs, so provider caches can hit.",
+   "status": "available",
+   "link": "/docs/modalities/#ci--prompt-cache-prefix-stability"
+  }
+ ],
+ "responsibilities": {
+  "head": [
+   "Level",
+   "dctx provides",
+   "You are responsible for"
+  ],
+  "rows": [
+   [
+    "System binary",
+    "Release archives with SHA256SUMS, cache caps; signed binary, doctor, journals and receipts (planned)",
+    "Choosing roots, the ignore rules (a policy file is planned), keeping one version on PATH"
+   ],
+   [
+    "Project library",
+    "Pinned vendored binary, protocol client, same bytes as CLI (pip and npm publishing soon; Rust facade from Git today)",
+    "Pinning the version, exclusions in the project policy, not re-implementing engine logic"
+   ],
+   [
+    "MCP and ACP agent setup",
+    "Lean profile, tested client configs, measured start-up cost (MCP today; ACP planned)",
+    "Turning off the host's own file tools, picking a profile, session ids and reading receipts (both planned)"
+   ],
+   [
+    "CI and cache",
+    "Byte-stable pack, deterministic exit codes; prefix tiers (planned)",
+    "Pinning the binary, caching the index between runs, treating pack drift as a signal not noise"
+   ]
+  ]
+ },
+ "personas": [
+  {
+   "id": "giant-folder",
+   "name": "One giant folder",
+   "who": "You work inside one very large tree, for example a 200 GB monorepo, data or document folder.",
+   "modality": "System binary, scoped roots, ignore rules at each root you query.",
+   "setup": [
+    "Install the system binary from GitHub Releases and verify it against SHA256SUMS.",
+    "Write a `.dctxignore` at each root you will query: data, generated output and archives out (`.gitignore` is read too).",
+    "Decide which sub-roots a task can name: a package, a service, a document set.",
+    "Optional: set fail-fast ceilings with `DCTX_MAX_SOURCE_BYTES`, `DCTX_MAX_RECORDS` and `DCTX_MAX_ENTRIES`."
+   ],
+   "first_command": "dctx map find Config --place packages/service-a --budget 500 --limit 5",
+   "expect": "A bounded page that starts with a `# <place> find` header and lists one stable id per line. Only the named sub-root is scanned and indexed; `dctx cache status --json` shows what the cache holds, under a 2 GiB hard cap. A scan over a limit fails with an error instead of returning a partial index.",
+   "record": "find",
+   "pitfall": "Pointing an agent at the whole root. Every call then has to scan or index far more than the task needs, and the cache cap can refuse it. Name the sub-root in the task, with `--place` or by starting in that folder.",
+   "links": [
+    [
+     "Huge trees: scope before indexing",
+     "/docs/modalities/#huge-trees-scope-before-indexing"
+    ],
+    [
+     "Map mode guide",
+     "/docs/map-mode/"
+    ]
+   ]
+  },
+  {
+   "id": "many-projects",
+   "name": "Many smaller projects",
+   "who": "You move between many small and medium repositories during the day.",
+   "modality": "System binary, the lean MCP profile once in your agent, nothing per project.",
+   "setup": [
+    "Install the system binary once and put it on PATH.",
+    "Add one MCP entry to your agent: command `dctx`, arguments `mcp --profile lean`. With no path, the server serves the directory the client starts it in.",
+    "If your client does not start servers in the project directory, add the absolute project path as the last argument instead.",
+    "Nothing else per project: dctx reads `.gitignore` and `.dctxignore` where they already are."
+   ],
+   "first_command": "dctx mcp --profile lean",
+   "expect": "This is the command your agent starts; in a terminal it waits for JSON-RPC on stdin (Ctrl-C stops it). Your agent sees two tools, `find` and `read`. `find` returns stable ids; `read` returns the verified source bytes of one id. The captured run below is the CLI equivalent on the sample project.",
+   "record": "find",
+   "pitfall": "Stale caches of projects you deleted or no longer use. Auto-clean runs once a day and drops unpinned roots after 30 idle days; to clean by hand, run `dctx cache status`, then `dctx cache gc --dry-run` or `dctx cache purge --root PATH --dry-run`.",
+   "links": [
+    [
+     "MCP client configuration",
+     "/docs/modalities/#client-configuration"
+    ],
+    [
+     "Choosing how to use dctx",
+     "/docs/modalities/"
+    ]
+   ]
+  },
+  {
+   "id": "library",
+   "name": "Agent builder embedding a library",
+   "who": "You build an agent, editor or tool and want dctx inside it.",
+   "modality": "Project library with its own pinned binary. pip and npm packages are publishing soon; today use the Rust facade from a tagged Git dependency, or run a pinned CLI binary and read its `--json` output.",
+   "setup": [
+    "Pin one version in your project, for example the Rust facade: `dctx = { git = \"https://github.com/Eris-Margeta/dctx\", tag = \"v1.2.0\" }`.",
+    "Pass your own ignore rules: the library does not load `.gitignore` by itself; the host supplies selection policy, storage limits and the clock.",
+    "Move ids, not text: call `find`, keep the returned ids, call `read` with them."
+   ],
+   "first_command": "cargo test --locked -p dctx-library-example --doc",
+   "expect": "The ten-line library example compiles and runs against an in-memory source. With the CLI, `--json` answers carry the same records, and `read` puts the exact source in `source_utf8`.",
+   "record": "read-json",
+   "pitfall": "Re-implementing engine logic: parsing or slicing pack text, recounting budgets, rebuilding ids. Treat answers as opaque pages and stable ids; if you need a different shape, ask the engine for `--json`.",
+   "links": [
+    [
+     "Rust library: embed the facade",
+     "/docs/modalities/#rust-library-embed-the-facade"
+    ],
+    [
+     "Use as a library",
+     "/docs/readme/#use-as-a-library"
+    ]
+   ]
+  },
+  {
+   "id": "team",
+   "name": "Team or organisation admin",
+   "who": "You roll dctx out to a team or a fleet of machines.",
+   "modality": "System binary distributed through your own package channel, one pinned version everywhere.",
+   "setup": [
+    "Download the release archives from GitHub Releases and verify them against SHA256SUMS. Signatures and an SBOM are planned.",
+    "Ship one pinned version through your own package manager, image or configuration tool.",
+    "Ship shared ignore rules (`.dctxignore` and a global ignore); the built-in deny for secrets, `.git` and symlinks always applies.",
+    "Tighten the cache cap per machine if you need to: `dctx cache config --max-bytes N` can only lower it."
+   ],
+   "first_command": "dctx --version",
+   "expect": "One line with the version on every machine; `dctx --version --verbose` adds the feature list and precision and cache limits. Every machine should print the same line.",
+   "record": "version",
+   "pitfall": "Mixing project and system versions without checking. Until `dctx doctor` (planned) lists every binary in reach, check `dctx --version` on PATH and the version each project pins, as part of onboarding.",
+   "links": [
+    [
+     "Privacy guarantees",
+     "/docs/privacy/"
+    ],
+    [
+     "Security policy",
+     "/security/"
+    ]
+   ]
+  }
+ ],
+ "install": {
+  "system": "Download the archive for your OS from GitHub Releases, verify it against SHA256SUMS, extract it and put `dctx` on PATH. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.",
+  "project": "pip and npm packages that carry their own pinned binary are publishing soon, as are `cargo install dctx-cli` and `npx dctx`. Today, embed the Rust facade from a tagged Git dependency."
+ },
+ "philosophy": "The binary is everything. One file holds the engine, the CLI and the MCP server; there is no service to run, no account and no model behind it. It works offline and makes zero network calls. The same tree and the same question give the same bytes, so answers can be compared, cached and trusted."
+}

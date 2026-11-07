@@ -71,7 +71,7 @@ def build(out: Path, skip_og: bool = False) -> int:
     import shell
     from assets import Assets
     from common import ICON, READS, ROOT, VERSION, date_of, read_bytes
-    from pages import benchmarks, docs, examples, home, misc, playground, reference
+    from pages import animations, benchmarks, docs, examples, home, misc, paths, playground, reference
     from pages.news_content import NEWS
     from routes import DOCS, POLICIES, build_routes, doc_path
 
@@ -104,6 +104,13 @@ def build(out: Path, skip_og: bool = False) -> int:
     for r in routes:
         if r.kind == "home":
             emit(r, home.body(scene), script="home.js")
+        elif r.path == "/start/":
+            emit(r, paths.start())
+        elif r.extra.get("persona"):
+            emit(r, paths.persona(r.extra["persona"]), parents=[("/start/", "Choose your path")])
+        elif r.path == "/for-ai-evaluators/":
+            body, graph = paths.evaluators()
+            emit(r, body, graph)
         elif r.path == "/docs/":
             emit(r, docs.index_page(rendered))
         elif r.kind == "doc":
@@ -132,6 +139,8 @@ def build(out: Path, skip_og: bool = False) -> int:
         elif r.path == "/benchmarks/":
             body, graph = benchmarks.benchmarks()
             emit(r, body, graph)
+        elif r.path == "/how-it-works/":
+            emit(r, animations.page(), script="how.js")
         elif r.kind == "changelog":
             emit(r, misc.changelog(linker))
         elif r.path == "/news/":
@@ -163,7 +172,9 @@ def build(out: Path, skip_og: bool = False) -> int:
     files["favicon.svg"] = (ICON.replace(' aria-hidden="true" focusable="false"', ' xmlns="http://www.w3.org/2000/svg"') + "\n").encode()
     files["llms.txt"] = llms.llms_txt().encode()
     files["llms-small.txt"] = llms.llms_small().encode()
-    files["llms-full.txt"] = llms.llms_full(rendered, linker).encode()
+    files["llms-full.txt"] = llms.llms_full().encode()
+    for rel in llms.stale_sources():
+        print(f"warning: {rel} changed since data/llms.json was captured; run capture.py --llms (check.py fails)", file=sys.stderr)
     files["news/feed.xml"] = llms.news_feed().encode()
     files["changelog/feed.xml"] = llms.changelog_feed(releases).encode()
     files["sitemap.xml"] = llms.sitemap(routes).encode()

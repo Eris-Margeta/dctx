@@ -1,186 +1,214 @@
 # dctx
 
-> Turn a codebase into focused context for AI assistants. Pack a project, find symbols and read exact source locally. Stable output helps prompt caches reuse context.
+> dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse. dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
 
-dctx 1.2.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short: https://www.dctx.internet.technology/llms-small.txt
+## About this file
 
-## Docs
-- [Why dctx](https://www.dctx.internet.technology/why/index.md): why it exists; why byte-identical output matters
-- [README](https://www.dctx.internet.technology/docs/readme/index.md): install, quick start, map mode
-- [Specification](https://www.dctx.internet.technology/docs/spec/index.md): constraints and roadmap
-- [Map mode](https://www.dctx.internet.technology/docs/map-mode/index.md): every map verb
-- [Which mode?](https://www.dctx.internet.technology/docs/modalities/index.md): scope and startup cost
-- [All documents](https://www.dctx.internet.technology/docs/): with Markdown twins
-
-## CLI
-- [CLI reference](https://www.dctx.internet.technology/cli/): help, env, exit codes, MCP tools
-- [Languages](https://www.dctx.internet.technology/languages/): 50 languages by tier
-
-## Examples
-- [Examples](https://www.dctx.internet.technology/examples/): every command, exact output
-- [Templates](https://www.dctx.internet.technology/templates/): built-in templates
-- [Playground](https://www.dctx.internet.technology/playground/): API: /api/v1/openapi.json
-
-## Evidence
-- [Benchmarks](https://www.dctx.internet.technology/benchmarks/): tables and caveats
-- [Stability report](https://www.dctx.internet.technology/docs/stability/index.md): 33/33 protocol
-
-## Project
-- [Security](https://www.dctx.internet.technology/security/index.md): private reports
-- [Contributing](https://www.dctx.internet.technology/docs/contributing/index.md): DCO
-
-## Optional
-- [Changelog](https://www.dctx.internet.technology/changelog/): releases
-- [llms-full.txt](https://www.dctx.internet.technology/llms-full.txt): everything
-
-## Why dctx
-
-<!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
-# Why dctx exists
-
-What problem dctx solves, the rules it follows, and why "byte-identical output" matters even if you never think about bytes.
-
-## The problem
-
-An AI coding assistant only knows what is in its **context window**: the text sent to the model with your request. It cannot see the rest of your project.
-
-Most projects are too large to send whole, so tools pick pieces. Often they pick badly: whole files when one function would do, text that looks similar but is the wrong code, code as it was before your last edit, or half a function.
-
-Each of these costs you. Models read text as **tokens** (small chunks of text, roughly a short word or part of one), and providers bill per token. The model reads every token before it answers, so more tokens also means more waiting. And answers get worse as irrelevant text piles up. The [README](../README.md#the-core-belief-prompt-processing-efficiency) sums it up: every token in front of a model is paid for three times, to read it, again when a cache is missed, and again in attention.
-
-## What dctx does
-
-dctx is a command-line tool that reads your project on your machine and answers precise questions about it: where a function is defined, what calls it, what its exact source is. Each answer fits a size budget and is built from whole pieces of syntax; a piece that is too long is marked as cut, with a way to get the rest. The same question about the same code gives the same bytes every time. An assistant can run the commands itself or call them through the built-in MCP server (`dctx mcp`; MCP is a standard way for AI tools to call other tools). dctx can also pack a whole project into one structured block for a chat.
-
-### Start with grep plus file reads
-
-The baseline is a literal search followed by reading the relevant files or line
-ranges. That is often enough for a short task. dctx earns its place when exact
-symbol reads and outlines avoid repeatedly sending large, irrelevant files.
-It aims to be one context-management tool across these workflows; choose the
-surface that fits in [Choosing how to use dctx](MODALITIES.md).
-
-### A small worked example
-
-Run with dctx 1.1.0 on a copy of this repository's `crates/dctx-lex-go` folder. The output is real and complete.
-
-```text
-$ dctx map find Add
-# dctx-lex-go find
-s:tests/fixtures/basic.go#Add	fn	L43-45
-
-$ dctx map read 's:tests/fixtures/basic.go#Add'
-# dctx-lex-go read
-s:tests/fixtures/basic.go#Add	fn	tests/fixtures/basic.go
-func Add[T ~int](a, b T) T {
-	return a
-}
-
-$ dctx map neighbors 's:tests/fixtures/basic.go#Add' --edge calls --dir in
-# dctx-lex-go neighbors
-calls:in:s:tests/fixtures/basic.go#main	fn	tests/fixtures/basic.go	L59
-```
-
-`find` returns a stable id, the kind of thing it is (a function) and its lines. This is a historical 1.1.0 transcript; the current CLI also includes verified source bytes in text `read` output, or in `source_utf8` with `read --json`. `neighbors` says that `main` calls it, on line 59.
-
-## The philosophy
-
-The [specification](SPEC.md#2-the-core-belief-prompt-processing-efficiency) turns this into five testable rules.
-
-**Bounded.** Every map answer has a size ceiling, reserved before anything is written, and a record is never split. The budget is up to 2,000 estimated tokens (1,000 for `explain`).
-*Why it matters to you:* one question cannot flood the context window and crowd out your own instructions.
-
-**Deterministic.** The same code and the same question give the same bytes.
-*Why it matters to you:* results are repeatable, and repeated prompts can be served from a cache.
-
-**Prefix-stable.** When context is sent again across turns, bytes that did not need to change do not change.
-*Why it matters to you:* this is what keeps caching working across a conversation.
-
-**Non-redundant.** Within one session, do not resend what was already sent unless it changed. This one is still a target.
-
-(continued: https://www.dctx.internet.technology/why/)
-
-## Quick start
-
-In 30 seconds, try a tiny project (POSIX shell; on Windows use Git Bash):
-
-```sh
-mkdir dctx-demo
-cd dctx-demo
-printf 'def hello(name):\n    return f"Hello, {name}!"\n' > hello.py
-dctx map skeleton hello.py
-```
-
-Output from dctx 1.2.0:
-
-```text
-# dctx-demo skeleton
-m:hello.py	module	L1-2	hello.py
-s:hello.py#hello	fn	L1-2	def hello(name):
-```
-
-For your own project:
-
-```sh
-dctx pack .                # structured context on stdout
-dctx pack . --clipboard    # copy it to the clipboard
-dctx map find "SnapshotConfig"
-dctx mcp                   # stdio tools for an MCP client
-```
-
-`pack` writes a file only with `--output`. Tree timestamps are off by default,
-so a bare `touch` does not change its output; `--tree-stamps=on` includes them.
-Run `dctx` without arguments for the interactive terminal menu.
-
-## Map mode
-
-```zsh
-# Run from this repository's root; map needs a file target.
-dctx map map crates/dctx-cli/src/lib.rs --depth 2
-dctx map find "SnapshotConfig"
-# Use a stable ID returned by map/find for neighbors, explain and read.
-dctx map neighbors 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --edge calls --dir in
-dctx map explain 's:crates/dctx-cli/src/lib.rs#SnapshotConfig'
-dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
-```
-
-## Map verbs
-
-- dctx map map: Outline of a file (m:<path> or a place-relative path) or a symbol and what it contains.
-- dctx map find: Ranked symbols, modules, headings and config keys whose name or summary matches QUERY.
-- dctx map neighbors: Edges of one node: callers with --dir in --edge calls, callees with --dir out.
-- dctx map explain: One node with its signature and summary, no body.
-- dctx map read: The verified source text of one node; a long node pages with --cursor.
-- dctx map skeleton: Declaration signatures of one file in source order, no bodies.
-- dctx map grep: Exhaustive literal search of indexed files, hits grouped by enclosing symbol.
-- dctx map hubs: Most-called symbols and per-directory file and symbol counts. No TARGET.
-- dctx map path: Shortest edge path (calls, imports, contains; at most 8 hops) between two nodes, or `no path`.
-- dctx map export: The whole graph as one deterministic document. No TARGET, no token cap.
+- This is llms-small.txt: the facts and the route table, with an outline of the start documents. The other entry points: https://www.dctx.internet.technology/llms.txt, https://www.dctx.internet.technology/llms-full.txt.
+- Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
+- Docs commit: 4e2d3fcf050feaf484507b54ea3cfb35b9c24e35 (2026-11-07T18:00:57Z), the last commit that changed one of the documents.
+- Command: `dctx map map docs/START.md --depth 2`; `dctx map map docs/WHY-DCTX.md --depth 2`; `dctx map map README.md --depth 2`; `dctx map map docs/MODALITIES.md --depth 2`
+- Budget: 1,016 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
-- Compare with grep plus file reads; count startup and all model turns, not just tool output: https://www.dctx.internet.technology/docs/modalities/
-- Cold index 0.13-1.20 s on 6 corpora, median of 3 (run 7): https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json
-- 50 languages: 36 full, 8 outline, 6 docs: https://www.dctx.internet.technology/languages/
-- 33/33 text and 33/33 JSON answers byte-identical after unrelated edits: https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md
-- 0 socket attempts by dctx in every traced benchmark variant: https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md
+### What dctx is
 
-## Install
+dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output or MCP tools.
 
-```zsh
-git clone https://github.com/Eris-Margeta/dctx
-cd dctx
-cargo build --locked --release -p dctx-cli
-./target/release/dctx-cli --version
-alias dctx="$PWD/target/release/dctx-cli"
+What it is not:
+
+- No RAG: no embeddings, no vector search, and the engine never calls a model.
+- No network: pack, map, cache and mcp make no network calls; the release check counts socket calls under strace and fails on any.
+- No telemetry, not even opt-out.
+- No agent loop: dctx answers one command at a time; the agent or the human decides what to ask next.
+
+### Version and download
+
+- Current version: 1.2.0, released 2026-11-07 (tag `v1.2.0`): https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0
+- Each release on GitHub ships prebuilt archives for Linux x64/ARM64, macOS x64/ARM64 and Windows x64 with a SHA256SUMS file.
+- Verify a download: `sha256sum --check --ignore-missing SHA256SUMS`
+- Signed release binaries and an SBOM are planned; there is no signature to verify yet.
+
+### Modalities
+
+- CLI (available): `dctx pack PATH` for one structured block (clipboard, file or stdout); `dctx map find|read|neighbors|skeleton|...` for bounded symbol answers. https://www.dctx.internet.technology/cli/
+- MCP server (available): `dctx mcp PATH` over stdio for Claude Code, Cursor and Codex; `--profile lean` exposes only find and read. https://www.dctx.internet.technology/docs/modalities/#mcp-server-convenient-tools-with-startup-context
+- Task context (available): `dctx pack --for TEXT --budget N`: find, neighbors and read of the names in TEXT, cut to an estimated-token budget. https://www.dctx.internet.technology/docs/map-mode/
+- CI and prompt cache (available): Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch. https://www.dctx.internet.technology/docs/modalities/#ci--prompt-cache-prefix-stability
+- Rust library (available from Git): The `dctx` facade crate as a tagged Git dependency; crates.io publishing soon. https://www.dctx.internet.technology/docs/modalities/#rust-library-embed-the-facade
+- npm CLI (publishing soon): `npx dctx` runs the native CLI from a Node toolchain once published; use the release archives today. https://www.dctx.internet.technology/docs/modalities/#npm-cli-publishing-soon
+- Desktop app (preview): A Tauri preview you build from source; a GPUI rebuild is planned. https://www.dctx.internet.technology/docs/modalities/#desktop-app-tauri-preview-today
+- Python and Node libraries (planned): Project-scoped packages with their own pinned binary; not available yet. https://www.dctx.internet.technology/docs/modalities/#python-and-node-bindings-planned
+
+Two scopes, one binary:
+
+- System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.
+- Project binary (planned with the Python and Node libraries): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.
+- Same engine, different owner. Release signing is planned; today both are verified against SHA256SUMS.
+
+### Before you start
+
+> dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.
+
+### Benchmarks
+
+Baseline: grep plus reading files.
+
+- Being prepared: A whole-session benchmark against grep plus file reads (every model turn, startup and tool definitions counted) is being prepared and will be published with raw data. No session saving is claimed yet. https://www.dctx.internet.technology/docs/benchmark/
+- Measured: Byte stability: the same query on unchanged code returns the same bytes; 33 of 33 text and JSON answers were byte-identical after unrelated edits (Linux only). https://www.dctx.internet.technology/docs/stability/
+- Historical: The October and November in-house numbers (run 7: 140 of 140 task questions, cold index and warm latency) measure tool output only, as estimated stdout tokens and raw fact coverage without a model; they are not agent completion rates or session costs. https://www.dctx.internet.technology/benchmarks/
+- Hypothesis: That a pack template changes model answer quality or cost is a hypothesis pending an A/B test; nothing on this site measures it. https://www.dctx.internet.technology/templates/
+
+### Removed in 1.2.0
+
+These existed before 1.2.0 and no longer work. A transcript that uses them describes an old version.
+
+- `dctx PATH` (the implicit snapshot command, for example `dctx .`): use `dctx pack PATH`.
+- the top-level snapshot flags `-d`/`--diff`, `-t`/`--tree` and `-r`/`--reset`: use `dctx pack PATH` with its filters.
+- the project rule files `.legacyignore` and `.dctxomitcontent`: use `.gitignore` and `.dctxignore`.
+- `dctx cache gc --legacy` and its export-selection flags: use `dctx cache gc`.
+
+### How to verify a claim
+
+- Test suite: `cargo test --workspace --locked --exclude dctx-desktop --exclude dctx-desktop-api` https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md
+- CI: Every push and pull request runs the suite on Linux, macOS (ARM64 and x64) and Windows, on stable Rust and the minimum supported version 1.91. https://github.com/Eris-Margeta/dctx/actions
+- No network calls: `scripts/release-check.sh --quick target/release/dctx-cli` https://github.com/Eris-Margeta/dctx/blob/main/scripts/release-check.sh
+- Byte stability: `python3 docs/research/stability-20261105/verify.py` https://www.dctx.internet.technology/docs/stability/
+- Historical benchmark: `docs/research/bench-3way-20261030/run-3way.sh target/release/dctx-cli` https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030
+- Every output on this site: Recorded from the real binary by tools/website/capture.py; tools/website/check.py re-records and fails on drift. https://github.com/Eris-Margeta/dctx/tree/main/tools/website
+
+## Pages
+
+Documents link to their Markdown twin (index.md), the repository file with only link targets rewritten.
+
+### Docs
+
+- [Documentation](https://www.dctx.internet.technology/docs/): Specification, guides, benchmark reports and project policies for dctx, rendered from the repository.
+- [Choose your path](https://www.dctx.internet.technology/start/): dctx is an advanced tool with several ways to use it. Pick the path that matches your work: one giant folder, many small projects, a library in your own tool, or a team rollout.
+- [One giant folder](https://www.dctx.internet.technology/start/giant-folder/): You work inside one very large tree, for example a 200 GB monorepo, data or document folder. Setup, first command, what to expect and the pitfall to avoid.
+- [Many smaller projects](https://www.dctx.internet.technology/start/many-projects/): You move between many small and medium repositories during the day. Setup, first command, what to expect and the pitfall to avoid.
+- [Agent builder embedding a library](https://www.dctx.internet.technology/start/library/): You build an agent, editor or tool and want dctx inside it. Setup, first command, what to expect and the pitfall to avoid.
+- [Team or organisation admin](https://www.dctx.internet.technology/start/team/): You roll dctx out to a team or a fleet of machines. Setup, first command, what to expect and the pitfall to avoid.
+- [For AI evaluators](https://www.dctx.internet.technology/for-ai-evaluators/): What dctx is and is not, its version, modalities, benchmark status, removed commands and how to verify every claim.
+- [Why dctx](https://www.dctx.internet.technology/why/index.md): Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting.
+- [README](https://www.dctx.internet.technology/docs/readme/index.md): Installation, quick start, map mode, language tiers and the CLI reference.
+- [What dctx is](https://www.dctx.internet.technology/docs/start/index.md): The claim and its limits, the advanced-user notice, choose your path, the safe path in ten minutes, responsibilities and the two scopes.
+- [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/index.md): Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI.
+- [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/index.md): Every map verb with examples, budgets, ids and precision labels.
+- [Agent snippet](https://www.dctx.internet.technology/docs/agents/index.md): The AGENTS.md section that tells coding agents to ask dctx first.
+- [Plugins guide](https://www.dctx.internet.technology/docs/plugins/index.md): The plugin boundary, capabilities, consent and current limits.
+- [Specification](https://www.dctx.internet.technology/docs/spec/index.md): The core belief, the five constraints, the ten RAG defect classes, policy and roadmap.
+- [Privacy guarantees](https://www.dctx.internet.technology/docs/privacy/index.md): Ignore semantics and the full sensitive-file deny list.
+- [Language coverage (ADR-018)](https://www.dctx.internet.technology/docs/language-coverage/index.md): The three tiers and how a language enters one.
+- [Template contract (DTS v2)](https://www.dctx.internet.technology/docs/templates-contract/index.md): DTS source v2 and the compiled plan IR v1.
+- [Templating engine (ADR-003)](https://www.dctx.internet.technology/docs/templating/index.md): Markers, ahead-of-time compilation, the two rendering passes and the data variables.
+- [CLI exit codes](https://www.dctx.internet.technology/docs/exit-codes/index.md): The exit-code contract for map, pack, mcp and languages.
+- [How dctx works](https://www.dctx.internet.technology/how-it-works/): Five short animations: two scopes of one binary, calls times context, prefix stability, the giant folder and the safe path for new users.
+
+### CLI
+
+- [CLI reference](https://www.dctx.internet.technology/cli/): Every dctx command, flag, environment variable, exit code and MCP tool, captured from the dctx binary.
+- [Languages](https://www.dctx.internet.technology/languages/): The 50 language families dctx indexes, by tier: full, outline and docs.
+
+### Examples
+
+- [Examples](https://www.dctx.internet.technology/examples/): Every dctx command on one sample project, with its exact output, exit code, bytes and estimated tokens.
+- [Templates](https://www.dctx.internet.technology/templates/): The two built-in dctx templates, their source, their output on the same project and what changes between them.
+- [Playground](https://www.dctx.internet.technology/playground/): Run the real dctx binary on a sample project or on your own text files, in the browser.
+
+### Evidence
+
+- [Measurement evidence](https://www.dctx.internet.technology/docs/benchmark/index.md): Grep plus file reads first; whole-session scope and secondary historical protocols.
+- [Byte-stability report](https://www.dctx.internet.technology/docs/stability/index.md): Protocol, raw answers and limits of the 33/33 measurement.
+- [Earlier two-way study](https://www.dctx.internet.technology/docs/benchmark-oct/index.md): October 2026, before call edges: the benchmark that set the roadmap.
+- [Benchmarks](https://www.dctx.internet.technology/benchmarks/): Grep plus file reads, whole-session accounting, byte stability and secondary historical measurements.
+
+### Project
+
+- [Crate map](https://www.dctx.internet.technology/docs/crate-map/index.md): How the Rust workspace is organised.
+- [Releasing](https://www.dctx.internet.technology/docs/releasing/index.md): How a release is cut and checked.
+- [Contributing](https://www.dctx.internet.technology/docs/contributing/index.md): How to propose changes, with a DCO sign-off.
+- [Security policy](https://www.dctx.internet.technology/security/index.md): How to report a vulnerability privately, and what happens next.
+- [Trademark policy](https://www.dctx.internet.technology/trademark/index.md): What the dctx name and logo may be used for, and what forks may call themselves.
+- [Maintenance](https://www.dctx.internet.technology/maintenance/index.md): dctx is free under Apache-2.0. Maintenance agreements fund security response, long-term support and priority work.
+
+### Optional
+
+- [Changelog](https://www.dctx.internet.technology/changelog/): Every dctx release, from dircontxt 1.0.0 in C to dctx in Rust, with known issues.
+- [News](https://www.dctx.internet.technology/news/): Releases, measurements and product decisions from the dctx project.
+- [dctx 1.1: three more languages, a prefix-stable pack, and a measured lead.](https://www.dctx.internet.technology/news/dctx-1-1/): Perl, Fortran and Verilog join map mode; dctx pack drops timestamps so prompt caches hit; the three-way benchmark and the byte-stability measurement are public.
+- [dctx Desktop is now free. Forever.](https://www.dctx.internet.technology/news/desktop-free-forever/): For individuals, teams and companies. No trial, no seat count, no expiry.
+- [Our specification, and a benchmark that does not flatter us.](https://www.dctx.internet.technology/news/specification-and-benchmark/): The dctx Context Management Specification, and an isolated comparison with Trail-Code: wins, losses and what comes next.
+
+## Outline of the start documents
+
+`dctx map map FILE --depth 2`: one heading per line with its dctx id and line range in the file at the docs commit.
+
+```text
+# dctx map
+d:docs/START.md#What dctx is	heading	L3-227
+d:docs/START.md#Choose your path	heading	L17-104
+d:docs/START.md#One giant folder	heading	L27-44
+d:docs/START.md#Many small projects	heading	L45-64
+d:docs/START.md#Agent builder embedding a library	heading	L65-84
+d:docs/START.md#Team / enterprise admin	heading	L85-104
+d:docs/START.md#Safe path in ten minutes	heading	L105-183
+d:docs/START.md#1. Install the system binary	heading	L107-126
+d:docs/START.md#2. Choose one project and inspect one answer	heading	L127-140
+d:docs/START.md#3. Configure the lean MCP profile	heading	L141-162
+d:docs/START.md#4. Measure before changing anything	heading	L163-183
+d:docs/START.md#Responsibilities	heading	L184-204
+d:docs/START.md#Two scopes, one binary	heading	L205-227
+# dctx map
+d:docs/WHY-DCTX.md#Why dctx exists	heading	L3-145
+d:docs/WHY-DCTX.md#The problem	heading	L7-14
+d:docs/WHY-DCTX.md#What dctx does	heading	L15-49
+d:docs/WHY-DCTX.md#Start with grep plus file reads	heading	L19-26
+d:docs/WHY-DCTX.md#A small worked example	heading	L27-49
+d:docs/WHY-DCTX.md#The philosophy	heading	L50-74
+d:docs/WHY-DCTX.md#Why byte-identical output matters	heading	L75-121
+d:docs/WHY-DCTX.md#Prompt caching, in plain words	heading	L77-84
+d:docs/WHY-DCTX.md#Prefix-stable, simply	heading	L85-99
+d:docs/WHY-DCTX.md#The evidence	heading	L100-105
+d:docs/WHY-DCTX.md#An illustration of money and time	heading	L106-115
+d:docs/WHY-DCTX.md#Other reasons determinism matters	heading	L116-121
+d:docs/WHY-DCTX.md#What dctx is not	heading	L122-129
+d:docs/WHY-DCTX.md#Where to go next	heading	L130-137
+d:docs/WHY-DCTX.md#Sources in this repository	heading	L138-145
+# dctx map
+d:README.md#Installation	heading	L48-72
+d:README.md#What the output looks like	heading	L73-188
+d:README.md#Pack a project	heading	L77-125
+d:README.md#Find a symbol, then read it	heading	L126-152
+d:README.md#Pack for a task	heading	L153-188
+d:README.md#Which mode?	heading	L189-198
+d:README.md#Measured, in the open	heading	L199-212
+d:README.md#Start and choose your path	heading	L213-226
+d:README.md#The core belief: prompt-processing efficiency	heading	L227-237
+d:README.md#Quick Start	heading	L238-253
+d:README.md#Map mode: context for agents	heading	L254-264
+d:README.md#From source	heading	L265-282
+d:README.md#Use as a library	heading	L283-314
+d:README.md#CLI Reference	heading	L315-421
+d:README.md#Language tiers	heading	L352-421
+d:README.md#Security & Privacy	heading	L422-449
+d:README.md#Open source and maintenance	heading	L450-457
+d:README.md#Where it comes from	heading	L458-462
+d:README.md#Contributing	heading	L463-473
+# dctx map
+d:docs/MODALITIES.md#Choosing how to use dctx	heading	L3-337
+d:docs/MODALITIES.md#Available surfaces and publication status	heading	L11-25
+d:docs/MODALITIES.md#Choose by task	heading	L26-36
+d:docs/MODALITIES.md#Human, one-off: pack to clipboard	heading	L37-56
+d:docs/MODALITIES.md#Short agent task: grep can be enough	heading	L57-85
+d:docs/MODALITIES.md#Huge trees: scope before indexing	heading	L86-159
+d:docs/MODALITIES.md#MCP server: convenient tools with startup context	heading	L160-250
+d:docs/MODALITIES.md#Client configuration	heading	L168-199
+d:docs/MODALITIES.md#Tools and startup cost	heading	L200-250
+d:docs/MODALITIES.md#CI / prompt-cache prefix stability	heading	L251-274
+d:docs/MODALITIES.md#Rust library: embed the facade	heading	L275-309
+d:docs/MODALITIES.md#npm CLI: publishing soon	heading	L310-322
+d:docs/MODALITIES.md#Desktop app: Tauri preview today	heading	L323-330
+d:docs/MODALITIES.md#Python and Node bindings: planned	heading	L331-337
 ```
-
-## Exit codes
-
-- 0: ok: the command answered
-- 1: no result: the command ran, but the named target or input has no answer
-- 2: usage: the arguments are wrong
-- 3: index error: the place, source, cache or index could not be opened, read, built or written
-
-Everything, including every document and every captured example: https://www.dctx.internet.technology/llms-full.txt

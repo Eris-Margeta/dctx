@@ -13,6 +13,8 @@
 4. Documents and links, JSON-LD, OG images, machine files, first-load budgets (requests, bytes, largest
    asset), accessibility, contrast, external links, hashed assets, docs twins against their sources,
    nginx.conf (CSP with the theme script hash), legacy and sales wording, dates.json against git.
+5. The llms files: facts.json against VERSION, CHANGELOG.md and the tag; data/llms.json against the documents,
+   git and (with DCTX_BIN) a re-capture; removed commands only in the removed list.
 Needs the build dependencies (tools/website/requirements.txt).
 """
 from __future__ import annotations
@@ -20,6 +22,7 @@ from __future__ import annotations
 import base64
 import datetime as dt
 import hashlib
+import html
 import json
 import os
 import re
@@ -52,6 +55,7 @@ HTML_LIMIT = {"docs/spec/index.html": 450_000, "cli/index.html": 300_000, "docs/
               "changelog/index.html": 200_000, "examples/index.html": 200_000, "docs/benchmark/index.html": 200_000}
 SALES = re.compile(r"(?i)free forever|enterprise|pricing|trusted by|world[- ]class|revolutionary|best[- ]in[- ]class")
 LEGACY_RULES = re.compile(r"(?i)\.legacyignore|\.dctxomitcontent|config/dctx/omitcontent")
+LLMS_LIMIT = {"llms-small.txt": 20_480, "llms.txt": 102_400, "llms-full.txt": 1_048_576}
 LEGACY_CALL = re.compile(r"dctx \.(?:\s+-[a-zA-Z]|[ \t]*$)", re.M)
 
 
@@ -123,6 +127,105 @@ def capture_drift(errors: list[str], warnings: list[str], skip: bool) -> None:
             a, b = json.loads(old), json.loads(new)
             changed = [x["id"] for x, y in zip(a["records"], b["records"]) if x != y] or ["(record list)"]
             errors.append(f"capture drift: the binary's output differs from data/demo.json in {', '.join(changed[:8])}; run capture.py")
+
+
+def shallow() -> bool:
+    try:
+        return git("rev-parse", "--is-shallow-repository").strip() == b"true"
+    except (subprocess.CalledProcessError, OSError):
+        return True
+
+
+def llms_drift(errors: list[str], warnings: list[str], skip: bool) -> None:
+    """The llms files against their sources: document digests, the docs commit, and (with the binary) a re-capture."""
+    import llms
+    cap = json.loads((HERE / "data/llms.json").read_text())
+    for rel in llms.stale_sources():
+        errors.append(f"llms drift: {rel} changed since data/llms.json was captured; run capture.py --llms")
+    from routes import llms_tiers
+    wanted = sorted({f for *_, files in llms_tiers() for f in files})
+    if sorted(cap["sources"]) != wanted:
+        errors.append(f"llms drift: data/llms.json covers {len(cap['sources'])} documents, the tiers name {len(wanted)}; run capture.py --llms")
+    if shallow():
+        warnings.append("llms docs commit not checked: shallow clone or no git")
+    else:
+        real = git("log", "-1", "--format=%H %cI", "--", *cap["sources"]).decode().split()
+        if real != [cap["docs_commit"], cap["docs_date"]]:
+            errors.append(f"llms drift: data/llms.json names docs commit {cap['docs_commit'][:12]}, git says {real[0][:12]}; "
+                          "commit the documents, then run capture.py --llms")
+    binary = os.environ.get("DCTX_BIN") or str(ROOT / "target/release/dctx-cli")
+    if skip or not Path(binary).is_file():
+        warnings.append("llms capture drift NOT checked (no binary or --no-capture)")
+        return
+    with tempfile.TemporaryDirectory(prefix="dctx-llms-check-") as tmp:
+        target = Path(tmp) / "llms.json"
+        argv = [sys.executable, str(HERE / "capture.py"), "--llms", "--out", str(target), "--keep-git", str(HERE / "data/llms.json")]
+        r = subprocess.run(argv, env={**os.environ, "DCTX_BIN": binary}, capture_output=True, text=True)
+        if r.returncode:
+            errors.append(f"llms capture: capture.py --llms failed: {r.stdout}{r.stderr}")
+            return
+        new = json.loads(target.read_text())
+        changed = [b["file"] for a, b in zip(cap["tiers"], new["tiers"]) if a != b] or ["(tier list)"]
+        if new != cap:
+            errors.append(f"llms capture drift: the binary's output over the documents differs from data/llms.json in "
+                          f"{', '.join(changed)}; run capture.py --llms")
+
+
+def facts_fresh(errors: list[str], warnings: list[str]) -> None:
+    """data/facts.json: version = VERSION; release date = CHANGELOG.md and the release tag (never the clock);
+    the notice verbatim in README.md and docs/START.md (the canonical wording lives in those documents)."""
+    facts = json.loads((HERE / "data/facts.json").read_text())
+    version = (ROOT / "VERSION").read_text().strip()
+    for doc in ("README.md", "docs/START.md"):
+        if facts["notice"] not in (ROOT / doc).read_text():
+            errors.append(f"facts.json: notice is not verbatim in {doc}")
+    if facts["version"] != version:
+        errors.append(f"facts.json: version {facts['version']} != VERSION {version}")
+    if facts["release_tag"] != f"v{version}" or f"/releases/tag/v{version}" not in facts["verify_download"]["link"]:
+        errors.append(f"facts.json: release_tag and verify_download.link must name v{version}")
+    m = re.search(rf"^## \[{re.escape(version)}\] - (\d{{4}}-\d{{2}}-\d{{2}})", (ROOT / "CHANGELOG.md").read_text(), re.M)
+    if not m or m.group(1) != facts["released"]:
+        errors.append(f"facts.json: released {facts['released']} != CHANGELOG.md {m.group(1) if m else '(no entry)'} for {version}")
+    try:
+        tag_date = git("log", "-1", "--format=%cs", f"v{version}^{{commit}}", "--").decode().strip()
+    except (subprocess.CalledProcessError, OSError):
+        warnings.append(f"facts.json: release date not checked against git: no tag v{version}")
+        return
+    if tag_date != facts["released"]:
+        errors.append(f"facts.json: released {facts['released']} != the commit date of tag v{version} ({tag_date})")
+
+
+def removed_list_patterns() -> list[tuple[str, re.Pattern]]:
+    facts = json.loads((HERE / "data/facts.json").read_text())
+    return [(item["was"], re.compile(p)) for item in facts["removed"]["items"] for p in item["patterns"]]
+
+
+def strip_removed_list(html_text: str) -> str:
+    """A page may show the removed list inside one element marked data-facts="removed" (no same-tag nesting)."""
+    return re.sub(r'<(\w+)[^>]*\bdata-facts="removed"[^>]*>.*?</\1>', "", html_text, flags=re.S)
+
+
+def removed_outside_list(label: str, text: str, errors: list[str]) -> None:
+    """A removed command may appear only in the facts' removed list, in a historical source inside a pack
+    (llms.HISTORICAL), or on a line that itself calls it legacy or removed."""
+    from llms import HISTORICAL
+    pats = removed_list_patterns()
+    source, in_list = None, False
+    for n, line in enumerate(text.split("\n"), 1):
+        m = re.match(r'<FILE_CONTENT_START ID="[^"]+" PATH="([^"]+)"', line)
+        if m:
+            source = m.group(1)
+            continue
+        if line.startswith("</FILE_CONTENT_END "):
+            source = None
+            continue
+        if source is None and line.startswith("#"):
+            in_list = line.startswith("### Removed in ")
+        if in_list or (source and source.startswith(HISTORICAL)) or re.search(r"(?i)(?<![-\w])legacy\b|\bremoved\b", line):
+            continue
+        for was, p in pats:
+            if p.search(line):
+                errors.append(f"{label}:{n}{' (' + source + ')' if source else ''}: removed command ({was}) outside the removed list: {line.strip()[:100]!r}")
 
 
 def readme_drift(errors: list[str]) -> None:
@@ -330,16 +433,19 @@ def contrast(css: str, errors: list[str]) -> list[str]:
         lin = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
         return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
     out = []
+    # Body text and links in it at least 7:1 (WCAG AAA); secondary text at least 4.5:1 (design review R3, section 7).
+    minimum = {"ink": 7.0, "brand-text": 7.0, "muted": 4.5}
     for name, theme in (("light", light), ("dark", dark)):
-        for fg, bg in (("ink", "bg"), ("muted", "bg"), ("brand-text", "bg"), ("ink", "surface"), ("muted", "surface"), ("muted", "surface-2")):
+        for fg, bg in (("ink", "bg"), ("muted", "bg"), ("brand-text", "bg"), ("ink", "surface"), ("ink", "surface-2"),
+                       ("muted", "surface"), ("muted", "surface-2")):
             if fg not in theme or bg not in theme:
                 errors.append(f"contrast: --{fg} or --{bg} missing in the {name} theme")
                 continue
             a, b = sorted((lum(theme[fg]), lum(theme[bg])), reverse=True)
             ratio = (a + 0.05) / (b + 0.05)
             out.append(f"{name} {fg}/{bg} {ratio:.2f}")
-            if ratio < 4.5:
-                errors.append(f"contrast: {name} --{fg} on --{bg} is {ratio:.2f}:1 (< 4.5)")
+            if ratio < minimum[fg]:
+                errors.append(f"contrast: {name} --{fg} on --{bg} is {ratio:.2f}:1 (< {minimum[fg]})")
     return out
 
 
@@ -451,13 +557,15 @@ def check_site(site: Path, errors: list[str], report: dict) -> None:
         if path.stat().st_size > limit:
             errors.append(f"{label}: HTML is {path.stat().st_size:,} bytes (limit {limit:,})")
         report.setdefault("pages", {})[label] = (requests, size, largest)
-        text = path.read_text(encoding="utf-8")
+        text = strip_removed_list(path.read_text(encoding="utf-8"))
         plain = re.sub(r"<[^>]+>", " ", text)
         if LEGACY_RULES.search(text):
             errors.append(f"{label}: mentions a legacy rule file")
         handwritten = kinds.get(label) != "doc" and label != "cli/index.html"
         if handwritten and LEGACY_CALL.search(re.sub(r"<[^>]+>", "", text)):
             errors.append(f"{label}: a hand-written page shows a legacy `dctx .` command")
+        if kinds.get(label) not in ("doc", "changelog", "post"):
+            removed_outside_list(label, html.unescape(re.sub(r"<[^>]+>", "", text)), errors)
         if kinds.get(label) != "doc" and SALES.search(plain):
             errors.append(f"{label}: sales wording: {SALES.search(plain).group(0)!r}")
     report["pages_checked"] = len(docs)
@@ -514,17 +622,28 @@ def check_site(site: Path, errors: list[str], report: dict) -> None:
     if gif.stat().st_size > 1_500_000:
         errors.append(f"home.gif is {gif.stat().st_size:,} bytes > 1.5 MB")
     report["og"] = {"png": len(pngs), "gif_bytes": gif.stat().st_size, "largest_png": max(f.stat().st_size for f in pngs)}
-    llms = (site / "llms.txt").read_text()
-    if len(llms.encode()) > 2048:
-        errors.append(f"llms.txt is {len(llms.encode())} bytes > 2 KB")
-    if len((site / "llms-small.txt").read_bytes()) > 12_288:
-        errors.append("llms-small.txt > 12 KB")
-    for u in set(re.findall(r"\((https?://[^)]+)\)", llms) + re.findall(r"(https://\S+\.txt)", llms)):
-        p = urlsplit(u)
-        f = site / unquote(p.path).lstrip("/")
-        if p.hostname != HOST or not (f.is_file() or (f / "index.html").is_file()):
-            errors.append(f"llms.txt: {u} does not resolve to a built file")
-    full = (site / "llms-full.txt").read_text()
+    llms_texts = {name: (site / name).read_text() for name in LLMS_LIMIT}
+    for name, text in llms_texts.items():
+        if len(text.encode()) > LLMS_LIMIT[name]:
+            errors.append(f"{name} is {len(text.encode()):,} bytes > {LLMS_LIMIT[name]:,}")
+        head = re.split(r"^## (?:Documents|Outline of the start documents)$", text, maxsplit=1, flags=re.M)[0]
+        if not head.startswith("# dctx\n\n> ") or "## Facts" not in head or "## Pages" not in head:
+            errors.append(f"{name}: does not start with the title, the facts block and the route table")
+        for u in sorted({x.rstrip(".,;:") for x in re.findall(r"https?://[^\s)`]+", head)}):
+            p = urlsplit(u)
+            if p.hostname != HOST:
+                if not u.startswith(ALLOWED_EXTERNAL):
+                    errors.append(f"{name}: external link {u} not on the allowlist")
+                continue
+            f = site / unquote(p.path).lstrip("/")
+            page = f / "index.html" if f.is_dir() else f
+            if not page.is_file():
+                errors.append(f"{name}: {u} does not resolve to a built file")
+            elif p.fragment and (page not in docs or unquote(p.fragment) not in docs[page].ids):
+                errors.append(f"{name}: {u}: missing fragment")
+        removed_outside_list(name, text, errors)
+    llms = llms_texts["llms.txt"]
+    full = llms_texts["llms-full.txt"]
     report["llms_full_bytes"] = len(full.encode())
     report["llms_bytes"] = len(llms.encode())
     from routes import doc_path
@@ -583,8 +702,10 @@ def check_twin(site: Path, twin: Path, source: str, full: str, errors: list[str]
     text = twin.read_text()
     if md.strip_targets(text) != md.strip_targets((ROOT / source).read_text()):
         errors.append(f"{label}: drifts from {source} beyond link targets")
-    if text.rstrip("\n") not in full:
-        errors.append(f"llms-full.txt does not contain {label}")
+    import llms
+    tier = llms.tier("llms-full.txt")
+    if source not in tier["dropped"] + tier.get("altered", []) and (ROOT / source).read_text().rstrip("\n") not in full:
+        errors.append(f"llms-full.txt does not contain {source} (the dctx pack of the documents)")
     page = (twin.parent / "index.html").read_text()
     if f"/blob/main/{source}" not in page or f"/edit/main/{source}" not in page:
         errors.append(f"{twin.parent.relative_to(site)}/: no View source / Edit on GitHub link to {source}")
@@ -616,6 +737,8 @@ def main(argv: list[str]) -> int:
             files = staleness(site, errors, "--working-tree" in argv)
             check_site(site, errors, report)
         capture_drift(errors, warnings, "--no-capture" in argv)
+        llms_drift(errors, warnings, "--no-capture" in argv)
+        facts_fresh(errors, warnings)
         readme_drift(errors)
         hits = deny_list(errors, warnings)
         dates_fresh(errors, warnings)
