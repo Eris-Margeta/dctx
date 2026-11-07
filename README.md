@@ -44,8 +44,23 @@
 
 Download the archive for your OS and architecture from
 [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), verify
-it against `SHA256SUMS`, extract it, and put `dctx` (`dctx.exe` on Windows) on
-`PATH`. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
+its signature and signed `SHA256SUMS`, extract it, and put `dctx` (`dctx.exe` on
+Windows) on `PATH`. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
+CLI releases produced by the supply-chain workflow include cosign bundles,
+CycloneDX SBOMs, GitHub provenance and per-platform air-gap bundles. For an archive
+and its `.sigstore.json` downloaded from the same release, use cosign 3.1.4:
+
+```sh
+TAG=v1.2.0 # select a release produced by the supply-chain workflow
+ASSET=dctx-x86_64-unknown-linux-musl.tar.gz
+cosign verify-blob --bundle "$ASSET.sigstore.json" \
+  --certificate-identity "https://github.com/Eris-Margeta/dctx/.github/workflows/release.yml@refs/tags/$TAG" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com "$ASSET"
+```
+
+See [verification, provenance and offline installation](docs/VERIFYING.md) for
+signed-checksum commands, `gh attestation verify`, trust preparation and build
+reproducibility limits. Earlier releases do not retroactively gain this evidence.
 CI covers Linux, macOS and Windows; see [the matrix and desktop exclusions](docs/TESTING.md).
 
 **Coming soon:** `cargo install dctx-cli` and `npx dctx`. Registry packages are
