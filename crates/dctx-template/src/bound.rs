@@ -4,8 +4,6 @@
 //! Depends on [`crate::model`], [`crate::opcode`] and dctx-core glob matching. Callers use [`render_plan`].
 //! A template decision wider than the host grant is clamped on the render path and refused by [`authorize_path`].
 
-use std::collections::HashMap;
-
 use dctx_core::FileHandlingDecision;
 
 use crate::error::TemplateError;
@@ -121,19 +119,10 @@ pub fn render_plan(
             Ok(json_document(&prepared, count, truncated))
         });
     }
-    let end_marker = {
-        let variables: HashMap<String, String> = plan.render.variables.iter().cloned().collect();
-        crate::v1::end_marker_of(&variables)
-    };
     let mut counter = 1usize;
     let mut fragments = Vec::with_capacity(prepared.len());
     for item in &prepared {
-        fragments.push(render_record(
-            &plan.render,
-            item,
-            &mut counter,
-            &end_marker,
-        )?);
+        fragments.push(render_record(&plan.render, item, &mut counter)?);
     }
     let layout_name = view.render.clone();
     choose(prepared.len(), &budget, |count, truncated| {
@@ -240,40 +229,13 @@ pub(super) fn file_value(
     clippy::naive_bytecount,
     reason = "Count newline bytes with standard iterators to preserve the renderer line-count convention without adding a byte-count dependency."
 )]
-pub(super) fn file_text(item: &Prepared, end_marker: &str) -> (usize, String) {
+pub(super) fn file_text(item: &Prepared) -> (usize, String) {
     if item.decision == FileHandlingDecision::OmitContent {
         return (0, "[Content omitted by pattern rules]".to_string());
     }
     let lines = item.content.iter().filter(|byte| **byte == b'\n').count() + 1;
     let text = String::from_utf8_lossy(&item.content);
-    (lines, escape_content(&text, end_marker))
-}
-
-fn escape_content(text: &str, end_marker: &str) -> String {
-    if !text.contains('\\') && (end_marker.is_empty() || !text.contains(end_marker)) {
-        return text.to_string();
-    }
-    let marker = end_marker.as_bytes();
-    let bytes = text.as_bytes();
-    let mut out = String::new();
-    let mut index = 0;
-    while index < bytes.len() {
-        if bytes[index] == b'\\' {
-            out.push('\\');
-            out.push('\\');
-            index += 1;
-            continue;
-        }
-        if !marker.is_empty() && bytes[index..].starts_with(marker) {
-            out.push('\\');
-        }
-        let Some(ch) = text[index..].chars().next() else {
-            break;
-        };
-        out.push(ch);
-        index += ch.len_utf8();
-    }
-    out
+    (lines, text.into_owned())
 }
 
 fn join_fragments(fragments: &[Fragment], count: usize) -> (String, String) {

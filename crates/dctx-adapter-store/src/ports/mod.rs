@@ -31,7 +31,8 @@ pub(crate) fn read_ceiling(path: &str) -> u64 {
 /// What a durable publish is allowed to assume about this adapter.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct FsCapabilities {
-    /// File and directory sync are available.
+    /// File bytes and published names can be made durable (directory sync on
+    /// Unix, write-through publication renames on Windows).
     pub sync: bool,
     /// Replace of an existing name is atomic.
     pub atomic_replace: bool,
@@ -92,7 +93,8 @@ pub trait StoreFs: Send + Sync {
     /// Returns invalid-path, missing-file, unsupported-durability or synchronization failures.
     fn sync_file(&self, path: &str) -> Result<(), StoreError>;
 
-    /// Makes directory entries durable.
+    /// Completes name publication durability. On Windows, publication renames
+    /// already write through, so this is a no-op; it is not a general directory flush.
     ///
     /// # Errors
     /// Returns unsupported-durability or directory synchronization failures.

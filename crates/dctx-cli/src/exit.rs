@@ -78,6 +78,11 @@ impl Failure {
     reason = "A pure mapping; the caller returns the failure."
 )]
 pub fn from_facade(error: &DctxError, help: &str) -> Failure {
+    from_facade_scoped(error, help, "pass --place <a smaller directory>")
+}
+
+/// Uses the caller's actual scope syntax in capacity hints (map has `--place`, pack has PATH).
+pub(crate) fn from_facade_scoped(error: &DctxError, help: &str, narrower: &str) -> Failure {
     let message = error.to_string();
     match error.code() {
         ErrorCode::StaleContinuation | ErrorCode::Stale => Failure::usage(
@@ -92,8 +97,8 @@ pub fn from_facade(error: &DctxError, help: &str) -> Failure {
             message,
             "the target is excluded by .gitignore, .dctxignore or the sensitive-file rules; pick another target",
         ),
-        ErrorCode::ResourceLimit => Failure::index(message, limit_hint(error)),
-        ErrorCode::CacheLimit => Failure::index(message, "free cache space with `dctx cache gc`, then run the query again"),
+        ErrorCode::ResourceLimit => Failure::index(message, limit_hint(error, narrower)),
+        ErrorCode::CacheLimit => Failure::index(message, format!("cache capacity is insufficient for this request; {narrower} (the product cache cap is 2147483648 bytes)")),
         ErrorCode::Busy => Failure::index(message, "another dctx process holds the cache; run the query again when it finishes"),
         ErrorCode::CorruptIndex => Failure::index(
             message,
@@ -105,19 +110,23 @@ pub fn from_facade(error: &DctxError, help: &str) -> Failure {
 }
 
 /// The hint for a bounded quantity: the source, record and entry caps have an env switch, the others need a smaller place.
-fn limit_hint(error: &DctxError) -> &'static str {
-    match error {
+fn limit_hint(error: &DctxError, narrower: &str) -> String {
+    let cause = match error {
         DctxError::ResourceLimit { resource: Resource::SourceBytes, .. } => {
-            "the place has more source bytes than one scan reads; raise DCTX_MAX_SOURCE_BYTES or pass --place <a smaller directory>"
+            "the place has more source bytes than one scan reads; raise DCTX_MAX_SOURCE_BYTES (1..17179869184 bytes) or"
         }
         DctxError::ResourceLimit { resource: Resource::Records, .. } => {
-            "the place holds more records (files, symbols, edges) than one index keeps; raise DCTX_MAX_RECORDS (1..100000000) or pass --place <a smaller directory>"
+            "the place holds more records (files, symbols, edges) than one index keeps; raise DCTX_MAX_RECORDS (1..100000000) or"
         }
         DctxError::ResourceLimit { resource: Resource::Entries, .. } => {
-            "the place has more files and directories than one scan visits; raise DCTX_MAX_ENTRIES (1..100000000) or pass --place <a smaller directory>"
+            "the place has more files and directories than one scan visits; raise DCTX_MAX_ENTRIES (1..100000000) or"
         }
-        _ => "the place or the answer exceeds a dctx limit; pass --place <a smaller directory> or narrow the query",
-    }
+        DctxError::ResourceLimit { resource: Resource::ObjectBytes, .. } => {
+            "the generation exceeds the cache object read limit;"
+        }
+        _ => "the place or the answer exceeds a dctx limit; narrow the query or",
+    };
+    format!("{cause} {narrower}")
 }
 
 #[cfg(test)]
@@ -197,6 +206,30 @@ mod tests {
         ] {
             assert!(!from_facade(&error, "x").hint.is_empty(), "{error}");
         }
+    }
+
+    #[test]
+    fn capacity_hints_distinguish_objects_and_cache_without_assuming_gc_can_help() {
+        let object = from_facade(
+            &DctxError::ResourceLimit {
+                resource: Resource::ObjectBytes,
+                limit: 64,
+            },
+            "x",
+        );
+        assert!(object.message.contains("object_bytes > 64"));
+        assert!(object.hint.contains("object read limit"));
+        assert!(object.hint.contains("--place"));
+        let cache = from_facade(
+            &DctxError::CacheLimit {
+                requested: 100,
+                available: 0,
+            },
+            "x",
+        );
+        assert!(cache.hint.contains("cache capacity"));
+        assert!(cache.hint.contains("--place <a smaller directory>"));
+        assert!(!cache.hint.contains("cache gc"));
     }
 }
 

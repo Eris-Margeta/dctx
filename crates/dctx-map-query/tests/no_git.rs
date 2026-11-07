@@ -6,6 +6,9 @@
 
 #![forbid(unsafe_code)]
 
+#[path = "../../../tests/support/source_files.rs"]
+mod source_files;
+
 use dctx_map_query::FileSource;
 use dctx_map_query::ports::Source;
 use std::{
@@ -40,33 +43,27 @@ fn compact(source: &str) -> String {
 }
 
 fn walk_sources(dir: &Path, hits: &mut Vec<PathBuf>) {
-    let Ok(entries) = fs::read_dir(dir) else {
-        return;
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        // decision 078 bans git from production code. Test trees may spawn git on purpose
-        // (confinement adversary probes prove it is blocked), so they are not scanned.
-        if name == "target" || name == ".git" || name == "tests" || name == "benches" {
+    let files = source_files::files(dir);
+    assert!(!files.is_empty(), "crate sources missing");
+    for path in files {
+        // Decision 078 bans Git from production code. Keep test/bench exclusions.
+        let relative = path.strip_prefix(dir).unwrap();
+        if relative.components().any(|part| {
+            matches!(
+                part.as_os_str().to_str(),
+                Some("target" | ".git" | "tests" | "benches")
+            )
+        }) || path.extension().is_none_or(|ext| ext != "rs")
+        {
             continue;
         }
-        let Ok(kind) = entry.file_type() else {
-            continue;
-        };
-        if kind.is_dir() {
-            walk_sources(&path, hits);
-        } else if path.extension().is_some_and(|ext| ext == "rs") {
-            let Ok(text) = fs::read_to_string(&path) else {
-                continue;
-            };
-            let compact = compact(&text);
-            if git_spawn_markers()
-                .iter()
-                .any(|marker| compact.contains(marker))
-            {
-                hits.push(path);
-            }
+        let text = fs::read_to_string(&path).unwrap();
+        let compact = compact(&text);
+        if git_spawn_markers()
+            .iter()
+            .any(|marker| compact.contains(marker))
+        {
+            hits.push(path);
         }
     }
 }
@@ -80,15 +77,18 @@ fn crate_sources_do_not_spawn_git() {
     assert!(hits.is_empty(), "git spawn in {hits:?}");
 }
 
+#[cfg(unix)]
 fn mode(path: &Path, bits: u32) {
     use std::os::unix::fs::PermissionsExt;
     fs::set_permissions(path, fs::Permissions::from_mode(bits)).unwrap();
 }
 
+#[cfg(unix)]
 struct Restore {
     path: PathBuf,
 }
 
+#[cfg(unix)]
 impl Drop for Restore {
     fn drop(&mut self) {
         mode(&self.path, 0o755);
@@ -106,12 +106,32 @@ fn ignored_and_omitted_paths_are_not_opened() {
     fs::write(root.join("Cargo.lock"), b"SECRET-OMITTED").unwrap();
     fs::create_dir(root.join("hidden")).unwrap();
     fs::write(root.join("hidden/note.rs"), b"SECRET-HIDDEN").unwrap();
-    mode(&root.join("secret.rs"), 0);
-    mode(&root.join("Cargo.lock"), 0);
-    mode(&root.join("hidden"), 0);
-    let _restore = Restore {
-        path: root.join("hidden"),
+    #[cfg(unix)]
+    let _restore = {
+        mode(&root.join("secret.rs"), 0);
+        mode(&root.join("Cargo.lock"), 0);
+        mode(&root.join("hidden"), 0);
+        Restore {
+            path: root.join("hidden"),
+        }
     };
+    // Windows has no Unix mode bits. Deny sharing while the snapshot and reads run;
+    // even an administrator cannot open these bodies through another file handle.
+    #[cfg(windows)]
+    let _closed: Vec<_> = ["secret.rs", "Cargo.lock", "hidden/note.rs"]
+        .into_iter()
+        .map(|name| {
+            use std::os::windows::fs::OpenOptionsExt;
+            let path = root.join(name);
+            let file = fs::OpenOptions::new()
+                .read(true)
+                .share_mode(0)
+                .open(&path)
+                .unwrap();
+            assert!(fs::read(&path).is_err(), "read denial control: {name}");
+            file
+        })
+        .collect();
 
     let source = FileSource::new(root).unwrap();
     let snapshot = source
@@ -218,24 +238,52 @@ fn git_tool_name() -> String {
 }
 
 fn trapped_path(dir: &Path) -> std::ffi::OsString {
-    let mut next = std::ffi::OsString::from(dir);
-    next.push(":");
-    if let Some(old) = std::env::var_os("PATH") {
-        next.push(old);
-    }
-    next
+    let old = std::env::var_os("PATH").unwrap_or_default();
+    std::env::join_paths(std::iter::once(dir.to_path_buf()).chain(std::env::split_paths(&old)))
+        .unwrap()
 }
 
 fn write_git_trap(dir: &Path) -> PathBuf {
     let log = dir.join("spawn-log");
     fs::write(&log, b"").unwrap();
-    let script = dir.join(git_tool_name());
-    fs::write(
-        &script,
-        "#!/bin/sh\nprintf '%s\\n' \"$0 $*\" >> \"$DCTX_GIT_SPAWN_LOG\"\nprintf 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\\n'\nexit 0\n",
-    )
-    .unwrap();
-    mode(&script, 0o755);
+    #[cfg(unix)]
+    {
+        let script = dir.join(git_tool_name());
+        fs::write(
+            &script,
+            "#!/bin/sh\nprintf '%s\\n' \"$0 $*\" >> \"$DCTX_GIT_SPAWN_LOG\"\nprintf 'deadbeefdeadbeefdeadbeefdeadbeefdeadbeef\\n'\nexit 0\n",
+        )
+        .unwrap();
+        mode(&script, 0o755);
+    }
+    #[cfg(windows)]
+    {
+        // A native executable catches Command::new("git") too; a .cmd trap would
+        // only catch callers that explicitly start a command interpreter.
+        let source = dir.join("trap.rs");
+        fs::write(
+            &source,
+            r#"fn main() {
+            use std::io::Write;
+            let mut log = std::fs::OpenOptions::new().append(true)
+                .open(std::env::var_os("DCTX_GIT_SPAWN_LOG").unwrap()).unwrap();
+            writeln!(log, "git spawned").unwrap();
+            println!("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef");
+        }"#,
+        )
+        .unwrap();
+        let result = Command::new("rustc")
+            .arg(&source)
+            .arg("-o")
+            .arg(dir.join(format!("{}.exe", git_tool_name())))
+            .output()
+            .unwrap();
+        assert!(
+            result.status.success(),
+            "trap compilation: {}",
+            String::from_utf8_lossy(&result.stderr)
+        );
+    }
     log
 }
 
@@ -292,9 +340,8 @@ fn git_directory_matches_plain_folder_and_never_spawns() {
     let log = write_git_trap(dir.path());
     let path = trapped_path(dir.path());
     let tool = git_tool_name();
-    let probed = Command::new("/bin/sh")
-        .arg("-c")
-        .arg(format!("{tool} rev-parse"))
+    let probed = Command::new(tool)
+        .arg("rev-parse")
         .env("PATH", &path)
         .env("DCTX_GIT_SPAWN_LOG", &log)
         .output()

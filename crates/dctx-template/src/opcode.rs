@@ -8,7 +8,6 @@ use std::collections::HashMap;
 
 use crate::error::{MAX_STRING_BYTES, TemplateError};
 use crate::model::{Inst, NamedCode, OP_DATA, OP_MAX, OP_PARTIAL, OP_TEXT, RenderProgram};
-use crate::v1::replace_vars_in_order;
 
 /// Field ids stored in [`OP_DATA`] arguments.
 pub fn field_id(name: &str) -> Option<u16> {
@@ -259,7 +258,9 @@ pub fn execute(
             opcode => return Err(TemplateError::UnknownOpcode { opcode }),
         }
     }
-    Ok(replace_vars_in_order(&buf, &program.variables))
+    // Variables were resolved in template structure before bytecode compilation.
+    // Data and included output are opaque and must never be substituted again.
+    Ok(buf)
 }
 
 /// `{{>name}}` targets in `text`, without the braces.

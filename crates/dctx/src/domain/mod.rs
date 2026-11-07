@@ -34,7 +34,8 @@ pub use request::{
 pub use rules::RuleSources;
 pub use sink::{BoundedSink, VecSink};
 pub use source_ceiling::{
-    ENTRIES_ENV, RECORDS_ENV, SOURCE_ENV, parse_source_ceiling, records_ceiling, source_ceiling,
+    ENTRIES_ENV, RECORDS_ENV, SOURCE_ENV, entries_ceiling, parse_source_ceiling, records_ceiling,
+    source_ceiling,
 };
 pub use wire::{encode_answer, encode_answer_with};
 

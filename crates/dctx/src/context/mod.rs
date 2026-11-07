@@ -157,8 +157,9 @@ fn ask(
 
 /// The lines of a map text page after its `# <place> <verb>` header.
 fn body(answer: &str) -> Vec<&str> {
-    let mut lines = answer.lines();
-    let first = answer.lines().next();
+    // Keep carriage returns in source lines; Page adds back only the newline.
+    let mut lines = answer.split_terminator('\n');
+    let first = lines.clone().next();
     if first.is_some_and(|line| line.starts_with("# ")) {
         lines.next();
     }

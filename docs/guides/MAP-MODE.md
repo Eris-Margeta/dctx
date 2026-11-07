@@ -8,6 +8,9 @@ The current CLI uses the shared dctx facade. Older storage and Git-based designs
 in [SPEC-MAP-MODE](../SPEC-MAP-MODE.md) are not the current CLI contract.
 dctx and this guide are Apache-2.0.
 
+For a tool client, see the [MCP server guide](MCP.md), including the opt-in lean
+profile and custom tool subsets.
+
 ## Commands
 
 ```text

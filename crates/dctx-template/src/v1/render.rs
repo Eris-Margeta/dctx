@@ -7,12 +7,37 @@
 mod doc;
 mod measure;
 
-use std::collections::HashMap;
-
 use super::parse::{Template, replace_vars};
 use crate::legacy_output::FileMode;
 
 const RENDER_CEILING: u64 = 16 * 1024 * 1024;
+
+/// Splits template structure into literal spans and complete data placeholders.
+/// Inserted values never pass through this iterator.
+fn data_parts(mut text: &str) -> impl Iterator<Item = &str> {
+    std::iter::from_fn(move || {
+        if text.is_empty() {
+            return None;
+        }
+        let end = match text.find("{{{") {
+            Some(0) => text.find("}}}").map_or(text.len(), |end| end + 3),
+            Some(start) => start,
+            None => text.len(),
+        };
+        let (part, rest) = text.split_at(end);
+        text = rest;
+        Some(part)
+    })
+}
+
+fn insert_data(text: &str, fields: &[(&str, &str)]) -> String {
+    let mut output = String::new();
+    for part in data_parts(text) {
+        let value = fields.iter().find(|(field, _)| *field == part);
+        output.push_str(value.map_or(part, |(_, value)| *value));
+    }
+    output
+}
 
 /// One tree node. Content is ignored unless the node is an included file.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -101,13 +126,19 @@ impl Template {
     }
 
     pub(crate) fn marker_layout(&self, tree: &str, files: &str) -> String {
-        let mut output = self.layout.clone();
-        output = output.replace("{{{comp.tree}}}", tree);
-        output = output.replace("{{{comp.files}}}", files);
-        if let Some(project) = self.variables.get("project") {
-            output = output.replace("{{{project}}}", project);
-        }
-        replace_vars(&output, &self.variables)
+        let layout = replace_vars(&self.layout, &self.variables);
+        let project = self
+            .variables
+            .get("project")
+            .map_or("{{{project}}}", String::as_str);
+        insert_data(
+            &layout,
+            &[
+                ("{{{comp.tree}}}", tree),
+                ("{{{comp.files}}}", files),
+                ("{{{project}}}", project),
+            ],
+        )
     }
 }
 
@@ -149,25 +180,36 @@ fn render_node(
         node.relative_path.clone()
     };
 
-    let mut entry = format!("{indent}{}", template.partial_tree_entry);
-    entry = entry.replace("{{{node.type_char}}}", type_char);
-    entry = entry.replace("{{{node.path}}}", &display_path);
-    entry = entry.replace("{{{node.id}}}", &current_id);
-    entry = entry.replace("{{{node.mod}}}", &node.modified.to_string());
-    entry = entry.replace("{{{node.size_part}}}", &size_part);
-    entry = replace_vars(&entry, &template.variables);
+    let partial = replace_vars(&template.partial_tree_entry, &template.variables);
+    let entry = format!(
+        "{indent}{}",
+        insert_data(
+            &partial,
+            &[
+                ("{{{node.type_char}}}", type_char),
+                ("{{{node.path}}}", &display_path),
+                ("{{{node.id}}}", &current_id),
+                ("{{{node.mod}}}", &node.modified.to_string()),
+                ("{{{node.size_part}}}", &size_part),
+            ]
+        )
+    );
     tree_buf.push_str(&entry);
     tree_buf.push('\n');
 
     if !node.is_dir && !node.is_ignored && mode.includes(node) {
         let (line_count, content) = file_body(node, mode);
-        let mut block = template.partial_file_block.clone();
-        block = block.replace("{{{file.id}}}", &current_id);
-        block = block.replace("{{{file.path}}}", &node.relative_path);
-        block = block.replace("{{{file.size}}}", &node.content_size.to_string());
-        block = block.replace("{{{file.lines}}}", &line_count.to_string());
-        block = block.replace("{{{file.content}}}", &content);
-        block = replace_vars(&block, &template.variables);
+        let partial = replace_vars(&template.partial_file_block, &template.variables);
+        let block = insert_data(
+            &partial,
+            &[
+                ("{{{file.id}}}", &current_id),
+                ("{{{file.path}}}", &node.relative_path),
+                ("{{{file.size}}}", &node.content_size.to_string()),
+                ("{{{file.lines}}}", &line_count.to_string()),
+                ("{{{file.content}}}", &content),
+            ],
+        );
         files_buf.push_str(&block);
         files_buf.push('\n');
     }
@@ -201,20 +243,6 @@ fn file_body(node: &MarkerNode, mode: &FileMode<'_>) -> (usize, String) {
         }
         None => (0, String::new()),
     }
-}
-
-/// End-marker prefix used when a plan render escapes file content.
-pub fn end_marker_of(variables: &HashMap<String, String>) -> String {
-    let open = variables
-        .get("end_marker_open")
-        .map_or("</", String::as_str);
-    let name = variables
-        .get("file_end_marker")
-        .map_or("FILE", String::as_str);
-    let close = variables
-        .get("end_marker_close")
-        .map_or(">", String::as_str);
-    format!("{open}{name}{close}")
 }
 
 #[cfg(test)]
@@ -270,6 +298,38 @@ mod measure_tests {
             template.measure_legacy(&root, &mode).expect("measure");
         assert_eq!(body, times * unit);
         assert_eq!(files_raw, times * unit + 1);
+    }
+
+    #[test]
+    fn measured_literals_match_rendering_even_above_the_ceiling() {
+        let body = "{{name}} {{start_marker_open}} {{ unknown }} {{{triple}}} \\{{escaped}} {{{project}}} {{{comp.files}}}";
+        let mut template = repeated(5);
+        template.insert_variable("name", "expanded");
+        template.insert_variable("start_marker_open", "<");
+        template.insert_variable("project", "{{{comp.files}}}");
+        let mut root = MarkerNode::dir("", 0);
+        root.children.push(MarkerNode::file(
+            "{{name}}-{{{file.content}}}",
+            body.as_bytes(),
+            1,
+        ));
+        let mode = FileMode::Snapshot {
+            tree_only: false,
+            omit_svg_content: true,
+        };
+        let (_, _, files, measured) = template.measure_legacy(&root, &mode).expect("measure");
+        assert_eq!(measured, (body.len() * 5) as u64);
+        assert_eq!(files, measured + 1);
+        assert_eq!(template.marker_layout("", &body.repeat(5)), body.repeat(5));
+
+        template.partial_file_block = "{{{file.content}}}".repeat(4096);
+        root.children[0] = MarkerNode::file("{{name}}", &body.repeat(128).into_bytes(), 1);
+        assert!(!template.legacy_expansion_fits(&root, &mode));
+        let (_, _, files, measured) = template
+            .measure_legacy(&root, &mode)
+            .expect("large measure");
+        assert_eq!(measured, (body.len() * 128 * 4096) as u64);
+        assert_eq!(files, measured + 1);
     }
 
     #[test]

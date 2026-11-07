@@ -716,30 +716,21 @@ blast, serve). Interactive TUI when run without arguments.
 `crates/dctx` is the stable API for every surface (`docs/design/contracts/API-PORTS-v1.md`).
 Bindings for Python, Node and a C ABI wrap the facade; none re-implements an engine.
 
-### 24.3 MCP server (target, feature `mcp`)
+### 24.3 MCP server
 
-`dctx serve --mcp` speaks JSON-RPC over stdio only. It is a surface, not a plugin: it
-renders answers the facade already produced, so a broker hop would add cost without a
-privacy gain. Tool schemas are prompt bytes on every call, so the set is small and the
-schemas short:
+`dctx mcp [PATH]` (also `dctx serve --mcp`) speaks JSON-RPC over stdio, one message
+per line. The default tools are `map`, `find`, `neighbors`, `explain`, `read`, `hubs`,
+`grep`, `skeleton`, `path` and `export`; each runs the corresponding `dctx map` verb.
+`--profile lean` exposes only `find` and `read`; `--tools NAME,...` selects a custom
+subset. Selected tools have shorter descriptions and retain complete input schemas.
+Unselected tools cannot be called. The default surface is unchanged.
 
-| Tool | Maps to |
-|---|---|
-| `dctx_map` | `map` |
-| `dctx_find` | `find` |
-| `dctx_neighbors` | `neighbors` |
-| `dctx_explain` | `explain` |
-| `dctx_read` | `read` (always byte-verified) |
-| `dctx_status` | `status` |
-
-`dctx_blast` and `dctx_check` appear only when their plugins are enabled and granted.
-Tool results carry the same canonical text page as the CLI, so prefix stability holds
-across surfaces. A network listener is a policy-gated capability, never a default.
-
-**Gate.** Tool definitions ≤ 600 estimated tokens per session (comparison tool: 6
-tools, 3,515 bytes, about 1,005 tokens); results are the canonical text page. Answers
-MUST NOT contain instructions to the agent: no banners, no "report savings" text (the
-comparison tool spends about 310 bytes, roughly 89 tokens, per call on one).
+See the [MCP guide](https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MCP.md) for configuration, validation and startup response
+sizes. Measure whole agent sessions against grep plus reading files, including
+instructions, tool definitions and extra calls. Wire bytes and bytes/4 estimates
+alone do not establish total session token savings. Tool results use the CLI's code
+path and MUST NOT contain instructions to the agent, banners or requests to report
+savings.
 
 ### 24.4 Agent hooks (target)
 

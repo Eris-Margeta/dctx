@@ -10,6 +10,5 @@ mod render;
 
 pub use compiled::CompiledTemplate;
 pub(crate) use parse::finish;
-pub use parse::{Template, replace_vars, replace_vars_in_order};
-pub(crate) use render::end_marker_of;
+pub use parse::{Template, replace_vars};
 pub use render::{MarkerNode, render_markers};

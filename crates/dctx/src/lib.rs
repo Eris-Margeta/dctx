@@ -6,7 +6,8 @@
 //! A caller may inject a plugin host and a cache root. The library default starts none and spawns nothing.
 //! Disable `plugin-runtime` to exclude the host/platform/protocol dependencies and use typed refusal stubs.
 
-#![forbid(unsafe_code)]
+#![cfg_attr(not(windows), forbid(unsafe_code))]
+#![cfg_attr(windows, deny(unsafe_code))]
 #![deny(missing_docs)]
 #![cfg_attr(not(test), deny(clippy::unwrap_used))]
 #![cfg_attr(not(test), deny(clippy::expect_used))]
@@ -33,8 +34,8 @@ pub use domain::{
     DctxError, Direction, ENTRIES_ENV, ErrorCode, Freshness, FreshnessMode, GcRequest, HostGrants,
     IdentityOutcome, MapRequest, OperationLimits, PackReport, PackRequest, Precision, PurgeRequest,
     PurgeScope, RECORDS_ENV, REQUEST_VERSION, Resource, RuleSources, SOURCE_ENV, STRUCTURAL_PARSER,
-    SegmentInfo, SnapshotRequest, VecSink, Verb, encode_answer, encode_answer_with, object_key,
-    parse_source_ceiling, source_ceiling, validate_segment,
+    SegmentInfo, SnapshotRequest, VecSink, Verb, encode_answer, encode_answer_with,
+    entries_ceiling, object_key, parse_source_ceiling, source_ceiling, validate_segment,
 };
 pub use languages::{Confidence, LANGUAGES, Language, Tier};
 pub use plugins::{Boundary, HookEffect, HookWarning, PluginHost};

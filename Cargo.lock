@@ -832,6 +832,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tempfile",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -864,6 +865,7 @@ dependencies = [
  "proptest",
  "tempfile",
  "thiserror 2.0.18",
+ "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -874,6 +876,7 @@ dependencies = [
  "dctx-adapter-cache",
  "dctx-adapter-fs",
  "dctx-core",
+ "dctx-hash",
  "dctx-map-query",
  "dctx-pack",
  "dctx-plugin-distribution",
@@ -1056,6 +1059,13 @@ version = "1.2.0"
 dependencies = [
  "dctx-hash",
  "dctx-map-model",
+]
+
+[[package]]
+name = "dctx-library-example"
+version = "0.0.0"
+dependencies = [
+ "dctx",
 ]
 
 [[package]]

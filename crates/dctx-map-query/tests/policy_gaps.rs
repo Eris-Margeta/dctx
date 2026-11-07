@@ -6,6 +6,9 @@
 
 #![forbid(unsafe_code)]
 
+#[path = "../../../tests/support/source_files.rs"]
+mod source_files;
+
 use std::{
     fs,
     path::{Path, PathBuf},
@@ -20,18 +23,11 @@ fn read_text(path: &Path) -> String {
 }
 
 fn rust_files(dir: &Path, out: &mut Vec<PathBuf>) {
-    let entries =
-        fs::read_dir(dir).unwrap_or_else(|err| panic!("read_dir {}: {err}", dir.display()));
-    for entry in entries {
-        let path = entry
-            .unwrap_or_else(|err| panic!("dir entry: {err}"))
-            .path();
-        if path.is_dir() {
-            rust_files(&path, out);
-        } else if path.extension().is_some_and(|ext| ext == "rs") {
-            out.push(path);
-        }
-    }
+    out.extend(
+        source_files::files(dir)
+            .into_iter()
+            .filter(|path| path.extension().is_some_and(|ext| ext == "rs")),
+    );
 }
 
 fn toml_code(line: &str) -> &str {
