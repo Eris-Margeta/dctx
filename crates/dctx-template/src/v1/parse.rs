@@ -245,20 +245,27 @@ fn walk(
     visited: &mut HashSet<String>,
     cycles: &mut Vec<String>,
 ) {
-    if visited.contains(key) {
-        return;
-    }
-    if !visiting.insert(key.to_string()) {
-        cycles.push(key.to_string());
-        return;
-    }
-    if let Some(next) = edges.get(key) {
-        for dep in next {
-            walk(dep, edges, visiting, visited, cycles);
+    // Keep DFS state on the heap: user-controlled variable chains must not
+    // consume one call frame per dependency. Reverse pushes preserve visit order.
+    let mut pending = vec![(key, false)];
+    while let Some((key, leaving)) = pending.pop() {
+        if leaving {
+            visiting.remove(key);
+            visited.insert(key.to_string());
+            continue;
+        }
+        if visited.contains(key) {
+            continue;
+        }
+        if !visiting.insert(key.to_string()) {
+            cycles.push(key.to_string());
+            continue;
+        }
+        pending.push((key, true));
+        if let Some(next) = edges.get(key) {
+            pending.extend(next.iter().rev().map(|dep| (*dep, false)));
         }
     }
-    visiting.remove(key);
-    visited.insert(key.to_string());
 }
 
 #[cfg(test)]
@@ -281,5 +288,17 @@ mod tests {
                 .iter()
                 .any(|err| matches!(err, TemplateValidationError::Cycle(_)))
         );
+    }
+
+    #[test]
+    fn robustness_deep_variable_dependencies() {
+        let mut vars = HashMap::new();
+        for index in 0..20_000 {
+            vars.insert(format!("v{index:05}"), format!("{{{{v{:05}}}}}", index + 1));
+        }
+        vars.insert("v20000".into(), "done".into());
+        assert!(find_cycles(&vars).is_empty());
+        vars.insert("v20000".into(), "{{v00000}}".into());
+        assert_eq!(find_cycles(&vars), vec!["v00000".to_owned()]);
     }
 }

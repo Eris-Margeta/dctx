@@ -40,3 +40,14 @@ fn a_read_cursor_names_the_next_line_and_keeps_the_id() {
     assert_eq!(truncation_line(12, 40), "[DCTX_TRUNCATED] lines 12-40\n");
     assert!(parse_resume("m:a.rs").is_err());
 }
+
+proptest::proptest! {
+    #[test]
+    fn robustness_read_resume_and_spans(
+        text in ".{0,512}", start in proptest::prelude::any::<u64>(),
+        end in proptest::prelude::any::<u64>(),
+    ) {
+        let _ = parse_resume(&text);
+        let _ = slice_span(text.as_bytes(), [start, end], [1, 1], 10, None);
+    }
+}

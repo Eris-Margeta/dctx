@@ -1,0 +1,51 @@
+name: Parser fuzz smoke
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fuzz-smoke-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fuzz-smoke:
+    name: Bounded parser properties (stable)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_PROFILE_DEV_DEBUG: 0
+      CARGO_PROFILE_TEST_DEBUG: 0
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - name: Install stable Rust
+        run: |
+          rustup toolchain install stable --profile minimal
+          rustup override set stable
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: fuzz-smoke-stable
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Run stable fallback fuzz targets (180 second execution budget)
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/fuzz-smoke.py --seconds 180 --cases 64 --seed 445846555 2>&1 | tee fuzz-smoke.log
+      - name: Preserve log and minimized counterexamples
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fuzz-smoke-failures
+          path: |
+            fuzz-smoke.log
+            **/proptest-regressions/**
+            **/*.proptest-regressions
+          if-no-files-found: ignore

@@ -97,3 +97,16 @@ fn data_scripts_are_not_lexed_and_unclosed_tags_never_panic() {
         "ok"
     );
 }
+
+#[test]
+fn malformed_non_heading_tags_do_not_underflow() {
+    for digit in 0_u8..=u8::MAX {
+        let tag = [b'<', b'h', digit, b'>'];
+        let expected = (b'1'..=b'6').contains(&digit).then(|| digit - b'0');
+        assert_eq!(super::heading_level(&tag), expected);
+    }
+    for source in ["<h!>", "<a >", "<h\t>", "<h🦀>", "<h1>Title</h1><h!>"] {
+        let (symbols, _) = lexed("sample.html", source);
+        assert_eq!(symbols.len(), usize::from(source.contains("Title")));
+    }
+}

@@ -287,15 +287,30 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
         let kind = reader.string()?;
         let name = reader.string()?;
         let path = reader.string()?;
-        let letter = id.bytes().next().unwrap_or(b'm');
+        // A cache is untrusted even when its framing is intact. In particular,
+        // id matching assumes the prefix is one ASCII byte.
+        id.parse::<dctx_map_model::StableId>()
+            .map_err(|_| DctxError::CorruptIndex {
+                reason: "generation node id",
+            })?;
+        let letter = id.as_bytes()[0];
         let ordinal = ordinal_suffix(&id, &name);
+        let mut canonical = String::new();
+        crate::index::write_stable_id(&mut canonical, letter, &path, &name, ordinal);
+        if canonical != id {
+            return Err(DctxError::CorruptIndex {
+                reason: "generation node id",
+            });
+        }
         let Some(index) = u32::try_from(nodes.len()).ok() else {
             return Err(DctxError::CorruptIndex {
                 reason: "generation count",
             });
         };
-        if let std::collections::hash_map::Entry::Vacant(slot) = by_id.entry(id) {
-            slot.insert(index);
+        if by_id.insert(id, index).is_some() {
+            return Err(DctxError::CorruptIndex {
+                reason: "generation duplicate id",
+            });
         }
         nodes.push(IndexedNode {
             letter,

@@ -76,7 +76,7 @@ impl<'a> Reader<'a> {
         let count = usize::try_from(self.u64()?).map_err(|_| DctxError::CorruptIndex {
             reason: "generation count",
         })?;
-        if count > records_cap() {
+        if count > records_cap() || count > self.rest.len() {
             return Err(DctxError::CorruptIndex {
                 reason: "generation count",
             });

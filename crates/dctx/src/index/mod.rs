@@ -310,3 +310,6 @@ pub(crate) struct Generation {
     /// Lazy id lookup table over `nodes`. Derived data: never encoded, never compared.
     pub ids: IdIndex,
 }
+
+#[cfg(test)]
+mod robustness;

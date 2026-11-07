@@ -462,3 +462,20 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod robustness {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn robustness_cursor_decoder(text in ".{1,1024}", generation in any::<u64>()) {
+            let _ = parse_cursor(&text, generation, Verb::Find);
+            let encoded = cursor(generation, Verb::Find, &text);
+            prop_assert_eq!(parse_cursor(&encoded, generation, Verb::Find), Ok(text));
+            prop_assert!(parse_cursor(&encoded, generation, Verb::Read).is_err());
+            prop_assert!(parse_cursor(&encoded, generation.wrapping_add(1), Verb::Find).is_err());
+        }
+    }
+}

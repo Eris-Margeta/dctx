@@ -202,3 +202,16 @@ fn write_private(path: &Path, bytes: &[u8]) -> Result<(), String> {
         .map_err(|_| "failed to write the cache policy".to_string())?;
     Ok(())
 }
+
+#[cfg(test)]
+mod robustness {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn robustness_cache_policy(text in ".{0,4096}") {
+            let _ = parse_policy(&text);
+        }
+    }
+}

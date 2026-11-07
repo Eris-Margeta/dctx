@@ -476,3 +476,156 @@ mod stamp {
         assert!(error.to_string().contains("DCTX_FRESHNESS"), "{error}");
     }
 }
+
+mod robustness {
+    use super::*;
+    use proptest::prelude::*;
+    use std::sync::OnceLock;
+
+    pub(super) fn seed_for_regression() -> &'static [u8] {
+        static SEED: OnceLock<Vec<u8>> = OnceLock::new();
+        SEED.get_or_init(|| {
+            let dir = tempfile::tempdir().unwrap();
+            let cache = dir.path().join("cache");
+            std::fs::create_dir(&cache).unwrap();
+            let mut session = open(source(b"fn kept() {}\nfn caller() { kept(); }\n"), &cache);
+            let handle = session
+                .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+                .unwrap();
+            let bytes = session.load_retained().unwrap().unwrap();
+            drop(handle);
+            bytes
+        })
+    }
+
+    fn check(bytes: &[u8]) {
+        match decode_generation(bytes) {
+            Ok(decoded) => {
+                let generation = &decoded.generation;
+                for node in &generation.nodes {
+                    let mut id = String::new();
+                    crate::index::write_node_id(&mut id, &generation.text, node);
+                    let _ = crate::index::id_matches(&generation.text, node, &id);
+                    let _ = generation.node_index(&id);
+                }
+                let limits =
+                    crate::domain::resolve_scan(&crate::domain::OperationLimits::default())
+                        .unwrap();
+                let encoded =
+                    encode_generation(&decoded.source_key, &decoded.view, &limits, generation)
+                        .unwrap();
+                assert!(decode_generation(&encoded).is_ok());
+            }
+            Err(error) => assert!(!error.to_string().is_empty()),
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn robustness_generation_decoder(bytes in prop::collection::vec(any::<u8>(), 0..4096)) {
+            check(&bytes);
+            let mut framed = MAGIC.to_vec();
+            framed.extend_from_slice(&VERSION.to_le_bytes());
+            framed.extend_from_slice(&bytes);
+            check(&framed);
+        }
+
+        #[test]
+        fn robustness_generation_mutations(
+            changes in prop::collection::vec((any::<prop::sample::Index>(), any::<u8>()), 1..8),
+        ) {
+            let mut bytes = seed_for_regression().to_vec();
+            for (index, value) in changes {
+                let at = index.index(bytes.len());
+                bytes[at] = value;
+            }
+            check(&bytes);
+        }
+    }
+
+    #[test]
+    fn robustness_generation_prefixes_and_poisoned_counts() {
+        let bytes = seed_for_regression();
+        check(bytes);
+        for cut in 0..bytes.len() {
+            assert!(decode_generation(&bytes[..cut]).is_err(), "cut {cut}");
+        }
+        for at in 12..bytes.len().saturating_sub(8) {
+            let mut poisoned = bytes.to_vec();
+            poisoned[at..at + 8].fill(0xff);
+            check(&poisoned);
+        }
+    }
+
+    #[test]
+    fn robustness_corrupt_generation_rebuilds_then_reuses() {
+        for corrupt in [
+            Vec::new(),
+            b"dctxgen1\x04\0\0\0\xff\xff\xff\xff".to_vec(),
+            vec![0xff; 512],
+        ] {
+            let dir = tempfile::tempdir().unwrap();
+            let cache = dir.path().join("cache");
+            std::fs::create_dir(&cache).unwrap();
+            let mut session = open(source(b"fn kept() {}\n"), &cache);
+            let handle = session
+                .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+                .unwrap();
+            let retained = session.load_retained().unwrap().unwrap();
+            drop(handle);
+            drop(session);
+            let mut replaced = 0;
+            for file in std::fs::read_dir(cache.join("objects")).unwrap() {
+                let path = file.unwrap().path();
+                if std::fs::read(&path).unwrap() == retained {
+                    std::fs::write(path, &corrupt).unwrap();
+                    replaced += 1;
+                }
+            }
+            assert_eq!(replaced, 1);
+            assert!(decode_generation(&corrupt).is_err());
+            let mut reopened = open(source(b"fn kept() {}\n"), &cache);
+            let handle = reopened
+                .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+                .unwrap();
+            assert!(!handle.reused());
+            assert!(
+                find_ids(&mut reopened, &handle, "kept")
+                    .iter()
+                    .any(|id| id.contains("kept"))
+            );
+            drop(handle);
+            drop(reopened);
+            let mut warm = open(source(b"fn kept() {}\n"), &cache);
+            assert!(
+                warm.snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+                    .unwrap()
+                    .reused()
+            );
+        }
+    }
+}
+
+#[test]
+fn robustness_non_ascii_cached_node_id_is_refused() {
+    let mut bytes = robustness::seed_for_regression().to_vec();
+    let positions: Vec<_> = bytes
+        .windows(b"s:item.rs#kept".len())
+        .enumerate()
+        .filter_map(|(at, window)| (window == b"s:item.rs#kept").then_some(at))
+        .collect();
+    assert!(!positions.is_empty());
+    // Keep edge references consistent so this reaches node reconstruction.
+    for at in positions {
+        bytes[at..at + 2].copy_from_slice("é".as_bytes());
+    }
+    let decoded = decode_generation(&bytes);
+    if let Ok(decoded) = &decoded {
+        for node in &decoded.generation.nodes {
+            let mut id = String::new();
+            crate::index::write_node_id(&mut id, &decoded.generation.text, node);
+            let _ = crate::index::id_matches(&decoded.generation.text, node, &id);
+        }
+    }
+    assert!(matches!(decoded, Err(DctxError::CorruptIndex { .. })));
+}

@@ -326,3 +326,16 @@ mod tests {
         assert!(parse_slice(&["cache", "tune"]).is_err());
     }
 }
+
+#[cfg(test)]
+mod robustness {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn robustness_cache_commands(args in prop::collection::vec(".{0,64}", 0..16)) {
+            let _ = parse(&args);
+        }
+    }
+}

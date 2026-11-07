@@ -349,3 +349,17 @@ mod tests {
         assert!(parse(&"[".repeat(200)).is_err());
     }
 }
+
+#[cfg(test)]
+mod robustness {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn robustness_json_decoder(text in ".{0,2048}") {
+            let first = parse(&text);
+            prop_assert_eq!(format!("{first:?}"), format!("{:?}", parse(&text)));
+        }
+    }
+}

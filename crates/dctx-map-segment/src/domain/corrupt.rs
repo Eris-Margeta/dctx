@@ -246,6 +246,32 @@ proptest! {
         prop_assert!(checked(&bytes, SegmentRole::Fact));
         prop_assert!(checked(&bytes, SegmentRole::View));
     }
+
+    #[test]
+    fn robustness_checksum_valid_segment_mutations(
+        changes in proptest::collection::vec((any::<proptest::sample::Index>(), any::<u8>()), 1..8),
+        view in any::<bool>(),
+    ) {
+        let (mut bytes, role) = if view {
+            ({
+                let mut builder = SegmentBuilder::view();
+                builder.set_view_key(crate::ViewKeyDraft {
+                    trust: "test".into(), root: "fixture".into(), snapshot: [0; 32],
+                    overlay_generation: 0, policy: [0; 32], resolver_revision: "v1".into(),
+                    environment: [0; 32],
+                }).unwrap();
+                builder.build().unwrap()
+            }, SegmentRole::View)
+        } else {
+            (accent_segment(), SegmentRole::Fact)
+        };
+        for (index, value) in changes {
+            let at = index.index(bytes.len());
+            bytes[at] = value;
+        }
+        resign(&mut bytes);
+        prop_assert!(checked(&bytes, role));
+    }
 }
 
 fn checked(bytes: &[u8], role: SegmentRole) -> bool {

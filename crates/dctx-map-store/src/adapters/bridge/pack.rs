@@ -335,3 +335,63 @@ fn push_digest(out: &mut Vec<u8>, digest: &ContentDigest) {
     out.extend_from_slice(digest.as_bytes());
     push_u64(out, digest.byte_length());
 }
+
+#[cfg(test)]
+mod robustness {
+    use super::*;
+    use proptest::prelude::*;
+
+    fn seed() -> Vec<u8> {
+        let tree = DirContextTreeNode::new(NodeType::Directory, "", PathBuf::new());
+        let snapshot = PackSnapshot::new(
+            tree,
+            Version { major: 1, minor: 0 },
+            Timestamp(0),
+            ContentDigests::new(),
+        )
+        .unwrap();
+        encode(&snapshot).unwrap()
+    }
+
+    fn check(bytes: &[u8]) {
+        if let Ok(snapshot) = decode(bytes) {
+            let canonical = encode(&snapshot).unwrap();
+            assert!(decode(&canonical).is_ok());
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn robustness_pack_snapshot_bytes(bytes in prop::collection::vec(any::<u8>(), 0..4096)) {
+            check(&bytes);
+            let mut framed = b"DCTXPK01".to_vec();
+            framed.extend_from_slice(&bytes);
+            let sum = dctx_hash::Sha256::digest(&framed).unwrap();
+            framed.extend_from_slice(sum.as_bytes());
+            check(&framed);
+        }
+
+        #[test]
+        fn robustness_checksum_valid_pack_mutations(
+            changes in prop::collection::vec((any::<prop::sample::Index>(), any::<u8>()), 1..8),
+        ) {
+            let mut bytes = seed();
+            let end = bytes.len() - 32;
+            for (index, value) in changes {
+                bytes[index.index(end)] = value;
+            }
+            let sum = dctx_hash::Sha256::digest(&bytes[..end]).unwrap();
+            bytes[end..].copy_from_slice(sum.as_bytes());
+            check(&bytes);
+        }
+    }
+
+    #[test]
+    fn robustness_pack_snapshot_prefixes_are_refused() {
+        let bytes = seed();
+        check(&bytes);
+        for cut in 0..bytes.len() {
+            assert!(decode(&bytes[..cut]).is_err(), "cut {cut}");
+        }
+    }
+}

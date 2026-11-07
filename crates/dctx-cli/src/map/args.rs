@@ -361,3 +361,22 @@ mod tests {
         }
     }
 }
+
+#[cfg(test)]
+mod robustness {
+    use super::*;
+    use proptest::prelude::*;
+
+    proptest! {
+        #[test]
+        fn robustness_map_selectors_and_flags(
+            target in ".{0,256}", tail in prop::collection::vec(".{0,64}", 0..12),
+        ) {
+            for verb in ["map", "find", "read", "skeleton", "explain", "neighbors", "grep", "path", "hubs", "export"] {
+                let mut args = vec![verb.to_owned(), target.clone()];
+                args.extend(tail.iter().cloned());
+                let _ = parse(&args);
+            }
+        }
+    }
+}

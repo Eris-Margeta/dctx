@@ -200,7 +200,7 @@ fn heading_level(rest: &[u8]) -> Option<u8> {
     (h.eq_ignore_ascii_case(&b'h')
         && (b'1'..=b'6').contains(&digit)
         && (after.is_ascii_whitespace() || matches!(after, b'>' | b'/')))
-    .then_some(digit - b'0')
+    .then(|| digit - b'0')
 }
 
 /// Offset of the `>` that closes the open tag at `lt`, skipping quoted attribute values.
