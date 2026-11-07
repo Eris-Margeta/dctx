@@ -40,7 +40,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="dctx: README">
-<meta property="article:modified_time" content="2026-11-07T17:05:41Z">
+<meta property="article:modified_time" content="2026-11-07T17:44:48Z">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="README · dctx">
 <meta name="twitter:description" content="Installation, quick start, map mode, language tiers and the CLI reference.">
@@ -191,13 +191,13 @@
    "mainEntityOfPage": {
     "@id": "https://www.dctx.internet.technology/docs/readme/#webpage"
    },
-   "wordCount": 3809,
+   "wordCount": 2109,
    "encoding": {
     "@type": "MediaObject",
     "contentUrl": "https://www.dctx.internet.technology/docs/readme/index.md",
     "encodingFormat": "text/markdown"
    },
-   "dateModified": "2026-11-07T17:05:41Z"
+   "dateModified": "2026-11-07T17:44:48Z"
   }
  ]
 }
@@ -219,54 +219,63 @@
  </div>
 </header>
 <main id="main">
-<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/" aria-current="page">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/modalities/">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/readme/" aria-current="page">README</a></li></ol></nav><h1 id="dctx">dctx</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/README.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/README.md">Edit on GitHub</a> &middot; <a href="/docs/readme/index.md" type="text/markdown">Markdown</a> &middot; <code>README.md</code> &middot; 3,809 words &middot; updated <time datetime="2026-11-07">7 November 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#installation">Installation</a></li><li><a href="#quick-start">Quick Start</a></li><li><a href="#what-the-output-looks-like">What the output looks like</a></li><li><a href="#which-mode">Which mode?</a></li><li><a href="#use-as-a-library">Use as a library</a></li><li><a href="#why-dctx">Why dctx</a></li><li><a href="#the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency</a></li><li><a href="#where-it-comes-from">Where it comes from</a></li><li><a href="#map-mode-context-for-agents">Map mode: context for agents</a></li><li><a href="#organization-control">Organization control</a></li><li><a href="#plugins">Plugins</a></li><li><a href="#security--privacy">Security &amp; Privacy</a></li><li><a href="#measured-in-the-open">Measured, in the open</a></li><li><a href="#out-of-scope-for-v1">Out of scope for v1</a></li><li><a href="#open-source-and-maintenance">Open source and maintenance</a></li><li><a href="#cli-reference">CLI Reference</a></li><li><a href="#use-as-a-library-1">Use as a library</a></li><li><a href="#architecture">Architecture</a></li><li><a href="#license">License</a></li><li><a href="#contributing">Contributing</a></li></ul></details>
-<p><strong>Turn a codebase into focused context for AI assistants.</strong> Pack a project, find symbols and read exact source locally. Stable output helps prompt caches reuse context.</p>
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/" aria-current="page">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/modalities/">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/readme/" aria-current="page">README</a></li></ol></nav><h1 id="dctx">dctx</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/README.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/README.md">Edit on GitHub</a> &middot; <a href="/docs/readme/index.md" type="text/markdown">Markdown</a> &middot; <code>README.md</code> &middot; 2,109 words &middot; updated <time datetime="2026-11-07">7 November 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#installation">Installation</a></li><li><a href="#what-the-output-looks-like">What the output looks like</a></li><li><a href="#which-mode">Which mode?</a></li><li><a href="#measured-in-the-open">Measured, in the open</a></li><li><a href="#start-and-choose-your-path">Start and choose your path</a></li><li><a href="#the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency</a></li><li><a href="#quick-start">Quick Start</a></li><li><a href="#map-mode-context-for-agents">Map mode: context for agents</a></li><li><a href="#from-source-1">From source</a></li><li><a href="#use-as-a-library">Use as a library</a></li><li><a href="#cli-reference">CLI Reference</a></li><li><a href="#security--privacy">Security &amp; Privacy</a></li><li><a href="#open-source-and-maintenance">Open source and maintenance</a></li><li><a href="#where-it-comes-from">Where it comes from</a></li><li><a href="#contributing">Contributing</a></li></ul></details>
+<p><strong>dctx turns any folder into the smallest correct context for a task, offline, with byte-stable output that prompt caches can reuse.</strong> dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.</p>
 <hr />
 <h2 id="installation">Installation<a class="hd" href="#installation" aria-label="Link to Installation">#</a></h2>
-<p>Download the archive for your OS and architecture from
+<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
+<strong>System binary — available now.</strong> Download the archive for your OS and architecture
+from <a href="https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0">GitHub Releases</a>,
+compare its SHA-256 with the matching entry in <code>SHA256SUMS</code>, extract it, and put
+<code>dctx</code> (<code>dctx.exe</code> on Windows) on <code>PATH</code>. Archives cover Linux x64/ARM64,
+macOS x64/ARM64 and Windows x64. Signed binary releases are planned.
+=======
+Download the archive for your OS and architecture from
 <a href="https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0">GitHub Releases</a>, verify
-it against <code>SHA256SUMS</code>, extract it, and put <code>dctx</code> (<code>dctx.exe</code> on Windows) on
-<code>PATH</code>. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
+its signature and signed <code>SHA256SUMS</code>, extract it, and put <code>dctx</code> (<code>dctx.exe</code> on
+Windows) on <code>PATH</code>. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
+CLI releases produced by the supply-chain workflow include cosign bundles,
+CycloneDX SBOMs, GitHub provenance and per-platform air-gap bundles. For an archive
+and its <code>.sigstore.json</code> downloaded from the same release, use cosign 3.1.4:</p>
+<div class="hl"><pre><code><span class="t-nv">TAG</span><span class="t-o">=</span>v1.2.0<span class="t-w"> </span><span class="t-c1"># select a release produced by the supply-chain workflow</span>
+<span class="t-nv">ASSET</span><span class="t-o">=</span>dctx-x86_64-unknown-linux-musl.tar.gz
+cosign<span class="t-w"> </span>verify-blob<span class="t-w"> </span>--bundle<span class="t-w"> </span><span class="t-s2">&quot;</span><span class="t-nv">$ASSET</span><span class="t-s2">.sigstore.json&quot;</span><span class="t-w"> </span><span class="t-se">\</span>
+<span class="t-w">  </span>--certificate-identity<span class="t-w"> </span><span class="t-s2">&quot;https://github.com/Eris-Margeta/dctx/.github/workflows/release.yml@refs/tags/</span><span class="t-nv">$TAG</span><span class="t-s2">&quot;</span><span class="t-w"> </span><span class="t-se">\</span>
+<span class="t-w">  </span>--certificate-oidc-issuer<span class="t-w"> </span>https://token.actions.githubusercontent.com<span class="t-w"> </span><span class="t-s2">&quot;</span><span class="t-nv">$ASSET</span><span class="t-s2">&quot;</span>
+</code></pre></div>
+
+<p>See <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/VERIFYING.md">verification, provenance and offline installation</a> for
+signed-checksum commands, <code>gh attestation verify</code>, trust preparation and build
+reproducibility limits. Earlier releases do not retroactively gain this evidence.
 CI covers Linux, macOS and Windows; see <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md">the matrix and desktop exclusions</a>.</p>
 <p><strong>Coming soon:</strong> <code>cargo install dctx-cli</code> and <code>npx dctx</code>. Registry packages are
 not live yet; use the release archives now.</p>
 <h3 id="from-source">From source<a class="hd" href="#from-source" aria-label="Link to From source">#</a></h3>
 <p>Requires Rust 1.91 or newer.</p>
-<div class="hl"><pre><code>git<span class="t-w"> </span>clone<span class="t-w"> </span>https://github.com/Eris-Margeta/dctx
-<span class="t-nb">cd</span><span class="t-w"> </span>dctx
-cargo<span class="t-w"> </span>build<span class="t-w"> </span>--locked<span class="t-w"> </span>--release<span class="t-w"> </span>-p<span class="t-w"> </span>dctx-cli
-./target/release/dctx-cli<span class="t-w"> </span>--version
-<span class="t-nb">alias</span><span class="t-w"> </span><span class="t-nv">dctx</span><span class="t-o">=</span><span class="t-s2">&quot;</span><span class="t-nv">$PWD</span><span class="t-s2">/target/release/dctx-cli&quot;</span>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<blockquote>
+<p>main</p>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+</blockquote>
+<div class="hl"><pre><code>dctx<span class="t-w"> </span>--version
 </code></pre></div>
 
-<p>Cargo builds <code>dctx-cli</code> (<code>dctx-cli.exe</code> on Windows); release archives supply
-<code>dctx</code>. For a local source installation, use
-<code>cargo install --locked --path crates/dctx-cli</code> and <code>alias dctx=dctx-cli</code>.
-On Windows, invoke the executable directly or create a PowerShell alias.</p>
-<h2 id="quick-start">Quick Start<a class="hd" href="#quick-start" aria-label="Link to Quick Start">#</a></h2>
-<p>In 30 seconds, try a tiny project (POSIX shell; on Windows use Git Bash):</p>
-<div class="hl"><pre><code>mkdir<span class="t-w"> </span>dctx-demo
-<span class="t-nb">cd</span><span class="t-w"> </span>dctx-demo
-<span class="t-nb">printf</span><span class="t-w"> </span><span class="t-s1">&#39;def hello(name):\n    return f&quot;Hello, {name}!&quot;\n&#39;</span><span class="t-w"> </span>&gt;<span class="t-w"> </span>hello.py
-dctx<span class="t-w"> </span>map<span class="t-w"> </span>skeleton<span class="t-w"> </span>hello.py
-</code></pre></div>
-
-<p>Output from dctx 1.2.0:</p>
-<div class="hl"><pre><code># dctx-demo skeleton
-m:hello.py  module  L1-2    hello.py
-s:hello.py#hello    fn  L1-2    def hello(name):
-</code></pre></div>
-
-<p>For your own project:</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>pack<span class="t-w"> </span>.<span class="t-w">                </span><span class="t-c1"># structured context on stdout</span>
-dctx<span class="t-w"> </span>pack<span class="t-w"> </span>.<span class="t-w"> </span>--clipboard<span class="t-w">    </span><span class="t-c1"># copy it to the clipboard</span>
-dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span><span class="t-s2">&quot;SnapshotConfig&quot;</span>
-dctx<span class="t-w"> </span>mcp<span class="t-w">                   </span><span class="t-c1"># stdio tools for an MCP client</span>
-</code></pre></div>
-
-<p><code>pack</code> writes a file only with <code>--output</code>. Tree timestamps are off by default,
-so a bare <code>touch</code> does not change its output; <code>--tree-stamps=on</code> includes them.
-Run <code>dctx</code> without arguments for the interactive terminal menu.</p>
+<p><strong>Project libraries — publishing soon.</strong> The pip/npm libraries with their own
+pinned binary are planned. The <a href="/docs/modalities/#rust-library-embed-the-facade">Rust facade</a>
+is available from tagged Git today; crates.io, <code>cargo install dctx-cli</code> and the
+npm CLI (<code>npx dctx</code>) are publishing soon. Use release archives now.</p>
+<p>Follow <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/START.md#safe-path-in-ten-minutes">the safe path in ten minutes</a>
+for one project, lean MCP setup and whole-session measurement.</p>
 <h2 id="what-the-output-looks-like">What the output looks like<a class="hd" href="#what-the-output-looks-like" aria-label="Link to What the output looks like">#</a></h2>
 <p>These are real runs on the tiny <a href="https://github.com/Eris-Margeta/dctx/tree/main/tools/website/sample">kiosk sample</a>, captured by <a href="https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py">capture.py</a> from the release binary. Commands run inside a copy named <code>kiosk</code>. For source builds, the executable is <code>dctx-cli</code> (or define a <code>dctx</code> alias).</p>
 <h3 id="pack-a-project">Pack a project<a class="hd" href="#pack-a-project" aria-label="Link to Pack a project">#</a></h3>
@@ -368,100 +377,82 @@ pub struct Order {
 # end body_tokens=223 budget=800 dropped=0
 </code></pre></div>
 
-<hr />
 <h2 id="which-mode">Which mode?<a class="hd" href="#which-mode" aria-label="Link to Which mode?">#</a></h2>
-<div class="table-wrap"><table>
-<thead>
-<tr>
-<th>Modality</th>
-<th>Install</th>
-<th>Status</th>
-<th>Best for</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>CLI / interactive terminal</td>
-<td><a href="https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0">Prebuilt archives</a>, or build from source above</td>
-<td>Available now; <code>cargo install dctx-cli</code> publishing soon</td>
-<td>One-off chat (<code>pack --clipboard</code>), shell agents, scripts and CI; run <code>dctx</code> for the terminal menu</td>
-</tr>
-<tr>
-<td>MCP server</td>
-<td>Included in the CLI; configure <code>dctx mcp /absolute/project</code></td>
-<td>Available now, stdio</td>
-<td>Claude Code, Cursor and Codex tool calls on a scoped project</td>
-</tr>
-<tr>
-<td>Rust library (<code>dctx</code> facade)</td>
-<td>Tagged Git dependency below</td>
-<td>Available from Git; crates.io publishing soon</td>
-<td>Embedding pack, map, templates and cache in Rust tools and editors</td>
-</tr>
-<tr>
-<td>npm CLI (<code>npx dctx</code>)</td>
-<td><code>npx dctx</code> after publication; use archives today</td>
-<td>Publishing soon</td>
-<td>Running the native CLI from a Node toolchain</td>
-</tr>
-<tr>
-<td>Desktop app</td>
-<td><a href="https://github.com/Eris-Margeta/dctx/blob/main/apps/dctx-desktop/README.md#quick-start">Build the Tauri app</a></td>
-<td>Tauri 0.11 preview today; GPUI rebuild planned</td>
-<td>Selecting projects and generating snapshots in a GUI</td>
-</tr>
-<tr>
-<td>Python / Node bindings</td>
-<td>No supported package install yet</td>
-<td>Planned</td>
-<td>Future in-process Python and JavaScript integrations</td>
-</tr>
-</tbody>
-</table></div>
-<p>Use <code>dctx pack . --clipboard</code> for a one-off chat, plain grep plus file reads for a
-small agent task, and <code>find</code> + <code>read --json</code> + <code>skeleton</code> for repeated work in big
-files. Scope huge trees before indexing. MCP adds tool definitions to the agent's
-starting context; smaller answers alone do not prove lower session cost.
-The npm package wraps the CLI; it is separate from the planned Node library binding.
-See <a href="/docs/modalities/">Choosing how to use dctx</a> for commands, library boundaries,
-MCP configuration and overhead, cache limits and CI guidance.</p>
-<h3 id="connect-an-mcp-client">Connect an MCP client<a class="hd" href="#connect-an-mcp-client" aria-label="Link to Connect an MCP client">#</a></h3>
-<p>Install the CLI archive first. Replace both absolute paths below with your
-executable and the project to index (on Windows, use <code>dctx.exe</code> and JSON-escaped
-paths). An explicit project path avoids relying on the client's working directory.
-For a source build, point <code>command</code> at <code>target/release/dctx-cli</code>.</p>
-<p><a href="https://code.claude.com/docs/en/mcp">Claude Code</a> (<code>.mcp.json</code> at the project root)
-and <a href="https://cursor.com/docs/mcp">Cursor</a> (<code>.cursor/mcp.json</code>) use this JSON:</p>
-<div class="hl"><pre><code><span class="t-p">{</span>
-<span class="t-w">  </span><span class="t-nt">&quot;mcpServers&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">{</span>
-<span class="t-w">    </span><span class="t-nt">&quot;dctx&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">{</span>
-<span class="t-w">      </span><span class="t-nt">&quot;type&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">&quot;stdio&quot;</span><span class="t-p">,</span>
-<span class="t-w">      </span><span class="t-nt">&quot;command&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/dctx&quot;</span><span class="t-p">,</span>
-<span class="t-w">      </span><span class="t-nt">&quot;args&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-s2">&quot;mcp&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/project&quot;</span><span class="t-p">]</span>
-<span class="t-w">    </span><span class="t-p">}</span>
-<span class="t-w">  </span><span class="t-p">}</span>
-<span class="t-p">}</span>
+<ul>
+<li><a href="/docs/modalities/#human-one-off-pack-to-clipboard">CLI and one-off chat</a>: pack selected source for a prompt or use the interactive terminal.</li>
+<li><a href="/docs/modalities/#short-agent-task-grep-can-be-enough">Agents, short tasks</a>: compare with grep plus narrow file reads first.</li>
+<li><a href="/docs/modalities/#huge-trees-scope-before-indexing">Agents, long sessions and huge trees</a>: scope the root, find symbols and read exact source.</li>
+<li><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MCP.md">MCP</a>: use the lean profile to start; ACP is planned.</li>
+<li><a href="/docs/modalities/#rust-library-embed-the-facade">Libraries</a>: embed the Rust facade today; pip/npm project libraries are publishing soon.</li>
+<li><a href="/docs/modalities/#ci--prompt-cache-prefix-stability">CI and prompt caching</a>: pin inputs and measure byte stability and provider cache behavior.</li>
+<li><a href="/docs/modalities/#desktop-app-tauri-preview-today">Desktop</a>: build the Tauri 0.11 preview; the GPUI rebuild is planned.</li>
+</ul>
+<h2 id="measured-in-the-open">Measured, in the open<a class="hd" href="#measured-in-the-open" aria-label="Link to Measured, in the open">#</a></h2>
+<p>The baseline is <strong>grep plus reading files</strong>.</p>
+<p>A controlled grep-plus-read benchmark that counts whole agent sessions (start-up context, every call, provider cache hits and accuracy) is being prepared; until it is published, dctx makes no whole-session savings claim.</p>
+<p>Historical cold indexing of six benchmark corpora took dctx 0.13–1.20 s on one Linux x86_64 runner. This measures CLI wall time, not agent completion time or session cost.</p>
+<p><a href="/docs/modalities/">Choosing how to use dctx</a> covers scoping and MCP startup overhead. <a href="/docs/benchmark/">Measurement evidence</a> describes what was measured (tool-output bytes and estimated tokens); other-tool protocols are retained only as secondary historical notes.</p>
+<h2 id="start-and-choose-your-path">Start and choose your path<a class="hd" href="#start-and-choose-your-path" aria-label="Link to Start and choose your path">#</a></h2>
+<p><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/START.md">What dctx is</a>, <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/START.md#choose-your-path">four user paths</a>,
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/START.md#responsibilities">responsibilities</a>, and
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/START.md#two-scopes-one-binary">two scopes, one binary</a> explain setup and
+ownership. The <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/README.md">documentation index</a> groups modalities, scopes,
+engine behavior, reference material, trust and evaluator evidence.</p>
+<p>“Smallest correct context” is the goal: selection is lexical and bounded, not a
+proof of task completeness or a mathematical minimum. Large folders need scoped
+roots; budgets bound answers, not scans. Provider cache hits and whole-session
+savings must be measured. See <a href="/docs/modalities/">current limits</a> and the
+<a href="/docs/spec/">specification and roadmap</a>.</p>
+<h2 id="the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency<a class="hd" href="#the-core-belief-prompt-processing-efficiency" aria-label="Link to The core belief: prompt-processing efficiency">#</a></h2>
+<p>Send fewer relevant bytes, keep their order stable, and verify exact source.
+dctx does not use embeddings; it selects lexical symbols and document sections.</p>
+<ul>
+<li><strong>Bounded</strong>: map answers use estimated token budgets and whole records.</li>
+<li><strong>Deterministic</strong>: identical source snapshots and requests give identical bytes.</li>
+</ul>
+<p>Read the <a href="/why/">philosophy</a> and its
+<a href="/docs/spec/#2-the-core-belief-prompt-processing-efficiency">testable constraints</a>.</p>
+<h2 id="quick-start">Quick Start<a class="hd" href="#quick-start" aria-label="Link to Quick Start">#</a></h2>
+<p>Try a tiny project (POSIX shell; on Windows use Git Bash):</p>
+<div class="hl"><pre><code>mkdir<span class="t-w"> </span>dctx-demo
+<span class="t-nb">cd</span><span class="t-w"> </span>dctx-demo
+<span class="t-nb">printf</span><span class="t-w"> </span><span class="t-s1">&#39;def hello(name):\n    return f&quot;Hello, {name}!&quot;\n&#39;</span><span class="t-w"> </span>&gt;<span class="t-w"> </span>hello.py
+dctx<span class="t-w"> </span>map<span class="t-w"> </span>skeleton<span class="t-w"> </span>hello.py
 </code></pre></div>
 
-<p><a href="https://developers.openai.com/codex/mcp/">Codex</a> uses <code>~/.codex/config.toml</code>
-(or <code>.codex/config.toml</code> in a trusted project):</p>
-<div class="hl"><pre><code><span class="t-k">[mcp_servers.dctx]</span>
-<span class="t-n">command</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/dctx&quot;</span>
-<span class="t-n">args</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-s2">&quot;mcp&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/project&quot;</span><span class="t-p">]</span>
+<p>Use the <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/START.md#safe-path-in-ten-minutes">safe path</a> or the
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/examples/README.md">runnable pack and map example</a>. For repeated agent work,
+see <a href="/docs/map-mode/">Map mode: context for agents</a> and the
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MCP.md">MCP client guide</a>.</p>
+<h2 id="map-mode-context-for-agents">Map mode: context for agents<a class="hd" href="#map-mode-context-for-agents" aria-label="Link to Map mode: context for agents">#</a></h2>
+<p>From this repository's root:</p>
+<div class="hl"><pre><code>dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span><span class="t-s2">&quot;SnapshotConfig&quot;</span>
 </code></pre></div>
 
+<p>Read exact IDs from the result with <code>dctx map read 'ID' --json</code>.
+See the <a href="/docs/map-mode/">map guide</a> for commands, budgets and limits.</p>
+<h2 id="from-source-1">From source<a class="hd" href="#from-source-1" aria-label="Link to From source">#</a></h2>
+<p>Requires Rust 1.91 or newer.</p>
+<div class="hl"><pre><code>git<span class="t-w"> </span>clone<span class="t-w"> </span>https://github.com/Eris-Margeta/dctx
+<span class="t-nb">cd</span><span class="t-w"> </span>dctx
+cargo<span class="t-w"> </span>build<span class="t-w"> </span>--locked<span class="t-w"> </span>--release<span class="t-w"> </span>-p<span class="t-w"> </span>dctx-cli
+./target/release/dctx-cli<span class="t-w"> </span>--version
+<span class="t-nb">alias</span><span class="t-w"> </span><span class="t-nv">dctx</span><span class="t-o">=</span><span class="t-s2">&quot;</span><span class="t-nv">$PWD</span><span class="t-s2">/target/release/dctx-cli&quot;</span>
+</code></pre></div>
+
+<p>Cargo builds <code>dctx-cli</code> (<code>dctx-cli.exe</code> on Windows); release archives supply
+<code>dctx</code>. For a local source installation, use
+<code>cargo install --locked --path crates/dctx-cli</code> and <code>alias dctx=dctx-cli</code>.
+On Windows, invoke the executable directly or create a PowerShell alias.
+See <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md">CI coverage and desktop exclusions</a>.</p>
 <h2 id="use-as-a-library">Use as a library<a class="hd" href="#use-as-a-library" aria-label="Link to Use as a library">#</a></h2>
-<p>The public Rust API is the <a href="https://github.com/Eris-Margeta/dctx/tree/main/crates/dctx"><code>dctx</code> facade</a>, rather than the internal
-<code>dctx-core</code> crate. It exposes sessions for pack, map, templates and cache, with
-explicit source, clock, cancellation, selection policy and storage ports.
-<strong>crates.io: publishing soon.</strong> Use the current tagged Git dependency:</p>
+<p>The public Rust entry point is the <a href="https://github.com/Eris-Margeta/dctx/tree/main/crates/dctx"><code>dctx</code> facade</a>, available from
+Git now; <strong>crates.io publishing soon</strong>.</p>
 <div class="hl"><pre><code><span class="t-k">[dependencies]</span>
 <span class="t-n">dctx</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-p">{</span><span class="t-w"> </span><span class="t-n">git</span><span class="t-w"> </span><span class="t-p">=</span><span class="t-w"> </span><span class="t-s2">&quot;https://github.com/Eris-Margeta/dctx&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">tag</span><span class="t-w"> </span><span class="t-p">=</span><span class="t-w"> </span><span class="t-s2">&quot;v1.2.0&quot;</span><span class="t-w"> </span><span class="t-p">}</span>
 </code></pre></div>
 
-<p>This ten-line example packs an in-memory source with an explicit 8 MiB ephemeral
-storage ceiling. It runs as a <a href="https://github.com/Eris-Margeta/dctx/blob/main/examples/library/README.md">Rust doctest</a> in workspace
-CI; rustdoc supplies the enclosing <code>main</code> and error return type.</p>
+<p>This example is generated from the <a href="https://github.com/Eris-Margeta/dctx/blob/main/examples/library/README.md">workspace doctest</a>:</p>
 <div class="hl"><pre><code><span class="t-k">use</span><span class="t-w"> </span><span class="t-n">dctx</span><span class="t-p">::{</span><span class="t-n">memory</span><span class="t-p">::{</span><span class="t-n">CancelFlag</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">FixedClock</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">MemorySource</span><span class="t-p">},</span><span class="t-w"> </span><span class="t-o">*</span><span class="t-p">};</span>
 <span class="t-kd">let</span><span class="t-w"> </span><span class="t-k">mut</span><span class="t-w"> </span><span class="t-n">source</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-n">MemorySource</span><span class="t-p">::</span><span class="t-n">new</span><span class="t-p">();</span>
 <span class="t-n">source</span><span class="t-p">.</span><span class="t-n">insert_file</span><span class="t-p">(</span><span class="t-s">&quot;hello.rs&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-s">b&quot;pub fn hello() {}</span><span class="t-se">\n</span><span class="t-s">&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">0</span><span class="t-p">)</span><span class="t-o">?</span><span class="t-p">;</span>
@@ -474,131 +465,42 @@ CI; rustdoc supplies the enclosing <code>main</code> and error return type.</p>
 <span class="t-fm">println!</span><span class="t-p">(</span><span class="t-s">&quot;{}&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">std</span><span class="t-p">::</span><span class="t-kt">str</span><span class="t-p">::</span><span class="t-n">from_utf8</span><span class="t-p">(</span><span class="t-n">output</span><span class="t-p">.</span><span class="t-n">as_bytes</span><span class="t-p">())</span><span class="t-o">?</span><span class="t-p">);</span>
 </code></pre></div>
 
-<p>The facade discovers no home directory, global config or Git executable and
-starts no plugin host by default. A filesystem integration must provide its own
-clock and ignore-rule policy; <code>FsSource</code> does not automatically apply <code>.gitignore</code>.
-See the <a href="/docs/modalities/#rust-library-embed-the-facade">library integration notes</a>
-for the boundary between library and CLI behavior. Python and Node bindings are
-planned; there is no supported in-process package for either yet.</p>
-<h2 id="why-dctx">Why dctx<a class="hd" href="#why-dctx" aria-label="Link to Why dctx">#</a></h2>
-<div class="table-wrap"><table>
-<tr><td><b>Deterministic</b></td><td>Same source snapshot and request give identical bytes (every text verb checked over 5 runs on Linux; the cross-OS gate is still open). <code>dctx pack</code> tree lines carry no timestamps, so a <code>touch</code> changes nothing.</td></tr>
-<tr><td><b>Prefix-stable</b></td><td>In a <code>dctx pack</code> page, an edit keeps every byte before the edited file as a shared prefix, which is what a provider's prompt cache reuses. Map and find answers were byte-identical after unrelated edits in 33/33 text and 33/33 JSON cases (<a href="/docs/stability/">measured 6 Nov 2026</a>); layered prompt tiers are still a target (<a href="/docs/spec/">spec</a> PPE-3).</td></tr>
-<tr><td><b>Private and offline</b></td><td>No telemetry, no model calls, no network. The release check counts socket calls under <code>strace -f</code> and fails on any. Secrets files are listed by name, never read.</td></tr>
-<tr><td><b>Fast</b></td><td>Cold index of six historical benchmark corpora in 0.13-1.20 s, on one Linux x86_64 runner. This does not measure agent session cost.</td></tr>
-<tr><td><b>Agent-ready</b></td><td><code>dctx mcp</code> is a stdio MCP server exposing the map verbs; answers are bounded and never split a record.</td></tr>
-<tr><td><b>Broad</b></td><td>50 language families: 36 with symbols and lexical call edges, 8 with symbol outlines, 6 document formats with headed sections; run <code>dctx languages</code>.</td></tr>
-<tr><td><b>Verified</b></td><td>TLA+ models of the cache lifecycle and the plugin system in <a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/formal">docs/formal</a>, each with a mutation gate: every deliberately broken variant must be caught (plugins: 8 baselines, 59 mutants, 37 reachability witnesses). Plugin manifests and the plugin discovery index are verified with Ed25519 signatures.</td></tr>
-<tr><td><b>Measured</b></td><td>Compare focused answers with grep plus file reads, then count startup context and all agent turns. <a href="#measured-in-the-open">Evidence and limits below.</a></td></tr>
-<tr><td><b>Your choice of surface</b></td><td>CLI, Rust library facade, MCP server, and a <a href="https://github.com/Eris-Margeta/dctx/tree/main/apps/dctx-desktop">desktop app</a> (0.11 preview, free, Apache-2.0).</td></tr>
-</table></div>
+<p>The host supplies selection rules and storage policy; <code>FsSource</code> does not
+load <code>.gitignore</code> automatically. Read the
+<a href="/docs/modalities/#rust-library-embed-the-facade">library integration boundary</a>
+before embedding it. Python and Node project wrappers are planned.</p>
+<h2 id="cli-reference">CLI Reference<a class="hd" href="#cli-reference" aria-label="Link to CLI Reference">#</a></h2>
+<div class="hl"><pre><code>Usage: dctx [PATH] [OPTIONS]
+       dctx pack [PATH] [--output PATH] [--clipboard] [--json] [--tree-stamps=on|off]
+       dctx pack [PATH] --for &lt;TEXT&gt; [--budget TOKENS]
+       dctx map &lt;map|find|neighbors|explain|read&gt; &lt;TARGET&gt; [--json]
+       dctx cache status|gc|purge|config|auto
+       dctx template build &lt;PATH&gt; | template list
+       dctx plugin search|install|list|info|enable|disable|remove|update|verify|run
+       dctx git &lt;status|protect&gt;
 
-<h3 id="at-a-glance">At a glance<a class="hd" href="#at-a-glance" aria-label="Link to At a glance">#</a></h3>
-<div class="table-wrap"><table>
-<thead>
-<tr>
-<th></th>
-<th></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Version</td>
-<td>1.2.0</td>
-</tr>
-<tr>
-<td>License</td>
-<td>Apache-2.0</td>
-</tr>
-<tr>
-<td>Written in</td>
-<td>Rust (2021 and 2024 editions): 36 crates plus the desktop app</td>
-</tr>
-<tr>
-<td>CI coverage</td>
-<td>Linux, macOS (ARM64 and x64), Windows x64; <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md">matrix and exclusions</a></td>
-</tr>
-<tr>
-<td>Modes</td>
-<td><code>pack</code> (whole project or diff), <code>map</code> (agents), <code>mcp</code> (stdio server)</td>
-</tr>
-</tbody>
-</table></div>
-<hr />
-<h2 id="the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency<a class="hd" href="#the-core-belief-prompt-processing-efficiency" aria-label="Link to The core belief: prompt-processing efficiency">#</a></h2>
-<p>Every token you put in front of a model is paid for three times:</p>
-<ul>
-<li><strong>Prefill</strong> — the model must process every input token before it answers. You pay per token, and you wait for it.</li>
-<li><strong>Cache misses</strong> — providers serve repeated prompt prefixes from a cache for a fraction of the price and latency. One changed byte early in a prompt throws the rest of the cache away.</li>
-<li><strong>Attention</strong> — answers get worse as irrelevant tokens pile up.</li>
-</ul>
-<p>dctx exists to send <strong>the fewest, most relevant bytes, in an order that stays the same between turns</strong>, so prompts are smaller, caches hit, and the model reasons over exact source instead of guesses. That is the whole philosophy, and every feature has to earn its place against it. The <a href="/docs/spec/#2-the-core-belief-prompt-processing-efficiency">specification</a> turns it into five testable constraints — bounded, deterministic, prefix-stable, non-redundant, honest — and eight metrics.</p>
-<h3 id="one-engine-for-every-way-software-is-built">One engine for every way software is built<a class="hd" href="#one-engine-for-every-way-software-is-built" aria-label="Link to One engine for every way software is built">#</a></h3>
-<div class="table-wrap"><table>
-<thead>
-<tr>
-<th>You work by…</th>
-<th>dctx gives you</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td><strong>Hand-coding</strong> in an unfamiliar codebase</td>
-<td><code>dctx map</code> outlines, symbol search and exact source reads</td>
-</tr>
-<tr>
-<td><strong>Copy-paste</strong> into a chat assistant</td>
-<td><code>dctx pack</code> — the whole project or only what changed, in one structured block</td>
-</tr>
-<tr>
-<td><strong>Tab completion</strong> and IDE assistants</td>
-<td>A library facade with millisecond reads for the editor's own context budget</td>
-</tr>
-<tr>
-<td><strong>Agents</strong> in a terminal</td>
-<td>Bounded, copyable, deterministic answers: five verbs, one record per line</td>
-</tr>
-<tr>
-<td><strong>Fully automated software factories</strong></td>
-<td>A specification for signed organization policy and receipts; the policy lattice is planned</td>
-</tr>
-</tbody>
-</table></div>
-<h3 id="zero-rag-defects">Zero RAG defects<a class="hd" href="#zero-rag-defects" aria-label="Link to Zero RAG defects">#</a></h3>
-<p>Chunk retrieval over embeddings fails in predictable ways: it cuts functions in half, returns different chunks for the same question, serves stale code, leaks ignored files, and hides how much it cost. dctx does not use embeddings. It answers from a lexical graph of syntax-owned spans with explicit confidence, verifies source bytes before emitting them, and reports precision and freshness. The <a href="/docs/spec/#3-zero-rag-defects">spec</a> names ten defect classes and their intended defenses; its <a href="/docs/spec/#31-roadmap-and-acceptance-gates">roadmap</a> distinguishes the measured baseline from planned work.</p>
-<hr />
-<h2 id="where-it-comes-from">Where it comes from<a class="hd" href="#where-it-comes-from" aria-label="Link to Where it comes from">#</a></h2>
-<p>dctx started in <strong>2025 as <code>dircontxt</code>, written in pure C</strong> (<a href="https://github.com/Eris-Margeta/dctx/tree/main/legacy-c"><code>legacy-c/</code></a>), to solve the context problem while we were still moving to an AI workflow: one command that gave a model the whole project — structured, versioned, with diffs and a strict ignore system — instead of pasting forty files. It was rewritten in Rust in 2026 and grew a privacy-first core, a template system, a plugin host, a desktop app and map mode for agents. The goal has not changed: <strong>context, engineered.</strong></p>
-<hr />
-<h2 id="map-mode-context-for-agents">Map mode: context for agents<a class="hd" href="#map-mode-context-for-agents" aria-label="Link to Map mode: context for agents">#</a></h2>
-<div class="hl"><pre><code><span class="t-c1"># Run from this repository&#39;s root; map needs a file target.</span>
-dctx<span class="t-w"> </span>map<span class="t-w"> </span>map<span class="t-w"> </span>crates/dctx-cli/src/lib.rs<span class="t-w"> </span>--depth<span class="t-w"> </span><span class="t-m">2</span>
-dctx<span class="t-w"> </span>map<span class="t-w"> </span>find<span class="t-w"> </span><span class="t-s2">&quot;SnapshotConfig&quot;</span>
-<span class="t-c1"># Use a stable ID returned by map/find for neighbors, explain and read.</span>
-dctx<span class="t-w"> </span>map<span class="t-w"> </span>neighbors<span class="t-w"> </span><span class="t-s1">&#39;s:crates/dctx-cli/src/lib.rs#SnapshotConfig&#39;</span><span class="t-w"> </span>--edge<span class="t-w"> </span>calls<span class="t-w"> </span>--dir<span class="t-w"> </span><span class="t-k">in</span>
-dctx<span class="t-w"> </span>map<span class="t-w"> </span>explain<span class="t-w"> </span><span class="t-s1">&#39;s:crates/dctx-cli/src/lib.rs#SnapshotConfig&#39;</span>
-dctx<span class="t-w"> </span>map<span class="t-w"> </span><span class="t-nb">read</span><span class="t-w"> </span><span class="t-s1">&#39;s:crates/dctx-cli/src/lib.rs#SnapshotConfig&#39;</span><span class="t-w"> </span>--json
+Snapshot options:
+  -c, --clipboard       Copy to clipboard
+  -d, --diff            Output the diff only (if available)
+  -t, --tree            Tree only (skips file content)
+  -r, --reset           Force V1 reset
+  --tree-stamps=on|off  MOD: and SIZE: on tree lines (default off; on = the 1.0.0 text)
+
+Filter options:
+  --ext &lt;list&gt;          Only these extensions, e.g. rs,toml
+  --binary              Include binary files (excluded by default)
+  --empty | --non-empty Only empty / non-empty files
+  --large &lt;MB&gt; | --small &lt;MB&gt;
+  --hidden              Only hidden files and folders
+  --debug-ignored       Show ignored paths without reading them
 </code></pre></div>
 
-<ul>
-<li><strong>Source bytes</strong>: <code>map read</code> prints metadata and verified source content; <code>--json</code> carries the content in <code>source_utf8</code> for tools.</li>
-<li><strong>Bounded</strong>: output uses an estimated token budget (up to 2,000; explain up to 1,000), not a model tokenizer guarantee, and never splits a record.</li>
-<li><strong>Deterministic</strong>: the same tree and question give the same bytes, so prompt caches hit.</li>
-<li><strong>Precision and freshness</strong>: use <code>--json</code> for the structured metadata. Structural declarations and conservative call edges do not imply exact semantic resolution.</li>
-<li><strong>Languages</strong>: every supported language is in one of three tiers (full, outline, docs); see <a href="#language-tiers">Language tiers</a> below or run <code>dctx languages</code>.</li>
-<li><strong>No Git, no network for map queries</strong>: identity comes from dctx's own content digest; map does not need Git history or embeddings.</li>
-<li><strong>Skeleton and grep</strong>: <code>dctx map skeleton &lt;file&gt;</code> prints the declaration signatures of one file, with no bodies, in source order. <code>dctx map grep &lt;literal&gt;</code> is an exhaustive literal search of indexed files, with hits grouped by enclosing symbol; <code>-i</code> makes it ASCII case-insensitive.</li>
-<li><strong>Hubs</strong>: <code>dctx map hubs</code> lists the most-called symbols and the file and symbol counts per directory (<code>--limit</code> 1 to 60, default 20).</li>
-<li><strong>Path</strong>: <code>dctx map path &lt;FROM&gt; &lt;TO&gt;</code> prints the shortest edge path (calls, imports, contains) of at most 8 hops, or <code>no path</code>.</li>
-<li><strong>Export</strong>: <code>dctx map export --format json|mermaid</code> writes the whole graph as one deterministic document. The mermaid form is a flowchart of calls and imports. <code>--output PATH</code> writes a file.</li>
-<li><strong>Neighbors</strong>: <code>--edge calls|imports</code> selects the edge kind, and <code>--depth</code> goes up to 4. Inbound call records carry their call-site lines, at most three per record: <code>\tL6,L7</code> in text and a <code>sites</code> array in JSON.</li>
-<li><strong>Find</strong>: quote a multi-word concept as one argument; a name that spells the whole phrase ranks just under an exact name. For config keys with no symbol match, <code>find</code> falls back to literal hits, and a SCREAMING_CASE key (<code>HOME</code>, <code>DJANGO_SETTINGS_MODULE</code>) always lists the code that reads it after the best exact symbol.</li>
-<li><strong>Outline of a file</strong>: <code>map map &lt;file&gt;</code> lists exported top-level declarations first, then the rest in source order, with impl blocks, constants and tests last; without <code>--budget</code> its page is 1,000 tokens so <code>--limit 40</code> is not cut early. Map and find text lines are <code>&lt;id&gt;\t&lt;kind&gt;\tL&lt;start&gt;-&lt;end&gt;</code>, since the id already names the path.</li>
-<li><strong>MCP</strong>: <code>dctx mcp</code> runs a stdio MCP server that exposes the map verbs as tools, including skeleton, path and export.</li>
-<li><strong>Byte-stable answers</strong>: the text header is <code># &lt;place&gt; &lt;verb&gt;</code>, and JSON leaves out the snapshot digest, generation and age. <code>--meta</code> restores them.</li>
-<li><strong>Source limit</strong>: <code>DCTX_MAX_SOURCE_BYTES</code> sets the total source bytes one scan may read (1 to 17179869184; default 1 GiB).</li>
-</ul>
-<p>Details: <a href="/docs/map-mode/">Map mode guide</a>. The <a href="/docs/benchmark/">benchmark evidence</a> leads with grep plus file reads; older other-tool results are retained as historical evidence. Planned next — agent hooks, blast radius for a diff, delta answers and prefix-stable context tiers — is specified in <a href="/docs/spec/#31-roadmap-and-acceptance-gates">docs/SPEC.md</a>.</p>
+<p>Run <code>dctx --help</code> for the complete reference and <code>dctx --version --verbose</code> for feature and precision limits.</p>
+<p>See <a href="/docs/map-mode/">map commands and limits</a>,
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MCP.md">MCP profiles</a>, <a href="/docs/exit-codes/">exit codes</a>,
+<a href="/docs/templates-contract/">templates</a>, and <a href="/docs/plugins/">plugins</a>.
+Native plugin launch is currently refused by the product host; consent alone
+does not enable it. Organization policy and <code>dctx policy explain</code> are planned.</p>
 <h3 id="language-tiers">Language tiers<a class="hd" href="#language-tiers" aria-label="Link to Language tiers">#</a></h3>
 <p><code>dctx languages</code> prints this table (<code>--json</code> for tools, <code>--markdown</code> for this block) from the one registry that also drives <code>dctx --version --verbose</code>; a test fails when the block below differs from it.</p>
 <ul>
@@ -664,19 +566,10 @@ dctx<span class="t-w"> </span>map<span class="t-w"> </span><span class="t-nb">re
 
 </details>
 
-<hr />
-<h2 id="organization-control">Organization control<a class="hd" href="#organization-control" aria-label="Link to Organization control">#</a></h2>
-<p>The dctx Template System (DTS) defines output templates. The specification proposes extending it to selection, budgets, parsers, cache limits, plugins and privacy through a <strong>seven-layer, signed policy lattice</strong> — built-in → organization → tenant → machine → user → project → session — where each layer can only narrow the one above it. The lattice and <code>dctx policy explain</code> are planned, not current CLI commands. See <a href="/docs/spec/#part-iv--policy">Part IV of the spec</a>.</p>
-<hr />
-<h2 id="plugins">Plugins<a class="hd" href="#plugins" aria-label="Link to Plugins">#</a></h2>
-<p>External effects are designed to run through out-of-process plugins with explicit capabilities and consent. The bundled Git plugin implements <code>.gitignore</code> protection and optional staging, but the current product host refuses native plugin launch, including the Git recipe; consent alone does not enable execution. See the <a href="/docs/plugins/">Plugins guide</a>.</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>plugin<span class="t-w"> </span>list
-dctx<span class="t-w"> </span>plugin<span class="t-w"> </span>info<span class="t-w"> </span>dctx/git
-</code></pre></div>
-
-<hr />
 <h2 id="security--privacy">Security &amp; Privacy<a class="hd" href="#security--privacy" aria-label="Link to Security &amp; Privacy">#</a></h2>
-<p><strong>The filesystem selection boundary excludes ignored file contents, including in debug mode.</strong></p>
+<p>Pack, map and MCP run locally and have <strong>no telemetry</strong>, <strong>call no model</strong> and
+<strong>make no network calls</strong>. Selection happens before any byte is read, hashed,
+parsed or cached, and is checked again before output leaves the engine.</p>
 <div class="table-wrap"><table>
 <thead>
 <tr>
@@ -687,112 +580,43 @@ dctx<span class="t-w"> </span>plugin<span class="t-w"> </span>info<span class="t
 <tbody>
 <tr>
 <td><code>.gitignore</code>, <code>.dctxignore</code>, global ignore</td>
-<td>Excluded from normal selection; <code>--debug-ignored</code> can show ignored path metadata without reading content</td>
+<td>Excluded from normal selection; <code>--debug-ignored</code> shows ignored path metadata without reading content</td>
 </tr>
 </tbody>
 </table></div>
-<p>Selection happens before any byte is read, hashed, parsed or cached, and is checked again before output leaves the engine.</p>
-<p>On top of the rule files there is a strict built-in deny with no override (no flag, no <code>!</code> negation, not even <code>DCTX_INDEX_IGNORED=1</code>):</p>
-<ul>
-<li><strong>Sensitive files</strong> are listed by name but never read: <code>.env</code>, <code>.env.*</code>, <code>*.env</code>, <code>.envrc</code>, <code>*.pem</code>, <code>*.key</code>, <code>*.p12</code>, <code>*.pfx</code>, <code>*.jks</code>, <code>*.keystore</code>, SSH private keys (<code>id_rsa</code>, <code>id_dsa</code>, <code>id_ecdsa</code>, <code>id_ed25519</code>), <code>credentials</code>, <code>credentials.json</code> and other data extensions, <code>*.credentials.json</code>, <code>secrets.yaml</code>/<code>.yml</code>/<code>.json</code>/<code>.toml</code>, <code>.npmrc</code>, <code>.netrc</code>, <code>.pypirc</code>, <code>.pgpass</code>, <code>.htpasswd</code>, <code>.git-credentials</code>. The full list is in <a href="/docs/privacy/">ADR-014</a>.</li>
-<li><strong><code>.git</code></strong> at any depth is never listed or read by the map verbs, and never read by <code>pack</code>, even when a rule says <code>!.git/</code>.</li>
-<li><strong>Symlinks</strong> are never followed: the final component is opened with <code>O_NOFOLLOW</code>, and a symlinked directory is listed by name only, never entered or read through.</li>
-</ul>
-<p>dctx decides by file name only; a secret pasted into an ordinary source file is not detected. The shipped <code>pack</code>, <code>dctx map</code> and <code>dctx mcp</code> path is guarded by <code>crates/dctx/tests/map_sensitive_files.rs</code>, <code>crates/dctx/tests/git_and_symlink_privacy.rs</code>, <code>crates/dctx/tests/map_env_files.rs</code>, the unit tests in <code>crates/dctx/src/adapters/fs.rs</code>, <code>crates/dctx/src/domain/policy.rs</code> and <code>crates/dctx-pack/src/snapshot.rs</code>, and an end-to-end check that runs every command against a git-tracked canary fixture (<code>&lt;repo&gt;/scripts/checks/V1-1.zsh</code>).</p>
-<div class="hl"><pre><code>dctx<span class="t-w"> </span>pack<span class="t-w"> </span>.<span class="t-w"> </span>--debug-ignored<span class="t-w">  </span><span class="t-c1"># see ignored paths in the tree without reading them</span>
-</code></pre></div>
-
-<div class="hl"><pre><code># .dctxignore
-.env
-.env.*
-*.key
-*.pem
-.ssh/
-secrets/
-credentials/
-</code></pre></div>
-
-<p>The core pack/map workflows run locally, have <strong>no telemetry</strong>, <strong>call no model</strong> and <strong>make no network calls</strong>: the release check (<code>scripts/release-check.sh</code>) counts AF_INET/AF_INET6 connect/send calls under <code>strace -f</code> for every map verb, <code>pack</code>, <code>cache status</code> and <code>mcp</code>, and fails on any (it reports SKIP where strace cannot run). The current product CLI has no TLS network adapter for plugin discovery or downloads; network-capable distribution and plugin designs are documented separately. See the <a href="/docs/plugins/#what-is-not-yet-available">Plugins guide</a> for current limits and <a href="/security/">SECURITY.md</a> for private vulnerability reporting.</p>
-<hr />
-<h2 id="measured-in-the-open">Measured, in the open<a class="hd" href="#measured-in-the-open" aria-label="Link to Measured, in the open">#</a></h2>
-<p>The baseline is <strong>grep plus reading files</strong>.</p>
-<p>A controlled grep-plus-read benchmark that counts whole agent sessions (start-up context, every call, provider cache hits and accuracy) is being prepared; until it is published, dctx makes no whole-session savings claim.</p>
-<p>Historical cold indexing of six benchmark corpora took dctx 0.13–1.20 s on one Linux x86_64 runner. This measures CLI wall time, not agent completion time or session cost.</p>
-<p><a href="/docs/modalities/">Choosing how to use dctx</a> covers scoping and MCP startup overhead. <a href="/docs/benchmark/">Measurement evidence</a> describes what was measured (tool-output bytes and estimated tokens); other-tool protocols are retained only as secondary historical notes.</p>
-<p>Older protocols and raw results are linked from the <a href="/docs/benchmark/">benchmark evidence</a> as secondary historical material. See also the <a href="/changelog/">changelog</a>.</p>
-<hr />
-<h2 id="out-of-scope-for-v1">Out of scope for v1<a class="hd" href="#out-of-scope-for-v1" aria-label="Link to Out of scope for v1">#</a></h2>
-<ul>
-<li>Any network or cloud feature.</li>
-<li>Watch or incremental mode beyond re-indexing.</li>
-<li>Shell call edges (shell is outline tier: symbols only).</li>
-<li>Embeddings or semantic search.</li>
-<li>LSP-grade type resolution: call edges are lexical.</li>
-<li>A stable plugin ABI or desktop API: neither is stable in v1.</li>
-<li>Cross-repository queries.</li>
-</ul>
-<hr />
+<p><code>DCTX_INDEX_IGNORED=1</code> skips those ignore texts, so leave it unset when relying
+on them. Built-in sensitive-file and <code>.git</code> exclusions still apply.</p>
+<p>Sensitive files such as <code>.env</code>, private keys and credentials are omitted from
+content reads even with ignore negations; pack may list their names.
+<code>.git</code> at any depth is never listed or read by map, and is never read by pack.
+Symlinks are never followed; final-component file opens use <code>O_NOFOLLOW</code>.
+dctx decides by file name only: a secret pasted into an ordinary source file
+is not detected. Inspect context before sharing it.
+The <a href="/docs/privacy/">privacy contract and deny list</a>
+and <a href="/docs/map-mode/#index-cache-and-privacy">map privacy guide</a> explain
+the boundary. Report vulnerabilities privately through <a href="/security/">SECURITY.md</a>.</p>
+<p>The <a href="https://github.com/Eris-Margeta/dctx/blob/main/scripts/release-check.sh">release check</a> tests socket activity under
+<code>strace -f</code> and reports SKIP where tracing cannot run. Plugin network and
+organization policy designs in the spec include planned features;
+see <a href="/docs/plugins/#what-is-not-yet-available">current plugin limits</a>.</p>
 <h2 id="open-source-and-maintenance">Open source and maintenance<a class="hd" href="#open-source-and-maintenance" aria-label="Link to Open source and maintenance">#</a></h2>
-<p>dctx is open source under the <a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">Apache-2.0</a> license, which makes it free for any use, including commercial use. The core (<code>pack</code>) and every modality stay open, and no feature is held back behind a paid edition. Individuals and teams can support the project through <a href="https://github.com/sponsors/Eris-Margeta">GitHub Sponsors</a>. Companies that depend on dctx can fund its upkeep through a <a href="/maintenance/">maintenance agreement</a>, which covers security response times, long-term support and a written commitment for procurement (see <a href="/maintenance/">maintenance</a>). Paying never changes the license and never closes a feature. The "dctx" name and logo are trademarks of Eris Margeta; see <a href="/trademark/">TRADEMARK.md</a> for what forks may call themselves.</p>
-<p>All first-party code and documentation, including the desktop app and planned GPUI rebuild, are Apache-2.0, copyright Eris Margeta. Dependencies and vendored materials retain their own licenses and notices; see <a href="https://github.com/Eris-Margeta/dctx/blob/main/THIRD_PARTY.md">THIRD_PARTY.md</a>, <a href="https://github.com/Eris-Margeta/dctx/blob/main/THIRD_PARTY_NPM.md">THIRD_PARTY_NPM.md</a> and <a href="https://github.com/Eris-Margeta/dctx/blob/main/NOTICE">NOTICE</a>.</p>
-<p>The dependency policy retains the <strong>Ed25519 signature verifier</strong> (<code>ed25519-dalek</code>) for plugin/index verification. Signed organization policy bundles are planned; their presence in the specification does not mean the CLI can enroll or verify them today. See the <a href="/docs/spec/#27-dependencies-and-build-profiles">dependency policy</a>.</p>
-<hr />
-<h2 id="cli-reference">CLI Reference<a class="hd" href="#cli-reference" aria-label="Link to CLI Reference">#</a></h2>
-<div class="hl"><pre><code>Usage: dctx [PATH] [OPTIONS]
-       dctx pack [PATH] [--output PATH] [--clipboard] [--json] [--tree-stamps=on|off]
-       dctx pack [PATH] --for &lt;TEXT&gt; [--budget TOKENS]
-       dctx map &lt;map|find|neighbors|explain|read&gt; &lt;TARGET&gt; [--json]
-       dctx cache status|gc|purge|config|auto
-       dctx template build &lt;PATH&gt; | template list
-       dctx plugin search|install|list|info|enable|disable|remove|update|verify|run
-       dctx git &lt;status|protect&gt;
-
-Snapshot options:
-  -c, --clipboard       Copy to clipboard
-  -d, --diff            Output the diff only (if available)
-  -t, --tree            Tree only (skips file content)
-  -r, --reset           Force V1 reset
-  --tree-stamps=on|off  MOD: and SIZE: on tree lines (default off; on = the 1.0.0 text)
-
-Filter options:
-  --ext &lt;list&gt;          Only these extensions, e.g. rs,toml
-  --binary              Include binary files (excluded by default)
-  --empty | --non-empty Only empty / non-empty files
-  --large &lt;MB&gt; | --small &lt;MB&gt;
-  --hidden              Only hidden files and folders
-  --debug-ignored       Show ignored paths without reading them
-</code></pre></div>
-
-<p>Run <code>dctx --help</code> for the complete reference and <code>dctx --version --verbose</code> for feature and precision limits.</p>
-<hr />
-<h2 id="use-as-a-library-1">Use as a library<a class="hd" href="#use-as-a-library-1" aria-label="Link to Use as a library">#</a></h2>
-<div class="hl"><pre><code><span class="t-k">[dependencies]</span>
-<span class="t-n">dctx</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-p">{</span><span class="t-w"> </span><span class="t-n">path</span><span class="t-w"> </span><span class="t-p">=</span><span class="t-w"> </span><span class="t-s2">&quot;crates/dctx&quot;</span><span class="t-w"> </span><span class="t-p">}</span>
-</code></pre></div>
-
-<p>This path dependency assumes your Cargo project is at this repository's root; adjust it for another location. <a href="https://github.com/Eris-Margeta/dctx/tree/main/crates/dctx"><code>crates/dctx</code></a> is the facade used by the CLI; the desktop uses <a href="https://github.com/Eris-Margeta/dctx/tree/main/crates/dctx-desktop-api"><code>crates/dctx-desktop-api</code></a> on top of it. Python, Node and C bindings are planned on the same facade.</p>
-<hr />
-<h2 id="architecture">Architecture<a class="hd" href="#architecture" aria-label="Link to Architecture">#</a></h2>
-<div class="hl"><pre><code>dctx/
-├── crates/        # Rust workspace: pure core, mode engines, adapters, lexers, plugin host, facade, CLI
-├── plugins/       # First-party plugins (dctx-plugin-git)
-├── apps/          # dctx-desktop
-├── legacy-c/      # The original C implementation (dircontxt)
-├── docs/          # Specification, design records, contracts, formal models, guides
-├── tools/         # Benchmarks, plugin tooling, test scripts
-└── website/       # project website
-</code></pre></div>
-
-<p>Start with <a href="/docs/spec/">docs/SPEC.md</a>, then <a href="/docs/crate-map/">docs/CRATE-MAP.md</a>.</p>
-<hr />
-<h2 id="license">License<a class="hd" href="#license" aria-label="Link to License">#</a></h2>
-<p>Apache License 2.0. Copyright Eris Margeta. The desktop app is included under the same license. Paid maintenance agreements fund the project; see <a href="/maintenance/">MAINTENANCE.md</a>. See <a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">LICENSE</a> and <a href="https://github.com/Eris-Margeta/dctx/blob/main/NOTICE">NOTICE</a>.</p>
+<p>dctx and its desktop app are <a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">Apache-2.0</a>, copyright Eris Margeta.
+Every modality stays open. <a href="https://github.com/sponsors/Eris-Margeta">GitHub Sponsors</a>
+and <a href="/maintenance/">maintenance agreements</a> fund upkeep without changing the
+license. See <a href="/trademark/">trademark policy</a>, <a href="https://github.com/Eris-Margeta/dctx/blob/main/NOTICE">NOTICE</a>,
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/THIRD_PARTY.md">Rust dependencies</a> and <a href="https://github.com/Eris-Margeta/dctx/blob/main/THIRD_PARTY_NPM.md">npm dependencies</a>.</p>
+<h2 id="where-it-comes-from">Where it comes from<a class="hd" href="#where-it-comes-from" aria-label="Link to Where it comes from">#</a></h2>
+<p>dctx started in 2025 as <code>dircontxt</code> in C and was rewritten in Rust in 2026.
+The <a href="/changelog/">changelog</a> and <a href="https://github.com/Eris-Margeta/dctx/tree/main/legacy-c"><code>legacy-c/</code></a> preserve that history.</p>
 <h2 id="contributing">Contributing<a class="hd" href="#contributing" aria-label="Link to Contributing">#</a></h2>
-<p>Contributions are welcome. Read <a href="/docs/contributing/">CONTRIBUTING.md</a> and the <a href="/docs/spec/">specification</a> first.</p>
-<hr />
-<p align="center">
-  <sub>Context, engineered. Built in Rust.</sub>
-</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/why/" rel="prev"><span>Previous</span>Why dctx</a><a class="next" href="/docs/spec/" rel="next"><span>Next</span>Specification</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#installation">Installation</a></li><li class="l3"><a href="#from-source">From source</a></li><li class="l2"><a href="#quick-start">Quick Start</a></li><li class="l2"><a href="#what-the-output-looks-like">What the output looks like</a></li><li class="l3"><a href="#pack-a-project">Pack a project</a></li><li class="l3"><a href="#find-a-symbol-then-read-it">Find a symbol, then read it</a></li><li class="l3"><a href="#pack-for-a-task">Pack for a task</a></li><li class="l2"><a href="#which-mode">Which mode?</a></li><li class="l3"><a href="#connect-an-mcp-client">Connect an MCP client</a></li><li class="l2"><a href="#use-as-a-library">Use as a library</a></li><li class="l2"><a href="#why-dctx">Why dctx</a></li><li class="l3"><a href="#at-a-glance">At a glance</a></li><li class="l2"><a href="#the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency</a></li><li class="l3"><a href="#one-engine-for-every-way-software-is-built">One engine for every way software is built</a></li><li class="l3"><a href="#zero-rag-defects">Zero RAG defects</a></li><li class="l2"><a href="#where-it-comes-from">Where it comes from</a></li><li class="l2"><a href="#map-mode-context-for-agents">Map mode: context for agents</a></li><li class="l3"><a href="#language-tiers">Language tiers</a></li><li class="l2"><a href="#organization-control">Organization control</a></li><li class="l2"><a href="#plugins">Plugins</a></li><li class="l2"><a href="#security--privacy">Security &amp; Privacy</a></li><li class="l2"><a href="#measured-in-the-open">Measured, in the open</a></li><li class="l2"><a href="#out-of-scope-for-v1">Out of scope for v1</a></li><li class="l2"><a href="#open-source-and-maintenance">Open source and maintenance</a></li><li class="l2"><a href="#cli-reference">CLI Reference</a></li><li class="l2"><a href="#use-as-a-library-1">Use as a library</a></li><li class="l2"><a href="#architecture">Architecture</a></li><li class="l2"><a href="#license">License</a></li><li class="l2"><a href="#contributing">Contributing</a></li></ul></nav></div>
+<p>Read <a href="/docs/contributing/">CONTRIBUTING.md</a>, the <a href="/docs/spec/">specification</a> and
+<a href="/docs/crate-map/">crate map</a>.</p>
+<p><a href="/">Website</a> ·
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/README.md">Documentation</a> ·
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/README.md#for-ai-evaluators">For AI evaluators</a> ·
+<a href="/llms-small.txt">llms-small.txt</a> ·
+<a href="/llms.txt">llms.txt</a> ·
+<a href="/llms-full.txt">llms-full.txt</a></p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/why/" rel="prev"><span>Previous</span>Why dctx</a><a class="next" href="/docs/spec/" rel="next"><span>Next</span>Specification</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#installation">Installation</a></li><li class="l3"><a href="#from-source">From source</a></li><li class="l2"><a href="#what-the-output-looks-like">What the output looks like</a></li><li class="l3"><a href="#pack-a-project">Pack a project</a></li><li class="l3"><a href="#find-a-symbol-then-read-it">Find a symbol, then read it</a></li><li class="l3"><a href="#pack-for-a-task">Pack for a task</a></li><li class="l2"><a href="#which-mode">Which mode?</a></li><li class="l2"><a href="#measured-in-the-open">Measured, in the open</a></li><li class="l2"><a href="#start-and-choose-your-path">Start and choose your path</a></li><li class="l2"><a href="#the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency</a></li><li class="l2"><a href="#quick-start">Quick Start</a></li><li class="l2"><a href="#map-mode-context-for-agents">Map mode: context for agents</a></li><li class="l2"><a href="#from-source-1">From source</a></li><li class="l2"><a href="#use-as-a-library">Use as a library</a></li><li class="l2"><a href="#cli-reference">CLI Reference</a></li><li class="l3"><a href="#language-tiers">Language tiers</a></li><li class="l2"><a href="#security--privacy">Security &amp; Privacy</a></li><li class="l2"><a href="#open-source-and-maintenance">Open source and maintenance</a></li><li class="l2"><a href="#where-it-comes-from">Where it comes from</a></li><li class="l2"><a href="#contributing">Contributing</a></li></ul></nav></div>
 </main>
 <footer class="ftr">
  <div class="wrap">

@@ -22,13 +22,20 @@ env:
   RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
+  reproducibility:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/reproducible.yml
+    with:
+      ref: refs/tags/${{ inputs.tag || github.ref_name }}
+
   preflight:
     runs-on: ubuntu-24.04
     outputs:
       npm: ${{ steps.secrets.outputs.npm }}
       crates: ${{ steps.secrets.outputs.crates }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
         with:
           ref: refs/tags/${{ env.RELEASE_TAG }}
           persist-credentials: false
@@ -37,6 +44,7 @@ jobs:
         run: |
           set -euo pipefail
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]
+          test "$GITHUB_REF" = "refs/tags/$RELEASE_TAG"
           test "${RELEASE_TAG#v}" = "$(cat VERSION)"
           # Crate, lockfile and metadata versions must match. The public README is a curated
           # front page whose version badge may lag; that alone is a warning, not a failure.
@@ -60,6 +68,7 @@ jobs:
   build:
     name: Build ${{ matrix.target }}
     needs: preflight
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -81,86 +90,142 @@ jobs:
             extension: zip
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
         with:
           ref: refs/tags/${{ env.RELEASE_TAG }}
           persist-credentials: false
-      - name: Install Rust target
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0 (GitHub API resolved)
+        with:
+          python-version: '3.12.8'
+      - name: Install pinned release toolchain
         shell: bash
         run: |
-          rustup toolchain install stable --profile minimal
-          rustup default stable
-          rustup target add '${{ matrix.target }}'
-      - name: Install native musl linker
+          source tools/release/toolchain.env
+          rustup toolchain install "$DCTX_RELEASE_RUST" --profile minimal --target '${{ matrix.target }}'
+      - name: Install native musl C compiler (bundled SQLite)
         if: runner.os == 'Linux'
-        shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install --yes musl-tools
-          echo 'CARGO_TARGET_X86_64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc' >> "$GITHUB_ENV"
-          echo 'CARGO_TARGET_AARCH64_UNKNOWN_LINUX_MUSL_LINKER=musl-gcc' >> "$GITHUB_ENV"
-          echo 'CC_x86_64_unknown_linux_musl=musl-gcc' >> "$GITHUB_ENV"
-          echo 'CC_aarch64_unknown_linux_musl=musl-gcc' >> "$GITHUB_ENV"
-      - name: Build release
-        run: cargo build --locked --release -p dctx-cli --bin dctx-cli --target ${{ matrix.target }}
-      - name: Smoke test CLI (Unix)
-        if: runner.os != 'Windows'
-        run: ./target/${{ matrix.target }}/release/dctx-cli --version
-      - name: Smoke test CLI (Windows)
-        if: runner.os == 'Windows'
-        run: .\target\${{ matrix.target }}\release\dctx-cli.exe --version
-      - name: Archive (Unix)
-        if: runner.os != 'Windows'
+          sudo apt-get install --yes --no-install-recommends musl-tools
+      - name: Build and package CLI
+        shell: bash
+        run: bash tools/release/build.sh '${{ matrix.target }}' dist
+      - name: Generate CLI CycloneDX SBOM from Cargo metadata
         shell: bash
         run: |
-          mkdir -p dist
-          cp target/${{ matrix.target }}/release/dctx-cli dist/dctx
-          chmod 755 dist/dctx
-          cp LICENSE NOTICE dist/
-          COPYFILE_DISABLE=1 tar -czf dctx-${{ matrix.target }}.tar.gz -C dist dctx LICENSE NOTICE
-      - name: Archive (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Path dist -Force
-          Copy-Item target\${{ matrix.target }}\release\dctx-cli.exe dist\dctx.exe
-          Copy-Item LICENSE, NOTICE dist\
-          Compress-Archive -Path dist\* -DestinationPath dctx-${{ matrix.target }}.zip
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+          set -euo pipefail
+          source tools/release/toolchain.env
+          SOURCE_DATE_EPOCH=$(git log -1 --format=%ct)
+          export SOURCE_DATE_EPOCH
+          cargo +"$DCTX_RELEASE_RUST" install cargo-cyclonedx --version 0.5.10 --locked
+          # Matches the release's default features and target; include transitive/build deps.
+          cargo +"$DCTX_RELEASE_RUST" cyclonedx --manifest-path crates/dctx-cli/Cargo.toml \
+            --format json --spec-version 1.5 --all --target '${{ matrix.target }}' \
+            --override-filename release-sbom
+          cp crates/dctx-cli/release-sbom.json 'dist/dctx-${{ matrix.target }}.cdx.json'
+          git diff --exit-code -- Cargo.lock
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 (GitHub API resolved)
         with:
           name: dctx-${{ matrix.target }}
-          path: dctx-${{ matrix.target }}.${{ matrix.extension }}
+          path: |
+            dist/dctx-${{ matrix.target }}.${{ matrix.extension }}
+            dist/dctx-${{ matrix.target }}.cdx.json
           if-no-files-found: error
 
-  release:
-    name: Create GitHub Release
-    needs: build
+  sign:
+    name: Sign and attest release payloads
+    needs: [build, reproducibility]
+    # OIDC exists only here: ordinary build/publish jobs cannot mint signing identities.
+    # Dispatch the release workflow from the release tag so the identity also binds the tag.
+    if: github.ref == format('refs/tags/{0}', inputs.tag || github.ref_name)
     runs-on: ubuntu-24.04
+    timeout-minutes: 30
     permissions:
-      contents: write
+      contents: read
+      id-token: write
+      attestations: write
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
         with:
           ref: refs/tags/${{ env.RELEASE_TAG }}
           persist-credentials: false
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0 (GitHub API resolved)
         with:
           pattern: dctx-*
           path: artifacts
           merge-multiple: true
-      - name: Checksums and changelog
+      - name: Bind the released Linux archive to the reproducibility result
         shell: bash
+        env:
+          EXPECTED_LINUX_SHA256: ${{ needs.reproducibility.outputs.sha256 }}
         run: |
           set -euo pipefail
-          (cd artifacts && sha256sum dctx-*.tar.gz dctx-*.zip > SHA256SUMS && sha256sum --check SHA256SUMS)
-          ./tools/extract-changelog.sh "$RELEASE_TAG" > release-notes.md
-          test -s release-notes.md
+          [[ "$EXPECTED_LINUX_SHA256" =~ ^[a-f0-9]{64}$ ]]
+          printf '%s  %s\n' "$EXPECTED_LINUX_SHA256" artifacts/dctx-x86_64-unknown-linux-musl.tar.gz | sha256sum --check
+      - name: Install cosign (version and SHA-256 pinned)
+        run: bash tools/release/install-cosign.sh
+      - name: Attest every native archive
+        id: archives
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3 (GitHub API resolved)
+        with:
+          subject-path: |
+            artifacts/dctx-*.tar.gz
+            artifacts/dctx-*.zip
+      - name: Sign native archives, SBOMs and air-gap payloads
+        shell: bash
+        env:
+          DCTX_CERTIFICATE_IDENTITY: https://github.com/Eris-Margeta/dctx/.github/workflows/release.yml@refs/tags/${{ env.RELEASE_TAG }}
+          ARCHIVE_PROVENANCE: ${{ steps.archives.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          cp "$ARCHIVE_PROVENANCE" artifacts/archive-provenance.jsonl
+          python3 tools/release/supply-chain.py seal --artifacts artifacts --stage airgap \
+            --epoch "$(git log -1 --format=%ct)"
+      - name: Attest every air-gap archive
+        id: airgap
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # v3 (GitHub API resolved)
+        with:
+          subject-path: artifacts/dctx-*-airgap.tar.gz
+      - name: Sign provenance and final checksums
+        shell: bash
+        env:
+          DCTX_CERTIFICATE_IDENTITY: https://github.com/Eris-Margeta/dctx/.github/workflows/release.yml@refs/tags/${{ env.RELEASE_TAG }}
+          AIRGAP_PROVENANCE: ${{ steps.airgap.outputs.bundle-path }}
+        run: |
+          set -euo pipefail
+          cp "$AIRGAP_PROVENANCE" artifacts/airgap-provenance.jsonl
+          python3 tools/release/supply-chain.py finish --artifacts artifacts
+          (cd artifacts && sha256sum --check SHA256SUMS)
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 (GitHub API resolved)
+        with:
+          name: signed-release
+          path: artifacts/*
+          if-no-files-found: error
+
+  release:
+    name: Create GitHub Release
+    needs: sign
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+          persist-credentials: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0 (GitHub API resolved)
+        with:
+          name: signed-release
+          path: artifacts
       - name: Create release with changelog notes
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          (cd artifacts && sha256sum --check SHA256SUMS)
+          ./tools/extract-changelog.sh "$RELEASE_TAG" > release-notes.md
+          test -s release-notes.md
           extra=()
           if [[ "$RELEASE_TAG" == *-* ]]; then extra+=(--prerelease); fi
           gh release create "$RELEASE_TAG" artifacts/* --verify-tag \
@@ -172,13 +237,12 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      id-token: write
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
         with:
           ref: refs/tags/${{ env.RELEASE_TAG }}
           persist-credentials: false
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0 (GitHub API resolved)
         with:
           node-version: '24'
           registry-url: https://registry.npmjs.org
@@ -197,7 +261,7 @@ jobs:
           npm_tag=latest
           if [[ "$RELEASE_TAG" == *-* ]]; then npm_tag=next; fi
           for package in packaging/npm/cli-* packaging/npm/dctx; do
-            (cd "$package" && npm publish --provenance --access public --tag "$npm_tag")
+            (cd "$package" && npm publish --access public --tag "$npm_tag")
           done
 
   crates-publish:
@@ -205,12 +269,16 @@ jobs:
     if: needs.preflight.outputs.crates == 'true'
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
         with:
           ref: refs/tags/${{ env.RELEASE_TAG }}
           persist-credentials: false
-      - name: Install Rust
-        run: rustup update stable && rustup default stable
+      - name: Install pinned release Rust
+        shell: bash
+        run: |
+          source tools/release/toolchain.env
+          rustup toolchain install "$DCTX_RELEASE_RUST" --profile minimal
+          rustup default "$DCTX_RELEASE_RUST"
       - name: Publish crates in dependency order
         env:
           CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
