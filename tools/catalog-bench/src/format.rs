@@ -3,16 +3,16 @@
 //! Checked mmap reader and streaming writer; no source file content is stored.
 
 use memmap2::Mmap;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeSet, HashMap};
 use std::fs::{File, OpenOptions};
 use std::io::{self, BufWriter, Seek, SeekFrom, Write};
 use std::ops::Range;
 use std::path::Path;
 
 const HEADER: usize = 64;
-const MAGIC: &[u8; 8] = b"DCTXCAT1";
+const MAGIC: &[u8; 8] = b"DCTXCAT2";
 
-fn invalid(message: &str) -> io::Error {
+pub(crate) fn invalid(message: &str) -> io::Error {
     io::Error::new(io::ErrorKind::InvalidData, message)
 }
 
@@ -67,7 +67,7 @@ pub struct Entry {
     pub metadata: Metadata,
 }
 
-fn put(out: &mut impl Write, mut value: u64) -> io::Result<()> {
+pub(crate) fn put(out: &mut impl Write, mut value: u64) -> io::Result<()> {
     let mut encoded = [0; 10];
     let mut len = 0;
     loop {
@@ -82,7 +82,7 @@ fn put(out: &mut impl Write, mut value: u64) -> io::Result<()> {
     out.write_all(&encoded[..len])
 }
 
-fn get(bytes: &[u8], cursor: &mut usize) -> io::Result<u64> {
+pub(crate) fn get(bytes: &[u8], cursor: &mut usize) -> io::Result<u64> {
     let mut value = 0;
     for shift in (0..70).step_by(7) {
         let byte = *bytes
@@ -103,7 +103,7 @@ fn get(bytes: &[u8], cursor: &mut usize) -> io::Result<u64> {
     Err(invalid("varint overflow"))
 }
 
-fn number(bytes: &[u8], cursor: &mut usize) -> io::Result<usize> {
+pub(crate) fn number(bytes: &[u8], cursor: &mut usize) -> io::Result<usize> {
     usize::try_from(get(bytes, cursor)?).map_err(|_| invalid("integer too large"))
 }
 
@@ -163,12 +163,35 @@ pub fn write_catalog(
     entries: &mut [Entry],
     directories: &mut [(Vec<u8>, bool)],
 ) -> io::Result<()> {
-    directories.sort_unstable_by(|a, b| a.0.cmp(&b.0));
     entries.sort_unstable_by(|a, b| a.path.cmp(&b.path));
+    let prepared = crate::name_index::prepare(entries)?;
+    write_prepared(output, entries, directories, prepared)
+}
+
+/// Write metadata and the tokens collected in the same parallel filesystem walk.
+/// File IDs retain the merged traversal order; directory IDs are sorted.
+/// # Errors
+/// Returns I/O errors or malformed/oversized input errors.
+pub fn write_snapshot(output: &Path, mut snapshot: crate::Snapshot) -> io::Result<()> {
+    let names = std::mem::take(&mut snapshot.names);
+    write_prepared(output, &snapshot.entries, &mut snapshot.directories, names)
+}
+
+#[allow(
+    clippy::too_many_lines,
+    reason = "keep section layout and publication together"
+)]
+fn write_prepared(
+    output: &Path,
+    entries: &[Entry],
+    directories: &mut [(Vec<u8>, bool)],
+    prepared: crate::name_index::Prepared,
+) -> io::Result<()> {
+    directories.sort_unstable_by(|a, b| a.0.cmp(&b.0));
     if directories.first().map(|d| d.0.as_slice()) != Some(b"") {
         return Err(invalid("missing root directory"));
     }
-    let mut ids = BTreeMap::<&[u8], usize>::new();
+    let mut ids = HashMap::<&[u8], usize>::new();
     let mut directory_bytes = Vec::new();
     let mut git_roots = 0_u64;
     for (id, (path, git)) in directories.iter().enumerate() {
@@ -213,7 +236,7 @@ pub fn write_catalog(
     let mut encoded = Vec::new();
     let mut offset = 0_u32;
     let mut previous: Option<&[u8]> = None;
-    for entry in entries.iter() {
+    for entry in entries {
         if previous == Some(entry.path.as_slice()) {
             return Err(invalid("duplicate file"));
         }
@@ -246,6 +269,9 @@ pub fn write_catalog(
         out.write_all(&encoded)?;
     }
     offsets.push(offset);
+    let name_start = out.stream_position()?;
+    let name_index = crate::name_index::build(prepared)?;
+    out.write_all(&name_index)?;
     let end = out.stream_position()?;
     out.seek(SeekFrom::Start(u64::try_from(index_start).unwrap()))?;
     for offset in offsets {
@@ -260,7 +286,7 @@ pub fn write_catalog(
         u64::try_from(index_start).unwrap(),
         u64::try_from(records_start).unwrap(),
         end,
-        0,
+        name_start,
     ] {
         out.write_all(&value.to_le_bytes())?;
     }
@@ -282,6 +308,7 @@ pub struct Catalog {
     files: usize,
     index_start: usize,
     records_start: usize,
+    name_start: usize,
     git_roots: usize,
     shards: usize,
 }
@@ -314,8 +341,10 @@ impl Catalog {
         let git_roots = field(24)?;
         let index_start = field(32)?;
         let records_start = field(40)?;
+        let name_start = field(56)?;
         if field(48)? != map.len()
-            || field(56)? != 0
+            || name_start < records_start
+            || name_start > map.len()
             || index_start < HEADER
             || records_start > map.len()
             || dirs == 0
@@ -335,6 +364,7 @@ impl Catalog {
             files,
             index_start,
             records_start,
+            name_start,
             git_roots,
             shards: 0,
         };
@@ -384,9 +414,10 @@ impl Catalog {
             }
             shard_keys.insert(catalog.directories[parent].shard);
         }
-        if catalog.offset(files) != catalog.map.len() - records_start {
+        if catalog.offset(files) != catalog.name_start - records_start {
             return Err(invalid("trailing record bytes"));
         }
+        crate::name_index::Index::new(&catalog.map[name_start..]).validate(files)?;
         catalog.shards = shard_keys.len();
         Ok(catalog)
     }
@@ -402,7 +433,7 @@ impl Catalog {
         }
         let start = self.offset(id);
         let end = self.offset(id + 1);
-        self.map[self.records_start..]
+        self.map[self.records_start..self.name_start]
             .get(start..end)
             .ok_or_else(|| invalid("invalid record offsets"))
     }
@@ -510,21 +541,24 @@ impl Catalog {
         reason = "open validates every immutable mapped record before accepting queries"
     )]
     pub fn find(&self, token: &[u8]) -> Vec<usize> {
-        if token.is_empty() || !token.iter().copied().all(token_byte) {
-            return Vec::new();
-        }
-        (0..self.files)
-            .filter(|&id| {
-                // Entire map was validated once in open(), and remains immutable.
-                let bytes = self.basename(id).expect("validated catalog");
-                bytes
-                    .split(|&b| !token_byte(b))
-                    .any(|part| part.eq_ignore_ascii_case(token))
-            })
-            .collect()
+        let mut result = self.search(token, crate::QueryMode::Exact, usize::MAX);
+        result.sort_unstable();
+        result
+    }
+    /// Search a token, prefix, or substring, returning at most `limit` distinct IDs.
+    /// Order is token dictionary order, then file ID; ASCII case is folded.
+    /// Substrings stay within one token. Short substrings merge matching gram lists.
+    #[must_use]
+    pub fn search(&self, query: &[u8], mode: crate::QueryMode, limit: usize) -> Vec<usize> {
+        crate::name_index::Index::new(&self.map[self.name_start..]).find(query, mode, limit)
+    }
+    /// Persisted token/trigram index bytes, included in `size()`.
+    #[must_use]
+    pub fn name_index_size(&self) -> usize {
+        self.map.len() - self.name_start
     }
 }
 
-fn token_byte(byte: u8) -> bool {
+pub(crate) fn token_byte(byte: u8) -> bool {
     byte.is_ascii_alphanumeric() || byte >= 0x80
 }

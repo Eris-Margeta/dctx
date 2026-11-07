@@ -295,3 +295,144 @@ fn signed_mtime_extremes_round_trip() {
     assert_eq!(catalog.entry(0).unwrap(), entries[0]);
     assert_eq!(catalog.entry(1).unwrap(), entries[1]);
 }
+
+#[test]
+fn index_matches_scan_oracle_and_pages_deduplicate() {
+    use catalog_bench::QueryMode;
+    let scratch = Scratch::new();
+    let output = scratch.0.join("indexed");
+    let mut entries: Vec<_> = (0..250)
+        .map(|id| entry(format!("Parser{id:03}_parser_test_TEST.rs").as_bytes(), id))
+        .collect();
+    entries.push(entry(b"\xffABC\xfe_aaaaaaa.a", 300));
+    entries.push(entry(b"!!!", 301));
+    write_catalog(&output, &mut entries, &mut [(vec![], false)]).unwrap();
+    let catalog = Catalog::open(&output).unwrap();
+    assert!(catalog.name_index_size() > 0);
+    for query in [
+        b"parser".as_slice(),
+        b"PARS",
+        b"ar",
+        b"a",
+        b"rs",
+        b"ser12",
+        b"aaa",
+        b"\xffabc",
+        b"missing",
+        b"",
+        b"test-rs",
+    ] {
+        for mode in [QueryMode::Exact, QueryMode::Prefix, QueryMode::Substring] {
+            let mut expected = Vec::new();
+            if !query.is_empty()
+                && query
+                    .iter()
+                    .all(|b| b.is_ascii_alphanumeric() || *b >= 0x80)
+            {
+                for (id, entry) in entries.iter().enumerate() {
+                    let q = query.to_ascii_lowercase();
+                    if entry
+                        .path
+                        .split(|b| !(b.is_ascii_alphanumeric() || *b >= 0x80))
+                        .any(|t| {
+                            let t = t.to_ascii_lowercase();
+                            match mode {
+                                QueryMode::Exact => t == q,
+                                QueryMode::Prefix => t.starts_with(&q),
+                                QueryMode::Substring => t.windows(q.len()).any(|w| w == q),
+                            }
+                        })
+                    {
+                        expected.push(id);
+                    }
+                }
+            }
+            let full = catalog.search(query, mode, usize::MAX);
+            let mut sorted = full.clone();
+            sorted.sort_unstable();
+            assert_eq!(sorted, expected, "{query:?} {mode:?}");
+            for limit in [0, 1, 3, 100, 500] {
+                let page = catalog.search(query, mode, limit);
+                assert_eq!(page, full[..full.len().min(limit)]);
+            }
+        }
+    }
+}
+
+#[test]
+fn index_rejects_corruption_without_panicking() {
+    let scratch = Scratch::new();
+    let output = scratch.0.join("catalog");
+    write_catalog(
+        &output,
+        &mut [entry(b"abc_ABC.rs", 1), entry(b"abcd.rs", 2)],
+        &mut [(vec![], false)],
+    )
+    .unwrap();
+    let raw = fs::read(&output).unwrap();
+    let start = usize::try_from(u64::from_le_bytes(raw[56..64].try_into().unwrap())).unwrap();
+    let broken = scratch.0.join("broken");
+    // Every index byte sees arbitrary mutations. Some changes remain valid;
+    // all must be handled without an out-of-bounds access or a panic.
+    for at in start..raw.len() {
+        for value in [0, 127, 128, 255] {
+            let mut copy = raw.clone();
+            copy[at] = value;
+            fs::write(&broken, copy).unwrap();
+            let _ = Catalog::open(&broken);
+        }
+    }
+    let mut copy = raw.clone();
+    copy[start..start + 4].copy_from_slice(&u32::MAX.to_le_bytes());
+    fs::write(&broken, copy).unwrap();
+    assert!(Catalog::open(&broken).is_err());
+    // Bad token offset, token case, posting file ID, gram key and gram token ID.
+    let word = |at| u32::from_le_bytes(raw[at..at + 4].try_into().unwrap()) as usize;
+    let dictionary = start + word(start + 8);
+    let gram_directory = start + word(start + 12);
+    let gram_data = start + word(start + 16);
+    for at in [
+        start + 24,
+        dictionary + 1,
+        dictionary + 5,
+        gram_directory,
+        gram_data,
+    ] {
+        let mut copy = raw.clone();
+        copy[at] = 255;
+        fs::write(&broken, copy).unwrap();
+        assert!(Catalog::open(&broken).is_err(), "{at}");
+    }
+}
+
+#[test]
+fn parallel_walk_tokens_survive_file_id_merge() {
+    use catalog_bench::{QueryMode, write_snapshot};
+    let scratch = Scratch::new();
+    let root = scratch.0.join("root");
+    for dir in 0..20 {
+        let path = root.join(format!("d{dir}"));
+        fs::create_dir_all(&path).unwrap();
+        for file in 0..10 {
+            fs::write(path.join(format!("Parser{file}_TEST.rs")), []).unwrap();
+        }
+    }
+    let output = scratch.0.join("catalog");
+    let snapshot = walk(&root, 8, None).unwrap();
+    let expected = snapshot.entries.clone();
+    write_snapshot(&output, snapshot).unwrap();
+    let catalog = Catalog::open(&output).unwrap();
+    for (id, entry) in expected.iter().enumerate() {
+        assert_eq!(&catalog.entry(id).unwrap(), entry);
+    }
+    assert_eq!(catalog.find(b"test").len(), 200);
+    assert_eq!(
+        catalog
+            .search(b"ser3", QueryMode::Substring, usize::MAX)
+            .len(),
+        20
+    );
+    for id in catalog.search(b"parser3", QueryMode::Exact, usize::MAX) {
+        assert!(catalog.basename(id).unwrap().starts_with(b"Parser3_"));
+    }
+}

@@ -15,6 +15,7 @@ use std::time::{Duration, Instant};
 /// Collected metadata and walker diagnostics. Errors make a run incomplete.
 #[derive(Default)]
 pub struct Snapshot {
+    pub(crate) names: crate::name_index::Prepared,
     pub entries: Vec<Entry>,
     pub directories: Vec<(Vec<u8>, bool)>,
     pub errors: Vec<String>,
@@ -143,6 +144,14 @@ pub fn walk(root: &Path, threads: usize, exclude: Option<&Path>) -> io::Result<S
                 match fs::symlink_metadata(path) {
                     Ok(metadata) if metadata.is_file() => {
                         let tier = Tier::from_name(entry.file_name().as_bytes());
+                        if let Err(error) = local
+                            .snapshot
+                            .names
+                            .add(entry.file_name().as_bytes(), local.snapshot.entries.len())
+                        {
+                            local.snapshot.errors.push(error.to_string());
+                            return WalkState::Continue;
+                        }
                         local.snapshot.entries.push(Entry {
                             path: relative,
                             metadata: Metadata {
@@ -167,7 +176,18 @@ pub fn walk(root: &Path, threads: usize, exclude: Option<&Path>) -> io::Result<S
         })
     });
     let mut snapshot = Snapshot::default();
-    for mut local in all.into_inner().unwrap() {
+    let locals = all.into_inner().unwrap();
+    snapshot
+        .entries
+        .reserve(locals.iter().map(|s| s.entries.len()).sum());
+    snapshot
+        .directories
+        .reserve(locals.iter().map(|s| s.directories.len()).sum());
+    snapshot
+        .names
+        .reserve(locals.iter().map(|s| s.names.lengths()));
+    for mut local in locals {
+        snapshot.names.append(local.names, snapshot.entries.len())?;
         snapshot.entries.append(&mut local.entries);
         snapshot.directories.append(&mut local.directories);
         snapshot.errors.append(&mut local.errors);

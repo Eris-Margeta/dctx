@@ -2,7 +2,9 @@
 // SPDX-FileCopyrightText: 2026 Eris Margeta
 //! Linux benchmark CLI. Outputs one key=value per line for reproducible capture.
 
-use catalog_bench::{Catalog, Entry, Metadata, Tier, walk, write_catalog};
+use catalog_bench::{
+    Catalog, Entry, Metadata, QueryMode, Tier, walk, write_catalog, write_snapshot,
+};
 use std::hint::black_box;
 use std::io::{self, Write};
 use std::os::unix::ffi::OsStrExt;
@@ -67,25 +69,51 @@ fn queries(catalog: &Catalog) -> io::Result<()> {
             samples.push(samples[0].clone());
         }
     }
-    let mut matches = 0_u64;
-    let mut path_bytes = 0_u64;
-    for token in &samples {
-        let start = Instant::now();
-        let found = catalog.find(black_box(token));
-        for id in found {
-            let entry = catalog.entry(id)?;
-            path_bytes += u64::try_from(black_box(entry.path).len()).unwrap();
-            matches += 1;
+    for (label, mode, limit) in [
+        ("exact_page", QueryMode::Exact, 100),
+        ("prefix_page", QueryMode::Prefix, 100),
+        ("substring_page", QueryMode::Substring, 100),
+        ("exact_full", QueryMode::Exact, usize::MAX),
+    ] {
+        let mut lookup_latencies = Vec::new();
+        let mut matches = 0_u64;
+        let mut path_bytes = 0_u64;
+        latencies.clear();
+        for sample in &samples {
+            // Keep short/common tokens. Longer prefix/substring probes use half a token.
+            let token = match mode {
+                QueryMode::Exact => sample.as_slice(),
+                QueryMode::Prefix => &sample[..sample.len().div_ceil(2)],
+                QueryMode::Substring => &sample[sample.len() / 4..(sample.len() * 3).div_ceil(4)],
+            };
+            let start = Instant::now();
+            let found = catalog.search(black_box(token), mode, limit);
+            if label == "exact_full" {
+                lookup_latencies.push(start.elapsed().as_secs_f64() * 1000.0);
+            }
+            for id in found {
+                let entry = catalog.entry(id)?;
+                path_bytes += u64::try_from(black_box(entry.path).len()).unwrap();
+                matches += 1;
+            }
+            latencies.push(start.elapsed().as_secs_f64() * 1000.0);
         }
-        latencies.push(start.elapsed().as_secs_f64() * 1000.0);
+        if !lookup_latencies.is_empty() {
+            lookup_latencies.sort_unstable_by(f64::total_cmp);
+            println!(
+                "exact_full_lookup_p50_ms={:.6}\nexact_full_lookup_p99_ms={:.6}",
+                lookup_latencies[499], lookup_latencies[989]
+            );
+        }
+        latencies.sort_unstable_by(f64::total_cmp);
+        println!(
+            "{label}_queries={}\n{label}_p50_ms={:.6}\n{label}_p99_ms={:.6}\n{label}_matches={matches}\n{label}_path_bytes={path_bytes}",
+            samples.len(),
+            latencies[499],
+            latencies[989]
+        );
     }
-    latencies.sort_unstable_by(f64::total_cmp);
-    println!(
-        "queries={}\nquery_seed=0xdc7ca7a101\nquery_p50_ms={:.6}\nquery_p99_ms={:.6}\nquery_total_matches={matches}\nquery_total_path_bytes={path_bytes}",
-        samples.len(),
-        latencies[499],
-        latencies[989]
-    );
+    println!("query_seed=0xdc7ca7a101\npage_limit=100");
     Ok(())
 }
 
@@ -102,7 +130,7 @@ fn finish(output: &Path, build_start: Instant) -> io::Result<()> {
     let start = Instant::now();
     let catalog = Catalog::open(output)?;
     println!(
-        "reopen_validate_seconds={:.6}\nfiles={}\ncatalog_bytes={}\ncatalog_bytes_per_file={:.6}\ngit_roots={}\nshards={}",
+        "reopen_validate_seconds={:.6}\nfiles={}\ncatalog_bytes={}\ncatalog_bytes_per_file={:.6}\nname_index_bytes={}\nbase_catalog_bytes={}\ngit_roots={}\nshards={}",
         start.elapsed().as_secs_f64(),
         catalog.len(),
         catalog.size(),
@@ -111,6 +139,8 @@ fn finish(output: &Path, build_start: Instant) -> io::Result<()> {
         } else {
             catalog.size() as f64 / catalog.len() as f64
         },
+        catalog.name_index_size(),
+        catalog.size() - catalog.name_index_size(),
         catalog.git_roots(),
         catalog.shards()
     );
@@ -130,7 +160,7 @@ fn finish(output: &Path, build_start: Instant) -> io::Result<()> {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<_> = std::env::args_os().collect();
     let Some(command) = args.get(1).and_then(|v| v.to_str()) else {
-        return Err("usage: catalog-bench build ROOT OUTPUT [THREADS] | synthetic OUTPUT FILES | query CATALOG TOKEN | inspect CATALOG".into());
+        return Err("usage: catalog-bench build ROOT OUTPUT [THREADS] | synthetic OUTPUT FILES | query CATALOG TOKEN [exact|prefix|substring] [LIMIT] | inspect CATALOG".into());
     };
     match command {
         "build" if (4..=5).contains(&args.len()) => {
@@ -152,7 +182,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 return Err("put output in a scratch subdirectory".into());
             }
             let start = Instant::now();
-            let mut snapshot = walk(root, threads, Some(&output_parent))?;
+            let snapshot = walk(root, threads, Some(&output_parent))?;
             println!(
                 "mode=filesystem\nthreads={threads}\nwalk_seconds={:.6}\nwalk_files_per_second={:.3}\nwalk_files={}\ndirectories={}\nwalk_errors={}\nsymlinks_skipped={}\nrss_after_walk_kib={}",
                 snapshot.elapsed.as_secs_f64(),
@@ -166,14 +196,13 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             for error in snapshot.errors.iter().take(10) {
                 eprintln!("walk error: {error}");
             }
+            let incomplete = !snapshot.errors.is_empty();
             let encode_start = Instant::now();
-            write_catalog(output, &mut snapshot.entries, &mut snapshot.directories)?;
+            write_snapshot(output, snapshot)?;
             println!(
                 "encode_sync_seconds={:.6}",
                 encode_start.elapsed().as_secs_f64()
             );
-            let incomplete = !snapshot.errors.is_empty();
-            drop(snapshot);
             finish(output, start)?;
             if incomplete {
                 return Err("incomplete snapshot: walk errors reported above".into());
@@ -207,11 +236,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             drop(dirs);
             finish(output, start)?;
         }
-        "query" if args.len() == 4 => {
+        "query" if (4..=6).contains(&args.len()) => {
             let catalog = Catalog::open(Path::new(&args[2]))?;
             let stdout = std::io::stdout();
             let mut out = stdout.lock();
-            for id in catalog.find(args[3].as_bytes()) {
+            let mode = match args.get(4).and_then(|a| a.to_str()).unwrap_or("exact") {
+                "exact" => QueryMode::Exact,
+                "prefix" => QueryMode::Prefix,
+                "substring" => QueryMode::Substring,
+                _ => return Err("invalid query mode".into()),
+            };
+            let limit = args
+                .get(5)
+                .map(|s| {
+                    s.to_str()
+                        .ok_or("invalid limit")?
+                        .parse::<usize>()
+                        .map_err(|_| "invalid limit")
+                })
+                .transpose()?
+                .unwrap_or(usize::MAX);
+            for id in catalog.search(args[3].as_bytes(), mode, limit) {
                 // NUL-delimited raw path bytes, preserving non-UTF-8 and newlines.
                 out.write_all(&catalog.entry(id)?.path)?;
                 out.write_all(&[0])?;

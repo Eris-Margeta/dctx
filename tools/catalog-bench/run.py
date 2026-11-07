@@ -17,6 +17,7 @@ import os
 from pathlib import Path
 import platform
 import resource
+import shutil
 import subprocess
 import time
 
@@ -110,15 +111,22 @@ def cold_catalog(binary, path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--threads", type=int, default=len(os.sched_getaffinity(0)))
-    parser.add_argument("--report", type=Path, default=WORKTREE / "docs/results/DCX-CATALOG-01.json")
+    parser.add_argument("--report", type=Path, default=WORKTREE / "docs/results/DCX-CATALOG-02.json")
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--synthetic-only", action="store_true")
     mode.add_argument("--skip-synthetic", action="store_true")
+    mode.add_argument("--fresh-only", action="store_true", help="measure only --fresh-tree-files")
+    parser.add_argument("--fresh-tree-files", type=int, default=0, help="also generate and first-touch a new on-disk tree (max 1M empty files)")
     parser.add_argument("roots", nargs="*", type=Path)
     args = parser.parse_args()
+    if args.fresh_only and not args.fresh_tree_files:
+        parser.error("--fresh-only requires --fresh-tree-files")
     report = args.report.resolve()
     if not report.is_relative_to(WORKTREE):
         parser.error("report must be inside the worktree")
+    if not 0 <= args.fresh_tree_files <= 1_000_000:
+        parser.error("fresh tree must contain 0..1000000 files")
+    report.parent.mkdir(parents=True, exist_ok=True)
     os.umask(0o022)
     # Bound scratch allocation on unexpected input growth; not a measured target.
     resource.setrlimit(resource.RLIMIT_AS, (8 * 1024**3, 8 * 1024**3))
@@ -126,11 +134,12 @@ def main():
     scratch.mkdir(exist_ok=True)
     output = scratch / f"bench-{os.getpid()}.cat"
     binary = PROJECT / "target/release/catalog-bench"
-    data = {"machine": machine(), "method": "first-observed cache unknown; warm following first build/queries; 1000 full-result token queries each",
+    data = {"machine": machine(), "method": "first-observed cache unknown; warm following first build/queries; 1000 exact full-result plus 1000 each exact/prefix/substring first-page queries (100 paths)",
             "spdx_license_identifier": "Apache-2.0",
             "threads": args.threads, "runs": []}
-    roots = [] if args.synthetic_only else (args.roots or [WORKTREE, Path("/srv/work"), Path("/srv/data")])
+    roots = [] if args.synthetic_only or args.fresh_only else (args.roots or [WORKTREE, Path("/srv/work"), Path("/srv/data")])
     checkpoint = scratch / f"checkpoint-{os.getpid()}.json"
+    fresh = None
     try:
         for root in roots:
             if not root.is_dir() or not os.access(root, os.R_OK | os.X_OK):
@@ -143,13 +152,57 @@ def main():
                 result["cold_catalog_reopen"] = cold_catalog(binary, output) if output.is_file() else None
                 output.unlink(missing_ok=True)
                 checkpoint.write_text(json.dumps(data, indent=2) + "\n")
-        if not args.skip_synthetic:
+        if not args.skip_synthetic and not args.fresh_only:
             result = run(binary, ["synthetic", output, 1_000_000])
             result.update(root="synthetic:1M metadata records", phase="synthetic")
             result["cold_catalog_reopen"] = cold_catalog(binary, output) if output.is_file() else None
             data["runs"].append(result)
+            output.unlink(missing_ok=True)
+        if args.fresh_tree_files:
+            parent = WORKTREE / ".research-tmp"
+            parent.mkdir(exist_ok=True)
+            # A local ignore file keeps this scratch out of repository status and walks.
+            (parent / ".gitignore").write_text("*\n")
+            if os.statvfs(parent).f_bavail * os.statvfs(parent).f_frsize < 2 * 1024**3:
+                raise RuntimeError("less than 2 GiB free; refusing fresh tree")
+            fresh = parent / f"catalog-fresh-{os.getpid()}"
+            fresh.mkdir()
+            begin = time.monotonic()
+            directory_blocks = 0
+            for directory in range((args.fresh_tree_files + 999) // 1000):
+                path = fresh / f"src{directory:06}"
+                path.mkdir()
+                descriptor = os.open(path, os.O_RDONLY | os.O_DIRECTORY)
+                try:
+                    for identifier in range(directory*1000, min((directory+1)*1000, args.fresh_tree_files)):
+                        fd = os.open(f"module{identifier:08}_test.rs", os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644, dir_fd=descriptor)
+                        os.close(fd)
+                    os.fsync(descriptor)
+                    directory_blocks += os.fstat(descriptor).st_blocks * 512
+                finally:
+                    os.close(descriptor)
+            estimate = directory_blocks + args.fresh_tree_files * 4096
+            if estimate >= 5_000_000_000:
+                raise RuntimeError("fresh tree conservative allocation estimate exceeds 5 GB")
+            data["fresh_tree"] = {"files": args.fresh_tree_files, "generation_seconds": time.monotonic()-begin,
+                "regular_file_data_bytes": 0, "directory_allocated_bytes": directory_blocks,
+                "conservative_bytes_including_4096_per_inode": estimate,
+                "cache_qualification": "first traversal of newly created paths; creation warms dentries/inodes; directory fsync does not evict metadata; NOT verified cold",
+                "path": str(fresh)}
+            for phase in ("fresh_first_touch", "fresh_warm"):
+                result = run(binary, ["build", fresh, output, args.threads])
+                result.update(root="fresh:1M on-disk" if args.fresh_tree_files==1_000_000 else f"fresh:{args.fresh_tree_files} on-disk", phase=phase)
+                data["runs"].append(result)
+                output.unlink(missing_ok=True)
+                checkpoint.write_text(json.dumps(data, indent=2) + "\n")
+
     finally:
+        if fresh is not None:
+            shutil.rmtree(fresh)
+            data["fresh_tree_deleted"] = True
         output.unlink(missing_ok=True)
+        data["finished_utc"] = datetime.datetime.now(datetime.timezone.utc).isoformat()
+        data["source_sha256"] = {str(p.relative_to(WORKTREE)): hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted((PROJECT / "src").glob("*.rs"))}
         report.write_text(json.dumps(data, indent=2) + "\n")
         checkpoint.unlink(missing_ok=True)
     return int(any(run.get("status", 0) for run in data["runs"]))
