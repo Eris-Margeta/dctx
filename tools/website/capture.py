@@ -25,6 +25,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 SAMPLE = HERE / "sample"
+SAMPLE_MTIME = 1767225600  # 2026-01-01T00:00:00Z, see capture()
 OUT = HERE / "data" / "demo.json"
 SENTINEL = "example-not-a-secret"  # the value of the sample's .env; it must never reach an output
 VERBS = ["map", "find", "neighbors", "explain", "read", "skeleton", "grep", "hubs", "path", "export"]
@@ -100,6 +101,10 @@ def capture(binary: str, version: str) -> dict:
             (tmp_path / name).mkdir()
         place = tmp_path / "kiosk"
         shutil.copytree(SAMPLE, place)
+        # The snapshot digest (find --meta) covers modification times; a checkout or an archive sets
+        # them to its own clock, so every copied path gets one fixed time (2026-01-01T00:00:00Z).
+        for path in [*place.rglob("*"), place]:
+            os.utime(path, (SAMPLE_MTIME, SAMPLE_MTIME), follow_symlinks=False)
         env = {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path / "home"), "XDG_CONFIG_HOME": str(tmp_path / "config"),
                "DCTX_CACHE_DIR": str(tmp_path / "cache"), "DCTX_AUTO_CLEAN": "0", "LC_ALL": "C.UTF-8", "COLUMNS": "100"}
         stdout, _, code = run(binary, ["--version"], place, env)
