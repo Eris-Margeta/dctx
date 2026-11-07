@@ -24,7 +24,7 @@ cargo build --release --locked --manifest-path tools/catalog-bench/Cargo.toml
 python3 tools/catalog-bench/run.py --fresh-tree-files 1000000
 ```
 
-The runner measures this worktree, read-only `/srv/work`, accessible `/srv/data`,
+The runner measures this checkout by default (pass `--roots` for other trees, read-only),
 and 1M synthetic metadata records. The optional fresh-tree case creates 1M empty
 files under a locally ignored `.research-tmp/` directory, measures the first
 traversal and repeat traversal, then deletes the tree. It refuses more than 1M
@@ -38,7 +38,7 @@ walk parallelism. Positional roots replace defaults. `--synthetic-only` and
 `--skip-synthetic` select cases; `--fresh-tree-files` independently adds the disk
 case; `--fresh-only --fresh-tree-files 1000000` runs only that case. All catalogs are deleted, including on ordinary exceptions. Partial
 snapshots report their metrics and exit unsuccessfully; in particular inaccessible
-entries under `/srv/data` are not silently counted as coverage. The runner uses
+entries under unreadable roots are not silently counted as coverage. The runner uses
 an 8 GiB address-space ceiling, distinct from the 512 MiB RSS target.
 
 ```sh
@@ -185,4 +185,4 @@ Tests compare index modes and limited output with a scan oracle; cover duplicate
 tokens, short queries, mixed ASCII case, non-UTF-8, Unicode, empty/missing keys,
 parallel visitor ID merging, truncated/mutated index sections, and all prior
 metadata, routing, ignore, shard, and symlink cases.
-Results and acceptance decisions: [DCX-CATALOG-02](../../docs/results/DCX-CATALOG-02.md).
+Measured results are summarised in the project benchmark notes when published.

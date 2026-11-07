@@ -137,7 +137,7 @@ def main():
     data = {"machine": machine(), "method": "first-observed cache unknown; warm following first build/queries; 1000 exact full-result plus 1000 each exact/prefix/substring first-page queries (100 paths)",
             "spdx_license_identifier": "Apache-2.0",
             "threads": args.threads, "runs": []}
-    roots = [] if args.synthetic_only or args.fresh_only else (args.roots or [WORKTREE, Path("/srv/work"), Path("/srv/data")])
+    roots = [] if args.synthetic_only or args.fresh_only else (args.roots or [WORKTREE])
     checkpoint = scratch / f"checkpoint-{os.getpid()}.json"
     fresh = None
     try:
