@@ -87,10 +87,13 @@ and bytes are.
 | dctx `/` (local) | 9 (8 + favicon) | 192,110 | 206 ms | 0 |
 | dctx `/docs/spec/` (local) | 7 | 220,150 | 298 ms | 0 |
 
-With the web fonts held back 0.8 s each (worst case), CLS stays at 0.001–0.004 on `/`; on `/docs/spec/` at
-390 px it reaches 0.14 and on `/cli/` at 1440 px 0.36. The fallback faces have the web fonts' widths
-(0.6 em measured for both at 100 px); the residue comes from Linux Chromium rounding glyph advances to whole
-pixels at 12–13 px. At normal load CLS is 0 on every page measured.
+With the web fonts held back 0.8 s each (worst case), CLS is 0 on all 35 sitemap pages at 1440 and 390 px
+(`tools/website/browser/slowfont.py` and a sweep of every page; before the fix: 0.36 on `/cli/` at 1440 px, up to
+0.22 on document pages at 390 px). Two changes: the fonts use `font-display: optional` (all four are preloaded,
+so at normal load they are on the first paint; a font that misses it is not swapped in, so text never moves), and
+the monospace fallback's `size-adjust` is 100.1 % instead of 99.66 %, so Linux Chromium rounds the fallback to
+the same whole-pixel ppem and advance as JetBrains Mono at 12.5 px. At normal load CLS is 0 on every page
+measured and all four web fonts report `loaded`.
 
 ## Decisions taken while building
 

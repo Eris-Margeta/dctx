@@ -1,16 +1,16 @@
 /* dctx website. Hand-written, no framework. Tokens first; dark theme follows the system until
    the visitor picks one (data-theme on <html>). Fonts are self-hosted, OFL 1.1. */
-@font-face { font-family: Geist; font-style: normal; font-weight: 400; font-display: swap; src: url("@font:geist-400") format("woff2"); }
-@font-face { font-family: Geist; font-style: normal; font-weight: 600; font-display: swap; src: url("@font:geist-600") format("woff2"); }
-@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400; font-display: swap; src: url("@font:jetbrains-mono-400") format("woff2"); }
-@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 500; font-display: swap; src: url("@font:jetbrains-mono-500") format("woff2"); }
+@font-face { font-family: Geist; font-style: normal; font-weight: 400; font-display: optional; src: url("@font:geist-400") format("woff2"); }
+@font-face { font-family: Geist; font-style: normal; font-weight: 600; font-display: optional; src: url("@font:geist-600") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 400; font-display: optional; src: url("@font:jetbrains-mono-400") format("woff2"); }
+@font-face { font-family: "JetBrains Mono"; font-style: normal; font-weight: 500; font-display: optional; src: url("@font:jetbrains-mono-500") format("woff2"); }
 /* Metric-matched fallbacks (Arial/Helvetica widths and Geist/JetBrains vertical metrics), so the swap
    to the web font does not move text. Computed in tools/website/README.md. */
 @font-face { font-family: "Geist Fallback"; font-weight: 400; src: local("Arial"), local("Helvetica"), local("Liberation Sans"); size-adjust: 107.12%; ascent-override: 85.89%; descent-override: 20.54%; line-gap-override: 9.34%; }
 @font-face { font-family: "Geist Fallback"; font-weight: 600; src: local("Arial Bold"), local("Helvetica Bold"), local("Liberation Sans Bold"), local("Arial"); size-adjust: 103.21%; ascent-override: 89.13%; descent-override: 21.31%; line-gap-override: 9.69%; }
 @font-face { font-family: "Geist Fallback D"; font-weight: 400; src: local("DejaVu Sans"); size-adjust: 93.30%; ascent-override: 98.61%; descent-override: 23.58%; line-gap-override: 10.72%; }
 @font-face { font-family: "Geist Fallback D"; font-weight: 600; src: local("DejaVu Sans Bold"); size-adjust: 86.17%; ascent-override: 106.76%; descent-override: 25.53%; line-gap-override: 11.60%; }
-@font-face { font-family: "JetBrains Mono Fallback"; src: local("Menlo"), local("DejaVu Sans Mono"), local("Courier New"); size-adjust: 99.66%; ascent-override: 102%; descent-override: 30%; line-gap-override: 0%; }
+@font-face { font-family: "JetBrains Mono Fallback"; src: local("Menlo"), local("DejaVu Sans Mono"), local("Courier New"); size-adjust: 100.1%; ascent-override: 102%; descent-override: 30%; line-gap-override: 0%; }
 
 :root {
   --bg: #fbfaff; --surface: #ffffff; --surface-2: #f2effa; --ink: #16131f; --muted: #5b566e; --line: #e4e0ef;

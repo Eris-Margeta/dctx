@@ -40,7 +40,8 @@ Every number on a hand-written page carries a small source link to the file it i
 ## Loading
 
 First visit to `/`: 8 requests (HTML, one stylesheet, one script, four preloaded fonts, the poster image).
-Fonts use `font-display: swap` with metric-matched fallback faces (`size-adjust` and ascent, descent and
+Fonts are preloaded and use `font-display: optional` (a font that misses the first paint is not swapped in,
+so a slow font never moves text), with metric-matched fallback faces (`size-adjust` and ascent, descent and
 line-gap overrides) for Arial/Helvetica/Liberation Sans and DejaVu Sans, computed from letter-frequency
 weighted advance widths of Geist against each fallback. The hero animation starts after the load event,
 when the main thread is idle; the poster is on screen before that. `check.py` enforces the first-load
