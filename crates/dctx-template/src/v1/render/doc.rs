@@ -12,48 +12,6 @@ pub(super) fn too_big() -> TemplateError {
     }
 }
 
-fn expanded_len(hay_len: u64, count: u64, pattern_len: u64, replacement_len: u64) -> Option<u64> {
-    let removed = count.checked_mul(pattern_len)?;
-    let added = count.checked_mul(replacement_len)?;
-    hay_len.checked_sub(removed)?.checked_add(added)
-}
-
-fn seam_contains(text: &str, pattern: &str) -> bool {
-    if pattern.len() < 2 || text.is_empty() {
-        return false;
-    }
-    let window = pattern.len() - 1;
-    let prefix = char_window_start(text, window);
-    let suffix = char_window_end(text, window);
-    let junction = format!("{suffix}{prefix}");
-    match junction.find(pattern) {
-        Some(index) => index < suffix.len() && index + pattern.len() > suffix.len(),
-        None => false,
-    }
-}
-
-fn char_window_start(text: &str, bytes: usize) -> &str {
-    if bytes >= text.len() {
-        return text;
-    }
-    let mut end = bytes;
-    while end < text.len() && !text.is_char_boundary(end) {
-        end += 1;
-    }
-    &text[..end]
-}
-
-fn char_window_end(text: &str, bytes: usize) -> &str {
-    if bytes >= text.len() {
-        return text;
-    }
-    let mut start = text.len() - bytes;
-    while start > 0 && !text.is_char_boundary(start) {
-        start -= 1;
-    }
-    &text[start..]
-}
-
 #[derive(Clone)]
 struct Piece {
     text: String,
@@ -152,40 +110,22 @@ impl Doc {
         Ok(out)
     }
 
-    fn may_contain(&self, pattern: &str) -> bool {
-        let Some(&first) = pattern.as_bytes().first() else {
-            return true;
-        };
-        self.pieces
-            .iter()
-            .any(|piece| piece.text.as_bytes().contains(&first))
-    }
-
-    pub(super) fn replaced(&self, pattern: &str, replacement: &Doc) -> Result<Doc, TemplateError> {
-        if pattern.is_empty() {
-            return Err(too_big());
-        }
-        if self.len()? <= RENDER_CEILING {
-            let haystack = self.materialize()?;
-            return replace_text(&haystack, pattern, replacement);
-        }
-        if !self.may_contain(pattern) {
-            return Ok(self.clone());
-        }
-        let mut out = Doc::default();
-        for piece in &self.pieces {
-            let first = pattern.as_bytes()[0];
-            if !piece.text.as_bytes().contains(&first) && !seam_contains(&piece.text, pattern) {
-                out.push_times(&piece.text, piece.times)?;
-                continue;
+    pub(super) fn interpolate(text: &str, fields: &[(&str, &Doc)]) -> Result<Doc, TemplateError> {
+        let mut output = Doc::default();
+        let mut parts = data_parts(text).peekable();
+        while let Some(part) = parts.next() {
+            if let Some((_, value)) = fields.iter().find(|(field, _)| *field == part) {
+                let mut times = 1u64;
+                while parts.peek() == Some(&part) {
+                    parts.next();
+                    times = times.checked_add(1).ok_or_else(too_big)?;
+                }
+                output.push_repeated(value, times)?;
+            } else {
+                output.push_str(part)?;
             }
-            if seam_contains(&piece.text, pattern) {
-                return Err(too_big());
-            }
-            let replaced = replace_runs(&piece.text, pattern, replacement)?;
-            out.push_repeated(&replaced, piece.times)?;
         }
-        Ok(out)
+        Ok(output)
     }
 
     pub(super) fn trimmed(&self) -> Result<Doc, TemplateError> {
@@ -282,72 +222,4 @@ fn trim_end_side(pieces: &mut Vec<Piece>) {
             times: 1,
         });
     }
-}
-
-fn replace_text(haystack: &str, pattern: &str, replacement: &Doc) -> Result<Doc, TemplateError> {
-    if pattern.is_empty() {
-        return Err(too_big());
-    }
-    if !haystack.contains(pattern) {
-        return Ok(Doc::from_str(haystack));
-    }
-    let count = haystack.matches(pattern).count() as u64;
-    let repl_len = replacement.len()?;
-    if let Some(new_len) =
-        expanded_len(haystack.len() as u64, count, pattern.len() as u64, repl_len)
-        && new_len <= RENDER_CEILING
-        && repl_len <= RENDER_CEILING
-    {
-        let repl_text = replacement.materialize()?;
-        return Ok(Doc::from_string(haystack.replace(pattern, &repl_text)));
-    }
-    replace_runs(haystack, pattern, replacement)
-}
-
-fn replace_runs(haystack: &str, pattern: &str, replacement: &Doc) -> Result<Doc, TemplateError> {
-    if pattern.is_empty() {
-        return Err(too_big());
-    }
-    let mut out = Doc::default();
-    let mut rest = haystack;
-    loop {
-        if rest.is_empty() {
-            break;
-        }
-        match rest.find(pattern) {
-            None => {
-                out.push_str(rest)?;
-                break;
-            }
-            Some(0) => {
-                let mut run = 0u64;
-                while let Some(stripped) = rest.strip_prefix(pattern) {
-                    run = run.checked_add(1).ok_or_else(too_big)?;
-                    rest = stripped;
-                }
-                out.push_repeated(replacement, run)?;
-            }
-            Some(index) => {
-                out.push_str(&rest[..index])?;
-                rest = &rest[index..];
-            }
-        }
-    }
-    Ok(out)
-}
-
-pub(super) fn with_vars(doc: Doc, vars: &HashMap<String, String>) -> Result<Doc, TemplateError> {
-    if doc.len()? <= RENDER_CEILING {
-        let text = doc.materialize()?;
-        return Ok(Doc::from_string(replace_vars(&text, vars)));
-    }
-    if !doc.may_contain("{{") {
-        return Ok(doc);
-    }
-    let mut current = doc;
-    for (key, value) in vars {
-        let pattern = format!("{{{{{key}}}}}");
-        current = current.replaced(&pattern, &Doc::from_str(value))?;
-    }
-    Ok(current)
 }

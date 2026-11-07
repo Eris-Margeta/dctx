@@ -14,6 +14,12 @@ and distribution plans below do not describe the current release.
 
 ## [Unreleased]
 
+### Fixed
+
+- Pack rendering preserves literal template syntax in file bodies and paths, including
+  backslashes, for default, stamped and compiled templates. Variable substitution now
+  applies only to template structure; `pack --for` also preserves source CRLF bytes.
+
 ## [1.2.0] - 2026-11-07
 
 ### Added

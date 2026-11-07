@@ -19,7 +19,6 @@ pub(super) fn render_record(
     program: &RenderProgram,
     item: &Prepared,
     counter: &mut usize,
-    end_marker: &str,
 ) -> Result<Fragment, TemplateError> {
     let id = if item.depth == 0 && item.is_dir {
         "ROOT".to_string()
@@ -68,7 +67,7 @@ pub(super) fn render_record(
         && item.decision != FileHandlingDecision::DebugVisible
         && let Some(code) = named(&program.partials, "FILE_BLOCK")
     {
-        let (lines, text) = file_text(item, end_marker);
+        let (lines, text) = file_text(item);
         let size = item.size.to_string();
         let lines = lines.to_string();
         let body = execute(
