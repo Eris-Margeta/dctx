@@ -13,7 +13,7 @@ Use `target/release/dctx-cli.exe` on Windows, or supply an installed `dctx`
 binary's absolute path. No Python packages, model credentials or network
 access are required. The [guide](../../docs/guides/MCP.md) explains the results;
 [sample.json](sample.json) records the original default/lean run; the
-[three-tool measurement](../../docs/results/DCX-PROF3-01-mcp.json) records all
+[three-tool measurement](three-profile.json) records all
 three profiles. These are observations, not performance gates.
 
 The script creates a deterministic 26-file Rust fixture and private cache

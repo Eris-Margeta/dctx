@@ -325,6 +325,13 @@ impl Session {
         crate::domain::resolve_query(request.verb, request, policy)
     }
 
+    pub(crate) fn context_output_limits(&self) -> Result<OperationLimits, DctxError> {
+        Ok(self
+            .limits
+            .intersect(OperationLimits::from_ceiling(&self.ceiling))
+            .intersect(self.plan_limits()?))
+    }
+
     fn plan_limits(&self) -> Result<OperationLimits, DctxError> {
         let Some(plan) = &self.plan else {
             return Ok(OperationLimits::default());

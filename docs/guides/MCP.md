@@ -10,7 +10,7 @@ the same options. No separate server installation is needed.
 
 | Mode | Command | Tools and descriptions |
 | --- | --- | --- |
-| Default | `dctx mcp [PATH]` | All 10 tools, original descriptions. Also `--profile default`. |
+| Default | `dctx mcp [PATH]` | All 10 tools, full descriptions. Also `--profile default`. |
 | Lean | `dctx mcp --profile lean [PATH]` | `find`, `read`; shorter descriptions. |
 | Three-tool | `dctx mcp --profile three [PATH]` | `map`, `find`, `read`; shorter descriptions. |
 | Custom | `dctx mcp --tools find,read,grep [PATH]` | Only the named tools; shorter descriptions. |
@@ -44,11 +44,13 @@ error `-32602` without executing it. Restart the server to change the selection.
 
 ## Measured overhead
 
+The recorded sample predates the named-context parameters on `read`. Re-run the
+measurement script for current schema sizes.
+
 Default and lean measurements use a release build of dctx 1.2.0 (`fd82034`) on
 Linux x86-64, Python 3.13.5, on 2026-11-07. The three-tool row was measured in
 the same environment and on the same date, from `e251de8` plus the profile
-change; the default and lean byte counts also matched in that run
-([raw profile measurement](../results/DCX-PROF3-01-mcp.json)). Counts come from
+change; the default and lean byte counts also matched in that run. Counts come from
 the running binary's `tools/list`, not a checked-in schema approximation. Reproduce
 them from the repository root with the
 [stdlib measurement script](../../tools/mcp-measure/measure.py):
@@ -400,3 +402,13 @@ input/output tokens, cache behavior and task correctness. Reduced tool output
 alone does not establish a session saving. Bounded `find` then `read` is useful
 when repeated reads can select a small relevant node from a large file; choose
 the surface around the session's tasks.
+
+## Named context through the read tool
+
+Set `context: true` on the existing `read` tool to request minimal ranked context
+for its `id` (a file path, symbol name, or stable ID). `budget` caps the final
+encoded page. Use `session: "review-1", dedupe: true` to receive ID references
+for chunks already delivered on this connection; this also works in the lean
+profile. No additional tool is registered. Ordinary source reads keep their
+existing behavior. See [named context](../CONTEXT.md) for examples, chunk identity,
+session limits, and the equivalent CLI/RPC operations.

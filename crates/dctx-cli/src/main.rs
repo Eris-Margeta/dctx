@@ -4,6 +4,7 @@
 #![forbid(unsafe_code)]
 
 mod daemon;
+mod context_cmd;
 mod map;
 mod mcp;
 mod pack_for;
@@ -61,6 +62,12 @@ fn main() {
                 .cloned()
                 .collect();
             mcp::run(&words).map_err(|failure| failure.within("serve"))
+        }
+        Some("context") => {
+            maybe_auto_clean(allow_auto_clean);
+            context_cmd::Runtime::default()
+                .output(&args[2..])
+                .and_then(exit::CommandOutput::emit)
         }
         Some("read") => {
             maybe_auto_clean(allow_auto_clean);

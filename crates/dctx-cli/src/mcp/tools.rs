@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
-//! The MCP tool table: names, input schemas and the mapping from a call to `dctx map` arguments.
-//! A call becomes the same argument vector the CLI would receive, so `map::execute` is the only code path.
+//! MCP tool names, input schemas, and the mapping from calls to CLI arguments.
+//! Ordinary calls use `map::execute`; read with context enabled uses the named-context CLI path.
 
 use super::json::Json;
 
@@ -95,14 +95,18 @@ const TOOLS: &[Tool] = &[
     },
     Tool {
         name: "read",
-        help: "Read the source of one node, or of absolute lines inside it.",
-        compact_help: "Read node source, optionally at absolute lines within it.",
+        help: "Read node source or absolute lines; set context=true for minimal ranked context of a file/symbol.",
+        compact_help: "Read node source/lines, or minimal file/symbol context with context=true.",
         positional: Some("id"),
         second_positional: None,
         props: &[
-            prop("id", "string", "Stable node id"),
+            prop("id", "string", "Stable node id; with context=true, also a file path or symbol name"),
             prop("lines", "string", "Absolute source lines inside the node, as A-B"),
             prop("full", "boolean", "Permit up to 400 lines"),
+            prop("context", "boolean", "Return minimal ranked context for this file/symbol instead of a source read"),
+            prop("session", "string", "Context delivery session id, scoped to this connection"),
+            prop("dedupe", "boolean", "Context only: reference chunks already delivered in this session"),
+            prop("budget", "integer", "Source budget 1..2000; context budget 100..100000 estimated tokens"),
         ],
     },
     Tool {
@@ -163,7 +167,7 @@ const TOOLS: &[Tool] = &[
 /// Tool availability and description style, fixed for the lifetime of a server.
 #[derive(Debug, Default)]
 pub(super) enum Surface {
-    /// The original ten tools, descriptions and schemas, unchanged.
+    /// All ten tools, with full descriptions and schemas.
     #[default]
     Full,
     /// A non-empty subset, exposed in canonical table order with compact descriptions.
@@ -271,7 +275,7 @@ pub(super) fn list(surface: &Surface) -> Json {
     Json::obj(vec![("tools", Json::Arr(tools))])
 }
 
-/// Turns a call into the argument vector of `dctx map`, or a message naming the bad argument.
+/// Turns a call into CLI-shaped arguments, or a message naming the bad argument.
 pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String>, String> {
     let tool = TOOLS
         .iter()
@@ -288,7 +292,12 @@ pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String
             return Err(format!("unknown argument {key} for {name}"));
         }
     }
-    let mut out = vec![name.to_string()];
+    let named_context = name == "read"
+        && members
+            .iter()
+            .find(|(key, _)| key == "context")
+            .is_some_and(|(_, value)| matches!(value, Json::Bool(true)));
+    let mut out = vec![if named_context { "context" } else { name }.to_string()];
     if let Some(first) = tool.positional {
         let value = members
             .iter()
@@ -337,7 +346,7 @@ pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String
         let Some((_, value)) = members.iter().find(|(key, _)| key == p.name) else {
             continue;
         };
-        if matches!(value, Json::Null) {
+        if matches!(value, Json::Null) || named_context && p.name == "context" {
             continue;
         }
         let flag = format!("--{}", p.name.replace('_', "-"));
@@ -357,6 +366,12 @@ pub(super) fn to_args(name: &str, arguments: Option<&Json>) -> Result<Vec<String
             }
             _ => return Err(format!("{} must be of type {}", p.name, p.ty)),
         }
+    }
+    if named_context {
+        // The required id is a literal value, including when it starts with '-'.
+        // Keep all options before the terminator so no target or session value is reinterpreted.
+        let target = out.remove(1);
+        out.extend(["--".to_string(), target]);
     }
     Ok(out)
 }
@@ -392,6 +407,26 @@ mod tests {
         assert_eq!(
             args("read", r#"{"id":"s:a#b","lines":"3-9"}"#).unwrap(),
             ["read", "s:a#b", "--lines", "3-9"]
+        );
+    }
+
+    #[test]
+    fn context_arguments_preserve_flag_shaped_values() {
+        assert_eq!(
+            args(
+                "read",
+                r#"{"id":"--help","context":true,"session":"--context","dedupe":true,"json":true}"#
+            )
+            .unwrap(),
+            [
+                "context",
+                "--session",
+                "--context",
+                "--dedupe",
+                "--json",
+                "--",
+                "--help"
+            ]
         );
     }
 

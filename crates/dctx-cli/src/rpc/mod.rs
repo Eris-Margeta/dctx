@@ -21,7 +21,11 @@ pub(crate) fn run(args: &[String]) -> Result<(), Failure> {
         }
         _ => return Err(usage("usage: dctx rpc")),
     }
-    serve(io::stdin().lock(), io::stdout().lock(), &execute).or_else(|error| {
+    let runtime = crate::context_cmd::Runtime::default();
+    serve(io::stdin().lock(), io::stdout().lock(), &|request| {
+        execute(request, &runtime)
+    })
+    .or_else(|error| {
         if error.kind() == io::ErrorKind::BrokenPipe {
             Ok(())
         } else {
@@ -175,15 +179,27 @@ fn handle(
     }
 }
 
-fn execute(request: &Request) -> Result<CommandOutput, Failure> {
+fn execute(
+    request: &Request,
+    runtime: &crate::context_cmd::Runtime,
+) -> Result<CommandOutput, Failure> {
     let mut args = request.args.clone();
     // JSON is the protocol's output format. No other argument is changed or retried.
-    let unique_format = matches!(request.verb, Verb::Languages | Verb::CacheStatus);
-    if !unique_format || !args.iter().any(|arg| arg == "--json") {
+    let unique_format = matches!(
+        request.verb,
+        Verb::Languages | Verb::CacheStatus | Verb::Context
+    );
+    let explicit_json = if request.verb == Verb::Context {
+        crate::context_cmd::has_flag(&args, "--json")
+    } else {
+        args.iter().any(|arg| arg == "--json")
+    };
+    if !unique_format || !explicit_json {
         args.insert(0, "--json".to_string());
     }
     match request.verb {
         Verb::Hello => Err(usage("hello is handled by the session")),
+        Verb::Context if !crate::context_cmd::has_flag(&args, "--for") => runtime.output(&args),
         Verb::Pack | Verb::Context => {
             args.insert(0, "pack".to_string());
             if request.verb == Verb::Context && !crate::pack_for::requested(&args[1..]) {

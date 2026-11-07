@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 //! `dctx mcp`: a stdio MCP server (JSON-RPC 2.0, one message per line) exposing the map verbs as tools.
-//! Every `tools/call` builds the argument vector of `dctx map <verb> ...` and runs `map::execute`, the CLI's own code path.
+//! Each call uses its existing CLI path: map verbs use `map::execute`, and read with context enabled uses named context.
 //! Only JSON-RPC lines go to stdout; diagnostics stay on stderr. The server exits 0 at end of input.
 
 mod json;
@@ -72,7 +72,11 @@ pub(crate) fn run(args: &[String]) -> Result<(), Failure> {
     }
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
-    serve(stdin.lock(), stdout.lock(), &surface, &crate::map::execute).map_err(|error| {
+    let runtime = crate::context_cmd::Runtime::default();
+    serve(stdin.lock(), stdout.lock(), &surface, &|args| {
+        runtime.map(args)
+    })
+    .map_err(|error| {
         Failure::index(
             error.to_string(),
             "stdin or stdout failed; restart the server from the MCP client",
