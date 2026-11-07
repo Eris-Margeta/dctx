@@ -1,7 +1,11 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-DESKTOP-004: Complete Separation of CLI and Desktop Cache/Config
 
 **Date:** 2026-02-04
-**Status:** Accepted
+**Status:** current — separate desktop settings and cache namespaces.
+
+The shared engine does not require the CLI and desktop to use the same settings or cache directories. See the [desktop README](../../README.md).
 
 ---
 

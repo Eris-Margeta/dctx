@@ -1,7 +1,11 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-DESKTOP-001: Tauri v2 Technology Choice for Desktop Application
 
 **Date:** 2026-02-03
-**Status:** Accepted
+**Status:** superseded — historical desktop architecture.
+
+Tauri remains the current preview implementation; a GPUI rebuild is planned. Both are Apache-2.0, copyright Eris Margeta. See the [desktop README](../../README.md).
 
 ---
 

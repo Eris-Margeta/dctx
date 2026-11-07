@@ -1,6 +1,8 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Lexer provenance
 
-Where the language knowledge in dctx map mode comes from: whether any keyword table or grammar was copied or derived from tree-sitter or another project. Recorded for the v1 licence review (card 8).
+Where the language knowledge in dctx map mode comes from: whether any keyword table or grammar was copied or derived from tree-sitter or another project. This provenance record supports license review.
 
 ## Method
 

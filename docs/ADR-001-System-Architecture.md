@@ -1,6 +1,10 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-001: System Architecture, Configuration Hierarchy & State Management
 
-**Status:** Accepted
+**Status:** superseded — historical design and implementation record.
+
+Use the [current product contracts](design/PRODUCT-CONTRACTS.md), [README](../README.md) and [testing guide](TESTING.md) for release behavior.
 **Date:** 2026-01-08
 **Author:** dctx Team
 **Context:** Transformation of `dctx` from a C utility to a multi-platform Rust ecosystem (CLI + Library).

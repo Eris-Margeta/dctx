@@ -70,7 +70,7 @@ class Markdown(unittest.TestCase):
         self.assertEqual(linker.resolve("docs/guides/MAP-MODE.md", "../../README.md"), "/docs/readme/")
         self.assertTrue(linker.resolve("README.md", "LICENSE").endswith("/blob/main/LICENSE"))
         self.assertTrue(linker.resolve("README.md", "legacy-c/").endswith("/tree/main/legacy-c"))
-        self.assertEqual(linker.resolve("README.md", "https://dctx.internet.technology/"), "/")
+        self.assertEqual(linker.resolve("README.md", "https://www.dctx.internet.technology/"), "/")
         self.assertIsNone(linker.resolve("README.md", "https://img.shields.io/badge/x"))
         self.assertIsNone(linker.resolve("README.md", "no/such/file.md"))
         self.assertIsNone(linker.resolve("README.md", "../outside.md"))

@@ -1,6 +1,10 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-004: CLI Implementation Strategy & Zero-Dependency Mandate
 
-**Status:** Accepted
+**Status:** superseded — historical design and implementation record.
+
+Use the [current product contracts](design/PRODUCT-CONTRACTS.md), [README](../README.md) and [testing guide](TESTING.md) for release behavior.
 **Date:** 2026-01-12
 **Author:** dctx Team
 **Context:** The `dctx` tool is designed to be a lightweight, "instant-on" utility that can run in diverse environments (CI/CD containers, old servers, developer laptops). We recently ported the Logic to Rust (dctx-core) and the Interface to Rust (dctx-cli). We need to codify the constraints for the CLI to prevent binary bloat and compilation overhead.

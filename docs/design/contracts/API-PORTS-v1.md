@@ -1,9 +1,9 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Facade, ports and wire contract v1
 
-DX-A0b · API sketch 1.0 / JSON protocol 2 / proposed C ABI 1.
-Defines one library boundary for every product surface and mode.
-Depends on identity/parser/segment/cache/DTS contracts; used by B0/D1/D4/E1–E3.
-Signatures below are language-neutral sketches, not compiling Rust or a release.
+Status: current design reference. One library boundary serves all surfaces. API sketch v1, JSON protocol v2 and proposed C ABI v1 are independent version axes.
+See [product contracts](../PRODUCT-CONTRACTS.md) for scope and compatibility.
 
 ## Ownership and entry points
 

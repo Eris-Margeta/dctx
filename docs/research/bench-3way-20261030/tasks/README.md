@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Task-level rerun (70 agent questions): dctx vs Trail-Code 0.28.0 vs graphify 0.9.97
 
 Rerun of section 8 of `docs/research/trail-code-2026-10/REPORT.md` with the October protocol. October result:

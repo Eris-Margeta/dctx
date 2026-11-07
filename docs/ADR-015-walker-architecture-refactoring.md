@@ -1,6 +1,10 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-015: Walker Architecture Refactoring
 
-**Status:** IMPLEMENTED
+**Status:** superseded — historical design and implementation record.
+
+Use the [current product contracts](design/PRODUCT-CONTRACTS.md), [README](../README.md) and [testing guide](TESTING.md) for release behavior.
 **Date:** 2026-02-02
 **Author:** Eris Margeta
 **Related:** Phase 10.7, BUG-REPORT-IGNORED-DIRECTORIES-RECURSION.md, REFACTORING-PROPOSAL-WALKER-IGNORE.md

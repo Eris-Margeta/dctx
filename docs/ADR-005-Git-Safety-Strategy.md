@@ -1,7 +1,11 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-005: Version-Aware Git Safety & Configuration Strategy
 
 **Date:** 2026-01-12
-**Status:** Accepted
+**Status:** superseded — historical design and implementation record.
+
+Use the [current product contracts](design/PRODUCT-CONTRACTS.md), [README](../README.md) and [testing guide](TESTING.md) for release behavior.
 **Author:** dctx Team
 **Context:** `dctx` generates large context files (`.llmcontext.txt`), diffs, and binary state files. While binary files are centralized (ADR-001), text output remains in the project directory. Users frequently forget to ignore these files, leading to repository pollution. Furthermore, as the tool evolves (e.g., updating from v0.1.0 to v0.1.2), new configuration options and ignore rules must be propagated to the user's system without overwriting their custom settings or degrading runtime performance.
 

@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # CLI exit codes
 
 `dctx map`, `dctx pack`, `dctx mcp`, `dctx languages`, an unknown command and a non-UTF-8 argument follow one contract:

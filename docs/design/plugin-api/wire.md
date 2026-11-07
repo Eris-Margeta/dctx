@@ -1,8 +1,10 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Framing and session protocol 1.0
 
-PL-C · normative · PLUGINS.md §§3.1–3.4.
+Status: normative wire and session contract.
 Depends on the closed wire/request/result/event schemas and semantics.md.
-PL-P supplies the codec; PL-H supplies session state, budgets and receipts.
+The codec implements framing; the host manages session state, budgets and receipts.
 
 ## Bytes and canonical inputs
 

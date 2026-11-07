@@ -1,6 +1,12 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Changelog - dctx Desktop
 
 All notable changes to the desktop application will be documented in this file.
+
+**Current license: Apache-2.0. Copyright Eris Margeta.** This covers the desktop
+app and planned GPUI rebuild. The app is free; historical entries below record
+earlier licensing and pricing and are not current terms. See [LICENSE](LICENSE).
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

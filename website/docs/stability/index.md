@@ -1,8 +1,9 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # STAB-01: byte stability on `0495f5f`
 
 Measured **2026-11-06 UTC** on Linux from commit
-`0495f5f87717df5385209d306b92328a8cd96cf6`. The directory date is the card's
-requested evidence destination. No engine changes were made.
+`0495f5f87717df5385209d306b92328a8cd96cf6`. The directory retains its original evidence date. No engine changes were made.
 
 | Measurement | Text | JSON |
 |---|---:|---:|
@@ -33,7 +34,7 @@ reruns queries, and restores the file. Its original evidence remains at
 The original `/path/to/workdir/dctx-vs-trail` host tree is absent. The repository contains
 the scripts and historical results, but no original seven-corpus checkout set or
 the host's `scripts/corpora.json`. Checked alternate `bench3` and `perf-20261101`
-corpora paths were also absent. This run uses the card's fallback: three corpora
+corpora paths were also absent. This run uses the documented fallback: three corpora
 extracted exclusively from tracked files at the pinned current commit. No fetch or
 network access was used. The new denominator differs from the historical 0/63;
 Trail-Code's historical 59/70 was not rerun.
@@ -138,5 +139,5 @@ byte counts and SHA-256 hashes. `measure.py` records a fresh run only when no
 [`stability-original.csv`](https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/stability-original.csv) is a byte-for-byte copy of the
 historical CSV, SHA-256
 `46b54db2fb469dc4df70eaa0bf22b458a8089f437cdee3294efe071314280266`.
-Placing both here keeps all writes within the card's own set; the historical
-source file was neither overwritten nor modified.
+Both files are retained to distinguish the new measurement from the unchanged
+historical source.

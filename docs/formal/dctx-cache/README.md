@@ -1,8 +1,10 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # DX-A2 cache lifecycle model
 
 Finite TLA+ model of the dctx cache publication and reclamation protocol.
 It checks ARCHITECTURE-PROPOSAL §4 properties P2, P3, P4 and P8, and the
-registered-root ownership rule from decision 078 (decision 077's git piggy-back is withdrawn).
+registered-root ownership rule based on dctx metadata, without Git identities.
 `check.sh` runs TLC on the pass configs, then `expect-fail/`.
 
 ## What one state is

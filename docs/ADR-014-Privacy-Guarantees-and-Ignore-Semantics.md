@@ -1,6 +1,10 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-014: Privacy Guarantees & Ignore Semantics
 
-**Status:** ✅ IMPLEMENTED
+**Status:** current — architectural principle retained; historical examples describe their original release.
+
+For shipped behavior and limitations, see the [README](../README.md), [testing guide](TESTING.md) and [specification](SPEC.md). Earlier “formally proven” wording refers to historical tests; tests and defense layers do not constitute a formal proof of all implementations.
 **Date:** 2026-02-02
 **Approved:** 2026-02-02
 **Implemented:** 2026-02-02 (WO-050 through WO-054)

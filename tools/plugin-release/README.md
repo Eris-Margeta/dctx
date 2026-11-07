@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Release inventory generators
 
 Python 3 standard library generators for CONTRACT.md sections 5–7. The pure

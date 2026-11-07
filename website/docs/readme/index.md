@@ -1,12 +1,12 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 <p align="center">
-  <img src="https://img.shields.io/badge/dctx-Context%2C%20engineered-8b5cf6?style=for-the-badge" alt="dctx">
+  <img src="https://github.com/Eris-Margeta/dctx/blob/main/docs/assets/dctx-header.svg" alt="dctx - context, engineered" width="100%">
 </p>
 
-<h1 align="center">dctx</h1>
-
 <p align="center">
-  <strong>The context engine for AI-assisted software development.</strong><br>
-  Fewer tokens. Stable prefixes. Exact source. One policy for every workflow.
+  <strong>Turn a codebase into focused context for AI assistants.</strong><br>
+  Pack a project, find symbols and read exact source locally. Stable output helps prompt caches reuse context.
 </p>
 
 <p align="center">
@@ -25,9 +25,11 @@
     <img src="https://img.shields.io/badge/commercial-maintenance%20available-8b5cf6" alt="Commercial maintenance available">
   </a>
   <img src="https://img.shields.io/badge/telemetry-none-brightgreen" alt="No telemetry">
+  <img src="https://img.shields.io/badge/own%20benchmark-140%2F140-8b5cf6" alt="Own benchmark 140/140">
 </p>
 
 <p align="center">
+  <a href="#why-dctx">Why dctx</a> •
   <a href="#the-core-belief-prompt-processing-efficiency">Philosophy</a> •
   <a href="#installation">Installation</a> •
   <a href="#quick-start">Quick Start</a> •
@@ -36,6 +38,94 @@
   <a href="https://www.dctx.internet.technology/docs/spec/">Specification</a> •
   <a href="https://www.dctx.internet.technology/">Website</a>
 </p>
+
+---
+
+## Installation
+
+Download the archive for your OS and architecture from
+[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), verify
+it against `SHA256SUMS`, extract it, and put `dctx` (`dctx.exe` on Windows) on
+`PATH`. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
+CI covers Linux, macOS and Windows; see [the matrix and desktop exclusions](https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md).
+
+**Coming soon:** `cargo install dctx-cli` and `npx dctx`. Registry packages are
+not live yet; use the release archives now.
+
+### From source
+
+Requires Rust 1.91 or newer.
+
+```sh
+git clone https://github.com/Eris-Margeta/dctx
+cd dctx
+cargo build --locked --release -p dctx-cli
+./target/release/dctx-cli --version
+alias dctx="$PWD/target/release/dctx-cli"
+```
+
+Cargo builds `dctx-cli` (`dctx-cli.exe` on Windows); release archives supply
+`dctx`. For a local source installation, use
+`cargo install --locked --path crates/dctx-cli` and `alias dctx=dctx-cli`.
+On Windows, invoke the executable directly or create a PowerShell alias.
+
+## Quick Start
+
+In 30 seconds, try a tiny project (POSIX shell; on Windows use Git Bash):
+
+```sh
+mkdir dctx-demo
+cd dctx-demo
+printf 'def hello(name):\n    return f"Hello, {name}!"\n' > hello.py
+dctx map skeleton hello.py
+```
+
+Output from dctx 1.2.0:
+
+```text
+# dctx-demo skeleton
+m:hello.py	module	L1-2	hello.py
+s:hello.py#hello	fn	L1-2	def hello(name):
+```
+
+For your own project:
+
+```sh
+dctx pack .                # structured context on stdout
+dctx pack . --clipboard    # copy it to the clipboard
+dctx map find "SnapshotConfig"
+dctx mcp                   # stdio tools for an MCP client
+```
+
+`pack` writes a file only with `--output`. Tree timestamps are off by default,
+so a bare `touch` does not change its output; `--tree-stamps=on` includes them.
+Run `dctx` without arguments for the interactive terminal menu.
+
+---
+
+## Why dctx
+
+<table>
+<tr><td><b>Deterministic</b></td><td>Same source snapshot and request give identical bytes (every text verb checked over 5 runs on Linux; the cross-OS gate is still open). <code>dctx pack</code> tree lines carry no timestamps, so a <code>touch</code> changes nothing.</td></tr>
+<tr><td><b>Prefix-stable</b></td><td>In a <code>dctx pack</code> page, an edit keeps every byte before the edited file as a shared prefix, which is what a provider's prompt cache reuses. Map and find answers were byte-identical after unrelated edits in 33/33 text and 33/33 JSON cases (<a href="https://www.dctx.internet.technology/docs/stability/">measured 6 Nov 2026</a>); layered prompt tiers are still a target (<a href="https://www.dctx.internet.technology/docs/spec/">spec</a> PPE-3).</td></tr>
+<tr><td><b>Private and offline</b></td><td>No telemetry, no model calls, no network. The release check counts socket calls under <code>strace -f</code> and fails on any. Secrets files are listed by name, never read.</td></tr>
+<tr><td><b>Fast</b></td><td>Cold index of the benchmark corpora in 0.13-1.20 s (Trail-Code 1.04-52.83 s, graphify 4.59-59.56 s), on one Linux x86_64 runner.</td></tr>
+<tr><td><b>Agent-ready</b></td><td><code>dctx mcp</code> is a stdio MCP server exposing the map verbs; answers are bounded and never split a record.</td></tr>
+<tr><td><b>Broad</b></td><td>50 language families: 36 with symbols and lexical call edges, 8 with symbol outlines, 6 document formats with headed sections; run <code>dctx languages</code>.</td></tr>
+<tr><td><b>Verified</b></td><td>TLA+ models of the cache lifecycle and the plugin system in <a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/formal">docs/formal</a>, each with a mutation gate: every deliberately broken variant must be caught (plugins: 8 baselines, 59 mutants, 37 reachability witnesses). Plugin manifests and the plugin discovery index are verified with Ed25519 signatures.</td></tr>
+<tr><td><b>Measured</b></td><td>140/140 on our 70-question protocol using 29,340 tokens, against Trail-Code 122 (88,923) and graphify 96 (197,203). <a href="#measured-in-the-open">Details and caveats below.</a></td></tr>
+<tr><td><b>Your choice of surface</b></td><td>CLI, Rust library facade, MCP server, and a <a href="https://github.com/Eris-Margeta/dctx/tree/main/apps/dctx-desktop">desktop app</a> (0.11 preview, free, Apache-2.0).</td></tr>
+</table>
+
+### At a glance
+
+| | |
+|---|---|
+| Version | 1.2.0 |
+| License | Apache-2.0 |
+| Written in | Rust (2021 and 2024 editions): 36 crates plus the desktop app |
+| CI coverage | Linux, macOS (ARM64 and x64), Windows x64; [matrix and exclusions](https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md) |
+| Modes | `pack` (whole project or diff), `map` (agents), `mcp` (stdio server) |
 
 ---
 
@@ -71,53 +161,6 @@ dctx started in **2025 as `dircontxt`, written in pure C** ([`legacy-c/`](https:
 
 ---
 
-## Installation
-
-Requires a recent stable Rust toolchain with Cargo (the workspace includes Rust 2024 crates). Linux x86_64 is the only tested platform for v1; macOS and Windows builds are untested.
-
-### From source
-
-```zsh
-git clone https://github.com/Eris-Margeta/dctx
-cd dctx
-cargo build --locked --release -p dctx-cli
-./target/release/dctx-cli --version   # dctx 1.1.0 (<git sha>)
-```
-
-The package and Cargo-built executable are named **`dctx-cli`** (`dctx-cli.exe` on Windows). The help text and examples use **`dctx`**. After building, this zsh alias lets you use those examples in the current shell:
-
-```zsh
-alias dctx="$PWD/target/release/dctx-cli"
-```
-
-### Using Cargo
-
-From the cloned repository root:
-
-```zsh
-cargo install --locked --path crates/dctx-cli
-dctx-cli --version
-alias dctx=dctx-cli
-```
-
-Ensure Cargo's binary directory (normally `$HOME/.cargo/bin`) is on `PATH`. This installs `dctx-cli`; the alias supplies `dctx` in the current shell. Neither command installs a package from crates.io.
-
-Alternatively, the Unix [installer](https://github.com/Eris-Margeta/dctx/blob/main/tools/install.sh) builds the CLI and copies it as `dctx` to `/usr/local/bin` (or `DCTX_INSTALL_DIR`). It also creates configuration, templates and ignore rules under `${XDG_CONFIG_HOME:-$HOME/.config}/dctx` and may request sudo for the binary copy. Review it before running.
-
----
-
-## Quick Start
-
-```zsh
-dctx pack .            # whole project as one structured context block on stdout
-dctx pack . --clipboard  # … straight to the clipboard
-dctx                   # interactive menu
-```
-
-`dctx pack` writes to stdout, the clipboard or `--output`; it creates a text export only when you request a file. Its tree lines carry the `ID` only, with no modification time and no size, so the page stays byte-identical across a bare `touch` and an edit keeps everything before the edited file as a shared prefix (what a prompt cache reuses); `--tree-stamps=on` brings back the 1.0.0 tree lines with `MOD:` and `SIZE:`. Running without arguments opens an interactive terminal menu.
-
----
-
 ## Map mode: context for agents
 
 ```zsh
@@ -132,7 +175,7 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 
 - **Source bytes**: `map read --json` includes source content; the current text renderer prints metadata only.
 - **Bounded**: output uses an estimated token budget (up to 2,000; explain up to 1,000), not a model tokenizer guarantee, and never splits a record.
-- **Deterministic**: the same tree and question give the same bytes, so prompt caches hit (see byte-stable answers below).
+- **Deterministic**: the same tree and question give the same bytes, so prompt caches hit.
 - **Precision and freshness**: use `--json` for the structured metadata. Structural declarations and conservative call edges do not imply exact semantic resolution.
 - **Languages**: every supported language is in one of three tiers (full, outline, docs); see [Language tiers](#language-tiers) below or run `dctx languages`.
 - **No Git, no network for map queries**: identity comes from dctx's own content digest; map does not need Git history or embeddings.
@@ -144,7 +187,7 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 - **Find**: quote a multi-word concept as one argument; a name that spells the whole phrase ranks just under an exact name. For config keys with no symbol match, `find` falls back to literal hits, and a SCREAMING_CASE key (`HOME`, `DJANGO_SETTINGS_MODULE`) always lists the code that reads it after the best exact symbol.
 - **Outline of a file**: `map map <file>` lists exported top-level declarations first, then the rest in source order, with impl blocks, constants and tests last; without `--budget` its page is 1,000 tokens so `--limit 40` is not cut early. Map and find text lines are `<id>\t<kind>\tL<start>-<end>`, since the id already names the path.
 - **MCP**: `dctx mcp` runs a stdio MCP server that exposes the map verbs as tools, including skeleton, path and export.
-- **Byte-stable answers**: on 6 Nov 2026, build `0495f5f` preserved 33/33 text and 33/33 JSON answers after unrelated comment edits across three pinned local corpora (11 query shapes each); all were identical over five runs, with paired-answer common-prefix ratio 1.0. The tested text headers are `# <place> <verb>`; default JSON omits snapshot digest, generation and age, which `--meta` restores. [Protocol, raw answers and limits](https://www.dctx.internet.technology/docs/stability/). Prefix-stable tier layering (SPEC §12.1) remains a target.
+- **Byte-stable answers**: the text header is `# <place> <verb>`, and JSON leaves out the snapshot digest, generation and age. `--meta` restores them.
 - **Source limit**: `DCTX_MAX_SOURCE_BYTES` sets the total source bytes one scan may read (1 to 17179869184; default 1 GiB).
 
 
@@ -158,6 +201,8 @@ Details: [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/). 
 - **outline**: symbols only; no call edges are promised. Shell function bodies can yield same-file call guesses, but v1 does not promise shell call edges.
 - **docs**: headed sections.
 - **Confidence**: `guess` marks the heuristic outline families, and every record from those files carries confidence `guess`; `structural` means a dedicated lexer or deterministic document rules.
+
+<details><summary>Full language table</summary>
 
 <!-- languages:begin -->
 | Language | Tag | Files | Tier | Confidence |
@@ -213,6 +258,8 @@ Details: [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/). 
 | Org | `org` | `.org` | docs | structural |
 | LaTeX | `tex` | `.tex` | docs | structural |
 <!-- languages:end -->
+
+</details>
 
 ---
 
@@ -283,9 +330,9 @@ On our 70-question protocol (designed by the dctx team; questions, gold facts an
 | Trail-Code 0.28.0 | 122 | 312 | 88,923 | 70 |
 | graphify 0.9.97, code-only | 96 | 238 | 197,203 | 91 |
 
-That protocol is ours, so it can favour dctx. An independently selected protocol (repositories picked by seed, callers gold from language servers, questions written without seeing dctx output) is pending: v1 card 6 publishes it, and its table will be added here whatever the result.
+That protocol is ours, so it can favour dctx. An independently selected protocol (repositories picked by seed, callers gold from language servers, questions written without seeing dctx output) is documented in [the independent protocol](https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-independent/README.md); treat its results separately from this in-house benchmark.
 
-Cold index of the 6 benchmark corpora (flask, ripgrep, pocketbase, trailcode, mixed, docs; median of 3 runs) took dctx 0.13–1.20 s, against Trail-Code 1.04–52.83 s and graphify 4.59–59.56 s (docs: no index), on one Linux x86_64 runner (Linux 6.12.113+deb13-cloud-amd64, x86_64 CPU). Linux x86_64 is the only tested platform.
+Cold index of the 6 benchmark corpora (flask, ripgrep, pocketbase, trailcode, mixed, docs; median of 3 runs) took dctx 0.13–1.20 s, against Trail-Code 1.04–52.83 s and graphify 4.59–59.56 s (docs: no index), on one Linux x86_64 runner (Linux 6.12.113+deb13-cloud-amd64, Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz). These performance measurements cover Linux x86_64; cross-platform correctness checks are described in [TESTING.md](https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md).
 
 dctx makes no network calls: it made 0 socket calls in all 4 traced benchmark steps, and the release check (`scripts/release-check.sh`) asserts zero AF_INET/AF_INET6 connect/send calls under `strace -f` for every map verb, `pack`, `cache status` and `mcp`.
 
@@ -299,14 +346,12 @@ An earlier two-way study against Trail-Code (October 2026, dctx `17dff0b`, befor
 ## Out of scope for v1
 
 - Any network or cloud feature.
-- macOS and Windows support claims: they are untested; Linux x86_64 is the only tested platform.
 - Watch or incremental mode beyond re-indexing.
 - Shell call edges (shell is outline tier: symbols only).
 - Embeddings or semantic search.
 - LSP-grade type resolution: call edges are lexical.
 - A stable plugin ABI or desktop API: neither is stable in v1.
 - Cross-repository queries.
-- Publishing to crates.io or GitHub releases (an owner decision).
 
 ---
 
@@ -314,9 +359,9 @@ An earlier two-way study against Trail-Code (October 2026, dctx `17dff0b`, befor
 
 dctx is open source under the [Apache-2.0](https://github.com/Eris-Margeta/dctx/blob/main/LICENSE) license, which makes it free for any use, including commercial use. The core (`pack`) and every modality stay open, and no feature is held back behind a paid edition. Individuals and teams can support the project through [GitHub Sponsors](https://github.com/sponsors/Eris-Margeta). Companies that depend on dctx can fund its upkeep through a [maintenance agreement](https://www.dctx.internet.technology/maintenance/), which covers security response times, long-term support and a written commitment for procurement (see [maintenance](https://www.dctx.internet.technology/maintenance/)). Paying never changes the license and never closes a feature. The "dctx" name and logo are trademarks of Eris Margeta; see [TRADEMARK.md](https://www.dctx.internet.technology/trademark/) for what forks may call themselves.
 
-Project code is open source (Apache-2.0) and **ongoing work**; third-party dependencies retain their own licenses. Parts of the current development line use third-party crates; anything with third-party dependencies is not considered enterprise-ready.
+All first-party code and documentation, including the desktop app and planned GPUI rebuild, are Apache-2.0, copyright Eris Margeta. Dependencies and vendored materials retain their own licenses and notices; see [THIRD_PARTY.md](https://github.com/Eris-Margeta/dctx/blob/main/THIRD_PARTY.md), [THIRD_PARTY_NPM.md](https://github.com/Eris-Margeta/dctx/blob/main/THIRD_PARTY_NPM.md) and [NOTICE](https://github.com/Eris-Margeta/dctx/blob/main/NOTICE).
 
-The dependency policy retains the **Ed25519 signature verifier** (`ed25519-dalek`) for plugin/index verification. Signed organization policy bundles are planned; their presence in the specification does not mean the CLI can enroll or verify them today. See the [dependency policy](https://www.dctx.internet.technology/docs/spec/#27-dependencies-and-enterprise-readiness).
+The dependency policy retains the **Ed25519 signature verifier** (`ed25519-dalek`) for plugin/index verification. Signed organization policy bundles are planned; their presence in the specification does not mean the CLI can enroll or verify them today. See the [dependency policy](https://www.dctx.internet.technology/docs/spec/#27-dependencies-and-build-profiles).
 
 ---
 
@@ -372,9 +417,8 @@ dctx/
 ├── apps/          # dctx-desktop
 ├── legacy-c/      # The original C implementation (dircontxt)
 ├── docs/          # Specification, design records, contracts, formal models, guides
-├── presentation/  # Slides and the dctx film
 ├── tools/         # Benchmarks, plugin tooling, test scripts
-└── website/       # dctx.internet.technology
+└── website/       # project website
 ```
 
 Start with [docs/SPEC.md](https://www.dctx.internet.technology/docs/spec/), then [docs/CRATE-MAP.md](https://www.dctx.internet.technology/docs/crate-map/).
@@ -383,7 +427,7 @@ Start with [docs/SPEC.md](https://www.dctx.internet.technology/docs/spec/), then
 
 ## License
 
-Apache License 2.0. Copyright Eris Margeta. Project code is licensed under Apache-2.0; third-party dependencies retain their own licenses. The desktop app is free, forever. Paid maintenance agreements fund the project; see [MAINTENANCE.md](https://www.dctx.internet.technology/maintenance/). See [LICENSE](https://github.com/Eris-Margeta/dctx/blob/main/LICENSE) and [NOTICE](https://github.com/Eris-Margeta/dctx/blob/main/NOTICE).
+Apache License 2.0. Copyright Eris Margeta. The desktop app is included under the same license. Paid maintenance agreements fund the project; see [MAINTENANCE.md](https://www.dctx.internet.technology/maintenance/). See [LICENSE](https://github.com/Eris-Margeta/dctx/blob/main/LICENSE) and [NOTICE](https://github.com/Eris-Margeta/dctx/blob/main/NOTICE).
 
 ## Contributing
 

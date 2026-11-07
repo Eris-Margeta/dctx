@@ -1,6 +1,10 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-018: Language Coverage
 
-**Status:** accepted (PA, decision 114, pending the maintainer confirmation)
+**Status:** superseded — historical design and implementation record.
+
+The original 13-family scope below is superseded by the [current language registry table](https://www.dctx.internet.technology/docs/readme/#language-tiers); confidence and completion principles remain relevant.
 
 ## Context
 

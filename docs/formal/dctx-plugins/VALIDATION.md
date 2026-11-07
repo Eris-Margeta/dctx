@@ -1,17 +1,19 @@
-# PL-M validation receipt
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
+# Plugin model validation report
 
 Observed remote TLC results for the models and configurations in this directory.
-PLUGINS §7.1 / PL-C PP1–PP10; used by PL-H/PL-I and the PL-V release gate.
-The authoritative detailed inputs and counterexamples are in the VM evidence folder.
+The PP1–PP10 models are checked separately from native platform qualification.
+Detailed per-case inputs are listed in the local suite manifest.
 
-Completed 2026-10-16 at 10:54 UTC using the packet's exact remote command:
+Completed 2026-10-16 at 10:54 UTC using the following command:
 
 ```sh
 sh docs/formal/dctx-plugins/check.sh
 ```
 
 Exit status: **0**. TLC 2.19 (08 August 2024, revision 5a47802), Java 21 on
-the authorized Linux VM. The nonempty-check predicate also returned zero.
+a Linux VM. The nonempty-check predicate also returned zero.
 
 ```text
 PASS PP1-PP10: 8 baselines, 59 mutants, 37 reachability witnesses; 104 total

@@ -1,35 +1,25 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Plugin API v1 contract
 
-PL-C · frozen 2026-10-16 · DX-PLUGIN §7.1.
-This directory is the normative contract and input corpus for PL-P, PL-D,
-PL-M and the later host, distribution and Git packets. It changes no product
-behavior and authorizes no installation, execution, signing or publication.
+Status: current protocol design reference. This directory contains normative
+schemas and conformance inputs. See the [plugin design](../PLUGINS.md) for the
+architecture and [user guide](../../guides/PLUGINS.md) for implemented behavior.
 
 ## Authority and versions
 
-[PLUGINS.md](../PLUGINS.md) §§1–6 is the design source. The packet's decision 080
-disposition accepts decisions 1–7 and 9–12, with the following decision-2
-adjustment. **OS confinement is mandatory before any third-party plugin is
-enabled**, including its first handshake. The official bundled Git plugin may
-ship with brokered permission-checked effects and host audit while confinement
-is completed per OS. This exception is determined by the verified containing
-distribution, never by a manifest flag, signer reputation or a claimed ID.
-An independently installed Git override is not bundled and does not inherit it.
-Report the exception as `bundled-git-pending-confinement`; do not claim native
-isolation or completed platform-adversary evidence for that mode. All consent,
-selection, broker, audit and Git recipe requirements still apply. PP4 uses this
-explicit admission alternative; the confinement branch remains mandatory for
-third parties. PP2's broker privacy rule is not relaxed, and an unconfined
-process is not represented as an OS-enforced privacy boundary.
+Third-party plugins require native confinement before their first handshake.
+Only the verified official bundled Git implementation may report
+`bundled-git-pending-confinement` while platform qualification is incomplete.
+This exception does not follow a manifest flag, signer reputation, claimed ID
+or independently installed override. Consent, selection, broker and audit rules
+still apply; the exception does not establish OS-enforced privacy.
 
-decision 081 supersedes decision 8 and conflicting §5.2 prose: use Ed25519, with
-first-party **safe-Rust verification in dctx**. Signing belongs only to release
-tooling using an audited library; the signing key stays in the key manager.
-No production verifier dependency is introduced here. `ed25519-dalek` and
-`sha2` are dev-only differential oracles under the supplied Rust standards.
-DX-SHA's `dctx_hash::Sha256` supplies content digests. decision 078 prohibits Git in
-the core; Git behavior belongs only to `plugins/dctx-plugin-git` and its
-explicitly composed broker adapters, never a core compatibility shim.
+Ed25519 verification uses `dctx-ed25519`, backed by the audited
+`ed25519-dalek` dependency. Earlier first-party-verifier proposals are superseded.
+Signing belongs to release tooling; keys are never embedded in plugin code.
+`dctx_hash::Sha256` supplies content digests. Git effects belong to the explicit
+plugin and broker adapters, without a core Git compatibility path.
 
 | Version axis | Frozen value | Evolution |
 |---|---|---|
@@ -87,14 +77,9 @@ output-list pagination required by §3.1; it confers no content authority.
 The corpus contains real SHA-256 identities and supplied preimages, including
 the checked-in `dctx-hash` NIST vectors. Small artifact payloads are **hash and
 schema fixtures**, not native executables or trusted installable releases.
-No test signature stands for release authority. PL-I/PL-REL must add signed
-native fixture bundles under their own ownership and separate authorization.
+No test signature stands for release authority. Release validation requires signed native fixture bundles with independent
+key-management and platform evidence.
 
-This packet permits read/edit only. Its complete authorized acceptance set is
-`test -d docs/design/plugin-api` and
-`ls docs/design/plugin-api | grep -q .`, run once after final edits. These are
-directory checks, not schema, Rust, platform, signature or formal verification.
-No Cargo command, local validator or full product suite is run here. PL-P/PL-D
-consume this corpus in authorized remote validation; PL-V owns the final
-one-time workspace suite and promotion evidence. The matrix describes required
-future predicates and never represents them as passed by this packet.
+Schema fixtures do not establish signature validity, native execution,
+platform confinement or release approval. Run the relevant conformance, platform
+and formal checks and retain their results before making those claims.

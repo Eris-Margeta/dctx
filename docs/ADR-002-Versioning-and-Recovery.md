@@ -1,6 +1,10 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-002: Versioning Strategy, Massive Changes & State Recovery
 
-**Status:** Accepted
+**Status:** superseded — historical design and implementation record.
+
+Use the [current product contracts](design/PRODUCT-CONTRACTS.md), [README](../README.md) and [testing guide](TESTING.md) for release behavior.
 **Date:** 2026-01-08
 **Author:** dctx Team
 **Context:** Defines how `dctx` handles version increments, file corruption, and massive filesystem changes to maintain a reliable "Source of Truth".

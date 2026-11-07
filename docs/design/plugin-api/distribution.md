@@ -1,7 +1,9 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Release and installation contract v1
 
-PL-C · normative · PLUGINS.md §5, decision 080 and decision 081.
-PL-I/PL-X/PL-REL implement this contract after PL-R research and approval.
+Status: current distribution design; see the [plugin architecture](../PLUGINS.md).
+Distribution/PL-X/Release implement this contract after Feasibility research and approval.
 No locator in the fixture corpus is a published service or a trust anchor.
 
 ## Authenticated bytes
@@ -30,7 +32,7 @@ verification adapter resolves that ID from pinned/explicitly approved trust
 records. Unknown keys require independent fingerprint or organization approval.
 First-party safe-Rust Ed25519 verification must reject noncanonical encodings,
 out-of-range scalars, invalid/small-order points and equation failures; its
-dedicated conformance packet pins strict acceptance vectors and differential
+dedicated conformance suite pins strict acceptance vectors and differential
 checks. Do not implement signing in runtime dctx. Release tooling uses an
 audited signer library with key manager-held keys and a separate signing grant.
 Do not treat this document or a public test key as that grant.

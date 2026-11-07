@@ -1,7 +1,11 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-DESKTOP-002: Core Dependency Architecture (Desktop → Core Direct Library Integration)
 
 **Date:** 2026-02-03
-**Status:** Accepted
+**Status:** superseded — historical desktop architecture.
+
+Desktop now uses `dctx-desktop-api` and the shared `dctx` facade rather than a direct core-only API. See the [desktop README](../../README.md).
 
 ---
 

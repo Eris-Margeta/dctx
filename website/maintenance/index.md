@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # dctx maintenance
 
 dctx is open source under the Apache-2.0 license and free for any use, including commercial use. A maintenance agreement is how organisations that depend on dctx pay for its upkeep. Paying never changes the license and never closes a feature.

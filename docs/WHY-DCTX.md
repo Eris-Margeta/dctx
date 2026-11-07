@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Why dctx exists
 
 What problem dctx solves, the rules it follows, and why "byte-identical output" matters even if you never think about bytes.
@@ -134,5 +136,4 @@ If the context is byte-identical, turn one pays 200 units and the next nine pay 
 - [docs/SPEC.md](SPEC.md): §2 rules PPE-1 to PPE-5, §3 defects R1 and R7, §4 privacy and no network, §11 page formats, §12.1 tiers, §13 token estimate, §32 non-goals.
 - [docs/research/stability-20261105/REPORT.md](research/stability-20261105/REPORT.md): 33/33 results and limits.
 - [docs/BENCHMARK-20261030.md](BENCHMARK-20261030.md): `unresolved` call records.
-- [Release and website verification](results/DCX-SITE-02.md): zero network connections in the release check; desktop preview.
 - Worked example and prefix figures: output of dctx 1.1.0 (`a4f6378`, built from [crates/dctx-cli](../crates/dctx-cli)) on a copy of [crates/dctx-lex-go](../crates/dctx-lex-go).

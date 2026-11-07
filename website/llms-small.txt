@@ -1,6 +1,6 @@
 # dctx
 
-> The context engine for AI-assisted software development. Fewer tokens. Stable prefixes. Exact source. One policy for every workflow.
+> Turn a codebase into focused context for AI assistants. Pack a project, find symbols and read exact source locally. Stable output helps prompt caches reuse context.
 
 dctx 1.2.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short: https://www.dctx.internet.technology/llms-small.txt
 
@@ -35,6 +35,8 @@ dctx 1.2.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short:
 
 ## Why dctx
 
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Why dctx exists
 
 What problem dctx solves, the rules it follows, and why "byte-identical output" matters even if you never think about bytes.
@@ -100,11 +102,37 @@ The docs add a few more commitments:
 
 ## Quick start
 
-```zsh
-dctx pack .            # whole project as one structured context block on stdout
-dctx pack . --clipboard  # … straight to the clipboard
-dctx                   # interactive menu
+In 30 seconds, try a tiny project (POSIX shell; on Windows use Git Bash):
+
+```sh
+mkdir dctx-demo
+cd dctx-demo
+printf 'def hello(name):\n    return f"Hello, {name}!"\n' > hello.py
+dctx map skeleton hello.py
 ```
+
+Output from dctx 1.2.0:
+
+```text
+# dctx-demo skeleton
+m:hello.py	module	L1-2	hello.py
+s:hello.py#hello	fn	L1-2	def hello(name):
+```
+
+For your own project:
+
+```sh
+dctx pack .                # structured context on stdout
+dctx pack . --clipboard    # copy it to the clipboard
+dctx map find "SnapshotConfig"
+dctx mcp                   # stdio tools for an MCP client
+```
+
+`pack` writes a file only with `--output`. Tree timestamps are off by default,
+so a bare `touch` does not change its output; `--tree-stamps=on` includes them.
+Run `dctx` without arguments for the interactive terminal menu.
+
+---
 
 ## Map mode
 
@@ -145,7 +173,8 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 git clone https://github.com/Eris-Margeta/dctx
 cd dctx
 cargo build --locked --release -p dctx-cli
-./target/release/dctx-cli --version   # dctx 1.1.0 (<git sha>)
+./target/release/dctx-cli --version
+alias dctx="$PWD/target/release/dctx-cli"
 ```
 
 ## Exit codes

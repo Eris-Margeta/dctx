@@ -1,4 +1,9 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # npm release packages
+
+Registry publication is coming soon. Use the prebuilt archives from
+[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases) for installation.
 
 `dctx/` contains the JavaScript command shim. Each `cli-*` directory is an optional,
 OS/CPU constrained binary package. Platform executables are generated and ignored
@@ -8,7 +13,7 @@ From the repository root, fill all six packages from a GitHub Release's five
 archives and `SHA256SUMS`:
 
 ```sh
-python3 tools/release/prepare-npm.py v1.1.0 artifacts/
+python3 tools/release/prepare-npm.py v1.2.0 artifacts/
 (cd packaging/npm/dctx && npm pack --dry-run)
 ```
 

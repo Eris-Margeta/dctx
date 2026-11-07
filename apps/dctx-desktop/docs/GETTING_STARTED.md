@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Getting Started - dctx Desktop
 
 **Welcome to dctx Desktop!** This guide will get you up and running in 5 minutes.

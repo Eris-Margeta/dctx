@@ -1,10 +1,12 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Map mode
 
 Map mode explores a project through bounded outlines, symbol searches and source
 reads. It builds the index automatically; there is no user `index` command.
 The current CLI uses the shared dctx facade. Older storage and Git-based designs
 in SPEC-MAP-MODE are not the current CLI contract.
-dctx and this guide are Apache-2.0 (decision 078).
+dctx and this guide are Apache-2.0.
 
 ## Commands
 
@@ -109,7 +111,7 @@ absolute path to override its root. Otherwise it is:
 | Other | `$XDG_CACHE_HOME/dctx/v2`, or `~/.cache/dctx/v2` |
 
 The implemented lifecycle follows
-[DX-ARCH-08](https://github.com/Eris-Margeta/dctx/blob/main/docs/design/ARCHITECTURE-DECISIONS.md): time-based expiry, a system
+[DX-ARCH-08](https://github.com/Eris-Margeta/dctx/blob/main/docs/archive/design/ARCHITECTURE-DECISIONS.md): time-based expiry, a system
 size cap and an automatic cleaner. Defaults are 7 days for idle overlays/previews,
 30 days for unpinned roots and 1 day for staging; the hard cap is 2 GiB, the soft
 watermark 1.5 GiB and the eviction target 1.2 GiB. These are cache policies, not
@@ -133,7 +135,7 @@ plugin and TUI commands run one bounded cleanup when due (daily by default).
 
 Ignored files are excluded before content reads; omitted files may have metadata
 listed but their content is never read. The core never reads `.git/` or runs Git
-(decision 078). The intended `.gitignore` contract is rules only, not Git metadata.
+The intended `.gitignore` contract is rules only, not Git metadata.
 **Unverified:** automatic `.gitignore` rule loading in this facade CLI path:
 `host.rs` supplies `RuleTexts::default()`, with no local/global rule texts.
 Do not assume project-specific ignore rules were loaded by this map command.

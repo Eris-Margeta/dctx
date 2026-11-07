@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # dctx documentation
 
 Start with the [project README](../README.md) for installation and the
@@ -26,7 +28,7 @@ The Cargo-built executable is `dctx-cli`; guides also use the alias `dctx`.
 | --- | --- |
 | [Specification](SPEC.md) | Product goals, constraints, roadmap and acceptance gates; planned features are identified there. |
 | [Crate map](CRATE-MAP.md) | Package inventory, boundaries and direct dependencies. |
-| [Architecture decisions](design/ARCHITECTURE-DECISIONS.md) | Accepted architecture boundaries. |
+| [Architecture history](archive/design/ARCHITECTURE-DECISIONS.md) | Superseded planning record; use current product contracts. |
 | [Product contracts](design/PRODUCT-CONTRACTS.md) | Engine and surface contracts. |
 | [Map specification](SPEC-MAP-MODE.md) | Map design background; use the map guide and CLI help for current behavior. |
 | [API ports](design/contracts/API-PORTS-v1.md), [parsers](design/contracts/PARSERS-v1.md), [cache](design/contracts/CACHE-v1.md), [segments](design/contracts/SEGMENTS-v1.md) | Versioned boundary contracts. |
@@ -64,14 +66,11 @@ own status; inclusion here does not certify that its entire design is implemente
 ## Retained reference material
 
 - [`legacy-c/`](../legacy-c/) preserves the original C implementation and project history.
-- [Legacy documentation](LEGACY.md) explains the archived `docs/LEGACY/` migration material.
-- [`dossiers/`](dossiers/) retains dependency, platform, binding and plugin evidence;
-  recorded results are tied to their original configurations.
-- [`presentation/`](../presentation/) contains presentation sources and exports.
+- [`dossiers/`](archive/dossiers) retains dependency, platform, binding and plugin evidence;
+  historical results are tied to their original configurations.
 - [`research/`](research/) retains experiment scripts, data and reports, including
   the [map benchmark report](research/trail-code-2026-10/REPORT.md).
-- [`reviews/`](reviews/) contains historical implementation reviews and gap analyses.
 
 These directories are retained because their contents have historical or evidence
-value. They are not obsolete merely because they are outside the Cargo workspace;
-they preserve the evidence behind older designs and measurements.
+value. Current usage and contracts are listed above. Superseded process records are
+collected in the [archive index](archive/README.md), with a link to their replacement.

@@ -103,7 +103,6 @@ def body(scene: dict) -> str:
     facts_html, _ = facts()
     c = scene["counts"]
     readme_build = data.readme_block("From source")
-    readme_cargo = data.readme_block("Installation")
     _, ind_line, ind_tasks = data.independent()
     steps = [
         ("repository", f'{c["disk"]} files on disk'),
@@ -188,9 +187,8 @@ def body(scene: dict) -> str:
  <div class="wrap cols cols-2">
   <div>
    <div class="sec-head"><h2 id="install-h">Install</h2></div>
-   <p>Install a native binary through npm, Cargo or a release archive. Cargo needs Rust 1.91 or newer; CI covers Linux, macOS and Windows. {src("README.md", "README", line_of("README.md", "## Installation"))}</p>
+   <p>Download a prebuilt archive from <a href="https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0">GitHub Releases</a> and verify it against SHA256SUMS. CI covers Linux, macOS and Windows. npm and crates.io installation are coming soon. Source builds need Rust 1.91 or newer. {src("README.md", "README", line_of("README.md", "## Installation"))}</p>
    {code("From source", readme_build, "shell")}
-   {code("npm, Cargo or release archives", readme_cargo, "shell")}
   </div>
   <div>
    <div class="sec-head"><h2 id="project-h">Project</h2></div>

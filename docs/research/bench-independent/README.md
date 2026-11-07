@@ -1,4 +1,6 @@
-# Independent benchmark (v1 card 6)
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
+# Independent benchmark (protocol v1)
 
 This benchmark uses a protocol the dctx team did not tune. The repos are picked by seed, the gold comes from language
 servers, the questions follow fixed rules, and one tokenizer counts for every tool. The protocol, the question rules and

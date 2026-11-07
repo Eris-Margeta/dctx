@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Changelog
 
 All notable changes to dctx are recorded here. The format follows
@@ -6,6 +8,9 @@ All notable changes to dctx are recorded here. The format follows
 
 For current functionality and limitations, see the [README](README.md).
 Historical entries describe the behavior and support scope of that release.
+Current licensing: all first-party code and documentation, including the desktop app
+and planned GPUI rebuild, are Apache-2.0, copyright Eris Margeta. Historical license
+and distribution plans below do not describe the current release.
 
 ## [Unreleased]
 
@@ -14,7 +19,7 @@ Historical entries describe the behavior and support scope of that release.
 ### Added
 
 - Prebuilt release archives for Linux x64/ARM64 (static musl), macOS x64/ARM64 and Windows x64, with SHA256SUMS.
-- Install from npm (`npx dctx`, platform packages under `@dctx/cli-*`) and crates.io (`cargo install dctx-cli`).
+- Packaging support for npm (`npx dctx`, platform packages under `@dctx/cli-*`) and crates.io (`cargo install dctx-cli`); registry publication is coming soon. Install the prebuilt GitHub release archives now.
 - Cross-platform CI: every push and pull request runs the full test suite on Linux, macOS (ARM64 and x64)
   and Windows, on stable Rust and the minimum supported version. See [docs/TESTING.md](docs/TESTING.md).
 - The website redeploys automatically from `main`.
@@ -270,7 +275,8 @@ The original tool, written in pure C (`legacy-c/`).
 - A three-tier ignore system (built-in defaults, a global ignore file and a
   per-project `.dircontxtignore`) and a global configuration file.
 
-[Unreleased]: https://github.com/Eris-Margeta/dctx/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/Eris-Margeta/dctx/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/Eris-Margeta/dctx/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/Eris-Margeta/dctx/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/Eris-Margeta/dctx/compare/v0.25.0...v1.0.0
 [0.25.0]: https://github.com/Eris-Margeta/dctx/compare/v0.11.0...v0.25.0

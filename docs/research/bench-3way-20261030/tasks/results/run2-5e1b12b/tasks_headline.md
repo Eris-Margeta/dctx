@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 | Corpus | dctx calls / tokens / score / facts | trail calls / tokens / score / facts | graphify calls / tokens / score / facts | dctx-ext calls / tokens / score / facts |
 |---|---|---|---|---|
 | flask | 15 / 4,211 / 16 of 20 / 42 of 48 | 10 / 5,511 / 16 of 20 / 39 of 48 | 13 / 10,447 / 14 of 20 / 34 of 48 | 15 / 5,586 / 17 of 20 / 42 of 48 |

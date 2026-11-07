@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Desktop browser evidence
 
 DX-E2E adapts the HQ e2e skill to the desktop's Vite frontend and mocked Tauri

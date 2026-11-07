@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Runnable CLI quickstart
 
 Requires zsh and a recent stable Rust toolchain with Cargo (the workspace includes

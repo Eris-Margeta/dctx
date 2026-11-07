@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Why dctx exists
 
 What problem dctx solves, the rules it follows, and why "byte-identical output" matters even if you never think about bytes.
@@ -130,9 +132,8 @@ If the context is byte-identical, turn one pays 200 units and the next nine pay 
 ## Sources in this repository
 
 - [README.md](https://www.dctx.internet.technology/docs/readme/): core belief, map-mode budgets, MCP, `pack` tree lines, `--tree-stamps`, tested platform.
-- [CHANGELOG.md](https://www.dctx.internet.technology/changelog/): 1.1.0 prefix-stable `pack` output (DCX-P-PACK), stability re-measurement.
+- [CHANGELOG.md](https://www.dctx.internet.technology/changelog/): 1.1.0 prefix-stable `pack` output, stability re-measurement.
 - [docs/SPEC.md](https://www.dctx.internet.technology/docs/spec/): §2 rules PPE-1 to PPE-5, §3 defects R1 and R7, §4 privacy and no network, §11 page formats, §12.1 tiers, §13 token estimate, §32 non-goals.
 - [docs/research/stability-20261105/REPORT.md](https://www.dctx.internet.technology/docs/stability/): 33/33 results and limits.
 - [docs/BENCHMARK-20261030.md](https://www.dctx.internet.technology/docs/benchmark/): `unresolved` call records.
-- [docs/results/DCX-SITE-02.md](https://github.com/Eris-Margeta/dctx/blob/main/docs/results/DCX-SITE-02.md): zero network connections in the release check; desktop preview.
 - Worked example and prefix figures: output of dctx 1.1.0 (`a4f6378`, built from [crates/dctx-cli](https://github.com/Eris-Margeta/dctx/tree/main/crates/dctx-cli)) on a copy of [crates/dctx-lex-go](https://github.com/Eris-Margeta/dctx/tree/main/crates/dctx-lex-go).

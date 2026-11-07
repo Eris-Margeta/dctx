@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Desktop documentation index
 
 Start with [Getting started](GETTING_STARTED.md) or the [desktop README](../README.md).

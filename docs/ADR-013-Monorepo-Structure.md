@@ -1,7 +1,11 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-013: Monorepo Structure
 
 **Date:** 2026-01-25
-**Status:** Accepted
+**Status:** superseded — historical design and implementation record.
+
+The monorepo layout remains current. Desktop pricing, direct-core integration and unified-version examples below are historical; the free desktop and planned GPUI rebuild are Apache-2.0, copyright Eris Margeta. See [product contracts](design/PRODUCT-CONTRACTS.md) and [maintenance](../MAINTENANCE.md).
 
 ---
 
@@ -10,12 +14,12 @@
 As dctx evolves, we need to support multiple distribution formats:
 1. **Core library** - For Rust developers
 2. **CLI tool** - For command-line users
-3. **Desktop GUI** - For non-technical users (commercial product)
+3. **Desktop GUI** - For non-technical users (free open source preview)
 4. **Language bindings** - For Python/Node.js developers (future)
 
 Previously, the repository was organized as a simple Rust workspace with two crates. This structure doesn't clearly separate:
 - Components, which are all Apache-2.0
-- The desktop app, sold as signed builds with updates (a way to support the project)
+- The desktop app, free under Apache-2.0; maintenance agreements support the project
 - Future language bindings
 - Distribution artifacts
 
@@ -24,7 +28,7 @@ Previously, the repository was organized as a simple Rust workspace with two cra
 * **Clear Licensing**: Everything is Apache-2.0
 * **Monorepo Benefits**: Single source of truth, shared CI/CD, atomic commits
 * **Scalability**: Easy to add bindings without restructuring again
-* **Business Model**: The desktop app is sold as signed builds with updates (a way to support the project)
+* **Business Model**: The desktop app is free under Apache-2.0; maintenance agreements support the project
 * **Developer Experience**: Obvious where each component lives
 * **Distribution**: Multiple distribution formats from one repo
 * **Code Reuse**: Desktop app and bindings use same dctx-core
@@ -37,14 +41,14 @@ Previously, the repository was organized as a simple Rust workspace with two cra
 ```
 github.com/dctx/dctx-core       (Apache-2.0)
 github.com/dctx/dctx-cli        (Apache-2.0)
-github.com/dctx/dctx-desktop    (Apache-2.0; sold as signed builds with updates)
+github.com/dctx/dctx-desktop    (Apache-2.0; free under Apache-2.0)
 github.com/dctx/dctx-py         (Apache-2.0)
 ```
 
 **Pros:**
 - Clear separation
 - Independent versioning
-- Easier to sell desktop app separately
+- Independent desktop packaging
 
 **Cons:**
 - Synchronization nightmare (version bumps require 4 PRs)
@@ -83,7 +87,7 @@ dctx/
 
 ## 4. Decision Outcome
 
-**Chosen approach:** Monorepo with clear directory-based licensing
+**Chosen approach:** Monorepo with one first-party Apache-2.0 license
 
 ### Directory Structure
 
@@ -94,7 +98,7 @@ dctx/
 │   └── dctx-cli/              # CLI binary
 │
 ├── apps/                      # Applications
-│   └── dctx-desktop/          # Apache-2.0 - Tauri GUI, sold as signed builds with updates
+│   └── dctx-desktop/          # Apache-2.0 - Tauri GUI, free under Apache-2.0
 │       ├── src/               # Frontend (TypeScript)
 │       ├── src-tauri/         # Backend (Rust + dctx-core)
 │       ├── LICENSE            # Apache-2.0
@@ -116,15 +120,15 @@ dctx/
 
 ### Licensing Model
 
-**Everything is Apache-2.0** (decision 078, 16.10.2026). Copyright holder: Eris Margeta.
+**Everything is Apache-2.0** for all first-party code and documentation. Copyright holder: Eris Margeta.
 - `crates/dctx-core/` - Core library
 - `crates/dctx-cli/` - CLI with ALL features
 - `bindings/dctx-py/` - Python bindings (future)
 - `bindings/dctx-node/` - Node.js bindings (future)
 - `apps/dctx-desktop/` - Desktop GUI application
-- Root `LICENSE` applies to the whole repository
+- Root `LICENSE` applies to first-party material
 - `apps/dctx-desktop/LICENSE` is the same Apache-2.0 text
-- The desktop app is sold as signed builds with updates (a way to support the project)
+- The desktop app is free under Apache-2.0; maintenance agreements support the project
 
 ### Workspace Configuration
 
@@ -187,7 +191,7 @@ dctx/
 * ✅ **Scalability**: Easy to add Python/Node.js bindings
 * ✅ **Single Version**: All components share version number (0.11.0)
 * ✅ **Developer Experience**: Clear structure, obvious where things go
-* ✅ **Business Model**: The desktop app is sold as signed builds with updates (a way to support the project)
+* ✅ **Business Model**: The desktop app is free under Apache-2.0; maintenance agreements support the project
 * ✅ **Transparency**: Desktop app source is Apache-2.0 and visible
 
 ## 6. Negative Consequences
@@ -296,7 +300,7 @@ cargo build --package dctx-desktop
 cat crates/dctx-core/Cargo.toml   # license = "Apache-2.0"
 cat crates/dctx-cli/Cargo.toml    # license = "Apache-2.0"
 
-# Desktop app (Apache-2.0; sold as signed builds with updates)
+# Desktop app (Apache-2.0; free under Apache-2.0)
 cat apps/dctx-desktop/src-tauri/Cargo.toml  # license = "Apache-2.0"
 cat apps/dctx-desktop/LICENSE               # Apache-2.0 terms
 ```
@@ -313,7 +317,7 @@ cat apps/dctx-desktop/LICENSE               # Apache-2.0 terms
 | **Turborepo** | Monorepo with multiple packages | Several packages |
 | **Next.js** | Monorepo with framework + tools | Several packages |
 
-**dctx**: Everything is Apache-2.0. The desktop app is sold as signed builds with updates (a way to support the project).
+**dctx**: Everything is Apache-2.0. The desktop app is free under Apache-2.0; maintenance agreements support the project.
 
 ## 10. Future Considerations
 

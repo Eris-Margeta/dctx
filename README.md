@@ -1,10 +1,12 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 <p align="center">
   <img src="docs/assets/dctx-header.svg" alt="dctx - context, engineered" width="100%">
 </p>
 
 <p align="center">
-  <strong>The context engine for AI-assisted software development.</strong><br>
-  Fewer tokens. Stable prefixes. Exact source. One policy for every workflow.
+  <strong>Turn a codebase into focused context for AI assistants.</strong><br>
+  Pack a project, find symbols and read exact source locally. Stable output helps prompt caches reuse context.
 </p>
 
 <p align="center">
@@ -34,8 +36,70 @@
   <a href="#map-mode-context-for-agents">Map mode</a> •
   <a href="#security--privacy">Security & Privacy</a> •
   <a href="docs/SPEC.md">Specification</a> •
-  <a href="https://dctx.internet.technology/">Website</a>
+  <a href="https://www.dctx.internet.technology/">Website</a>
 </p>
+
+---
+
+## Installation
+
+Download the archive for your OS and architecture from
+[GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), verify
+it against `SHA256SUMS`, extract it, and put `dctx` (`dctx.exe` on Windows) on
+`PATH`. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
+CI covers Linux, macOS and Windows; see [the matrix and desktop exclusions](docs/TESTING.md).
+
+**Coming soon:** `cargo install dctx-cli` and `npx dctx`. Registry packages are
+not live yet; use the release archives now.
+
+### From source
+
+Requires Rust 1.91 or newer.
+
+```sh
+git clone https://github.com/Eris-Margeta/dctx
+cd dctx
+cargo build --locked --release -p dctx-cli
+./target/release/dctx-cli --version
+alias dctx="$PWD/target/release/dctx-cli"
+```
+
+Cargo builds `dctx-cli` (`dctx-cli.exe` on Windows); release archives supply
+`dctx`. For a local source installation, use
+`cargo install --locked --path crates/dctx-cli` and `alias dctx=dctx-cli`.
+On Windows, invoke the executable directly or create a PowerShell alias.
+
+## Quick Start
+
+In 30 seconds, try a tiny project (POSIX shell; on Windows use Git Bash):
+
+```sh
+mkdir dctx-demo
+cd dctx-demo
+printf 'def hello(name):\n    return f"Hello, {name}!"\n' > hello.py
+dctx map skeleton hello.py
+```
+
+Output from dctx 1.2.0:
+
+```text
+# dctx-demo skeleton
+m:hello.py	module	L1-2	hello.py
+s:hello.py#hello	fn	L1-2	def hello(name):
+```
+
+For your own project:
+
+```sh
+dctx pack .                # structured context on stdout
+dctx pack . --clipboard    # copy it to the clipboard
+dctx map find "SnapshotConfig"
+dctx mcp                   # stdio tools for an MCP client
+```
+
+`pack` writes a file only with `--output`. Tree timestamps are off by default,
+so a bare `touch` does not change its output; `--tree-stamps=on` includes them.
+Run `dctx` without arguments for the interactive terminal menu.
 
 ---
 
@@ -57,10 +121,10 @@
 
 | | |
 |---|---|
-| Version | 1.1.0 (release candidate 1) |
+| Version | 1.2.0 |
 | License | Apache-2.0 |
 | Written in | Rust (2021 and 2024 editions): 36 crates plus the desktop app |
-| Tested platform | Linux x86_64 (macOS/Windows untested) |
+| CI coverage | Linux, macOS (ARM64 and x64), Windows x64; [matrix and exclusions](docs/TESTING.md) |
 | Modes | `pack` (whole project or diff), `map` (agents), `mcp` (stdio server) |
 
 ---
@@ -94,53 +158,6 @@ Chunk retrieval over embeddings fails in predictable ways: it cuts functions in 
 ## Where it comes from
 
 dctx started in **2025 as `dircontxt`, written in pure C** ([`legacy-c/`](legacy-c/)), to solve the context problem while we were still moving to an AI workflow: one command that gave a model the whole project — structured, versioned, with diffs and a strict ignore system — instead of pasting forty files. It was rewritten in Rust in 2026 and grew a privacy-first core, a template system, a plugin host, a desktop app and map mode for agents. The goal has not changed: **context, engineered.**
-
----
-
-## Installation
-
-Requires a recent stable Rust toolchain with Cargo (the workspace includes Rust 2024 crates). Linux x86_64 is the only tested platform for v1; macOS and Windows builds are untested.
-
-### From source
-
-```zsh
-git clone https://github.com/Eris-Margeta/dctx
-cd dctx
-cargo build --locked --release -p dctx-cli
-./target/release/dctx-cli --version   # dctx 1.1.0 (<git sha>)
-```
-
-The package and Cargo-built executable are named **`dctx-cli`** (`dctx-cli.exe` on Windows). The help text and examples use **`dctx`**. After building, this zsh alias lets you use those examples in the current shell:
-
-```zsh
-alias dctx="$PWD/target/release/dctx-cli"
-```
-
-### Using Cargo
-
-From the cloned repository root:
-
-```zsh
-cargo install --locked --path crates/dctx-cli
-dctx-cli --version
-alias dctx=dctx-cli
-```
-
-Ensure Cargo's binary directory (normally `$HOME/.cargo/bin`) is on `PATH`. This installs `dctx-cli`; the alias supplies `dctx` in the current shell. Neither command installs a package from crates.io.
-
-Alternatively, the Unix [installer](tools/install.sh) builds the CLI and copies it as `dctx` to `/usr/local/bin` (or `DCTX_INSTALL_DIR`). It also creates configuration, templates and ignore rules under `${XDG_CONFIG_HOME:-$HOME/.config}/dctx` and may request sudo for the binary copy. Review it before running.
-
----
-
-## Quick Start
-
-```zsh
-dctx pack .            # whole project as one structured context block on stdout
-dctx pack . --clipboard  # … straight to the clipboard
-dctx                   # interactive menu
-```
-
-`dctx pack` writes to stdout, the clipboard or `--output`; it creates a text export only when you request a file. Its tree lines carry the `ID` only, with no modification time and no size, so the page stays byte-identical across a bare `touch` and an edit keeps everything before the edited file as a shared prefix (what a prompt cache reuses); `--tree-stamps=on` brings back the 1.0.0 tree lines with `MOD:` and `SIZE:`. Running without arguments opens an interactive terminal menu.
 
 ---
 
@@ -313,9 +330,9 @@ On our 70-question protocol (designed by the dctx team; questions, gold facts an
 | Trail-Code 0.28.0 | 122 | 312 | 88,923 | 70 |
 | graphify 0.9.97, code-only | 96 | 238 | 197,203 | 91 |
 
-That protocol is ours, so it can favour dctx. An independently selected protocol (repositories picked by seed, callers gold from language servers, questions written without seeing dctx output) is pending: v1 card 6 publishes it, and its table will be added here whatever the result.
+That protocol is ours, so it can favour dctx. An independently selected protocol (repositories picked by seed, callers gold from language servers, questions written without seeing dctx output) is documented in [the independent protocol](docs/research/bench-independent/README.md); treat its results separately from this in-house benchmark.
 
-Cold index of the 6 benchmark corpora (flask, ripgrep, pocketbase, trailcode, mixed, docs; median of 3 runs) took dctx 0.13–1.20 s, against Trail-Code 1.04–52.83 s and graphify 4.59–59.56 s (docs: no index), on one Linux x86_64 runner (Linux 6.12.113+deb13-cloud-amd64, Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz). Linux x86_64 is the only tested platform.
+Cold index of the 6 benchmark corpora (flask, ripgrep, pocketbase, trailcode, mixed, docs; median of 3 runs) took dctx 0.13–1.20 s, against Trail-Code 1.04–52.83 s and graphify 4.59–59.56 s (docs: no index), on one Linux x86_64 runner (Linux 6.12.113+deb13-cloud-amd64, Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz). These performance measurements cover Linux x86_64; cross-platform correctness checks are described in [TESTING.md](docs/TESTING.md).
 
 dctx makes no network calls: it made 0 socket calls in all 4 traced benchmark steps, and the release check (`scripts/release-check.sh`) asserts zero AF_INET/AF_INET6 connect/send calls under `strace -f` for every map verb, `pack`, `cache status` and `mcp`.
 
@@ -329,14 +346,12 @@ An earlier two-way study against Trail-Code (October 2026, dctx `17dff0b`, befor
 ## Out of scope for v1
 
 - Any network or cloud feature.
-- macOS and Windows support claims: they are untested; Linux x86_64 is the only tested platform.
 - Watch or incremental mode beyond re-indexing.
 - Shell call edges (shell is outline tier: symbols only).
 - Embeddings or semantic search.
 - LSP-grade type resolution: call edges are lexical.
 - A stable plugin ABI or desktop API: neither is stable in v1.
 - Cross-repository queries.
-- Publishing to crates.io or GitHub releases (an owner decision).
 
 ---
 
@@ -344,9 +359,9 @@ An earlier two-way study against Trail-Code (October 2026, dctx `17dff0b`, befor
 
 dctx is open source under the [Apache-2.0](LICENSE) license, which makes it free for any use, including commercial use. The core (`pack`) and every modality stay open, and no feature is held back behind a paid edition. Individuals and teams can support the project through [GitHub Sponsors](https://github.com/sponsors/Eris-Margeta). Companies that depend on dctx can fund its upkeep through a [maintenance agreement](MAINTENANCE.md), which covers security response times, long-term support and a written commitment for procurement (see [maintenance](https://www.dctx.internet.technology/maintenance/)). Paying never changes the license and never closes a feature. The "dctx" name and logo are trademarks of Eris Margeta; see [TRADEMARK.md](TRADEMARK.md) for what forks may call themselves.
 
-Project code is open source (Apache-2.0) and **ongoing work**; third-party dependencies retain their own licenses. Parts of the current development line use third-party crates; anything with third-party dependencies is not considered enterprise-ready.
+All first-party code and documentation, including the desktop app and planned GPUI rebuild, are Apache-2.0, copyright Eris Margeta. Dependencies and vendored materials retain their own licenses and notices; see [THIRD_PARTY.md](THIRD_PARTY.md), [THIRD_PARTY_NPM.md](THIRD_PARTY_NPM.md) and [NOTICE](NOTICE).
 
-The dependency policy retains the **Ed25519 signature verifier** (`ed25519-dalek`) for plugin/index verification. Signed organization policy bundles are planned; their presence in the specification does not mean the CLI can enroll or verify them today. See the [dependency policy](docs/SPEC.md#27-dependencies-and-enterprise-readiness).
+The dependency policy retains the **Ed25519 signature verifier** (`ed25519-dalek`) for plugin/index verification. Signed organization policy bundles are planned; their presence in the specification does not mean the CLI can enroll or verify them today. See the [dependency policy](docs/SPEC.md#27-dependencies-and-build-profiles).
 
 ---
 
@@ -412,7 +427,7 @@ Start with [docs/SPEC.md](docs/SPEC.md), then [docs/CRATE-MAP.md](docs/CRATE-MAP
 
 ## License
 
-Apache License 2.0. Copyright Eris Margeta. Project code is licensed under Apache-2.0; third-party dependencies retain their own licenses. The desktop app is free, forever. Paid maintenance agreements fund the project; see [MAINTENANCE.md](MAINTENANCE.md). See [LICENSE](LICENSE) and [NOTICE](NOTICE).
+Apache License 2.0. Copyright Eris Margeta. The desktop app is included under the same license. Paid maintenance agreements fund the project; see [MAINTENANCE.md](MAINTENANCE.md). See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ## Contributing
 

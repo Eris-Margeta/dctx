@@ -1,6 +1,6 @@
 # dctx
 
-> The context engine for AI-assisted software development. Fewer tokens. Stable prefixes. Exact source. One policy for every workflow.
+> Turn a codebase into focused context for AI assistants. Pack a project, find symbols and read exact source locally. Stable output helps prompt caches reuse context.
 
 dctx 1.2.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short: https://www.dctx.internet.technology/llms-small.txt
 

@@ -1,11 +1,9 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Cache lifecycle contract v1
 
-DX-A0b · lifecycle/ledger sketch 1.0 · managed directory namespace v2.
-Defines decision 077 time/size/automatic cleaning. decision 078: ownership and expiry use
-dctx manifests, leases, TTL and file metadata only. The core never reads
-`.git/` and never spawns git.
-Depends on identity v1 and segment/manifest v1; used by A2/C3/C4/D2/D3.
-All thresholds are Stage-0 policy defaults, not measured tuning results.
+Status: current design reference. Lifecycle and ledger sketch v1, managed directory namespace v2. Ownership and expiry use dctx manifests, leases, TTL and file metadata; the core never reads `.git/` or spawns Git.
+See [product contracts](../PRODUCT-CONTRACTS.md) for scope and compatibility.
 
 ## Ownership, locations and configuration
 

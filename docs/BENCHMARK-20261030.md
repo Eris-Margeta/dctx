@@ -1,11 +1,12 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # dctx vs Trail-Code vs graphify: three-way benchmark (30 October 2026)
 
 > Historical measurements and plans from October 2026. Limitations in older runs
 > are retained as evidence; see the [README](../README.md) for current behavior.
 
 One command, same host, same corpora, same CPU set, no network, pinned versions. Raw aggregate, headline tables
-and the harness are in [`research/bench-3way-20261030/`](research/bench-3way-20261030/); the gap analysis behind
-the work is [`GAP-MATRIX-20261030.md`](GAP-MATRIX-20261030.md). Where another tool wins, the tables say so.
+and the harness are in [`research/bench-3way-20261030/`](research/bench-3way-20261030/); the current goals are in the [specification](SPEC.md). Where another tool wins, the tables say so.
 
 - **dctx**: `main` at `ac8408c` (the following commit only changes `CHANGELOG.md`), release build,
   sha256 `82bd48760932305748a00d2b32901c667af948f602822b9816cc5c545de7ebbc`.

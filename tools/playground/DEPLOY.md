@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Deploying the dctx website and playground
 
 For the operator. Nothing here runs automatically. `$DEPLOY` is the SSH target of the Dokploy host
@@ -66,7 +68,7 @@ not needed: nginx reads the files on every request. After changing `default.conf
 ## 4. Verify
 
 ```sh
-curl -sI https://dctx.internet.technology/ | head -3              # 301 to https://www.dctx.internet.technology/
+curl -sI https://www.dctx.internet.technology/ | head -3              # 301 to https://www.dctx.internet.technology/
 curl -sI https://www.dctx.internet.technology/ | grep -iE '^(HTTP|content-security-policy|strict-transport|cache-control)'
 curl -s https://www.dctx.internet.technology/build.json            # version 1.1.0, source_sha256
 tools/website/.venv/bin/python -c 'import json;print(json.load(open("website/build.json"))["source_sha256"])'   # the same digest

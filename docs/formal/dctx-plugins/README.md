@@ -1,7 +1,9 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Plugin state machines and TLC gate
 
-PL-M implements the formal-model row in [PLUGINS §7.1](../../design/PLUGINS.md)
-and the frozen [PL-C properties](../../design/plugin-api/properties.md).
+The models describe the [plugin architecture](../../design/PLUGINS.md) and
+the [protocol properties](../../design/plugin-api/properties.md).
 These finite TLA+ models describe the host contracts; they do not establish
 that the Rust implementation, a cryptographic primitive or an OS provider
 refines those contracts. No product runtime code or dependencies change here.
@@ -89,7 +91,7 @@ These are compositional host contracts, not one enormous product automaton:
 - `Resources` independently checks each additive quota dimension. Composition
   requires admission to check **all** applicable dimensions before allocating
   or committing. `Isolation` describes allowed facade/build composition; actual
-  Cargo closure audits and native process-spawn fixtures remain PL-V obligations.
+  Cargo closure audits and native process-spawn fixtures are separate checks.
 
 ## Finite domains and refinement obligations
 
@@ -157,7 +159,7 @@ No fairness assumption forces the optional user to cancel that cycle.
 
 ## Decisions and trust boundary
 
-decision 080 takes precedence over the proposal's original universal pre-exec wording:
+The current admission contract requires that
 third-party enablement and any third-party instruction require proven native
 confinement. Only the authenticated containing-distribution `bundled-git`
 origin may temporarily use permission-checked brokers and audit while its OS
@@ -167,7 +169,8 @@ resource and receipt contracts. Broker invariants do not prove that an
 unconfined native bundled process cannot bypass brokers; it is trusted code
 in that temporary disposition. Real adversarial OS isolation is a separate gate.
 
-decision 081 fixes the signature port to first-party safe-Rust **Ed25519 verification**
+The signature port requires **Ed25519 verification** through the audited dependency
+wrapped by `dctx-ed25519`
 of the domain-separated exact manifest bytes, with authenticated payload size/
 SHA-256, schema, pinned trust, compatibility and freshness checks. `signature`
 in this model is the trusted result of that verifier, not an implementation of
@@ -175,7 +178,7 @@ the group arithmetic. Signature and checksum are independent checks. Signing
 exists only in authorized release tooling using an audited library and the
 key manager; there is no signing transition or secret in these models.
 
-decision 078 keeps all Git behavior in `plugins/dctx-plugin-git`. The isolation model
+The architecture keeps all Git behavior in `plugins/dctx-plugin-git`. The isolation model
 has no core Git transition except the deliberate `core-git` mutant. The
 engine can produce a core/strict/plugin-free result with zero worker/Git spawns.
 
@@ -197,7 +200,7 @@ engine can produce a core/strict/plugin-free result with zero worker/Git spawns.
 | Explicit exact-version rollback | `Install.ApproveRollback`, `Rollback` |
 | Plan/order, hooks, engine publication and report | `Hooks.Plan`, `RunHook`, `Publish`, `Report` |
 
-PL-H/PL-I and the other implementation owners must map their real transitions
+Implementations must map their real transitions
 to these actions and add port/property tests, including a positive control for
-each refusal. PL-V combines that evidence with native confinement, strict
+each refusal. Release checks combine that evidence with native confinement, strict
 closure, signed artifact and protocol conformance checks before promotion.

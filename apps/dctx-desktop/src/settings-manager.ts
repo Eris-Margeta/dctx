@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 Eris Margeta
 // apps/dctx-desktop/src/settings-manager.ts
 //
 // Settings Manager - Handles loading, saving, and syncing desktop settings with backend
