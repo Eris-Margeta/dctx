@@ -20,9 +20,6 @@ use crate::domain::{DctxError, Resource};
 /// Retries when another session commits the ledger or publishes the same object id.
 pub(super) const COMMIT_ATTEMPTS: u32 = 4;
 
-/// Largest object file a reuse load will read. A bigger file is refused.
-const OBJECT_READ_CAP: u64 = 512 * 1024 * 1024;
-
 /// Lease written with a snapshot. Drop releases it in the ledger; bytes stay until collection.
 pub(in crate::session) struct SnapshotLease {
     root: std::path::PathBuf,
@@ -63,7 +60,9 @@ impl PersistedCache {
             return Ok(None);
         }
         let segment_len = u64::try_from(bytes.len()).unwrap_or(u64::MAX);
+        check_object_size(segment_len, self.object_read_cap)?;
         let manifest_len = u64::try_from(view_manifest(self.root_id, 0).len()).unwrap_or(u64::MAX);
+        check_object_size(manifest_len, self.object_read_cap)?;
         let need = segment_len.saturating_add(manifest_len);
         let (root_id, session) = (self.root_id, self.session);
         let mut written: Vec<ObjectId> = Vec::new();
@@ -223,13 +222,15 @@ impl PersistedCache {
                 let Ok(manifest_id) = manifest_object(life, root_id, generation) else {
                     return Ok(None);
                 };
-                let Some(manifest) = read_object(&root_path, manifest_id.raw())? else {
+                let Some(manifest) =
+                    read_object(&root_path, manifest_id.raw(), self.object_read_cap)?
+                else {
                     return Ok(None);
                 };
                 let Some(segment_raw) = segment_id_of(&manifest) else {
                     return Ok(None);
                 };
-                read_object(&root_path, segment_raw)
+                read_object(&root_path, segment_raw, self.object_read_cap)
             })
             .map_err(update_error)?;
         if let Some(life) = seen {
@@ -339,7 +340,17 @@ fn segment_id_of(bytes: &[u8]) -> Option<u64> {
     Some(u64::from_le_bytes(raw))
 }
 
-fn read_object(root: &Path, raw: u64) -> Result<Option<Vec<u8>>, DctxError> {
+fn check_object_size(bytes: u64, limit: u64) -> Result<(), DctxError> {
+    if bytes > limit {
+        return Err(DctxError::ResourceLimit {
+            resource: Resource::ObjectBytes,
+            limit,
+        });
+    }
+    Ok(())
+}
+
+fn read_object(root: &Path, raw: u64, limit: u64) -> Result<Option<Vec<u8>>, DctxError> {
     let path = root.join("objects").join(raw.to_string());
     if !path.starts_with(root) {
         return Err(DctxError::invalid("cache object is outside the root"));
@@ -352,17 +363,23 @@ fn read_object(root: &Path, raw: u64) -> Result<Option<Vec<u8>>, DctxError> {
     if meta.file_type().is_symlink() || !meta.is_file() {
         return Err(DctxError::invalid("cache object is not a file"));
     }
-    if meta.len() > OBJECT_READ_CAP {
-        return Err(DctxError::ResourceLimit {
-            resource: Resource::Memory,
-            limit: OBJECT_READ_CAP,
-        });
-    }
-    match std::fs::read(&path) {
-        Ok(bytes) => Ok(Some(bytes)),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
-        Err(_) => Err(DctxError::io("object read")),
-    }
+    check_object_size(meta.len(), limit)?;
+    // Bound the read itself as well: metadata alone does not bound a file that grows.
+    use std::io::Read;
+    let file = match std::fs::File::open(&path) {
+        Ok(file) => file,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(_) => return Err(DctxError::io("object read")),
+    };
+    let mut bytes = Vec::new();
+    bytes
+        .try_reserve_exact(usize::try_from(meta.len()).map_err(|_| DctxError::io("object length"))?)
+        .map_err(|_| DctxError::io("object read allocation"))?;
+    file.take(limit.saturating_add(1))
+        .read_to_end(&mut bytes)
+        .map_err(|_| DctxError::io("object read"))?;
+    check_object_size(u64::try_from(bytes.len()).unwrap_or(u64::MAX), limit)?;
+    Ok(Some(bytes))
 }
 
 fn ensure_root(life: &mut Lifecycle, root: RootId) -> Result<(), DctxError> {
@@ -435,26 +452,4 @@ fn release_persisted(root: &Path, lease: LeaseId) -> Result<(), CacheError> {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::is_conflict;
-    use dctx_adapter_cache::CacheError;
-
-    #[test]
-    fn conflict_reasons_retry_and_a_cap_refusal_does_not() {
-        let stale = CacheError::InvalidRequest {
-            reason: "stale ledger",
-        };
-        let published = CacheError::InvalidRequest {
-            reason: "object already published",
-        };
-        let cap = CacheError::CacheLimit {
-            requested: 4,
-            available: 1,
-            pinned: 0,
-            pending: 0,
-        };
-        assert!(is_conflict(&stale));
-        assert!(is_conflict(&published));
-        assert!(!is_conflict(&cap));
-    }
-}
+mod tests;

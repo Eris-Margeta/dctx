@@ -37,7 +37,7 @@ pub(crate) use cache::with_ledger;
 
 pub(crate) use rules::project_rules;
 
-use cache::{CLI_ROOT_ID, MAP_AUTO_CLEAN};
+use cache::{place_root_id, MAP_AUTO_CLEAN};
 
 #[cfg(all(test, unix))]
 use rules::local_ignore_text;
@@ -80,7 +80,8 @@ pub fn open_mapped(path: &Path) -> Result<(Session, String), String> {
 /// # Errors
 /// Returns source-root, project-rule, managed-cache, or session setup failures.
 pub fn open_mapped_at(path: &Path, root: Option<&Path>) -> Result<(Session, String), String> {
-    let (source, place, key) = open_source(path)?;
+    let (source, place, canonical) = open_source(path)?;
+    let key = canonical.to_string_lossy().into_owned();
     let rules = project_rules(path)?;
     let Some(root) = root else {
         return Ok((build(source, &place, "default", rules)?, key));
@@ -88,11 +89,15 @@ pub fn open_mapped_at(path: &Path, root: Option<&Path>) -> Result<(Session, Stri
     if ensure_cache_dir(root).is_err() {
         return Ok((build(source, &place, "default", rules)?, key));
     }
-    if let Ok(session) = build_cached(source, &place, root, rules.clone()) {
+    let root_id = place_root_id(&canonical)?;
+    if let Ok(session) = build_cached(source, &place, root, root_id, rules.clone()) {
         Ok((session, key))
     } else {
-        let (source, place, key) = open_source(path)?;
-        Ok((build(source, &place, "default", rules)?, key))
+        let (source, place, canonical) = open_source(path)?;
+        Ok((
+            build(source, &place, "default", rules)?,
+            canonical.to_string_lossy().into_owned(),
+        ))
     }
 }
 
@@ -104,9 +109,12 @@ pub fn open_mapped_query(path: &Path, scope: Option<&str>) -> Result<(Session, S
     let Some(scope) = scope else {
         return open_mapped(path);
     };
-    let (source, place, key) = open_source(path)?;
+    let (source, place, canonical) = open_source(path)?;
     let rules = rules::project_rules_scoped(path, Some(scope))?;
-    Ok((build(source, &place, "default", rules)?, key))
+    Ok((
+        build(source, &place, "default", rules)?,
+        canonical.to_string_lossy().into_owned(),
+    ))
 }
 
 /// True when map should print whether the generation was reused. Set `DCTX_REUSE_REPORT=1`.
@@ -118,7 +126,7 @@ pub fn reuse_report_enabled() -> bool {
     std::env::var("DCTX_REUSE_REPORT").ok().as_deref() == Some("1")
 }
 
-fn open_source(path: &Path) -> Result<(FsSource, String, String), String> {
+fn open_source(path: &Path) -> Result<(FsSource, String, PathBuf), String> {
     if path.as_os_str().is_empty() {
         return Err("source path is empty".to_string());
     }
@@ -130,11 +138,7 @@ fn open_source(path: &Path) -> Result<(FsSource, String, String), String> {
         .filter(|name| !name.is_empty())
         .unwrap_or("place")
         .to_string();
-    let key = match canonical.to_str() {
-        Some(text) => text.to_string(),
-        None => canonical.to_string_lossy().into_owned(),
-    };
-    Ok((source, place, key))
+    Ok((source, place, canonical))
 }
 
 fn facade_error(error: DctxError) -> String {
@@ -148,6 +152,7 @@ fn build_cached(
     source: impl Source + Send + 'static,
     place: &str,
     root: &Path,
+    root_id: u64,
     rules: RuleSources,
 ) -> Result<Session, String> {
     let mut policy =
@@ -169,7 +174,7 @@ fn build_cached(
         })
         .place(place)
         .view("default")
-        .cache_root(root, CLI_ROOT_ID)
+        .cache_root(root, root_id)
         .auto_clean(policy)
         .build()
         .map_err(facade_error)

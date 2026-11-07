@@ -17,6 +17,13 @@ use dctx_ports::Source;
 
 use crate::domain::DctxError;
 
+#[cfg(windows)]
+#[allow(
+    unsafe_code,
+    reason = "Windows file identity is unstable in std at MSRV; the private wrapper borrows an owned file handle for GetFileInformationByHandle."
+)]
+mod windows;
+
 /// `O_NOFOLLOW` from the platform headers. crates/dctx has no `libc` dependency, so the raw values are kept here:
 /// Linux and Android use `0o100000` on aarch64, arm and powerpc and `0o400000` elsewhere; macOS, iOS and the BSDs use `0x0100`.
 /// Another Unix gets `0` (no kernel guard); the pre-open and post-open checks below still apply there.
@@ -194,12 +201,17 @@ impl Source for FsSource {
         // The clock is read before the stat: an edit after this stat gets a time no earlier than `now`,
         // so a stamp older than `now - RACY_WINDOW_NS` can never be matched by a later edit.
         let now = now_ns();
+        #[cfg(windows)]
+        let (meta, inode) = windows::stat(&full).map_err(map_io)?;
+        #[cfg(not(windows))]
         let meta = std::fs::symlink_metadata(&full).map_err(map_io)?;
+        #[cfg(not(windows))]
+        let inode = inode_of(&meta);
         let entry = EntryMeta {
             size: meta.len(),
             modified: Timestamp(modified_millis(&meta)),
         };
-        Ok((entry, settled_stamp(&meta, now)))
+        Ok((entry, settled_stamp(&meta, now, inode)))
     }
 
     fn read(&self, grant: &ReadGrant, max_bytes: u64) -> Result<Vec<u8>, CoreError> {
@@ -251,7 +263,7 @@ fn now_ns() -> u128 {
 
 /// The stat identity of a regular file whose mtime is settled: at least [`RACY_WINDOW_NS`] before `now_ns`.
 /// `None` for anything else (a symlink, a recent or future mtime, no inode on this platform), and the caller hashes.
-fn settled_stamp(meta: &std::fs::Metadata, now_ns: u128) -> Option<EntryStamp> {
+fn settled_stamp(meta: &std::fs::Metadata, now_ns: u128, inode: Option<u64>) -> Option<EntryStamp> {
     if !meta.file_type().is_file() {
         return None;
     }
@@ -267,7 +279,7 @@ fn settled_stamp(meta: &std::fs::Metadata, now_ns: u128) -> Option<EntryStamp> {
     Some(EntryStamp {
         size: meta.len(),
         modified_ns,
-        inode: inode_of(meta)?,
+        inode: inode?,
     })
 }
 
@@ -276,7 +288,7 @@ fn inode_of(meta: &std::fs::Metadata) -> Option<u64> {
     Some(std::os::unix::fs::MetadataExt::ino(meta))
 }
 
-#[cfg(not(unix))]
+#[cfg(not(any(unix, windows)))]
 fn inode_of(_meta: &std::fs::Metadata) -> Option<u64> {
     None
 }
@@ -294,6 +306,44 @@ mod tests {
     use super::*;
     use dctx_core::FileHandlingDecision;
     use std::fs;
+
+    #[test]
+    fn settled_stamp_requires_identity_and_the_full_racy_window() {
+        let dir = tempfile::tempdir().expect("temp");
+        let path = dir.path().join("stamp");
+        fs::write(&path, b"abc").expect("write");
+        let meta = fs::symlink_metadata(&path).expect("metadata");
+        let mtime = meta
+            .modified()
+            .unwrap()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let settled_at = mtime + RACY_WINDOW_NS;
+        assert_eq!(settled_stamp(&meta, settled_at - 1, Some(42)), None);
+        assert_eq!(settled_stamp(&meta, mtime - 1, Some(42)), None);
+        assert_eq!(settled_stamp(&meta, settled_at, None), None);
+        assert_eq!(
+            settled_stamp(&meta, settled_at, Some(42)),
+            Some(EntryStamp {
+                size: 3,
+                modified_ns: mtime,
+                inode: 42
+            })
+        );
+        let directory = fs::metadata(dir.path()).expect("directory");
+        assert_eq!(settled_stamp(&directory, u128::MAX, Some(42)), None);
+        fs::File::options()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_modified(std::time::UNIX_EPOCH)
+            .unwrap();
+        assert_eq!(
+            settled_stamp(&fs::metadata(&path).unwrap(), settled_at, Some(42)),
+            None
+        );
+    }
 
     #[test]
     fn stat_stamps_only_a_settled_regular_file() {

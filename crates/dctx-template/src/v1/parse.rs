@@ -145,22 +145,29 @@ pub fn replace_vars(text: &str, vars: &HashMap<String, String>) -> String {
     }
     for (key, val) in vars {
         let pattern = format!("{{{{{key}}}}}");
-        result = result.replace(&pattern, val);
+        result = replace_variable(&result, &pattern, val);
     }
     result
 }
 
-/// Replaces `{{key}}` in the given order. V2 rendering uses this for stable bytes.
-pub fn replace_vars_in_order(text: &str, vars: &[(String, String)]) -> String {
-    let mut result = text.to_string();
-    if !result.contains("{{") {
-        return result;
+// A configuration variable must not match the inner braces of a data field,
+// particularly `{{{project}}}` after the caller supplies the project name.
+fn replace_variable(text: &str, pattern: &str, value: &str) -> String {
+    let mut output = String::new();
+    let mut rest = text;
+    while let Some(start) = rest.find("{{{") {
+        output.push_str(&rest[..start].replace(pattern, value));
+        rest = &rest[start..];
+        let Some(end) = rest.find("}}}") else {
+            output.push_str(rest);
+            return output;
+        };
+        let end = end + 3;
+        output.push_str(&rest[..end]);
+        rest = &rest[end..];
     }
-    for (key, val) in vars {
-        let pattern = format!("{{{{{key}}}}}");
-        result = result.replace(&pattern, val);
-    }
-    result
+    output.push_str(&rest.replace(pattern, value));
+    output
 }
 
 fn collect_unresolved(

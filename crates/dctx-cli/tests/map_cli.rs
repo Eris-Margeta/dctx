@@ -170,7 +170,12 @@ fn map_binary_finds_and_outlines_new_languages_without_git() {
     }
 
     // The facade index is ephemeral; repeat processes share the host cache root.
-    assert!(repo.root.join("cache/ledger.v1").is_file());
+    assert!(repo
+        .root
+        .join("cache")
+        .join(dctx_cli::host::engine_cache_namespace())
+        .join("ledger.v1")
+        .is_file());
     for ((path, _, symbol), (found, mapped)) in SOURCES.iter().zip(answers) {
         assert_eq!(repo.run(&["map", "find", symbol, "--in", path]), found);
         assert_eq!(repo.run(&["map", "map", &format!("m:{path}")]), mapped);

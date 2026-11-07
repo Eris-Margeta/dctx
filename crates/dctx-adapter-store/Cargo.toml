@@ -16,6 +16,9 @@ dctx-hash = { version = "=1.2.0", path = "../dctx-hash" }
 dctx-map-segment = { version = "=1.2.0", path = "../dctx-map-segment" }
 thiserror = "=2.0.18"
 
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "=0.61.2", features = ["Win32_Storage_FileSystem"] }
+
 [dev-dependencies]
 dctx-map-segment = { path = "../dctx-map-segment" }
 proptest = "1"

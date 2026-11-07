@@ -5,6 +5,8 @@ members = [
   # only the strict build (--no-default-features --features strict) contains no plugin worker.
   "plugins/*",
   "apps/dctx-desktop/src-tauri",
+  # Documentation example: workspace doctests keep the public library snippet compiling.
+  "examples/library",
   # Bindings (future)
   # "bindings/dctx-py",
   # "bindings/dctx-node",

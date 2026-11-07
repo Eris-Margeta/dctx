@@ -8,11 +8,11 @@
 
 use std::path::PathBuf;
 
-use dctx::{PackRequest, VecSink};
+use dctx::{DctxError, PackRequest, VecSink};
 use dctx_core::budget::PackLimits;
 use dctx_core::version::Version;
 
-use crate::exit::Failure;
+use crate::exit::{from_facade_scoped, Failure};
 use crate::host;
 
 mod filter;
@@ -81,7 +81,7 @@ Pack filters (ADR-011, ADR-009):
   --exclude <pattern>   Drop files matching this ignore-rule glob (repeatable)
   --output, -o <path>   Write the page to one file
   --clipboard, -c       Copy the page to the clipboard
-  --json                Summary report instead of the source page
+  --json                Summary report; with --for, the facade JSON context page
   --tree-stamps=on|off  MOD: timestamp on tree lines: off (default) keeps the page prefix stable across a touch, on = the 1.0.0 text
 Task context (agent cards):
   --for <text>          Instead of the source page: map find on the names in <text>, then neighbors and read of the best hits
@@ -97,10 +97,18 @@ Exit codes: 0 ok, 1 nothing to pack (no view filter), 2 usage, 3 source or outpu
 /// # Errors
 /// Argument refusals (exit 2), source, scan, render or output failures (exit 3), and a pack of no file (exit 1).
 pub fn run(args: &[String]) -> Result<(), Failure> {
+    output(args)?.emit()
+}
+
+/// Captures the same pack output and status as the CLI without printing.
+/// # Errors
+/// Returns argument, source, scan, render or output failures.
+pub fn output(args: &[String]) -> Result<crate::exit::CommandOutput, Failure> {
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
-        print!("{}", crate::help::text());
-        print!("{}", flag_help());
-        return Ok(());
+        return Ok(crate::exit::CommandOutput {
+            stdout: format!("{}{}", crate::help::text(), flag_help()),
+            failure: None,
+        });
     }
     let usage = |message: String| {
         Failure::usage(
@@ -113,41 +121,59 @@ pub fn run(args: &[String]) -> Result<(), Failure> {
     if let Some(message) = summary_refusal(&plan) {
         return Err(usage(message.to_string()));
     }
-    let outcome = execute_plan(&plan).map_err(|message| {
-        Failure::index(message, "check that PATH is an existing, readable directory and that --output names a writable file").within("pack")
-    })?;
+    let outcome = execute_plan(&plan).map_err(|error| error.within("pack"))?;
+    let mut stdout = String::new();
     if outcome.wrote.is_none() && !outcome.clipboard {
-        print!("{}", String::from_utf8_lossy(&outcome.body));
+        stdout.push_str(&String::from_utf8_lossy(&outcome.body));
     }
-    println!("{}", outcome.report_line);
-    if outcome.files == 0 && !plan.filters.affects_view() && !plan.filters.debug_ignored {
-        let message = format!(
-            "nothing to pack in {}: no file passed the ignore and sensitive-file rules",
-            plan.path.display()
-        );
-        return Err(Failure::no_result(
-            message,
-            "add files to the directory, or check its .gitignore and .dctxignore rules",
-        )
-        .within("pack"));
-    }
-    Ok(())
+    stdout.push_str(&outcome.report_line);
+    stdout.push('\n');
+    let failure =
+        if outcome.files == 0 && !plan.filters.affects_view() && !plan.filters.debug_ignored {
+            let message = format!(
+                "nothing to pack in {}: no file passed the ignore and sensitive-file rules",
+                plan.path.display()
+            );
+            Some(
+                Failure::no_result(
+                    message,
+                    "add files to the directory, or check its .gitignore and .dctxignore rules",
+                )
+                .within("pack"),
+            )
+        } else {
+            None
+        };
+    Ok(crate::exit::CommandOutput { stdout, failure })
 }
 
 /// Runs pack and returns the page. Tests use this so stdout stays a projection.
 /// # Errors
 /// Returns argument parsing, source/session, snapshot/rendering, or requested-format failures.
 pub fn execute(args: &[String]) -> Result<PackOutcome, String> {
-    execute_plan(&parse(args)?)
+    execute_plan(&parse(args)?).map_err(|error| error.message)
 }
 
 /// Runs one parsed pack: the facade summary for `--json`, else the source page.
-fn execute_plan(plan: &Plan) -> Result<PackOutcome, String> {
+fn execute_plan(plan: &Plan) -> Result<PackOutcome, Failure> {
     if plan.report_format.is_some() {
         return facade_summary(plan);
     }
     let (body, files, version) = source_page(plan)?;
-    emit(&plan.destination, &body, files, &version)
+    emit(&plan.destination, &body, files, &version).map_err(pack_io_failure)
+}
+
+fn pack_io_failure(message: String) -> Failure {
+    Failure::index(message, "check that PATH is an existing, readable directory and that --output names a writable file")
+}
+
+/// Preserve typed capacity refusals until their recovery hint has been selected.
+fn pack_facade_failure(error: DctxError) -> Failure {
+    from_facade_scoped(
+        &error,
+        "dctx pack --help",
+        "use `dctx pack <a smaller directory>`",
+    )
 }
 
 /// Why `--json` refuses this plan: the summary has no file list, so debug and view filters do not apply.
@@ -162,34 +188,35 @@ fn summary_refusal(plan: &Plan) -> Option<&'static str> {
 }
 
 /// `--json` summary. The facade report has no file list, so view filters are refused.
-fn facade_summary(plan: &Plan) -> Result<PackOutcome, String> {
+fn facade_summary(plan: &Plan) -> Result<PackOutcome, Failure> {
     if let Some(message) = summary_refusal(plan) {
-        return Err(message.to_string());
+        return Err(pack_io_failure(message.to_string()));
     }
     let format = plan
         .report_format
-        .ok_or_else(|| "pack summary requires --json".to_string())?;
-    let mut session = host::open_dir(&plan.path)?;
+        .ok_or_else(|| pack_io_failure("pack summary requires --json".to_string()))?;
+    let mut session = host::open_dir(&plan.path).map_err(pack_io_failure)?;
     let mut request = PackRequest::new();
     request.output_format = format;
     let mut sink = VecSink::new();
     let report = session
         .pack(&request, &mut sink)
-        .map_err(|error| error.to_string())?;
+        .map_err(pack_facade_failure)?;
     emit(
         &plan.destination,
         sink.as_bytes(),
         report.files,
         &report.version,
     )
+    .map_err(pack_io_failure)
 }
 
 /// Source page. Selection comes from the repository rules. View filters hide files first.
-fn source_page(plan: &Plan) -> Result<(Vec<u8>, u64, String), String> {
-    let rules = host::project_rules(&plan.path)?;
+fn source_page(plan: &Plan) -> Result<(Vec<u8>, u64, String), Failure> {
+    let rules = host::project_rules(&plan.path).map_err(pack_io_failure)?;
     let policy = rules.policy();
     let request = view_request(&plan.filters);
-    let inner = dctx::FsSource::open(&plan.path).map_err(|error| error.to_string())?;
+    let inner = dctx::FsSource::open(&plan.path).map_err(pack_facade_failure)?;
     let report_reads = std::env::var("DCTX_READ_REPORT").ok().as_deref() == Some("1");
     let source = NarrowedSource {
         inner,
@@ -206,11 +233,11 @@ fn source_page(plan: &Plan) -> Result<(Vec<u8>, u64, String), String> {
             limits: facade_scan_limits()?,
         },
     )
-    .map_err(|error| error.to_string())?;
+    .map_err(|error| pack_facade_failure(DctxError::from_core(error)))?;
     let tree = narrow(&scanned.tree, &plan.filters);
     let files = file_count(&tree);
     let markers = legacy_markers(&tree, &policy);
-    let output = source_document(&plan.path, plan.tree_stamps)?;
+    let output = source_document(&plan.path, plan.tree_stamps).map_err(pack_io_failure)?;
     let version = Version::new_v1();
     let text = dctx_template::render_legacy_snapshot(
         &output.template,
@@ -241,13 +268,13 @@ fn view_request(filters: &Filters) -> PackRequest {
     request
 }
 
-/// Safety caps from `crates/dctx/src/domain/limits.rs`. `resolve_scan` is crate-private; the source cap follows `DCTX_MAX_SOURCE_BYTES`.
-fn facade_scan_limits() -> Result<PackLimits, String> {
+/// Safety caps from the facade, including the source and entry environment overrides.
+fn facade_scan_limits() -> Result<PackLimits, Failure> {
     Ok(PackLimits {
-        max_entries: 100_000,
+        max_entries: dctx::entries_ceiling().map_err(pack_facade_failure)?,
         max_depth: 256,
         max_file_bytes: 8 * 1024 * 1024,
-        max_source_bytes: dctx::source_ceiling().map_err(|error| error.to_string())?,
+        max_source_bytes: dctx::source_ceiling().map_err(pack_facade_failure)?,
     })
 }
 

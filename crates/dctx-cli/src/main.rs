@@ -7,8 +7,9 @@ mod map;
 mod mcp;
 mod pack_for;
 mod plugin;
+mod rpc;
 
-use dctx_cli::{cache, exit, help, host, languages, pack, template, tui};
+use dctx_cli::{cache, doctor, exit, help, host, languages, pack, template, tui};
 use exit::Failure;
 use std::{env, ffi::OsString};
 
@@ -39,11 +40,13 @@ fn main() {
     }
     // map, pack, mcp, languages and unknown commands follow docs/CLI-EXIT-CODES.md; cache and template use exit 1.
     let result = match head {
+        Some("doctor") => doctor::run(&args[2..]),
         Some("map") => {
             maybe_auto_clean(allow_auto_clean);
             map::run(&args[2..])
         }
         // The MCP server answers on stdout in JSON-RPC lines only, so it never auto-cleans.
+        Some("rpc") => rpc::run(&args[2..]).map_err(|failure| failure.within("rpc")),
         Some("mcp") => mcp::run(&args[2..]).map_err(|failure| failure.within("mcp")),
         Some("serve") => {
             let words: Vec<_> = args[2..]
@@ -70,12 +73,7 @@ fn main() {
             cache::run(&args[1..]).map_err(|error| command_error(format!("cache: {error}")))
         }
         // Reads only the facade registry: no source, no cache, so no auto-clean either.
-        Some("languages") => languages::run(&args[2..]).map_err(|error| {
-            Failure::usage(
-                format!("languages: {error}"),
-                "run `dctx languages --help` for the formats and an example",
-            )
-        }),
+        Some("languages") => languages::output(&args[2..]).and_then(exit::CommandOutput::emit),
         Some("template") => {
             maybe_auto_clean(allow_auto_clean);
             template::run(&args[1..]).map_err(|error| command_error(format!("template: {error}")))
@@ -100,6 +98,10 @@ fn main() {
                         env!("DCTX_GIT_SHA")
                     );
                     if args.iter().any(|arg| arg == "--verbose") {
+                        match doctor::executable_details() {
+                            Ok(details) => print!("{details}"),
+                            Err(error) => eprintln!("dctx: {error}"),
+                        }
                         print!("{}", help::limits());
                     }
                 }

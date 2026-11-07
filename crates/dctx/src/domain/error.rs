@@ -34,6 +34,8 @@ pub enum Resource {
     Work,
     /// Segment or parse memory.
     Memory,
+    /// Bytes of one persisted cache object, bounded for both admission and reuse reads.
+    ObjectBytes,
     /// Milliseconds past the injected clock.
     Deadline,
 }
@@ -55,6 +57,7 @@ impl Resource {
             Self::Tokens => "tokens",
             Self::Work => "work",
             Self::Memory => "memory",
+            Self::ObjectBytes => "object_bytes",
             Self::Deadline => "deadline",
         }
     }

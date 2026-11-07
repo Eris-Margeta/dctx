@@ -2,6 +2,9 @@
 //! Structural evidence for "no code runs during install": the crate source contains no process,
 //! dynamic-loading or shell primitive, and no port offers execution. PLUGINS.md §5.3, I-INTEGRITY.
 
+#[path = "../../../tests/support/source_files.rs"]
+mod source_files;
+
 const SOURCES: &[(&str, &str)] = &[
     ("lib.rs", include_str!("../src/lib.rs")),
     ("error.rs", include_str!("../src/error.rs")),
@@ -81,23 +84,15 @@ fn no_execution_primitives_in_the_crate() {
 #[test]
 fn every_source_file_is_listed() {
     let root = concat!(env!("CARGO_MANIFEST_DIR"), "/src");
-    let mut found = Vec::new();
-    let mut stack = vec![std::path::PathBuf::from(root)];
-    while let Some(dir) = stack.pop() {
-        for entry in std::fs::read_dir(dir).unwrap() {
-            let path = entry.unwrap().path();
-            if path.is_dir() {
-                stack.push(path);
-            } else {
-                found.push(
-                    path.strip_prefix(root)
-                        .unwrap()
-                        .to_string_lossy()
-                        .replace('\\', "/"),
-                );
-            }
-        }
-    }
+    let mut found: Vec<String> = source_files::files(std::path::Path::new(root))
+        .into_iter()
+        .map(|path| {
+            path.strip_prefix(root)
+                .unwrap()
+                .to_string_lossy()
+                .replace('\\', "/")
+        })
+        .collect();
     found.sort();
     let mut listed: Vec<String> = SOURCES.iter().map(|(file, _)| (*file).to_owned()).collect();
     listed.sort();

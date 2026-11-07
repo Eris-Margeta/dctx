@@ -3,6 +3,11 @@
 
     DCTX_BIN=target/release/dctx-cli python3 tools/website/capture.py            # rewrite data/demo.json
     DCTX_BIN=target/release/dctx-cli python3 tools/website/capture.py --out FILE # write elsewhere (check.py)
+    DCTX_BIN=target/release/dctx-cli python3 tools/website/capture.py --llms     # rewrite data/llms.json
+
+--llms runs the same binary over a copy of the documents behind llms-small.txt, llms.txt and
+llms-full.txt (routes.llms_tiers) and records its exact output, the sha256 of every input document and
+the last commit that touched them (git; --keep-git FILE reuses that commit from FILE, for shallow clones).
 
 Every command runs in a fresh, empty environment: HOME, XDG_CONFIG_HOME and DCTX_CACHE_DIR are
 new temporary directories, DCTX_AUTO_CLEAN=0, LC_ALL=C.UTF-8, and the working directory is a copy
@@ -12,6 +17,7 @@ Python standard library only.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import os
@@ -27,6 +33,7 @@ ROOT = HERE.parents[1]
 SAMPLE = HERE / "sample"
 SAMPLE_MTIME = 1767225600  # 2026-01-01T00:00:00Z, see capture()
 OUT = HERE / "data" / "demo.json"
+LLMS_OUT = HERE / "data" / "llms.json"
 SENTINEL = "example-not-a-secret"  # the value of the sample's .env; it must never reach an output
 VERBS = ["map", "find", "neighbors", "explain", "read", "skeleton", "grep", "hubs", "path", "export"]
 GREET = "s:src/util.rs#greet"
@@ -45,9 +52,10 @@ COMMANDS: list[tuple[str, str, list[str], str]] = [
     ("pack-stamps", "pack", ["pack", ".", "--tree-stamps=on"], "The 1.0.0 tree lines with MOD and SIZE. MOD is a modification time in milliseconds and differs on every checkout, so its digits are replaced with … here."),
     ("pack-ext-rs", "pack", ["pack", ".", "--ext", "rs"], "Only the Rust files."),
     ("pack-debug-ignored", "pack", ["pack", ".", "--debug-ignored"], "Ignored paths are listed with [IGNORED] and never read: the content of target/ does not appear."),
-    ("pack-for", "pack", ["pack", ".", "--for", "greet store", "--budget", "600"], "Task context for an agent: find, neighbors and read of the names in the text, cut to the budget."),
+    ("pack-for", "pack", ["pack", ".", "--for", "greet store", "--budget", "800"], "Task context for an agent: find, neighbors and read of the names in the text, cut to the estimated output-token budget."),
     ("map-map", "map", ["map", "map", "src/util.rs", "--depth", "2"], "Outline of one file."),
     ("find", "map", ["map", "find", "greet"], ""),
+    ("read", "map", ["map", "read", GREET], "Read the symbol metadata and verified source bytes; --json puts the source in source_utf8."),
     ("neighbors-in", "map", ["map", "neighbors", GREET, "--edge", "calls", "--dir", "in"], "Callers, with the call-site line."),
     ("explain", "map", ["map", "explain", GREET], ""),
     ("skeleton", "map", ["map", "skeleton", "src/store.rs"], "Declaration signatures, no bodies, in source order."),
@@ -178,6 +186,101 @@ def capture(binary: str, version: str) -> dict:
         }
 
 
+def _git(*args: str) -> str:
+    return subprocess.run(["git", "-C", str(ROOT), *args], check=True, capture_output=True, text=True).stdout.strip()
+
+
+def docs_commit(files: list[str]) -> dict:
+    """The last commit that touched any of the documents, and its commit date. Never the clock."""
+    sha, date = _git("log", "-1", "--format=%H %cI", "--", *files).split()
+    return {"docs_commit": sha, "docs_date": date}
+
+
+def _pack_page(stdout: str, files: list[str]) -> str:
+    """The pack page without the trailing `pack bytes=N files=M ...` status line."""
+    m = re.search(r"pack bytes=(\d+) files=(\d+) [^\n]*\n?\Z", stdout)
+    if not m:
+        raise SystemExit("capture --llms: no `pack bytes=` status line; the pack output format changed")
+    if int(m.group(2)) != len(files):
+        raise SystemExit(f"capture --llms: pack read {m.group(2)} files, expected {len(files)}: {files}")
+    page = stdout.encode("utf-8")[:int(m.group(1))].decode("utf-8")
+    if not page.startswith("[DCTX_LLM_CONTEXT_SNAPSHOT_V1]") or not stdout[len(page):].startswith("pack bytes="):
+        raise SystemExit("capture --llms: pack page and status line do not split cleanly")
+    return page.rstrip("\n") + "\n"
+
+
+def pack_body(page: str, rel: str) -> str | None:
+    """The content of one file inside a pack page: the LINES="N" lines after its start marker (the end
+    marker alone is ambiguous when a document quotes a pack)."""
+    m = re.search(r'^<FILE_CONTENT_START ID="[^"]+" PATH="' + re.escape(rel) + r'"[^>]* LINES="(\d+)">\n', page, re.M)
+    if not m:
+        return None
+    lines = page[m.end():].split("\n")[:int(m.group(1))]
+    return "\n".join(lines).rstrip("\n")
+
+
+def capture_llms(binary: str, version: str, keep_git: dict | None = None) -> dict:
+    from routes import llms_tiers
+    tiers = llms_tiers()
+    corpus = sorted({f for *_, files in tiers for f in files})
+    sources = {}
+    with tempfile.TemporaryDirectory(prefix="dctx-llms-") as tmp:
+        tmp_path = Path(tmp)
+        for name in ("home", "config", "cache"):
+            (tmp_path / name).mkdir()
+        place = tmp_path / "dctx"
+        for rel in corpus:
+            data = (ROOT / rel).read_bytes()
+            sources[rel] = hashlib.sha256(data).hexdigest()
+            (place / rel).parent.mkdir(parents=True, exist_ok=True)
+            (place / rel).write_bytes(data)
+        for path in [*place.rglob("*"), place]:
+            os.utime(path, (SAMPLE_MTIME, SAMPLE_MTIME), follow_symlinks=False)
+        env = {"PATH": "/usr/bin:/bin", "HOME": str(tmp_path / "home"), "XDG_CONFIG_HOME": str(tmp_path / "config"),
+               "DCTX_CACHE_DIR": str(tmp_path / "cache"), "DCTX_AUTO_CLEAN": "0", "LC_ALL": "C.UTF-8", "COLUMNS": "100"}
+        stdout, _, code = run(binary, ["--version"], place, env)
+        if code or not stdout.startswith(f"dctx {version} "):
+            raise SystemExit(f"capture --llms: {binary} --version printed {stdout.strip()!r}; expected 'dctx {version} (…)'")
+
+        def render(mode: str, files: list[str]) -> tuple[str, list[list[str]]]:
+            if mode == "pack":
+                argv = ["pack", "."] + [x for f in files for x in ("--include", "/" + f)]
+                out, err, code = run(binary, argv, place, env)
+                if code:
+                    raise SystemExit(f"capture --llms: dctx {' '.join(argv)} exited {code}: {err}")
+                return _pack_page(out, files), [["dctx", *argv]]
+            parts, argvs = [], []
+            for f in files:
+                argv = ["map", "map", f, "--depth", "2"]
+                out, err, code = run(binary, argv, place, env)
+                if code:
+                    raise SystemExit(f"capture --llms: dctx {' '.join(argv)} exited {code}: {err}")
+                parts.append(out.rstrip("\n") + "\n")
+                argvs.append(["dctx", *argv])
+            return "".join(parts), argvs
+
+        records = []
+        for name, mode, budget, files in tiers:
+            chosen, dropped = [], []
+            for f in files:
+                text, _ = render(mode, chosen + [f])
+                if est_tokens(len(text.encode("utf-8"))) <= budget:
+                    chosen.append(f)
+                else:
+                    dropped.append(f)
+            text, argvs = render(mode, chosen)
+            if tmp in text or SENTINEL in text:
+                raise SystemExit(f"capture --llms: {name} output contains a temporary path or the sample secret")
+            nbytes = len(text.encode("utf-8"))
+            record = {"file": name, "mode": mode, "budget": budget, "files": chosen, "dropped": dropped,
+                      "commands": argvs, "bytes": nbytes, "est_tokens": est_tokens(nbytes)}
+            if mode == "pack":
+                record["altered"] = [f for f in chosen if pack_body(text, f) != (ROOT / f).read_text(encoding="utf-8").rstrip("\n")]
+            records.append({**record, "output": text})
+    git = {k: keep_git[k] for k in ("docs_commit", "docs_date")} if keep_git else docs_commit(corpus)
+    return {"schema": 1, "version": version, **git, "sources": sources, "tiers": records}
+
+
 def main(argv: list[str]) -> int:
     out = OUT
     if "--out" in argv:
@@ -188,10 +291,18 @@ def main(argv: list[str]) -> int:
               file=sys.stderr)
         return 2
     version = (ROOT / "VERSION").read_text(encoding="utf-8").strip()
-    data = capture(str(Path(binary).resolve()), version)
+    if "--llms" in argv:
+        if "--out" not in argv:
+            out = LLMS_OUT
+        keep = json.loads(Path(argv[argv.index("--keep-git") + 1]).read_text()) if "--keep-git" in argv else None
+        data = capture_llms(str(Path(binary).resolve()), version, keep)
+        summary = ", ".join(f"{t['file']} {len(t['files'])} files {t['est_tokens']}/{t['budget']}" for t in data["tiers"])
+    else:
+        data = capture(str(Path(binary).resolve()), version)
+        summary = f"{len(data['records'])} records"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(data, ensure_ascii=False, indent=1, sort_keys=False) + "\n", encoding="utf-8")
-    print(f"capture: {len(data['records'])} records -> {out}")
+    print(f"capture: {summary} -> {out}")
     return 0
 
 

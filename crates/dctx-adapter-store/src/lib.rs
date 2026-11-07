@@ -5,7 +5,8 @@
 //! Callers publish through [`SegmentStore`]; engines never see filesystem paths as handles.
 //! No git, no `.git` paths, and no PID-age lock clearing (decision 078).
 
-#![forbid(unsafe_code)]
+#![cfg_attr(not(windows), forbid(unsafe_code))]
+#![cfg_attr(windows, deny(unsafe_code))]
 #![deny(missing_docs)]
 
 pub mod adapters;

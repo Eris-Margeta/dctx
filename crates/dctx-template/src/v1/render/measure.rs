@@ -3,7 +3,7 @@
 //! Tree and file bodies are measured as run-length documents, so an oversized answer is refused without allocation.
 //! Depends on [`super::doc`]. Used by [`crate::legacy_output`] and the parity tests.
 
-use super::doc::{Doc, too_big, with_vars};
+use super::doc::{Doc, too_big};
 use super::*;
 use crate::TemplateError;
 
@@ -55,7 +55,19 @@ impl Template {
         files: &mut u64,
         tree: &mut u64,
     ) -> bool {
-        let entry = self.partial_tree_entry.len() as u64 + (depth.min(4096) as u64) * 2 + 64;
+        let partial = replace_vars(&self.partial_tree_entry, &self.variables);
+        let size_attr = self.variables.get("attr_size").map_or(4, String::len) as u64;
+        let entry = block_upper(
+            &partial,
+            &[
+                ("{{{node.type_char}}}", 3),
+                ("{{{node.path}}}", node.relative_path.len() as u64 + 10),
+                ("{{{node.id}}}", 24),
+                ("{{{node.mod}}}", 20),
+                ("{{{node.size_part}}}", size_attr.saturating_add(23)),
+            ],
+        )
+        .saturating_add((depth.min(4096) as u64) * 2 + 1);
         *tree = tree.saturating_add(entry);
         if *tree > RENDER_CEILING {
             return false;
@@ -70,7 +82,7 @@ impl Template {
                     .saturating_mul(3),
             };
             let block = block_upper(
-                &self.partial_file_block,
+                &replace_vars(&self.partial_file_block, &self.variables),
                 &[
                     ("{{{file.id}}}", 16),
                     ("{{{file.path}}}", node.relative_path.len() as u64 + 16),
@@ -90,7 +102,7 @@ impl Template {
     }
 
     fn layout_upper(&self, tree: u64, files: u64) -> u64 {
-        let layout = &self.layout;
+        let layout = replace_vars(&self.layout, &self.variables);
         let mut upper = layout.len() as u64;
         upper = upper.saturating_add(
             (layout.matches("{{{comp.tree}}}").count() as u64).saturating_mul(tree),
@@ -102,12 +114,6 @@ impl Template {
             upper = upper.saturating_add(
                 (layout.matches("{{{project}}}").count() as u64)
                     .saturating_mul(project.len() as u64),
-            );
-        }
-        for (key, value) in &self.variables {
-            let pattern = format!("{{{{{key}}}}}");
-            upper = upper.saturating_add(
-                (layout.matches(&pattern).count() as u64).saturating_mul(value.len() as u64),
             );
         }
         upper
@@ -174,14 +180,20 @@ impl Template {
         for _ in 0..depth.min(4096) {
             entry.push_str("  ");
         }
-        entry.push_str(&self.partial_tree_entry);
-        let mut doc = Doc::from_string(entry);
-        doc = doc.replaced("{{{node.type_char}}}", &Doc::from_str(type_char))?;
-        doc = doc.replaced("{{{node.path}}}", &Doc::from_str(&display_path))?;
-        doc = doc.replaced("{{{node.id}}}", &Doc::from_str(current_id))?;
-        doc = doc.replaced("{{{node.mod}}}", &Doc::from_str(&node.modified.to_string()))?;
-        doc = doc.replaced("{{{node.size_part}}}", &Doc::from_str(&size_part))?;
-        doc = with_vars(doc, &self.variables)?;
+        entry.push_str(&replace_vars(&self.partial_tree_entry, &self.variables));
+        let doc = Doc::interpolate(
+            &entry,
+            &[
+                ("{{{node.type_char}}}", &Doc::from_str(type_char)),
+                ("{{{node.path}}}", &Doc::from_str(&display_path)),
+                ("{{{node.id}}}", &Doc::from_str(current_id)),
+                (
+                    "{{{node.mod}}}",
+                    &Doc::from_string(node.modified.to_string()),
+                ),
+                ("{{{node.size_part}}}", &Doc::from_str(&size_part)),
+            ],
+        )?;
         if doc.len()? > RENDER_CEILING {
             return Err(too_big());
         }
@@ -195,26 +207,39 @@ impl Template {
         mode: &FileMode<'_>,
     ) -> Result<Doc, TemplateError> {
         let (line_count, content) = measured_body(node, mode);
-        let mut block = Doc::from_str(&self.partial_file_block);
-        block = block.replaced("{{{file.id}}}", &Doc::from_str(current_id))?;
-        block = block.replaced("{{{file.path}}}", &Doc::from_str(&node.relative_path))?;
-        block = block.replaced(
-            "{{{file.size}}}",
-            &Doc::from_str(&node.content_size.to_string()),
-        )?;
-        block = block.replaced("{{{file.lines}}}", &Doc::from_str(&line_count.to_string()))?;
-        block = block.replaced("{{{file.content}}}", &Doc::from_string(content))?;
-        with_vars(block, &self.variables)
+        let partial = replace_vars(&self.partial_file_block, &self.variables);
+        Doc::interpolate(
+            &partial,
+            &[
+                ("{{{file.id}}}", &Doc::from_str(current_id)),
+                ("{{{file.path}}}", &Doc::from_str(&node.relative_path)),
+                (
+                    "{{{file.size}}}",
+                    &Doc::from_string(node.content_size.to_string()),
+                ),
+                (
+                    "{{{file.lines}}}",
+                    &Doc::from_string(line_count.to_string()),
+                ),
+                ("{{{file.content}}}", &Doc::from_string(content)),
+            ],
+        )
     }
 
     fn layout_doc(&self, tree: &Doc, files: &Doc) -> Result<Doc, TemplateError> {
-        let mut output = Doc::from_str(&self.layout);
-        output = output.replaced("{{{comp.tree}}}", tree)?;
-        output = output.replaced("{{{comp.files}}}", files)?;
-        if let Some(project) = self.variables.get("project") {
-            output = output.replaced("{{{project}}}", &Doc::from_str(project))?;
-        }
-        with_vars(output, &self.variables)
+        let layout = replace_vars(&self.layout, &self.variables);
+        let project = self
+            .variables
+            .get("project")
+            .map_or("{{{project}}}", String::as_str);
+        Doc::interpolate(
+            &layout,
+            &[
+                ("{{{comp.tree}}}", tree),
+                ("{{{comp.files}}}", files),
+                ("{{{project}}}", &Doc::from_str(project)),
+            ],
+        )
     }
 }
 

@@ -27,10 +27,10 @@ pub(super) fn extract(text: &str) -> Vec<String> {
     // Odd pieces of a split on backticks are the backticked spans.
     for span in text.split('`').skip(1).step_by(2) {
         let inside = words(span);
-        if let [(word, _)] = inside.as_slice() {
-            if is_name(word) {
-                push_unique(&mut code, word);
-            }
+        if let [(word, _)] = inside.as_slice()
+            && is_name(word)
+        {
+            push_unique(&mut code, word);
         }
     }
     for (word, pathed) in words(text) {

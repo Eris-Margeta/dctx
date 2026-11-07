@@ -34,7 +34,8 @@ pub use request::{
 pub use rules::RuleSources;
 pub use sink::{BoundedSink, VecSink};
 pub use source_ceiling::{
-    ENTRIES_ENV, RECORDS_ENV, SOURCE_ENV, parse_source_ceiling, records_ceiling, source_ceiling,
+    ENTRIES_ENV, RECORDS_ENV, SOURCE_ENV, entries_ceiling, parse_source_ceiling, records_ceiling,
+    source_ceiling,
 };
 pub use wire::{encode_answer, encode_answer_with};
 
@@ -46,3 +47,5 @@ pub(crate) use limits::{
 pub(crate) use policy::{ParserChoice, ancestors_include};
 pub(crate) use report::seal_segment;
 pub(crate) use wire::{cursor, encode_text, parse_cursor};
+
+pub(crate) use wire::push_string as quote_json;
