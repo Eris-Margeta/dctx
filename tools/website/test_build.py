@@ -160,6 +160,36 @@ class Capture(unittest.TestCase):
         self.assertEqual(status["assets/logo.png"], "binary")
 
 
+class FactsSource(unittest.TestCase):
+    """data/facts.json is the one source of the notice, the personas and the evaluator facts."""
+
+    def test_facts_load_and_personas_have_pages(self):
+        import facts
+        f = facts.load()
+        self.assertTrue(f["notice"].startswith("dctx is an advanced tool with several ways to use it."))
+        self.assertTrue(f["notice"].endswith("Measure before you change anything."))
+        paths = {r.path for r in build_routes(NEWS)}
+        self.assertEqual(len(f["personas"]), 4)
+        for p in f["personas"]:
+            self.assertIn(facts.persona_path(p["id"]), paths)
+            self.assertIn(p["record"], [r["id"] for r in demo()["records"]], "persona runs are real captures")
+        self.assertIn("/for-ai-evaluators/", paths)
+        self.assertIn(f"**{f['version']}**", facts.markdown())
+
+    def test_animation_hook_is_optional(self):
+        import importlib.machinery
+        import types
+        from pages import home
+        with patch("importlib.util.find_spec", return_value=None):
+            self.assertEqual(home.anim("two_scopes"), "")
+        fake = types.ModuleType("pages.animations")
+        fake.__spec__ = importlib.machinery.ModuleSpec("pages.animations", None)
+        fake.two_scopes = lambda: "<svg></svg>"
+        with patch.dict(sys.modules, {"pages.animations": fake}):
+            self.assertEqual(home.anim("two_scopes"), '<div class="anim-slot" data-anim="two_scopes"><svg></svg></div>')
+            self.assertEqual(home.anim("safe_path"), "")
+
+
 class FullCheck(unittest.TestCase):
     def test_generated_website(self):
         binary = Path(os.environ.get("DCTX_BIN") or ROOT / "target/release/dctx-cli")

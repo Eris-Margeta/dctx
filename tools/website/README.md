@@ -55,12 +55,48 @@ examples is handwritten. The Rust snippet comes from the workspace doctest in
 | `/templates/` | `crates/dctx-template/templates/*.dctx_template`, ADR-003 and the template captures |
 | `/benchmarks/`, the home facts | tables parsed from `docs/BENCHMARK-20261030.md`, the run 7 `aggregate.json` and the stability report (`data.py`) |
 | `/changelog/` and its feed | `CHANGELOG.md` |
+| the home notice and path selector, `/start/` and its four persona pages, `/for-ai-evaluators/` | `data/facts.json` through `facts.py` (see below); persona runs are records from `data/demo.json` |
 | OG images, the poster, icons | `og.py` (Pillow), from the same scene geometry as the canvas animation |
 | `llms.txt`, `llms-small.txt`, `llms-full.txt`, sitemap, feeds, robots, `security.txt`, `humans.txt`, manifest, OpenSearch, search index, `build.json` | `llms.py`, from the route table in `routes.py` |
 | CSS and JS | hand-written in `src/`, published content-hashed (`assets.py`); `theme.js` runs inline and `tools/playground/nginx.conf` allows it by hash |
 | fonts | `fonts/` (Geist and JetBrains Mono, SIL OFL 1.1), made once by `fonts.py` |
 
 Every number on a hand-written page carries a small source link to the file it is parsed from.
+
+## The facts block (`data/facts.json`)
+
+`data/facts.json` is the single source of the wording people and models quote: what dctx is and is not,
+the advanced-user notice, the safe path, the two scopes, the modalities, the responsibility table, the
+four personas (setup, first command, what to expect, pitfall, and the id of the captured run shown),
+the benchmark status, removed commands, how to verify each claim, install text per scope and the
+philosophy paragraph. It holds no version and no numbers: `facts.py` adds the version from `VERSION`,
+the release date from `CHANGELOG.md` and the measured values from the benchmark documents (`data.py`).
+
+- `facts.load()` returns the merged dict and fails the build if a required key or persona field is missing.
+- `facts.markdown()` renders the facts block as Markdown in the evaluator order (what / version /
+  modalities / notice / benchmark / removed / verify); the llms files should prepend this.
+- Inline code in facts.json uses backticks; pages render it with `pages.paths.md_inline`.
+- Honesty rule: anything not in the current release says planned or publishing soon. `check.py` still
+  rejects sales wording on these pages (note: the word "enterprise" is on that list).
+
+## Home page order and the animation hook
+
+`pages/home.py` follows the design review: claim and hero animation, the notice with the
+choose-your-path selector, captured output, what has been measured, modalities, responsibilities,
+philosophy, install per scope; the footer links the llms files. Five slots call
+`pages/animations.py` when that module exists: `two_scopes()`, `calls_times_context()`,
+`prefix_stability()`, `giant_folder()` and `safe_path()`, each returning an HTML string placed in a
+`<div class="anim-slot" data-anim="NAME">`. Without the module, or when a function returns an empty
+string, the slot renders nothing and the build passes.
+
+The selector remembers the last chosen persona in `localStorage` (`dctx-path`, wrapped in try/catch)
+only to mark that card; every page works without storage.
+
+## Readability
+
+Base text 18 px (17 px under 600 px), line height 1.6 (headings 1.3), heading scale 1.25 (h1 2rem,
+h2 1.56rem, h3 1.25rem, h4 1rem), prose measure 68ch, code 15 px with horizontal scroll, light code
+blocks in the light theme, no text under 14 px, tables zebra-striped at a 3 % tint.
 
 ## Inputs that are not rebuilt
 
@@ -89,5 +125,5 @@ internal links and fragments; external links only to the allowlist; JSON-LD type
 Person/Organization/SoftwareApplication values; OG images (1200×630, dark and light, the 24-frame GIF);
 `llms.txt` ≤ 2 KB with every URL resolving; Markdown twins against their sources; sitemap equals the
 indexable pages; feeds parse; `security.txt` expiry; hashed and referenced assets; CSS, JS, font and
-HTML budgets; WCAG contrast of the colour tokens in both themes; nginx.conf headers; no legacy commands
+HTML budgets; WCAG contrast of the colour tokens in both themes (body text and links 7:1, secondary text 4.5:1); nginx.conf headers; no legacy commands
 or rule files and no sales wording on hand-written pages.

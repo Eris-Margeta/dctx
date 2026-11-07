@@ -76,6 +76,25 @@
     });
   });
 
+  /* Choose your path: remember the last persona so the selector can mark it. Optional: every page
+     works the same without storage (private windows, blocked site data). */
+  var PATH_KEY = 'dctx-path';
+  function recall(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+  var pathPage = document.querySelector('[data-path-page]');
+  if (pathPage) store(PATH_KEY, pathPage.getAttribute('data-path-page'));
+  $$('[data-path-select]').forEach(function (list) {
+    var chosen = recall(PATH_KEY);
+    $$('[data-path]', list).forEach(function (card) {
+      var id = card.getAttribute('data-path'), link = card.querySelector('a');
+      if (link) link.addEventListener('click', function () { store(PATH_KEY, id); });
+      if (id === chosen) {
+        card.classList.add('picked');
+        var tag = document.createElement('p'); tag.className = 'picked-tag'; tag.textContent = 'Your last choice';
+        card.insertBefore(tag, card.firstChild);
+      }
+    });
+  });
+
   var menu = document.querySelector('.menu');
   if (menu) document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.open) { menu.open = false; menu.querySelector('summary').focus(); } });
 })();

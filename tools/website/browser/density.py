@@ -8,7 +8,6 @@ with sync_playwright() as p:
       const inBox = el => { const b = el.closest('.scroll'); if (!b) return true; const r = el.getBoundingClientRect(), q = b.getBoundingClientRect(); return r.top >= q.top && r.bottom <= q.bottom; };
       const count = s => [...document.querySelectorAll(s)].filter(e => vis(e) && inBox(e)).length;
       const geo = JSON.parse(document.getElementById('scene-data').textContent);
-      return {chips: count('.chips li'), steps: count('.steps li'), facts: count('.facts > div'), quickstart: count('.hero-copy .code pre code').length || document.querySelectorAll('.hero-copy .code pre code')[0].textContent.trim().split('\\n').length,
-              install: count('.install'), terminal_lines: count('.term-hero .ln'), nav: count('.nav li'),
+      return {chips: count('.chips li'), steps: count('.steps li'), facts: count('.facts > div'), paths: count('.paths > li'), notice: count('.callout'), terminal_lines: count('.term-hero .ln'), nav: count('.nav li'),
               scene_labels: geo.nodes.filter(n => n.id.startsWith('m:')).length + geo.nbrs.length + 3}; }"""))
     b.close()

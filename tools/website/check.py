@@ -330,16 +330,19 @@ def contrast(css: str, errors: list[str]) -> list[str]:
         lin = [c / 12.92 if c <= 0.03928 else ((c + 0.055) / 1.055) ** 2.4 for c in rgb]
         return 0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2]
     out = []
+    # Body text and links in it at least 7:1 (WCAG AAA); secondary text at least 4.5:1 (design review R3, section 7).
+    minimum = {"ink": 7.0, "brand-text": 7.0, "muted": 4.5}
     for name, theme in (("light", light), ("dark", dark)):
-        for fg, bg in (("ink", "bg"), ("muted", "bg"), ("brand-text", "bg"), ("ink", "surface"), ("muted", "surface"), ("muted", "surface-2")):
+        for fg, bg in (("ink", "bg"), ("muted", "bg"), ("brand-text", "bg"), ("ink", "surface"), ("ink", "surface-2"),
+                       ("muted", "surface"), ("muted", "surface-2")):
             if fg not in theme or bg not in theme:
                 errors.append(f"contrast: --{fg} or --{bg} missing in the {name} theme")
                 continue
             a, b = sorted((lum(theme[fg]), lum(theme[bg])), reverse=True)
             ratio = (a + 0.05) / (b + 0.05)
             out.append(f"{name} {fg}/{bg} {ratio:.2f}")
-            if ratio < 4.5:
-                errors.append(f"contrast: {name} --{fg} on --{bg} is {ratio:.2f}:1 (< 4.5)")
+            if ratio < minimum[fg]:
+                errors.append(f"contrast: {name} --{fg} on --{bg} is {ratio:.2f}:1 (< {minimum[fg]})")
     return out
 
 

@@ -71,7 +71,7 @@ def build(out: Path, skip_og: bool = False) -> int:
     import shell
     from assets import Assets
     from common import ICON, READS, ROOT, VERSION, date_of, read_bytes
-    from pages import benchmarks, docs, examples, home, misc, playground, reference
+    from pages import benchmarks, docs, examples, home, misc, paths, playground, reference
     from pages.news_content import NEWS
     from routes import DOCS, POLICIES, build_routes, doc_path
 
@@ -104,6 +104,13 @@ def build(out: Path, skip_og: bool = False) -> int:
     for r in routes:
         if r.kind == "home":
             emit(r, home.body(scene), script="home.js")
+        elif r.path == "/start/":
+            emit(r, paths.start())
+        elif r.extra.get("persona"):
+            emit(r, paths.persona(r.extra["persona"]), parents=[("/start/", "Choose your path")])
+        elif r.path == "/for-ai-evaluators/":
+            body, graph = paths.evaluators()
+            emit(r, body, graph)
         elif r.path == "/docs/":
             emit(r, docs.index_page(rendered))
         elif r.kind == "doc":
