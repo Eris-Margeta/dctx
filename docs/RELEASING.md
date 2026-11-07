@@ -22,14 +22,30 @@ its commit/tag/push prompts. Publication starts when a maintainer pushes a `v*` 
    `git tag -a "v$(cat VERSION)" -m "dctx $(cat VERSION)"` and
    `git push origin "v$(cat VERSION)"`. Never move an existing published tag.
 4. **Observe:** preflight verifies VERSION, all crate versions/requirements and the
-   matching changelog section. Five native builds produce Linux x64/ARM64 **musl**,
-   macOS x64/ARM64 and Windows x64 archives. Each contains `dctx` (`dctx.exe` on
-   Windows), LICENSE and NOTICE. `release` creates SHA256SUMS and a GitHub Release
-   whose notes are exactly that changelog section. Only this job has `contents: write`.
-   Afterward `npm-publish` checksums the released assets, fills `packaging/npm/` from
-   the tag, publishes five `@dctx/cli-*` packages before `dctx` with provenance and
-   public access; `crates-publish` publishes in dependency order and Cargo waits for
-   indexing. Each publishing job is skipped if its token is absent. Smoke-check
+   matching changelog section. Five native builds use the Rust pin in
+   `tools/release/toolchain.env` and `tools/release/build.sh` to produce Linux
+   x64/ARM64 **musl**, macOS x64/ARM64 and Windows x64 archives, plus target-specific
+   CycloneDX JSON SBOMs (`cargo-cyclonedx` 0.5.10, Cargo metadata, default CLI features).
+   Each native archive contains `dctx` (`dctx.exe` on Windows), LICENSE and NOTICE.
+   Two additional fresh-runner Linux x86_64 musl builds must produce identical
+   SHA-256 digests and bytes before signing. This gate can also be run manually via
+   `reproducible.yml` without publishing. See [verification and reproducibility](VERIFYING.md).
+   The `sign` job alone has `id-token: write` and `attestations: write`. It uses
+   GitHub OIDC with cosign 3.1.4, signs all archives/SBOMs/checksums/provenance
+   envelopes and emits a `.sigstore.json` bundle per payload. It creates and signs
+   per-platform air-gap tarballs, with directly installable binaries, internal
+   signed manifests and verification evidence, and attests every native and air-gap
+   archive using GitHub artifact attestations. Only `release` has `contents: write`;
+   it publishes the sealed assets with the changelog notes. For a manual release
+   dispatch, select the release tag as the workflow ref **and** supply that tag as
+   the input (`gh workflow run release.yml --ref vX.Y.Z -f tag=vX.Y.Z`); preflight
+   rejects a different ref so certificate identities always bind the release tag.
+   Afterward `npm-publish` checksums the released assets and publishes five
+   `@dctx/cli-*` packages before `dctx`. It uses the npm token without an OIDC grant;
+   npm provenance is not emitted because OIDC is restricted to `sign`. The GitHub
+   archives retain the documented cosign and GitHub attestation evidence.
+   `crates-publish` publishes in dependency order and Cargo waits for indexing.
+   Each registry job is skipped if its token is absent. Smoke-check
    `npm exec --package=dctx -- dctx --version` and `cargo install dctx-cli --version X.Y.Z`
    (the Cargo executable is `dctx-cli`; release archives/npm expose `dctx`).
 5. **Website:** pushes to main affecting website, website tooling, docs or CHANGELOG
@@ -52,9 +68,24 @@ Create these **repository Actions secrets** before enabling publication/deployme
 | `DCTX_SITE_HOST` | SSH destination `deploy-user@hostname` (port 22), without a path. |
 | `DCTX_SITE_KNOWN_HOSTS` | Complete OpenSSH known_hosts lines for that hostname, verified out of band; never discover/trust keys during a deploy. |
 
-`GITHUB_TOKEN` is supplied automatically. npm alone gets `id-token: write` for
-[provenance](https://docs.npmjs.com/generating-provenance-statements/). Missing any
-site secret skips the deploy job. No registry tokens or SSH material belong in git.
+`GITHUB_TOKEN` is supplied automatically. Only the signing job gets OIDC access;
+keyless signing needs no stored signing key. The cosign bootstrap is pinned by
+version and the GitHub API release-asset SHA-256 in `tools/release/install-cosign.sh`. The repository must permit GitHub
+artifact attestations. Enable GitHub private vulnerability reporting as described
+in [SECURITY.md](../SECURITY.md). Missing any site secret skips the deploy job.
+No registry tokens or SSH material belong in git.
+
+The quality job runs pinned `cargo-audit` 0.22.2 against Cargo.lock alongside the
+existing cargo-deny licence policy. `.cargo/audit.toml` contains the committed
+advisory ignore list, initially empty. An exception requires an advisory ID,
+affected dependency path, reason and expiry; do not add ignores merely to make
+CI green. Audit needs current RustSec advisory data and fails if it cannot fetch
+it. Workflow lint uses actionlint v1.7.7 at its API-resolved commit; only the known
+`macos-15-intel` runner-label warning is ignored. Run
+`bash tools/release/lint-workflows.sh` and
+`python3 -m unittest discover -s tools/release -p 'test_supply_chain.py' -v` locally.
+All third-party action references are full commit SHAs resolved through the GitHub
+commits API. Update pins deliberately and validate workflows after each update.
 
 **Rollback:** stop publication/deployment by removing its secrets or disabling the
 workflow. Revert a bad website source change on main and regenerate the site to deploy

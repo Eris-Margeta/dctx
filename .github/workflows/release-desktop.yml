@@ -5,8 +5,13 @@ on:
     tags:
       - 'desktop-v*'
 
+permissions:
+  contents: read
+
 jobs:
   release:
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -28,15 +33,17 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
+        with:
+          persist-credentials: false
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v1
+        uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1 (GitHub API resolved)
         with:
           bun-version: latest
 
       - name: Setup Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable (GitHub API resolved)
         with:
           targets: ${{ matrix.platform.target }}
 
@@ -76,7 +83,7 @@ jobs:
           fi
           if [ -d "macos" ]; then
             cd macos
-            tar -czf ../dctx-desktop-${{ matrix.platform.arch }}.app.tar.gz *.app || true
+            tar -czf ../dctx-desktop-${{ matrix.platform.arch }}.app.tar.gz ./*.app || true
           fi
 
       - name: Prepare release artifacts (Windows)
@@ -100,7 +107,7 @@ jobs:
           fi
 
       - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1 (GitHub API resolved)
         with:
           files: |
             apps/dctx-desktop/src-tauri/target/${{ matrix.platform.target }}/release/bundle/*.dmg
