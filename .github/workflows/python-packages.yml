@@ -1,0 +1,118 @@
+# SPDX-License-Identifier: Apache-2.0
+name: Python packages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/python/**'
+      - 'crates/**'
+      - 'plugins/**'
+      - 'docs/protocol/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'VERSION'
+      - 'tools/release/**'
+      - '.github/workflows/python-packages.yml'
+  pull_request:
+    paths:
+      - 'packages/python/**'
+      - 'crates/**'
+      - 'plugins/**'
+      - 'docs/protocol/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - 'VERSION'
+      - 'tools/release/**'
+      - '.github/workflows/python-packages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: python-packages-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wrapper:
+    name: Transport (Python ${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ['3.11', '3.13']
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Schema and transport checks
+        run: python -W error::ResourceWarning -m unittest discover -s packages/python/tests -v
+
+  wheels:
+    name: Wheel (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-24.04
+            target: x86_64-unknown-linux-musl
+          - os: ubuntu-24.04-arm
+            target: aarch64-unknown-linux-musl
+          - os: macos-15-intel
+            target: x86_64-apple-darwin
+          - os: macos-15
+            target: aarch64-apple-darwin
+          - os: windows-2022
+            target: x86_64-pc-windows-msvc
+    defaults:
+      run:
+        shell: bash
+    env:
+      CARGO_TERM_COLOR: always
+      DCTX_REQUIRE_ENGINE_TESTS: '1'
+      DCTX_WHEEL_TARGET: ${{ matrix.target }}
+      MACOSX_DEPLOYMENT_TARGET: ${{ matrix.target == 'x86_64-apple-darwin' && '10.13' || '11.0' }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.11'
+      - name: Install pinned release Rust
+        run: |
+          source tools/release/toolchain.env
+          rustup toolchain install "$DCTX_RELEASE_RUST" --profile minimal --target '${{ matrix.target }}'
+          rustup override set "$DCTX_RELEASE_RUST"
+      - name: Install native musl compiler
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends musl-tools
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          key: python-${{ matrix.target }}
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+      - name: Build engine with the release recipe
+        run: bash tools/release/build.sh '${{ matrix.target }}' target/python-native
+      - name: Build wheels and run parity plus offline install
+        run: |
+          binary="$PWD/target/${{ matrix.target }}/release/dctx-cli"
+          if [[ '${{ matrix.target }}' == *-windows-* ]]; then
+            binary=$(cygpath -am "${binary}.exe")
+          fi
+          export DCTX_TEST_BIN="$binary"
+          python packages/python/tools/generate_api.py --check
+          python packages/python/tools/build_wheels.py --output wheelhouse \
+            --binary "$binary" --target '${{ matrix.target }}'
+          python -W error::ResourceWarning -m unittest discover -s packages/python/tests -v
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: python-${{ matrix.target }}
+          path: wheelhouse/*.whl
+          if-no-files-found: error
