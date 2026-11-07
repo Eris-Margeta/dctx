@@ -85,7 +85,7 @@ jobs:
           import sys
 
           sys.exit(subprocess.call(
-              ["cargo", "test", "--workspace", "--locked",
+              ["cargo", "test", "--workspace", "--locked", "--no-fail-fast",
                "--exclude", "dctx-desktop", "--exclude", "dctx-desktop-api"],
               close_fds=True,
           ))

@@ -10,8 +10,10 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 
 use common::{open, req, segment};
+#[cfg(unix)]
+use dctx_adapter_store::StoreOptions;
 use dctx_adapter_store::ports::StoreFs;
-use dctx_adapter_store::{GcBudget, MemoryFs, SegmentRole, StdFs, StoreError, StoreOptions};
+use dctx_adapter_store::{GcBudget, MemoryFs, SegmentRole, StdFs, StoreError};
 use dctx_map_segment::decode;
 
 #[test]
@@ -76,6 +78,7 @@ fn writer_readers_and_gc_agree_on_valid_generations() {
 }
 
 #[test]
+#[cfg(unix)]
 fn std_round_trip_reopens_and_the_writer_lock_is_exclusive() {
     let dir = tempfile::tempdir().unwrap();
     let store = dctx_adapter_store::SegmentStore::open(
@@ -122,11 +125,39 @@ fn std_round_trip_reopens_and_the_writer_lock_is_exclusive() {
         Err(err) => panic!("{err}"),
     };
     drop(reopened);
-    let fs1 = StdFs::open(dir.path()).unwrap();
+    assert_writer_lock_exclusive(dir.path());
+}
+
+fn assert_writer_lock_exclusive(root: &std::path::Path) {
+    let fs1 = StdFs::open(root).unwrap();
     fs1.try_lock("main").unwrap();
-    let fs2 = StdFs::open(dir.path()).unwrap();
+    let fs2 = StdFs::open(root).unwrap();
     assert_eq!(fs2.try_lock("main").unwrap_err(), StoreError::Busy);
     fs1.unlock("main").unwrap();
     fs2.try_lock("main").unwrap();
     fs2.unlock("main").unwrap();
+}
+
+#[cfg(windows)]
+#[test]
+fn std_refuses_unqualified_durability_and_the_writer_lock_is_exclusive() {
+    use dctx_adapter_store::{SegmentStore, StoreOptions};
+    let dir = tempfile::tempdir().unwrap();
+    let fs = StdFs::open(dir.path()).unwrap();
+    assert!(!fs.capabilities().sync);
+    assert!(!fs.capabilities().atomic_replace);
+    assert_eq!(
+        fs.sync_dir(),
+        Err(StoreError::UnsupportedDurability { capability: "sync" })
+    );
+    let store = SegmentStore::open(fs, StoreOptions::capped(8 * 1024 * 1024)).unwrap();
+    let error = store
+        .publish(req("main", 1, segment("unsynced")))
+        .expect_err("durability must refuse before publication");
+    assert_eq!(
+        error,
+        StoreError::UnsupportedDurability { capability: "sync" }
+    );
+    assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
+    assert_writer_lock_exclusive(dir.path());
 }

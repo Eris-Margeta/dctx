@@ -4,6 +4,7 @@
 //! Uses only std and the parent store; subprocesses exit without destructors at real IO cuts.
 #![forbid(unsafe_code)]
 
+#[cfg(unix)]
 use super::*;
 #[cfg(unix)]
 use std::process::{Command, Stdio};
@@ -39,6 +40,7 @@ impl Drop for Fixture {
     }
 }
 
+#[cfg(unix)]
 pub(super) fn crash_cut(phase: &str) {
     if std::env::var("DCTX_STORE_CRASH").as_deref() == Ok(phase) {
         std::process::exit(77);

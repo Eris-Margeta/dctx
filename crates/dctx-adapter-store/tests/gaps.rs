@@ -6,6 +6,7 @@
 
 mod common;
 
+#[cfg(unix)]
 use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
@@ -297,19 +298,24 @@ fn bounded_corrupt_reads() {
 #[test]
 fn symlink_confinement() {
     let dir = tempfile::tempdir().expect("dir");
-    let store = SegmentStore::open(StdFs::open(dir.path()).expect("fs"), cap()).expect("open");
-    let bytes = segment("kept");
-    store
-        .publish(req("main", 1, bytes.clone()))
-        .expect("publish");
-    let pin = store.pin("main").expect("pin");
-    assert_eq!(
+    // Real durable publication is Unix-only; Windows refusal is asserted in
+    // concurrent.rs. Raw confined reads/writes below run on every platform.
+    #[cfg(unix)]
+    {
+        let store = SegmentStore::open(StdFs::open(dir.path()).expect("fs"), cap()).expect("open");
+        let bytes = segment("kept");
         store
-            .read_segment(&pin, pin.segments()[0].digest())
-            .expect("read"),
-        bytes
-    );
-    drop(store);
+            .publish(req("main", 1, bytes.clone()))
+            .expect("publish");
+        let pin = store.pin("main").expect("pin");
+        assert_eq!(
+            store
+                .read_segment(&pin, pin.segments()[0].digest())
+                .expect("read"),
+            bytes
+        );
+        drop(store);
+    }
     let fs = StdFs::open(dir.path()).expect("fs");
     fs.create("segments/plain.seg").expect("create");
     fs.write("segments/plain.seg", b"inside").expect("write");

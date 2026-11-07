@@ -9,7 +9,7 @@ dctx 1.2.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short:
 - [README](https://www.dctx.internet.technology/docs/readme/index.md): install, quick start, map mode
 - [Specification](https://www.dctx.internet.technology/docs/spec/index.md): constraints and roadmap
 - [Map mode](https://www.dctx.internet.technology/docs/map-mode/index.md): every map verb
-- [Agent snippet](https://www.dctx.internet.technology/docs/agents/index.md): AGENTS.md text
+- [Which mode?](https://www.dctx.internet.technology/docs/modalities/index.md): scope and startup cost
 - [All documents](https://www.dctx.internet.technology/docs/): with Markdown twins
 
 ## CLI
@@ -57,7 +57,13 @@ Each of these costs you. Models read text as **tokens** (small chunks of text, r
 
 dctx is a command-line tool that reads your project on your machine and answers precise questions about it: where a function is defined, what calls it, what its exact source is. Each answer fits a size budget and is built from whole pieces of syntax; a piece that is too long is marked as cut, with a way to get the rest. The same question about the same code gives the same bytes every time. An assistant can run the commands itself or call them through the built-in MCP server (`dctx mcp`; MCP is a standard way for AI tools to call other tools). dctx can also pack a whole project into one structured block for a chat.
 
-Think of photocopying random pages of a book versus using its index. dctx is the index.
+### Start with grep plus file reads
+
+The baseline is a literal search followed by reading the relevant files or line
+ranges. That is often enough for a short task. dctx earns its place when exact
+symbol reads and outlines avoid repeatedly sending large, irrelevant files.
+It aims to be one context-management tool across these workflows; choose the
+surface that fits in [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/).
 
 ### A small worked example
 
@@ -80,7 +86,7 @@ $ dctx map neighbors 's:tests/fixtures/basic.go#Add' --edge calls --dir in
 calls:in:s:tests/fixtures/basic.go#main	fn	tests/fixtures/basic.go	L59
 ```
 
-`find` returns a stable id, the kind of thing it is (a function) and its lines. `read` returns the exact source. `neighbors` says that `main` calls it, on line 59.
+`find` returns a stable id, the kind of thing it is (a function) and its lines. This is a historical 1.1.0 transcript; in the current CLI use `read --json` to include source bytes, because text read output contains metadata only. `neighbors` says that `main` calls it, on line 59.
 
 ## The philosophy
 
@@ -160,13 +166,13 @@ If the context is byte-identical, turn one pays 200 units and the next nine pay 
 - **Not exact token counting.** Budgets use an estimate, `ceil(2 × UTF-8 bytes / 7)`, not a model's tokenizer.
 - **Not vector search or RAG.** No embeddings in the core, and the engine never calls a model.
 - **Not a hosted service or a daemon.** One binary that runs when you call it. No telemetry, not even opt-out.
-- **Not finished everywhere.** Linux x86_64 is the only tested platform for v1. Plain `dctx pack` is not bounded; it sends the whole project. The desktop app is a source-only preview with no download yet.
+- **Limits still matter.** Plain `dctx pack` sends the selected project without an output budget by default. A 100 GB tree needs scoping, and the cache has a 2 GiB hard cap. CI covers Linux, macOS and Windows; byte-stability measurements here ran on Linux only.
 
 ## Where to go next
 
 - [README](https://www.dctx.internet.technology/docs/readme/): install, quick start, map mode.
 - [Specification](https://www.dctx.internet.technology/docs/spec/): rules, metrics, roadmap.
-- [Benchmark](https://www.dctx.internet.technology/docs/benchmark/): dctx against Trail-Code and graphify, including where they win.
+- [Measurement evidence](https://www.dctx.internet.technology/docs/benchmark/): grep plus file reads first; other-tool numbers are secondary historical notes.
 - [Stability report](https://www.dctx.internet.technology/docs/stability/): protocol, raw answers and limits.
 - [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/): every verb and option.
 
@@ -212,7 +218,6 @@ source: https://github.com/Eris-Margeta/dctx/blob/main/README.md
     <img src="https://img.shields.io/badge/commercial-maintenance%20available-8b5cf6" alt="Commercial maintenance available">
   </a>
   <img src="https://img.shields.io/badge/telemetry-none-brightgreen" alt="No telemetry">
-  <img src="https://img.shields.io/badge/own%20benchmark-140%2F140-8b5cf6" alt="Own benchmark 140/140">
 </p>
 
 <p align="center">
@@ -290,17 +295,26 @@ Run `dctx` without arguments for the interactive terminal menu.
 
 ---
 
+## Which mode?
+
+Use `dctx pack . --clipboard` for a one-off chat, plain grep plus file reads for a
+small agent task, and `find` + `read --json` + `skeleton` for repeated work in big
+files. Scope huge trees before indexing. MCP adds tool definitions to the agent's
+starting context; smaller answers alone do not prove lower session cost.
+See [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/) for commands, cache limits,
+MCP overhead and CI guidance.
+
 ## Why dctx
 
 <table>
 <tr><td><b>Deterministic</b></td><td>Same source snapshot and request give identical bytes (every text verb checked over 5 runs on Linux; the cross-OS gate is still open). <code>dctx pack</code> tree lines carry no timestamps, so a <code>touch</code> changes nothing.</td></tr>
 <tr><td><b>Prefix-stable</b></td><td>In a <code>dctx pack</code> page, an edit keeps every byte before the edited file as a shared prefix, which is what a provider's prompt cache reuses. Map and find answers were byte-identical after unrelated edits in 33/33 text and 33/33 JSON cases (<a href="https://www.dctx.internet.technology/docs/stability/">measured 6 Nov 2026</a>); layered prompt tiers are still a target (<a href="https://www.dctx.internet.technology/docs/spec/">spec</a> PPE-3).</td></tr>
 <tr><td><b>Private and offline</b></td><td>No telemetry, no model calls, no network. The release check counts socket calls under <code>strace -f</code> and fails on any. Secrets files are listed by name, never read.</td></tr>
-<tr><td><b>Fast</b></td><td>Cold index of the benchmark corpora in 0.13-1.20 s (Trail-Code 1.04-52.83 s, graphify 4.59-59.56 s), on one Linux x86_64 runner.</td></tr>
+<tr><td><b>Fast</b></td><td>Cold index of six historical benchmark corpora in 0.13-1.20 s, on one Linux x86_64 runner. This does not measure agent session cost.</td></tr>
 <tr><td><b>Agent-ready</b></td><td><code>dctx mcp</code> is a stdio MCP server exposing the map verbs; answers are bounded and never split a record.</td></tr>
 <tr><td><b>Broad</b></td><td>50 language families: 36 with symbols and lexical call edges, 8 with symbol outlines, 6 document formats with headed sections; run <code>dctx languages</code>.</td></tr>
 <tr><td><b>Verified</b></td><td>TLA+ models of the cache lifecycle and the plugin system in <a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/formal">docs/formal</a>, each with a mutation gate: every deliberately broken variant must be caught (plugins: 8 baselines, 59 mutants, 37 reachability witnesses). Plugin manifests and the plugin discovery index are verified with Ed25519 signatures.</td></tr>
-<tr><td><b>Measured</b></td><td>140/140 on our 70-question protocol using 29,340 tokens, against Trail-Code 122 (88,923) and graphify 96 (197,203). <a href="#measured-in-the-open">Details and caveats below.</a></td></tr>
+<tr><td><b>Measured</b></td><td>Compare focused answers with grep plus file reads, then count startup context and all agent turns. <a href="#measured-in-the-open">Evidence and limits below.</a></td></tr>
 <tr><td><b>Your choice of surface</b></td><td>CLI, Rust library facade, MCP server, and a <a href="https://github.com/Eris-Margeta/dctx/tree/main/apps/dctx-desktop">desktop app</a> (0.11 preview, free, Apache-2.0).</td></tr>
 </table>
 
@@ -378,7 +392,7 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 - **Source limit**: `DCTX_MAX_SOURCE_BYTES` sets the total source bytes one scan may read (1 to 17179869184; default 1 GiB).
 
 
-Details: [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/). The three-way benchmark against graphify and Trail-Code is in [docs/BENCHMARK-20261030.md](https://www.dctx.internet.technology/docs/benchmark/). Planned next — agent hooks, blast radius for a diff, delta answers and prefix-stable context tiers — is specified in [docs/SPEC.md](https://www.dctx.internet.technology/docs/spec/#31-roadmap-and-acceptance-gates).
+Details: [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/). The [benchmark evidence](https://www.dctx.internet.technology/docs/benchmark/) leads with grep plus file reads; older other-tool results are retained as historical evidence. Planned next — agent hooks, blast radius for a diff, delta answers and prefix-stable context tiers — is specified in [docs/SPEC.md](https://www.dctx.internet.technology/docs/spec/#31-roadmap-and-acceptance-gates).
 
 ### Language tiers
 
@@ -507,26 +521,18 @@ The core pack/map workflows run locally, have **no telemetry**, **call no model*
 ## Measured, in the open
 
 <!-- bench:begin -->
-<!-- Generated by scripts/render_readme.py from docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json and docs/research/bench-3way-20261030/tasks/results/run5-53f8b6b/tasks_aggregate.json. Edit the script, then run it; `just readme-check` fails on drift. -->
+<!-- Generated by scripts/render_readme.py. Baseline observations: docs/BENCHMARK-20261030.md; historical timing: docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json. -->
 
-On our 70-question protocol (designed by the dctx team; questions, gold facts and scorer are in [`docs/research/bench-3way-20261030/tasks/`](https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030/tasks)), run 31 Oct 2026 against Trail-Code 0.28.0 and graphify 0.9.97 in code-only mode, dctx scored 140/140 using 29,340 tokens; Trail-Code 122 (88,923), graphify 96 (197,203). Tokens are estimated as stdout bytes / 3.5, rounded up, for every tool.
+The baseline is **grep plus reading files**.
 
-| Tool | Points /140 | Gold facts /354 | Tokens | Tool calls |
-|---|---|---|---|---|
-| dctx `53f8b6b` | 140 | 353 | 29,340 | 105 |
-| Trail-Code 0.28.0 | 122 | 312 | 88,923 | 70 |
-| graphify 0.9.97, code-only | 96 | 238 | 197,203 | 91 |
+A controlled grep-plus-read benchmark that counts whole agent sessions (start-up context, every call, provider cache hits and accuracy) is being prepared; until it is published, dctx makes no whole-session savings claim.
 
-That protocol is ours, so it can favour dctx. An independently selected protocol (repositories picked by seed, callers gold from language servers, questions written without seeing dctx output) is documented in [the independent protocol](https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-independent/README.md); treat its results separately from this in-house benchmark.
+Historical cold indexing of six benchmark corpora took dctx 0.13–1.20 s on one Linux x86_64 runner. This measures CLI wall time, not agent completion time or session cost.
 
-Cold index of the 6 benchmark corpora (flask, ripgrep, pocketbase, trailcode, mixed, docs; median of 3 runs) took dctx 0.13–1.20 s, against Trail-Code 1.04–52.83 s and graphify 4.59–59.56 s (docs: no index), on one Linux x86_64 runner (Linux 6.12.113+deb13-cloud-amd64, Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz). These performance measurements cover Linux x86_64; cross-platform correctness checks are described in [TESTING.md](https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md).
-
-dctx makes no network calls: it made 0 socket calls in all 4 traced benchmark steps, and the release check (`scripts/release-check.sh`) asserts zero AF_INET/AF_INET6 connect/send calls under `strace -f` for every map verb, `pack`, `cache status` and `mcp`.
-
-Raw results, corpora pins and scripts: [`docs/research/bench-3way-20261030/`](https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030); the write-up is [docs/BENCHMARK-20261030.md](https://www.dctx.internet.technology/docs/benchmark/) (Run 7).
+[Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/) covers scoping and MCP startup overhead. [Measurement evidence](https://www.dctx.internet.technology/docs/benchmark/) describes what was measured (tool-output bytes and estimated tokens); other-tool protocols are retained only as secondary historical notes.
 <!-- bench:end -->
 
-An earlier two-way study against Trail-Code (October 2026, dctx `17dff0b`, before the call edges measured above) is in [docs/research/trail-code-2026-10](https://www.dctx.internet.technology/docs/benchmark-oct/). See also the [changelog](https://www.dctx.internet.technology/changelog/).
+Older protocols and raw results are linked from the [benchmark evidence](https://www.dctx.internet.technology/docs/benchmark/) as secondary historical material. See also the [changelog](https://www.dctx.internet.technology/changelog/).
 
 ---
 
@@ -1628,6 +1634,233 @@ namespace `dctx/`; file names `.dctx/`, `.dctxignore`,
 | Original map-mode design (historical) | `docs/SPEC-MAP-MODE.md` |
 
 ---
+url: https://www.dctx.internet.technology/docs/modalities/
+title: Choosing how to use dctx
+source: https://github.com/Eris-Margeta/dctx/blob/main/docs/MODALITIES.md
+---
+
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
+# Choosing how to use dctx
+
+Compare dctx with **grep plus reading files**, and choose by the work you need to
+do. Smaller tool output is useful, but total agent cost also includes startup
+instructions, tool definitions, conversation history and the number of model
+turns. A tool call can require another model request carrying that context again;
+provider caching can change its billed cost. Count both calls and session tokens.
+
+| Your situation | Start here | Avoid it when |
+|---|---|---|
+| Human, one-off chat | `dctx pack . --clipboard` | The selected tree is too large to paste or contains irrelevant material |
+| Short agent task | Grep, then read the matching file or lines | Add dctx only if a focused query saves enough work to cover setup and extra turns |
+| Long agent session / big files | `find` → `read --json`, with `skeleton` for orientation | The needed file is already small or a grep plus narrow read gives the same answer |
+| Huge tree, monorepo, data or Markdown corpus | Run from a relevant subfolder; apply ignore rules before scanning | You need an unscoped index of 100 GB+ or expect a budget flag to reduce the scan |
+| MCP client | `dctx mcp .` in a scoped root | Tool definitions and extra model turns outweigh focused-read savings |
+| CI / repeated prompt prefix | Deterministic `pack` or scoped map output saved as an artifact | You expect dctx alone to guarantee provider cache hits |
+
+## Human, one-off: pack to clipboard
+
+From the project or relevant subfolder:
+
+```sh
+dctx pack . --clipboard
+```
+
+Paste the resulting structured context into your chat. The local clipboard must
+be available. To inspect or save the same selection instead:
+
+```sh
+dctx pack . --output context.txt
+```
+
+Do not use an unbounded whole-project pack for a large tree or when only one
+function matters. Narrow the root first, or use map reads. Pack's `--ext rs,toml`
+and `--small 1` filters can restrict extensions and file sizes (MB); they are
+pack filters, not map index limits. Inspect the content before sharing it.
+
+## Short agent task: grep can be enough
+
+If you know a name and expect only a few file reads, use the existing shell:
+
+```sh
+grep -R -n -F --include='*.rs' 'SnapshotConfig' crates/dctx-cli/src
+sed -n '1,120p' crates/dctx-cli/src/lib.rs
+```
+
+Choose the line range from the search result; reading a narrow range is an
+honest baseline alongside whole-file reads. If a symbol read is useful, call
+`dctx map find SnapshotConfig` through the existing shell. Loading an MCP server
+adds tool descriptions to starting context; installing verbose agent
+instructions can add more. Do not add that setup for a tiny edit unless you
+measure a benefit.
+
+```sh
+cd crates/dctx-lex-go
+dctx map find Add --budget 500 --limit 5
+dctx map read 's:tests/fixtures/basic.go#Add' --json
+dctx map skeleton tests/fixtures/basic.go --budget 1000
+```
+
+For your project, use the exact ID returned by `find`. `read --json` includes
+source bytes; the current text renderer prints read metadata only. Skeletons
+show declaration signatures without bodies. If an answer has `more` and `next`,
+pass that opaque `next` value with `--cursor` on the same request, and count the
+extra call. Budgets are estimated output tokens, not a model tokenizer promise.
+
+## Huge trees: scope before indexing
+
+A 100 GB+ folder, including a 200 GB working tree, is a container of possible
+scopes, not a promise that dctx can index it all at once. Source volume, visited
+entries, record count and cache size are separate limits. Markdown headings
+produce document nodes, so mostly text trees can still have large indexes.
+
+Map's shared cache stores a lifecycle ledger (`ledger.v1`), policy (`policy.v1`),
+serialized generations and their view manifests in managed object files. A map
+generation contains file inventory, digests and stat stamps, declarations,
+summaries, signatures, source spans and edges. It is not a copy of the whole
+source tree or an embedding store; exact source reads still verify live files.
+A compatible unchanged generation can be reused across CLI processes.
+
+The product hard cap is **2 GiB (2,147,483,648 accounted bytes)** across the shared
+cache. Defaults also include a 1.5 GiB soft watermark and a roughly 1.2 GiB
+cleanup target. Admission evicts reclaimable generations first, preserving live
+reader leases. If the new generation still cannot fit, the query fails with a
+cache-limit error; it does not quietly return a complete partial index. Repeating
+the same unscoped request will not fix this. The cap is not a RAM-usage or exact
+filesystem-size guarantee. `cache config --max-bytes` can only tighten it.
+
+Start at the relevant package, not the huge parent:
+
+```sh
+cd packages/service-a
+dctx map find Config --budget 500 --limit 5
+# Equivalent root selection from elsewhere:
+dctx map find Config --place packages/service-a --budget 500 --limit 5
+```
+
+`--place` selects the scan root. `--in src` narrows find/grep matches **after**
+indexing; `--budget`, `--limit` and `--cursor` bound answers, not the tree scan.
+Running from a subfolder changes relative paths and IDs; retain the needed ignore
+rules there instead of assuming parent project rules were inherited.
+
+Use existing `.gitignore` and a `.dctxignore` at the chosen root to exclude data,
+generated output and irrelevant documents before reads, parsing and caching.
+For example, merge these project-specific entries into `.dctxignore`:
+
+```gitignore
+/data/
+/generated/
+/archive/
+```
+
+The host loads global ignore rules, root and nested `.gitignore` rules, then the
+root `.dctxignore`. Built-in sensitive-file and `.git` exclusions still apply.
+Do not set `DCTX_INDEX_IGNORED=1` when relying on these ignore rules.
+
+The built binary documents these **environment variables**, not scan-limit flags:
+
+| Variable | Default | Accepted range / effect |
+|---|---|---|
+| `DCTX_MAX_SOURCE_BYTES` | 1,073,741,824 (1 GiB) | 1–17,179,869,184 total source bytes per scan |
+| `DCTX_MAX_RECORDS` | 1,000,000 | 1–100,000,000 files, symbols and edges |
+| `DCTX_MAX_ENTRIES` | 100,000 | 1–100,000,000 visited files and directories |
+
+For a deliberately smaller scope and fail-fast ceilings:
+
+```sh
+DCTX_MAX_SOURCE_BYTES=268435456 DCTX_MAX_RECORDS=250000 DCTX_MAX_ENTRIES=25000 \
+  dctx map find Config --place packages/service-a --budget 500 --limit 5
+dctx cache status --json
+dctx cache gc --dry-run
+```
+
+Limits refuse an oversized scan; they do not produce an exhaustive answer from
+a truncated scan. Raising source or record ceilings does not raise the 2 GiB
+cache cap. A different absolute `DCTX_CACHE_DIR` selects a separate cache
+location, not a larger cap. Do not use dctx on the whole huge tree if narrowing
+would exclude facts your task requires; use grep and direct reads across the
+needed directories, or query several explicit scopes and account for extra calls.
+
+## MCP server: convenient tools with startup context
+
+Configure your MCP client to launch this process in the selected project root:
+
+```sh
+dctx mcp .
+```
+
+It exposes ten tools: `map`, `find`, `neighbors`, `explain`, `read`, `skeleton`,
+`grep`, `hubs`, `path`, `export`. These are query tools, not a pack or cache-admin
+interface. Export emits the whole graph without the normal answer-token cap.
+For source bytes, set the MCP `read` argument `"json": true`, just as CLI
+reads need `--json`. Without it, read output contains metadata only.
+
+| Payload | Exact UTF-8 bytes | Estimated tokens |
+|---|---|---|
+| Complete `tools/list` response, request ID `2`, without trailing LF | 6,135 | 1,753 |
+| Same response including one LF | 6,136 | — |
+| Compact `result.tools` array alone (definitions and schemas) | 6,091 | 1,741 |
+
+The [captured response](https://github.com/Eris-Margeta/dctx/blob/main/docs/assets/mcp-tools-list-1.2.0.json) includes its trailing LF.
+Token estimates use `ceil(2 × bytes / 7)`, the CLI's byte heuristic, **not an
+actual model tokenizer**. Clients may transform schemas, add wrappers or defer
+loading tools, so this is the definition payload's estimated startup cost, not
+the client's exact input-token count.
+
+Reproduce from the project root (with `dctx` on PATH):
+
+```sh
+python3 - <<'PYCODE'
+import json
+import subprocess
+
+requests = [
+    {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {
+        "protocolVersion": "2025-06-18", "capabilities": {},
+        "clientInfo": {"name": "dctx-modality-measurement", "version": "1"}}},
+    {"jsonrpc": "2.0", "method": "notifications/initialized"},
+    {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
+]
+wire = "".join(json.dumps(r, separators=(",", ":")) + "\n" for r in requests)
+reply = subprocess.run(["dctx", "mcp", "."], input=wire.encode(),
+                       stdout=subprocess.PIPE, check=True).stdout
+line = next(x for x in reply.splitlines() if json.loads(x).get("id") == 2)
+definitions = json.dumps(json.loads(line)["result"]["tools"],
+                         ensure_ascii=False, separators=(",", ":")).encode()
+for name, payload in [("response without LF", line), ("tools array", definitions)]:
+    print(name, len(payload), "bytes;", (2 * len(payload) + 6) // 7, "est. tokens")
+PYCODE
+```
+
+Do not enable MCP solely to save output tokens on a short task. Prefer existing
+shell access when it avoids adding definitions; use MCP when the client's tool
+workflow makes repeated focused queries useful. Compare total session usage
+under the same client and model, including definition loading and extra turns.
+
+## CI / prompt-cache prefix stability
+
+Save deterministic output from a fixed selection as a build artifact:
+
+```sh
+dctx pack . --output context.txt
+dctx map find SnapshotConfig --json > symbol-context.json
+```
+
+Keep generated artifacts outside the next scan or ignore them. Keep the default
+`--tree-stamps=off` for stable prefixes. For map,
+leave `--meta` off to exclude changing snapshot, generation and age metadata.
+Keep stable instructions and context early in the assembled prompt, followed by
+changing task text. Use the same template, root, request and binary version.
+
+The [stability report](https://www.dctx.internet.technology/docs/stability/) measured 33/33 text
+and 33/33 JSON answers unchanged after unrelated edits on three Linux corpora,
+and identical output over five runs. It measured answer bytes, not provider
+cache hits, billed tokens or whole-session latency. A bare `touch` leaves default
+pack output unchanged; a real edit can preserve the bytes before the edited
+file. Do not assume every edit preserves the entire prompt, or that provider
+cache retention and minimum-prefix requirements are controlled by dctx.
+
+---
 url: https://www.dctx.internet.technology/docs/map-mode/
 title: Map mode guide
 source: https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MAP-MODE.md
@@ -1729,14 +1962,20 @@ checks empty records for `OpaqueBeacon` in `sample.unknown`.
 
 ## Index, cache and privacy
 
-Each invocation opens a facade session, takes a strict snapshot and queries its
-ephemeral index. Repeated processes share the host cache root, not a persistent
-CLI graph database. Identity uses dctx's first-party SHA-256 and file metadata,
-without Git object IDs. The retired per-worktree SQLite cache selector
-(`map/storage.rs`) has been deleted: queries do not create `~/.cache/dctx/map`,
-and the CLI does not read `DCTX_MAP_CACHE`.
+Each invocation opens a facade session and can reuse a compatible persisted
+map generation after checking its inventory and file freshness. The default
+stamp mode trusts settled files with unchanged size, mtime and inode;
+`DCTX_FRESHNESS=strict_live` hashes every file on a warm start. Exact source
+reads still verify live bytes. There is no persistent CLI graph database.
+The retired per-worktree SQLite cache selector (`map/storage.rs`) has been
+deleted; the CLI does not read `DCTX_MAP_CACHE`.
 
-The shared cache stores `ledger.v1` and `policy.v1`. Set `DCTX_CACHE_DIR` to an
+The shared cache stores `ledger.v1`, `policy.v1`, serialized generations and
+view manifests in managed object files. Generations contain file inventory,
+digests and stamps, nodes, signatures, summaries, spans and edges, rather than
+copies of all source contents. See [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/#huge-trees-scope-before-indexing)
+for huge-tree scoping and the behavior when the cache cap is reached.
+Set `DCTX_CACHE_DIR` to an
 absolute path to override its root. Otherwise it is:
 
 | Platform | Cache root |
@@ -1769,11 +2008,10 @@ plugin and TUI commands run one bounded cleanup when due (daily by default).
 `--no-auto-clean` or `DCTX_AUTO_CLEAN=0` disables that slice.
 
 Ignored files are excluded before content reads; omitted files may have metadata
-listed but their content is never read. The core never reads `.git/` or runs Git
-The intended `.gitignore` contract is rules only, not Git metadata.
-**Unverified:** automatic `.gitignore` rule loading in this facade CLI path:
-`host.rs` supplies `RuleTexts::default()`, with no local/global rule texts.
-Do not assume project-specific ignore rules were loaded by this map command.
+listed but their content is never read. The host loads global ignore rules,
+root and nested `.gitignore` rules, then the chosen root's `.dctxignore`.
+`DCTX_INDEX_IGNORED=1` skips those ignore texts; built-in sensitive-file and
+`.git` exclusions still apply. The core does not read Git metadata or run Git.
 The optional Git plugin has separately disclosed authority; see [Plugins](https://www.dctx.internet.technology/docs/plugins/).
 
 ## Two worked examples
@@ -2833,16 +3071,31 @@ Keep tree-sitter optional and preserve precision/refusal and store-invariant gat
 
 ---
 url: https://www.dctx.internet.technology/docs/benchmark/
-title: Three-way benchmark
+title: Measurement evidence
 source: https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md
 ---
 
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
-# dctx vs Trail-Code vs graphify: three-way benchmark (30 October 2026)
+# dctx measurement: grep plus file reads first
 
-> Historical measurements and plans from October 2026. Limitations in older runs
-> are retained as evidence; see the [README](https://www.dctx.internet.technology/docs/readme/) for current behavior.
+The baseline for choosing dctx is **grep plus reading files**. Count the whole
+agent session before claiming a cost saving. Output bytes and estimated output
+tokens measure only the returned context; they exclude startup instructions,
+tool descriptions, conversation replay, model output and provider cache effects.
+
+## Grep plus file reads
+
+The headline baseline is grep plus reading files. A controlled benchmark against it, counting whole agent sessions, is being prepared and will be published with raw data; no result is claimed here yet.
+
+## Secondary historical evidence: other-tool protocols
+
+Everything below retains the October/November research record, including its
+older limitations and plans. These other-tool comparisons are historical notes,
+not the product's headline baseline or a recommendation between tools. All
+"tokens" in these tables mean estimated **tool stdout tokens**, calculated as
+`ceil(stdout_bytes / 3.5)`, never whole-session tokens. Task scores are fact
+coverage in raw outputs without a model, not agent completion rates.
 
 One command, same host, same corpora, same CPU set, no network, pinned versions. Raw aggregate, headline tables
 and the harness are in [`research/bench-3way-20261030/`](https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030); the current goals are in the [specification](https://www.dctx.internet.technology/docs/spec/). Where another tool wins, the tables say so.
@@ -2854,7 +3107,7 @@ and the harness are in [`research/bench-3way-20261030/`](https://github.com/Eris
 - **graphify** `graphifyy` 0.9.97 from PyPI, LLM-free code path only (`extract --code-only`,
   `GRAPHIFY_BACKEND=none`). Its LLM pass over docs, PDFs and images was **not** run, and nothing here measures it.
 
-## Headline
+## Historical three-way summary
 
 | Area | Result |
 |---|---|
@@ -3117,7 +3370,7 @@ All corpora and the edit-stability, network and coverage tables are in
 
 ## Not claimed
 
-- Task-level answer quality with a frozen model. The fact-scoring protocol was re-run; Trail-Code leads it, 122 to 77.
+- Whole-session cost or task-level answer quality with a frozen model. Historical fact scores describe raw tool outputs only.
 - Anything about graphify's LLM semantic graph, or Trail-Code's learnings and LSP edges.
 - SWE-bench or agent-run numbers.
 - Equal language depth. dctx's 25 new formats are outline tier: symbols, not call edges.

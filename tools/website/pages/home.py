@@ -44,8 +44,8 @@ def facts() -> tuple[str, int]:
     net, net_line = data.network_zero()
     lo, hi, n = r7["cold"]["dctx"]
     rows = [
-        (f'{r7["points"]["dctx"]}/140', f'points on the 70-question protocol (Trail-Code {r7["points"]["trail"]}, graphify {r7["points"]["graphify"]}). '
-         + src(data.BENCH, "run 7", r7["line"])),
+        ("grep + read", 'the baseline for choosing a mode; count startup and every agent turn. '
+         + '<a class="src" href="/docs/modalities/">Choosing how to use dctx</a>'),
         (f"{lo:.2f}&ndash;{hi:.2f}&nbsp;s", f"cold index of {n} benchmark corpora, median of 3 runs. " + src(data.RUN7, "run 7")),
         (f'{langs["total"]}', f'language families: {langs["tiers"]["full"]} full, {langs["tiers"]["outline"]} outline, '
          f'{langs["tiers"]["docs"]} docs. <a class="src" href="/languages/">dctx languages</a>'),
@@ -92,10 +92,8 @@ def ppe() -> str:
 
 
 def bench_table() -> str:
-    r7 = data.run7()
-    head = r7["head"]
-    return table(head, r7["rows"], numeric={1, 2, 3, 4},
-                 caption=f'Run 7, 31 October 2026. Tokens are estimated as stdout bytes / 3.5 for every tool. {src(data.BENCH, "BENCHMARK-20261030.md", r7["line"])}')
+    return ('<p>The baseline is grep plus reading files. A controlled whole-session benchmark against it is being '
+            'prepared; see <a href="/benchmarks/">benchmarks</a> for what has been measured so far.</p>')
 
 
 def body(scene: dict) -> str:
@@ -103,7 +101,6 @@ def body(scene: dict) -> str:
     facts_html, _ = facts()
     c = scene["counts"]
     readme_build = data.readme_block("From source")
-    _, ind_line, ind_tasks = data.independent()
     steps = [
         ("repository", f'{c["disk"]} files on disk'),
         ("policy", f'{c["listed"]} listed, {c["read"]} read'),
@@ -214,7 +211,7 @@ def body(scene: dict) -> str:
   <div>
    <div class="sec-head"><h2 id="bench-h">Benchmark</h2></div>
    {bench_table()}
-   <p class="caveat">The 70-question protocol was designed by the dctx team, so it can favour dctx. On an independent protocol (3 seeded repositories the tools never saw, gold from language servers, 31 October): {e(ind_tasks)} {src(data.BENCH, "BENCHMARK", ind_line)} <a href="/benchmarks/#independent">All tables and caveats</a></p>
+   <p class="caveat">Returned bytes do not measure whole-session cost or establish an advantage over grep plus narrow line-range reads. <a href="/docs/modalities/">Choose a mode</a> and count startup context, all model turns and cached input. <a href="/benchmarks/">Evidence and secondary historical tables</a></p>
   </div>
  </div>
 </section>

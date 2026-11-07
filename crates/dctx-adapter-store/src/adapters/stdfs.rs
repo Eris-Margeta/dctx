@@ -65,8 +65,10 @@ impl StdFs {
 impl StoreFs for StdFs {
     fn capabilities(&self) -> FsCapabilities {
         FsCapabilities {
-            sync: true,
-            atomic_replace: true,
+            // Directory fsync and atomic pointer replacement are qualified on
+            // Unix only. Windows must refuse durable publication before writes.
+            sync: cfg!(unix),
+            atomic_replace: cfg!(unix),
             os_lock: true,
         }
     }
@@ -156,9 +158,15 @@ impl StoreFs for StdFs {
     }
 
     fn sync_dir(&self) -> Result<(), StoreError> {
-        let dir = File::open(&self.root).map_err(ports::io_err)?;
-        dir.sync_all().map_err(ports::io_err)?;
-        Ok(())
+        #[cfg(unix)]
+        {
+            let dir = File::open(&self.root).map_err(ports::io_err)?;
+            dir.sync_all().map_err(ports::io_err)
+        }
+        #[cfg(not(unix))]
+        {
+            Err(StoreError::UnsupportedDurability { capability: "sync" })
+        }
     }
 
     fn rename_new(&self, from: &str, to: &str) -> Result<(), StoreError> {
