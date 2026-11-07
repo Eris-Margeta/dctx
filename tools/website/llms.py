@@ -32,6 +32,7 @@ LLMS_LINKS = [
               ("Specification", doc_path("spec") + "index.md", "constraints and roadmap"),
               ("Map mode", doc_path("map-mode") + "index.md", "every map verb"),
               ("Which mode?", doc_path("modalities") + "index.md", "scope and startup cost"),
+              ("How it works", "/how-it-works/", "five animations"),
               ("All documents", "/docs/", "with Markdown twins")]),
     ("CLI", [("CLI reference", "/cli/", "help, env, exit codes, MCP tools"),
              ("Languages", "/languages/", "50 languages by tier")]),

@@ -54,6 +54,7 @@ examples is handwritten. The Rust snippet comes from the workspace doctest in
 | `/cli/`, `/languages/`, `/examples/`, the hero terminal | `data/demo.json`, recorded from the real binary by `capture.py` on `sample/`; `check.py` re-records and fails on drift |
 | `/templates/` | `crates/dctx-template/templates/*.dctx_template`, ADR-003 and the template captures |
 | `/benchmarks/`, the home facts | tables parsed from `docs/BENCHMARK-20261030.md`, the run 7 `aggregate.json` and the stability report (`data.py`) |
+| `/how-it-works/` and the explainer animations | `pages/animations.py` (figures, captions, prose fallbacks) and `src/anim.js` (five deterministic canvas scenes, frame-counted, in the `home.js` and `how.js` bundles) |
 | `/changelog/` and its feed | `CHANGELOG.md` |
 | OG images, the poster, icons | `og.py` (Pillow), from the same scene geometry as the canvas animation |
 | `llms.txt`, `llms-small.txt`, `llms-full.txt`, sitemap, feeds, robots, `security.txt`, `humans.txt`, manifest, OpenSearch, search index, `build.json` | `llms.py`, from the route table in `routes.py` |

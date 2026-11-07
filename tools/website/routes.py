@@ -106,6 +106,9 @@ def build_routes(news: list[dict]) -> list[Route]:
                             crumb=post["title"], llms="Optional", extra={"post": post}))
     for path, file, title, line in POLICIES:
         routes.append(Route(path, title, line, "doc", None, source=file, group="Policy", og=path.strip("/"), llms="Project"))
+    # After the policies so that adding it shifts no earlier OG image seed.
+    routes.append(Route("/how-it-works/", "How dctx works", "Five short animations: two scopes of one binary, calls times context, "
+                        "prefix stability, the giant folder and the safe path for new users.", "page", "docs", og="how-it-works", llms="Docs"))
     routes += [
         Route("/search/", "Search", "Search the dctx website.", "search", og="search", indexable=False),
         Route("/playground/offline/", "Playground offline", "The playground service is not reachable right now.", "page", "playground",
