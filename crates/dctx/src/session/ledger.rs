@@ -142,6 +142,8 @@ pub(crate) struct PersistedCache {
     root_path: PathBuf,
     session: SessionId,
     reclaimed: u64,
+    /// One bound for persisted object admission and reads. Never below an admitted object.
+    object_read_cap: u64,
 }
 
 static SESSION_IDS: AtomicU64 = AtomicU64::new(1);
@@ -200,6 +202,7 @@ impl PersistedCache {
             root_path: path.to_path_buf(),
             session: next_session(),
             reclaimed,
+            object_read_cap: dctx_adapter_cache::HARD_CAP_BYTES,
         };
         cache.register_and_touch(now_ms)?;
         Ok(cache)

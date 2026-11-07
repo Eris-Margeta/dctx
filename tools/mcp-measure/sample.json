@@ -1,0 +1,96 @@
+{
+  "binary": "dctx 1.2.0 (fd82034)",
+  "platform": "Linux-6.12.115+deb13.1-cloud-amd64-x86_64-with-glibc2.41",
+  "python": "3.13.5",
+  "samples": 7,
+  "burst": 8,
+  "fixture": {
+    "files": 26,
+    "bytes": 24629,
+    "sha256": "e9acdbc2d7b8fb5491f1c37149b64e027543f2095f151959c656cb5d4270bc7a"
+  },
+  "profiles": [
+    {
+      "profile": "default",
+      "tools": 10,
+      "definitions_bytes": 6091,
+      "input_schemas_bytes": 4894,
+      "tools_list_wire_bytes": 6136,
+      "startup_wire_bytes": 6278
+    },
+    {
+      "profile": "lean",
+      "tools": 2,
+      "definitions_bytes": 1450,
+      "input_schemas_bytes": 1251,
+      "tools_list_wire_bytes": 1495,
+      "startup_wire_bytes": 1637
+    }
+  ],
+  "wrapping": [
+    {
+      "output": "text",
+      "cli_stdout_bytes": 106,
+      "mcp_result_bytes": 160,
+      "mcp_wire_bytes": 196,
+      "wire_ratio": 1.849056603773585,
+      "decoded_text_equals_cli": true
+    },
+    {
+      "output": "facade JSON",
+      "cli_stdout_bytes": 500,
+      "mcp_result_bytes": 637,
+      "mcp_wire_bytes": 673,
+      "wire_ratio": 1.346,
+      "decoded_text_equals_cli": true
+    }
+  ],
+  "timings": {
+    "spawn_handshake_ms": 10.369233990786597,
+    "first_empty_cache_call_ms": 42.86278600920923,
+    "spawn_through_first_call_ms": 53.23201999999583,
+    "warm_call_ms": [
+      17.388392996508628,
+      81.36816399928648,
+      37.72229699825402,
+      14.622615999542177,
+      14.73067799815908,
+      184.80396499217022,
+      13.81432599737309
+    ],
+    "warm_median_ms": 17.388392996508628,
+    "burst_completion_ms": [
+      46.68959300033748,
+      236.69349899864756,
+      403.3630999911111,
+      433.5734810010763,
+      443.8852019957267,
+      459.31554900016636,
+      476.29675299685914,
+      491.5721159923123
+    ],
+    "queued_ping_ms": 491.81187999784015
+  },
+  "pagination": {
+    "find": {
+      "first_records": 2,
+      "second_records": 2,
+      "cursor_advanced": true
+    },
+    "read": {
+      "first_records": 1,
+      "second_records": 1,
+      "cursor_advanced": true
+    },
+    "absolute_read_window_verified": true
+  },
+  "tool_error": {
+    "content": [
+      {
+        "type": "text",
+        "text": "id is required and must be a non-empty string"
+      }
+    ],
+    "isError": true
+  }
+}

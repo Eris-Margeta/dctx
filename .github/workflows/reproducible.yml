@@ -1,0 +1,102 @@
+name: Reproducible Linux release archive
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Commit or tag to rebuild (both runners resolve to the same commit)'
+        required: true
+        type: string
+  workflow_call:
+    outputs:
+      sha256:
+        description: 'SHA-256 of the archive matched by both clean builds'
+        value: ${{ jobs.compare.outputs.sha256 }}
+    inputs:
+      ref:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    outputs:
+      commit: ${{ steps.source.outputs.commit }}
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
+        with:
+          ref: ${{ inputs.ref }}
+          persist-credentials: false
+      - id: source
+        run: echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+  build:
+    needs: source
+    name: Clean Linux musl build ${{ matrix.copy }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        copy: [one, two]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1 (GitHub API resolved)
+        with:
+          ref: ${{ needs.source.outputs.commit }}
+          path: source-${{ matrix.copy }}
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0 (GitHub API resolved)
+        with:
+          python-version: '3.12.8'
+      - name: Install native musl C compiler (bundled SQLite)
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends musl-tools
+      - name: Build without shared Cargo or target caches
+        shell: bash
+        working-directory: source-${{ matrix.copy }}
+        run: |
+          set -euo pipefail
+          source tools/release/toolchain.env
+          rustup toolchain install "$DCTX_RELEASE_RUST" --profile minimal --target x86_64-unknown-linux-musl
+          export CARGO_HOME="$RUNNER_TEMP/cargo-${{ matrix.copy }}"
+          export CARGO_TARGET_DIR="$RUNNER_TEMP/target-${{ matrix.copy }}"
+          bash tools/release/build.sh x86_64-unknown-linux-musl dist
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 (GitHub API resolved)
+        with:
+          name: reproducible-${{ matrix.copy }}
+          path: source-${{ matrix.copy }}/dist/*.tar.gz
+          if-no-files-found: error
+
+  compare:
+    permissions: {}
+    outputs:
+      sha256: ${{ steps.compare.outputs.sha256 }}
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0 (GitHub API resolved)
+        with:
+          pattern: reproducible-*
+          path: rebuilds
+      - name: Compare SHA-256 and bytes
+        id: compare
+        shell: bash
+        run: |
+          set -euo pipefail
+          one=rebuilds/reproducible-one/dctx-x86_64-unknown-linux-musl.tar.gz
+          two=rebuilds/reproducible-two/dctx-x86_64-unknown-linux-musl.tar.gz
+          sha256sum "$one" "$two" | tee reproducibility.txt
+          test "$(sha256sum "$one" | cut -d ' ' -f 1)" = "$(sha256sum "$two" | cut -d ' ' -f 1)"
+          cmp "$one" "$two"
+          echo "sha256=$(sha256sum "$one" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+          cat reproducibility.txt >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2 (GitHub API resolved)
+        if: ${{ !cancelled() }}
+        with:
+          name: reproducibility-report
+          path: reproducibility.txt
+          if-no-files-found: error
