@@ -10,14 +10,16 @@ use dctx_core::ids::ViewKey;
 
 /// Durable (or ephemeral, if the caller chose so) home of pack snapshots.
 pub trait FactStore {
-    /// The latest published snapshot of `view`, if any. Corrupt data is `CorruptIndex`.
+    /// The latest published manifest of `view`, if any. Corrupt data is `CorruptIndex`.
+    /// File bodies are absent; consumers read source bytes on demand and verify `digests()`.
+    /// `dctx_pack::read_snapshot_file` provides that check for pack consumers.
     ///
     /// # Errors
     /// Returns `CorruptIndex` for an invalid stored snapshot, or an adapter
     /// error when storage cannot be read.
     fn load(&self, view: &ViewKey) -> Result<Option<PackSnapshot>, DctxError>;
 
-    /// Atomically replaces the latest snapshot of `view`.
+    /// Atomically replaces the latest manifest of `view`. File bodies are not retained.
     ///
     /// # Errors
     /// Returns an adapter error if storage cannot publish the snapshot;

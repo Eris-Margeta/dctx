@@ -164,25 +164,6 @@ pub(crate) fn id_matches(text: &TextBlob, node: &IndexedNode, target: &str) -> b
     parse_ordinal(digits) == Some(node.ordinal)
 }
 
-/// Ordinal stored in a persisted id. `0` means the id has no `~` suffix.
-///
-/// A name may itself contain `~`. The suffix is only the digits after the stored name.
-pub(crate) fn ordinal_suffix(id: &str, name: &str) -> u32 {
-    let Some((_, tail)) = id.rsplit_once('#') else {
-        return 0;
-    };
-    if tail == name {
-        return 0;
-    }
-    let Some(rest) = tail.strip_prefix(name) else {
-        return 0;
-    };
-    let Some(digits) = rest.strip_prefix('~') else {
-        return 0;
-    };
-    parse_ordinal(digits).unwrap_or(0)
-}
-
 fn parse_ordinal(digits: &str) -> Option<u32> {
     if digits.is_empty() || (digits.len() > 1 && digits.as_bytes().first().copied() == Some(b'0')) {
         return None;

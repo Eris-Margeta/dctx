@@ -55,7 +55,7 @@ impl FactStore for MemoryFactStore {
             return Err(DctxError::io("publish refused"));
         }
         self.snapshots
-            .insert(view.as_str().to_string(), snapshot.clone());
+            .insert(view.as_str().to_string(), snapshot.clone().into_manifest());
         self.publishes += 1;
         Ok(())
     }

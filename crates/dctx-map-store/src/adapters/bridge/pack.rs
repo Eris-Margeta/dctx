@@ -13,6 +13,7 @@ use dctx_core::ids::{Timestamp, ViewKey};
 use dctx_core::version::Version;
 use dctx_hash::ContentDigest;
 use rusqlite::{Connection, OptionalExtension, params};
+use std::collections::{BTreeMap, BTreeSet};
 use std::path::PathBuf;
 
 const MAX_DEPTH: usize = 128;
@@ -70,8 +71,16 @@ pub(crate) fn publish(
 }
 
 fn encode(snapshot: &PackSnapshot) -> Result<Vec<u8>> {
+    if snapshot.digests().len() > MAX_NODES as usize {
+        return Err(StoreError::InvalidKey("pack digests"));
+    }
     let mut body = Vec::new();
-    body.extend_from_slice(b"DCTXPK01");
+    body.extend_from_slice(b"DCTXPK02");
+    let strings = Strings::collect(snapshot)?;
+    push_u32(&mut body, strings.values.len() as u32);
+    for value in &strings.values {
+        push_blob(&mut body, value.as_bytes())?;
+    }
     push_u32(&mut body, snapshot.version().major);
     push_u32(&mut body, snapshot.version().minor);
     push_u64(&mut body, snapshot.taken_at().millis());
@@ -82,17 +91,22 @@ fn encode(snapshot: &PackSnapshot) -> Result<Vec<u8>> {
             .map_err(|_| StoreError::InvalidKey("pack field"))?,
     );
     for (path, digest) in snapshot.digests() {
-        push_blob(&mut body, path.as_bytes())?;
+        strings.push(&mut body, path)?;
         push_digest(&mut body, digest);
     }
-    encode_node(&mut body, snapshot.tree(), 0)?;
+    encode_node(&mut body, snapshot.tree(), 0, &strings)?;
     let checksum = dctx_hash::Sha256::digest(&body)
         .map_err(|_| StoreError::InvalidKey("invalid content digest"))?;
     body.extend_from_slice(checksum.as_bytes());
     Ok(body)
 }
 
-fn encode_node(out: &mut Vec<u8>, node: &DirContextTreeNode, depth: usize) -> Result<()> {
+fn encode_node(
+    out: &mut Vec<u8>,
+    node: &DirContextTreeNode,
+    depth: usize,
+    strings: &Strings<'_>,
+) -> Result<()> {
     if depth > MAX_DEPTH {
         return Err(StoreError::InvalidKey("pack depth"));
     }
@@ -107,9 +121,6 @@ fn encode_node(out: &mut Vec<u8>, node: &DirContextTreeNode, depth: usize) -> Re
         FileHandlingDecision::OmitContent => 3,
     });
     let mut flags = u8::from(node.is_ignored) | (u8::from(node.is_binary_file) << 1);
-    if node.file_content.is_some() {
-        flags |= 4;
-    }
     if node.binary_file_type.is_some() {
         flags |= 8;
     }
@@ -117,25 +128,22 @@ fn encode_node(out: &mut Vec<u8>, node: &DirContextTreeNode, depth: usize) -> Re
     push_u64(out, node.last_modified_timestamp);
     push_u64(out, node.content_offset_in_data_section);
     push_u64(out, node.content_size);
-    push_blob(out, node.relative_path.as_bytes())?;
+    strings.push(out, &node.relative_path)?;
     let disk = node
         .disk_path
         .to_str()
         .ok_or(StoreError::InvalidKey("disk path is not utf-8"))?;
-    push_blob(out, disk.as_bytes())?;
-    push_blob(out, node.generated_id_for_llm.as_bytes())?;
-    if let Some(content) = &node.file_content {
-        push_blob(out, content)?;
-    }
+    strings.push(out, disk)?;
+    strings.push(out, &node.generated_id_for_llm)?;
     if let Some(kind) = &node.binary_file_type {
-        push_blob(out, kind.as_bytes())?;
+        strings.push(out, kind)?;
     }
     push_u64(
         out,
         u64::try_from(node.children.len()).map_err(|_| StoreError::InvalidKey("pack field"))?,
     );
     for child in &node.children {
-        encode_node(out, child, depth + 1)?;
+        encode_node(out, child, depth + 1, strings)?;
     }
     Ok(())
 }
@@ -150,8 +158,20 @@ fn decode(bytes: &[u8]) -> Result<PackSnapshot> {
         return Err(corrupt());
     }
     let mut cursor = Cursor::new(body);
-    if cursor.take(8)? != b"DCTXPK01".as_slice() {
-        return Err(corrupt());
+    cursor.legacy = match cursor.take(8)? {
+        b"DCTXPK01" => true,
+        b"DCTXPK02" => false,
+        _ => return Err(corrupt()),
+    };
+    if !cursor.legacy {
+        let count = cursor.u32()? as usize;
+        if count > MAX_NODES as usize * 5 || count > body.len() / 8 {
+            return Err(corrupt());
+        }
+        for _ in 0..count {
+            let text = cursor.raw_text()?;
+            cursor.strings.push(text);
+        }
     }
     let version = Version {
         major: cursor.u32()?,
@@ -188,11 +208,18 @@ fn corrupt() -> StoreError {
 struct Cursor<'a> {
     buf: &'a [u8],
     at: usize,
+    legacy: bool,
+    strings: Vec<&'a str>,
 }
 
 impl<'a> Cursor<'a> {
     fn new(buf: &'a [u8]) -> Self {
-        Self { buf, at: 0 }
+        Self {
+            buf,
+            at: 0,
+            legacy: false,
+            strings: Vec::new(),
+        }
     }
 
     fn take(&mut self, len: usize) -> Result<&'a [u8]> {
@@ -217,13 +244,20 @@ impl<'a> Cursor<'a> {
         Ok(u64::from_le_bytes(raw))
     }
 
-    fn blob(&mut self) -> Result<Vec<u8>> {
+    fn raw_text(&mut self) -> Result<&'a str> {
         let len = usize::try_from(self.u64()?).map_err(|_| corrupt())?;
-        Ok(self.take(len)?.to_vec())
+        std::str::from_utf8(self.take(len)?).map_err(|_| corrupt())
     }
 
     fn text(&mut self) -> Result<String> {
-        String::from_utf8(self.blob()?).map_err(|_| corrupt())
+        if self.legacy {
+            return Ok(self.raw_text()?.to_string());
+        }
+        let id = self.u32()? as usize;
+        self.strings
+            .get(id)
+            .map(|value| (*value).to_string())
+            .ok_or_else(corrupt)
     }
 
     fn digest(&mut self) -> Result<ContentDigest> {
@@ -263,7 +297,7 @@ impl<'a> Cursor<'a> {
             _ => return Err(corrupt()),
         };
         let flags = self.take(1)?[0];
-        if flags & !0b1111 != 0 {
+        if flags & !0b1111 != 0 || (!self.legacy && flags & 4 != 0) {
             return Err(corrupt());
         }
         let modified = self.u64()?;
@@ -272,11 +306,11 @@ impl<'a> Cursor<'a> {
         let relative = self.text()?;
         let disk = self.text()?;
         let generated = self.text()?;
-        let content = if flags & 4 == 0 {
-            None
-        } else {
-            Some(self.blob()?)
-        };
+        if flags & 4 != 0 {
+            // Legacy migration validates framing/checksum but never retains a historical body.
+            let len = usize::try_from(self.u64()?).map_err(|_| corrupt())?;
+            self.take(len)?;
+        }
         let binary_type = if flags & 8 == 0 {
             None
         } else {
@@ -296,7 +330,7 @@ impl<'a> Cursor<'a> {
         node.content_offset_in_data_section = offset;
         node.content_size = size;
         node.generated_id_for_llm = generated;
-        node.file_content = content;
+        node.file_content = None;
         node.is_binary_file = flags & 2 != 0;
         node.binary_file_type = binary_type;
         node.is_ignored = flags & 1 != 0;
@@ -334,4 +368,265 @@ fn push_digest(out: &mut Vec<u8>, digest: &ContentDigest) {
     out.extend_from_slice(&digest.algorithm_code().to_le_bytes());
     out.extend_from_slice(digest.as_bytes());
     push_u64(out, digest.byte_length());
+}
+
+/// The dictionary shares paths between digest and tree rows and stores common labels once.
+struct Strings<'a> {
+    values: Vec<&'a str>,
+    ids: BTreeMap<&'a str, u32>,
+}
+
+impl<'a> Strings<'a> {
+    fn collect(snapshot: &'a PackSnapshot) -> Result<Self> {
+        let mut unique = BTreeSet::new();
+        unique.extend(snapshot.digests().keys().map(String::as_str));
+        let mut stack = vec![(snapshot.tree(), 0)];
+        let mut nodes = 0;
+        while let Some((node, depth)) = stack.pop() {
+            nodes += 1;
+            if nodes > MAX_NODES || depth > MAX_DEPTH {
+                return Err(StoreError::InvalidKey("pack bounds"));
+            }
+            unique.insert(node.relative_path.as_str());
+            unique.insert(
+                node.disk_path
+                    .to_str()
+                    .ok_or(StoreError::InvalidKey("disk path is not utf-8"))?,
+            );
+            unique.insert(node.generated_id_for_llm.as_str());
+            if let Some(kind) = &node.binary_file_type {
+                unique.insert(kind);
+            }
+            stack.extend(node.children.iter().map(|child| (child, depth + 1)));
+        }
+        let values: Vec<_> = unique.into_iter().collect();
+        let ids = values
+            .iter()
+            .enumerate()
+            .map(|(id, value)| (*value, id as u32))
+            .collect();
+        Ok(Self { values, ids })
+    }
+
+    fn push(&self, out: &mut Vec<u8>, value: &str) -> Result<()> {
+        push_u32(
+            out,
+            *self
+                .ids
+                .get(value)
+                .ok_or(StoreError::InvalidKey("pack string"))?,
+        );
+        Ok(())
+    }
+}
+
+/// Replace old payloads atomically without advancing history versions or generations.
+/// Secure deletion and vacuum remove the obsolete content-bearing pages from the active cache.
+pub(super) fn migrate(connection: &mut Connection) -> Result<()> {
+    let views: Vec<String> = {
+        let mut statement = connection.prepare(
+            "SELECT view_key FROM pack_snapshots WHERE substr(payload, 1, 8) = x'44435458504b3031'",
+        )?;
+        statement
+            .query_map([], |row| row.get(0))?
+            .collect::<std::result::Result<_, _>>()?
+    };
+    if views.is_empty() {
+        return Ok(());
+    }
+    connection.pragma_update(None, "secure_delete", "ON")?;
+    let transaction = connection.transaction()?;
+    for view in views {
+        // Bound migration memory to one historical payload. Any bad row rolls back every update.
+        let old: Vec<u8> = transaction.query_row(
+            "SELECT payload FROM pack_snapshots WHERE view_key = ?1",
+            [&view],
+            |row| row.get(0),
+        )?;
+        let bytes = encode(&decode(&old)?)?;
+        transaction.execute(
+            "UPDATE pack_snapshots SET payload = ?1, bytes = ?2 WHERE view_key = ?3",
+            params![bytes, ledger::charge(bytes.len())?, view],
+        )?;
+    }
+    let used = ledger::cached_bytes(&transaction)?;
+    let cap = ledger::cache_cap(&transaction)?;
+    if used > cap {
+        return Err(StoreError::CacheLimit {
+            requested: used,
+            available: cap,
+        });
+    }
+    transaction.commit()?;
+    connection.execute_batch("VACUUM")?;
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::SqliteStore;
+
+    const CONTENT: &[u8] = b"historical-body-canary-which-must-never-remain";
+
+    fn snapshot() -> PackSnapshot {
+        let mut root = DirContextTreeNode::new(NodeType::Directory, "", PathBuf::new());
+        let mut file = DirContextTreeNode::new(NodeType::File, "a.txt", PathBuf::from("a.txt"));
+        file.content_size = CONTENT.len() as u64;
+        file.file_content = Some(CONTENT.to_vec());
+        root.children.push(file);
+        let digests =
+            ContentDigests::from([("a.txt".into(), dctx_hash::Sha256::digest(CONTENT).unwrap())]);
+        PackSnapshot::new(root, Version::new_v1(), Timestamp(42), digests).unwrap()
+    }
+
+    // Independent v1 framing fixture: old caches embedded bodies after the node id.
+    fn legacy(snapshot: &PackSnapshot) -> Vec<u8> {
+        fn node(out: &mut Vec<u8>, tree: &DirContextTreeNode) {
+            out.push(if tree.node_type == NodeType::File {
+                1
+            } else {
+                2
+            });
+            out.push(0);
+            out.push(if tree.file_content.is_some() { 4 } else { 0 });
+            push_u64(out, tree.last_modified_timestamp);
+            push_u64(out, 0);
+            push_u64(out, tree.content_size);
+            push_blob(out, tree.relative_path.as_bytes()).unwrap();
+            push_blob(out, tree.disk_path.to_str().unwrap().as_bytes()).unwrap();
+            push_blob(out, b"").unwrap();
+            if let Some(content) = &tree.file_content {
+                push_blob(out, content).unwrap();
+            }
+            push_u64(out, tree.children.len() as u64);
+            for child in &tree.children {
+                node(out, child);
+            }
+        }
+        let mut bytes = b"DCTXPK01".to_vec();
+        push_u32(&mut bytes, snapshot.version().major);
+        push_u32(&mut bytes, snapshot.version().minor);
+        push_u64(&mut bytes, snapshot.taken_at().millis());
+        push_digest(&mut bytes, &snapshot.digest().0);
+        push_u64(&mut bytes, snapshot.digests().len() as u64);
+        for (path, digest) in snapshot.digests() {
+            push_blob(&mut bytes, path.as_bytes()).unwrap();
+            push_digest(&mut bytes, digest);
+        }
+        node(&mut bytes, snapshot.tree());
+        let checksum = dctx_hash::Sha256::digest(&bytes).unwrap();
+        bytes.extend_from_slice(checksum.as_bytes());
+        bytes
+    }
+
+    #[test]
+    fn compact_history_has_no_bodies_and_rejects_every_truncation() {
+        let original = snapshot();
+        let bytes = encode(&original).unwrap();
+        assert_eq!(&bytes[..8], b"DCTXPK02");
+        assert!(!bytes.windows(CONTENT.len()).any(|window| window == CONTENT));
+        let loaded = decode(&bytes).unwrap();
+        assert_eq!(loaded.digest(), original.digest());
+        assert_eq!(loaded.digests(), original.digests());
+        assert!(loaded.tree().children[0].file_content.is_none());
+        assert_eq!(encode(&loaded).unwrap(), bytes);
+        for end in 0..bytes.len() {
+            assert!(decode(&bytes[..end]).is_err(), "{end}");
+        }
+        // A valid checksum cannot hide an invalid dictionary reference.
+        let mut damaged = bytes[..bytes.len() - 32].to_vec();
+        let end = damaged.len();
+        // Last child has zero children; its generated-id reference precedes that count.
+        damaged[end - 12..end - 8].copy_from_slice(&u32::MAX.to_le_bytes());
+        let sum = dctx_hash::Sha256::digest(&damaged).unwrap();
+        damaged.extend_from_slice(sum.as_bytes());
+        assert!(decode(&damaged).is_err());
+    }
+
+    #[test]
+    fn opening_bridge_migrates_old_history_without_advancing_it() {
+        let mut store = SqliteStore::in_memory().unwrap();
+        let original = snapshot();
+        let bytes = legacy(&original);
+        assert!(bytes.windows(CONTENT.len()).any(|window| window == CONTENT));
+        store
+            .connection
+            .execute(
+                "INSERT INTO pack_snapshots VALUES('old', 7, ?1, ?2, 19)",
+                params![bytes, bytes.len() as i64],
+            )
+            .unwrap();
+        super::super::schema::ensure(&mut store.connection).unwrap();
+        let (generation, bytes, charged, used): (i64, Vec<u8>, i64, i64) = store
+            .connection
+            .query_row(
+                "SELECT generation, payload, bytes, last_used FROM pack_snapshots",
+                [],
+                |row| Ok((row.get(0)?, row.get(1)?, row.get(2)?, row.get(3)?)),
+            )
+            .unwrap();
+        assert_eq!((generation, used), (7, 19));
+        assert_eq!(charged, ledger::charge(bytes.len()).unwrap());
+        assert_eq!(bytes, encode(&original).unwrap());
+        assert_eq!(decode(&bytes).unwrap().digest(), original.digest());
+        super::super::schema::ensure(&mut store.connection).unwrap();
+    }
+
+    #[test]
+    fn migration_never_exceeds_the_configured_cap_or_discards_history() {
+        let mut store = SqliteStore::in_memory().unwrap();
+        let original = legacy(&snapshot());
+        store
+            .connection
+            .execute(
+                "INSERT INTO pack_snapshots VALUES('old', 7, ?1, ?2, 19)",
+                params![original, original.len() as i64],
+            )
+            .unwrap();
+        store
+            .connection
+            .execute("UPDATE bridge_ledger SET hard_cap = 1", [])
+            .unwrap();
+        assert!(matches!(
+            super::super::schema::ensure(&mut store.connection),
+            Err(StoreError::CacheLimit { .. })
+        ));
+        let saved: Vec<u8> = store
+            .connection
+            .query_row(
+                "SELECT payload FROM pack_snapshots WHERE view_key='old'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(saved, original);
+    }
+
+    #[test]
+    fn corrupt_legacy_row_leaves_all_history_unchanged() {
+        let mut store = SqliteStore::in_memory().unwrap();
+        let valid = legacy(&snapshot());
+        let mut invalid = valid.clone();
+        invalid[10] ^= 1;
+        for (view, bytes) in [("good", &valid), ("bad", &invalid)] {
+            store
+                .connection
+                .execute(
+                    "INSERT INTO pack_snapshots VALUES(?1, 7, ?2, ?3, 19)",
+                    params![view, bytes, bytes.len() as i64],
+                )
+                .unwrap();
+        }
+        assert!(super::super::schema::ensure(&mut store.connection).is_err());
+        let saved: Vec<u8> = store
+            .connection
+            .query_row(
+                "SELECT payload FROM pack_snapshots WHERE view_key='good'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(saved, valid);
+    }
 }

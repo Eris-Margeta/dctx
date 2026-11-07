@@ -68,7 +68,10 @@ fn same(left: &DirContextTreeNode, right: &DirContextTreeNode) {
     assert_eq!(left.content_size, right.content_size);
     assert_eq!(left.disk_path, right.disk_path);
     assert_eq!(left.generated_id_for_llm, right.generated_id_for_llm);
-    assert_eq!(left.file_content, right.file_content);
+    assert!(
+        left.file_content.is_none(),
+        "history stores only a manifest"
+    );
     assert_eq!(left.is_binary_file, right.is_binary_file);
     assert_eq!(left.binary_file_type, right.binary_file_type);
     assert_eq!(left.is_ignored, right.is_ignored);

@@ -80,6 +80,18 @@ impl PackSnapshot {
         })
     }
 
+    /// Removes file bodies while preserving every manifest fact and the snapshot identity.
+    /// Content is owned by the source and can be read later with digest verification.
+    #[must_use]
+    pub fn into_manifest(mut self) -> Self {
+        let mut stack = vec![&mut self.tree];
+        while let Some(node) = stack.pop() {
+            node.file_content = None;
+            stack.extend(&mut node.children);
+        }
+        self
+    }
+
     /// The selected tree.
     #[allow(
         clippy::must_use_candidate,

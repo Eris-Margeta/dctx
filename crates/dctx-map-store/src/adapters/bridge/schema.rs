@@ -47,5 +47,5 @@ pub(crate) fn ensure(connection: &mut Connection) -> Result<()> {
         [cap],
     )?;
     transaction.commit()?;
-    Ok(())
+    super::pack::migrate(connection)
 }

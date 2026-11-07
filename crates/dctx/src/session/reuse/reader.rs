@@ -4,6 +4,7 @@ use crate::domain::DctxError;
 
 pub(super) struct Reader<'a> {
     pub(super) rest: &'a [u8],
+    pub(super) strings: Vec<&'a str>,
 }
 
 impl<'a> Reader<'a> {
@@ -46,7 +47,35 @@ impl<'a> Reader<'a> {
         Ok(u128::from_le_bytes(raw))
     }
 
+    pub(super) fn load_strings(&mut self) -> Result<(), DctxError> {
+        let count = usize::try_from(self.u64()?).map_err(|_| DctxError::CorruptIndex {
+            reason: "generation strings",
+        })?;
+        // Every entry needs a four-byte length. Bound allocation by both input and record limits.
+        if count > self.rest.len() / 4 || count > records_cap().saturating_mul(10).saturating_add(8)
+        {
+            return Err(DctxError::CorruptIndex {
+                reason: "generation strings",
+            });
+        }
+        for _ in 0..count {
+            let value = self.raw_string()?;
+            self.strings.push(value);
+        }
+        Ok(())
+    }
+
     pub(super) fn string(&mut self) -> Result<String, DctxError> {
+        let id = self.u32()? as usize;
+        self.strings
+            .get(id)
+            .map(|value| (*value).to_string())
+            .ok_or(DctxError::CorruptIndex {
+                reason: "generation string reference",
+            })
+    }
+
+    fn raw_string(&mut self) -> Result<&'a str, DctxError> {
         let len = usize::try_from(self.u32()?).map_err(|_| DctxError::CorruptIndex {
             reason: "generation string",
         })?;
@@ -59,14 +88,14 @@ impl<'a> Reader<'a> {
         let text = std::str::from_utf8(bytes).map_err(|_| DctxError::CorruptIndex {
             reason: "generation string",
         })?;
-        Ok(text.to_string())
+        Ok(text)
     }
 
-    pub(super) fn count(&mut self) -> Result<usize, DctxError> {
+    pub(super) fn count(&mut self, record_bytes: usize) -> Result<usize, DctxError> {
         let count = usize::try_from(self.u64()?).map_err(|_| DctxError::CorruptIndex {
             reason: "generation count",
         })?;
-        if count > records_cap() {
+        if count > records_cap() || count > self.rest.len() / record_bytes {
             return Err(DctxError::CorruptIndex {
                 reason: "generation count",
             });

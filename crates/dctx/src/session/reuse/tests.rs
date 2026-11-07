@@ -476,3 +476,98 @@ mod stamp {
         assert!(error.to_string().contains("DCTX_FRESHNESS"), "{error}");
     }
 }
+
+#[test]
+fn compact_strings_preserve_heading_ids_edges_and_exports() {
+    let dir = tempfile::tempdir().expect("temp");
+    let cache = dir.path().join("cache");
+    std::fs::create_dir(&cache).expect("cache");
+    let mut source = MemorySource::new();
+    let heading = "Repeated heading Ω ~1";
+    for path in ["a.md", "b.md"] {
+        source
+            .insert_file(
+                path,
+                format!("# {heading}\n\nA short summary.\n\n```text\nbody-canary-not-cached\n```\n# {heading}\n\nA short summary.\n")
+                    .as_bytes(),
+                1,
+            )
+            .expect("doc");
+    }
+    let mut cold = open(source, &cache);
+    let handle = cold
+        .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+        .expect("cold");
+    let bytes = cold.load_retained().expect("load").expect("segment");
+    let decoded = decode_generation(&bytes).expect("decode");
+    assert_eq!(
+        bytes
+            .windows(heading.len())
+            .filter(|value| *value == heading.as_bytes())
+            .count(),
+        1
+    );
+    assert!(
+        !bytes
+            .windows(b"body-canary-not-cached".len())
+            .any(|value| value == b"body-canary-not-cached")
+    );
+    let original = cold.generation(&handle).expect("generation");
+    assert_eq!(decoded.generation.files, original.files);
+    for (saved, live) in decoded.generation.nodes.iter().zip(&original.nodes) {
+        assert_eq!(
+            (&saved.summary, &saved.signature, saved.ordinal),
+            (&live.summary, &live.signature, live.ordinal)
+        );
+    }
+    // Text spans may be relocated; compare the externally encoded graph instead.
+    let format = crate::index::export::ExportFormat::parse("json").expect("format");
+    assert_eq!(
+        crate::index::export::export_graph(&decoded.generation, format),
+        crate::index::export::export_graph(&original, format)
+    );
+    for end in 0..bytes.len() {
+        assert!(decode_generation(&bytes[..end]).is_err(), "{end}");
+    }
+    let mut broken = bytes.clone();
+    // First reference follows the dictionary. An invalid id is refused even with valid framing.
+    let mut reader = Reader {
+        rest: &bytes[MAGIC.len() + 4..],
+        strings: Vec::new(),
+    };
+    reader.load_strings().expect("pool");
+    let reference = bytes.len() - reader.rest.len();
+    broken[reference..reference + 4].copy_from_slice(&u32::MAX.to_le_bytes());
+    assert!(decode_generation(&broken).is_err());
+}
+
+#[test]
+fn an_old_generation_rebuilds_once_and_then_reuses() {
+    let dir = tempfile::tempdir().expect("temp");
+    let cache = dir.path().join("cache");
+    std::fs::create_dir(&cache).expect("cache");
+    let mut cold = open(source(b"fn kept() {}\n"), &cache);
+    let handle = cold
+        .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+        .expect("cold");
+    let ids = find_ids(&mut cold, &handle, "kept");
+    drop(handle);
+    let mut old = cold.load_retained().expect("load").expect("segment");
+    old[MAGIC.len()..MAGIC.len() + 4].copy_from_slice(&3u32.to_le_bytes());
+    drop(cold.store_cache_segment(&old).expect("publish old"));
+    drop(cold);
+    let mut rebuilt = open(source(b"fn kept() {}\n"), &cache);
+    let handle = rebuilt
+        .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+        .expect("rebuild");
+    assert!(!handle.reused());
+    assert_eq!(find_ids(&mut rebuilt, &handle, "kept"), ids);
+    drop(handle);
+    drop(rebuilt);
+    let mut warm = open(source(b"fn kept() {}\n"), &cache);
+    let handle = warm
+        .snapshot_reusable(&SnapshotRequest::strict(), "fixture")
+        .expect("warm");
+    assert!(handle.reused());
+    assert_eq!(find_ids(&mut warm, &handle, "kept"), ids);
+}
