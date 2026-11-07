@@ -1,31 +1,61 @@
 <!doctype html>
-<html lang="en" class="js-off">
+<html lang="en" class="no-js">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Documentation · dctx</title>
-<meta name="description" content="Specification, guides, benchmark reports and project policies for dctx.">
+<script>/* Runs before first paint: theme and motion preference, so there is no flash. */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  d.className = d.className.replace('no-js', 'js');
+  try { t = localStorage.getItem('dctx-theme'); m = localStorage.getItem('dctx-motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
+})();</script>
+<link rel="stylesheet" href="/assets/site.b368f17c.css">
+<link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="Specification, guides, benchmark reports and project policies for dctx, rendered from the repository.">
 <meta name="robots" content="index, follow, max-image-preview:large">
-<link rel="canonical" href="https://www.dctx.internet.technology/docs/">
-<meta property="og:url" content="https://www.dctx.internet.technology/docs/">
+<meta name="generator" content="dctx website builder">
 <meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#fafaf9" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0b0a12" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://www.dctx.internet.technology/docs/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="dctx">
 <meta property="og:locale" content="en_US">
 <meta property="og:title" content="Documentation · dctx">
-<meta property="og:description" content="Specification, guides, benchmark reports and project policies for dctx.">
-<meta property="og:image" content="https://www.dctx.internet.technology/assets/og.png">
+<meta property="og:description" content="Specification, guides, benchmark reports and project policies for dctx, rendered from the repository.">
+<meta property="og:url" content="https://www.dctx.internet.technology/docs/">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs.dark.png">
+<meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="dctx: context, engineered. A code tree flows into a compact, stable block of tokens.">
+<meta property="og:image:alt" content="dctx: Documentation">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs.light.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Documentation">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Documentation · dctx">
+<meta name="twitter:description" content="Specification, guides, benchmark reports and project policies for dctx, rendered from the repository.">
+<meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/docs.dark.png">
+<meta name="twitter:image:alt" content="dctx: Documentation">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="license" href="https://www.apache.org/licenses/LICENSE-2.0">
+<link rel="author" href="https://tejl.com/">
+<link rel="help" href="/docs/">
+<link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
 <link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
-<script>try{var t=localStorage.getItem('dctx-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
-<link rel="stylesheet" href="/assets/site.css">
-<script src="/assets/site.js" defer></script>
+<link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
+<script src="/assets/page.9bdcd125.js" defer></script>
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -65,6 +95,36 @@
    "inLanguage": "en",
    "publisher": {
     "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.dctx.internet.technology/search/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://www.dctx.internet.technology/#software",
+   "name": "dctx",
+   "softwareVersion": "1.1.0",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Linux (x86_64 tested)",
+   "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
+   "url": "https://www.dctx.internet.technology/",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "codeRepository": "https://github.com/Eris-Margeta/dctx",
+   "programmingLanguage": "Rust",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-1-0",
+   "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.dctx.internet.technology/docs/"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
    }
   },
   {
@@ -90,7 +150,7 @@
    "@id": "https://www.dctx.internet.technology/docs/#webpage",
    "url": "https://www.dctx.internet.technology/docs/",
    "name": "Documentation",
-   "description": "Specification, guides, benchmark reports and project policies for dctx.",
+   "description": "Specification, guides, benchmark reports and project policies for dctx, rendered from the repository.",
    "inLanguage": "en",
    "isPartOf": {
     "@id": "https://www.dctx.internet.technology/#website"
@@ -105,46 +165,41 @@
 </head>
 <body>
 <a class="skip" href="#main">Skip to content</a>
-<header class="site-header">
- <div class="wrap nav">
-  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
-  <nav aria-label="Primary"><ul class="nav-links"><li><a href="/#why">Why dctx</a></li><li><a href="/#install">Install</a></li><li><a href="/#benchmark">Benchmark</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/news/">News</a></li><li><a href="/changelog/">Changelog</a></li></ul></nav>
-  <div class="nav-end">
-   <a class="btn btn-ghost btn-sm btn-gh" href="https://github.com/Eris-Margeta/dctx">Source code</a>
-   <button class="icon-btn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
-   <details class="menu"><summary class="icon-btn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
-    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/#why">Why dctx</a></li><li><a href="/#install">Install</a></li><li><a href="/#benchmark">Benchmark</a></li><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/news/">News</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li></ul></nav></details>
+<header class="hdr">
+ <div class="wrap hdr-in">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.1.0</span></a>
+  <nav class="nav" aria-label="Primary"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
+  <div class="hdr-end">
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
   </div>
  </div>
 </header>
 <main id="main">
-<div class="wrap"><div class="page-head"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/" aria-current="page">Documentation</a></li></ol></nav>
-<span class="eyebrow">Documentation</span><h1>Documentation</h1>
-<p class="lede">The documentation lives next to the code, so it is versioned with it. These links open the current main branch of the repository.</p></div>
-<div class="prose"><h2 id="start-here">Start here</h2><ul class="link-list"><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md"><strong>Specification</strong><span>The core belief, the five constraints, the ten RAG defect classes, policy and roadmap.</span></a></li><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md"><strong>README</strong><span>Installation, quick start, map mode, language tiers and the CLI reference.</span></a></li><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MAP-MODE.md"><strong>Map mode guide</strong><span>Every map verb with examples, budgets, ids and precision labels.</span></a></li></ul><h2 id="using-dctx">Using dctx</h2><ul class="link-list"><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/AGENTS-SNIPPET.md"><strong>Agent snippet</strong><span>The AGENTS.md section that tells coding agents to ask dctx first.</span></a></li><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/PLUGINS.md"><strong>Plugins guide</strong><span>The plugin boundary, capabilities, consent and current limits.</span></a></li><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/CLI-EXIT-CODES.md"><strong>CLI exit codes</strong><span>The exit-code contract for map, pack, mcp and languages.</span></a></li><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md"><strong>Privacy guarantees</strong><span>Ignore semantics and the full sensitive-file deny list.</span></a></li></ul><h2 id="evidence">Evidence</h2><ul class="link-list"><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md"><strong>Three-way benchmark</strong><span>dctx, Trail-Code and graphify on the 70-question protocol, with caveats.</span></a></li><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md"><strong>Byte-stability report</strong><span>Protocol, raw answers and limits of the 33/33 measurement.</span></a></li><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/trail-code-2026-10/REPORT.md"><strong>Earlier two-way study</strong><span>October 2026, before call edges: the benchmark that set the roadmap.</span></a></li></ul><h2 id="project">Project</h2><ul class="link-list"><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/CRATE-MAP.md"><strong>Crate map</strong><span>How the Rust workspace is organised.</span></a></li><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/CONTRIBUTING.md"><strong>Contributing</strong><span>How to propose changes, with a DCO sign-off.</span></a></li><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/SECURITY.md"><strong>Security policy</strong><span>How to report a vulnerability privately.</span></a></li><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/MAINTENANCE.md"><strong>Maintenance terms</strong><span>What a maintenance agreement covers.</span></a></li><li><a class="link-card" href="https://github.com/Eris-Margeta/dctx/blob/main/CHANGELOG.md"><strong>Changelog source</strong><span>The source of the changelog page on this site.</span></a></li></ul></div></div>
+<div class="wrap"><div class="page-head"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/" aria-current="page">Documentation</a></li></ol></nav><span class="eyebrow">Documentation</span><h1>Documentation</h1>
+<p class="lede">Every document is rendered from the repository at build time, with a Markdown twin next to it (<code>index.md</code>), and all of them are in <a href="/llms-full.txt">llms-full.txt</a>. The CLI reference is generated from the binary: <a href="/cli/">/cli/</a>.</p></div>
+<h2 id="start-here">Start here</h2><div class="table-wrap"><table class="doc-index"><thead><tr><th scope="col">Document</th><th scope="col">What it covers</th><th scope="col" class="num">Words</th><th scope="col">Updated</th><th scope="col">Source</th></tr></thead><tbody><tr><td><a href="/why/">Why dctx</a></td><td>Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting.</td><td class="num">1,518</td><td><time datetime="2026-11-06">2026-11-06</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/WHY-DCTX.md">docs/WHY-DCTX.md</a></td></tr><tr><td><a href="/docs/readme/">README</a></td><td>Installation, quick start, map mode, language tiers and the CLI reference.</td><td class="num">3,106</td><td><time datetime="2026-11-06">2026-11-06</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/README.md">README.md</a></td></tr><tr><td><a href="/docs/spec/">Specification</a></td><td>The core belief, the five constraints, the ten RAG defect classes, policy and roadmap.</td><td class="num">9,516</td><td><time datetime="2026-11-06">2026-11-06</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">docs/SPEC.md</a></td></tr><tr><td><a href="/docs/map-mode/">Map mode guide</a></td><td>Every map verb with examples, budgets, ids and precision labels.</td><td class="num">1,033</td><td><time datetime="2026-10-31">2026-10-31</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MAP-MODE.md">docs/guides/MAP-MODE.md</a></td></tr></tbody></table></div><h2 id="using-dctx">Using dctx</h2><div class="table-wrap"><table class="doc-index"><thead><tr><th scope="col">Document</th><th scope="col">What it covers</th><th scope="col" class="num">Words</th><th scope="col">Updated</th><th scope="col">Source</th></tr></thead><tbody><tr><td><a href="/docs/agents/">Agent snippet</a></td><td>The AGENTS.md section that tells coding agents to ask dctx first.</td><td class="num">175</td><td><time datetime="2026-10-31">2026-10-31</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/AGENTS-SNIPPET.md">docs/guides/AGENTS-SNIPPET.md</a></td></tr><tr><td><a href="/docs/plugins/">Plugins guide</a></td><td>The plugin boundary, capabilities, consent and current limits.</td><td class="num">982</td><td><time datetime="2026-10-18">2026-10-18</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/PLUGINS.md">docs/guides/PLUGINS.md</a></td></tr><tr><td><a href="/docs/exit-codes/">CLI exit codes</a></td><td>The exit-code contract for map, pack, mcp and languages.</td><td class="num">626</td><td><time datetime="2026-11-03">2026-11-03</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/CLI-EXIT-CODES.md">docs/CLI-EXIT-CODES.md</a></td></tr><tr><td><a href="/docs/privacy/">Privacy guarantees</a></td><td>Ignore semantics and the full sensitive-file deny list.</td><td class="num">2,786</td><td><time datetime="2026-11-03">2026-11-03</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md">docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md</a></td></tr><tr><td><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></td><td>The three tiers and how a language enters one.</td><td class="num">496</td><td><time datetime="2026-10-18">2026-10-18</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/ADR-018-Language-Coverage.md">docs/ADR-018-Language-Coverage.md</a></td></tr></tbody></table></div><h2 id="templates">Templates</h2><div class="table-wrap"><table class="doc-index"><thead><tr><th scope="col">Document</th><th scope="col">What it covers</th><th scope="col" class="num">Words</th><th scope="col">Updated</th><th scope="col">Source</th></tr></thead><tbody><tr><td><a href="/docs/templates-contract/">Template contract (DTS v2)</a></td><td>DTS source v2 and the compiled plan IR v1.</td><td class="num">644</td><td><time datetime="2026-10-16">2026-10-16</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/design/contracts/DTS-v2.md">docs/design/contracts/DTS-v2.md</a></td></tr><tr><td><a href="/docs/templating/">Templating engine (ADR-003)</a></td><td>Markers, ahead-of-time compilation, the two rendering passes and the data variables.</td><td class="num">486</td><td><time datetime="2026-11-01">2026-11-01</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/ADR-003-Templating-Engine.md">docs/ADR-003-Templating-Engine.md</a></td></tr></tbody></table></div><h2 id="evidence">Evidence</h2><div class="table-wrap"><table class="doc-index"><thead><tr><th scope="col">Document</th><th scope="col">What it covers</th><th scope="col" class="num">Words</th><th scope="col">Updated</th><th scope="col">Source</th></tr></thead><tbody><tr><td><a href="/docs/benchmark/">Three-way benchmark</a></td><td>dctx, Trail-Code and graphify on the 70-question protocol, with caveats.</td><td class="num">3,919</td><td><time datetime="2026-11-03">2026-11-03</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md">docs/BENCHMARK-20261030.md</a></td></tr><tr><td><a href="/docs/stability/">Byte-stability report</a></td><td>Protocol, raw answers and limits of the 33/33 measurement.</td><td class="num">1,071</td><td><time datetime="2026-11-06">2026-11-06</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md">docs/research/stability-20261105/REPORT.md</a></td></tr><tr><td><a href="/docs/benchmark-oct/">Earlier two-way study</a></td><td>October 2026, before call edges: the benchmark that set the roadmap.</td><td class="num">7,317</td><td><time datetime="2026-10-21">2026-10-21</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/trail-code-2026-10/REPORT.md">docs/research/trail-code-2026-10/REPORT.md</a></td></tr></tbody></table></div><h2 id="project">Project</h2><div class="table-wrap"><table class="doc-index"><thead><tr><th scope="col">Document</th><th scope="col">What it covers</th><th scope="col" class="num">Words</th><th scope="col">Updated</th><th scope="col">Source</th></tr></thead><tbody><tr><td><a href="/docs/crate-map/">Crate map</a></td><td>How the Rust workspace is organised.</td><td class="num">1,976</td><td><time datetime="2026-10-31">2026-10-31</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/CRATE-MAP.md">docs/CRATE-MAP.md</a></td></tr><tr><td><a href="/docs/contributing/">Contributing</a></td><td>How to propose changes, with a DCO sign-off.</td><td class="num">480</td><td><time datetime="2026-11-01">2026-11-01</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a></td></tr><tr><td><a href="/docs/releasing/">Releasing</a></td><td>How a release is cut and checked.</td><td class="num">902</td><td><time datetime="2026-11-03">2026-11-03</time></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/RELEASING.md">RELEASING.md</a></td></tr></tbody></table></div><h2 id="policies">Policies</h2><div class="table-wrap"><table><thead><tr><th scope="col">Document</th><th scope="col">What it covers</th><th scope="col"></th><th scope="col"></th><th scope="col">Source</th></tr></thead><tbody><tr><td><a href="/security/">Security policy</a></td><td>How to report a vulnerability privately.</td><td></td><td></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/SECURITY.md">SECURITY.md</a></td></tr><tr><td><a href="/trademark/">Trademark policy</a></td><td>Use of the dctx name and logo.</td><td></td><td></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/TRADEMARK.md">TRADEMARK.md</a></td></tr><tr><td><a href="/maintenance/">Maintenance</a></td><td>What a maintenance agreement covers.</td><td></td><td></td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/MAINTENANCE.md">MAINTENANCE.md</a></td></tr></tbody></table></div>
+<p class="note">Crawlers, including AI crawlers, may read this site: see <a href="/robots.txt">robots.txt</a> and <a href="/llms.txt">llms.txt</a>.</p></div>
 </main>
-<footer class="site-footer">
+<footer class="ftr">
  <div class="wrap">
-  <div class="foot-grid">
-   <div>
+  <div class="ftr-grid">
+   <div class="ftr-brand">
     <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
     <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p class="mono small">dctx 1.1.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
    </div>
-   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul>
-    <li><a href="/#why">Why dctx</a></li><li><a href="/#install">Install</a></li><li><a href="/#benchmark">Benchmark</a></li>
-    <li><a href="/#privacy">Security and privacy</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></nav>
-   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul>
-    <li><a href="/docs/">Documentation</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/SPEC.md">Specification</a></li>
-    <li><a href="/news/">News</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/feed.xml">Atom feed</a></li></ul></nav>
-   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul>
-    <li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li>
-    <li><a href="https://github.com/Eris-Margeta/dctx/blob/main/SECURITY.md">Report a vulnerability</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li>
-    <li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
   </div>
-  <div class="foot-bottom">
+  <div class="ftr-bottom">
    <div>
     <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
-    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="https://github.com/Eris-Margeta/dctx/blob/main/TRADEMARK.md">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
    </div>
    <div class="credit">
     <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>

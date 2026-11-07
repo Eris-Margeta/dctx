@@ -1,0 +1,37 @@
+# Dokploy Compose app "dctx": the static site and the playground behind one nginx.
+# The Dokploy domain www.dctx.internet.technology points at dctx-site:80; nginx serves the site and
+# proxies /api/ to dctx-play:8080. The site works with dctx-play stopped (the playground page
+# then shows its recorded runs). See tools/playground/DEPLOY.md.
+services:
+  dctx-site:
+    image: nginx:1.27-alpine
+    volumes:
+      - /srv/sites/dctx:/usr/share/nginx/html:ro
+      - /srv/sites/dctx-nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    read_only: true
+    tmpfs: ["/var/cache/nginx", "/var/run", "/tmp"]
+    mem_limit: 128m
+    restart: unless-stopped
+    networks: [dokploy-network]
+  dctx-play:
+    build: { context: /srv/sites/dctx-play }
+    image: dctx-play:local
+    read_only: true
+    tmpfs: ["/run/play:size=64m,mode=1777"]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 192m
+    mem_reservation: 48m
+    cpus: "0.50"
+    user: "65532:65532"
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/dctx-play", "--health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    restart: unless-stopped
+    networks: [dokploy-network]
+networks:
+  dokploy-network:
+    external: true

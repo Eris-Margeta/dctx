@@ -1,0 +1,158 @@
+# dctx
+
+> The context engine for AI-assisted software development. Fewer tokens. Stable prefixes. Exact source. One policy for every workflow.
+
+dctx 1.1.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short: https://www.dctx.internet.technology/llms-small.txt
+
+## Docs
+- [Why dctx](https://www.dctx.internet.technology/why/index.md): why it exists; why byte-identical output matters
+- [README](https://www.dctx.internet.technology/docs/readme/index.md): install, quick start, map mode
+- [Specification](https://www.dctx.internet.technology/docs/spec/index.md): constraints and roadmap
+- [Map mode](https://www.dctx.internet.technology/docs/map-mode/index.md): every map verb
+- [Agent snippet](https://www.dctx.internet.technology/docs/agents/index.md): AGENTS.md text
+- [All documents](https://www.dctx.internet.technology/docs/): with Markdown twins
+
+## CLI
+- [CLI reference](https://www.dctx.internet.technology/cli/): help, env, exit codes, MCP tools
+- [Languages](https://www.dctx.internet.technology/languages/): 50 languages by tier
+
+## Examples
+- [Examples](https://www.dctx.internet.technology/examples/): every command, exact output
+- [Templates](https://www.dctx.internet.technology/templates/): built-in templates
+- [Playground](https://www.dctx.internet.technology/playground/): API: /api/v1/openapi.json
+
+## Evidence
+- [Benchmarks](https://www.dctx.internet.technology/benchmarks/): tables and caveats
+- [Stability report](https://www.dctx.internet.technology/docs/stability/index.md): 33/33 protocol
+
+## Project
+- [Security](https://www.dctx.internet.technology/security/index.md): private reports
+- [Contributing](https://www.dctx.internet.technology/docs/contributing/index.md): DCO
+
+## Optional
+- [Changelog](https://www.dctx.internet.technology/changelog/): releases
+- [llms-full.txt](https://www.dctx.internet.technology/llms-full.txt): everything
+
+## Why dctx
+
+# Why dctx exists
+
+What problem dctx solves, the rules it follows, and why "byte-identical output" matters even if you never think about bytes.
+
+## The problem
+
+An AI coding assistant only knows what is in its **context window**: the text sent to the model with your request. It cannot see the rest of your project.
+
+Most projects are too large to send whole, so tools pick pieces. Often they pick badly: whole files when one function would do, text that looks similar but is the wrong code, code as it was before your last edit, or half a function.
+
+Each of these costs you. Models read text as **tokens** (small chunks of text, roughly a short word or part of one), and providers bill per token. The model reads every token before it answers, so more tokens also means more waiting. And answers get worse as irrelevant text piles up. The [README](../README.md#the-core-belief-prompt-processing-efficiency) sums it up: every token in front of a model is paid for three times, to read it, again when a cache is missed, and again in attention.
+
+## What dctx does
+
+dctx is a command-line tool that reads your project on your machine and answers precise questions about it: where a function is defined, what calls it, what its exact source is. Each answer fits a size budget and is built from whole pieces of syntax; a piece that is too long is marked as cut, with a way to get the rest. The same question about the same code gives the same bytes every time. An assistant can run the commands itself or call them through the built-in MCP server (`dctx mcp`; MCP is a standard way for AI tools to call other tools). dctx can also pack a whole project into one structured block for a chat.
+
+Think of photocopying random pages of a book versus using its index. dctx is the index.
+
+### A small worked example
+
+Run with dctx 1.1.0 on a copy of this repository's `crates/dctx-lex-go` folder. The output is real and complete.
+
+```text
+$ dctx map find Add
+# dctx-lex-go find
+s:tests/fixtures/basic.go#Add	fn	L43-45
+
+$ dctx map read 's:tests/fixtures/basic.go#Add'
+# dctx-lex-go read
+s:tests/fixtures/basic.go#Add	fn	tests/fixtures/basic.go
+func Add[T ~int](a, b T) T {
+	return a
+}
+
+$ dctx map neighbors 's:tests/fixtures/basic.go#Add' --edge calls --dir in
+# dctx-lex-go neighbors
+calls:in:s:tests/fixtures/basic.go#main	fn	tests/fixtures/basic.go	L59
+```
+
+`find` returns a stable id, the kind of thing it is (a function) and its lines. `read` returns the exact source. `neighbors` says that `main` calls it, on line 59.
+
+## The philosophy
+
+The [specification](SPEC.md#2-the-core-belief-prompt-processing-efficiency) turns this into five testable rules.
+
+**Bounded.** Every map answer has a size ceiling, reserved before anything is written, and a record is never split. The budget is up to 2,000 estimated tokens (1,000 for `explain`).
+*Why it matters to you:* one question cannot flood the context window and crowd out your own instructions.
+
+**Deterministic.** The same code and the same question give the same bytes.
+*Why it matters to you:* results are repeatable, and repeated prompts can be served from a cache.
+
+**Prefix-stable.** When context is sent again across turns, bytes that did not need to change do not change.
+*Why it matters to you:* this is what keeps caching working across a conversation.
+
+**Non-redundant.** Within one session, do not resend what was already sent unless it changed. This one is still a target.
+
+**Honest.** Every answer states its freshness, precision and provenance, and dctx never asserts what it does not know. With `--json`, the `read` above carries `"freshness":{"mode":"strict","state":"verified"}`, a `precision` block, and `more` and `next` fields for anything that did not fit. Calls it cannot resolve are listed as `unresolved`, not guessed.
+*Why it matters to you:* you and your assistant can tell a fact from a guess.
+
+The docs add a few more commitments:
+
+(continued: https://www.dctx.internet.technology/why/)
+
+## Quick start
+
+```zsh
+dctx pack .            # whole project as one structured context block on stdout
+dctx pack . --clipboard  # … straight to the clipboard
+dctx                   # interactive menu
+```
+
+## Map mode
+
+```zsh
+# Run from this repository's root; map needs a file target.
+dctx map map crates/dctx-cli/src/lib.rs --depth 2
+dctx map find "SnapshotConfig"
+# Use a stable ID returned by map/find for neighbors, explain and read.
+dctx map neighbors 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --edge calls --dir in
+dctx map explain 's:crates/dctx-cli/src/lib.rs#SnapshotConfig'
+dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
+```
+
+## Map verbs
+
+- dctx map map: Outline of a file (m:<path> or a place-relative path) or a symbol and what it contains.
+- dctx map find: Ranked symbols, modules, headings and config keys whose name or summary matches QUERY.
+- dctx map neighbors: Edges of one node: callers with --dir in --edge calls, callees with --dir out.
+- dctx map explain: One node with its signature and summary, no body.
+- dctx map read: The verified source text of one node; a long node pages with --cursor.
+- dctx map skeleton: Declaration signatures of one file in source order, no bodies.
+- dctx map grep: Exhaustive literal search of indexed files, hits grouped by enclosing symbol.
+- dctx map hubs: Most-called symbols and per-directory file and symbol counts. No TARGET.
+- dctx map path: Shortest edge path (calls, imports, contains; at most 8 hops) between two nodes, or `no path`.
+- dctx map export: The whole graph as one deterministic document. No TARGET, no token cap.
+
+## Facts
+
+- 140/140 points on the 70-question protocol (Trail-Code 122, graphify 96); the protocol was designed by the dctx team: https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md
+- Cold index 0.13-1.20 s on 6 corpora, median of 3 (run 7): https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json
+- 50 languages: 36 full, 8 outline, 6 docs: https://www.dctx.internet.technology/languages/
+- 33/33 text and 33/33 JSON answers byte-identical after unrelated edits: https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md
+- 0 socket attempts by dctx in every traced benchmark variant: https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md
+
+## Install
+
+```zsh
+git clone https://github.com/Eris-Margeta/dctx
+cd dctx
+cargo build --locked --release -p dctx-cli
+./target/release/dctx-cli --version   # dctx 1.1.0 (<git sha>)
+```
+
+## Exit codes
+
+- 0: ok: the command answered
+- 1: no result: the command ran, but the named target or input has no answer
+- 2: usage: the arguments are wrong
+- 3: index error: the place, source, cache or index could not be opened, read, built or written
+
+Everything, including every document and every captured example: https://www.dctx.internet.technology/llms-full.txt

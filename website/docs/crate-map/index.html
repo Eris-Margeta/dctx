@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crate map · dctx</title>
+<script>/* Runs before first paint: theme and motion preference, so there is no flash. */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  d.className = d.className.replace('no-js', 'js');
+  try { t = localStorage.getItem('dctx-theme'); m = localStorage.getItem('dctx-motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
+})();</script>
+<link rel="stylesheet" href="/assets/site.b368f17c.css">
+<link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="How the Rust workspace is organised.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="generator" content="dctx website builder">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://www.dctx.internet.technology/docs/crate-map/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="dctx">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Crate map · dctx">
+<meta property="og:description" content="How the Rust workspace is organised.">
+<meta property="og:url" content="https://www.dctx.internet.technology/docs/crate-map/">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-crate-map.dark.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Crate map">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-crate-map.light.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Crate map">
+<meta property="article:modified_time" content="2026-10-31T10:32:25+01:00">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Crate map · dctx">
+<meta name="twitter:description" content="How the Rust workspace is organised.">
+<meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/docs-crate-map.dark.png">
+<meta name="twitter:image:alt" content="dctx: Crate map">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="license" href="https://www.apache.org/licenses/LICENSE-2.0">
+<link rel="author" href="https://tejl.com/">
+<link rel="help" href="/docs/">
+<link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
+<link rel="alternate" type="text/markdown" href="/docs/crate-map/index.md" title="Crate map as Markdown">
+<link rel="prev" href="/docs/benchmark-oct/">
+<link rel="next" href="/docs/contributing/">
+<script src="/assets/page.9bdcd125.js" defer></script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://www.dctx.internet.technology/#organization",
+   "name": "TEJL",
+   "url": "https://tejl.com/",
+   "logo": "https://www.dctx.internet.technology/assets/tejl-logo-off-black.svg",
+   "email": "info@tejl.com",
+   "sameAs": [
+    "https://tejl.hr/"
+   ],
+   "founder": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   }
+  },
+  {
+   "@type": "Person",
+   "@id": "https://www.dctx.internet.technology/#author",
+   "name": "Eris Margeta",
+   "url": "https://tejl.com/",
+   "sameAs": [
+    "https://github.com/Eris-Margeta"
+   ],
+   "jobTitle": "Founder",
+   "worksFor": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://www.dctx.internet.technology/#website",
+   "url": "https://www.dctx.internet.technology/",
+   "name": "dctx",
+   "inLanguage": "en",
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.dctx.internet.technology/search/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://www.dctx.internet.technology/#software",
+   "name": "dctx",
+   "softwareVersion": "1.1.0",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Linux (x86_64 tested)",
+   "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
+   "url": "https://www.dctx.internet.technology/",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "codeRepository": "https://github.com/Eris-Margeta/dctx",
+   "programmingLanguage": "Rust",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-1-0",
+   "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.dctx.internet.technology/docs/"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "@id": "https://www.dctx.internet.technology/docs/crate-map/#breadcrumb",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "dctx",
+     "item": "https://www.dctx.internet.technology/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Documentation",
+     "item": "https://www.dctx.internet.technology/docs/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Crate map",
+     "item": "https://www.dctx.internet.technology/docs/crate-map/"
+    }
+   ]
+  },
+  {
+   "@type": "WebPage",
+   "@id": "https://www.dctx.internet.technology/docs/crate-map/#webpage",
+   "url": "https://www.dctx.internet.technology/docs/crate-map/",
+   "name": "Crate map",
+   "description": "How the Rust workspace is organised.",
+   "inLanguage": "en",
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "breadcrumb": {
+    "@id": "https://www.dctx.internet.technology/docs/crate-map/#breadcrumb"
+   }
+  },
+  {
+   "@type": "TechArticle",
+   "@id": "https://www.dctx.internet.technology/docs/crate-map/#article",
+   "headline": "Crate map",
+   "description": "How the Rust workspace is organised.",
+   "url": "https://www.dctx.internet.technology/docs/crate-map/",
+   "inLanguage": "en",
+   "about": {
+    "@id": "https://www.dctx.internet.technology/#software"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "mainEntityOfPage": {
+    "@id": "https://www.dctx.internet.technology/docs/crate-map/#webpage"
+   },
+   "wordCount": 1976,
+   "encoding": {
+    "@type": "MediaObject",
+    "contentUrl": "https://www.dctx.internet.technology/docs/crate-map/index.md",
+    "encodingFormat": "text/markdown"
+   },
+   "dateModified": "2026-10-31T10:32:25+01:00"
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr">
+ <div class="wrap hdr-in">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.1.0</span></a>
+  <nav class="nav" aria-label="Primary"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
+  <div class="hdr-end">
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
+  </div>
+ </div>
+</header>
+<main id="main">
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/">Three-way benchmark</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/" aria-current="page">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/crate-map/" aria-current="page">Crate map</a></li></ol></nav><h1 id="crate-map">Crate map</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/CRATE-MAP.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/docs/CRATE-MAP.md">Edit on GitHub</a> &middot; <a href="/docs/crate-map/index.md" type="text/markdown">Markdown</a> &middot; <code>docs/CRATE-MAP.md</code> &middot; 1,976 words &middot; updated <time datetime="2026-10-31">31 October 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#how-to-read-the-inventory">How to read the inventory</a></li><li><a href="#shipped-cli-path-v1">Shipped CLI path (v1)</a></li><li><a href="#core-engines-and-adapters">Core, engines and adapters</a></li><li><a href="#lexers-and-structural-extractors">Lexers and structural extractors</a></li><li><a href="#plugin-infrastructure-facade-and-surfaces">Plugin infrastructure, facade and surfaces</a></li><li><a href="#dependency-picture-core-toward-consumers">Dependency picture: core toward consumers</a></li><li><a href="#language-wiring">Language wiring</a></li><li><a href="#cross-cutting-rules-and-evidence-locations">Cross-cutting rules and evidence locations</a></li><li><a href="#validation-commands">Validation commands</a></li></ul></details>
+<p>Static checkout guide for humans and low-context workers (DX-MAP).
+40 non-fixture Cargo packages: 36 under <code>crates/</code>, one plugin, one desktop,
+and two standalone tools. Root <code>Cargo.toml</code> includes crates, plugins and desktop;
+each tool declares its own workspace. <code>bindings/README.md</code> describes planned
+bindings; root membership for Python/Node is commented out. Fixture manifests
+under tests are not product crates.</p>
+<h2 id="how-to-read-the-inventory">How to read the inventory<a class="hd" href="#how-to-read-the-inventory" aria-label="Link to How to read the inventory">#</a></h2>
+<p>Each row gives purpose, layer, direct first-party path dependencies, and direct
+external <strong>normal</strong> dependencies. <code>none</code> means std-only at that crate boundary;
+<code>first-party only</code> means no direct external normal dependency, not an assertion
+about the complete dependency closure. Dev/build dependencies are excluded.
+Optional and target-specific normal dependencies are explicitly marked.
+Resolved transitive dependencies and runtime behavior are <strong>unverified</strong> here.</p>
+<p>Source convention: for every row named <code>X</code>, purpose is taken from
+<code>crates/X/src/lib.rs:1</code> (first six lines), and dependency names from
+<code>crates/X/Cargo.toml</code> <code>[dependencies]</code>. These two paths are the row's evidence.
+Exceptions use the directory shown in the row. Desktop purpose comes from
+<code>apps/dctx-desktop/README.md:3</code>; its lib header has no purpose description.
+Layer labels are navigation classifications of those headers, using the accepted
+boundaries in <code>docs/design/ARCHITECTURE-DECISIONS.md</code> (DX-ARCH-01).</p>
+<h2 id="shipped-cli-path-v1">Shipped CLI path (v1)<a class="hd" href="#shipped-cli-path-v1" aria-label="Link to Shipped CLI path (v1)">#</a></h2>
+<p>What the <code>dctx</code> binary (<code>crates/dctx-cli</code>) actually runs, as of v1. No refactor: the other crates stay in the workspace.</p>
+<ul>
+<li><strong>Shipped:</strong> <code>dctx-cli</code> and the <code>crates/dctx</code> facade session (index, find, grep, callers, callees, neighbors, skeleton, hubs, pack, read), with dctx-core (selection), dctx-hash, dctx-ports, dctx-pack, dctx-template, dctx-adapter-cache, dctx-adapter-fs (compatibility IO), dctx-map-model (records and rendering) and the <code>dctx-lex-*</code> extractors.</li>
+<li><strong>Request types only:</strong> <code>dctx-map-query</code>. The CLI imports <code>Request</code>, <code>Verb</code>, <code>Direction</code>, <code>Format</code>, <code>AnswerBudget</code> and <code>EdgeKind</code>; its <code>Index</code> engine is never called.</li>
+<li><strong>Internal or legacy (compiled as dependencies of <code>dctx-map-query</code>, not run by the CLI):</strong> the <code>dctx-map-query</code> <code>Index</code> engine, <code>dctx-map-store</code>, <code>dctx-map-scan</code>, <code>dctx-map-resolve</code>, <code>dctx-map-segment</code>, <code>dctx-adapter-store</code>; <code>dctx-map-parse</code> likewise. docs/SPEC-MAP-MODE.md sections 6–8 and 10 describe this engine.</li>
+<li><strong>Unstable (no stability promise in v1):</strong> dctx-plugin-host, dctx-plugin-platform, dctx-plugin-protocol, dctx-plugin-distribution and dctx-desktop-api. The default <code>dctx-cli</code> build enables the plugin runtime and the bundled git worker; <code>--no-default-features --features strict</code> builds without them.</li>
+</ul>
+<h2 id="core-engines-and-adapters">Core, engines and adapters<a class="hd" href="#core-engines-and-adapters" aria-label="Link to Core, engines and adapters">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Crate</th>
+<th>Purpose from header</th>
+<th>Layer</th>
+<th>Direct path dependencies</th>
+<th>Direct external normal dependencies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dctx-hash</td>
+<td>First-party SHA-256 content digests.</td>
+<td>pure core</td>
+<td>none</td>
+<td>none (std-only)</td>
+</tr>
+<tr>
+<td>dctx-core</td>
+<td>Pure domain: ids, selection decisions, budgets, errors, pack facts and settings parsing.</td>
+<td>pure core</td>
+<td>dctx-hash</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-ports</td>
+<td>Boundary traits Source, FactStore, Cache, Clock, Cancellation; in-memory implementations and spies.</td>
+<td>pure core</td>
+<td>dctx-core</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-map-model</td>
+<td>IO-free map identities, byte spans, precision, provenance and answers.</td>
+<td>pure core</td>
+<td>dctx-hash</td>
+<td>serde, serde_json (optional <code>wire-json</code>, enabled by default)</td>
+</tr>
+<tr>
+<td>dctx-map-segment</td>
+<td>Pure safe codec for immutable map index segments.</td>
+<td>pure core</td>
+<td>dctx-hash</td>
+<td>thiserror</td>
+</tr>
+<tr>
+<td>dctx-template</td>
+<td>Pure DTS v1 renderer and v2 ContextPlan compiler.</td>
+<td>mode engine</td>
+<td>dctx-core, dctx-hash</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-pack</td>
+<td>Pack snapshot and diff engine over injected ports, with no concrete IO.</td>
+<td>mode engine</td>
+<td>dctx-core, dctx-hash, dctx-ports</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-map-scan</td>
+<td>Model-independent scan privacy rules.</td>
+<td>mode engine</td>
+<td>none</td>
+<td>sha2, thiserror</td>
+</tr>
+<tr>
+<td>dctx-map-parse</td>
+<td>Per-file syntax facts; PureParser over lexers, optional tree-sitter oracle.</td>
+<td>lexer/parser</td>
+<td>dctx-map-model, dctx-lex-rust, dctx-lex-js, dctx-lex-md, dctx-lex-py, dctx-lex-go, dctx-lex-java, dctx-lex-c, dctx-lex-cfg, dctx-lex-cs, dctx-lex-kt, dctx-lex-rb, dctx-lex-php, dctx-lex-swift</td>
+<td>sha2, thiserror; optional: tree-sitter, tree-sitter-rust, tree-sitter-md, tree-sitter-javascript, tree-sitter-typescript (<code>syntax-tree-sitter</code>)</td>
+</tr>
+<tr>
+<td>dctx-map-resolve</td>
+<td>Pure symbol resolution and move detection.</td>
+<td>mode engine</td>
+<td>dctx-map-model</td>
+<td>thiserror</td>
+</tr>
+<tr>
+<td>dctx-map-store</td>
+<td>Persistent graph facts, pack snapshots and content-addressed comparison cache.</td>
+<td>adapter</td>
+<td>dctx-core, dctx-hash, dctx-map-model, dctx-ports</td>
+<td>rusqlite (<code>bundled</code>), thiserror, serde_json</td>
+</tr>
+<tr>
+<td>dctx-map-query</td>
+<td>Incremental indexing and bounded traversal; wires scan, parse, resolve and store APIs.</td>
+<td>mode engine</td>
+<td>dctx-map-model, dctx-map-scan, dctx-map-parse, dctx-map-resolve, dctx-map-store, dctx-map-segment, dctx-ports, dctx-adapter-fs, dctx-adapter-store, dctx-adapter-cache, dctx-core, dctx-hash</td>
+<td>thiserror, serde, serde_json</td>
+</tr>
+<tr>
+<td>dctx-adapter-fs</td>
+<td>Confined filesystem Source adapter; selection before content.</td>
+<td>adapter</td>
+<td>dctx-hash</td>
+<td>thiserror</td>
+</tr>
+<tr>
+<td>dctx-adapter-store</td>
+<td>Filesystem publication of immutable map segments and manifest generations.</td>
+<td>adapter</td>
+<td>dctx-hash, dctx-map-segment</td>
+<td>thiserror</td>
+</tr>
+<tr>
+<td>dctx-adapter-cache</td>
+<td>Cache quotas, leases, expiry, persisted ledger and bounded auto-clean.</td>
+<td>adapter</td>
+<td>dctx-core, dctx-hash, dctx-ports</td>
+<td>thiserror</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="lexers-and-structural-extractors">Lexers and structural extractors<a class="hd" href="#lexers-and-structural-extractors" aria-label="Link to Lexers and structural extractors">#</a></h2>
+<p>Purpose below retains the language and extractor role from each lib header.
+Several headers say “zero-dependency”; manifests qualify that statement: the
+model-dependent lexers have first-party direct dependencies, and
+<code>dctx-map-model</code> defaults to external JSON dependencies. Do not infer an
+external-free closure from the header wording.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Crate</th>
+<th>Purpose from header</th>
+<th>Layer</th>
+<th>Direct path dependencies</th>
+<th>Direct external normal dependencies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dctx-lex-rust</td>
+<td>Structural Rust extractor built on syn.</td>
+<td>lexer/parser</td>
+<td>none</td>
+<td>proc-macro2, quote, syn, thiserror</td>
+</tr>
+<tr>
+<td>dctx-lex-js</td>
+<td>Hand-written JavaScript and TypeScript structural extractor.</td>
+<td>lexer/parser</td>
+<td>dctx-hash, dctx-map-model</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-lex-md</td>
+<td>Hand-written Markdown structure extractor.</td>
+<td>lexer/parser</td>
+<td>none</td>
+<td>none (std-only)</td>
+</tr>
+<tr>
+<td>dctx-lex-py</td>
+<td>Hand-written Python structural extractor.</td>
+<td>lexer/parser</td>
+<td>dctx-hash, dctx-map-model</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-lex-go</td>
+<td>Hand-written Go structural extractor.</td>
+<td>lexer/parser</td>
+<td>dctx-hash, dctx-map-model</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-lex-java</td>
+<td>Hand-written Java structural extractor.</td>
+<td>lexer/parser</td>
+<td>dctx-hash, dctx-map-model</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-lex-c</td>
+<td>Hand-written C and C++ structural extractor.</td>
+<td>lexer/parser</td>
+<td>dctx-hash, dctx-map-model</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-lex-cfg</td>
+<td>Hand-written configuration structural extractor (JSON, TOML, YAML).</td>
+<td>lexer/parser</td>
+<td>dctx-hash, dctx-map-model</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-lex-cs</td>
+<td>Hand-written C# structural extractor.</td>
+<td>lexer/parser</td>
+<td>dctx-hash, dctx-map-model</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-lex-kt</td>
+<td>Hand-written Kotlin structural extractor.</td>
+<td>lexer/parser</td>
+<td>dctx-hash, dctx-map-model</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-lex-rb</td>
+<td>Hand-written Ruby structural extractor.</td>
+<td>lexer/parser</td>
+<td>dctx-hash, dctx-map-model</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-lex-php</td>
+<td>Hand-written PHP structural extractor.</td>
+<td>lexer/parser</td>
+<td>dctx-hash, dctx-map-model</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-lex-swift</td>
+<td>Hand-written Swift structural extractor.</td>
+<td>lexer/parser</td>
+<td>dctx-hash, dctx-map-model</td>
+<td>first-party only</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="plugin-infrastructure-facade-and-surfaces">Plugin infrastructure, facade and surfaces<a class="hd" href="#plugin-infrastructure-facade-and-surfaces" aria-label="Link to Plugin infrastructure, facade and surfaces">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Crate</th>
+<th>Purpose from header</th>
+<th>Layer</th>
+<th>Direct path dependencies</th>
+<th>Direct external normal dependencies</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dctx-ed25519</td>
+<td>Ed25519 verification for plugin trust, via audited ed25519-dalek.</td>
+<td>pure core</td>
+<td>none</td>
+<td>ed25519-dalek</td>
+</tr>
+<tr>
+<td>dctx-plugin-protocol</td>
+<td>Std-only codec and typed records for frozen plugin API v1.</td>
+<td>plugin</td>
+<td>none</td>
+<td>none (std-only)</td>
+</tr>
+<tr>
+<td>dctx-plugin-host</td>
+<td>Plugin host domain and brokers; authority, receipts, resources, lifecycle and hooks.</td>
+<td>plugin</td>
+<td>dctx-hash, dctx-plugin-protocol</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-plugin-platform</td>
+<td>Native plugin admission and platform security primitives; general native launches fail closed.</td>
+<td>adapter</td>
+<td>dctx-hash, dctx-plugin-protocol</td>
+<td>thiserror; Linux-only: rustix, landlock, seccompiler (target dependency section)</td>
+</tr>
+<tr>
+<td>dctx-plugin-distribution</td>
+<td>Plugin installer, trust and discovery client: signed manifests, offline bundles, atomic activation.</td>
+<td>plugin</td>
+<td>dctx-ed25519, dctx-hash, dctx-plugin-protocol</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-plugin-git (<code>plugins/dctx-plugin-git/</code>)</td>
+<td>Bundled git plugin: local .gitignore protection and brokered git add .gitignore.</td>
+<td>plugin</td>
+<td>dctx-plugin-protocol</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx</td>
+<td>Stable library facade for pack, map, templates, cache and optional plugin host.</td>
+<td>facade</td>
+<td>dctx-adapter-cache, dctx-core, dctx-hash, dctx-lex-js, dctx-lex-md, dctx-map-model, dctx-pack, dctx-ports, dctx-template; optional: dctx-lex-rust, dctx-plugin-host, dctx-plugin-platform, dctx-plugin-protocol</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-cli</td>
+<td>Library surface for cache administration; dctx binary wires the same modules.</td>
+<td>surface</td>
+<td>dctx, dctx-adapter-cache, dctx-core, dctx-map-query, dctx-plugin-distribution, dctx-plugin-protocol, dctx-template; optional: dctx-plugin-git</td>
+<td>first-party only</td>
+</tr>
+<tr>
+<td>dctx-desktop-api</td>
+<td>Desktop engine seam for snapshots, settings, recent projects and plugin management.</td>
+<td>surface</td>
+<td>dctx, dctx-plugin-distribution, dctx-template</td>
+<td>serde, serde_json</td>
+</tr>
+<tr>
+<td>dctx-desktop (<code>apps/dctx-desktop/src-tauri/</code>)</td>
+<td>Cross-platform GUI for dctx — Directory Context Generator (app README).</td>
+<td>surface</td>
+<td>dctx-desktop-api, dctx-plugin-distribution, dctx-plugin-protocol</td>
+<td>tauri, tauri-plugin-shell, tauri-plugin-dialog, tauri-plugin-clipboard-manager, serde, serde_json, tokio, chrono, dirs</td>
+</tr>
+<tr>
+<td>architecture-bench (<code>tools/architecture-bench/</code>)</td>
+<td>Baseline for current dctx map mode.</td>
+<td>tool</td>
+<td>dctx-map-query</td>
+<td>serde, serde_json, sha2, thiserror</td>
+</tr>
+<tr>
+<td>plugin-index (<code>tools/plugin-index/</code>)</td>
+<td>Local public-index validator for plugins.</td>
+<td>tool</td>
+<td>dctx-ed25519, dctx-hash</td>
+<td>thiserror</td>
+</tr>
+</tbody>
+</table></div>
+<p>Tool purpose evidence: each tool's <code>src/lib.rs:1</code>; dependencies: its Cargo.toml.
+Plugin purpose evidence: <code>plugins/dctx-plugin-git/src/lib.rs:1</code>.
+Desktop dependencies: <code>apps/dctx-desktop/src-tauri/Cargo.toml</code>.
+<code>tauri-build</code> is a desktop <strong>build</strong> dependency, outside the normal-dependency
+columns. Linux plugin dependencies are the one target-specific addition above.
+The facade does not directly depend on dctx-map-query: do not turn an intended
+architectural boundary into an invented Cargo edge. Its optional Rust extractor
+uses <code>syntax-rust</code>; plugin runtime dependencies use <code>plugin-runtime</code>.</p>
+<h2 id="dependency-picture-core-toward-consumers">Dependency picture: core toward consumers<a class="hd" href="#dependency-picture-core-toward-consumers" aria-label="Link to Dependency picture: core toward consumers">#</a></h2>
+<p>This is a selected-edge tree, not an exhaustive DAG. Children consume parents;
+repeated nodes have other inputs listed in the inventory. Every edge shown is
+a direct path dependency in the child's manifest. Braces group sibling crates.</p>
+<div class="hl"><pre><code>dctx-hash
+|-- dctx-core
+|   |-- dctx-ports
+|   |   `-- dctx-pack
+|   |       `-- dctx
+|   |           |-- dctx-cli
+|   |           `-- dctx-desktop-api
+|   |               `-- dctx-desktop
+|   `-- dctx-template --&gt; {dctx, dctx-cli, dctx-desktop-api}
+|-- dctx-map-model
+|   |-- dctx-lex-{js,py,go,java,c,cfg,cs,kt,rb,php,swift}
+|   |   `-- dctx-map-parse &lt;-- {dctx-lex-rust, dctx-lex-md}
+|   |       `-- dctx-map-query
+|   |           |-- dctx-cli
+|   |           `-- architecture-bench
+|   |-- dctx-map-resolve --&gt; dctx-map-query
+|   `-- dctx-map-store --&gt; dctx-map-query
+|-- dctx-map-segment
+|   `-- dctx-adapter-store --&gt; dctx-map-query
+|-- dctx-adapter-fs --&gt; dctx-map-query
+|-- dctx-adapter-cache --&gt; {dctx, dctx-cli, dctx-map-query}
+|-- dctx-plugin-host --&gt; dctx [optional]
+|-- dctx-plugin-platform --&gt; dctx [optional]
+|-- dctx-plugin-distribution --&gt; {dctx-cli, dctx-desktop-api, dctx-desktop}
+`-- plugin-index
+dctx-map-scan --&gt; dctx-map-query
+dctx-ed25519 --&gt; {dctx-plugin-distribution, plugin-index}
+dctx-plugin-protocol
+`-- {dctx-plugin-host, dctx-plugin-platform, dctx-plugin-distribution,
+     dctx-plugin-git, dctx [optional], dctx-cli, dctx-desktop}
+dctx-plugin-git --&gt; dctx-cli [optional]
+</code></pre></div>
+
+<h2 id="language-wiring">Language wiring<a class="hd" href="#language-wiring" aria-label="Link to Language wiring">#</a></h2>
+<p>Authoritative variants and extension selection:
+<code>crates/dctx-map-parse/src/domain/facts.rs:8</code> (<code>Language</code>, <code>for_path</code>).
+Dispatch: <code>crates/dctx-map-parse/src/adapters/mod.rs:40</code> (<code>PureParser</code>).
+Adapter paths below are relative to <code>crates/dctx-map-parse/src/adapters/</code>;
+each file imports the named lexer. These are all 13 <code>dctx-lex-*</code> packages.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Language variant(s)</th>
+<th>Lexer crate</th>
+<th>Adapter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rust</td>
+<td>dctx-lex-rust</td>
+<td>rust.rs</td>
+</tr>
+<tr>
+<td>JavaScript, TypeScript, Tsx</td>
+<td>dctx-lex-js</td>
+<td>javascript.rs</td>
+</tr>
+<tr>
+<td>Markdown</td>
+<td>dctx-lex-md</td>
+<td>markdown.rs</td>
+</tr>
+<tr>
+<td>Python</td>
+<td>dctx-lex-py</td>
+<td>python.rs</td>
+</tr>
+<tr>
+<td>Go</td>
+<td>dctx-lex-go</td>
+<td>go.rs</td>
+</tr>
+<tr>
+<td>Java</td>
+<td>dctx-lex-java</td>
+<td>java.rs</td>
+</tr>
+<tr>
+<td>C (C and C++)</td>
+<td>dctx-lex-c</td>
+<td>c.rs</td>
+</tr>
+<tr>
+<td>Config (JSON/JSONC, TOML, YAML)</td>
+<td>dctx-lex-cfg</td>
+<td>config.rs</td>
+</tr>
+<tr>
+<td>CSharp</td>
+<td>dctx-lex-cs</td>
+<td>csharp.rs</td>
+</tr>
+<tr>
+<td>Kotlin</td>
+<td>dctx-lex-kt</td>
+<td>kotlin.rs</td>
+</tr>
+<tr>
+<td>Ruby</td>
+<td>dctx-lex-rb</td>
+<td>ruby.rs</td>
+</tr>
+<tr>
+<td>Php</td>
+<td>dctx-lex-php</td>
+<td>php.rs</td>
+</tr>
+<tr>
+<td>Swift</td>
+<td>dctx-lex-swift</td>
+<td>swift.rs</td>
+</tr>
+<tr>
+<td>Unknown</td>
+<td>none</td>
+<td>mod.rs fallback: module-only</td>
+</tr>
+</tbody>
+</table></div>
+<p>The optional <code>TreeSitterParser</code> in <code>adapters/mod.rs:74</code> uses grammars for Rust,
+JavaScript/TypeScript/Tsx and Markdown. Other known languages take the pure
+adapters; Unknown takes fallback. This is an oracle feature, not the default.</p>
+<h2 id="cross-cutting-rules-and-evidence-locations">Cross-cutting rules and evidence locations<a class="hd" href="#cross-cutting-rules-and-evidence-locations" aria-label="Link to Cross-cutting rules and evidence locations">#</a></h2>
+<ul>
+<li><strong>No git at runtime (decision 078):</strong> <code>docs/design/ARCHITECTURE-DECISIONS.md</code>
+  records the core ban and plain-text .gitignore exception. Enforcement evidence:
+  <code>crates/dctx-map-query/tests/no_git.rs</code> (source spawn audit, PATH trap and
+  source-port privacy tests). VCS effects belong to the plugin, not the core.</li>
+<li><strong>Privacy, selection before content:</strong> <code>crates/dctx-adapter-fs/tests/privacy.rs</code>
+  uses read spies to check ignored/omitted paths remain unopened;
+  <code>crates/dctx-map-query/tests/source_privacy.rs</code> checks secrets, ignored files,
+  traversal and symlinks, with an included-file positive control.</li>
+<li><strong>Pure domain boundary:</strong> <code>crates/dctx-core/src/lib.rs:1</code> points to
+  <code>crates/dctx-core/tests/purity.rs</code>, which checks every source module without a
+  directory exemption. Comments and unit-test tails are excluded from the IO scan.
+  The crate retains its first-party dctx-hash dependency.</li>
+<li><strong>Plugin PP1–PP10:</strong> <code>docs/design/plugin-evidence/PP-MATRIX.md</code> maps tests,
+  formal evidence and gaps: PP1 authority narrows; PP2 excluded-source privacy;
+  PP3 effect audit; PP4 protocol binding; PP5 no blind replay; PP6 strict isolation;
+  PP7 bounded resources; PP8 lifecycle progress; PP9 install integrity;
+  PP10 hook order/result truth. The matrix is dated scout evidence, not a fresh
+  passing test result or certification of today's product acceptance.</li>
+<li><strong>Legacy removal:</strong> DX-D3-08b deletes the core IO wrappers and their exports.
+  <code>docs/design/D3-LEGACY-REMOVAL.md</code> remains the historical inventory;
+  <code>docs/design/D3-COMPATIBILITY.md</code> maps retired families to retained tests.
+  Pack codecs, template rendering, filesystem adapters and CLI compatibility IO
+  own the replacements. Pure core modules, settings and template assets remain.</li>
+</ul>
+<h2 id="validation-commands">Validation commands<a class="hd" href="#validation-commands" aria-label="Link to Validation commands">#</a></h2>
+<p>Run from the repository root unless a working directory is specified:</p>
+<div class="hl"><pre><code>cargo<span class="t-w"> </span><span class="t-nb">test</span><span class="t-w"> </span>-p<span class="t-w"> </span>&lt;crate&gt;
+cargo<span class="t-w"> </span><span class="t-nb">test</span><span class="t-w"> </span>--workspace<span class="t-w"> </span>--exclude<span class="t-w"> </span>dctx-desktop
+tools/desktop-check.sh
+<span class="t-c1"># Working directory: apps/dctx-desktop</span>
+bun<span class="t-w"> </span>run<span class="t-w"> </span>e2e
+</code></pre></div>
+
+<p>Sources: single-crate testing in <code>docs/standards/RUST-STANDARDS.md</code> (its final
+lockfile note says packets run without <code>--locked</code>); workspace command in
+<code>docs/SPEC-MAP-MODE.md:344</code>; desktop backend check in <code>tools/desktop-check.sh</code>;
+UI script in <code>apps/dctx-desktop/package.json:9</code> (<code>node e2e/runner.mjs</code>).
+The desktop script runs <code>cargo check -p dctx-desktop</code>, creates a temporary
+frontend placeholder if needed, restores the lockfile, and skips Linux without
+webkit2gtk-4.1. A skip is not desktop validation. Standalone tools are outside
+the root workspace suite (their manifests declare separate workspaces).</p>
+<p>Harness discipline: the workspace suite runs once at the end in authorized CI;
+see <code>docs/design/PLUGINS.md:518</code>. This documentation packet forbids Cargo.
+No product tests, desktop checks or UI runs were executed here; their current
+results are <strong>unverified</strong>. Only the packet's document predicates are run.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/benchmark-oct/" rel="prev"><span>Previous</span>Earlier two-way study</a><a class="next" href="/docs/contributing/" rel="next"><span>Next</span>Contributing</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#how-to-read-the-inventory">How to read the inventory</a></li><li class="l2"><a href="#shipped-cli-path-v1">Shipped CLI path (v1)</a></li><li class="l2"><a href="#core-engines-and-adapters">Core, engines and adapters</a></li><li class="l2"><a href="#lexers-and-structural-extractors">Lexers and structural extractors</a></li><li class="l2"><a href="#plugin-infrastructure-facade-and-surfaces">Plugin infrastructure, facade and surfaces</a></li><li class="l2"><a href="#dependency-picture-core-toward-consumers">Dependency picture: core toward consumers</a></li><li class="l2"><a href="#language-wiring">Language wiring</a></li><li class="l2"><a href="#cross-cutting-rules-and-evidence-locations">Cross-cutting rules and evidence locations</a></li><li class="l2"><a href="#validation-commands">Validation commands</a></li></ul></nav></div>
+</main>
+<footer class="ftr">
+ <div class="wrap">
+  <div class="ftr-grid">
+   <div class="ftr-brand">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
+    <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p class="mono small">dctx 1.1.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+   </div>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
+  </div>
+  <div class="ftr-bottom">
+   <div>
+    <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+   </div>
+   <div class="credit">
+    <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>
+    <a class="credit-logo" href="https://tejl.com/" aria-label="TEJL, publisher of dctx"><img src="/assets/tejl-logo-off-black.svg" width="818" height="422" alt="" loading="lazy" decoding="async"></a>
+   </div>
+  </div>
+ </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+ "CHANGELOG.md": "2026-11-06T21:58:10Z",
+ "CONTRIBUTING.md": "2026-11-01T16:40:39Z",
+ "MAINTENANCE.md": "2026-11-01T16:40:39Z",
+ "README.md": "2026-11-06T23:07:15Z",
+ "RELEASING.md": "2026-11-03T19:55:38Z",
+ "SECURITY.md": "2026-10-21T23:54:07+02:00",
+ "TRADEMARK.md": "2026-11-01T16:40:39Z",
+ "docs/ADR-003-Templating-Engine.md": "2026-11-01T22:18:02Z",
+ "docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md": "2026-11-03T20:04:17Z",
+ "docs/ADR-018-Language-Coverage.md": "2026-10-18T18:01:23+02:00",
+ "docs/BENCHMARK-20261030.md": "2026-11-03T19:55:38Z",
+ "docs/CLI-EXIT-CODES.md": "2026-11-03T19:55:38Z",
+ "docs/CRATE-MAP.md": "2026-10-31T10:32:25+01:00",
+ "docs/SPEC.md": "2026-11-06T01:39:40Z",
+ "docs/WHY-DCTX.md": "2026-11-06T23:23:05Z",
+ "docs/design/contracts/DTS-v2.md": "2026-10-16T11:45:29+02:00",
+ "docs/guides/AGENTS-SNIPPET.md": "2026-10-31T11:52:59+01:00",
+ "docs/guides/MAP-MODE.md": "2026-10-31T10:32:25+01:00",
+ "docs/guides/PLUGINS.md": "2026-10-18T06:32:07+02:00",
+ "docs/research/stability-20261105/REPORT.md": "2026-11-06T01:39:40Z",
+ "docs/research/trail-code-2026-10/REPORT.md": "2026-10-21T19:10:27+02:00"
+}

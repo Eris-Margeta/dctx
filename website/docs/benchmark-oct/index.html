@@ -1,0 +1,1425 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Earlier two-way study · dctx</title>
+<script>/* Runs before first paint: theme and motion preference, so there is no flash. */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  d.className = d.className.replace('no-js', 'js');
+  try { t = localStorage.getItem('dctx-theme'); m = localStorage.getItem('dctx-motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
+})();</script>
+<link rel="stylesheet" href="/assets/site.b368f17c.css">
+<link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="October 2026, before call edges: the benchmark that set the roadmap.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="generator" content="dctx website builder">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://www.dctx.internet.technology/docs/benchmark-oct/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="dctx">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Earlier two-way study · dctx">
+<meta property="og:description" content="October 2026, before call edges: the benchmark that set the roadmap.">
+<meta property="og:url" content="https://www.dctx.internet.technology/docs/benchmark-oct/">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-benchmark-oct.dark.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Earlier two-way study">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-benchmark-oct.light.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Earlier two-way study">
+<meta property="article:modified_time" content="2026-10-21T19:10:27+02:00">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Earlier two-way study · dctx">
+<meta name="twitter:description" content="October 2026, before call edges: the benchmark that set the roadmap.">
+<meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/docs-benchmark-oct.dark.png">
+<meta name="twitter:image:alt" content="dctx: Earlier two-way study">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="license" href="https://www.apache.org/licenses/LICENSE-2.0">
+<link rel="author" href="https://tejl.com/">
+<link rel="help" href="/docs/">
+<link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
+<link rel="alternate" type="text/markdown" href="/docs/benchmark-oct/index.md" title="Earlier two-way study as Markdown">
+<link rel="prev" href="/docs/stability/">
+<link rel="next" href="/docs/crate-map/">
+<script src="/assets/page.9bdcd125.js" defer></script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://www.dctx.internet.technology/#organization",
+   "name": "TEJL",
+   "url": "https://tejl.com/",
+   "logo": "https://www.dctx.internet.technology/assets/tejl-logo-off-black.svg",
+   "email": "info@tejl.com",
+   "sameAs": [
+    "https://tejl.hr/"
+   ],
+   "founder": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   }
+  },
+  {
+   "@type": "Person",
+   "@id": "https://www.dctx.internet.technology/#author",
+   "name": "Eris Margeta",
+   "url": "https://tejl.com/",
+   "sameAs": [
+    "https://github.com/Eris-Margeta"
+   ],
+   "jobTitle": "Founder",
+   "worksFor": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://www.dctx.internet.technology/#website",
+   "url": "https://www.dctx.internet.technology/",
+   "name": "dctx",
+   "inLanguage": "en",
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.dctx.internet.technology/search/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://www.dctx.internet.technology/#software",
+   "name": "dctx",
+   "softwareVersion": "1.1.0",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Linux (x86_64 tested)",
+   "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
+   "url": "https://www.dctx.internet.technology/",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "codeRepository": "https://github.com/Eris-Margeta/dctx",
+   "programmingLanguage": "Rust",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-1-0",
+   "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.dctx.internet.technology/docs/"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "@id": "https://www.dctx.internet.technology/docs/benchmark-oct/#breadcrumb",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "dctx",
+     "item": "https://www.dctx.internet.technology/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Documentation",
+     "item": "https://www.dctx.internet.technology/docs/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Earlier two-way study",
+     "item": "https://www.dctx.internet.technology/docs/benchmark-oct/"
+    }
+   ]
+  },
+  {
+   "@type": "WebPage",
+   "@id": "https://www.dctx.internet.technology/docs/benchmark-oct/#webpage",
+   "url": "https://www.dctx.internet.technology/docs/benchmark-oct/",
+   "name": "Earlier two-way study",
+   "description": "October 2026, before call edges: the benchmark that set the roadmap.",
+   "inLanguage": "en",
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "breadcrumb": {
+    "@id": "https://www.dctx.internet.technology/docs/benchmark-oct/#breadcrumb"
+   }
+  },
+  {
+   "@type": "TechArticle",
+   "@id": "https://www.dctx.internet.technology/docs/benchmark-oct/#article",
+   "headline": "dctx vs Trail-Code: head-to-head benchmark (October 2026)",
+   "description": "October 2026, before call edges: the benchmark that set the roadmap.",
+   "url": "https://www.dctx.internet.technology/docs/benchmark-oct/",
+   "inLanguage": "en",
+   "about": {
+    "@id": "https://www.dctx.internet.technology/#software"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "mainEntityOfPage": {
+    "@id": "https://www.dctx.internet.technology/docs/benchmark-oct/#webpage"
+   },
+   "wordCount": 7317,
+   "encoding": {
+    "@type": "MediaObject",
+    "contentUrl": "https://www.dctx.internet.technology/docs/benchmark-oct/index.md",
+    "encodingFormat": "text/markdown"
+   },
+   "dateModified": "2026-10-21T19:10:27+02:00"
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr">
+ <div class="wrap hdr-in">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.1.0</span></a>
+  <nav class="nav" aria-label="Primary"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
+  <div class="hdr-end">
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
+  </div>
+ </div>
+</header>
+<main id="main">
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/">Three-way benchmark</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/" aria-current="page">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/benchmark-oct/" aria-current="page">Earlier two-way study</a></li></ol></nav><h1 id="dctx-vs-trail-code-head-to-head-benchmark-october-2026">dctx vs Trail-Code: head-to-head benchmark (October 2026)</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/trail-code-2026-10/REPORT.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/docs/research/trail-code-2026-10/REPORT.md">Edit on GitHub</a> &middot; <a href="/docs/benchmark-oct/index.md" type="text/markdown">Markdown</a> &middot; <code>docs/research/trail-code-2026-10/REPORT.md</code> &middot; 7,317 words &middot; updated <time datetime="2026-10-21">21 October 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#1-summary">1. Summary</a></li><li><a href="#2-methodology">2. Methodology</a></li><li><a href="#3-footprint">3. Footprint</a></li><li><a href="#4-indexing-section-2-of-the-brief">4. Indexing (section 2 of the brief)</a></li><li><a href="#5-query-latency-and-output-size-section-3-and-4">5. Query latency and output size (section 3 and 4)</a></li><li><a href="#6-freshness-and-incremental-updates-section-2">6. Freshness and incremental updates (section 2)</a></li><li><a href="#7-call-graph-and-definition-accuracy-section-5">7. Call-graph and definition accuracy (section 5)</a></li><li><a href="#8-task-level-information-efficiency-section-6">8. Task-level information efficiency (section 6)</a></li><li><a href="#9-cache-friendliness-section-7">9. Cache-friendliness (section 7)</a></li><li><a href="#10-robustness-and-privacy-adversarial-corpus-section-10">10. Robustness and privacy: adversarial corpus (section 10)</a></li><li><a href="#11-network-and-telemetry-audit">11. Network and telemetry audit</a></li><li><a href="#12-files-written-by-trail-init-flask--y">12. Files written by trail init (flask, -y)</a></li><li><a href="#13-bounding-section-8">13. Bounding (section 8)</a></li><li><a href="#14-language-coverage-section-9">14. Language coverage (section 9)</a></li><li><a href="#15-where-dctx-wins--where-trail-code-wins--ties">15. Where dctx wins / where Trail-Code wins / ties</a></li><li><a href="#16-findings">16. Findings</a></li><li><a href="#17-not-tested-and-deviations">17. Not tested, and deviations</a></li><li><a href="#18-reproducing">18. Reproducing</a></li></ul></details>
+<p>Isolated, reproducible comparison of two code-context tools for coding agents on seven real corpora
+and one synthetic adversarial corpus. Every number below comes from <code>data/raw/*.jsonl</code> and can be
+regenerated with <code>scripts/</code>. Where Trail-Code is better, this report says so plainly.</p>
+<ul>
+<li><strong>dctx</strong> at commit <code>17dff0b454c24f43848abad1c88ea982e02731f7</code> (branch <code>internal</code>), <code>dctx-cli v0.25.0</code>,
+  agent interface <code>dctx map &lt;map|find|neighbors|explain|read&gt;</code>.</li>
+<li><strong>Trail-Code</strong> <code>@trailhq/trail-code@0.23.1</code> from npm (repository HEAD <code>b1211efd</code>, whose
+  <code>package.json</code> is also 0.23.1), CLI <code>trail</code> plus its MCP server.</li>
+</ul>
+<h2 id="1-summary">1. Summary<a class="hd" href="#1-summary" aria-label="Link to 1. Summary">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Call graph (callers, depth 1)</td>
+<td><strong>Trail-Code wins decisively.</strong> Trail precision 0.94 to 1.00, recall 0.10 to 0.96 per corpus. dctx returns <strong>no call or import edges at all</strong> (recall 0 on 140 targets): the CLI facade only emits <code>contains</code> edges.</td>
+</tr>
+<tr>
+<td>Task-level answers (70 agent questions)</td>
+<td>Trail 122/140 points, 312/354 gold facts in 88.7k tokens. dctx 69/140, 169/354 in 500k tokens (480k of them from the unbounded legacy tree used as the only overview). Without the overview question dctx uses 19.2k tokens for 137/322 facts (7.15 facts/1k tokens) versus Trail 57.0k for 284/322 (4.98 facts/1k): dctx is terser, Trail answers about twice as much.</td>
+</tr>
+<tr>
+<td>Footprint</td>
+<td><strong>dctx wins.</strong> One 9.2 MB binary (libc, libm, libgcc_s) versus 405.6 MB of <code>node_modules</code> (8,567 files, 50 package versions) plus a Node runtime.</td>
+</tr>
+<tr>
+<td>Cold index</td>
+<td><strong>dctx wins</strong> on all seven corpora: 0.09 to 6.05 s versus 2.44 to 94.9 s (2.8 to 69 times faster); peak RSS 8 to 567 MiB versus 181 to 2,111 MiB. Trail's index is smaller only on core (65 MB versus 158 MB).</td>
+</tr>
+<tr>
+<td>Warm query latency</td>
+<td><strong>dctx wins</strong> on small and medium repos (30 to 260 ms versus 0.6 to 1.4 s; Node startup sets Trail's floor near 0.6 s). On the largest Rust corpus dctx re-reads a 158 MB generation per process (1.45 s, 370 MiB per query) and Trail's <code>callers</code> is faster (0.83 s).</td>
+</tr>
+<tr>
+<td>Freshness</td>
+<td><strong>Tie on correctness</strong>: both see unstaged, untracked and staged edits and drop reverted symbols. Trail also adds the caller edge to the new function; dctx cannot. dctx's first query after an edit costs a full re-index (core: 7.5 s), and every edit adds a full new generation to the cache (core: 158 MB to 946 MB).</td>
+</tr>
+<tr>
+<td>Cache-friendliness</td>
+<td><strong>Trail wins.</strong> Trail text outputs are byte-identical across runs and across unrelated edits. Every dctx answer starts with a header containing the snapshot digest, so any edit anywhere changes byte 21 to 50 of every answer; dctx JSON is never byte-identical twice (<code>age_s</code>).</td>
+</tr>
+<tr>
+<td>Bounding</td>
+<td><strong>dctx wins for map verbs</strong> (hard 2,000-token cap, never exceeded; budgets below the minimum record size are refused with exit 1). Trail has no budget flag; single answers reached 142 KB (40.6k tokens). dctx's legacy tree and <code>pack</code> are unbounded (974 KB tree on django; 8.7 MB pack).</td>
+</tr>
+<tr>
+<td>Privacy / network</td>
+<td><strong>dctx wins.</strong> Zero sockets in every audited dctx run and no writes to the repository in map mode. Trail does a daily npm version check that ignores <code>DO_NOT_TRACK</code>, records an install telemetry event in <code>postinstall</code> and tries to send it, and modifies <code>.gitignore</code> and adds <code>.ignore</code> on every <code>trail build</code>. dctx <code>pack</code> printed a fake <code>.env</code> secret; Trail never read <code>.env</code>.</td>
+</tr>
+<tr>
+<td>Language breadth</td>
+<td>Trail parses 23 languages, including Scala, Elixir, Lua, OCaml, Zig, Dart, Solidity and Vue; dctx parses none of those. dctx adds structure for Markdown, JSON, TOML and YAML, which Trail ignores.</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="2-methodology">2. Methodology<a class="hd" href="#2-methodology" aria-label="Link to 2. Methodology">#</a></h2>
+<h3 id="host-isolation-contention">Host, isolation, contention<a class="hd" href="#host-isolation-contention" aria-label="Link to Host, isolation, contention">#</a></h3>
+<ul>
+<li>VM <code>build-host</code>: 32 vCPU Intel Xeon E5-2680 v2 @ 2.80 GHz, 94 GB RAM, Debian 13, kernel
+  6.12.111, Node v24.22.0, npm 11.19.1, rustc/cargo 1.99.0 (<code>data/env.txt</code>).</li>
+<li>The VM was also running an unrelated build and mutation batch. Every benchmark command was pinned with
+  <code>taskset -c 24-31</code> (8 CPUs). The other batch was not pinned, so it could share those CPUs.
+  1-minute load average across the 3,398 measured runs: min 1.04, median 2.31, p95 8.46, max 16.03
+  (each row in <code>data/raw/*runs.jsonl</code> records load before and after; <code>phases.jsonl</code> records each phase).
+  The ripgrep and pocketbase query phases ran at load 8 to 10, so treat their Trail <code>find</code> times
+  (1.2 to 1.3 s) as contention-affected.</li>
+<li>Both tools ran as the dedicated unprivileged user <code>dctxbench</code>, with <code>HOME</code>, npm prefix, npm cache,
+  <code>XDG_CACHE_HOME</code> and <code>DCTX_CACHE_DIR</code> inside <code>/path/to/workdir/dctx-vs-trail</code>, through <code>scripts/benv</code>
+  (<code>env -i</code>, then <code>sudo -u dctxbench unshare -rn</code>, then <code>taskset</code>). After installs, clones and builds,
+  every measured command ran in a new network namespace with only a down loopback.</li>
+<li><code>DO_NOT_TRACK=1</code> (Trail's documented opt-out, <code>dist/telemetry/gate.js</code>) was set for every measured
+  Trail run except the two deliberate "telemetry on" network audits.</li>
+<li>Timing: GNU time 1.9 (<code>/usr/bin/time -v</code>, 10 ms resolution) records wall, user+sys CPU and peak RSS for
+  the tool process tree. Warm queries are medians of 5 runs, cold runs medians of 3.</li>
+<li>Output size: raw stdout bytes and <code>ceil(bytes / 3.5)</code> estimated tokens for both tools (identical to
+  dctx's own <code>ceil(2*bytes/7)</code>). This is an estimate, not a tokenizer.</li>
+<li>Page cache was not dropped, to avoid disturbing the co-tenant batch. "Cold" therefore means "no tool
+  index or cache", not "cold disk".</li>
+</ul>
+<h3 id="builds-and-versions">Builds and versions<a class="hd" href="#builds-and-versions" aria-label="Link to Builds and versions">#</a></h3>
+<ul>
+<li>dctx: source rsynced from the workstation (no <code>target/</code>), built with <code>cargo build --release --locked
+  -p dctx-cli -j 8</code> without a compiler cache: 98.7 s wall, 389 s user CPU. Binary: 9,207,072 bytes,
+  sha256 <code>26c3cb70...cbce</code>. <code>ldd</code>: <code>libgcc_s</code>, <code>libm</code>, <code>libc</code>, <code>ld-linux</code> only.</li>
+<li>Trail-Code: <code>npm install --save-exact @trailhq/trail-code@0.23.1</code> (39.96 s). npm 11.19 printed
+  "install scripts not yet covered by allowScripts" warnings but still ran them (13 packages, including
+  Trail's own <code>postinstall</code> and <code>node-gyp</code> builds; Node headers were downloaded into <code>~/.cache/node-gyp</code>).</li>
+</ul>
+<h3 id="corpora-pinned">Corpora (pinned)<a class="hd" href="#corpora-pinned" aria-label="Link to Corpora (pinned)">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Corpus</th>
+<th>Language</th>
+<th>Pin</th>
+<th>Tracked files</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>flask</td>
+<td>Python</td>
+<td>tag 3.1.3, <code>22d92470</code></td>
+<td>235</td>
+</tr>
+<tr>
+<td>ripgrep</td>
+<td>Rust</td>
+<td>tag 15.2.0, <code>e89fff89</code></td>
+<td>222</td>
+</tr>
+<tr>
+<td>pocketbase</td>
+<td>Go + JS</td>
+<td>tag v0.40.5, <code>6f370ea7</code></td>
+<td>924</td>
+</tr>
+<tr>
+<td>trailcode (Trail-Code repo)</td>
+<td>TypeScript</td>
+<td><code>b1211efd</code></td>
+<td>380</td>
+</tr>
+<tr>
+<td>dctx</td>
+<td>Rust (+ fixtures in 15 languages)</td>
+<td><code>17dff0b4</code></td>
+<td>1,749</td>
+</tr>
+<tr>
+<td>django</td>
+<td>Python</td>
+<td>tag 6.1.2, <code>2212534b</code></td>
+<td>7,071</td>
+</tr>
+<tr>
+<td>core (private Rust repository)</td>
+<td>Rust</td>
+<td><code>f5f2f48b</code></td>
+<td>3,190</td>
+</tr>
+<tr>
+<td>adversarial (generated)</td>
+<td>mixed</td>
+<td><code>scripts/gen_adversarial.py</code></td>
+<td>see section 10</td>
+</tr>
+</tbody>
+</table></div>
+<p><code>core</code> was copied without <code>target/</code> and <code>corpus/</code>; its <code>.agent/worktrees/</code> (copies of the tree) was also
+removed. Its raw outputs, symbol names, paths and source lines are <strong>redacted</strong> from <code>data/</code>
+(<code>scripts/redact_private.py</code>); only numbers are published.</p>
+<h3 id="gold-sets-and-scoring">Gold sets and scoring<a class="hd" href="#gold-sets-and-scoring" aria-label="Link to Gold sets and scoring">#</a></h3>
+<ul>
+<li><strong>Targets.</strong> <code>scripts/select_targets.py</code> picks 20 definitions per corpus with a fixed seed: 4 hubs
+  (unique name, many calls), 4 rare (1 to 3 calls), 4 receiver-called methods, 4 colliding names
+  (2 to 6 definitions), 4 interface/trait methods. Selection uses the independent oracle in
+  <code>scripts/goldlib.py</code>, not either tool.</li>
+<li><strong>Oracle.</strong> Comments and strings are blanked (a cross-line state machine for Rust and Go, per-line for
+  JS/TS, triple-quote aware for Python). A line is a call site of <code>N</code> only if <code>N</code> is directly followed by an
+  argument list and the line is not a definition. Each site is bound to a definition by scope rules (same
+  file or package, explicit import, <code>self</code>/<code>this</code>, <code>Type::</code>); receiver calls to names that also exist on
+  standard-library types, and anything else unresolvable, are <strong>ambiguous</strong> and excluded from both
+  precision and recall. Interface/trait targets are scored at name level: every site bound to some
+  in-repo definition of the name, plus <code>self</code> calls.</li>
+<li><strong>Adjudication.</strong> A Trail <code>calls</code> hit is a true positive if its span contains a gold site of the target,
+  unjudged if it only contains ambiguous sites, and a false positive otherwise. Recall counts gold sites
+  inside any reported hit. Collisions were spot-checked by hand (all 28 collision targets: sample sites
+  listed in <code>data/targets/*.targets.json</code>). The hand check found one oracle bug: a <code>/*</code> inside a Rust
+  multi-line doc string started a fake block comment. After the fix the gold was rebuilt for the <strong>same</strong>
+  targets (<code>scripts/regold.py</code>; one target changed, ripgrep <code>unwrap_switch</code>, 61 to 69 sites), and the ripgrep
+  accuracy and task phases were rerun. The earlier rows are kept in <code>data/raw/*.pre-regold</code>. A remaining
+  known oracle gap: calls inside Python f-strings and JS template literals are blanked, which made
+  one true Trail hit (flask <code>dumps</code>) count as a false positive.</li>
+<li><strong>Tasks.</strong> <code>scripts/phase_tasks.py</code> builds 10 questions per corpus from the same oracle with fixed
+  command sequences per tool. Facts are scored by presence in the outputs (JSON string values are also
+  searched); caller facts must come from a caller/impact answer and need the caller's path and one of its
+  call-line numbers. Score per question: 2 if at least 80% of facts are present, 1 if any, 0 otherwise.</li>
+</ul>
+<h2 id="3-footprint">3. Footprint<a class="hd" href="#3-footprint" aria-label="Link to 3. Footprint">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th></th>
+<th>dctx</th>
+<th>Trail-Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Install</td>
+<td>one binary, 9,207,072 bytes</td>
+<td><code>node_modules</code> 405,601,700 bytes, 8,567 files</td>
+</tr>
+<tr>
+<td>Dependencies</td>
+<td>46 external crates in <code>cargo tree -e normal</code> (see TC-F11)</td>
+<td>50 package versions (47 names) in <code>npm ls --all</code>; largest: <code>tree-sitter-wasm</code> 128 MB, <code>@trailhq/trail-code</code> 129 MB (bundled grammars), <code>tree-sitter-swift</code> 73 MB, two LLM-provider SDKs 34 MB and 14 MB (used only by <code>--deep</code>)</td>
+</tr>
+<tr>
+<td>Runtime</td>
+<td>libc, libm, libgcc_s</td>
+<td>Node &gt;= 20 plus native addons</td>
+</tr>
+<tr>
+<td>Install side effects</td>
+<td>none</td>
+<td><code>postinstall</code> records an anonymous install event and spawns a detached flush; <code>~/.graft/telemetry.json</code> and <code>~/.graft/update-check.json</code> created at install</td>
+</tr>
+<tr>
+<td>MCP</td>
+<td>none (listed as planned in README)</td>
+<td>6 tools; tool definitions 3,515 bytes (~1,005 tokens) per agent session</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="4-indexing-section-2-of-the-brief">4. Indexing (section 2 of the brief)<a class="hd" href="#4-indexing-section-2-of-the-brief" aria-label="Link to 4. Indexing (section 2 of the brief)">#</a></h2>
+<p>Cold = new copy, no tool state, median of 3. dctx has no index command, so its cold run is the first
+<code>dctx map find main</code> with an empty <code>DCTX_CACHE_DIR</code>. The Trail cold run is <code>trail build .</code>. No-op = repeat
+with nothing changed (dctx: same query; Trail: <code>trail build .</code> again and <code>trail build --check .</code>).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Corpus</th>
+<th>dctx cold s (CPU s)</th>
+<th>Trail cold s (CPU s)</th>
+<th>dctx peak RSS MiB</th>
+<th>Trail peak RSS MiB</th>
+<th>dctx cache MB</th>
+<th>Trail index MB</th>
+<th>dctx no-op s</th>
+<th>Trail no-op build s</th>
+<th>Trail <code>--check</code> s</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>flask</td>
+<td><strong>0.09</strong> (0.08)</td>
+<td>3.45 (3.88)</td>
+<td><strong>8</strong></td>
+<td>181</td>
+<td><strong>0.85</strong></td>
+<td>4.39</td>
+<td><strong>0.04</strong></td>
+<td>0.88</td>
+<td>3.29</td>
+</tr>
+<tr>
+<td>ripgrep</td>
+<td><strong>0.45</strong> (0.42)</td>
+<td>2.44 (3.40)</td>
+<td><strong>18</strong></td>
+<td>282</td>
+<td><strong>1.77</strong></td>
+<td>8.36</td>
+<td><strong>0.05</strong></td>
+<td>1.35</td>
+<td>1.97</td>
+</tr>
+<tr>
+<td>pocketbase</td>
+<td><strong>0.72</strong> (0.71)</td>
+<td>49.45 (51.42)</td>
+<td><strong>39</strong></td>
+<td>969</td>
+<td><strong>6.69</strong></td>
+<td>41.83</td>
+<td><strong>0.17</strong></td>
+<td>2.65</td>
+<td>49.52</td>
+</tr>
+<tr>
+<td>trailcode</td>
+<td><strong>0.31</strong> (0.30)</td>
+<td>17.83 (18.65)</td>
+<td><strong>17</strong></td>
+<td>452</td>
+<td><strong>3.56</strong></td>
+<td>13.70</td>
+<td><strong>0.08</strong></td>
+<td>1.58</td>
+<td>18.67</td>
+</tr>
+<tr>
+<td>dctx</td>
+<td><strong>2.42</strong> (2.38)</td>
+<td>9.74 (13.96)</td>
+<td><strong>64</strong></td>
+<td>834</td>
+<td><strong>14.88</strong></td>
+<td>42.68</td>
+<td><strong>0.27</strong></td>
+<td>3.81</td>
+<td>7.90</td>
+</tr>
+<tr>
+<td>django</td>
+<td><strong>2.48</strong> (2.46)</td>
+<td>94.89 (97.55)</td>
+<td><strong>92</strong></td>
+<td>2,111</td>
+<td><strong>23.30</strong></td>
+<td>167.48</td>
+<td><strong>0.81</strong></td>
+<td>9.15</td>
+<td>86.46</td>
+</tr>
+<tr>
+<td>core</td>
+<td><strong>6.05</strong> (7.02)</td>
+<td>16.88 (21.43)</td>
+<td><strong>567</strong></td>
+<td>916</td>
+<td>157.70</td>
+<td><strong>64.71</strong></td>
+<td><strong>1.34</strong></td>
+<td>4.66</td>
+<td>13.82</td>
+</tr>
+</tbody>
+</table></div>
+<p>Notes:
+- core's dctx cost is dominated by configuration extraction. <code>--profile</code> on a cold run: parse/lex 3.39 s,
+  canonicalize/seal 1.43 s, persist 0.97 s; the slowest file is a 6.7 MB JSON test fixture that produced
+  235,842 symbols. The 158 MB generation is 2.9 times the 54 MB working tree (TC-F07).
+- Trail's <code>build --check</code> (the CI freshness check) costs as much as a full build on pocketbase and django.
+- Trail writes its index into the repository: <code>graft/</code> plus a modified <code>.gitignore</code> and a new <code>.ignore</code> on
+  every corpus, or <code>.trail/cache/</code> when the repo already has <code>.trail/</code> (Trail's own repo). dctx map writes
+  nothing into the repository and nothing into <code>HOME</code> (verified by full manifests before and after).</p>
+<h2 id="5-query-latency-and-output-size-section-3-and-4">5. Query latency and output size (section 3 and 4)<a class="hd" href="#5-query-latency-and-output-size-section-3-and-4" aria-label="Link to 5. Query latency and output size (section 3 and 4)">#</a></h2>
+<p>Warm medians of 5 (wall seconds; bytes of the answer). Command mapping:
+find = <code>dctx map find N --limit 10</code> / <code>trail ask N</code>; callers = <code>dctx map neighbors &lt;id&gt; --dir in --edge calls</code>
+/ <code>trail callers N</code>; outline = <code>dctx map map FILE --depth 2 --limit 40</code> / <code>trail skeleton FILE</code>;
+read = <code>dctx map read &lt;id&gt; --json</code> / <code>trail ask N --source --full -n 1</code>; overview = legacy <code>dctx . -t</code>
+(the map verbs have no root overview, TC-F05) / <code>trail map</code>; grep = none / <code>trail grep 'N\('</code>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Corpus</th>
+<th>find dctx</th>
+<th>find Trail</th>
+<th>callers dctx</th>
+<th>callers Trail</th>
+<th>outline dctx</th>
+<th>outline Trail</th>
+<th>read dctx</th>
+<th>read Trail</th>
+<th>overview dctx</th>
+<th>overview Trail</th>
+<th>grep Trail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>flask</td>
+<td>0.03 s / 848 B</td>
+<td>0.69 s / 917 B</td>
+<td>0.03 / 104 (empty)</td>
+<td>0.63 / 476</td>
+<td>0.03 / 1,327</td>
+<td>0.63 / 2,980</td>
+<td>0.03 / 1,472</td>
+<td>0.68 / 1,622</td>
+<td>0.04 / 22,537</td>
+<td>0.64 / 3,925</td>
+<td>0.65 / 3,244</td>
+</tr>
+<tr>
+<td>ripgrep</td>
+<td>0.06 / 217</td>
+<td>1.27 / 1,371</td>
+<td>0.06 / 107 (empty)</td>
+<td>0.67 / 2,801</td>
+<td>0.05 / 1,700</td>
+<td>0.66 / 3,935</td>
+<td>0.05 / 897</td>
+<td>0.85 / 1,057</td>
+<td>0.08 / 21,972</td>
+<td>0.71 / 8,883</td>
+<td>0.69 / 3,213</td>
+</tr>
+<tr>
+<td>pocketbase</td>
+<td>0.17 / 993</td>
+<td>1.18 / 1,252</td>
+<td>0.20 / 110 (empty)</td>
+<td>1.04 / 611</td>
+<td>0.17 / 1,087</td>
+<td>0.72 / 1,226</td>
+<td>0.17 / 780</td>
+<td>1.19 / 1,902</td>
+<td>0.22 / 80,655</td>
+<td>0.79 / 5,297</td>
+<td>0.96 / 5,019</td>
+</tr>
+<tr>
+<td>trailcode</td>
+<td>0.08 / 1,405</td>
+<td>0.90 / 1,792</td>
+<td>0.08 / 109 (empty)</td>
+<td>0.67 / 1,624</td>
+<td>0.08 / 1,740</td>
+<td>0.66 / 4,166</td>
+<td>0.08 / 1,691</td>
+<td>0.92 / 2,332</td>
+<td>0.41 / 30,347</td>
+<td>0.67 / 1,687</td>
+<td>0.74 / 3,476</td>
+</tr>
+<tr>
+<td>dctx</td>
+<td>0.26 / 222</td>
+<td>1.40 / 3,020</td>
+<td>0.26 / 105 (empty)</td>
+<td>0.79 / 6,790</td>
+<td>0.26 / 1,653</td>
+<td>0.76 / 4,329</td>
+<td>0.26 / 1,452</td>
+<td>1.41 / 2,643</td>
+<td>0.24 / 199,371</td>
+<td>2.81 / 34,030</td>
+<td>1.38 / 8,375</td>
+</tr>
+<tr>
+<td>django</td>
+<td>0.82 / 196</td>
+<td>3.28 / 1,093</td>
+<td>0.82 / 107 (empty)</td>
+<td>1.39 / 3,116</td>
+<td>0.81 / 1,719</td>
+<td>1.32 / 2,575</td>
+<td>0.81 / 835</td>
+<td>3.30 / 876</td>
+<td>0.98 / 974,082</td>
+<td>1.52 / 4,151</td>
+<td>5.43 / 6,249</td>
+</tr>
+<tr>
+<td>core</td>
+<td>1.45 / 534</td>
+<td>1.65 / 3,817</td>
+<td>1.45 / 106 (empty)</td>
+<td><strong>0.83</strong> / 1,366</td>
+<td>1.45 / 1,600</td>
+<td><strong>0.81</strong> / 1,196</td>
+<td>1.44 / 1,914</td>
+<td>1.69 / 4,159</td>
+<td>0.70 / 350,226</td>
+<td>10.00 / 52,978</td>
+<td>1.50 / 4,368</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>dctx warm latency grows with repository size because every process re-opens and loads the whole
+  generation (core: 370 MiB RSS for any query). Trail's floor is Node startup (~0.6 s, ~100 MiB RSS).</li>
+<li>dctx text mode is thin: <code>find</code> prints <code>id kind path</code> without line numbers, and <code>read</code>/<code>explain</code> in text
+  mode print only the id line (152 to 247 bytes, no source and no signature). Source needs <code>--json</code>
+  (TC-F04).</li>
+<li>dctx <code>--json</code> repeats thirteen keys per record, many of them <code>null</code>. Under the same default budget a
+  JSON <code>find</code> returned 4 records where the text <code>find</code> returned 10 (flask, <code>dispatch_request</code>).</li>
+<li>dctx cold query (empty cache, includes indexing, median of 3): flask 0.09 s, ripgrep 0.46 to 1.41 s,
+  pocketbase 0.72 s, trailcode 0.31 s (<code>data/queries_cold_dctx.csv</code>). Trail cannot answer without a graph
+  ("no graph found ... run <code>trail build</code> first"), so its cold first answer is the cold build plus a query.</li>
+<li>Trail prepends a banner to <code>callers</code>, <code>skeleton</code>, <code>grep</code>, <code>map</code> and source answers. The banner estimates
+  "tokens saved" and instructs the agent to tell the user the total each turn: ~310 bytes (~89 tokens) per
+  call, 6.3% of all Trail warm-query bytes and 54% of the <code>callees</code> answers.</li>
+</ul>
+<h2 id="6-freshness-and-incremental-updates-section-2">6. Freshness and incremental updates (section 2)<a class="hd" href="#6-freshness-and-incremental-updates-section-2" aria-label="Link to 6. Freshness and incremental updates (section 2)">#</a></h2>
+<p>Probe: append a new function that calls the hub target to its file (unstaged), then add a new untracked
+file, then <code>git add</code> it, then revert everything (<code>data/freshness.csv</code>).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Corpus</th>
+<th>dctx: new fn found / first query s</th>
+<th>Trail: new fn found / first query s</th>
+<th>Trail caller edge to new fn</th>
+<th>Untracked file found (dctx / Trail)</th>
+<th>Staged found</th>
+<th>Stale after revert</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>flask</td>
+<td>yes / 0.11</td>
+<td>yes / 1.06</td>
+<td>yes</td>
+<td>yes / yes</td>
+<td>yes / yes</td>
+<td>no / no</td>
+</tr>
+<tr>
+<td>ripgrep</td>
+<td>yes / 0.42</td>
+<td>yes / 1.43</td>
+<td>yes</td>
+<td>yes / yes</td>
+<td>yes / yes</td>
+<td>no / no</td>
+</tr>
+<tr>
+<td>pocketbase</td>
+<td>yes / 0.76</td>
+<td>yes / 2.95</td>
+<td>yes</td>
+<td>yes / yes</td>
+<td>yes / yes</td>
+<td>no / no</td>
+</tr>
+<tr>
+<td>trailcode</td>
+<td>yes / 0.32</td>
+<td>yes / 1.93</td>
+<td>yes</td>
+<td>yes / yes</td>
+<td>yes / yes</td>
+<td>no / no</td>
+</tr>
+<tr>
+<td>dctx</td>
+<td>yes / 2.31</td>
+<td>yes / 4.50</td>
+<td>yes</td>
+<td>yes / yes</td>
+<td>yes / yes</td>
+<td>no / no</td>
+</tr>
+<tr>
+<td>django</td>
+<td>yes / 2.70</td>
+<td>yes / 11.30</td>
+<td>yes</td>
+<td>yes / yes</td>
+<td>yes / yes</td>
+<td>no / no</td>
+</tr>
+<tr>
+<td>core</td>
+<td>yes / 7.48</td>
+<td>yes / 5.45</td>
+<td>yes</td>
+<td>yes / yes</td>
+<td>yes / yes</td>
+<td>no / no</td>
+</tr>
+</tbody>
+</table></div>
+<ul>
+<li>Both tools are correct on every freshness check, including uncommitted, unstaged and untracked edits.
+  dctx never reports the caller edge because it has no call edges.</li>
+<li>dctx re-indexes everything after any change: the first query after an edit costs about the cold
+  time (core 7.48 s versus 1.45 s warm; django 2.70 s versus 0.82 s). Trail re-parses only what moved
+  (django 11.3 s versus a 95 s cold build).</li>
+<li>Each changed snapshot adds a complete new dctx generation. After the query and freshness phases, the core
+  cache held six 158 MB generations (946 MB); three of them were byte-identical copies of the original
+  snapshot. <code>dctx cache status</code> reported 473 MB reclaimable, and <code>dctx cache gc --dry-run</code> reclaimed 0
+  bytes (<code>blockers: unlink_grace</code>). Total dctx cache at the end of the run (all corpora including the
+  adversarial ones): 1.36 GB. Trail's index sizes stayed constant.</li>
+</ul>
+<h2 id="7-call-graph-and-definition-accuracy-section-5">7. Call-graph and definition accuracy (section 5)<a class="hd" href="#7-call-graph-and-definition-accuracy-section-5" aria-label="Link to 7. Call-graph and definition accuracy (section 5)">#</a></h2>
+<p>Definition-level targets (hub, rare, receiver, collision; 16 per corpus), micro-averaged over call sites.
+Interface/trait targets are scored at name level separately. Per-target rows: <code>data/accuracy_targets.csv</code>.
+Misses and false positives: <code>data/raw/accuracy.jsonl</code> (redacted for core).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Corpus</th>
+<th>Gold sites</th>
+<th>Trail precision</th>
+<th>Trail recall</th>
+<th>dctx recall</th>
+<th>Interface name-level recall Trail / dctx</th>
+<th>Find-def rank 1: dctx <code>find</code> / Trail <code>ask</code></th>
+<th>Def in results: dctx / Trail <code>ask</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>flask</td>
+<td>122</td>
+<td>1.00</td>
+<td>0.30</td>
+<td>0</td>
+<td>1.00 / 0</td>
+<td>14 / 14 of 20</td>
+<td>20 / 19</td>
+</tr>
+<tr>
+<td>ripgrep</td>
+<td>144</td>
+<td>1.00 (3 unjudged)</td>
+<td>0.68</td>
+<td>0</td>
+<td>0.50 / 0</td>
+<td>13 / 10</td>
+<td>20 / 12</td>
+</tr>
+<tr>
+<td>pocketbase</td>
+<td>212</td>
+<td>1.00</td>
+<td>0.10</td>
+<td>0</td>
+<td>n/a (no resolvable sites)</td>
+<td>17 / 8</td>
+<td>20 / 13</td>
+</tr>
+<tr>
+<td>trailcode</td>
+<td>105</td>
+<td>1.00</td>
+<td>0.96</td>
+<td>0</td>
+<td>0.13 / 0</td>
+<td>14 / 12</td>
+<td>20 / 14</td>
+</tr>
+<tr>
+<td>dctx</td>
+<td>328</td>
+<td>1.00</td>
+<td>0.52</td>
+<td>0</td>
+<td>1.00 / 0</td>
+<td>14 / 11</td>
+<td>20 / 15</td>
+</tr>
+<tr>
+<td>django</td>
+<td>297</td>
+<td>1.00</td>
+<td>0.31</td>
+<td>0</td>
+<td>0.33 / 0</td>
+<td>17 / 12</td>
+<td>20 / 16</td>
+</tr>
+<tr>
+<td>core</td>
+<td>179</td>
+<td>1.00</td>
+<td>0.69</td>
+<td>0</td>
+<td>1.00 / 0</td>
+<td>14 / 12</td>
+<td>19 / 20</td>
+</tr>
+</tbody>
+</table></div>
+<p>By category over all corpora (Trail): hub P 1.00 / R 0.42 (1,187 sites), rare 1.00 / 0.93, receiver
+1.00 / 0.56, collision 1.00 / 0.86, interface 0.94 / 0.42. dctx: 0 everywhere.</p>
+<ul>
+<li><strong>dctx has no call graph in the shipped CLI.</strong> <code>neighbors --edge calls</code> returned empty on all 140
+  targets; <code>--edge imports</code> on module ids was also empty in spot checks (ripgrep, pocketbase). The lexers do extract references (for example
+  <code>EdgeKind::Calls</code> in <code>dctx-lex-*</code>, <code>dctx-map-parse/src/adapters/rust.rs</code>), but the facade index
+  (<code>crates/dctx/src/index/extract.rs</code>) only emits <code>contains</code> edges, and <code>dctx-map-resolve</code> is linked only
+  through <code>dctx-map-query</code>.</li>
+<li><strong>Trail is precise but misses a lot on some corpora.</strong> Typical misses: Go methods called through
+  variables (pocketbase <code>Record.Verified</code>, 0 of 39; <code>Record.ValidatePassword</code>, 0 of 36); Python methods
+  called on module-level objects (<code>apps.get_app_configs()</code>, 3 of 69); calls through a re-exported module
+  name (<code>flask.abort(...)</code>, 2 of 22); classmethods called on subclasses (<code>Index.as_view(...)</code>, 0 of 20).
+  Trail itself says it drops cross-file callers of ambiguous names "rather than guessed".</li>
+<li><strong>Find definition:</strong> dctx <code>find</code> ranked the definition first more often (103/140 versus 79/140 for
+  Trail <code>ask</code>) and listed it in 139/140 first pages versus 109/140. Trail <code>callers N</code> also lists every
+  same-name definition and matched the target definition in 136/140 cases.</li>
+</ul>
+<h2 id="8-task-level-information-efficiency-section-6">8. Task-level information efficiency (section 6)<a class="hd" href="#8-task-level-information-efficiency-section-6" aria-label="Link to 8. Task-level information efficiency (section 6)">#</a></h2>
+<p>Ten questions per corpus (definition and callers, change impact, outline, config key, module exports,
+source of a method, callees, repo overview, a colliding name, concept search). Questions and facts:
+<code>data/targets/*.questions.json</code>; per-question rows: <code>data/tasks.csv</code>, <code>data/tasks_by_question.csv</code>.</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Corpus</th>
+<th>dctx calls / tokens / score / facts</th>
+<th>Trail calls / tokens / score / facts</th>
+<th>Facts per 1k tokens dctx / Trail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>flask</td>
+<td>15 / 9,227 / 11 of 20 / 30 of 48</td>
+<td>10 / 5,529 / 16 / 39 of 48</td>
+<td>3.25 / 7.05</td>
+</tr>
+<tr>
+<td>ripgrep</td>
+<td>15 / 9,048 / 9 / 16 of 32</td>
+<td>10 / 25,974 / 13 / 23 of 32</td>
+<td>1.77 / 0.89</td>
+</tr>
+<tr>
+<td>pocketbase</td>
+<td>15 / 25,644 / 11 / 27 of 36</td>
+<td>10 / 4,026 / 18 / 33 of 36</td>
+<td>1.05 / 8.20</td>
+</tr>
+<tr>
+<td>trailcode</td>
+<td>15 / 11,625 / 10 / 35 of 64</td>
+<td>10 / 7,529 / 19 / 59 of 64</td>
+<td>3.01 / 7.84</td>
+</tr>
+<tr>
+<td>dctx</td>
+<td>15 / 60,080 / 10 / 21 of 48</td>
+<td>10 / 15,396 / 19 / 44 of 48</td>
+<td>0.35 / 2.86</td>
+</tr>
+<tr>
+<td>django</td>
+<td>15 / 281,264 / 10 / 29 of 70</td>
+<td>10 / 7,006 / 18 / 63 of 70</td>
+<td>0.10 / 8.99</td>
+</tr>
+<tr>
+<td>core</td>
+<td>15 / 103,117 / 8 / 11 of 56</td>
+<td>10 / 23,231 / 19 / 51 of 56</td>
+<td>0.11 / 2.20</td>
+</tr>
+<tr>
+<td><strong>All</strong></td>
+<td>105 / 500,005 / <strong>69 of 140</strong> / 169 of 354</td>
+<td>70 / 88,691 / <strong>122 of 140</strong> / 312 of 354</td>
+<td>0.34 / 3.52</td>
+</tr>
+<tr>
+<td>All except overview</td>
+<td>98 / 19,156 / 55 of 126 / 137 of 322</td>
+<td>63 / 56,989 / 109 of 126 / 284 of 322</td>
+<td><strong>7.15</strong> / 4.98</td>
+</tr>
+</tbody>
+</table></div>
+<p>By question type (score out of 14): outline dctx 11 / Trail 14; exports 8 / 14; source 14 / 12;
+definition and callers 7 / 10; impact 7 / 13; callees 2 / 8; collision 6 / 12; config key 0 / 14 (dctx has
+no text search); concept search 0 / 12 (multi-word <code>dctx map find</code> returned no records); overview 14 / 13
+(dctx through the unbounded legacy tree: 480k tokens over seven corpora versus 31.7k for <code>trail map</code>).</p>
+<h2 id="9-cache-friendliness-section-7">9. Cache-friendliness (section 7)<a class="hd" href="#9-cache-friendliness-section-7" aria-label="Link to 9. Cache-friendliness (section 7)">#</a></h2>
+<p>Each warm query ran 5 times, then again after appending one comment line to an unrelated file in another
+directory (<code>data/stability.csv</code>).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Property</th>
+<th>dctx</th>
+<th>Trail-Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Text output identical over 5 runs</td>
+<td>yes (all text verbs)</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>JSON output identical over 5 runs</td>
+<td><strong>no</strong>: <code>freshness.age_s</code> changes every second</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Identical after an unrelated edit</td>
+<td><strong>no, every answer</strong>: header <code># &lt;place&gt; &lt;verb&gt; v1:sha256:&lt;digest&gt;:&lt;bytes&gt; g=&lt;n&gt;</code> changes; common prefix 21 to 50 bytes</td>
+<td>yes for callers, callees, outline, grep, read, text find; <code>map</code> banner counts change; <code>ask --json</code> scores churn in the 9th to 16th digit</td>
+</tr>
+<tr>
+<td>Absolute paths in output</td>
+<td>none in map verbs; legacy <code>dctx .</code> prints the absolute path and a timing line</td>
+<td><code>ask --json</code> includes absolute paths of <code>.trail/learnings</code> files</td>
+</tr>
+<tr>
+<td>Timestamps</td>
+<td><code>age_s</code> in JSON</td>
+<td>none in answers</td>
+</tr>
+<tr>
+<td>Ordering</td>
+<td>stable</td>
+<td>stable</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="10-robustness-and-privacy-adversarial-corpus-section-10">10. Robustness and privacy: adversarial corpus (section 10)<a class="hd" href="#10-robustness-and-privacy-adversarial-corpus-section-10" aria-label="Link to 10. Robustness and privacy: adversarial corpus (section 10)">#</a></h2>
+<p><code>scripts/gen_adversarial.py</code> plants: a non-ignored <code>.env</code> with <code>DCTXBENCH_FAKE_SECRET=sk-test-...</code>, a
+gitignored directory and a gitignored <code>*.secret.py</code> with unique markers, an un-ignored <code>node_modules/</code>, a
+NUL-containing <code>.py</code>, a 50 MB text file, a 5 MB single-line minified JS, a 5 MB generated Python module
+with 50,000 functions, a 100 KB line, a symlink loop and a symlink escaping the repository, a non-UTF-8
+file name, a file name with a space and one with a newline, 200 nested directories, a CRLF file, empty and
+BOM-only files, and 13 files in languages dctx does not support. Run twice: as a git repository and as a
+plain directory. Timeout 300 s per command (<code>data/raw/adversarial.jsonl</code>).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Check</th>
+<th>dctx</th>
+<th>Trail-Code</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Crash or hang</td>
+<td>none in map verbs or <code>pack</code>; legacy <code>dctx . -t</code> exits 1 with <code>resource limit exceeded: Depth &gt; 128</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td>Gitignored files (git repo)</td>
+<td>not indexed, not in <code>pack</code></td>
+<td>not indexed (<code>trail grep</code> names the ignored paths in its footer)</td>
+</tr>
+<tr>
+<td>Gitignored files (no <code>.git</code>)</td>
+<td><strong>still excluded</strong> (rules read from <code>.gitignore</code>)</td>
+<td><strong>indexed</strong>: the gitignored secret value is in <code>graft/.cache/extract.*.json</code> and in <code>trail grep sk-test</code> output</td>
+</tr>
+<tr>
+<td><code>.env</code> secret</td>
+<td><strong>printed by <code>dctx pack .</code></strong> (not in map answers or the map cache)</td>
+<td>never read</td>
+</tr>
+<tr>
+<td>Symlink loop / escaping symlink</td>
+<td>not followed</td>
+<td>not followed</td>
+</tr>
+<tr>
+<td><code>node_modules/</code> (not ignored)</td>
+<td>skipped</td>
+<td>skipped</td>
+</tr>
+<tr>
+<td>NUL-containing <code>.py</code></td>
+<td>skipped as binary</td>
+<td>indexed</td>
+</tr>
+<tr>
+<td>5 MB minified JS, 5 MB generated <code>.py</code></td>
+<td>indexed (last of 50,000 functions found)</td>
+<td>skipped</td>
+</tr>
+<tr>
+<td>Non-UTF-8 file name</td>
+<td>skipped silently</td>
+<td>skipped</td>
+</tr>
+<tr>
+<td>Newline in file name</td>
+<td>skipped</td>
+<td>indexed</td>
+</tr>
+<tr>
+<td>CRLF file</td>
+<td>correct outline, read and spans</td>
+<td>correct skeleton and callers</td>
+</tr>
+<tr>
+<td>200-deep nesting</td>
+<td>indexed by map</td>
+<td>indexed</td>
+</tr>
+<tr>
+<td>Unsupported languages (13 files)</td>
+<td>0 indexed</td>
+<td>8 indexed (Zig, Elixir, Lua, OCaml, Scala, Dart, Solidity, Vue)</td>
+</tr>
+<tr>
+<td>Cost on this corpus</td>
+<td>first query 2.6 s, 262 MiB RSS; cache 45.9 MB</td>
+<td>build 1.5 s, 277 MiB RSS; index 0.13 MB</td>
+</tr>
+<tr>
+<td>Repository writes</td>
+<td>none (legacy <code>dctx .</code> writes <code>.dctx/</code>)</td>
+<td><code>.gitignore</code> modified, <code>.ignore</code> added</td>
+</tr>
+</tbody>
+</table></div>
+<h2 id="11-network-and-telemetry-audit">11. Network and telemetry audit<a class="hd" href="#11-network-and-telemetry-audit" aria-label="Link to 11. Network and telemetry audit">#</a></h2>
+<p><code>strace -f -e trace=socket,connect,sendto,sendmsg,bind</code> inside the network namespace (<code>data/raw/network.jsonl</code>).</p>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Run</th>
+<th>Sockets</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>dctx map find</code>, <code>dctx pack .</code>, <code>dctx plugin list</code></td>
+<td>0</td>
+<td>no socket syscalls at all</td>
+</tr>
+<tr>
+<td><code>trail build .</code> (telemetry on, and with <code>DO_NOT_TRACK=1</code>)</td>
+<td>0</td>
+<td></td>
+</tr>
+<tr>
+<td><code>trail callers</code> with the daily update-check stamp expired, <strong>with and without <code>DO_NOT_TRACK=1</code></strong></td>
+<td>30</td>
+<td>resolves <code>registry.npmjs.org</code> through systemd-resolved's varlink socket (which works from inside a network namespace), then tries TCP 443 on 104.16.x.34 and 2606:4700::6810:x; connects fail with <code>ENETUNREACH</code></td>
+</tr>
+<tr>
+<td>any Trail command with telemetry on, offline</td>
+<td>0</td>
+<td>events are queued in <code>~/.graft/telemetry-queue.ndjson</code>: app version, OS, arch, Node major, command, a random <code>repo_id</code> UUID, file-count bucket, languages, duration bucket</td>
+</tr>
+<tr>
+<td><code>npm install</code> (network allowed)</td>
+<td>n/a</td>
+<td><code>postinstall</code> recorded an install event and spawned a detached flush (<code>flushedAt</code> set in <code>~/.graft/telemetry.json</code>); delivery cannot be confirmed</td>
+</tr>
+</tbody>
+</table></div>
+<p>Trail's documented telemetry gates (<code>DO_NOT_TRACK</code>, CI, <code>trail telemetry disable</code>) did stop the usage
+pings. They do not gate the update check.</p>
+<h2 id="12-files-written-by-trail-init-flask--y">12. Files written by <code>trail init</code> (flask, <code>-y</code>)<a class="hd" href="#12-files-written-by-trail-init-flask--y" aria-label="Link to 12. Files written by trail init (flask, -y)">#</a></h2>
+<ul>
+<li>Repository (agent names replaced by <code>&lt;agent&gt;</code>): <code>.&lt;agent&gt;/settings.json</code>, <code>.&lt;agent&gt;/settings.local.json</code>,
+  <code>.github/&lt;agent&gt;-instructions.md</code>, <code>.trail/.gitignore</code>, <code>.trail/README.md</code>, <code>.trail/hook.cjs</code>, <code>.trail/statusline.cjs</code>, the index under
+  <code>.trail/cache/</code> (90 files).</li>
+<li><code>HOME</code> (machine-wide): <code>~/.&lt;agent&gt;/settings.json</code> (SessionStart, UserPromptSubmit, PostToolUse, Stop and
+  SessionEnd hooks), <code>~/.&lt;agent&gt;/skills/trail/SKILL.md</code>, <code>~/.&lt;agent&gt;/helpers/graft-hooks.cjs</code>,
+  <code>~/.trail/README.md</code>, <code>~/.trail/install.json</code>, <code>~/.trail/repos/index.json</code>, <code>~/.trail/repos/known.json</code>.
+  <code>--dry-run</code> lists all of them first; <code>--no-global</code> skips the home directory.</li>
+<li><code>trail uninstall -y</code> removed the repository wiring and the <code>~/.&lt;agent&gt;</code> files, but left
+  <code>.trail/README.md</code>, <code>.trail/.gitignore</code> and the four <code>~/.trail/</code> files behind.</li>
+<li>dctx has no init step. <code>dctx map</code> wrote nothing into the repositories or into <code>HOME</code>.</li>
+</ul>
+<h2 id="13-bounding-section-8">13. Bounding (section 8)<a class="hd" href="#13-bounding-section-8" aria-label="Link to 13. Bounding (section 8)">#</a></h2>
+<ul>
+<li>dctx map verbs: <code>--budget</code> 1..2000 (explain up to 1000) and <code>--limit</code> up to 40 are enforced. All 49
+  budgeted requests that returned output stayed within budget, as did every broad query at the 2,000-token
+  cap. The other 35 of 84 budgeted requests (budgets 20 and 100) failed with exit code 1 ("budget too
+  small: needs at least 102 bytes") instead of returning a shorter page (TC-F09).
+  Worst map answer on any corpus: 6,996 bytes (1,999 tokens).</li>
+<li>dctx outside map: <code>dctx . -t</code> wrote 974,082 bytes (278k tokens) for django and failed on the deep tree.
+  <code>dctx pack .</code> printed 1.59 MB for flask and 8.67 MB for the adversarial corpus to stdout.</li>
+<li>Trail has no budget option. Largest single answers: <code>skeleton</code> of a 140 KB generated <code>types.d.ts</code>
+  142,197 bytes (40.6k tokens); <code>ask --source --full -n 50</code> 70,466 bytes; <code>map --max-dirs 100000</code> 53,870
+  bytes on core (9.9 s). <code>grep</code> is capped internally (15 to 22 KB even for <code>grep e</code>), and <code>ask -n 1000</code>
+  returned at most 2.2 KB.</li>
+</ul>
+<h2 id="14-language-coverage-section-9">14. Language coverage (section 9)<a class="hd" href="#14-language-coverage-section-9" aria-label="Link to 14. Language coverage (section 9)">#</a></h2>
+<p><code>data/coverage.csv</code>: Trail's numbers come from its full graph; dctx's from a seeded sample of up to 12 files
+per extension (<code>dctx map map FILE --depth 1 --limit 1</code>).</p>
+<ul>
+<li>Source files: both tools give symbols to 83 to 100% of sampled <code>.py</code>, <code>.rs</code>, <code>.go</code> and <code>.ts</code> files
+  (the rest are empty modules and <code>__init__</code>-style files). Trail gave symbols to 2,010 of 2,919 django
+  <code>.py</code> files, 1,283 of 1,420 core <code>.rs</code>, 450 of 457 pocketbase <code>.go</code>, 292 of 316 trailcode <code>.ts</code>.</li>
+<li>JavaScript: Trail indexed 16 of 111 django <code>.js</code> files and 177 of 251 pocketbase <code>.js</code> files (vendored
+  and large files skipped); dctx produced symbols for 10 of 12 and 8 of 12 sampled files.</li>
+<li>Docs and config: dctx gives structure to <code>.md</code>, <code>.json</code>, <code>.toml</code>, <code>.yaml</code> and <code>.yml</code> (for example 12 of
+  12 sampled dctx <code>.json</code> and <code>.toml</code>); Trail gives none.</li>
+<li>Language list: Trail claims 23 languages and indexed 8 of the 13 extra languages in the adversarial
+  corpus. dctx documents 15 language families and indexed none of those 13.</li>
+</ul>
+<h2 id="15-where-dctx-wins--where-trail-code-wins--ties">15. Where dctx wins / where Trail-Code wins / ties<a class="hd" href="#15-where-dctx-wins--where-trail-code-wins--ties" aria-label="Link to 15. Where dctx wins / where Trail-Code wins / ties">#</a></h2>
+<p><strong>dctx wins</strong>
+- Footprint: 9.2 MB static-ish binary versus 405.6 MB of Node packages; no install scripts.
+- Privacy: no sockets in any run; no repository or home writes in map mode; <code>.gitignore</code> honoured even
+  without <code>.git</code>; gitignored secrets never indexed.
+- Cold index: 2.8 to 69 times faster and 1.6 to 27 times less peak memory on all seven corpora.
+- Warm latency on small and medium repositories: 30 to 260 ms versus 0.6 to 1.4 s.
+- Hard output bounds on every map verb.
+- Finding definitions: rank 1 in 103/140 cases versus 79/140 for <code>trail ask</code>.
+- Cheap no-op verification (0.04 to 1.34 s) versus <code>trail build --check</code> (2 to 86 s).
+- Structure for Markdown, JSON, TOML and YAML; large generated and minified files are still indexed.</p>
+<p><strong>Trail-Code wins</strong>
+- Call graph: precise callers and callees with depth, recall 0.10 to 0.96, versus none in dctx.
+- Task answers: 122/140 versus 69/140 points; config lookup, concept search, impact and callees questions.
+- Text search (<code>trail grep</code>, grouped by enclosing symbol) and a bounded repository map (1 to 15k tokens).
+- Cache-friendly output: answers do not change when unrelated files change.
+- Incremental re-indexing; edits reach the graph without a full rebuild.
+- Language breadth (23 languages) and MCP integration.
+- On the largest Rust corpus, warm <code>callers</code> and <code>skeleton</code> are faster than dctx (0.8 s versus 1.45 s) with
+  less memory per query.</p>
+<p><strong>Ties</strong>
+- Freshness correctness on unstaged, untracked, staged and reverted edits.
+- Neither follows symlink loops or escaping symlinks; both skip <code>node_modules/</code> and non-UTF-8 file names;
+  neither crashed or hung on the adversarial corpus in its primary interface.
+- Both produce byte-identical text output for identical repeated queries.</p>
+<h2 id="16-findings">16. Findings<a class="hd" href="#16-findings" aria-label="Link to 16. Findings">#</a></h2>
+<p>Each finding has an ID, severity, evidence and a recommendation that keeps dctx's philosophy: zero
+dependencies, a pure Rust core, no Git or network in the core, bounded outputs, privacy, and external
+effects only through consent-gated plugins.</p>
+<p><strong>TC-F01 (blocker): the shipped map CLI has no call or import edges.</strong>
+Evidence: <code>neighbors --edge calls</code> empty for 140 of 140 targets across seven corpora (<code>data/accuracy.csv</code>);
+<code>--edge imports</code> empty on module ids in spot checks; Trail precision 0.94 to 1.00 and recall up to 0.96 on the same gold.
+In the task benchmark, dctx scored 7/14 on definition-and-callers questions, 7/14 on impact, 2/14 on
+callees and 6/14 on colliding names. The facade (<code>crates/dctx/src/index/extract.rs</code>) only emits <code>contains</code>
+edges, although the lexers already produce <code>Calls</code>/<code>Imports</code> references and <code>dctx-map-resolve</code> exists.
+Recommendation: wire reference facts from the lexers through <code>dctx-map-resolve</code> into the facade segment,
+with explicit confidence (<code>exact</code>, <code>name</code>, <code>guess</code>) on every edge and a record of dropped ambiguous
+targets. Start with same-file, same-module and imported-name resolution, which is enough for Trail's
+"rare" and "collision" recall (0.86 to 0.93). Gate any typed resolution behind the precision label
+instead of adding a type checker. Use <code>scripts/phase_accuracy.py</code> as the acceptance test.</p>
+<p><strong>TC-F02 (major): no incremental index, and generations grow without deduplication.</strong>
+Evidence: the first query after a one-line edit costs about a full cold index (core 7.48 s versus 1.45 s
+warm; django 2.70 versus 0.82). The core cache grew from 158 MB to 946 MB after about five edits; three
+generations were byte-identical; <code>cache gc --dry-run</code> reclaimed 0 bytes (<code>unlink_grace</code>). Total cache
+at the end of the run: 1.36 GB.
+Recommendation: store per-file fact segments addressed by content hash and assemble generations from
+references, so an edit re-lexes one file and an unchanged snapshot reuses its predecessor. Reclaim
+superseded unpinned generations of the same root right away (or at the next run) instead of only after the
+grace and TTL windows.</p>
+<p><strong>TC-F03 (major): outputs are not prefix-stable or deterministic enough for prompt caching.</strong>
+Evidence: every map answer starts with <code># &lt;place&gt; &lt;verb&gt; v1:sha256:&lt;digest&gt;:&lt;bytes&gt; g=&lt;n&gt;</code>, so any edit
+anywhere changes byte 21 to 50 of every answer (<code>data/stability.csv</code>, 0 of 63 dctx answers unchanged after
+an unrelated edit versus 59 of 70 for Trail). JSON answers contain <code>freshness.age_s</code>, so no two JSON calls
+more than a second apart are identical.
+Recommendation: move snapshot identity and age to a trailer line or behind an opt-in flag; keep the first
+bytes of an answer a pure function of the answered nodes. Report age in coarse buckets or not at all in the
+default output.</p>
+<p><strong>TC-F04 (major): text mode is too thin for agents.</strong>
+Evidence: <code>dctx map read &lt;id&gt;</code> and <code>explain &lt;id&gt;</code> in text mode print only the id line (152 to 247 bytes,
+no source, no signature); <code>find</code> text has no line numbers; JSON carries thirteen keys per record, often
+<code>null</code>, so a default-budget JSON <code>find</code> returned 4 records versus 10 in text.
+Recommendation: print source for <code>read</code> and the signature and summary for <code>explain</code> in text mode; add
+<code>path:start-end</code> to text records; drop <code>null</code> keys from JSON v2 (or add a compact JSON).</p>
+<p><strong>TC-F05 (major): no bounded repository overview.</strong>
+Evidence: <code>dctx map map p:&lt;place&gt;</code> and <code>k:&lt;dir&gt;</code> answer <code>gone</code>, and directories are refused ("is a
+directory; pass a file path or a stable id"), although the guide says <code>map</code> outlines "the project root".
+The only overview is the legacy <code>dctx . -t</code>: 974 KB (278k tokens) on django, written into the repository
+as <code>.dctx/&lt;place&gt;.llmcontext.txt</code>, and it fails on trees deeper than 128. Trail's <code>map</code> answered in 1.7 to
+53 KB.
+Recommendation: implement <code>map p:</code> and directory targets as a budgeted overview (directories, file
+counts, top symbols by in-degree once TC-F01 lands), paging through <code>next</code>, written to stdout only.</p>
+<p><strong>TC-F06 (major): no text search.</strong>
+Evidence: config-key questions scored 0/14 for dctx and 14/14 for Trail (<code>trail grep</code>).
+Recommendation: add a bounded <code>dctx map grep</code> verb in the core (pure Rust, same ignore rules, no Git),
+grouped by enclosing symbol id and capped by <code>--budget</code> with a continuation cursor.</p>
+<p><strong>TC-F07 (major): large data files dominate cost.</strong>
+Evidence: on core one 6.7 MB JSON fixture produced 235,842 symbols; the generation is 158 MB (2.9 times
+the tree); every warm query re-reads it (1.45 s, 370 MiB RSS). Trail answers the same corpus with a 65 MB
+index and 0.8 s queries. The adversarial corpus needed 262 MiB for its first query because of its 5 MB source files.
+Recommendation: cap configuration and data extraction per file (bytes or node count), mark capped files
+as <code>opaque</code> in the precision label, and load only the segment parts a query touches instead of the whole
+generation in every process.</p>
+<p><strong>TC-F08 (major, privacy): <code>dctx pack</code> emits <code>.env</code> contents by default.</strong>
+Evidence: <code>dctx pack .</code> printed <code>DCTXBENCH_FAKE_SECRET=sk-test-...</code> from a non-gitignored <code>.env</code>
+(<code>data/raw/adversarial.jsonl</code>, both variants). Map answers and the map cache did not contain it. Trail
+never read <code>.env</code>.
+Recommendation: ship a default sensitive-content omit list (<code>.env*</code>, <code>*.pem</code>, <code>*.key</code>, <code>id_*</code>,
+<code>credentials*</code>, <code>*.p12</code>) that shows the path but never reads the content unless the user opts in. This
+matches the README's "never read" promise for secrets.</p>
+<p><strong>TC-F09 (minor): small budgets fail instead of degrading.</strong>
+Evidence: <code>--budget 20</code> and JSON <code>--budget 100</code> exit 1 ("budget too small: needs at least 336 bytes").
+Recommendation: return the largest prefix that fits (ids only, then <code>more</code>/<code>next</code>), or clamp to the floor
+and say so in the precision label.</p>
+<p><strong>TC-F10 (minor): concept search finds nothing for multi-word queries.</strong>
+Evidence: all seven concept queries (multi-word, for example "wsgi app") returned an empty page (about
+100 bytes, header only); Trail <code>ask</code> found the target in 6 of 7.
+Recommendation: split queries and identifiers on case and <code>_</code> boundaries, rank by token overlap with names
+and first-line doc summaries (already present as <code>summary</code>), all in the core without models.</p>
+<p><strong>TC-F11 (info): "Zero Dependencies" does not describe the built CLI.</strong>
+Evidence: <code>cargo tree -p dctx-cli -e normal</code> lists 46 external crates, including <code>rusqlite</code> with bundled
+SQLite C, <code>ed25519-dalek</code>, <code>landlock</code>, <code>seccompiler</code>, <code>serde_json</code> and <code>syn</code> 3, all compiled into the
+release build (<code>target/release/deps</code>). The binary itself only needs libc, libm and libgcc_s at run time.
+Recommendation: either feature-gate the plugin, sandbox and store crates out of the default build, or
+change the badge and README to "no runtime dependencies" and list the audited crates.</p>
+<p><strong>TC-F12 (minor, docs): <code>docs/guides/MAP-MODE.md</code> and <code>--version --verbose</code> are stale.</strong>
+Evidence: the guide says <code>.gitignore</code> rules are not loaded and <code>--lines</code> drops the start line; observed:
+gitignored files are excluded on the map path even without <code>.git</code>, and <code>--lines 240-246</code> returned exactly
+lines 240 to 246. The guide says <code>map</code> outlines the project root (it does not, TC-F05) and that the default
+CLI extracts "conservative calls" (none are exposed, TC-F01). <code>dctx --version --verbose</code> lists
+<code>languages: rust,javascript,typescript,markdown</code> and parser <code>dctx-lex-rust/syn-3.0.9</code>, while answers report
+<code>dctx-structural/1</code> and Python, Go and others work.
+Recommendation: regenerate the guide's limitation section and the verbose version block from tests.</p>
+<p><strong>TC-F13 (minor): silent omissions.</strong>
+Evidence: files with a non-UTF-8 name or a newline in the name, and NUL-containing source files, were
+skipped without any signal in the answer or the precision label (Trail also skips non-UTF-8 names).
+Recommendation: count omitted paths by reason in <code>precision</code> (for example <code>omitted: {binary: 1,
+unnamed: 2}</code>) so an agent knows the map is incomplete.</p>
+<p><strong>TC-F14 (info): footprint, privacy and speed are real advantages; keep them.</strong>
+Evidence: 9.2 MB binary versus 405.6 MB; 0 sockets versus a daily update check that ignores
+<code>DO_NOT_TRACK</code> and an install-time telemetry event; no repository writes versus <code>.gitignore</code>/<code>.ignore</code>
+edits on every Trail build; cold index 2.8 to 69 times faster on all seven corpora; definition ranking 103/140
+versus 79/140. Recommendation: keep these as non-negotiable acceptance gates while closing TC-F01 to F07.</p>
+<p><strong>TC-F15 (info): do not copy Trail's in-band agent instructions.</strong>
+Evidence: Trail prepends a ~310-byte banner to most answers that tells the agent to report "tokens saved"
+to the user (~89 tokens per call, 54% of <code>callees</code> output). It is prompt steering inside tool output and it
+changes when covered files change.
+Recommendation: keep dctx answers free of instructions; if savings metrics are useful, expose them in
+<code>dctx cache status</code> or a JSON field the caller can drop.</p>
+<p><strong>TC-F16 (info): MCP surface.</strong>
+Evidence: Trail's MCP server exposes 6 tools whose definitions cost ~1,005 tokens per session, and answers
+match the CLI. dctx has no MCP server (planned).
+Recommendation: add MCP as a consent-gated adapter over the same facade, with at most four tools and a
+definition budget under 600 tokens, reusing map ids and budgets.</p>
+<p><strong>TC-F17 (info): Trail's freshness check costs a full build.</strong>
+Evidence: <code>trail build --check</code> 49.5 s on pocketbase and 86.5 s on django, the same as cold builds;
+dctx verifies freshness on every query in 0.04 to 1.34 s.
+Recommendation: keep strict per-query verification as a dctx default and document it as a feature.</p>
+<p><strong>TC-F18 (info): Trail indexes gitignored files when <code>.git</code> is absent.</strong>
+Evidence: in the no-git adversarial variant, Trail indexed <code>ignored_dir/</code> and <code>app.secret.py</code>; the fake
+secret value appeared in <code>graft/.cache/extract.*.json</code> and <code>trail grep</code> output. dctx excluded both.
+Recommendation: keep dctx's rule-based ignore handling independent of Git, and add this case to the dctx
+privacy test suite.</p>
+<h2 id="17-not-tested-and-deviations">17. Not tested, and deviations<a class="hd" href="#17-not-tested-and-deviations" aria-label="Link to 17. Not tested, and deviations">#</a></h2>
+<ul>
+<li>Trail <code>build --deep</code> (needs an LLM key) and <code>--lsp</code> (no language servers installed on the host);
+  <code>trail blast</code>, <code>check</code>, <code>note</code>, <code>team</code>, <code>viz</code> and the learnings features; Trail cloud workspaces.</li>
+<li>Callees and depth-2 accuracy were not adjudicated (latency, size and task facts only).</li>
+<li>End-to-end agent outcomes (no model was run); exact tokenizer counts (estimator only).</li>
+<li>Page-cache-cold timings (caches were not dropped on a shared host); other operating systems.</li>
+<li>dctx plugins, TUI, templates and the optional <code>syntax-rust</code> build.</li>
+<li>Deviation: <code>DO_NOT_TRACK</code> was not set during <code>npm install</code>, so Trail's <code>postinstall</code> recorded an install
+  event and attempted a flush while the network was available. All later Trail runs had the opt-out set
+  and ran without network.</li>
+<li>Deviation: the network namespace does not block name resolution through systemd-resolved's varlink
+  socket. Only the deliberate update-check audit (stamp removed) triggered a lookup; the stamp was
+  restored before any other run, and runs with a fresh stamp made no socket calls.</li>
+<li>Deviation: the flask freshness, bounding and coverage rows come from the validation run of the final
+  scripts; the other corpora ran in one chained pass (<code>data/raw/phases.jsonl</code>).</li>
+<li>dctx's overview row uses the legacy snapshot alias because the map verbs have no repository overview.</li>
+</ul>
+<h2 id="18-reproducing">18. Reproducing<a class="hd" href="#18-reproducing" aria-label="Link to 18. Reproducing">#</a></h2>
+<ol>
+<li>On a Linux host with passwordless sudo: <code>scripts/setup_host.sh</code> (user, workspace, dctx build, pinned
+   Trail install, pinned clones). Copy <code>scripts/</code> to <code>$BENCH_ROOT/scripts</code>.</li>
+<li><code>scripts/run_all.sh</code> runs every phase. Each phase script appends JSONL under <code>$BENCH_ROOT/results</code>.</li>
+<li><code>python3 scripts/aggregate.py RESULTS data/</code> regenerates <code>data/*.csv</code> and <code>data/SUMMARY-TABLES.md</code>.
+   For a private corpus, run <code>scripts/redact_private.py data/ &lt;corpus&gt;</code> before publishing.</li>
+<li>Cleanup: <code>sudo userdel -r dctxbench &amp;&amp; sudo rm -rf /path/to/workdir &amp;&amp; sudo apt-get remove -y time strace</code>.</li>
+</ol>
+<p>All scripts are POSIX sh or Python 3 standard library only.</p>
+<h3 id="data-index">Data index<a class="hd" href="#data-index" aria-label="Link to Data index">#</a></h3>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Path</th>
+<th>Content</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>data/env.txt</code>, <code>data/tool-help.txt</code></td>
+<td>host, versions, pins, binary hash, <code>ldd</code>, CLI help of both tools</td>
+</tr>
+<tr>
+<td><code>data/raw/runs.jsonl</code> and <code>*_runs.jsonl</code></td>
+<td>every measured command: wall, CPU, RSS, exit code, output bytes and sha256, load</td>
+</tr>
+<tr>
+<td><code>data/raw/accuracy.jsonl</code>, <code>tasks.jsonl</code>, <code>freshness.jsonl</code>, <code>bounding.jsonl</code>, <code>coverage*.jsonl</code>, <code>adversarial.jsonl</code>, <code>network.jsonl</code>, <code>mcp.jsonl</code>, <code>init_writes.jsonl</code>, <code>writes.jsonl</code>, <code>index_size.jsonl</code></td>
+<td>per-phase results</td>
+</tr>
+<tr>
+<td><code>data/raw/strace.*.txt</code></td>
+<td>network audit traces</td>
+</tr>
+<tr>
+<td><code>data/targets/</code></td>
+<td>targets, gold call sites and task questions per corpus (core reduced to counts)</td>
+</tr>
+<tr>
+<td><code>data/outputs/</code></td>
+<td>first 16 KB of each raw answer (warm, unrelated-edit, accuracy and adversarial runs; core excluded)</td>
+</tr>
+<tr>
+<td><code>data/*.csv</code>, <code>data/SUMMARY-TABLES.md</code></td>
+<td>aggregated tables</td>
+</tr>
+</tbody>
+</table></div><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/stability/" rel="prev"><span>Previous</span>Byte-stability report</a><a class="next" href="/docs/crate-map/" rel="next"><span>Next</span>Crate map</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#1-summary">1. Summary</a></li><li class="l2"><a href="#2-methodology">2. Methodology</a></li><li class="l3"><a href="#host-isolation-contention">Host, isolation, contention</a></li><li class="l3"><a href="#builds-and-versions">Builds and versions</a></li><li class="l3"><a href="#corpora-pinned">Corpora (pinned)</a></li><li class="l3"><a href="#gold-sets-and-scoring">Gold sets and scoring</a></li><li class="l2"><a href="#3-footprint">3. Footprint</a></li><li class="l2"><a href="#4-indexing-section-2-of-the-brief">4. Indexing (section 2 of the brief)</a></li><li class="l2"><a href="#5-query-latency-and-output-size-section-3-and-4">5. Query latency and output size (section 3 and 4)</a></li><li class="l2"><a href="#6-freshness-and-incremental-updates-section-2">6. Freshness and incremental updates (section 2)</a></li><li class="l2"><a href="#7-call-graph-and-definition-accuracy-section-5">7. Call-graph and definition accuracy (section 5)</a></li><li class="l2"><a href="#8-task-level-information-efficiency-section-6">8. Task-level information efficiency (section 6)</a></li><li class="l2"><a href="#9-cache-friendliness-section-7">9. Cache-friendliness (section 7)</a></li><li class="l2"><a href="#10-robustness-and-privacy-adversarial-corpus-section-10">10. Robustness and privacy: adversarial corpus (section 10)</a></li><li class="l2"><a href="#11-network-and-telemetry-audit">11. Network and telemetry audit</a></li><li class="l2"><a href="#12-files-written-by-trail-init-flask--y">12. Files written by trail init (flask, -y)</a></li><li class="l2"><a href="#13-bounding-section-8">13. Bounding (section 8)</a></li><li class="l2"><a href="#14-language-coverage-section-9">14. Language coverage (section 9)</a></li><li class="l2"><a href="#15-where-dctx-wins--where-trail-code-wins--ties">15. Where dctx wins / where Trail-Code wins / ties</a></li><li class="l2"><a href="#16-findings">16. Findings</a></li><li class="l2"><a href="#17-not-tested-and-deviations">17. Not tested, and deviations</a></li><li class="l2"><a href="#18-reproducing">18. Reproducing</a></li><li class="l3"><a href="#data-index">Data index</a></li></ul></nav></div>
+</main>
+<footer class="ftr">
+ <div class="wrap">
+  <div class="ftr-grid">
+   <div class="ftr-brand">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
+    <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p class="mono small">dctx 1.1.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+   </div>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
+  </div>
+  <div class="ftr-bottom">
+   <div>
+    <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+   </div>
+   <div class="credit">
+    <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>
+    <a class="credit-logo" href="https://tejl.com/" aria-label="TEJL, publisher of dctx"><img src="/assets/tejl-logo-off-black.svg" width="818" height="422" alt="" loading="lazy" decoding="async"></a>
+   </div>
+  </div>
+ </div>
+</footer>
+</body>
+</html>

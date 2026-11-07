@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Benchmarks · dctx</title>
+<script>/* Runs before first paint: theme and motion preference, so there is no flash. */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  d.className = d.className.replace('no-js', 'js');
+  try { t = localStorage.getItem('dctx-theme'); m = localStorage.getItem('dctx-motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
+})();</script>
+<link rel="stylesheet" href="/assets/site.b368f17c.css">
+<link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="dctx against Trail-Code and graphify on a 70-question protocol, cold index, warm queries and byte stability.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="generator" content="dctx website builder">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://www.dctx.internet.technology/benchmarks/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="dctx">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Benchmarks · dctx">
+<meta property="og:description" content="dctx against Trail-Code and graphify on a 70-question protocol, cold index, warm queries and byte stability.">
+<meta property="og:url" content="https://www.dctx.internet.technology/benchmarks/">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/benchmarks.dark.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Benchmarks">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/benchmarks.light.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Benchmarks">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Benchmarks · dctx">
+<meta name="twitter:description" content="dctx against Trail-Code and graphify on a 70-question protocol, cold index, warm queries and byte stability.">
+<meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/benchmarks.dark.png">
+<meta name="twitter:image:alt" content="dctx: Benchmarks">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="license" href="https://www.apache.org/licenses/LICENSE-2.0">
+<link rel="author" href="https://tejl.com/">
+<link rel="help" href="/docs/">
+<link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
+<script src="/assets/page.9bdcd125.js" defer></script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://www.dctx.internet.technology/#organization",
+   "name": "TEJL",
+   "url": "https://tejl.com/",
+   "logo": "https://www.dctx.internet.technology/assets/tejl-logo-off-black.svg",
+   "email": "info@tejl.com",
+   "sameAs": [
+    "https://tejl.hr/"
+   ],
+   "founder": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   }
+  },
+  {
+   "@type": "Person",
+   "@id": "https://www.dctx.internet.technology/#author",
+   "name": "Eris Margeta",
+   "url": "https://tejl.com/",
+   "sameAs": [
+    "https://github.com/Eris-Margeta"
+   ],
+   "jobTitle": "Founder",
+   "worksFor": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://www.dctx.internet.technology/#website",
+   "url": "https://www.dctx.internet.technology/",
+   "name": "dctx",
+   "inLanguage": "en",
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.dctx.internet.technology/search/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://www.dctx.internet.technology/#software",
+   "name": "dctx",
+   "softwareVersion": "1.1.0",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Linux (x86_64 tested)",
+   "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
+   "url": "https://www.dctx.internet.technology/",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "codeRepository": "https://github.com/Eris-Margeta/dctx",
+   "programmingLanguage": "Rust",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-1-0",
+   "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.dctx.internet.technology/docs/"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "@id": "https://www.dctx.internet.technology/benchmarks/#breadcrumb",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "dctx",
+     "item": "https://www.dctx.internet.technology/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Benchmarks",
+     "item": "https://www.dctx.internet.technology/benchmarks/"
+    }
+   ]
+  },
+  {
+   "@type": "WebPage",
+   "@id": "https://www.dctx.internet.technology/benchmarks/#webpage",
+   "url": "https://www.dctx.internet.technology/benchmarks/",
+   "name": "Benchmarks",
+   "description": "dctx against Trail-Code and graphify on a 70-question protocol, cold index, warm queries and byte stability.",
+   "inLanguage": "en",
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "breadcrumb": {
+    "@id": "https://www.dctx.internet.technology/benchmarks/#breadcrumb"
+   }
+  },
+  {
+   "@type": "Dataset",
+   "@id": "https://www.dctx.internet.technology/benchmarks/#dataset",
+   "name": "dctx three-way benchmark, run 7",
+   "description": "Task-level protocol (70 questions, 354 gold facts), cold index and warm query timings for dctx, Trail-Code and graphify on six pinned corpora.",
+   "creator": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "measurementTechnique": "70-question task protocol (docs/BENCHMARK-20261030.md)",
+   "temporalCoverage": "2026-10-31",
+   "url": "https://www.dctx.internet.technology/benchmarks/",
+   "distribution": {
+    "@type": "DataDownload",
+    "encodingFormat": "application/json",
+    "contentUrl": "https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json"
+   }
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr">
+ <div class="wrap hdr-in">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.1.0</span></a>
+  <nav class="nav" aria-label="Primary"><ul><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/" aria-current="page">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
+  <div class="hdr-end">
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/" aria-current="page">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
+  </div>
+ </div>
+</header>
+<main id="main">
+<div class="wrap"><div class="page-head"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/benchmarks/" aria-current="page">Benchmarks</a></li></ol></nav><span class="eyebrow">Evidence</span><h1>Benchmarks</h1>
+<p class="lede">dctx against Trail-Code 0.28.0 and graphify 0.9.97 (code-only) on one Linux x86_64 host, plus the byte-stability measurement. Every table here is parsed from the repository files linked under it; none is retyped.</p></div>
+<div class="notice"><p>The 70-question protocol was designed by the dctx team and can favour dctx. The independent run below picked unseen repositories by seed and took gold answers from language servers. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L298" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></p></div>
+<h2 id="run7">Run 7: task-level protocol</h2>
+<div class="table-wrap"><table><caption>70 questions, 354 gold facts, 31 October 2026. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L40" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">Tool</th><th scope="col" class="num">Points /140</th><th scope="col" class="num">Gold facts /354</th><th scope="col" class="num">Tokens</th><th scope="col" class="num">Facts per 1k tokens</th></tr></thead><tbody><tr><td>dctx <code>53f8b6b</code></td><td class="num"><strong>140</strong> (run 6: 136)</td><td class="num"><strong>353</strong> (342)</td><td class="num"><strong>29,340</strong></td><td class="num"><strong>12.0</strong></td></tr><tr><td>Trail-Code 0.28.0</td><td class="num">122</td><td class="num">312</td><td class="num">88,923</td><td class="num">3.51</td></tr><tr><td>graphify 0.9.97, code-only</td><td class="num">96</td><td class="num">238</td><td class="num">197,203</td><td class="num">1.21</td></tr></tbody></table></div>
+<h2 id="question-types">By question type</h2>
+<p>Points out of 14 per type, from run 5 and task re-run 3 (dctx <code>a906884</code>), the last run with a per-type table; run 7 then scored every point on all ten types. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L46" title="Source: docs/BENCHMARK-20261030.md">run 7 note</a></p>
+<div class="table-wrap"><table><caption><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L77" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">Type</th><th scope="col" class="num">dctx</th><th scope="col" class="num">Trail-Code</th><th scope="col" class="num">graphify</th></tr></thead><tbody><tr><td>definition and callers</td><td class="num"><strong>14</strong></td><td class="num">10</td><td class="num">10</td></tr><tr><td>impact</td><td class="num"><strong>14</strong></td><td class="num">13</td><td class="num">12</td></tr><tr><td>outline</td><td class="num"><strong>14</strong></td><td class="num"><strong>14</strong></td><td class="num">12</td></tr><tr><td>config key</td><td class="num"><strong>14</strong></td><td class="num"><strong>14</strong></td><td class="num">6</td></tr><tr><td>exports</td><td class="num"><strong>14</strong></td><td class="num"><strong>14</strong></td><td class="num"><strong>14</strong></td></tr><tr><td>source</td><td class="num"><strong>14</strong></td><td class="num">12</td><td class="num">0</td></tr><tr><td>callees</td><td class="num"><strong>10</strong></td><td class="num">8</td><td class="num">8</td></tr><tr><td>overview</td><td class="num"><strong>14</strong></td><td class="num">13</td><td class="num">11</td></tr><tr><td>collision</td><td class="num"><strong>14</strong></td><td class="num">12</td><td class="num">13</td></tr><tr><td>concept</td><td class="num"><strong>14</strong></td><td class="num">12</td><td class="num">10</td></tr></tbody></table></div>
+<h2 id="independent">Independent benchmark, 31 October 2026</h2>
+<div class="prose"><p>Seeded selection of 3 repos the tools never saw (zoxide, requests, gin), gold from language servers and repo history, published regardless of outcome. Tasks: dctx 22/28 points, 31/36 facts, 6.85 facts per 1k tokens (Trail-Code 19/28, graphify 14/28). Callers against LSP gold, first page: dctx P 0.730 / R 0.341, Trail-Code P 0.731 / R 0.313, graphify P 0.920 / R 0.264. Honest read: dctx leads on task answers and token efficiency; caller recall on unseen repos is far below the in-house corpus (0.851), so the caller floors above hold only for the curated corpora. Full table and raw JSON: <code>docs/research/bench-independent/results/20261031T191225Z/</code>.</p></div>
+<p class="note"><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L298" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></p>
+<h2 id="cold-index">Cold index</h2>
+<div class="cols cols-2"><div>
+<p>Run 7 medians of three runs: dctx 0.13&ndash;1.20 s on 6 corpora, Trail-Code 1.04&ndash;52.83 s, graphify 4.59&ndash;59.56 s (5 corpora; no index on docs).</p>
+<div class="table-wrap"><table><caption><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json" title="Source: docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json">run7 aggregate.json</a></caption><thead><tr><th scope="col">corpus</th><th scope="col" class="num">dctx</th><th scope="col" class="num">Trail-Code</th><th scope="col" class="num">graphify</th></tr></thead><tbody><tr><td>flask</td><td class="num">0.13 s</td><td class="num">3.82 s</td><td class="num">8.02 s</td></tr><tr><td>ripgrep</td><td class="num">0.88 s</td><td class="num">3.21 s</td><td class="num">10.33 s</td></tr><tr><td>pocketbase</td><td class="num">0.93 s</td><td class="num">50.54 s</td><td class="num">59.56 s</td></tr><tr><td>trailcode</td><td class="num">1.20 s</td><td class="num">52.83 s</td><td class="num">45.55 s</td></tr><tr><td>mixed</td><td class="num">0.39 s</td><td class="num">3.97 s</td><td class="num">4.59 s</td></tr><tr><td>docs</td><td class="num">0.19 s</td><td class="num">1.04 s</td><td class="num">no index</td></tr></tbody></table></div>
+</div><div>
+<p>Run 1 (30 October), with peak memory and index size: median wall s, peak RSS of the largest process, index size.</p>
+<div class="table-wrap"><table><caption><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L221" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">corpus</th><th scope="col">dctx</th><th scope="col">Trail-Code</th><th scope="col">graphify</th></tr></thead><tbody><tr><td>flask (Python)</td><td>0.16 s, 19 MB, 1.1 MB</td><td>4.17 s, 225 MB, 4.4 MB</td><td>8.13 s, 102 MB, 4.5 MB</td></tr><tr><td>ripgrep (Rust)</td><td>0.54 s, 25 MB, 2.2 MB</td><td>3.01 s, 303 MB, 8.4 MB</td><td>10.45 s, 93 MB, 8.6 MB</td></tr><tr><td>pocketbase (Go+JS)</td><td>0.91 s, 63 MB, 9.9 MB</td><td>50.63 s, 987 MB, 41.8 MB</td><td>58.96 s, 243 MB, 26.3 MB</td></tr><tr><td>trailcode (TS)</td><td>1.16 s, 90 MB, 14.8 MB</td><td>58.34 s, 1,020 MB, 41.1 MB</td><td>44.32 s, 394 MB, 11.9 MB</td></tr><tr><td>mixed (10 langs)</td><td>0.24 s, 74 MB, 2.8 MB</td><td>3.84 s, 470 MB, 12.8 MB</td><td>4.46 s, 74 MB, 2.2 MB</td></tr><tr><td>docs</td><td>0.18 s, 74 MB, 1.4 MB</td><td>1.17 s, 121 MB, 0.0 MB</td><td>failed: no index</td></tr></tbody></table></div>
+</div></div>
+<h2 id="warm">Warm queries and answer size</h2>
+<div class="table-wrap"><table><caption>Run 1, median ms of 5 after one warm-up, including process start, and estimated tokens. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md#L242" title="Source: docs/BENCHMARK-20261030.md">BENCHMARK-20261030.md</a></caption><thead><tr><th scope="col">corpus</th><th scope="col">query</th><th scope="col">dctx</th><th scope="col">Trail-Code</th><th scope="col">graphify</th></tr></thead><tbody><tr><td>flask</td><td>search</td><td>81 ms, 218</td><td>1,066 ms, 262</td><td>564 ms, 1,845</td></tr><tr><td>flask</td><td>callers</td><td>47 ms, 479</td><td>988 ms, 136</td><td>381 ms, 32</td></tr><tr><td>flask</td><td>skeleton</td><td>44 ms, 866</td><td>991 ms, 852</td><td>514 ms, 474</td></tr><tr><td>flask</td><td>overview</td><td>45 ms, 491</td><td>1,009 ms, 1,122</td><td>7 ms, 5,930</td></tr><tr><td>pocketbase</td><td>search</td><td>213 ms, 259</td><td>1,573 ms, 358</td><td>1,393 ms, 97 (exit 3)</td></tr><tr><td>pocketbase</td><td>callers</td><td>214 ms, 464</td><td>1,195 ms, 175</td><td>777 ms, 24</td></tr><tr><td>pocketbase</td><td>overview</td><td>226 ms, 652</td><td>1,232 ms, 1,514</td><td>8 ms, 11,591</td></tr><tr><td>trailcode</td><td>callers</td><td>200 ms, 472</td><td>1,180 ms, 1,064</td><td>715 ms, 196</td></tr><tr><td>trailcode</td><td>overview</td><td>195 ms, 500</td><td>1,159 ms, 499</td><td>7 ms, 10,076</td></tr></tbody></table></div>
+<h2 id="stability">Byte stability</h2>
+<div class="table-wrap"><table><caption>Build <code>0495f5f</code>, 6 November 2026, three pinned corpora, 11 query shapes each. <a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md#L7" title="Source: docs/research/stability-20261105/REPORT.md">REPORT.md</a> &middot; <a href="/docs/stability/">full report</a></caption><thead><tr><th scope="col">Measurement</th><th scope="col" class="num">Text</th><th scope="col" class="num">JSON</th></tr></thead><tbody><tr><td>Answers identical after unrelated edit</td><td class="num">33/33</td><td class="num">33/33</td></tr><tr><td>Answers identical over five separate invocations</td><td class="num">33/33</td><td class="num">33/33</td></tr><tr><td>Baseline → post-edit common-prefix ratio, minimum / mean</td><td class="num">1.0 / 1.0</td><td class="num">1.0 / 1.0</td></tr><tr><td>Consecutive same-request transitions, five per case</td><td class="num">165</td><td class="num">165</td></tr><tr><td>Same-request M7, minimum / mean</td><td class="num">1.0 / 1.0</td><td class="num">1.0 / 1.0</td></tr><tr><td>Consecutive changing-question transitions</td><td class="num">195</td><td class="num">195</td></tr><tr><td>Changing-question M7, minimum / median / mean</td><td class="num">0.007795889 / 0.107142857 / 0.214830257</td><td class="num">0.008776458 / 0.067594433 / 0.182446794</td></tr><tr><td>Changing-question M7, total prefix bytes / total current bytes</td><td class="num">0.061846978</td><td class="num">0.079892615</td></tr></tbody></table></div>
+<h2 id="not-claimed">Not claimed</h2>
+<div class="prose"><ul>
+<li>Task-level answer quality with a frozen model. The fact-scoring protocol was re-run; Trail-Code leads it, 122 to 77.</li>
+<li>Anything about graphify's LLM semantic graph, or Trail-Code's learnings and LSP edges.</li>
+<li>SWE-bench or agent-run numbers.</li>
+<li>Equal language depth. dctx's 25 new formats are outline tier: symbols, not call edges.</li>
+</ul></div>
+<h2 id="raw">Raw data</h2>
+<ul><li><a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030/">docs/research/bench-3way-20261030/</a>: questions, gold facts, scorer, raw results and scripts</li>
+<li><a href="/docs/benchmark/">The full write-up</a>, with every run and the method</li>
+<li><a href="/docs/benchmark-oct/">The earlier two-way study</a> (October 2026, before call edges)</li></ul>
+</div>
+</main>
+<footer class="ftr">
+ <div class="wrap">
+  <div class="ftr-grid">
+   <div class="ftr-brand">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
+    <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p class="mono small">dctx 1.1.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+   </div>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
+  </div>
+  <div class="ftr-bottom">
+   <div>
+    <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+   </div>
+   <div class="credit">
+    <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>
+    <a class="credit-logo" href="https://tejl.com/" aria-label="TEJL, publisher of dctx"><img src="/assets/tejl-logo-off-black.svg" width="818" height="422" alt="" loading="lazy" decoding="async"></a>
+   </div>
+  </div>
+ </div>
+</footer>
+</body>
+</html>

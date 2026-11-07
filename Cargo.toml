@@ -9,8 +9,8 @@ members = [
   # "bindings/dctx-py",
   # "bindings/dctx-node",
 ]
-# plugins/index is the JSON index (PL-X), not a crate.
-exclude = ["plugins/index"]
+# plugins/index is the JSON index (PL-X), not a crate. tools/playground is the website playground server, built on its own.
+exclude = ["plugins/index", "tools/playground"]
 resolver = "2"
 
 [workspace.package]

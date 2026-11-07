@@ -155,7 +155,7 @@ public corpus, ranked candidates MAY arrive as a plugin overlay with provenance
    evidence: read-spy tests in `crates/dctx-adapter-fs/tests/privacy.rs` and
    `crates/dctx-map-query/tests/source_privacy.rs`.
 2. **Rules.** Built-in defaults, repository `.gitignore` files (read as plain text),
-   `.dctxignore`, `.dctxomitcontent` and policy (`privacy.ignore`) combine. Landed for
+   `.dctxignore` and policy (`privacy.ignore`) combine. Landed for
    pack and map.
 3. **Secret-shaped files (landed for v1).** A strict, built-in deny covers `.env`,
    `.env.*`, `*.env`, `.envrc`, `*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.jks`, `*.keystore`,
@@ -976,7 +976,7 @@ Summary of the design difference, independent of the measurements:
 # Appendix C — Reserved names
 
 Id prefixes `m:`, `s:`, `d:`, `k:`, `p:`, `@`; DTS section kinds 16–31; plugin
-namespace `dctx/`; file names `.dctx/`, `.dctxignore`, `.dctxomitcontent`,
+namespace `dctx/`; file names `.dctx/`, `.dctxignore`,
 `.dctxpol`; environment variables `DCTX_*`.
 
 # Appendix D — Document map

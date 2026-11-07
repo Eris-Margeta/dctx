@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Contributing · dctx</title>
+<script>/* Runs before first paint: theme and motion preference, so there is no flash. */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  d.className = d.className.replace('no-js', 'js');
+  try { t = localStorage.getItem('dctx-theme'); m = localStorage.getItem('dctx-motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
+})();</script>
+<link rel="stylesheet" href="/assets/site.b368f17c.css">
+<link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="How to propose changes, with a DCO sign-off.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="generator" content="dctx website builder">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://www.dctx.internet.technology/docs/contributing/">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="dctx">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="Contributing · dctx">
+<meta property="og:description" content="How to propose changes, with a DCO sign-off.">
+<meta property="og:url" content="https://www.dctx.internet.technology/docs/contributing/">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-contributing.dark.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Contributing">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/docs-contributing.light.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: Contributing">
+<meta property="article:modified_time" content="2026-11-01T16:40:39Z">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Contributing · dctx">
+<meta name="twitter:description" content="How to propose changes, with a DCO sign-off.">
+<meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/docs-contributing.dark.png">
+<meta name="twitter:image:alt" content="dctx: Contributing">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="license" href="https://www.apache.org/licenses/LICENSE-2.0">
+<link rel="author" href="https://tejl.com/">
+<link rel="help" href="/docs/">
+<link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
+<link rel="alternate" type="text/markdown" href="/docs/contributing/index.md" title="Contributing as Markdown">
+<link rel="prev" href="/docs/crate-map/">
+<link rel="next" href="/docs/releasing/">
+<script src="/assets/page.9bdcd125.js" defer></script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://www.dctx.internet.technology/#organization",
+   "name": "TEJL",
+   "url": "https://tejl.com/",
+   "logo": "https://www.dctx.internet.technology/assets/tejl-logo-off-black.svg",
+   "email": "info@tejl.com",
+   "sameAs": [
+    "https://tejl.hr/"
+   ],
+   "founder": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   }
+  },
+  {
+   "@type": "Person",
+   "@id": "https://www.dctx.internet.technology/#author",
+   "name": "Eris Margeta",
+   "url": "https://tejl.com/",
+   "sameAs": [
+    "https://github.com/Eris-Margeta"
+   ],
+   "jobTitle": "Founder",
+   "worksFor": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://www.dctx.internet.technology/#website",
+   "url": "https://www.dctx.internet.technology/",
+   "name": "dctx",
+   "inLanguage": "en",
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.dctx.internet.technology/search/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://www.dctx.internet.technology/#software",
+   "name": "dctx",
+   "softwareVersion": "1.1.0",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Linux (x86_64 tested)",
+   "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
+   "url": "https://www.dctx.internet.technology/",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "codeRepository": "https://github.com/Eris-Margeta/dctx",
+   "programmingLanguage": "Rust",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-1-0",
+   "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.dctx.internet.technology/docs/"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "@id": "https://www.dctx.internet.technology/docs/contributing/#breadcrumb",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "dctx",
+     "item": "https://www.dctx.internet.technology/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "Documentation",
+     "item": "https://www.dctx.internet.technology/docs/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 3,
+     "name": "Contributing",
+     "item": "https://www.dctx.internet.technology/docs/contributing/"
+    }
+   ]
+  },
+  {
+   "@type": "WebPage",
+   "@id": "https://www.dctx.internet.technology/docs/contributing/#webpage",
+   "url": "https://www.dctx.internet.technology/docs/contributing/",
+   "name": "Contributing",
+   "description": "How to propose changes, with a DCO sign-off.",
+   "inLanguage": "en",
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "breadcrumb": {
+    "@id": "https://www.dctx.internet.technology/docs/contributing/#breadcrumb"
+   }
+  },
+  {
+   "@type": "TechArticle",
+   "@id": "https://www.dctx.internet.technology/docs/contributing/#article",
+   "headline": "Contributing to dctx",
+   "description": "How to propose changes, with a DCO sign-off.",
+   "url": "https://www.dctx.internet.technology/docs/contributing/",
+   "inLanguage": "en",
+   "about": {
+    "@id": "https://www.dctx.internet.technology/#software"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "mainEntityOfPage": {
+    "@id": "https://www.dctx.internet.technology/docs/contributing/#webpage"
+   },
+   "wordCount": 480,
+   "encoding": {
+    "@type": "MediaObject",
+    "contentUrl": "https://www.dctx.internet.technology/docs/contributing/index.md",
+    "encodingFormat": "text/markdown"
+   },
+   "dateModified": "2026-11-01T16:40:39Z"
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr">
+ <div class="wrap hdr-in">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.1.0</span></a>
+  <nav class="nav" aria-label="Primary"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
+  <div class="hdr-end">
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/docs/" aria-current="page">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
+  </div>
+ </div>
+</header>
+<main id="main">
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/">Three-way benchmark</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/" aria-current="page">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/contributing/" aria-current="page">Contributing</a></li></ol></nav><h1 id="contributing-to-dctx">Contributing to dctx</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/CONTRIBUTING.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/CONTRIBUTING.md">Edit on GitHub</a> &middot; <a href="/docs/contributing/index.md" type="text/markdown">Markdown</a> &middot; <code>CONTRIBUTING.md</code> &middot; 480 words &middot; updated <time datetime="2026-11-01">1 November 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#bugs-ideas-and-questions">Bugs, ideas and questions</a></li><li><a href="#cli-development-setup">CLI development setup</a></li><li><a href="#validation">Validation</a></li><li><a href="#developer-certificate-of-origin">Developer Certificate of Origin</a></li><li><a href="#pull-requests">Pull requests</a></li></ul></details>
+<p>Read the <a href="/docs/spec/">specification</a>, <a href="/docs/crate-map/">crate map</a> and
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/CODE_OF_CONDUCT.md">Code of Conduct</a> before making changes. Project contributions
+are licensed under <a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">Apache-2.0</a>, consistent with <a href="https://github.com/Eris-Margeta/dctx/blob/main/NOTICE">NOTICE</a>.</p>
+<h2 id="bugs-ideas-and-questions">Bugs, ideas and questions<a class="hd" href="#bugs-ideas-and-questions" aria-label="Link to Bugs, ideas and questions">#</a></h2>
+<p>Search existing <a href="https://github.com/Eris-Margeta/dctx/issues">issues</a> before opening
+one. Use the bug or feature template and keep reproductions small. Include the
+commit or version, OS/architecture, build features, exact command, expected result
+and actual result. Redact source code, paths, credentials and generated context
+that you do not have permission to share.</p>
+<p>Report suspected vulnerabilities privately using <a href="/security/">SECURITY.md</a>,
+rather than in an issue or pull request. For other questions, open an issue with
+what you tried and the relevant documentation link.</p>
+<h2 id="cli-development-setup">CLI development setup<a class="hd" href="#cli-development-setup" aria-label="Link to CLI development setup">#</a></h2>
+<p>Use a recent stable Rust toolchain with Cargo; the workspace includes Rust 2024
+crates. Clone the repository and run commands from its root:</p>
+<div class="hl"><pre><code>git<span class="t-w"> </span>clone<span class="t-w"> </span>https://github.com/Eris-Margeta/dctx
+<span class="t-nb">cd</span><span class="t-w"> </span>dctx
+cargo<span class="t-w"> </span>build<span class="t-w"> </span>--locked<span class="t-w"> </span>-p<span class="t-w"> </span>dctx-cli
+cargo<span class="t-w"> </span>run<span class="t-w"> </span>--locked<span class="t-w"> </span>-p<span class="t-w"> </span>dctx-cli<span class="t-w"> </span>--<span class="t-w"> </span>--help
+</code></pre></div>
+
+<p>Cargo builds <strong><code>dctx-cli</code></strong>, while help text calls the tool <strong><code>dctx</code></strong>. See
+<a href="/docs/readme/#installation">installation</a> for aliases and install choices.</p>
+<p>Keep changes focused on the relevant crates and preserve unrelated work. The
+<a href="https://github.com/Eris-Margeta/dctx/tree/main/crates/dctx"><code>dctx</code> facade</a> serves the CLI and the desktop API; pure engine
+crates should not acquire filesystem, network or process effects. The
+<a href="/docs/plugins/">plugin guide</a> describes effect boundaries and current
+runtime limitations.</p>
+<h2 id="validation">Validation<a class="hd" href="#validation" aria-label="Link to Validation">#</a></h2>
+<p>Run focused tests for changed behavior, then the relevant broader checks. Current
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/.github/workflows/ci.yml">main CI</a> runs these Rust checks, excluding the desktop:</p>
+<div class="hl"><pre><code>cargo<span class="t-w"> </span>clippy<span class="t-w"> </span>--workspace<span class="t-w"> </span>--exclude<span class="t-w"> </span>dctx-desktop<span class="t-w"> </span>--all-targets<span class="t-w"> </span>--<span class="t-w"> </span>-D<span class="t-w"> </span>warnings<span class="t-w"> </span>-A<span class="t-w"> </span>clippy::field_reassign_with_default<span class="t-w"> </span>-A<span class="t-w"> </span>clippy::assertions_on_constants
+cargo<span class="t-w"> </span>nextest<span class="t-w"> </span>run<span class="t-w"> </span>--workspace<span class="t-w"> </span>--exclude<span class="t-w"> </span>dctx-desktop<span class="t-w"> </span>--no-fail-fast
+</code></pre></div>
+
+<p>The test command requires the <code>cargo-nextest</code> tool. CI closes inherited descriptors
+before nextest because native confinement tests reject extra descriptors; the
+workflow contains that wrapper. Preserve those tests' confinement checks.</p>
+<p>Use <code>cargo fmt --all -- --check</code> to check formatting and document public APIs.
+Desktop changes need their platform prerequisites and separate validation; see
+<a href="https://github.com/Eris-Margeta/dctx/blob/main/apps/dctx-desktop/README.md">the desktop guide</a>. The root <code>just ci</code> recipe also
+invokes desktop setup and is broader than the current main CI job.</p>
+<h2 id="developer-certificate-of-origin">Developer Certificate of Origin<a class="hd" href="#developer-certificate-of-origin" aria-label="Link to Developer Certificate of Origin">#</a></h2>
+<p>Contributions use the <a href="https://developercertificate.org">Developer Certificate of Origin</a>
+(DCO) instead of a contributor license agreement. Sign off each commit to certify that
+you wrote the change, or otherwise have the right to submit it under Apache-2.0:</p>
+<div class="hl"><pre><code>git<span class="t-w"> </span>commit<span class="t-w"> </span>-s
+</code></pre></div>
+
+<p>The <code>-s</code> flag adds a <code>Signed-off-by:</code> line with your name and email. Pull requests with
+unsigned commits will be asked to amend them with <code>git commit --amend -s</code>, or to rebase
+with <code>--signoff</code>.</p>
+<h2 id="pull-requests">Pull requests<a class="hd" href="#pull-requests" aria-label="Link to Pull requests">#</a></h2>
+<p>Create a focused branch from <code>main</code> and describe the problem, resulting behavior
+and any compatibility or privacy impact. Add regression coverage for behavior
+changes and update affected documentation. Check Markdown links and paths when
+editing guides. Use clear commit messages, for example <code>fix(cli): reject empty
+output paths</code>.</p>
+<p>In the PR, list the commands you ran, their results, and any checks you could not
+run. Include relevant OS/build features for platform-specific changes. Avoid
+unrelated formatting, generated governance files, local caches, credentials and
+private research artifacts. Maintainers may ask for a smaller change or additional
+validation before merging. Fork PRs do not run on the self-hosted CI runner;
+maintainers must arrange an appropriate review and validation path.</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/docs/crate-map/" rel="prev"><span>Previous</span>Crate map</a><a class="next" href="/docs/releasing/" rel="next"><span>Next</span>Releasing</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#bugs-ideas-and-questions">Bugs, ideas and questions</a></li><li class="l2"><a href="#cli-development-setup">CLI development setup</a></li><li class="l2"><a href="#validation">Validation</a></li><li class="l2"><a href="#developer-certificate-of-origin">Developer Certificate of Origin</a></li><li class="l2"><a href="#pull-requests">Pull requests</a></li></ul></nav></div>
+</main>
+<footer class="ftr">
+ <div class="wrap">
+  <div class="ftr-grid">
+   <div class="ftr-brand">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
+    <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p class="mono small">dctx 1.1.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+   </div>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
+  </div>
+  <div class="ftr-bottom">
+   <div>
+    <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+   </div>
+   <div class="credit">
+    <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>
+    <a class="credit-logo" href="https://tejl.com/" aria-label="TEJL, publisher of dctx"><img src="/assets/tejl-logo-off-black.svg" width="818" height="422" alt="" loading="lazy" decoding="async"></a>
+   </div>
+  </div>
+ </div>
+</footer>
+</body>
+</html>

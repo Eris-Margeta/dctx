@@ -1,0 +1,10 @@
+/* Result page of the no-JavaScript playground form. Same tokens as the website. */
+:root { --bg: #fbfaff; --surface: #f2effa; --ink: #16131f; --muted: #5b566e; --line: #e4e0ef; --brand-text: #5b2fd6; color-scheme: light dark; }
+@media (prefers-color-scheme: dark) { :root { --bg: #07060f; --surface: #161228; --ink: #efeaff; --muted: #b4aed6; --line: #262040; --brand-text: #b79cff; } }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 system-ui, sans-serif; }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 64px; }
+a { color: var(--brand-text); }
+h1 { font: 600 18px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; margin: 16px 0 4px; overflow-wrap: anywhere; }
+h2 { font: 600 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 24px 0 6px; }
+.meta { color: var(--muted); font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; margin: 0; }
+pre { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 12px 14px; overflow-x: auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; tab-size: 4; margin: 0; }

@@ -1,0 +1,6 @@
+[screen]
+title = "kiosk example"
+currency = "EUR"
+
+[orders]
+folder = "orders"

@@ -1,0 +1,3 @@
+kiosk	kiosk: the sample of every example on the website (Rust, TypeScript, Python, TOML, Markdown)
+lexer-go	Go lexer fixtures (crates/dctx-lex-go/tests/fixtures)
+parser-mixed	Parser test fixtures in 15 formats: C, C#, Go, Java, JavaScript, Kotlin, Markdown, PHP, Python, Ruby, Rust, Swift, TOML, TypeScript, YAML (crates/dctx-map-parse/tests/fixtures)
