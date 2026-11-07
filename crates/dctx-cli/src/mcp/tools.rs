@@ -20,6 +20,8 @@ struct Tool {
     name: &'static str,
     /// Description shown to the model.
     help: &'static str,
+    /// Shorter equivalent used by opt-in tool selections.
+    compact_help: &'static str,
     /// Property that becomes the first positional argument, if the verb has one.
     positional: Option<&'static str>,
     /// Property that becomes the second positional argument (used by `path` for `to`).
@@ -47,6 +49,7 @@ const TOOLS: &[Tool] = &[
     Tool {
         name: "map",
         help: "Structural map of a file, directory or node: its symbols and their relations.",
+        compact_help: "Map symbols and relations in a file, directory or node.",
         positional: Some("target"),
         second_positional: None,
         props: &[
@@ -58,6 +61,7 @@ const TOOLS: &[Tool] = &[
     Tool {
         name: "find",
         help: "Find symbols, modules and docs by name or words.",
+        compact_help: "Find symbols, modules and docs by name/words.",
         positional: Some("query"),
         second_positional: None,
         props: &[
@@ -70,6 +74,7 @@ const TOOLS: &[Tool] = &[
     Tool {
         name: "neighbors",
         help: "Nodes connected to a node by calls or imports, up to 4 hops.",
+        compact_help: "Find connected nodes via calls/imports, up to 4 hops.",
         positional: Some("id"),
         second_positional: None,
         props: &[
@@ -83,6 +88,7 @@ const TOOLS: &[Tool] = &[
     Tool {
         name: "explain",
         help: "Describe one node: its kind, place, signature and relations.",
+        compact_help: "Get a node's kind, place, signature and relations.",
         positional: Some("id"),
         second_positional: None,
         props: &[prop("id", "string", "Stable node id")],
@@ -90,6 +96,7 @@ const TOOLS: &[Tool] = &[
     Tool {
         name: "read",
         help: "Read the source of one node, or of absolute lines inside it.",
+        compact_help: "Read node source, optionally at absolute lines within it.",
         positional: Some("id"),
         second_positional: None,
         props: &[
@@ -101,6 +108,7 @@ const TOOLS: &[Tool] = &[
     Tool {
         name: "hubs",
         help: "Most-called symbols and per-directory file and symbol counts of the place.",
+        compact_help: "List most-called symbols and file/symbol counts per directory.",
         positional: None,
         second_positional: None,
         props: &[prop("limit", "integer", "Hub lines, 1..60 (default 20)")],
@@ -108,6 +116,7 @@ const TOOLS: &[Tool] = &[
     Tool {
         name: "grep",
         help: "Exhaustive literal search of indexed files, hits grouped by enclosing symbol.",
+        compact_help: "Search all indexed files literally; group hits by enclosing symbol.",
         positional: Some("query"),
         second_positional: None,
         props: &[
@@ -120,6 +129,7 @@ const TOOLS: &[Tool] = &[
     Tool {
         name: "skeleton",
         help: "Skeleton of a file or directory: its symbols and their relations, without depth expansion.",
+        compact_help: "Outline file/directory symbols and relations without depth expansion.",
         positional: Some("target"),
         second_positional: None,
         props: &[
@@ -129,6 +139,7 @@ const TOOLS: &[Tool] = &[
     Tool {
         name: "path",
         help: "Shortest edge path between two nodes (calls, imports, contains), at most 8 hops.",
+        compact_help: "Find shortest calls/imports/contains path between nodes, up to 8 hops.",
         positional: Some("from"),
         second_positional: Some("to"),
         props: &[
@@ -140,6 +151,7 @@ const TOOLS: &[Tool] = &[
     Tool {
         name: "export",
         help: "Whole graph as one deterministic document: graph JSON or a Mermaid flowchart.",
+        compact_help: "Export the whole graph deterministically as JSON or Mermaid.",
         positional: None,
         second_positional: None,
         props: &[
@@ -147,6 +159,50 @@ const TOOLS: &[Tool] = &[
         ],
     },
 ];
+
+/// Tool availability and description style, fixed for the lifetime of a server.
+#[derive(Debug, Default)]
+pub(super) enum Surface {
+    /// The original ten tools, descriptions and schemas, unchanged.
+    #[default]
+    Full,
+    /// A non-empty subset, exposed in canonical table order with compact descriptions.
+    Selected(Vec<&'static str>),
+}
+
+impl Surface {
+    pub(super) fn profile(name: &str) -> Result<Self, String> {
+        match name {
+            "default" => Ok(Self::Full),
+            "lean" => Ok(Self::Selected(vec!["find", "read"])),
+            _ => Err(format!(
+                "unknown MCP profile: {name}; expected default or lean"
+            )),
+        }
+    }
+
+    pub(super) fn from_names(names: &str) -> Result<Self, String> {
+        let mut selected = Vec::new();
+        for name in names.split(',') {
+            let tool = TOOLS
+                .iter()
+                .find(|tool| tool.name == name)
+                .ok_or_else(|| format!("unknown MCP tool: {name:?}"))?;
+            if selected.contains(&tool.name) {
+                return Err(format!("duplicate MCP tool: {name}"));
+            }
+            selected.push(tool.name);
+        }
+        Ok(Self::Selected(selected))
+    }
+
+    pub(super) fn contains(&self, name: &str) -> bool {
+        match self {
+            Self::Full => TOOLS.iter().any(|tool| tool.name == name),
+            Self::Selected(names) => names.contains(&name),
+        }
+    }
+}
 
 /// Every property `tool` accepts: its own, then the common ones not already in its own set.
 fn accepted(tool: &Tool) -> Vec<&Prop> {
@@ -195,23 +251,23 @@ fn schema_of(tool: &Tool) -> Json {
 }
 
 /// The `tools/list` result.
-pub(super) fn list() -> Json {
+pub(super) fn list(surface: &Surface) -> Json {
     let tools = TOOLS
         .iter()
+        .filter(|tool| surface.contains(tool.name))
         .map(|tool| {
+            let help = match surface {
+                Surface::Full => tool.help,
+                Surface::Selected(_) => tool.compact_help,
+            };
             Json::obj(vec![
                 ("name", Json::str(tool.name)),
-                ("description", Json::str(tool.help)),
+                ("description", Json::str(help)),
                 ("inputSchema", schema_of(tool)),
             ])
         })
         .collect();
     Json::obj(vec![("tools", Json::Arr(tools))])
-}
-
-/// True when `name` is a known tool.
-pub(super) fn exists(name: &str) -> bool {
-    TOOLS.iter().any(|tool| tool.name == name)
 }
 
 /// Turns a call into the argument vector of `dctx map`, or a message naming the bad argument.
@@ -348,7 +404,9 @@ mod tests {
             .unwrap_err()
             .contains("limit"));
         assert!(args("hubs", r#"{"cursor":"x"}"#).is_err());
-        assert!(list().get("tools").is_some() && exists("map") && exists("path"));
+        let surface = Surface::Full;
+        assert!(list(&surface).get("tools").is_some());
+        assert!(surface.contains("map") && surface.contains("path"));
     }
 
     #[test]
@@ -405,5 +463,73 @@ mod tests {
                 "export"
             ]
         );
+    }
+
+    #[test]
+    fn selections_keep_complete_schemas_and_shorten_only_descriptions() {
+        let Json::Arr(full) = list(&Surface::Full).get("tools").unwrap().clone() else {
+            panic!("tools array");
+        };
+        for (surface, expected) in [
+            (
+                Surface::profile("default").unwrap(),
+                TOOLS.iter().map(|t| t.name).collect::<Vec<_>>(),
+            ),
+            (Surface::profile("lean").unwrap(), vec!["find", "read"]),
+            (
+                Surface::from_names("read,grep,find").unwrap(),
+                vec!["find", "read", "grep"],
+            ),
+            (Surface::from_names("export").unwrap(), vec!["export"]),
+        ] {
+            let listed = list(&surface);
+            let Some(Json::Arr(selected)) = listed.get("tools") else {
+                panic!("tools array");
+            };
+            let names: Vec<_> = selected
+                .iter()
+                .map(|t| t.get("name").unwrap().as_str().unwrap())
+                .collect();
+            assert_eq!(names, expected);
+            for tool in selected {
+                let original = full
+                    .iter()
+                    .find(|t| t.get("name") == tool.get("name"))
+                    .unwrap();
+                assert_eq!(tool.get("inputSchema"), original.get("inputSchema"));
+                if matches!(surface, Surface::Full) {
+                    assert_eq!(tool, original);
+                } else {
+                    assert!(
+                        tool.get("description").unwrap().as_str().unwrap().len()
+                            < original.get("description").unwrap().as_str().unwrap().len()
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn every_tool_can_be_selected_but_invalid_selections_fail() {
+        for tool in TOOLS {
+            let surface = Surface::from_names(tool.name).unwrap();
+            for other in TOOLS {
+                assert_eq!(surface.contains(other.name), other.name == tool.name);
+            }
+        }
+        for names in [
+            "",
+            "nope",
+            "find,nope",
+            "find,",
+            ",read",
+            "find,,read",
+            "find,find",
+            "Find",
+            "find, read",
+        ] {
+            assert!(Surface::from_names(names).is_err(), "{names}");
+        }
+        assert!(Surface::profile("nope").is_err());
     }
 }

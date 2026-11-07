@@ -8,39 +8,71 @@ mod tools;
 
 use json::Json;
 use std::io::{BufRead, Write};
+use tools::Surface;
 
 use crate::exit::Failure;
 
 /// Protocol version answered when the client names none.
 const DEFAULT_PROTOCOL: &str = "2025-06-18";
 /// Usage text for `dctx mcp --help`.
-const HELP: &str = "Usage: dctx mcp [PATH]\n  Serve the map verbs (map, find, neighbors, explain, read, hubs, grep, skeleton, path, export) as MCP tools over stdio.\n  One JSON-RPC 2.0 message per line. Tools run in PATH (default: the current directory).\nExample: dctx mcp ~/src/project   (the command an MCP client such as Claude Code, Cursor or Codex starts)\n";
+const HELP: &str = "Usage: dctx mcp [--profile default|lean | --tools NAME,...] [PATH]\n  Serve map verbs as MCP tools over stdio; one JSON-RPC 2.0 message per line.\n  Default: map, find, neighbors, explain, read, hubs, grep, skeleton, path, export.\n  --profile lean: find and read, with compact descriptions and all parameters.\n  --tools NAME,...: expose only the named tools, with compact descriptions.\n  Select either --profile or --tools, once. Tools run in PATH (default: current directory).\n  Use -- before a PATH starting with '-'. Restart the server to change tools.\nExample: dctx mcp ~/src/project\n          dctx mcp --profile lean ~/src/project\n          dctx mcp --tools find,read,grep ~/src/project\n";
+
+/// Validate all arguments before changing directory or starting the protocol.
+fn options(args: &[String]) -> Result<(Option<String>, Surface), Failure> {
+    let mut path = None;
+    let mut surface = None;
+    let mut positional_only = false;
+    let mut args = args.iter();
+    let usage = |message| Failure::usage(message, "run `dctx mcp --help` for options and examples");
+    while let Some(arg) = args.next() {
+        if !positional_only && arg == "--" {
+            positional_only = true;
+        } else if !positional_only && arg.starts_with('-') {
+            let (flag, inline) = arg
+                .split_once('=')
+                .map_or((arg.as_str(), None), |(flag, value)| (flag, Some(value)));
+            if !matches!(flag, "--profile" | "--tools") {
+                return Err(usage(format!("unknown MCP option: {arg}")));
+            }
+            if surface.is_some() {
+                return Err(usage("select either --profile or --tools, once".into()));
+            }
+            let value = inline
+                .or_else(|| args.next().map(String::as_str))
+                .ok_or_else(|| usage(format!("{flag} requires a value")))?;
+            surface = Some(
+                match flag {
+                    "--profile" => Surface::profile(value),
+                    _ => Surface::from_names(value),
+                }
+                .map_err(usage)?,
+            );
+        } else if path.replace(arg.clone()).is_some() {
+            return Err(usage("expected at most one project PATH".into()));
+        }
+    }
+    Ok((path, surface.unwrap_or_default()))
+}
 
 /// Entry point for `dctx mcp [PATH]`: serves stdin to stdout until end of input.
 /// A bad argument is exit 2 and a PATH that cannot be entered exit 3 (docs/CLI-EXIT-CODES.md).
 pub(crate) fn run(args: &[String]) -> Result<(), Failure> {
-    match args {
-        [] => {}
-        [flag] if flag == "--help" || flag == "-h" => {
-            print!("{HELP}");
-            return Ok(());
-        }
-        [path] if !path.starts_with('-') => std::env::set_current_dir(path).map_err(|error| {
+    if matches!(args, [flag] if flag == "--help" || flag == "-h") {
+        print!("{HELP}");
+        return Ok(());
+    }
+    let (path, surface) = options(args)?;
+    if let Some(path) = path {
+        std::env::set_current_dir(&path).map_err(|error| {
             Failure::index(
                 format!("cannot enter {path}: {error}"),
                 "pass an existing project directory: dctx mcp <PATH>",
             )
-        })?,
-        _ => {
-            return Err(Failure::usage(
-                "usage: dctx mcp [PATH]",
-                "run `dctx mcp --help` for the usage and an example",
-            ))
-        }
+        })?;
     }
     let stdin = std::io::stdin();
     let stdout = std::io::stdout();
-    serve(stdin.lock(), stdout.lock(), &crate::map::execute).map_err(|error| {
+    serve(stdin.lock(), stdout.lock(), &surface, &crate::map::execute).map_err(|error| {
         Failure::index(
             error.to_string(),
             "stdin or stdout failed; restart the server from the MCP client",
@@ -52,6 +84,7 @@ pub(crate) fn run(args: &[String]) -> Result<(), Failure> {
 fn serve(
     mut input: impl BufRead,
     mut output: impl Write,
+    surface: &Surface,
     exec: &dyn Fn(&[String]) -> Result<String, String>,
 ) -> std::io::Result<()> {
     let mut raw = Vec::new();
@@ -64,7 +97,7 @@ fn serve(
         if line.trim().is_empty() {
             continue;
         }
-        if let Some(reply) = handle(line.trim(), exec) {
+        if let Some(reply) = handle(line.trim(), surface, exec) {
             writeln!(output, "{}", reply.to_line())?;
             output.flush()?;
         }
@@ -92,7 +125,11 @@ fn success(id: Json, result: Json) -> Json {
 }
 
 /// Handles one message line; `None` means no reply (notifications and stray responses).
-fn handle(line: &str, exec: &dyn Fn(&[String]) -> Result<String, String>) -> Option<Json> {
+fn handle(
+    line: &str,
+    surface: &Surface,
+    exec: &dyn Fn(&[String]) -> Result<String, String>,
+) -> Option<Json> {
     let message = match json::parse(line) {
         Ok(message) => message,
         Err(why) => return Some(error(Json::Null, -32700, &format!("parse error: {why}"))),
@@ -139,8 +176,8 @@ fn handle(line: &str, exec: &dyn Fn(&[String]) -> Result<String, String>) -> Opt
             )
         }
         "ping" => success(id, Json::obj(Vec::new())),
-        "tools/list" => success(id, tools::list()),
-        "tools/call" => call(id, params, exec),
+        "tools/list" => success(id, tools::list(surface)),
+        "tools/call" => call(id, params, surface, exec),
         other => error(id, -32601, &format!("method not found: {other}")),
     })
 }
@@ -148,12 +185,13 @@ fn handle(line: &str, exec: &dyn Fn(&[String]) -> Result<String, String>) -> Opt
 fn call(
     id: Json,
     params: Option<&Json>,
+    surface: &Surface,
     exec: &dyn Fn(&[String]) -> Result<String, String>,
 ) -> Json {
     let Some(name) = params.and_then(|p| p.get("name")).and_then(Json::as_str) else {
         return error(id, -32602, "invalid params: tool name is required");
     };
-    if !tools::exists(name) {
+    if !surface.contains(name) {
         return error(id, -32602, &format!("unknown tool: {name}"));
     }
     let outcome =
@@ -186,7 +224,7 @@ mod tests {
             }
         };
         let mut out = Vec::new();
-        serve(lines.as_bytes(), &mut out, &exec).expect("serve");
+        serve(lines.as_bytes(), &mut out, &Surface::Full, &exec).expect("serve");
         String::from_utf8(out)
             .expect("utf8")
             .lines()
@@ -243,6 +281,147 @@ mod tests {
                 Some(&Json::Num(code.into())),
                 "{n}"
             );
+        }
+    }
+
+    #[test]
+    fn options_accept_profiles_subsets_and_paths_in_either_order() {
+        for (words, expected_path, expected_names) in [
+            (
+                vec![],
+                None,
+                vec![
+                    "map",
+                    "find",
+                    "neighbors",
+                    "explain",
+                    "read",
+                    "hubs",
+                    "grep",
+                    "skeleton",
+                    "path",
+                    "export",
+                ],
+            ),
+            (
+                vec!["--profile", "default"],
+                None,
+                vec![
+                    "map",
+                    "find",
+                    "neighbors",
+                    "explain",
+                    "read",
+                    "hubs",
+                    "grep",
+                    "skeleton",
+                    "path",
+                    "export",
+                ],
+            ),
+            (
+                vec!["--profile", "lean", "project dir"],
+                Some("project dir"),
+                vec!["find", "read"],
+            ),
+            (
+                vec!["project", "--profile=lean"],
+                Some("project"),
+                vec!["find", "read"],
+            ),
+            (vec!["--tools", "read,find"], None, vec!["find", "read"]),
+            (
+                vec!["project", "--tools=grep"],
+                Some("project"),
+                vec!["grep"],
+            ),
+            (
+                vec!["--profile", "lean", "--", "-project"],
+                Some("-project"),
+                vec!["find", "read"],
+            ),
+        ] {
+            let args: Vec<_> = words.into_iter().map(str::to_string).collect();
+            let (path, surface) = options(&args).unwrap();
+            assert_eq!(path.as_deref(), expected_path);
+            let listed = tools::list(&surface);
+            let Some(Json::Arr(tools)) = listed.get("tools") else {
+                panic!("tools array");
+            };
+            let names: Vec<_> = tools
+                .iter()
+                .map(|t| t.get("name").unwrap().as_str().unwrap())
+                .collect();
+            assert_eq!(names, expected_names);
+        }
+    }
+
+    #[test]
+    fn invalid_options_are_usage_errors_before_serving() {
+        for words in [
+            vec!["--tools", "find,nope"],
+            vec!["--tools="],
+            vec!["--tools", "find,find"],
+            vec!["--tools", "find,"],
+            vec!["--tools"],
+            vec!["--profile"],
+            vec!["--profile", "nope"],
+            vec!["--profile="],
+            vec!["--profile", "lean", "--tools", "find"],
+            vec!["--tools", "find", "--profile", "lean"],
+            vec!["--tools", "find", "--tools", "read"],
+            vec!["--profile", "lean", "--profile", "default"],
+            vec!["--bogus"],
+            vec!["a", "b"],
+        ] {
+            let args: Vec<_> = words.into_iter().map(str::to_string).collect();
+            let failure = options(&args).unwrap_err();
+            assert_eq!(failure.code, crate::exit::USAGE, "{args:?}");
+            assert!(!failure.hint.is_empty());
+        }
+    }
+
+    #[test]
+    fn restricted_sessions_list_and_dispatch_only_selected_tools() {
+        let lines = concat!(
+            "{\"id\":1,\"method\":\"initialize\"}\n",
+            "{\"id\":2,\"method\":\"tools/list\"}\n",
+            "{\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"find\",\"arguments\":{\"query\":\"beta\"}}}\n",
+            "{\"id\":4,\"method\":\"tools/call\",\"params\":{\"name\":\"read\",\"arguments\":{\"id\":\"s:a#b\"}}}\n",
+            "{\"id\":5,\"method\":\"tools/call\",\"params\":{\"name\":\"map\"}}\n",
+            "{\"id\":6,\"method\":\"tools/call\",\"params\":{\"name\":\"nope\"}}\n",
+        );
+        for surface in [
+            Surface::profile("lean").unwrap(),
+            Surface::from_names("read,find").unwrap(),
+        ] {
+            let exec = |args: &[String]| {
+                assert!(matches!(args[0].as_str(), "find" | "read"));
+                Ok(args.join(" "))
+            };
+            let mut out = Vec::new();
+            serve(lines.as_bytes(), &mut out, &surface, &exec).unwrap();
+            let out = String::from_utf8(out).unwrap();
+            let replies: Vec<_> = out.lines().map(|line| json::parse(line).unwrap()).collect();
+            assert_eq!(replies.len(), 6);
+            assert_eq!(
+                replies[0],
+                session("{\"id\":1,\"method\":\"initialize\"}\n")[0]
+            );
+            assert_eq!(replies[1].get("result"), Some(&tools::list(&surface)));
+            for (reply, expected) in [(&replies[2], "find beta"), (&replies[3], "read s:a#b")] {
+                let Some(Json::Arr(content)) = reply.get("result").and_then(|r| r.get("content"))
+                else {
+                    panic!("tool content");
+                };
+                assert_eq!(content[0].get("text"), Some(&Json::str(expected)));
+            }
+            for reply in &replies[4..] {
+                assert_eq!(
+                    reply.get("error").and_then(|e| e.get("code")),
+                    Some(&Json::Num("-32602".into()))
+                );
+            }
         }
     }
 }

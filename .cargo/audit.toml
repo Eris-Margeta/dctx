@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: Apache-2.0
+# SPDX-FileCopyrightText: 2026 Eris Margeta
+# Any exception must include the advisory ID, affected path, reason and expiry here.
+# Keep empty unless a reviewed, time-limited justification is committed.
+[advisories]
+ignore = []

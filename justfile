@@ -261,6 +261,7 @@ site:
 # Re-record the CLI outputs the website shows (after a CLI change), then rebuild.
 site-capture:
     DCTX_BIN=target/release/dctx-cli python3 tools/website/capture.py
+    DCTX_BIN=target/release/dctx-cli python3 tools/website/capture.py --llms
     tools/website/.venv/bin/python tools/website/build.py
 
 # Preview the built site on this machine.

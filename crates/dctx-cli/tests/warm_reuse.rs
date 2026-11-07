@@ -12,7 +12,7 @@ mod common;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::PathBuf;
-use std::process::{Command, Output};
+use std::process::{Command, Output, Stdio};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 static NEXT: AtomicU64 = AtomicU64::new(1);
@@ -55,6 +55,12 @@ impl Repository {
     }
 
     fn output_env(&self, args: &[&str], extra: &[(&str, &str)]) -> Output {
+        self.command(args, extra)
+            .output()
+            .expect("run compiled CLI")
+    }
+
+    fn command(&self, args: &[&str], extra: &[(&str, &str)]) -> Command {
         let mut command = Command::new(env!("CARGO_BIN_EXE_dctx-cli"));
         command
             .current_dir(self.repo())
@@ -73,7 +79,7 @@ impl Repository {
             command.env(variable, self.root.join(folder));
         }
         command.envs(extra.iter().copied());
-        command.output().expect("run compiled CLI")
+        command
     }
 
     fn run(&self, args: &[&str]) -> (String, String) {
@@ -111,6 +117,71 @@ fn records(page: &str) -> &str {
         .find(",\"more\"")
         .unwrap_or_else(|| panic!("more in {page}"));
     &page[start..start + end]
+}
+
+#[test]
+fn switching_places_keeps_both_generations_warm_in_one_bounded_cache() {
+    let repo = Repository::new();
+    // Equal basenames must still have distinct canonical identities.
+    let a = repo.repo().join("a/project");
+    let b = repo.repo().join("b/project");
+    for place in [&a, &b] {
+        fs::create_dir_all(place).expect("place");
+        fs::write(place.join("item.rs"), "fn kept() {}\n").expect("source");
+        age(&place.join("item.rs"));
+    }
+    let a = a.to_str().expect("path");
+    let b = b.to_str().expect("path");
+    let mut first_page = String::new();
+    for (place, reused) in [(a, false), (b, false), (a, true), (b, true)] {
+        let (page, report) = repo.run(&["map", "find", "kept", "--json", "--place", place]);
+        assert_eq!(report.contains("generation reused"), reused, "{report}");
+        if first_page.is_empty() {
+            first_page = records(&page).to_string();
+        }
+        assert_eq!(records(&page), first_page);
+        if reused {
+            assert_eq!(count_line(&report, "content_reads"), 0, "{report}");
+        }
+    }
+    let life = dctx_cli::host::load_ledger(&repo.cache()).expect("ledger");
+    let status = life.status();
+    assert_eq!(status.roots.len(), 2);
+    assert!(status.admitted > 0 && status.admitted <= status.hard_cap);
+
+    // Canonical aliases select the same retained root, without another registration.
+    let alias = format!("{a}/.");
+    let (_, report) = repo.run(&["map", "find", "kept", "--place", &alias]);
+    assert!(report.contains("generation reused"), "{report}");
+    assert_eq!(
+        dctx_cli::host::load_ledger(&repo.cache())
+            .expect("ledger")
+            .status()
+            .roots
+            .len(),
+        2
+    );
+
+    // Registering another place must not give it a separate capacity allowance.
+    let cap = 65_536 + status.admitted;
+    repo.run(&["cache", "config", "--max-bytes", &cap.to_string()]);
+    let c = repo.repo().join("c/project");
+    fs::create_dir_all(&c).expect("third place");
+    fs::write(c.join("item.rs"), "fn kept() {}\n").expect("source");
+    let output = repo.output(&["map", "find", "kept", "--place", c.to_str().expect("path")]);
+    // Admission may safely evict an older unleased generation, or refuse if none
+    // is reclaimable. Either way the aggregate charge stays inside the same cap.
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert_eq!(output.status.code(), Some(3), "{stderr}");
+        assert!(stderr.contains("cache limit"), "{stderr}");
+    }
+    let after = dctx_cli::host::load_ledger(&repo.cache())
+        .expect("bounded ledger")
+        .status();
+    assert_eq!(after.roots.len(), 3);
+    assert_eq!(after.hard_cap, cap);
+    assert!(after.admitted <= cap - 65_536);
 }
 
 #[test]
@@ -292,4 +363,88 @@ fn caps_early_refusal_names_the_cap_and_the_override_passes() {
             "{variable} is named when its value is invalid"
         );
     }
+}
+
+#[test]
+fn pack_capacity_refusals_name_the_limit_and_a_working_override() {
+    let repo = Repository::new();
+    for name in ["a.rs", "b.rs", "c.rs", "d.rs"] {
+        fs::write(repo.repo().join(name), "fn kept() {}\n").expect("source");
+    }
+    for args in [&["pack", "."][..], &["pack", ".", "--json"][..]] {
+        for (variable, resource, limit) in [
+            ("DCTX_MAX_SOURCE_BYTES", "source_bytes", "1"),
+            ("DCTX_MAX_ENTRIES", "entries", "2"),
+        ] {
+            let refused = repo.output_env(args, &[(variable, limit)]);
+            let stderr = String::from_utf8_lossy(&refused.stderr);
+            assert_eq!(refused.status.code(), Some(3), "{args:?}: {stderr}");
+            assert!(refused.stdout.is_empty(), "no partial answer");
+            assert!(stderr.contains(resource), "{stderr}");
+            assert!(stderr.contains(variable), "{stderr}");
+            assert!(
+                stderr.contains("dctx pack <a smaller directory>"),
+                "{stderr}"
+            );
+            assert!(!stderr.contains("check that PATH"), "{stderr}");
+            assert!(!stderr.contains("cache gc"), "{stderr}");
+            let passed = repo.output_env(args, &[(variable, "1000")]);
+            assert!(
+                passed.status.success(),
+                "{}",
+                String::from_utf8_lossy(&passed.stderr)
+            );
+        }
+    }
+}
+
+#[test]
+fn an_empty_tight_cache_refuses_without_suggesting_useless_gc() {
+    let repo = Repository::new();
+    fs::write(repo.repo().join("a.rs"), "fn kept() {}\n").expect("source");
+    repo.run(&["cache", "config", "--max-bytes", "65536"]);
+    for args in [
+        &["map", "find", "kept"][..],
+        &["pack", "--for", "`kept`"][..],
+    ] {
+        let refused = repo.output(args);
+        let stderr = String::from_utf8_lossy(&refused.stderr);
+        assert_eq!(refused.status.code(), Some(3), "{stderr}");
+        assert!(refused.stdout.is_empty());
+        assert!(stderr.contains("cache capacity"), "{stderr}");
+        assert!(stderr.contains("--place <a smaller directory>"), "{stderr}");
+        assert!(!stderr.contains("cache gc"), "{stderr}");
+        assert!(!stderr.contains("check that PATH"), "{stderr}");
+    }
+    assert_eq!(
+        dctx_cli::host::load_ledger(&repo.cache())
+            .expect("ledger")
+            .admitted(),
+        0
+    );
+
+    let mut child = repo
+        .command(&["mcp"], &[])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .expect("MCP");
+    child.stdin.take().expect("stdin").write_all(
+        b"{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{}}\n\
+        {\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}\n\
+        {\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/call\",\"params\":{\"name\":\"find\",\"arguments\":{\"query\":\"kept\"}}}\n"
+    ).expect("request");
+    let output = child.wait_with_output().expect("MCP output");
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let text = String::from_utf8(output.stdout).expect("JSON");
+    assert!(text.contains("\"isError\":true"), "{text}");
+    assert!(text.contains("cache capacity"), "{text}");
+    assert!(text.contains("\\nhint: "), "{text}");
+    assert!(text.contains("--place <a smaller directory>"), "{text}");
+    assert!(!text.contains("cache gc"), "{text}");
 }

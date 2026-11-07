@@ -47,7 +47,7 @@ fn run(mut command: Command) -> Output {
 
 #[test]
 fn restricted_computation_and_every_escape_run_in_distinct_processes() {
-    let dir = tempfile::tempdir_in(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let dir = tempfile::tempdir().unwrap();
     let source = dir.path().join("source");
     let home = dir.path().join("fake-home");
     let cache = dir.path().join("fake-cache");
@@ -114,7 +114,7 @@ fn restricted_computation_and_every_escape_run_in_distinct_processes() {
 
 #[test]
 fn landlock_denial_is_observed_independently_of_the_syscall_filter() {
-    let dir = tempfile::tempdir_in(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let dir = tempfile::tempdir().unwrap();
     let fixture = dir.path().join("private");
     std::fs::write(&fixture, b"private-fixture").unwrap();
     let result = run(command("landlock", &fixture));
@@ -138,7 +138,7 @@ fn landlock_denial_is_observed_independently_of_the_syscall_filter() {
 
 #[test]
 fn bootstrap_never_calls_body_with_secrets_files_or_wrong_parent() {
-    let dir = tempfile::tempdir_in(env!("CARGO_MANIFEST_DIR")).unwrap();
+    let dir = tempfile::tempdir().unwrap();
     let fixture = dir.path().join("secret-fixture");
     std::fs::write(&fixture, b"private-fixture").unwrap();
     let clean = run(command("environment", &fixture));

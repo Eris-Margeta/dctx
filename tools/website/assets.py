@@ -14,8 +14,9 @@ from common import read_bytes
 
 FONTS = ["geist-400", "geist-600", "jetbrains-mono-400", "jetbrains-mono-500"]
 # One script request per page: site.js plus what the page needs, concatenated (each part is an IIFE).
-BUNDLES = {"page.js": ["site.js"], "home.js": ["site.js", "term.js", "hero.js"], "examples.js": ["site.js", "term.js"],
-           "playground.js": ["site.js", "playground.js"], "search.js": ["site.js", "search.js"]}
+# anim.js (the explainer animations, pages/animations.py) is inert on a page without figure[data-anim].
+BUNDLES = {"page.js": ["site.js"], "home.js": ["site.js", "term.js", "hero.js", "anim.js"], "examples.js": ["site.js", "term.js"],
+           "playground.js": ["site.js", "playground.js"], "search.js": ["site.js", "search.js"], "how.js": ["site.js", "anim.js"]}
 
 
 class Assets:

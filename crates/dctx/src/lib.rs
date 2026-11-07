@@ -31,8 +31,8 @@ pub use domain::{
     DctxError, Direction, ENTRIES_ENV, ErrorCode, Freshness, FreshnessMode, GcRequest, HostGrants,
     IdentityOutcome, MapRequest, OperationLimits, PackReport, PackRequest, Precision, PurgeRequest,
     PurgeScope, RECORDS_ENV, REQUEST_VERSION, Resource, RuleSources, SOURCE_ENV, STRUCTURAL_PARSER,
-    SegmentInfo, SnapshotRequest, VecSink, Verb, encode_answer, encode_answer_with, object_key,
-    parse_source_ceiling, source_ceiling, validate_segment,
+    SegmentInfo, SnapshotRequest, VecSink, Verb, encode_answer, encode_answer_with,
+    entries_ceiling, object_key, parse_source_ceiling, source_ceiling, validate_segment,
 };
 pub use languages::{Confidence, LANGUAGES, Language, Tier};
 pub use plugins::{Boundary, HookEffect, HookWarning, PluginHost};

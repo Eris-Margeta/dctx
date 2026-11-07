@@ -109,7 +109,7 @@ mod tests {
 
     #[test]
     fn seals_deny_inode_mutation_not_just_path_replacement() {
-        let mut source = tempfile::tempfile_in(env!("CARGO_MANIFEST_DIR")).unwrap();
+        let mut source = tempfile::tempfile().unwrap();
         source.write_all(b"approved").unwrap();
         source.rewind().unwrap();
         let digest = Sha256::digest(b"approved").unwrap();
@@ -127,7 +127,7 @@ mod tests {
     #[test]
     fn wrong_bytes_lengths_and_unbounded_copies_are_refused() {
         for bytes in [b"bad".as_slice(), b"good-extra", b"goo"] {
-            let mut source = tempfile::tempfile_in(env!("CARGO_MANIFEST_DIR")).unwrap();
+            let mut source = tempfile::tempfile().unwrap();
             source.write_all(bytes).unwrap();
             source.rewind().unwrap();
             assert!(matches!(
@@ -135,7 +135,7 @@ mod tests {
                 Err(PlatformError::Conflict)
             ));
         }
-        let source = tempfile::tempfile_in(env!("CARGO_MANIFEST_DIR")).unwrap();
+        let source = tempfile::tempfile().unwrap();
         assert!(matches!(
             SealedSnapshot::copy_checked(
                 &source,

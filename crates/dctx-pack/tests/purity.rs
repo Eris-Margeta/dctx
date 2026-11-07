@@ -4,6 +4,9 @@
 //! Also checks the manifest names no git or filesystem crate (decision 078). Comments and `#[cfg(test)]`
 //! tails are skipped. Run by `cargo test -p dctx-pack`.
 
+#[path = "../../../tests/support/source_files.rs"]
+mod source_files;
+
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -32,14 +35,11 @@ const FORBIDDEN: &[&str] = &[
 ];
 
 fn rust_files(dir: &Path, out: &mut Vec<PathBuf>) {
-    for entry in fs::read_dir(dir).unwrap() {
-        let path = entry.unwrap().path();
-        if path.is_dir() {
-            rust_files(&path, out);
-        } else if path.extension().is_some_and(|e| e == "rs") {
-            out.push(path);
-        }
-    }
+    out.extend(
+        source_files::files(dir)
+            .into_iter()
+            .filter(|path| path.extension().is_some_and(|ext| ext == "rs")),
+    );
 }
 
 fn violations(text: &str, label: &str) -> Vec<String> {
