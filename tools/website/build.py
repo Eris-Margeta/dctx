@@ -163,7 +163,9 @@ def build(out: Path, skip_og: bool = False) -> int:
     files["favicon.svg"] = (ICON.replace(' aria-hidden="true" focusable="false"', ' xmlns="http://www.w3.org/2000/svg"') + "\n").encode()
     files["llms.txt"] = llms.llms_txt().encode()
     files["llms-small.txt"] = llms.llms_small().encode()
-    files["llms-full.txt"] = llms.llms_full(rendered, linker).encode()
+    files["llms-full.txt"] = llms.llms_full().encode()
+    for rel in llms.stale_sources():
+        print(f"warning: {rel} changed since data/llms.json was captured; run capture.py --llms (check.py fails)", file=sys.stderr)
     files["news/feed.xml"] = llms.news_feed().encode()
     files["changelog/feed.xml"] = llms.changelog_feed(releases).encode()
     files["sitemap.xml"] = llms.sitemap(routes).encode()

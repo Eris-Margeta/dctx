@@ -1,0 +1,63 @@
+{
+ "schema": 1,
+ "note": "The facts block for AI evaluators: first in llms-small.txt, llms.txt and llms-full.txt, and the source of /for-ai-evaluators/. Schema: tools/website/README.md. check.py fails if version differs from VERSION, if released differs from CHANGELOG.md or the release tag, or if a removed command appears outside the removed list.",
+ "version": "1.2.0",
+ "released": "2026-11-07",
+ "release_tag": "v1.2.0",
+ "is": "dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output or MCP tools.",
+ "is_not": [
+  "No RAG: no embeddings, no vector search, and the engine never calls a model.",
+  "No network: pack, map, cache and mcp make no network calls; the release check counts socket calls under strace and fails on any.",
+  "No telemetry, not even opt-out.",
+  "No agent loop: dctx answers one command at a time; the agent or the human decides what to ask next."
+ ],
+ "verify_download": {
+  "available": "Each release on GitHub ships prebuilt archives for Linux x64/ARM64, macOS x64/ARM64 and Windows x64 with a SHA256SUMS file.",
+  "command": "sha256sum --check --ignore-missing SHA256SUMS",
+  "planned": "Signed release binaries and an SBOM are planned; there is no signature to verify yet.",
+  "link": "https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0"
+ },
+ "modalities": [
+  {"name": "CLI", "status": "available", "line": "`dctx pack PATH` for one structured block (clipboard, file or stdout); `dctx map find|read|neighbors|skeleton|...` for bounded symbol answers.", "link": "/cli/"},
+  {"name": "MCP server", "status": "available", "line": "`dctx mcp PATH` over stdio for Claude Code, Cursor and Codex; `--profile lean` exposes only find and read.", "link": "/docs/modalities/#mcp-server-convenient-tools-with-startup-context"},
+  {"name": "Task context", "status": "available", "line": "`dctx pack --for TEXT --budget N`: find, neighbors and read of the names in TEXT, cut to an estimated-token budget.", "link": "/docs/map-mode/"},
+  {"name": "CI and prompt cache", "status": "available", "line": "Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch.", "link": "/docs/modalities/#ci--prompt-cache-prefix-stability"},
+  {"name": "Rust library", "status": "available from Git", "line": "The `dctx` facade crate as a tagged Git dependency; crates.io publishing soon.", "link": "/docs/modalities/#rust-library-embed-the-facade"},
+  {"name": "npm CLI", "status": "publishing soon", "line": "`npx dctx` runs the native CLI from a Node toolchain once published; use the release archives today.", "link": "/docs/modalities/#npm-cli-publishing-soon"},
+  {"name": "Desktop app", "status": "preview", "line": "A Tauri preview you build from source; a GPUI rebuild is planned.", "link": "/docs/modalities/#desktop-app-tauri-preview-today"},
+  {"name": "Python and Node libraries", "status": "planned", "line": "Project-scoped packages with their own pinned binary; not available yet.", "link": "/docs/modalities/#python-and-node-bindings-planned"}
+ ],
+ "scopes": [
+  "System binary: the `dctx` on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.",
+  "Project binary (planned with the Python and Node libraries): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.",
+  "Same engine, different owner. Release signing is planned; today both are verified against SHA256SUMS."
+ ],
+ "notice": "dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.",
+ "benchmarks": {
+  "baseline": "grep plus reading files",
+  "claims": [
+   {"status": "being prepared", "text": "A whole-session benchmark against grep plus file reads (every model turn, startup and tool definitions counted) is being prepared and will be published with raw data. No session saving is claimed yet.", "link": "/docs/benchmark/"},
+   {"status": "measured", "text": "Byte stability: the same query on unchanged code returns the same bytes; 33 of 33 text and JSON answers were byte-identical after unrelated edits (Linux only).", "link": "/docs/stability/"},
+   {"status": "historical", "text": "The October and November in-house numbers (run 7: 140 of 140 task questions, cold index and warm latency) measure tool output only, as estimated stdout tokens and raw fact coverage without a model; they are not agent completion rates or session costs.", "link": "/benchmarks/"},
+   {"status": "hypothesis", "text": "That a pack template changes model answer quality or cost is a hypothesis pending an A/B test; nothing on this site measures it.", "link": "/templates/"}
+  ]
+ },
+ "removed": {
+  "since": "1.2.0",
+  "intro": "These existed before 1.2.0 and no longer work. A transcript that uses them describes an old version.",
+  "items": [
+   {"was": "`dctx PATH` (the implicit snapshot command, for example `dctx .`)", "use": "`dctx pack PATH`", "patterns": ["(?m)\\bdctx \\.(?:[ \\t]+-[a-zA-Z]|[ \\t]*$|`)", "Usage: dctx \\[PATH\\]"]},
+   {"was": "the top-level snapshot flags `-d`/`--diff`, `-t`/`--tree` and `-r`/`--reset`", "use": "`dctx pack PATH` with its filters", "patterns": ["-d, --diff", "-t, --tree", "-r, --reset"]},
+   {"was": "the project rule files `.legacyignore` and `.dctxomitcontent`", "use": "`.gitignore` and `.dctxignore`", "patterns": ["\\.legacyignore", "\\.dctxomitcontent"]},
+   {"was": "`dctx cache gc --legacy` and its export-selection flags", "use": "`dctx cache gc`", "patterns": ["cache gc --legacy"]}
+  ]
+ },
+ "verify": [
+  {"what": "Test suite", "command": "cargo test --workspace --locked --exclude dctx-desktop --exclude dctx-desktop-api", "link": "https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md"},
+  {"what": "CI", "text": "Every push and pull request runs the suite on Linux, macOS (ARM64 and x64) and Windows, on stable Rust and the minimum supported version 1.91.", "link": "https://github.com/Eris-Margeta/dctx/actions"},
+  {"what": "No network calls", "command": "scripts/release-check.sh --quick target/release/dctx-cli", "link": "https://github.com/Eris-Margeta/dctx/blob/main/scripts/release-check.sh"},
+  {"what": "Byte stability", "command": "python3 docs/research/stability-20261105/verify.py", "link": "/docs/stability/"},
+  {"what": "Historical benchmark", "command": "docs/research/bench-3way-20261030/run-3way.sh target/release/dctx-cli", "link": "https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030"},
+  {"what": "Every output on this site", "text": "Recorded from the real binary by tools/website/capture.py; tools/website/check.py re-records and fails on drift.", "link": "https://github.com/Eris-Margeta/dctx/tree/main/tools/website"}
+ ]
+}
