@@ -1,17 +1,19 @@
 """Machine-readable files: llms.txt, llms-small.txt, llms-full.txt, feeds, sitemap, robots, security.txt,
-humans.txt, manifest, OpenSearch, the search index and build.json. All derived from the route table."""
+humans.txt, manifest, OpenSearch, the search index and build.json. All derived from the route table.
+
+The three llms files are the entry points of AI evaluators: the facts block (data/facts.json), the route
+table, then the dctx binary's own output over the documents (data/llms.json, from `capture.py --llms`)."""
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 import re
 
-import data
 import md
-from common import BLOB, CONTACT, ORIGIN, VERSION, date_of, demo, e, rec
+from common import BLOB, CONTACT, ORIGIN, ROOT, TREE, VERSION, date_of, demo, e, read, rec
 from components import command
 from pages.news_content import NEWS
-from routes import DOCS, POLICIES, doc_path, has_why
 
 SECURITY_EXPIRES = "2027-11-01T00:00:00.000Z"  # check.py fails when this is in the past or more than a year ahead
 AI_CRAWLERS = ["GPTBot", "ClaudeBot", "Google-Extended", "PerplexityBot", "CCBot"]
@@ -27,90 +29,144 @@ def strapline() -> str:
     return m.group(1) + " " + m.group(2)
 
 
-LLMS_LINKS = [
-    ("Docs", [("README", doc_path("readme") + "index.md", "install, quick start, map mode"),
-              ("Specification", doc_path("spec") + "index.md", "constraints and roadmap"),
-              ("Map mode", doc_path("map-mode") + "index.md", "every map verb"),
-              ("Which mode?", doc_path("modalities") + "index.md", "scope and startup cost"),
-              ("All documents", "/docs/", "with Markdown twins")]),
-    ("CLI", [("CLI reference", "/cli/", "help, env, exit codes, MCP tools"),
-             ("Languages", "/languages/", "50 languages by tier")]),
-    ("Examples", [("Examples", "/examples/", "every command, exact output"),
-                  ("Templates", "/templates/", "built-in templates"),
-                  ("Playground", "/playground/", "API: /api/v1/openapi.json")]),
-    ("Evidence", [("Benchmarks", "/benchmarks/", "tables and caveats"),
-                  ("Stability report", doc_path("stability") + "index.md", "33/33 protocol")]),
-    ("Project", [("Security", "/security/index.md", "private reports"),
-                 ("Contributing", doc_path("contributing") + "index.md", "DCO")]),
-    ("Optional", [("Changelog", "/changelog/", "releases"), ("llms-full.txt", "/llms-full.txt", "everything")]),
-]
+LLMS_SECTIONS = ["Docs", "CLI", "Examples", "Evidence", "Project", "Optional"]
+HISTORICAL = ("CHANGELOG.md", "docs/research/")  # records of what was true then; removed commands may appear
+TIER_LINE = {"llms-small.txt": "the facts and the route table, with an outline of the start documents",
+             "llms.txt": "the facts, the route table and the start documents",
+             "llms-full.txt": "the facts, the route table, every document the budget allows, the captured CLI help and examples"}
+
+_facts: dict | None = None
+_capture: dict | None = None
 
 
-def llms_links() -> list:
-    links = [(section, list(items)) for section, items in LLMS_LINKS]
-    if has_why():
-        links[0][1].insert(0, ("Why dctx", "/why/index.md", "why it exists; why byte-identical output matters"))
-    return links
+def facts() -> dict:
+    """data/facts.json: the one facts source of the llms files and /for-ai-evaluators/ (schema in README.md)."""
+    global _facts
+    if _facts is None:
+        _facts = json.loads(read("tools/website/data/facts.json"))
+        if _facts["version"] != VERSION:
+            raise SystemExit(f"facts.json is for dctx {_facts['version']}, VERSION is {VERSION}")
+    return _facts
 
 
-def llms_txt() -> str:
-    out = [f"# dctx", "", f"> {strapline()}", "",
-           f"dctx {VERSION}: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short: {ORIGIN}/llms-small.txt", ""]
-    for section, links in llms_links():
-        out.append(f"## {section}")
-        out += [f"- [{t}]({abs_url(u)}): {d}" for t, u, d in links]
+def llms_capture() -> dict:
+    """data/llms.json: the dctx output behind the llms files, recorded by `capture.py --llms`."""
+    global _capture
+    if _capture is None:
+        _capture = json.loads(read("tools/website/data/llms.json"))
+        if _capture["version"] != VERSION:
+            raise SystemExit(f"llms.json was captured from dctx {_capture['version']}, VERSION is {VERSION}; run capture.py --llms")
+    return _capture
+
+
+def stale_sources() -> list[str]:
+    """Documents whose bytes differ from the ones the llms capture was made from."""
+    cap = llms_capture()
+    stale = []
+    for rel, digest in cap["sources"].items():
+        path = ROOT / rel
+        if not path.is_file() or hashlib.sha256(path.read_bytes()).hexdigest() != digest:
+            stale.append(rel)
+    return stale
+
+
+def tier(name: str) -> dict:
+    return next(t for t in llms_capture()["tiers"] if t["file"] == name)
+
+
+def link(url: str) -> str:
+    return abs_url(url) if url.startswith("/") else url
+
+
+def strapline() -> str:
+    text = md.prepare("README.md")
+    m = re.search(r"\*\*(.+?)\*\* (.+)", text)
+    return m.group(1) + " " + m.group(2)
+
+
+def facts_markdown() -> str:
+    f = facts()
+    v, b, r = f["verify_download"], f["benchmarks"], f["removed"]
+    out = ["## Facts", "", "### What dctx is", "", f["is"], "", "What it is not:", ""]
+    out += [f"- {x}" for x in f["is_not"]]
+    out += ["", "### Version and download", "",
+            f"- Current version: {f['version']}, released {f['released']} (tag `{f['release_tag']}`): {v['link']}",
+            f"- {v['available']}", f"- Verify a download: `{v['command']}`", f"- {v['planned']}",
+            "", "### Modalities", ""]
+    out += [f"- {m['name']} ({m['status']}): {m['line']} {link(m['link'])}" for m in f["modalities"]]
+    out += ["", "Two scopes, one binary:", ""] + [f"- {x}" for x in f["scopes"]]
+    out += ["", "### Before you start", "", f"> {f['notice']}", "", "### Benchmarks", "", f"Baseline: {b['baseline']}.", ""]
+    out += [f"- {c['status'].capitalize()}: {c['text']} {link(c['link'])}" for c in b["claims"]]
+    out += ["", f"### Removed in {r['since']}", "", r["intro"], ""]
+    out += [f"- {x['was']}: use {x['use']}." for x in r["items"]]
+    out += ["", "### How to verify a claim", ""]
+    out += [f"- {x['what']}: " + (f"`{x['command']}`" if "command" in x else x["text"]) + f" {link(x['link'])}" for x in f["verify"]]
+    return "\n".join(out) + "\n"
+
+
+def route_table() -> str:
+    from routes import build_routes
+    routes = [r for r in build_routes(NEWS) if r.indexable and r.llms]
+    out = ["## Pages", "", "Documents link to their Markdown twin (index.md), the repository file with only link targets rewritten.", ""]
+    for section in LLMS_SECTIONS:
+        rows = [r for r in routes if r.llms == section]
+        if not rows:
+            continue
+        out += [f"### {section}", ""]
+        out += [f"- [{r.title}]({abs_url(r.path + ('index.md' if r.kind == 'doc' else ''))}): {r.desc}" for r in rows]
         out.append("")
     return "\n".join(out)
 
 
-def readme_section(text: str, heading: str) -> str:
-    return data.section(text, heading).strip()
+def about(name: str) -> str:
+    cap, t = llms_capture(), tier(name)
+    others = ", ".join(f"{ORIGIN}/{n}" for n in TIER_LINE if n != name)
+    cmds = "; ".join("`" + " ".join(c) + "`" for c in t["commands"])
+    out = ["## About this file", "",
+           f"- This is {name}: {TIER_LINE[name]}. The other entry points: {others}.",
+           f"- Engine: dctx {cap['version']}. The documents section is the unedited output of the dctx binary on a copy of "
+           f"the documents, recorded by {BLOB}tools/website/capture.py; the site check re-runs it and fails on any byte of drift.",
+           f"- Docs commit: {cap['docs_commit']} ({cap['docs_date']}), the last commit that changed one of the documents.",
+           f"- Command: {cmds}",
+           f"- Budget: {t['est_tokens']:,} of {t['budget']:,} estimated tokens (ceil(2 * UTF-8 bytes / 7)), {len(t['files'])} documents."]
+    if t.get("altered"):
+        out.append("- Known engine issue: dctx " + cap["version"] + " pack substitutes template variables written as `{{name}}` inside file "
+                   "content, so these documents differ from the repository here: " + ", ".join(t["altered"]) + f". Read them at {TREE}.")
+    if t["dropped"]:
+        out.append("- Left out to stay within the budget: " + ", ".join(t["dropped"]) + f". Everything is in {ORIGIN}/llms-full.txt or at {TREE}.")
+    return "\n".join(out) + "\n"
+
+
+def documents(name: str) -> str:
+    t = tier(name)
+    if t["mode"] == "outline":
+        return ("## Outline of the start documents\n\n`dctx map map FILE --depth 2`: one heading per line with its dctx id and "
+                "line range in the file at the docs commit.\n\n```text\n" + t["output"] + "```\n")
+    return "## Documents\n\n" + t["output"]
+
+
+def llms_file(name: str, tail: str = "") -> str:
+    parts = ["# dctx", "", f"> {strapline()}", "", about(name), facts_markdown(), route_table(), documents(name)]
+    return "\n".join(parts) + tail
+
+
+def llms_txt() -> str:
+    return llms_file("llms.txt")
 
 
 def llms_small() -> str:
-    readme = md.prepare("README.md")
-    quick = readme_section(readme, "Quick Start")
-    quick = quick.split("\n\n`dctx pack` writes")[0]
-    mapmode = re.search(r"```zsh\n(.*?)```", readme_section(readme, "Map mode: context for agents"), re.S).group(0)
-    r7, stab, langs = data.run7(), data.stability(), data.languages()
-    lo, hi, n = r7["cold"]["dctx"]
-    net, _ = data.network_zero()
-    verbs = []
-    for verb in ["map", "find", "neighbors", "explain", "read", "skeleton", "grep", "hubs", "path", "export"]:
-        lines = rec(f"help-{verb}")["stdout"].split("\n")
-        verbs.append(f"- dctx map {verb}: {lines[1].strip()}")
-    _, head, rows = data.md_tables(md.read("docs/CLI-EXIT-CODES.md"))[0]
-    exits = "\n".join(f"- {r[0]}: {r[1]}" for r in rows)
-    facts = [
-        f"- Compare with grep plus file reads; count startup and all model turns, not just tool output: {ORIGIN}/docs/modalities/",
-        f"- Cold index {lo:.2f}-{hi:.2f} s on {n} corpora, median of 3 (run 7): {BLOB}{data.RUN7}",
-        f"- {langs['total']} languages: {langs['tiers']['full']} full, {langs['tiers']['outline']} outline, {langs['tiers']['docs']} docs: {ORIGIN}/languages/",
-        f"- {stab['text']} text and {stab['json']} JSON answers byte-identical after unrelated edits: {BLOB}{data.STAB}",
-        f"- {net} socket attempts by dctx in every traced benchmark variant: {BLOB}{data.BENCH}",
-    ]
-    install = data.readme_block("From source")
-    why = []
-    if has_why():
-        text = md.read("docs/WHY-DCTX.md").strip()
-        why = ["## Why dctx", "", text if len(text) < 4000 else text[:text.rfind("\n\n", 0, 4000)] + f"\n\n(continued: {ORIGIN}/why/)", ""]
-    return "\n".join([llms_txt(), *why, "## Quick start", "", quick, "", "## Map mode", "", mapmode, "", "## Map verbs", "", *verbs, "",
-                      "## Facts", "", *facts, "", "## Install", "", "```zsh", install, "```", "", "## Exit codes", "", exits, "",
-                      f"Everything, including every document and every captured example: {ORIGIN}/llms-full.txt", ""])
+    return llms_file("llms-small.txt")
 
 
 def full_header(url: str, title: str, source: str) -> str:
     return f"---\nurl: {url}\ntitle: {title}\nsource: {source}\n---\n\n"
 
 
-def llms_full(docs: dict, linker) -> str:
-    parts = [llms_txt(), "\n"]
-    for slug, file, title, _, _ in DOCS:
-        parts.append(full_header(abs_url(doc_path(slug)), title, BLOB + file) + docs[doc_path(slug)].twin.rstrip("\n") + "\n\n")
-    for path, file, title, _ in POLICIES:
-        parts.append(full_header(abs_url(path), title, BLOB + file) + docs[path].twin.rstrip("\n") + "\n\n")
+def llms_full() -> str:
     help_ids = ["help", "map-help"] + [f"help-{v}" for v in ["map", "find", "neighbors", "explain", "read", "skeleton", "grep", "hubs", "path", "export"]] + ["languages-help"]
     cli = "".join(f"$ {command(rec(i))}\n{rec(i)['stdout']}\n" for i in help_ids)
-    parts.append(full_header(abs_url("/cli/"), "CLI reference (captured help)", BLOB + "tools/website/data/demo.json") + "```text\n" + cli + "```\n\n")
+    parts = ["\n## CLI reference and examples (captured from the binary)\n\n",
+             full_header(abs_url("/cli/"), "CLI reference (captured help)", BLOB + "tools/website/data/demo.json") + "```text\n" + cli + "```\n\n"]
     ex = []
     for r in demo()["records"]:
         if r["group"] == "reference":
@@ -118,12 +174,7 @@ def llms_full(docs: dict, linker) -> str:
         ex.append(f"### {command(r)}\n\nexit {r['exit']}, {r['bytes']} bytes, ~{r['est_tokens']} est. tokens\n\n```text\n{r['stdout']}```\n"
                   + (f"\nstderr:\n\n```text\n{r['stderr']}```\n" if r["stderr"] else ""))
     parts.append(full_header(abs_url("/examples/"), "Examples (captured on the kiosk sample)", BLOB + "tools/website/data/demo.json") + "\n".join(ex) + "\n")
-    for name in ("default", "stamped"):
-        file = f"crates/dctx-template/templates/{name}.dctx_template"
-        parts.append(full_header(abs_url("/templates/"), f"{name}.dctx_template", BLOB + file) + "```text\n" + md.read(file) + "```\n\n")
-    changelog = md._md_links(md.read("CHANGELOG.md"), "CHANGELOG.md", linker)
-    parts.append(full_header(abs_url("/changelog/"), "Changelog", BLOB + "CHANGELOG.md") + changelog)
-    return "".join(parts)
+    return llms_file("llms-full.txt", "".join(parts))
 
 
 def atom(title: str, self_path: str, page_path: str, entries: list[tuple[str, str, str, str, str]]) -> str:
