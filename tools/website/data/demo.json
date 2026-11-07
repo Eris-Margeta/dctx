@@ -83,7 +83,7 @@
   "pack_bytes": 5548,
   "pack_files": 11,
   "for_body_tokens": 223,
-  "for_budget": 600,
+  "for_budget": 800,
   "for_dropped": 0,
   "mcp_tools": [
    "map",
@@ -188,14 +188,14 @@
     "--for",
     "greet store",
     "--budget",
-    "600"
+    "800"
    ],
-   "stdout": "# dctx pack --for budget=600 terms=2\n## find greet\ns:src/util.rs#greet\tfn\tL2-4\ns:web/app.ts#renderGreeting\tfn\tL10-12\n## find store\ns:src/store.rs#Order\tstruct\tL4-8\ns:src/store.rs#checksum\tfn\tL22-24\ns:src/store.rs#encode\tfn\tL17-19\n## neighbors s:src/util.rs#greet\ncalls:in:s:src/main.rs#main\tfn\tsrc/main.rs\tL7\ncalls:out:s:src/util.rs#title_case\tfn\tsrc/util.rs\ncontains:in:m:src/util.rs\tmodule\tsrc/util.rs\n## neighbors s:src/store.rs#Order\ncontains:in:m:src/store.rs\tmodule\tsrc/store.rs\n## read s:src/util.rs#greet\ns:src/util.rs#greet\tfn\tsrc/util.rs\npub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}\n## read s:src/store.rs#Order\ns:src/store.rs#Order\tstruct\tsrc/store.rs\npub struct Order {\n    pub id: u32,\n    pub item: String,\n    pub qty: u32,\n}\n# end body_tokens=223 budget=600 dropped=0\n",
+   "stdout": "# dctx pack --for budget=800 terms=2\n## find greet\ns:src/util.rs#greet\tfn\tL2-4\ns:web/app.ts#renderGreeting\tfn\tL10-12\n## find store\ns:src/store.rs#Order\tstruct\tL4-8\ns:src/store.rs#checksum\tfn\tL22-24\ns:src/store.rs#encode\tfn\tL17-19\n## neighbors s:src/util.rs#greet\ncalls:in:s:src/main.rs#main\tfn\tsrc/main.rs\tL7\ncalls:out:s:src/util.rs#title_case\tfn\tsrc/util.rs\ncontains:in:m:src/util.rs\tmodule\tsrc/util.rs\n## neighbors s:src/store.rs#Order\ncontains:in:m:src/store.rs\tmodule\tsrc/store.rs\n## read s:src/util.rs#greet\ns:src/util.rs#greet\tfn\tsrc/util.rs\npub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}\n## read s:src/store.rs#Order\ns:src/store.rs#Order\tstruct\tsrc/store.rs\npub struct Order {\n    pub id: u32,\n    pub item: String,\n    pub qty: u32,\n}\n# end body_tokens=223 budget=800 dropped=0\n",
    "stderr": "",
    "exit": 0,
    "bytes": 822,
    "est_tokens": 235,
-   "note": "Task context for an agent: find, neighbors and read of the names in the text, cut to the budget."
+   "note": "Task context for an agent: find, neighbors and read of the names in the text, cut to the estimated output-token budget."
   },
   {
    "id": "map-map",
@@ -229,6 +229,22 @@
    "exit": 0,
    "bytes": 79,
    "est_tokens": 23
+  },
+  {
+   "id": "read",
+   "group": "map",
+   "argv": [
+    "dctx",
+    "map",
+    "read",
+    "s:src/util.rs#greet"
+   ],
+   "stdout": "# kiosk read\ns:src/util.rs#greet\tfn\tsrc/util.rs\npub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}\n",
+   "stderr": "",
+   "exit": 0,
+   "bytes": 131,
+   "est_tokens": 38,
+   "note": "Read the symbol metadata and verified source bytes; --json puts the source in source_utf8."
   },
   {
    "id": "neighbors-in",

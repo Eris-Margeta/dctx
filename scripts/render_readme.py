@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-"""Render the README measurement block from the documented baseline and historical timing.
+"""Render README measurements, captured output and the compiled library example.
 
 Usage: python3 scripts/render_readme.py [--check]
 
 Uses the reported grep/read observations documented in docs/BENCHMARK-20261030.md
 and cold timings from the run 7 aggregate, and writes the text between
-`<!-- bench:begin -->` and `<!-- bench:end -->` in README.md. `--check` writes
-nothing and exits 1 when the committed block differs from the rendered one.
+`<!-- bench:begin -->` and `<!-- bench:end -->` in README.md. Output examples come
+from tools/website/data/demo.json; the library snippet comes from its doctest.
+`--check` writes nothing and exits 1 when any generated block drifts.
 Standard library only; run from any directory.
 """
 
@@ -15,6 +16,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools/website"))
+from output_examples import render as render_output  # noqa: E402
+
 README = ROOT / "README.md"
 BENCH = "docs/research/bench-3way-20261030"
 AGGREGATE = f"{BENCH}/results/run7-53f8b6b/aggregate.json"
@@ -70,13 +74,21 @@ def render():
     ]) + "\n"
 
 
-def splice(readme, block):
-    """Returns `readme` with the text between the bench markers replaced by `block`."""
-    if readme.count(BEGIN) != 1 or readme.count(END) != 1:
-        sys.exit("render_readme: README.md needs exactly one bench:begin and one bench:end marker")
-    head, rest = readme.split(BEGIN, 1)
-    _, tail = rest.split(END, 1)
-    return head + BEGIN + block + END + tail
+def splice(readme, block, begin=BEGIN, end=END):
+    """Replace exactly one generated block, refusing missing or duplicate markers."""
+    if readme.count(begin) != 1 or readme.count(end) != 1:
+        sys.exit(f"render_readme: README.md needs exactly one {begin.strip()} and one {end} marker")
+    head, rest = readme.split(begin, 1)
+    _, tail = rest.split(end, 1)
+    return head + begin + block + end + tail
+
+
+def library_example():
+    """Visible lines of the compiled Rust doctest, without rustdoc's hidden annotation."""
+    source = (ROOT / "examples/library/README.md").read_text(encoding="utf-8")
+    snippet = source.split("```rust\n", 1)[1].split("```", 1)[0]
+    visible = "\n".join(line for line in snippet.splitlines() if not line.startswith("# "))
+    return "```rust\n" + visible + "\n```\n"
 
 
 def main(argv):
@@ -86,15 +98,18 @@ def main(argv):
         return 2
     readme = README.read_text(encoding="utf-8")
     rendered = splice(readme, render())
+    rendered = splice(rendered, render_output(load("tools/website/data/demo.json")["records"]),
+                      "<!-- output:begin -->\n", "<!-- output:end -->")
+    rendered = splice(rendered, library_example(), "<!-- library:begin -->\n", "<!-- library:end -->")
     if argv == ["--check"]:
         if rendered != readme:
-            print("README.md bench block differs from the rendered one; run python3 scripts/render_readme.py", file=sys.stderr)
+            print("README.md generated blocks differ; run python3 scripts/render_readme.py", file=sys.stderr)
             return 1
-        print("README.md measurement block matches its generator")
+        print("README.md measurement, output and library blocks match their generators")
         return 0
     if rendered != readme:
         README.write_text(rendered, encoding="utf-8")
-        print("Updated README.md bench block")
+        print("Updated README.md generated blocks")
     return 0
 
 

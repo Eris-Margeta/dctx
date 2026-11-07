@@ -6,7 +6,7 @@ import re
 
 import data
 from common import BLOB, REPO, TREE, VERSION, demo, e, line_of, read, rec, src
-from components import code, table, term, transcript
+from components import code, output_examples, table, term, transcript
 from routes import DOCS, has_why
 
 HERO_RECORDS = ["pack-for", "find", "neighbors-in", "read-json"]
@@ -155,6 +155,10 @@ def body(scene: dict) -> str:
  <script type="application/json" id="scene-data">{scene_json}</script>
 </section>
 
+<section class="sec" aria-labelledby="what-the-output-looks-like">
+ <div class="wrap">{output_examples()}</div>
+</section>
+
 {why_link}<section class="sec" aria-labelledby="how-h">
  <div class="wrap">
   <div class="sec-head"><h2 id="how-h">How it works</h2><p>Four steps, every one checkable. The scene above runs them on the {c['disk']}-file sample.</p></div>
@@ -186,6 +190,11 @@ def body(scene: dict) -> str:
    <div class="sec-head"><h2 id="install-h">Install</h2></div>
    <p>Download a prebuilt archive from <a href="https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0">GitHub Releases</a> and verify it against SHA256SUMS. CI covers Linux, macOS and Windows. npm and crates.io installation are coming soon. Source builds need Rust 1.91 or newer. {src("README.md", "README", line_of("README.md", "## Installation"))}</p>
    {code("From source", readme_build, "shell")}
+   <p>Use the CLI for chat, shell agents and CI, or its bundled stdio MCP server for Claude Code, Cursor and Codex.
+   Embed the Rust <code>dctx</code> facade through a tagged Git dependency today; crates.io and <code>npx dctx</code>
+   are publishing soon. The desktop app is a Tauri preview with a rebuild planned; Python and Node bindings are planned.
+   <a href="/docs/modalities/">Compare modes, installs and status</a> &middot;
+   <a href="/docs/readme/#use-as-a-library">Use as a library</a>.</p>
   </div>
   <div>
    <div class="sec-head"><h2 id="project-h">Project</h2></div>

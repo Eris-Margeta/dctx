@@ -2,21 +2,25 @@
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Security Policy
 
-## Supported development line
+## Supported versions
 
-Security fixes target the latest 1.x release and the current `main` development
-line. The current release is **1.2.0**. Upgrade to the latest release before
-checking whether an issue is resolved. Older releases have no published backport
-or long-term support commitment; separate [maintenance agreements](MAINTENANCE.md)
-may define additional coverage. Include the exact version or commit and build
-features so maintainers can assess whether current code is affected.
+The current major release receives bug fixes and security fixes in its latest
+release. When a new major is released, the previous major receives security fixes
+for **six months after the new major's release date**, then reaches end of support.
+Older majors receive no fixes. Upgrade to the latest patch within a supported
+major before checking whether an issue is resolved. We publish fixes in new patch
+releases; we do not promise a separate patch for every historical minor version.
+This public policy has no LTS commitment beyond that six-month transition. Include the exact
+version or commit and build features so maintainers can assess affected versions.
 
 ## Reporting a vulnerability
 
-**Do not disclose vulnerabilities in public issues or pull requests.** Email
-[eris.margeta@gmail.com](mailto:eris.margeta@gmail.com) with a subject beginning
-`[dctx security]`. This private reporting route does not depend on GitHub private
-vulnerability reporting being enabled.
+**Do not disclose vulnerabilities in public issues or pull requests.** Use
+[GitHub private vulnerability reporting](https://github.com/Eris-Margeta/dctx/security/advisories/new)
+or email [info@tejl.com](mailto:info@tejl.com) with a subject beginning
+`[dctx security]`. If GitHub's private reporting form is unavailable, use email.
+Maintainers must enable private vulnerability reporting in repository security
+settings; that GitHub setting is separate from this policy file.
 
 Include, where possible:
 
@@ -32,13 +36,35 @@ Never send private keys, tokens, production data or a generated context export
 containing confidential code. Use synthetic examples and redact sensitive values.
 Test only systems and data you own or have explicit permission to assess.
 
+## What counts as a vulnerability
+
+dctx is an offline tool, but untrusted repositories, files, archives and plugin
+inputs still cross security boundaries. Report issues such as:
+
+- Disclosure of ignored, excluded or secret-file contents, including through
+  generated context, caches, diagnostics or plugin access.
+- Arbitrary code execution, sandbox or capability bypass, unsafe plugin execution,
+  or command injection caused by processing untrusted input.
+- Path traversal, symlink escapes, unintended file modification or unsafe archive
+  extraction outside an authorized destination.
+- Signature, checksum, provenance or update verification bypass; compromised
+  release artifacts or dependencies affecting supported builds.
+- A reproducible resource-exhaustion attack from a small malicious input that
+  defeats documented bounds and makes the tool unusable.
+
+Ordinary output mistakes, unsupported language coverage, feature requests and
+performance issues without a security boundary impact belong in public issues.
+Use private reporting when unsure. Offline operation does not make confidential
+local data or the release supply chain out of scope.
+
 ## Handling and disclosure
 
-Maintainers will review reports, investigate impact and coordinate fixes and
-public disclosure with the reporter. Response and remediation times depend on
-availability and severity; this policy does not promise a fixed service level.
-If you have not received a reply after a week, send a follow-up to the same address.
-Credit is subject to the reporter's consent.
+We acknowledge private vulnerability reports **within 7 days**. We investigate
+impact, identify affected supported versions and coordinate a fix or mitigation
+and public disclosure with the reporter. Remediation timing depends on severity
+and available maintainers; the acknowledgment window is not a promised fix deadline.
+If acknowledgment has not arrived within 7 days, follow up through the other
+private channel. Credit is subject to the reporter's consent.
 
 We will not take legal action against individuals who discover and report
 security vulnerabilities in good faith and in accordance with this policy.
