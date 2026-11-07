@@ -1,0 +1,11 @@
+skeleton "m:sample.java" "module" [1, 8] signature=None summary="" source="" confidence=None
+skeleton "s:sample.java#Boxed" "class" [1, 8] signature=Some("@Deprecated public class Boxed<T>") summary="@Deprecated public class Boxed<T>" source="sig" confidence=None
+read Some([0, 184]) Some("@Deprecated\npublic class Boxed<T> {\n    public <U> U copy(U value) {\n        class Nested { int run() { return 1; } }\n        return value;\n    }\n    public int café() { return 1; }\n}")
+skeleton "s:sample.java#Boxed::copy" "method" [3, 6] signature=Some("public <U> U copy(U value)") summary="public <U> U copy(U value)" source="sig" confidence=None
+read Some([36, 145]) Some("    public <U> U copy(U value) {\n        class Nested { int run() { return 1; } }\n        return value;\n    }")
+skeleton "s:sample.java#Boxed::copy::Nested" "class" [4, 4] signature=Some("class Nested") summary="class Nested" source="sig" confidence=None
+read Some([69, 117]) Some("        class Nested { int run() { return 1; } }")
+skeleton "s:sample.java#Boxed::copy::Nested::run" "method" [4, 4] signature=Some("int run()") summary="int run()" source="sig" confidence=None
+read Some([69, 117]) Some("        class Nested { int run() { return 1; } }")
+skeleton "s:sample.java#Boxed::café" "method" [7, 7] signature=Some("public int café()") summary="public int café()" source="sig" confidence=None
+read Some([146, 182]) Some("    public int café() { return 1; }")

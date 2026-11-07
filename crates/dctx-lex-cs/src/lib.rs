@@ -18,7 +18,7 @@ pub use domain::{
 /// Parser identity recorded with every fact key (PARSERS-v1 provenance).
 pub const PARSER_ID: &str = "dctx-lex-cs";
 /// Bumped whenever extraction output can change for the same bytes.
-pub const PARSER_REVISION: u32 = 1;
+pub const PARSER_REVISION: u32 = 2;
 
 /// Bounded structural extractor. Stateless apart from its limits.
 #[derive(Debug, Clone, Copy, Default)]
@@ -95,7 +95,7 @@ mod tests {
             Dialect::CSharp
         );
         assert_eq!(PARSER_ID, "dctx-lex-cs");
-        assert_eq!(PARSER_REVISION, 1);
+        assert_eq!(PARSER_REVISION, 2);
     }
 
     #[test]

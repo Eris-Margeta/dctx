@@ -11,6 +11,36 @@ const USE_SITE: &[&str] = &[
 ];
 
 impl Walker<'_> {
+    pub(super) fn local_function(
+        &mut self,
+        index: usize,
+        end: usize,
+        scope: &Scope,
+        next_candidate: &mut usize,
+    ) -> Option<usize> {
+        if self.is_semi(index) {
+            *next_candidate = index + 1;
+            return None;
+        }
+        let prefix = self.prefix(index, end);
+        // Do not rescan the same annotation/modifier/semicolon run at each token.
+        *next_candidate = prefix.next.max(index + 1);
+        if !self.is(prefix.next, "fun") {
+            return None;
+        }
+        // Anonymous functions are expressions, not named declarations.
+        let (cursor, _) = self.fun_angles(prefix.next, end);
+        self.find_fun_name(cursor, end)?;
+        if self.depth >= 64 {
+            self.problem(self.start_byte(index), DiagnosticReason::Malformed);
+            return Some(end);
+        }
+        self.depth += 1;
+        let next = self.function_decl(index, &prefix, end, scope);
+        self.depth -= 1;
+        Some(next.max(index + 1))
+    }
+
     pub(crate) fn declaration(
         &mut self,
         index: usize,
@@ -302,8 +332,12 @@ impl Walker<'_> {
         scope: &Scope,
     ) -> super::Symbol {
         let (last, sig_end, body) = span;
+        let local = matches!(
+            self.draft.nodes[scope.owner].node.symbol_kind,
+            Some(SymbolKind::Function | SymbolKind::Method)
+        );
         super::Symbol {
-            kind: if scope.name.is_empty() {
+            kind: if scope.name.is_empty() || local {
                 SymbolKind::Function
             } else {
                 SymbolKind::Method
@@ -313,7 +347,7 @@ impl Walker<'_> {
             last,
             sig_end,
             body,
-            is_public: prefix.public,
+            is_public: prefix.public && !local,
         }
     }
 

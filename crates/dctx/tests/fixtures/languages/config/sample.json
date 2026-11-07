@@ -1,0 +1,4 @@
+{
+  "Boxed": { "value": 1, "café": "fixture" },
+  "items": [{ "nested": true }]
+}

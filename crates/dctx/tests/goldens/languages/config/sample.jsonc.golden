@@ -1,0 +1,7 @@
+skeleton "m:sample.jsonc" "module" [1, 4] signature=None summary="" source="" confidence=None
+skeleton "s:sample.jsonc#Boxed" "struct" [3, 3] signature=None summary="" source="sig" confidence=None
+read Some([30, 77]) Some("  \"Boxed\": { \"value\": 1, \"café\": \"fixture\", },")
+skeleton "s:sample.jsonc#Boxed.café" "fn" [3, 3] signature=Some("fixture") summary="fixture" source="sig" confidence=None
+read Some([30, 77]) Some("  \"Boxed\": { \"value\": 1, \"café\": \"fixture\", },")
+skeleton "s:sample.jsonc#Boxed.value" "fn" [3, 3] signature=Some("1") summary="1" source="sig" confidence=None
+read Some([30, 77]) Some("  \"Boxed\": { \"value\": 1, \"café\": \"fixture\", },")

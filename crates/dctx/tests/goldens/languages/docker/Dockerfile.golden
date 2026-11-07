@@ -1,0 +1,5 @@
+skeleton "m:Dockerfile" "module" [1, 4] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:Dockerfile#boxed" "type" [1, 2] signature=Some("FROM scratch AS boxed") summary="FROM scratch AS boxed" source="sig" confidence=Some("guess")
+read Some([0, 47]) Some("FROM scratch AS boxed\nLABEL description=\"café\"")
+skeleton "s:Dockerfile#copied" "type" [3, 4] signature=Some("FROM boxed AS copied") summary="FROM boxed AS copied" source="sig" confidence=Some("guess")
+read Some([48, 84]) Some("FROM boxed AS copied\nCOPY . /fixture")

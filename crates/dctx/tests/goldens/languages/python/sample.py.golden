@@ -1,0 +1,9 @@
+skeleton "m:sample.py" "module" [1, 10] signature=None summary="" source="" confidence=None
+skeleton "s:sample.py#Boxed" "class" [1, 7] signature=Some("@decorator class Boxed:") summary="@decorator class Boxed:" source="sig" confidence=None
+read Some([0, 141]) Some("@decorator\nclass Boxed:\n    @staticmethod\n    def copy(value):\n        def nested(item):\n            return item\n        return nested(value)")
+skeleton "s:sample.py#Boxed::copy" "method" [3, 7] signature=Some("@staticmethod def copy(value):") summary="@staticmethod def copy(value):" source="sig" confidence=None
+read Some([24, 141]) Some("    @staticmethod\n    def copy(value):\n        def nested(item):\n            return item\n        return nested(value)")
+skeleton "s:sample.py#Boxed::copy::nested" "fn" [5, 6] signature=Some("def nested(item):") summary="def nested(item):" source="sig" confidence=None
+read Some([63, 112]) Some("        def nested(item):\n            return item")
+skeleton "s:sample.py#café" "fn" [9, 10] signature=Some("def café(value: str) -> str:") summary="def café(value: str) -> str:" source="sig" confidence=None
+read Some([143, 189]) Some("def café(value: str) -> str:\n    return value")

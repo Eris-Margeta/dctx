@@ -1,0 +1,9 @@
+skeleton "m:sample.ts" "module" [1, 8] signature=None summary="" source="" confidence=None
+skeleton "s:sample.ts#Boxed" "class" [2, 7] signature=Some("class Boxed<T>") summary="class Boxed<T>" source="sig" confidence=None
+read Some([8, 152]) Some("export class Boxed<T> {\n    copy<U>(value: U): U {\n        function nested<V>(item: V): V { return item; }\n        return nested(value);\n    }\n}")
+skeleton "s:sample.ts#Boxed::copy" "method" [3, 6] signature=Some("copy<U>(value: U): U") summary="copy<U>(value: U): U" source="sig" confidence=None
+read Some([32, 150]) Some("    copy<U>(value: U): U {\n        function nested<V>(item: V): V { return item; }\n        return nested(value);\n    }")
+skeleton "s:sample.ts#Boxed::copy::nested" "fn" [4, 4] signature=Some("function nested<V>(item: V): V") summary="function nested<V>(item: V): V" source="sig" confidence=None
+read Some([59, 114]) Some("        function nested<V>(item: V): V { return item; }")
+skeleton "s:sample.ts#café" "fn" [8, 8] signature=Some("function café<T>(value: T): T") summary="function café<T>(value: T): T" source="sig" confidence=None
+read Some([153, 208]) Some("export function café<T>(value: T): T { return value; }")

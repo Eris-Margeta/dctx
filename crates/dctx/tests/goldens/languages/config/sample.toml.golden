@@ -1,0 +1,11 @@
+skeleton "m:sample.toml" "module" [1, 5] signature=None summary="" source="" confidence=None
+skeleton "s:sample.toml#Boxed" "struct" [1, 5] signature=None summary="" source="sig" confidence=None
+read Some([0, 67]) Some("[Boxed]\nvalue = 1\n\"café\" = \"fixture\"\n[Boxed.nested]\nenabled = true")
+skeleton "s:sample.toml#Boxed.value" "fn" [2, 2] signature=Some("1") summary="1" source="sig" confidence=None
+read Some([8, 17]) Some("value = 1")
+skeleton "s:sample.toml#Boxed.café" "fn" [3, 3] signature=Some("fixture") summary="fixture" source="sig" confidence=None
+read Some([18, 37]) Some("\"café\" = \"fixture\"")
+skeleton "s:sample.toml#Boxed.nested" "struct" [4, 5] signature=None summary="" source="sig" confidence=None
+read Some([38, 67]) Some("[Boxed.nested]\nenabled = true")
+skeleton "s:sample.toml#Boxed.nested.enabled" "fn" [5, 5] signature=Some("true") summary="true" source="sig" confidence=None
+read Some([53, 67]) Some("enabled = true")

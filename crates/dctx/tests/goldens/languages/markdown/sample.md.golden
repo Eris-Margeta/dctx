@@ -1,0 +1,7 @@
+skeleton "m:sample.md" "module" [1, 13] signature=None summary="" source="" confidence=None
+skeleton "d:sample.md#Fixture" "heading" [1, 13] signature=None summary="An original fixture with café." source="heading" confidence=None
+read Some([0, 108]) Some("# Fixture\n\nAn original fixture with café.\n\n## Nested\n\n```rust\nfn hidden_in_fence() {}\n```\n\n### Leaf\n\nText.\n")
+skeleton "d:sample.md#Nested" "heading" [5, 13] signature=None summary="Nested" source="heading" confidence=None
+read Some([44, 108]) Some("## Nested\n\n```rust\nfn hidden_in_fence() {}\n```\n\n### Leaf\n\nText.\n")
+skeleton "d:sample.md#Leaf" "heading" [11, 13] signature=None summary="Text." source="heading" confidence=None
+read Some([92, 108]) Some("### Leaf\n\nText.\n")

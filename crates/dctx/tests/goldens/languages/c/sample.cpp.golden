@@ -1,0 +1,9 @@
+skeleton "m:sample.cpp" "module" [1, 10] signature=None summary="" source="" confidence=None
+skeleton "s:sample.cpp#IDENTITY" "macro" [1, 1] signature=Some("#define IDENTITY(value) (value)") summary="#define IDENTITY(value) (value)" source="sig" confidence=None
+read Some([0, 31]) Some("#define IDENTITY(value) (value)")
+skeleton "s:sample.cpp#Boxed" "class" [2, 9] signature=Some("template<typename T> class Boxed") summary="template<typename T> class Boxed" source="sig" confidence=None
+read Some([32, 186]) Some("template<typename T>\nclass Boxed {\npublic:\n    T copy(T value) {\n        auto nested = [](T item) { return item; };\n        return nested(value);\n    }\n};")
+skeleton "s:sample.cpp#Boxed::copy" "method" [5, 8] signature=Some("T copy(T value)") summary="T copy(T value)" source="sig" confidence=None
+read Some([75, 183]) Some("    T copy(T value) {\n        auto nested = [](T item) { return item; };\n        return nested(value);\n    }")
+skeleton "s:sample.cpp#café" "fn" [10, 10] signature=Some("[[nodiscard]] int café()") summary="[[nodiscard]] int café()" source="sig" confidence=None
+read Some([187, 236]) Some("[[nodiscard]] int café() { return IDENTITY(1); }")

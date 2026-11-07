@@ -68,7 +68,14 @@ impl Walker<'_> {
         owner: usize,
     ) -> Result<(), crate::LexError> {
         let mut control_header = false;
+        let mut next_local = i;
         while i < end {
+            if i >= next_local
+                && let Some(next) = self.local_function(i, end, owner, &mut next_local)?
+            {
+                i = next;
+                continue;
+            }
             if self.lex.tokens[i].kind == Kind::Directive {
                 let directive = self.text(i);
                 let conditional = matches!(directive, "#if" | "#elseif" | "#else" | "#endif");

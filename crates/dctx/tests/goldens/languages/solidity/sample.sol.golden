@@ -1,0 +1,7 @@
+skeleton "m:sample.sol" "module" [1, 7] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.sol#Boxed" "type" [2, 7] signature=Some("contract Boxed") summary="contract Boxed" source="sig" confidence=Some("guess")
+read Some([24, 158]) Some("contract Boxed {\n    modifier ready() { _; }\n    function copy(uint value) public ready returns (uint) {\n        return value;\n    }\n}")
+skeleton "s:sample.sol#Boxed::ready" "fn" [3, 3] signature=Some("modifier ready() { _; }") summary="modifier ready() { _; }" source="sig" confidence=Some("guess")
+read Some([41, 68]) Some("    modifier ready() { _; }")
+skeleton "s:sample.sol#Boxed::copy" "fn" [4, 6] signature=Some("function copy(uint value) public ready returns (uint)") summary="function copy(uint value) public ready returns (uint)" source="sig" confidence=Some("guess")
+read Some([69, 156]) Some("    function copy(uint value) public ready returns (uint) {\n        return value;\n    }")

@@ -41,6 +41,7 @@ pub(crate) fn extract(
         line_starts: &lexed.line_starts,
         draft: Draft::new(path, source, file_end, limits.max_facts)?,
         file_end,
+        local_depth: 0,
     };
     walker.apply_file_doc();
     walker.body(0, walker.toks.len(), &Scope::root(), Body::Namespace);
@@ -187,6 +188,7 @@ pub(crate) struct Walker<'a> {
     line_starts: &'a [u32],
     draft: Draft,
     file_end: u32,
+    local_depth: u32,
 }
 
 impl Draft {

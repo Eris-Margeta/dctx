@@ -1,0 +1,9 @@
+skeleton "m:sample.swift" "module" [1, 9] signature=None summary="" source="" confidence=None
+skeleton "s:sample.swift#Boxed" "class" [2, 9] signature=Some("@available(*, deprecated) public class Boxed<T>") summary="A generic container." source="doc" confidence=None
+read Some([25, 250]) Some("@available(*, deprecated)\npublic class Boxed<T> {\n    public func copy<U>(_ value: U) -> U {\n        func nested(_ item: U) -> U { return item }\n        return nested(value)\n    }\n    public func café() -> Int { return 1 }\n}")
+skeleton "s:sample.swift#Boxed::copy" "method" [4, 7] signature=Some("public func copy<U>(_ value: U) -> U") summary="public func copy<U>(_ value: U) -> U" source="sig" confidence=None
+read Some([75, 204]) Some("    public func copy<U>(_ value: U) -> U {\n        func nested(_ item: U) -> U { return item }\n        return nested(value)\n    }")
+skeleton "s:sample.swift#Boxed::copy::nested" "fn" [5, 5] signature=Some("func nested(_ item: U) -> U") summary="func nested(_ item: U) -> U" source="sig" confidence=None
+read Some([118, 169]) Some("        func nested(_ item: U) -> U { return item }")
+skeleton "s:sample.swift#Boxed::café" "method" [8, 8] signature=Some("public func café() -> Int") summary="public func café() -> Int" source="sig" confidence=None
+read Some([205, 248]) Some("    public func café() -> Int { return 1 }")

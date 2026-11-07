@@ -1,0 +1,5 @@
+skeleton "m:sample.tex" "module" [1, 4] signature=None summary="" source="" confidence=None
+skeleton "d:sample.tex#Fixture" "heading" [1, 4] signature=None summary="An original fixture with café." source="heading" confidence=None
+read Some([0, 76]) Some("\\section{Fixture}\nAn original fixture with café.\n\\subsection{Nested}\nText.\n")
+skeleton "d:sample.tex#Nested" "heading" [3, 4] signature=None summary="Text." source="heading" confidence=None
+read Some([50, 76]) Some("\\subsection{Nested}\nText.\n")

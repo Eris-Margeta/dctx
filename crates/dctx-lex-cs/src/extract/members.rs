@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 //! Fields, properties, methods and constructors inside a type body.
 //! Implements SPEC-MAP-MODE 5.1 member facts for C#. Signatures stop at the name
-//! or the parameter list; bodies are scanned for calls, not nested statements.
+//! or the parameter list; bodies are scanned for calls and named local functions.
 use super::declarations_types::visible;
 use super::{Emit, Prefix, Scope, ScopeKind, Walker};
 use crate::domain::{DiagnosticReason, slice};
@@ -22,6 +22,50 @@ struct MethodTail {
 }
 
 impl Walker<'_> {
+    pub(super) fn local_function(
+        &mut self,
+        index: usize,
+        end: usize,
+        scope: &Scope,
+        next_candidate: &mut usize,
+    ) -> Option<usize> {
+        let prefix = self.prefix(index, end);
+        *next_candidate = prefix.next.max(index + 1);
+        let name = self.parse_type_end(prefix.next, end)?;
+        if !self.can_name(name) {
+            return None;
+        }
+        let mut paren = name + 1;
+        if self.is(paren, "<") {
+            paren = self.close_angle(paren, end)? + 1;
+        }
+        if !self.is(paren, "(") {
+            return None;
+        }
+        let after = self.partner_within(paren, end)? + 1;
+        if !matches!(self.text(after), "{" | "=>" | "where") {
+            return None;
+        }
+        if self.local_depth >= 64 {
+            self.problem(self.start_byte(index), DiagnosticReason::Malformed);
+            return Some(end);
+        }
+        self.local_depth += 1;
+        let next = self.finish_method(
+            &MethodAt {
+                start: index,
+                type_from: prefix.next,
+                name,
+                ctor: false,
+            },
+            end,
+            scope,
+            &prefix,
+        );
+        self.local_depth -= 1;
+        Some(next)
+    }
+
     pub(crate) fn member(&mut self, index: usize, end: usize, scope: &Scope) -> usize {
         if index >= end {
             return end;
@@ -297,7 +341,11 @@ impl Walker<'_> {
         let tail = self.method_tail(at.start, cursor, sig_last, end);
         let child = self.emit(
             &Emit {
-                symbol: Some(SymbolKind::Method),
+                symbol: Some(if scope.kind == ScopeKind::Member {
+                    SymbolKind::Function
+                } else {
+                    SymbolKind::Method
+                }),
                 local: &local,
                 simple: scope.simple.as_str(),
                 scope_kind: ScopeKind::Member,

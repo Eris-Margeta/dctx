@@ -1,0 +1,13 @@
+skeleton "m:sample.rs" "module" [1, 12] signature=None summary="" source="" confidence=None
+skeleton "s:sample.rs#Boxed" "struct" [3, 3] signature=Some("pub struct Boxed<T>") summary="A generic container." source="doc" confidence=None
+read Some([42, 78]) Some("pub struct Boxed<T> { pub value: T }")
+skeleton "s:sample.rs#Boxed<T>::impl" "impl" [4, 10] signature=Some("impl<T: Clone> Boxed<T> {") summary="impl<T: Clone> Boxed<T> {" source="sig" confidence=None
+read Some([79, 243]) Some("impl<T: Clone> Boxed<T> {\n    pub fn copy(&self) -> T {\n        fn nested(value: i32) -> i32 { value }\n        let _ = nested(1);\n        self.value.clone()\n    }\n}")
+skeleton "s:sample.rs#Boxed::copy" "method" [5, 9] signature=Some("pub fn copy(&self)") summary="pub fn copy(&self)" source="sig" confidence=None
+read Some([109, 241]) Some("pub fn copy(&self) -> T {\n        fn nested(value: i32) -> i32 { value }\n        let _ = nested(1);\n        self.value.clone()\n    }")
+skeleton "s:sample.rs#Boxed::copy::nested" "fn" [6, 6] signature=Some("fn nested(value: i32)") summary="fn nested(value: i32)" source="sig" confidence=None
+read Some([143, 181]) Some("fn nested(value: i32) -> i32 { value }")
+skeleton "s:sample.rs#identity" "macro" [11, 11] signature=Some("macro_rules! identity { ($value:expr)") summary="macro_rules! identity { ($value:expr)" source="sig" confidence=None
+read Some([244, 298]) Some("macro_rules! identity { ($value:expr) => { $value }; }")
+skeleton "s:sample.rs#café" "fn" [12, 12] signature=Some("pub fn café()") summary="pub fn café()" source="sig" confidence=None
+read Some([299, 337]) Some("pub fn café() -> i32 { identity!(1) }")

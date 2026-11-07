@@ -1,0 +1,6 @@
+(defclass boxed () ((value :initarg :value)))
+(defmacro identity-value (value) value)
+(defun copy-value (value)
+  (flet ((nested (item) item))
+    (nested value)))
+(defun café () 1)

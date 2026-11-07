@@ -24,7 +24,7 @@ pub struct Precision {
     pub coverage: String,
     /// `complete`, `partial` or `metadata`.
     pub completion: String,
-    /// Parser id, for example `dctx-structural/2`.
+    /// Parser id, for example `dctx-structural/3`.
     pub parser: String,
 }
 

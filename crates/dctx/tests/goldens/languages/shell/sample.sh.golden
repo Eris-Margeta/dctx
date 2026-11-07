@@ -1,0 +1,5 @@
+skeleton "m:sample.sh" "module" [1, 5] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.sh#copy_value" "fn" [2, 5] signature=Some("copy_value()") summary="copy_value()" source="sig" confidence=Some("guess")
+read Some([10, 73]) Some("copy_value() {\n  nested() { printf '%s' \"$1\"; }\n  nested \"$1\"\n}")
+skeleton "s:sample.sh#nested" "fn" [3, 3] signature=Some("nested() { printf '%s' \"$1\"; }") summary="nested() { printf '%s' \"$1\"; }" source="sig" confidence=Some("guess")
+read Some([25, 57]) Some("  nested() { printf '%s' \"$1\"; }")

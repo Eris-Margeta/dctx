@@ -1,0 +1,11 @@
+skeleton "m:sample.c" "module" [1, 4] signature=None summary="" source="" confidence=None
+skeleton "s:sample.c#IDENTITY" "macro" [1, 1] signature=Some("#define IDENTITY(value) (value)") summary="#define IDENTITY(value) (value)" source="sig" confidence=None
+read Some([0, 31]) Some("#define IDENTITY(value) (value)")
+skeleton "s:sample.c#Boxed" "struct" [2, 2] signature=Some("struct Boxed") summary="struct Boxed" source="sig" confidence=None
+read Some([32, 60]) Some("struct Boxed { int value; };")
+skeleton "s:sample.c#Boxed::value" "fn" [2, 2] signature=Some("int value") summary="int value" source="sig" confidence=None
+read Some([32, 60]) Some("struct Boxed { int value; };")
+skeleton "s:sample.c#helper" "fn" [3, 3] signature=Some("static int helper(int value)") summary="static int helper(int value)" source="sig" confidence=None
+read Some([61, 117]) Some("static int helper(int value) { return IDENTITY(value); }")
+skeleton "s:sample.c#café" "fn" [4, 4] signature=Some("int café(void)") summary="int café(void)" source="sig" confidence=None
+read Some([118, 155]) Some("int café(void) { return helper(1); }")

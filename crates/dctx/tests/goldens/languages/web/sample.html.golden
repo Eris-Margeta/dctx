@@ -1,0 +1,5 @@
+skeleton "m:sample.html" "module" [1, 4] signature=None summary="" source="" confidence=None
+skeleton "d:sample.html#Fixture" "heading" [1, 4] signature=None summary="Fixture" source="heading" confidence=None
+read Some([0, 75]) Some("<h1>Fixture</h1>\n<script>\nfunction café(value) { return value; }\n</script>")
+skeleton "s:sample.html#café" "fn" [3, 3] signature=Some("function café(value)") summary="function café(value)" source="sig" confidence=None
+read Some([26, 65]) Some("function café(value) { return value; }")

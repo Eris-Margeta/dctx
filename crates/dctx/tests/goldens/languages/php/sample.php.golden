@@ -1,0 +1,11 @@
+skeleton "m:sample.php" "module" [1, 10] signature=None summary="" source="" confidence=None
+skeleton "s:sample.php#Sample" "fn" [2, 2] signature=Some("namespace Sample") summary="namespace Sample" source="sig" confidence=None
+read Some([6, 23]) Some("namespace Sample;")
+skeleton "s:sample.php#Sample::Boxed" "class" [3, 10] signature=Some("#[Deprecated] class Boxed") summary="#[Deprecated] class Boxed" source="sig" confidence=None
+read Some([24, 216]) Some("#[Deprecated]\nclass Boxed {\n    public function copy($value) {\n        function nested($item) { return $item; }\n        return nested($value);\n    }\n    public function café() { return 1; }\n}")
+skeleton "s:sample.php#Sample::Boxed::copy" "method" [5, 8] signature=Some("public function copy($value)") summary="public function copy($value)" source="sig" confidence=None
+read Some([52, 172]) Some("    public function copy($value) {\n        function nested($item) { return $item; }\n        return nested($value);\n    }")
+skeleton "s:sample.php#Sample::Boxed::copy::nested" "fn" [6, 6] signature=Some("function nested($item)") summary="function nested($item)" source="sig" confidence=None
+read Some([87, 135]) Some("        function nested($item) { return $item; }")
+skeleton "s:sample.php#Sample::Boxed::café" "method" [9, 9] signature=Some("public function café()") summary="public function café()" source="sig" confidence=None
+read Some([173, 214]) Some("    public function café() { return 1; }")

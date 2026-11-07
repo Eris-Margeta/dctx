@@ -1,0 +1,5 @@
+skeleton "m:sample.kts" "module" [1, 5] signature=None summary="" source="" confidence=None
+skeleton "s:sample.kts#copy" "fn" [1, 5] signature=Some("@Deprecated(\"fixture\") fun <T> copy(value: T): T") summary="@Deprecated(\"fixture\") fun <T> copy(value: T): T" source="sig" confidence=None
+read Some([0, 111]) Some("@Deprecated(\"fixture\")\nfun <T> copy(value: T): T {\n    fun nested(item: T): T = item\n    return nested(value)\n}")
+skeleton "s:sample.kts#copy::nested" "fn" [3, 3] signature=Some("fun nested(item: T): T") summary="fun nested(item: T): T" source="sig" confidence=None
+read Some([51, 84]) Some("    fun nested(item: T): T = item")

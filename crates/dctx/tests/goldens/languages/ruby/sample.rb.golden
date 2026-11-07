@@ -1,0 +1,9 @@
+skeleton "m:sample.rb" "module" [1, 13] signature=None summary="" source="" confidence=None
+skeleton "s:sample.rb#Sample" "type" [1, 13] signature=Some("module Sample") summary="module Sample" source="sig" confidence=None
+read Some([0, 161]) Some("module Sample\n  class Boxed\n    def copy(value)\n      def nested(item)\n        item\n      end\n      nested(value)\n    end\n    def café\n      1\n    end\n  end\nend")
+skeleton "s:sample.rb#Sample::Boxed" "class" [2, 12] signature=Some("class Boxed") summary="class Boxed" source="sig" confidence=None
+read Some([14, 157]) Some("  class Boxed\n    def copy(value)\n      def nested(item)\n        item\n      end\n      nested(value)\n    end\n    def café\n      1\n    end\n  end")
+skeleton "s:sample.rb#Sample::Boxed::copy" "method" [3, 8] signature=Some("def copy(value)") summary="def copy(value)" source="sig" confidence=None
+read Some([28, 121]) Some("    def copy(value)\n      def nested(item)\n        item\n      end\n      nested(value)\n    end")
+skeleton "s:sample.rb#Sample::Boxed::café" "method" [9, 11] signature=Some("def café") summary="def café" source="sig" confidence=None
+read Some([122, 151]) Some("    def café\n      1\n    end")

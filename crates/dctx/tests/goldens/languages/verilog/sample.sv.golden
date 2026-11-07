@@ -1,0 +1,7 @@
+skeleton "m:sample.sv" "module" [1, 8] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:sample.sv#Boxed" "type" [2, 8] signature=Some("module Boxed;") summary="module Boxed;" source="sig" confidence=Some("guess")
+read Some([30, 177]) Some("module Boxed;\n  function automatic integer copy(input integer value);\n    copy = `IDENTITY(value);\n  endfunction\n  task nested;\n  endtask\nendmodule")
+skeleton "s:sample.sv#Boxed::copy" "fn" [3, 5] signature=Some("function automatic integer copy(input integer value);") summary="function automatic integer copy(input integer value);" source="sig" confidence=Some("guess")
+read Some([44, 142]) Some("  function automatic integer copy(input integer value);\n    copy = `IDENTITY(value);\n  endfunction")
+skeleton "s:sample.sv#Boxed::nested" "fn" [6, 7] signature=Some("task nested;") summary="task nested;" source="sig" confidence=Some("guess")
+read Some([143, 167]) Some("  task nested;\n  endtask")

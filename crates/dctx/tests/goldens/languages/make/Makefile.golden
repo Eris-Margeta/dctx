@@ -1,0 +1,7 @@
+skeleton "m:Makefile" "module" [1, 6] signature=None summary="" source="" confidence=Some("guess")
+skeleton "s:Makefile#VALUE" "var" [1, 1] signature=Some("VALUE = fixture") summary="VALUE = fixture" source="sig" confidence=Some("guess")
+read Some([0, 15]) Some("VALUE = fixture")
+skeleton "s:Makefile#copy" "fn" [3, 4] signature=Some("copy: nested") summary="copy: nested" source="sig" confidence=Some("guess")
+read Some([36, 64]) Some("copy: nested\n\t@echo $(VALUE)")
+skeleton "s:Makefile#nested" "fn" [5, 6] signature=Some("nested:") summary="nested:" source="sig" confidence=Some("guess")
+read Some([65, 85]) Some("nested:\n\t@echo café")
