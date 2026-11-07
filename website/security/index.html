@@ -183,7 +183,7 @@
    "mainEntityOfPage": {
     "@id": "https://www.dctx.internet.technology/security/#webpage"
    },
-   "wordCount": 337,
+   "wordCount": 561,
    "encoding": {
     "@type": "MediaObject",
     "contentUrl": "https://www.dctx.internet.technology/security/index.md",
@@ -211,19 +211,23 @@
  </div>
 </header>
 <main id="main">
-<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/modalities/">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/" aria-current="page">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/security/" aria-current="page">Security policy</a></li></ol></nav><h1 id="security-policy">Security Policy</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/SECURITY.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/SECURITY.md">Edit on GitHub</a> &middot; <a href="/security/index.md" type="text/markdown">Markdown</a> &middot; <code>SECURITY.md</code> &middot; 337 words &middot; updated <time datetime="2026-11-07">7 November 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#supported-development-line">Supported development line</a></li><li><a href="#reporting-a-vulnerability">Reporting a vulnerability</a></li><li><a href="#handling-and-disclosure">Handling and disclosure</a></li></ul></details>
-<h2 id="supported-development-line">Supported development line<a class="hd" href="#supported-development-line" aria-label="Link to Supported development line">#</a></h2>
-<p>Security fixes target the latest 1.x release and the current <code>main</code> development
-line. The current release is <strong>1.2.0</strong>. Upgrade to the latest release before
-checking whether an issue is resolved. Older releases have no published backport
-or long-term support commitment; separate <a href="/maintenance/">maintenance agreements</a>
-may define additional coverage. Include the exact version or commit and build
-features so maintainers can assess whether current code is affected.</p>
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/modalities/">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/" aria-current="page">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/security/" aria-current="page">Security policy</a></li></ol></nav><h1 id="security-policy">Security Policy</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/SECURITY.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/SECURITY.md">Edit on GitHub</a> &middot; <a href="/security/index.md" type="text/markdown">Markdown</a> &middot; <code>SECURITY.md</code> &middot; 561 words &middot; updated <time datetime="2026-11-07">7 November 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#supported-versions">Supported versions</a></li><li><a href="#reporting-a-vulnerability">Reporting a vulnerability</a></li><li><a href="#what-counts-as-a-vulnerability">What counts as a vulnerability</a></li><li><a href="#handling-and-disclosure">Handling and disclosure</a></li></ul></details>
+<h2 id="supported-versions">Supported versions<a class="hd" href="#supported-versions" aria-label="Link to Supported versions">#</a></h2>
+<p>The current major release receives bug fixes and security fixes in its latest
+release. When a new major is released, the previous major receives security fixes
+for <strong>six months after the new major's release date</strong>, then reaches end of support.
+Older majors receive no fixes. Upgrade to the latest patch within a supported
+major before checking whether an issue is resolved. We publish fixes in new patch
+releases; we do not promise a separate patch for every historical minor version.
+This public policy has no LTS commitment beyond that six-month transition. Include the exact
+version or commit and build features so maintainers can assess affected versions.</p>
 <h2 id="reporting-a-vulnerability">Reporting a vulnerability<a class="hd" href="#reporting-a-vulnerability" aria-label="Link to Reporting a vulnerability">#</a></h2>
-<p><strong>Do not disclose vulnerabilities in public issues or pull requests.</strong> Email
-<a href="mailto:eris.margeta@gmail.com">eris.margeta@gmail.com</a> with a subject beginning
-<code>[dctx security]</code>. This private reporting route does not depend on GitHub private
-vulnerability reporting being enabled.</p>
+<p><strong>Do not disclose vulnerabilities in public issues or pull requests.</strong> Use
+<a href="https://github.com/Eris-Margeta/dctx/security/advisories/new">GitHub private vulnerability reporting</a>
+or email <a href="mailto:info@tejl.com">info@tejl.com</a> with a subject beginning
+<code>[dctx security]</code>. If GitHub's private reporting form is unavailable, use email.
+Maintainers must enable private vulnerability reporting in repository security
+settings; that GitHub setting is separate from this policy file.</p>
 <p>Include, where possible:</p>
 <ul>
 <li>Affected version or commit, OS/architecture and build features.</li>
@@ -237,18 +241,38 @@ vulnerability reporting being enabled.</p>
 <p>Never send private keys, tokens, production data or a generated context export
 containing confidential code. Use synthetic examples and redact sensitive values.
 Test only systems and data you own or have explicit permission to assess.</p>
+<h2 id="what-counts-as-a-vulnerability">What counts as a vulnerability<a class="hd" href="#what-counts-as-a-vulnerability" aria-label="Link to What counts as a vulnerability">#</a></h2>
+<p>dctx is an offline tool, but untrusted repositories, files, archives and plugin
+inputs still cross security boundaries. Report issues such as:</p>
+<ul>
+<li>Disclosure of ignored, excluded or secret-file contents, including through
+  generated context, caches, diagnostics or plugin access.</li>
+<li>Arbitrary code execution, sandbox or capability bypass, unsafe plugin execution,
+  or command injection caused by processing untrusted input.</li>
+<li>Path traversal, symlink escapes, unintended file modification or unsafe archive
+  extraction outside an authorized destination.</li>
+<li>Signature, checksum, provenance or update verification bypass; compromised
+  release artifacts or dependencies affecting supported builds.</li>
+<li>A reproducible resource-exhaustion attack from a small malicious input that
+  defeats documented bounds and makes the tool unusable.</li>
+</ul>
+<p>Ordinary output mistakes, unsupported language coverage, feature requests and
+performance issues without a security boundary impact belong in public issues.
+Use private reporting when unsure. Offline operation does not make confidential
+local data or the release supply chain out of scope.</p>
 <h2 id="handling-and-disclosure">Handling and disclosure<a class="hd" href="#handling-and-disclosure" aria-label="Link to Handling and disclosure">#</a></h2>
-<p>Maintainers will review reports, investigate impact and coordinate fixes and
-public disclosure with the reporter. Response and remediation times depend on
-availability and severity; this policy does not promise a fixed service level.
-If you have not received a reply after a week, send a follow-up to the same address.
-Credit is subject to the reporter's consent.</p>
+<p>We acknowledge private vulnerability reports <strong>within 7 days</strong>. We investigate
+impact, identify affected supported versions and coordinate a fix or mitigation
+and public disclosure with the reporter. Remediation timing depends on severity
+and available maintainers; the acknowledgment window is not a promised fix deadline.
+If acknowledgment has not arrived within 7 days, follow up through the other
+private channel. Credit is subject to the reporter's consent.</p>
 <p>We will not take legal action against individuals who discover and report
 security vulnerabilities in good faith and in accordance with this policy.</p>
 <p>Please coordinate public disclosure so users can receive a fix or mitigation.
 For architectural boundaries and current implementation limits, see the
 <a href="/docs/readme/#security--privacy">README</a> and <a href="/docs/plugins/">plugin guide</a>.
-Those descriptions are not a security certification.</p></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#supported-development-line">Supported development line</a></li><li class="l2"><a href="#reporting-a-vulnerability">Reporting a vulnerability</a></li><li class="l2"><a href="#handling-and-disclosure">Handling and disclosure</a></li></ul></nav></div>
+Those descriptions are not a security certification.</p></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#supported-versions">Supported versions</a></li><li class="l2"><a href="#reporting-a-vulnerability">Reporting a vulnerability</a></li><li class="l2"><a href="#what-counts-as-a-vulnerability">What counts as a vulnerability</a></li><li class="l2"><a href="#handling-and-disclosure">Handling and disclosure</a></li></ul></nav></div>
 </main>
 <footer class="ftr">
  <div class="wrap">
