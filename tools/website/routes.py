@@ -3,7 +3,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from common import ROOT
+import json
+
+from common import ROOT, read
 
 
 @dataclass
@@ -26,33 +28,42 @@ class Route:
         return self.og or (self.path.strip("/").replace("/", "-") or "home")
 
 
-# (slug, file, title, group, one line). Order = sidebar order = llms-full order.
+# (slug, file, title, group, one line). Order = sidebar order = llms-full order = pager order.
+# Groups follow the design review (R3, section 2): Start, Modalities, Scopes, Engine, Reference, Trust.
 DOCS = [
-    ("readme", "README.md", "README", "Start here", "Installation, quick start, map mode, language tiers and the CLI reference."),
-    ("spec", "docs/SPEC.md", "Specification", "Start here", "The core belief, the five constraints, the ten RAG defect classes, policy and roadmap."),
-    ("modalities", "docs/MODALITIES.md", "Choosing how to use dctx", "Start here", "Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI."),
-    ("map-mode", "docs/guides/MAP-MODE.md", "Map mode guide", "Start here", "Every map verb with examples, budgets, ids and precision labels."),
-    ("agents", "docs/guides/AGENTS-SNIPPET.md", "Agent snippet", "Using dctx", "The AGENTS.md section that tells coding agents to ask dctx first."),
-    ("plugins", "docs/guides/PLUGINS.md", "Plugins guide", "Using dctx", "The plugin boundary, capabilities, consent and current limits."),
-    ("exit-codes", "docs/CLI-EXIT-CODES.md", "CLI exit codes", "Using dctx", "The exit-code contract for map, pack, mcp and languages."),
-    ("privacy", "docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md", "Privacy guarantees", "Using dctx", "Ignore semantics and the full sensitive-file deny list."),
-    ("templates-contract", "docs/design/contracts/DTS-v2.md", "Template contract (DTS v2)", "Templates", "DTS source v2 and the compiled plan IR v1."),
-    ("templating", "docs/ADR-003-Templating-Engine.md", "Templating engine (ADR-003)", "Templates", "Markers, ahead-of-time compilation, the two rendering passes and the data variables."),
-    ("language-coverage", "docs/ADR-018-Language-Coverage.md", "Language coverage (ADR-018)", "Using dctx", "The three tiers and how a language enters one."),
-    ("benchmark", "docs/BENCHMARK-20261030.md", "Measurement evidence", "Evidence", "Grep plus file reads first; whole-session scope and secondary historical protocols."),
-    ("stability", "docs/research/stability-20261105/REPORT.md", "Byte-stability report", "Evidence", "Protocol, raw answers and limits of the 33/33 measurement."),
-    ("benchmark-oct", "docs/research/trail-code-2026-10/REPORT.md", "Earlier two-way study", "Evidence", "October 2026, before call edges: the benchmark that set the roadmap."),
-    ("crate-map", "docs/CRATE-MAP.md", "Crate map", "Project", "How the Rust workspace is organised."),
-    ("contributing", "CONTRIBUTING.md", "Contributing", "Project", "How to propose changes, with a DCO sign-off."),
-    ("releasing", "RELEASING.md", "Releasing", "Project", "How a release is cut and checked."),
+    ("readme", "README.md", "README", "Start", "Installation, quick start, map mode, language tiers and the CLI reference."),
+    ("modalities", "docs/MODALITIES.md", "Choosing how to use dctx", "Modalities", "Clipboard, grep plus reads, long sessions, huge trees, MCP startup cost and CI."),
+    ("map-mode", "docs/guides/MAP-MODE.md", "Map mode guide", "Modalities", "Every map verb with examples, budgets, ids and precision labels."),
+    ("agents", "docs/guides/AGENTS-SNIPPET.md", "Agent snippet", "Modalities", "The AGENTS.md section that tells coding agents to ask dctx first."),
+    ("plugins", "docs/guides/PLUGINS.md", "Plugins guide", "Modalities", "The plugin boundary, capabilities, consent and current limits."),
+    ("spec", "docs/SPEC.md", "Specification", "Engine", "The core belief, the five constraints, the ten RAG defect classes, policy and roadmap."),
+    ("privacy", "docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md", "Privacy guarantees", "Engine", "Ignore semantics and the full sensitive-file deny list."),
+    ("language-coverage", "docs/ADR-018-Language-Coverage.md", "Language coverage (ADR-018)", "Engine", "The three tiers and how a language enters one."),
+    ("templates-contract", "docs/design/contracts/DTS-v2.md", "Template contract (DTS v2)", "Engine", "DTS source v2 and the compiled plan IR v1."),
+    ("templating", "docs/ADR-003-Templating-Engine.md", "Templating engine (ADR-003)", "Engine", "Markers, ahead-of-time compilation, the two rendering passes and the data variables."),
+    ("crate-map", "docs/CRATE-MAP.md", "Crate map", "Engine", "How the Rust workspace is organised."),
+    ("exit-codes", "docs/CLI-EXIT-CODES.md", "CLI exit codes", "Reference", "The exit-code contract for map, pack, mcp and languages."),
+    ("benchmark", "docs/BENCHMARK-20261030.md", "Measurement evidence", "Trust", "Grep plus file reads first; whole-session scope and secondary historical protocols."),
+    ("stability", "docs/research/stability-20261105/REPORT.md", "Byte-stability report", "Trust", "Protocol, raw answers and limits of the 33/33 measurement."),
+    ("benchmark-oct", "docs/research/trail-code-2026-10/REPORT.md", "Earlier two-way study", "Trust", "October 2026, before call edges: the benchmark that set the roadmap."),
+    ("releasing", "RELEASING.md", "Releasing", "Trust", "How a release is cut and checked."),
+    ("contributing", "CONTRIBUTING.md", "Contributing", "Trust", "How to propose changes, with a DCO sign-off."),
 ]
-# docs/WHY-DCTX.md is written on its own card; the page appears (first in the docs, at /why/) as soon
-# as the file is in the tree, and nothing fails while it is not.
-WHY = ("why", "docs/WHY-DCTX.md", "Why dctx", "Start here",
+LLMS_SECTION = {"benchmark": "Evidence", "stability": "Evidence", "benchmark-oct": "Evidence",
+                "crate-map": "Project", "contributing": "Project", "releasing": "Project"}
+# docs/START.md (the safe path in ten minutes) and docs/WHY-DCTX.md are written on their own cards; each
+# page appears (START at /docs/start/, WHY first in the docs at /why/) as soon as its file is in the tree,
+# and nothing fails while it is not.
+START = ("start", "docs/START.md", "Safe path in ten minutes", "Start",
+         "One project, the system binary and the lean MCP profile: install, first command, what to measure.")
+if (ROOT / START[1]).is_file():
+    DOCS.insert(1, START)
+WHY = ("why", "docs/WHY-DCTX.md", "Why dctx", "Start",
        "Why dctx exists, its philosophy, and why byte-identical output keeps the prompt cache hitting.")
 if (ROOT / WHY[1]).is_file():
     DOCS.insert(0, WHY)
-DOC_GROUPS = ["Start here", "Using dctx", "Templates", "Evidence", "Project"]
+DOC_GROUPS = ["Start", "Modalities", "Engine", "Reference", "Trust"]
+PERSONAS = [(p["id"], p["name"], p["who"]) for p in json.loads(read("tools/website/data/facts.json"))["personas"]]
 
 # Project policies rendered with the docs renderer at top-level paths.
 POLICIES = [
@@ -61,7 +72,27 @@ POLICIES = [
     ("/maintenance/", "MAINTENANCE.md", "Maintenance", "dctx is free under Apache-2.0. Maintenance agreements fund security response, long-term support and priority work."),
 ]
 
-NAV = [("/docs/", "Docs", "docs"), ("/cli/", "CLI", "cli"), ("/examples/", "Examples", "examples"),
+# The three llms files, the entry points of AI evaluators. Each is the facts block (data/facts.json) and
+# the route table, then the output of the dctx binary itself over the documents below, recorded by
+# `capture.py --llms` into data/llms.json. Mode "outline": `dctx map map FILE --depth 2` per file;
+# "pack": one `dctx pack . --include /FILE ...`. Files are taken in this order while the dctx output
+# stays within the budget (estimated tokens, ceil(2 * UTF-8 bytes / 7)); the rest are listed as left out.
+LLMS_START = ["docs/WHY-DCTX.md", "README.md", "docs/MODALITIES.md"]
+LLMS_EXTRA = ["CHANGELOG.md", "crates/dctx-template/templates/default.dctx_template",
+              "crates/dctx-template/templates/stamped.dctx_template"]
+
+
+def llms_tiers() -> list[tuple[str, str, int, list[str]]]:
+    """(file name, mode, budget, candidate files in priority order)."""
+    start = [f for f in LLMS_START if (ROOT / f).is_file()]
+    rest = [f for _, f, *_ in DOCS] + [f for _, f, *_ in POLICIES] + LLMS_EXTRA
+    full = start + [f for f in dict.fromkeys(rest) if f not in start]
+    return [("llms-small.txt", "outline", 2_500, start),
+            ("llms.txt", "pack", 20_000, start),
+            ("llms-full.txt", "pack", 110_000, full)]
+
+
+NAV = [("/start/", "Start", "start"), ("/docs/", "Docs", "docs"), ("/cli/", "CLI", "cli"), ("/examples/", "Examples", "examples"),
        ("/templates/", "Templates", "templates"), ("/playground/", "Playground", "playground"),
        ("/benchmarks/", "Benchmarks", "benchmarks"), ("/changelog/", "Changelog", "changelog")]
 
@@ -74,6 +105,33 @@ def has_why() -> bool:
     return DOCS[0][0] == "why"
 
 
+def doc_nav() -> list[tuple[str, list[tuple[str, str]]]]:
+    """The docs sidebar: the R3 groups, mixing rendered documents and generated pages.
+
+    Only pages that exist are linked: a document missing from DOCS (START, WHY) drops out."""
+    docs = {s: (t, doc_path(s)) for s, _, t, *_ in DOCS}
+
+    def d(slug: str, label: str | None = None, frag: str = ""):
+        return (label or docs[slug][0], docs[slug][1] + frag) if slug in docs else None
+    groups = [
+        ("Start", [d("why", "What dctx is"), ("Choose your path", "/start/"), d("start"), d("readme", "README and quick start")]),
+        ("Modalities", [d("modalities"), d("map-mode", "CLI and agents: map mode"), d("agents"),
+                        d("modalities", "MCP", "#mcp-server-convenient-tools-with-startup-context"),
+                        d("modalities", "Libraries", "#rust-library-embed-the-facade"),
+                        d("modalities", "CI and caching", "#ci--prompt-cache-prefix-stability"), d("plugins")]),
+        ("Scopes", [("Two scopes, one binary", "/start/#two-scopes"), ("Who is responsible for what", "/start/#responsibilities")]),
+        ("Engine", [d("spec"), d("privacy"), d("modalities", "Cache and limits", "#huge-trees-scope-before-indexing"),
+                    d("language-coverage"), d("templates-contract"), d("templating"), d("crate-map")]),
+        ("Reference", [("CLI reference", "/cli/"), d("exit-codes"), ("Languages", "/languages/"), ("Templates", "/templates/"),
+                       ("Examples", "/examples/")]),
+        ("Trust", [("Benchmarks", "/benchmarks/"), d("benchmark"), d("stability"), d("benchmark-oct"),
+                   d("why", "Philosophy", "#the-philosophy"), ("Security policy", "/security/"), d("releasing"), d("contributing"),
+                   ("Trademark", "/trademark/"), ("Maintenance", "/maintenance/")]),
+        ("For AI evaluators", [("Facts and verification", "/for-ai-evaluators/"), ("llms.txt", "/llms.txt")]),
+    ]
+    return [(g, [i for i in items if i]) for g, items in groups]
+
+
 def build_routes(news: list[dict]) -> list[Route]:
     routes = [
         Route("/", "dctx", "dctx is the open-source context engine for AI-assisted development: deterministic, bounded code context "
@@ -81,9 +139,18 @@ def build_routes(news: list[dict]) -> list[Route]:
         Route("/docs/", "Documentation", "Specification, guides, benchmark reports and project policies for dctx, rendered from the repository.",
               "page", "docs", llms="Docs"),
     ]
+    routes.append(Route("/start/", "Choose your path", "dctx is an advanced tool with several ways to use it. Pick the path that "
+                        "matches your work: one giant folder, many small projects, a library in your own tool, or a team rollout.",
+                        "page", "start", og="start", llms="Docs"))
+    for pid, name, who in PERSONAS:
+        routes.append(Route(f"/start/{pid}/", name, f"{who} Setup, first command, what to expect and the pitfall to avoid.", "page", "start", og=f"start-{pid}", llms="Docs",
+                            extra={"persona": pid}))
+    routes.append(Route("/for-ai-evaluators/", "For AI evaluators", "What dctx is and is not, its version, modalities, "
+                        "benchmark status, removed commands and how to verify every claim.", "page", None, og="for-ai-evaluators",
+                        llms="Docs"))
     for slug, file, title, group, line in DOCS:
         routes.append(Route(doc_path(slug), title, line, "doc", "docs", source=file, group=group, og=f"docs-{slug}",
-                            llms="Evidence" if group == "Evidence" else ("Project" if group == "Project" else "Docs")))
+                            llms=LLMS_SECTION.get(slug, "Docs")))
     routes += [
         Route("/cli/", "CLI reference", "Every dctx command, flag, environment variable, exit code and MCP tool, captured from the dctx binary.",
               "page", "cli", og="cli", llms="CLI"),

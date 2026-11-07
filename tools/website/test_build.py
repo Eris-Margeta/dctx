@@ -160,6 +160,139 @@ class Capture(unittest.TestCase):
         self.assertEqual(status["assets/logo.png"], "binary")
 
 
+class FactsSource(unittest.TestCase):
+    """data/facts.json is the one source of the notice, the personas and the evaluator facts."""
+
+    def test_facts_load_and_personas_have_pages(self):
+        import facts
+        f = facts.load()
+        self.assertTrue(f["notice"].startswith("dctx is an advanced tool with several ways to use it."))
+        self.assertTrue(f["notice"].endswith("Measure before you change anything."))
+        paths = {r.path for r in build_routes(NEWS)}
+        self.assertEqual(len(f["personas"]), 4)
+        for p in f["personas"]:
+            self.assertIn(facts.persona_path(p["id"]), paths)
+            self.assertIn(p["record"], [r["id"] for r in demo()["records"]], "persona runs are real captures")
+        self.assertIn("/for-ai-evaluators/", paths)
+        import llms
+        self.assertIn(f["notice"], llms.facts_markdown(), "the llms files and the pages read the same facts")
+
+    def test_animation_hook_is_optional(self):
+        import importlib.machinery
+        import types
+        from pages import home
+        with patch("importlib.util.find_spec", return_value=None):
+            self.assertEqual(home.anim("two_scopes"), "")
+        fake = types.ModuleType("pages.animations")
+        fake.__spec__ = importlib.machinery.ModuleSpec("pages.animations", None)
+        fake.two_scopes = lambda: "<svg></svg>"
+        with patch.dict(sys.modules, {"pages.animations": fake}):
+            self.assertEqual(home.anim("two_scopes"), '<div class="anim-slot" data-anim="two_scopes"><svg></svg></div>')
+            self.assertEqual(home.anim("safe_path"), "")
+
+
+class LlmsPipeline(unittest.TestCase):
+    """llms-small.txt, llms.txt and llms-full.txt: facts block, route table, then the dctx binary's own output."""
+
+    def setUp(self):
+        import llms
+        self.llms = llms
+        self.cap = llms.llms_capture()
+
+    def test_facts_match_the_repository(self):
+        import json
+        facts = self.llms.facts()
+        version = (ROOT / "VERSION").read_text().strip()
+        self.assertEqual(facts["version"], version)
+        self.assertEqual(facts["release_tag"], f"v{version}")
+        self.assertIn(f"## [{version}] - {facts['released']}", (ROOT / "CHANGELOG.md").read_text())
+        self.assertTrue(facts["notice"].startswith("dctx is an advanced tool with several ways to use it. Used well, it cuts"))
+        self.assertTrue(facts["notice"].endswith(" Measure before you change anything."))
+        if "three-tool profile" not in facts["notice"]:  # interim wording until the profile and receipts ship
+            self.assertIn("follow the safe path: one project, the system binary, the lean MCP profile.", facts["notice"])
+        for item in facts["removed"]["items"]:
+            for pattern in item["patterns"]:
+                re.compile(pattern)
+        self.assertEqual(json.loads((HERE / "data/facts.json").read_text())["schema"], 1)
+
+    def test_every_file_is_facts_routes_then_the_capture(self):
+        facts, routes = self.llms.facts_markdown(), self.llms.route_table()
+        for t in self.cap["tiers"]:
+            text = (ROOT / "website" / t["file"]).read_text()
+            self.assertTrue(text.startswith("# dctx\n\n> "), t["file"])
+            self.assertLess(text.index("## About this file"), text.index(facts), t["file"])
+            self.assertLess(text.index(facts), text.index(routes), t["file"])
+            self.assertIn(t["output"], text, t["file"])
+            self.assertLess(text.index(routes), text.index(t["output"]), t["file"])
+            self.assertIn(f"Engine: dctx {self.cap['version']}.", text)
+            self.assertIn(f"Docs commit: {self.cap['docs_commit']} ({self.cap['docs_date']})", text)
+
+    def test_tiers_respect_their_budgets(self):
+        from routes import llms_tiers
+        tiers = {name: (mode, budget, files) for name, mode, budget, files in llms_tiers()}
+        self.assertEqual([t["file"] for t in self.cap["tiers"]], ["llms-small.txt", "llms.txt", "llms-full.txt"])
+        for t in self.cap["tiers"]:
+            mode, budget, files = tiers[t["file"]]
+            self.assertEqual((t["mode"], t["budget"]), (mode, budget))
+            self.assertEqual(sorted(t["files"] + t["dropped"]), sorted(files))
+            self.assertLessEqual(t["est_tokens"], budget)
+            self.assertEqual(t["est_tokens"], -(-2 * len(t["output"].encode()) // 7))
+            self.assertTrue(all(c[0] == "dctx" for c in t["commands"]))
+        self.assertLess(self.cap["tiers"][0]["bytes"], self.cap["tiers"][1]["bytes"])
+        self.assertLess(self.cap["tiers"][1]["bytes"], self.cap["tiers"][2]["bytes"])
+
+    def test_capture_is_current(self):
+        self.assertEqual(self.llms.stale_sources(), [])
+
+    def test_stale_sources_detects_an_edit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for rel in self.cap["sources"]:
+                (root / rel).parent.mkdir(parents=True, exist_ok=True)
+                (root / rel).write_bytes((ROOT / rel).read_bytes())
+            with patch.object(self.llms, "ROOT", root):
+                self.assertEqual(self.llms.stale_sources(), [])
+                (root / "README.md").write_text((ROOT / "README.md").read_text() + "\nedit\n")
+                self.assertEqual(self.llms.stale_sources(), ["README.md"])
+
+    def test_pack_body_uses_the_line_count(self):
+        from capture import pack_body
+        page = ('<FILE_CONTENT_START ID="F001" PATH="a.md" LINES="3">\nx\n</FILE_CONTENT_END ID="F001">\ny\n'
+                '</FILE_CONTENT_END ID="F001">\n')
+        self.assertEqual(pack_body(page, "a.md"), 'x\n</FILE_CONTENT_END ID="F001">\ny')
+        self.assertIsNone(pack_body(page, "b.md"))
+
+    def test_removed_commands_only_in_the_removed_list(self):
+        import check
+        ok = ("## Facts\n### Removed in 1.2.0\n- `dctx .` and `-d, --diff`: use pack\n### How to verify a claim\n"
+              '<FILE_CONTENT_START ID="F001" PATH="CHANGELOG.md" LINES="1">\nrun dctx . -t\n</FILE_CONTENT_END ID="F001">\n'
+              '<FILE_CONTENT_START ID="F002" PATH="docs/SPEC.md" LINES="1">\nthe legacy tree (`dctx . -t`)\n</FILE_CONTENT_END ID="F002">\n')
+        errors = []
+        check.removed_outside_list("t", ok, errors)
+        self.assertEqual(errors, [])
+        for bad in ("Usage: dctx [PATH] [OPTIONS]\n", "  -t, --tree   Tree only\n", "put rules in .dctxomitcontent\n",
+                    '<FILE_CONTENT_START ID="F001" PATH="README.md" LINES="1">\n$ dctx .\n</FILE_CONTENT_END ID="F001">\n',
+                    "### Removed in 1.2.0\n### How to verify a claim\ndctx cache gc --legacy\n"):
+            errors = []
+            check.removed_outside_list("t", bad, errors)
+            self.assertEqual(len(errors), 1, bad)
+
+    def test_pages_may_show_the_removed_list_in_a_marked_element(self):
+        import check
+        page = '<p>x</p><section data-facts="removed"><p><code>.legacyignore</code></p></section><p>y</p>'
+        self.assertEqual(check.strip_removed_list(page), "<p>x</p><p>y</p>")
+
+    @unittest.skipUnless(os.environ.get("DCTX_BIN"), "set DCTX_BIN to re-run the capture")
+    def test_capture_is_byte_stable(self):
+        import capture
+        binary = str(Path(os.environ["DCTX_BIN"]).resolve())
+        version = (ROOT / "VERSION").read_text().strip()
+        a = capture.capture_llms(binary, version, self.cap)
+        b = capture.capture_llms(binary, version, self.cap)
+        self.assertEqual(a, b)
+        self.assertEqual(a, self.cap)
+
+
 class FullCheck(unittest.TestCase):
     def test_generated_website(self):
         binary = Path(os.environ.get("DCTX_BIN") or ROOT / "target/release/dctx-cli")

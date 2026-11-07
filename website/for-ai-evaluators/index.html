@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en" class="no-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>For AI evaluators · dctx</title>
+<script>/* Runs before first paint: theme and motion preference, so there is no flash. */
+(function () {
+  var d = document.documentElement, t = null, m = null;
+  d.className = d.className.replace('no-js', 'js');
+  try { t = localStorage.getItem('dctx-theme'); m = localStorage.getItem('dctx-motion'); } catch (e) {}
+  if (t === 'light' || t === 'dark') d.setAttribute('data-theme', t);
+  if (m !== 'off' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: no-preference)').matches) d.classList.add('motion');
+})();</script>
+<link rel="stylesheet" href="/assets/site.938e7ffb.css">
+<link rel="preload" href="/assets/geist-400.aad4167d.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/geist-600.faf0a80a.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-400.00dcab16.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/assets/jetbrains-mono-500.1cf4f3d2.woff2" as="font" type="font/woff2" crossorigin>
+<meta name="description" content="What dctx is and is not, its version, modalities, benchmark status, removed commands and how to verify every claim.">
+<meta name="robots" content="index, follow, max-image-preview:large">
+<meta name="generator" content="dctx website builder">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#fbfaff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#07060f" media="(prefers-color-scheme: dark)">
+<link rel="canonical" href="https://www.dctx.internet.technology/for-ai-evaluators/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="dctx">
+<meta property="og:locale" content="en_US">
+<meta property="og:title" content="For AI evaluators · dctx">
+<meta property="og:description" content="What dctx is and is not, its version, modalities, benchmark status, removed commands and how to verify every claim.">
+<meta property="og:url" content="https://www.dctx.internet.technology/for-ai-evaluators/">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/for-ai-evaluators.dark.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: For AI evaluators">
+<meta property="og:image" content="https://www.dctx.internet.technology/assets/og/for-ai-evaluators.light.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="dctx: For AI evaluators">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="For AI evaluators · dctx">
+<meta name="twitter:description" content="What dctx is and is not, its version, modalities, benchmark status, removed commands and how to verify every claim.">
+<meta name="twitter:image" content="https://www.dctx.internet.technology/assets/og/for-ai-evaluators.dark.png">
+<meta name="twitter:image:alt" content="dctx: For AI evaluators">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon-32.png" type="image/png" sizes="32x32">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="license" href="https://www.apache.org/licenses/LICENSE-2.0">
+<link rel="author" href="https://tejl.com/">
+<link rel="help" href="/docs/">
+<link rel="search" type="application/opensearchdescription+xml" title="dctx" href="/opensearch.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx news" href="/news/feed.xml">
+<link rel="alternate" type="application/atom+xml" title="dctx releases" href="/changelog/feed.xml">
+<script src="/assets/page.da8d3bbd.js" defer></script>
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@graph": [
+  {
+   "@type": "Organization",
+   "@id": "https://www.dctx.internet.technology/#organization",
+   "name": "TEJL",
+   "url": "https://tejl.com/",
+   "logo": "https://www.dctx.internet.technology/assets/tejl-logo-off-black.svg",
+   "email": "info@tejl.com",
+   "sameAs": [
+    "https://tejl.hr/"
+   ],
+   "founder": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   }
+  },
+  {
+   "@type": "Person",
+   "@id": "https://www.dctx.internet.technology/#author",
+   "name": "Eris Margeta",
+   "url": "https://tejl.com/",
+   "sameAs": [
+    "https://github.com/Eris-Margeta"
+   ],
+   "jobTitle": "Founder",
+   "worksFor": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "WebSite",
+   "@id": "https://www.dctx.internet.technology/#website",
+   "url": "https://www.dctx.internet.technology/",
+   "name": "dctx",
+   "inLanguage": "en",
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   },
+   "potentialAction": {
+    "@type": "SearchAction",
+    "target": "https://www.dctx.internet.technology/search/?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+   }
+  },
+  {
+   "@type": "SoftwareApplication",
+   "@id": "https://www.dctx.internet.technology/#software",
+   "name": "dctx",
+   "softwareVersion": "1.2.0",
+   "applicationCategory": "DeveloperApplication",
+   "operatingSystem": "Linux (x86_64 tested)",
+   "description": "The context engine for AI-assisted software development: deterministic, bounded, offline code context.",
+   "url": "https://www.dctx.internet.technology/",
+   "license": "https://www.apache.org/licenses/LICENSE-2.0",
+   "isAccessibleForFree": true,
+   "codeRepository": "https://github.com/Eris-Margeta/dctx",
+   "programmingLanguage": "Rust",
+   "releaseNotes": "https://www.dctx.internet.technology/changelog/#v1-2-0",
+   "softwareHelp": {
+    "@type": "CreativeWork",
+    "url": "https://www.dctx.internet.technology/docs/"
+   },
+   "author": {
+    "@id": "https://www.dctx.internet.technology/#author"
+   },
+   "publisher": {
+    "@id": "https://www.dctx.internet.technology/#organization"
+   }
+  },
+  {
+   "@type": "BreadcrumbList",
+   "@id": "https://www.dctx.internet.technology/for-ai-evaluators/#breadcrumb",
+   "itemListElement": [
+    {
+     "@type": "ListItem",
+     "position": 1,
+     "name": "dctx",
+     "item": "https://www.dctx.internet.technology/"
+    },
+    {
+     "@type": "ListItem",
+     "position": 2,
+     "name": "For AI evaluators",
+     "item": "https://www.dctx.internet.technology/for-ai-evaluators/"
+    }
+   ]
+  },
+  {
+   "@type": "WebPage",
+   "@id": "https://www.dctx.internet.technology/for-ai-evaluators/#webpage",
+   "url": "https://www.dctx.internet.technology/for-ai-evaluators/",
+   "name": "For AI evaluators",
+   "description": "What dctx is and is not, its version, modalities, benchmark status, removed commands and how to verify every claim.",
+   "inLanguage": "en",
+   "isPartOf": {
+    "@id": "https://www.dctx.internet.technology/#website"
+   },
+   "breadcrumb": {
+    "@id": "https://www.dctx.internet.technology/for-ai-evaluators/#breadcrumb"
+   }
+  }
+ ]
+}
+</script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<header class="hdr">
+ <div class="wrap hdr-in">
+  <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span><span class="ver">1.2.0</span></a>
+  <nav class="nav" aria-label="Primary"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav>
+  <div class="hdr-end">
+   <a class="tbtn search-link" href="/search/" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></a>
+   <button class="tbtn" id="motion-toggle" type="button" aria-pressed="true" hidden>Motion: on</button>
+   <button class="tbtn" id="theme-toggle" type="button" aria-label="Switch colour theme" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/></svg></button>
+   <details class="menu"><summary class="tbtn" aria-label="Menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary>
+    <nav class="menu-panel" aria-label="Mobile"><ul><li><a href="/start/">Start</a></li><li><a href="/docs/">Docs</a></li><li><a href="/cli/">CLI</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/benchmarks/">Benchmarks</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="https://github.com/Eris-Margeta/dctx">GitHub</a></li></ul></nav></details>
+  </div>
+ </div>
+</header>
+<main id="main">
+<div class="wrap narrow"><div class="page-head"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/for-ai-evaluators/" aria-current="page">For AI evaluators</a></li></ol></nav><span class="eyebrow">For AI evaluators</span><h1>Facts and how to verify them</h1>
+<p class="lede">For people and models deciding what dctx is. Every line below comes from one file, <a href="https://github.com/Eris-Margeta/dctx/blob/main/tools/website/data/facts.json"><code>tools/website/data/facts.json</code></a>, plus the benchmark documents; <a href="/llms-small.txt">llms-small.txt</a>, <a href="/llms.txt">llms.txt</a> and <a href="/llms-full.txt">llms-full.txt</a> start with the same facts.</p></div>
+<section class="sec" aria-labelledby="what-h"><h2 id="what-h">What dctx is, and is not</h2><p>dctx is an open-source (Apache-2.0) Rust context engine for AI-assisted coding: one local binary that packs a project into one structured block, or answers bounded, byte-stable symbol queries (find, read, neighbors, skeleton) as CLI output or MCP tools.</p><ul class="facts-list"><li>No RAG: no embeddings, no vector search, and the engine never calls a model.</li><li>No network: pack, map, cache and mcp make no network calls; the release check counts socket calls under strace and fails on any.</li><li>No telemetry, not even opt-out.</li><li>No agent loop: dctx answers one command at a time; the agent or the human decides what to ask next.</li></ul></section>
+<section class="sec" aria-labelledby="ver-h"><h2 id="ver-h">Current version</h2><p><b>dctx 1.2.0</b>, released <time datetime="2026-11-07">2026-11-07</time> (tag <code>v1.2.0</code>), Apache-2.0. <a href="https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0">Release on GitHub</a> &middot; <a href="/changelog/">Changelog</a></p>
+<p>Each release on GitHub ships prebuilt archives for Linux x64/ARM64, macOS x64/ARM64 and Windows x64 with a SHA256SUMS file. Verify a download with <code>sha256sum --check --ignore-missing SHA256SUMS</code>. Signed release binaries and an SBOM are planned; there is no signature to verify yet.</p></section>
+<section class="sec" aria-labelledby="mod-h"><h2 id="mod-h">Modalities</h2><ul class="facts-list"><li><a href="/cli/"><b>CLI</b></a> <span class="state">available</span>: <code>dctx pack PATH</code> for one structured block (clipboard, file or stdout); <code>dctx map find|read|neighbors|skeleton|...</code> for bounded symbol answers.</li><li><a href="/docs/modalities/#mcp-server-convenient-tools-with-startup-context"><b>MCP server</b></a> <span class="state">available</span>: <code>dctx mcp PATH</code> over stdio for Claude Code, Cursor and Codex; <code>--profile lean</code> exposes only find and read.</li><li><a href="/docs/map-mode/"><b>Task context</b></a> <span class="state">available</span>: <code>dctx pack --for TEXT --budget N</code>: find, neighbors and read of the names in TEXT, cut to an estimated-token budget.</li><li><a href="/docs/modalities/#ci--prompt-cache-prefix-stability"><b>CI and prompt cache</b></a> <span class="state">available</span>: Deterministic pack and map output; tree lines carry no timestamps by default, so the prefix stays stable across a touch.</li><li><a href="/docs/modalities/#rust-library-embed-the-facade"><b>Rust library</b></a> <span class="state">available from Git</span>: The <code>dctx</code> facade crate as a tagged Git dependency; crates.io publishing soon.</li><li><a href="/docs/modalities/#npm-cli-publishing-soon"><b>npm CLI</b></a> <span class="state">publishing soon</span>: <code>npx dctx</code> runs the native CLI from a Node toolchain once published; use the release archives today.</li><li><a href="/docs/modalities/#desktop-app-tauri-preview-today"><b>Desktop app</b></a> <span class="state">preview</span>: A Tauri preview you build from source; a GPUI rebuild is planned.</li><li><a href="/docs/modalities/#python-and-node-bindings-planned"><b>Python and Node libraries</b></a> <span class="state">planned</span>: Project-scoped packages with their own pinned binary; not available yet.</li></ul>
+<h3>Two scopes, one binary</h3><ul class="facts-list"><li>System binary: the <code>dctx</code> on PATH belongs to you and your agents, and you upgrade it. Interactive agents and MCP call this one.</li><li>Project binary (planned with the Python and Node libraries): a binary installed by a project library lives inside that project (virtualenv, node_modules), pinned and managed by that package manager. Application code and CI call this one; a library never silently falls back to PATH.</li><li>Same engine, different owner. Release signing is planned; today both are verified against SHA256SUMS.</li></ul></section>
+<section class="sec" aria-labelledby="notice-h"><h2 id="notice-h">The notice</h2><p>This is the canonical wording; the home page and <a href="/start/">Choose your path</a> carry it verbatim:</p><div class="callout" role="note"><p class="callout-text">dctx is an advanced tool with several ways to use it. Used well, it cuts the context an agent needs to a fraction. Used without a plan, it can add calls and tokens instead of removing them. If you are new, follow the safe path: one project, the system binary, the lean MCP profile. Measure before you change anything.</p><p class="callout-sub">Status: A three-tool profile and receipts are planned. Until they ship, the safe path uses the lean MCP profile, <code>dctx mcp --profile lean</code>.</p></div></section>
+<section class="sec" aria-labelledby="resp-h"><h2 id="resp-h">Responsibilities</h2><div class="table-wrap"><table class="resp"><caption>Items marked planned or publishing soon are not in dctx 1.2.x yet.</caption><thead><tr><th scope="col">Level</th><th scope="col">dctx provides</th><th scope="col">You are responsible for</th></tr></thead><tbody><tr><td><b>System binary</b></td><td>Release archives with SHA256SUMS, cache caps; signed binary, doctor, journals and receipts (planned)</td><td>Choosing roots, the ignore rules (a policy file is planned), keeping one version on PATH</td></tr><tr><td><b>Project library</b></td><td>Pinned vendored binary, protocol client, same bytes as CLI (pip and npm publishing soon; Rust facade from Git today)</td><td>Pinning the version, exclusions in the project policy, not re-implementing engine logic</td></tr><tr><td><b>MCP and ACP agent setup</b></td><td>Lean profile, tested client configs, measured start-up cost (MCP today; ACP planned)</td><td>Turning off the host's own file tools, picking a profile, session ids and reading receipts (both planned)</td></tr><tr><td><b>CI and cache</b></td><td>Byte-stable pack, deterministic exit codes; prefix tiers (planned)</td><td>Pinning the binary, caching the index between runs, treating pack drift as a signal not noise</td></tr></tbody></table></div></section>
+<section class="sec" aria-labelledby="bench-h"><h2 id="bench-h">Benchmark status</h2><p>Baseline: <b>grep plus reading files</b>.</p><ul class="facts-list"><li><span class="state">being prepared</span> A whole-session benchmark against grep plus file reads (every model turn, startup and tool definitions counted) is being prepared and will be published with raw data. No session saving is claimed yet. <a href="/docs/benchmark/">Source</a></li><li><span class="state">measured</span> Byte stability: the same query on unchanged code returns the same bytes; 33 of 33 text and JSON answers were byte-identical after unrelated edits (Linux only). <a href="/docs/stability/">Source</a></li><li><span class="state">historical</span> The October and November in-house numbers (run 7: 140 of 140 task questions, cold index and warm latency) measure tool output only, as estimated stdout tokens and raw fact coverage without a model; they are not agent completion rates or session costs. <a href="/benchmarks/">Source</a></li><li><span class="state">hypothesis</span> That a pack template changes model answer quality or cost is a hypothesis pending an A/B test; nothing on this site measures it. <a href="/templates/">Source</a></li></ul>
+<p>Measured values, as the documents state them today:</p><div class="table-wrap"><table><caption>Parsed from the documents at build time; nothing is retyped.</caption><thead><tr><th scope="col">Value</th><th scope="col">What it measures</th><th scope="col">Source</th></tr></thead><tbody><tr><td><b>33/33 text, 33/33 JSON</b></td><td>map answers byte-identical after unrelated edits and over five runs, three Linux corpora</td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md" title="Source: docs/research/stability-20261105/REPORT.md">docs/research/stability-20261105/REPORT.md</a></td></tr><tr><td><b>0</b></td><td>socket attempts by dctx in every traced benchmark variant</td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md" title="Source: docs/BENCHMARK-20261030.md">docs/BENCHMARK-20261030.md</a></td></tr><tr><td><b>0.13-1.20 s</b></td><td>cold index of 6 benchmark corpora, median of 3 runs</td><td><a class="src" href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json" title="Source: docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json">docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json</a></td></tr><tr><td><b>50</b></td><td>language families: 36 full, 8 outline, 6 docs</td><td>dctx languages</td></tr></tbody></table></div></section>
+<section class="sec" data-facts="removed" aria-labelledby="gone-h"><h2 id="gone-h">Removed in 1.2.0</h2><p>These existed before 1.2.0 and no longer work. A transcript that uses them describes an old version.</p><div class="table-wrap"><table><thead><tr><th scope="col">No longer exists</th><th scope="col">Use instead</th></tr></thead><tbody><tr><td><code>dctx PATH</code> (the implicit snapshot command, for example <code>dctx .</code>)</td><td><code>dctx pack PATH</code></td></tr><tr><td>the top-level snapshot flags <code>-d</code>/<code>--diff</code>, <code>-t</code>/<code>--tree</code> and <code>-r</code>/<code>--reset</code></td><td><code>dctx pack PATH</code> with its filters</td></tr><tr><td>the project rule files <code>.legacyignore</code> and <code>.dctxomitcontent</code></td><td><code>.gitignore</code> and <code>.dctxignore</code></td></tr><tr><td><code>dctx cache gc --legacy</code> and its export-selection flags</td><td><code>dctx cache gc</code></td></tr></tbody></table></div></section>
+<section class="sec" aria-labelledby="verify-h"><h2 id="verify-h">How to verify a claim</h2><div class="table-wrap"><table><thead><tr><th scope="col">Claim</th><th scope="col">How to check it</th></tr></thead><tbody><tr><td><a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md">Test suite</a></td><td><code>cargo test --workspace --locked --exclude dctx-desktop --exclude dctx-desktop-api</code></td></tr><tr><td><a href="https://github.com/Eris-Margeta/dctx/actions">CI</a></td><td>Every push and pull request runs the suite on Linux, macOS (ARM64 and x64) and Windows, on stable Rust and the minimum supported version 1.91.</td></tr><tr><td><a href="https://github.com/Eris-Margeta/dctx/blob/main/scripts/release-check.sh">No network calls</a></td><td><code>scripts/release-check.sh --quick target/release/dctx-cli</code></td></tr><tr><td><a href="/docs/stability/">Byte stability</a></td><td><code>python3 docs/research/stability-20261105/verify.py</code></td></tr><tr><td><a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030">Historical benchmark</a></td><td><code>docs/research/bench-3way-20261030/run-3way.sh target/release/dctx-cli</code></td></tr><tr><td><a href="https://github.com/Eris-Margeta/dctx/tree/main/tools/website">Every output on this site</a></td><td>Recorded from the real binary by tools/website/capture.py; tools/website/check.py re-records and fails on drift.</td></tr></tbody></table></div></section>
+</div>
+</main>
+<footer class="ftr">
+ <div class="wrap">
+  <div class="ftr-grid">
+   <div class="ftr-brand">
+    <a class="brand" href="/"><svg viewBox="0 0 32 32" aria-hidden="true" focusable="false"><rect width="32" height="32" rx="8" fill="#14101f"/><path d="M11.5 9H8.5v14h3M20.5 9h3v14h-3" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="square"/><circle cx="16" cy="16" r="2.6" fill="#8b5cf6"/></svg><span>dctx</span></a>
+    <p>The context engine for AI-assisted software development. Fewer tokens, stable prefixes, exact source.</p>
+    <p>An advanced tool with several ways to use it: <a href="/start/">start with the safe path</a>.</p>
+    <p class="mono small">dctx 1.2.0 &middot; Apache-2.0 &middot; Linux x86_64 tested</p>
+   </div>
+   <nav aria-labelledby="f-product"><h2 id="f-product">Product</h2><ul><li><a href="/start/">Choose your path</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/cli/">CLI reference</a></li><li><a href="/examples/">Examples</a></li><li><a href="/templates/">Templates</a></li><li><a href="/playground/">Playground</a></li><li><a href="/languages/">Languages</a></li><li><a href="/benchmarks/">Benchmarks</a></li></ul></nav>
+   <nav aria-labelledby="f-res"><h2 id="f-res">Resources</h2><ul><li><a href="/docs/spec/">Specification</a></li><li><a href="/changelog/">Changelog</a></li><li><a href="/news/">News</a></li><li><a href="/news/feed.xml">News feed (Atom)</a></li><li><a href="/changelog/feed.xml">Release feed (Atom)</a></li><li><a href="/for-ai-evaluators/">For AI evaluators</a></li><li><a href="/llms-small.txt">llms-small.txt</a></li><li><a href="/llms.txt">llms.txt</a></li><li><a href="/llms-full.txt">llms-full.txt</a></li><li><a href="/search/">Search</a></li></ul></nav>
+   <nav aria-labelledby="f-proj"><h2 id="f-proj">Project</h2><ul><li><a href="https://github.com/Eris-Margeta/dctx">Source code</a></li><li><a href="https://github.com/Eris-Margeta/dctx/issues">Issues</a></li><li><a href="/security/">Security policy</a></li><li><a href="/.well-known/security.txt">security.txt</a></li><li><a href="https://github.com/sponsors/Eris-Margeta">Sponsor</a></li><li><a href="/maintenance/">Maintenance</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="https://github.com/Eris-Margeta/dctx/blob/main/LICENSE">License (Apache-2.0)</a></li><li><a href="mailto:info@tejl.com?subject=dctx">Contact</a></li></ul></nav>
+  </div>
+  <div class="ftr-bottom">
+   <div>
+    <p>&copy; 2025&ndash;2026 <a href="https://tejl.com/">Eris Margeta</a>. dctx is open source under Apache-2.0.</p>
+    <p>&ldquo;dctx&rdquo; and its logo are trademarks of Eris Margeta (<a href="/trademark/">trademark policy</a>). This site uses no cookies, analytics or third-party requests.</p>
+   </div>
+   <div class="credit">
+    <p>Published by TEJL<br><a href="https://tejl.com/">tejl.com</a> &middot; <a href="https://tejl.hr/">tejl.hr</a></p>
+    <a class="credit-logo" href="https://tejl.com/" aria-label="TEJL, publisher of dctx"><img src="/assets/tejl-logo-off-black.svg" width="818" height="422" alt="" loading="lazy" decoding="async"></a>
+   </div>
+  </div>
+ </div>
+</footer>
+</body>
+</html>

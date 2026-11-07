@@ -3,19 +3,15 @@ from __future__ import annotations
 
 from common import BLOB, REPO, ORG_ID, ORIGIN, PERSON_ID, APP_ID, SITE_ID, e, date_of, human_date, iso_of
 from components import table
-from routes import DOC_GROUPS, DOCS, doc_path
+from routes import DOC_GROUPS, DOCS, doc_nav, doc_path
 
 
 def sidebar(current: str) -> str:
     groups = []
-    for group in DOC_GROUPS:
-        items = "".join(f'<li><a href="{doc_path(s)}"{" aria-current=\"page\"" if doc_path(s) == current else ""}>{e(t)}</a></li>'
-                        for s, _, t, g, _ in DOCS if g == group)
-        groups.append(f'<p class="side-h">{e(group)}</p><ul>{items}</ul>')
-    policies = ('<p class="side-h">Policies</p><ul>' + "".join(
-        f'<li><a href="{p}"{" aria-current=\"page\"" if p == current else ""}>{t}</a></li>'
-        for p, t in (("/security/", "Security"), ("/trademark/", "Trademark"), ("/maintenance/", "Maintenance"))) + "</ul>")
-    return f'<aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p>{"".join(groups)}{policies}</aside>'
+    for group, items in doc_nav():
+        lis = "".join(f'<li><a href="{h}"{" aria-current=\"page\"" if h == current else ""}>{e(t)}</a></li>' for t, h in items)
+        groups.append(f'<p class="side-h">{e(group)}</p><ul>{lis}</ul>')
+    return f'<aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p>{"".join(groups)}</aside>'
 
 
 def toc_html(toc: list[tuple[int, str, str]]) -> tuple[str, str]:
@@ -84,6 +80,7 @@ def index_page(docs_by_path: dict) -> str:
         ("/maintenance/", "MAINTENANCE.md", "Maintenance", "What a maintenance agreement covers."))]
     parts.append('<h2 id="policies">Policies</h2>' + table(["Document", "What it covers", "", "", "Source"], rows, raw=True))
     return f"""<div class="wrap"><div class="page-head">{{{{crumbs}}}}<span class="eyebrow">Documentation</span><h1>Documentation</h1>
+<p class="lede">New here? <a href="/start/">Choose your path</a> first: dctx is an advanced tool with several ways to use it. Evaluating dctx, or an AI doing so? Read <a href="/for-ai-evaluators/">the facts and how to verify them</a>.</p>
 <p class="lede">Every document is rendered from the repository at build time, with a Markdown twin next to it (<code>index.md</code>), and all of them are in <a href="/llms-full.txt">llms-full.txt</a>. The CLI reference is generated from the binary: <a href="/cli/">/cli/</a>.</p></div>
 {"".join(parts)}
 <p class="note">Crawlers, including AI crawlers, may read this site: see <a href="/robots.txt">robots.txt</a> and <a href="/llms.txt">llms.txt</a>.</p></div>"""
