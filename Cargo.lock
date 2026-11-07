@@ -1056,6 +1056,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "dctx-library-example"
+version = "0.0.0"
+dependencies = [
+ "dctx",
+]
+
+[[package]]
 name = "dctx-map-model"
 version = "1.2.0"
 dependencies = [

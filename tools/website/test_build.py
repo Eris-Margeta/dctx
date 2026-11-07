@@ -118,6 +118,24 @@ class Facts(unittest.TestCase):
 
 
 class Capture(unittest.TestCase):
+    def test_pack_excerpt_is_verbatim_with_an_exact_omission_count(self):
+        from output_examples import PACK_LINES, render
+
+        records = demo()["records"]
+        pack = next(r for r in records if r["id"] == "pack")["stdout"].splitlines()
+        rendered = render(records)
+        excerpt = rendered.split("$ dctx pack .\n", 1)[1].split("\n```", 1)[0].splitlines()
+        self.assertEqual(excerpt[:-1], pack[:PACK_LINES])
+        self.assertEqual(excerpt[-1], f"… ({len(pack) - PACK_LINES} more lines)")
+        self.assertIn("<DIRECTORY_TREE>", excerpt)
+        self.assertTrue(any(line.startswith('<FILE_CONTENT_START ID=') for line in excerpt))
+
+    def test_readme_output_matches_the_shared_capture_renderer(self):
+        from output_examples import render
+
+        block = (ROOT / "README.md").read_text().split("<!-- output:begin -->\n", 1)[1].split("<!-- output:end -->", 1)[0]
+        self.assertEqual(block, render(demo()["records"]))
+
     def test_records(self):
         d = demo()
         ids = [r["id"] for r in d["records"]]
@@ -143,9 +161,11 @@ class Capture(unittest.TestCase):
 
 
 class FullCheck(unittest.TestCase):
-    def test_committed_website(self):
+    def test_generated_website(self):
         binary = Path(os.environ.get("DCTX_BIN") or ROOT / "target/release/dctx-cli")
-        args = [] if binary.is_file() else ["--no-capture"]
+        args = ["--working-tree"]
+        if not binary.is_file():
+            args.append("--no-capture")
         result = subprocess.run([sys.executable, str(HERE / "check.py"), *args], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
