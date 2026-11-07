@@ -199,7 +199,10 @@ fn environment_change_restarts_instead_of_reusing_inherited_engine_settings() {
 }
 
 fn endpoint(fixture: &Fixture) -> std::path::PathBuf {
-    let directory = fixture.0.path().join("c/daemon");
+    let directory = fixture.0.path().join(format!(
+        "c/{}/daemon",
+        dctx_cli::host::engine_cache_namespace()
+    ));
     let mut hash = dctx_hash::Sha256::new();
     hash.update(directory.as_os_str().as_encoded_bytes())
         .expect("hash");
@@ -242,8 +245,22 @@ fn mismatched_handshake_exits_and_next_cli_autostarts_matching_daemon() {
 #[test]
 fn unusable_transport_falls_back_without_changing_bytes() {
     let fixture = Fixture::new();
-    fs::create_dir_all(fixture.0.path().join("c")).expect("cache");
-    fs::write(fixture.0.path().join("c/daemon"), "occupied").expect("block daemon");
+    fs::create_dir_all(
+        fixture
+            .0
+            .path()
+            .join("c")
+            .join(dctx_cli::host::engine_cache_namespace()),
+    )
+    .expect("cache");
+    fs::write(
+        fixture.0.path().join(format!(
+            "c/{}/daemon",
+            dctx_cli::host::engine_cache_namespace()
+        )),
+        "occupied",
+    )
+    .expect("block daemon");
     fixture.parity(&["map", "find", "kept", "--json"]);
     fixture.parity(&["pack", "--for", "`kept`", "--json"]);
 }
@@ -255,10 +272,13 @@ fn socket_and_directory_modes_are_private_even_with_normal_umask() {
     let fixture = Fixture::new();
     fixture.parity(&["map", "find", "kept", "--json"]);
     assert_eq!(
-        fs::metadata(fixture.0.path().join("c/daemon"))
-            .expect("dir")
-            .permissions()
-            .mode()
+        fs::metadata(fixture.0.path().join(format!(
+            "c/{}/daemon",
+            dctx_cli::host::engine_cache_namespace()
+        )))
+        .expect("dir")
+        .permissions()
+        .mode()
             & 0o777,
         0o700
     );
@@ -273,7 +293,10 @@ fn socket_and_directory_modes_are_private_even_with_normal_umask() {
     fixture.run(&["daemon", "stop"], "0");
     std::thread::sleep(Duration::from_millis(50));
     fs::set_permissions(
-        fixture.0.path().join("c/daemon"),
+        fixture.0.path().join(format!(
+            "c/{}/daemon",
+            dctx_cli::host::engine_cache_namespace()
+        )),
         fs::Permissions::from_mode(0o755),
     )
     .expect("unsafe directory");
