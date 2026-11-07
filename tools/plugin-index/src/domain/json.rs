@@ -185,7 +185,10 @@ impl<'a> Parser<'a> {
             b'n' => '\n',
             b'r' => '\r',
             b't' => '\t',
-            b'u' => self.decode_unit(self.hex4()?)?,
+            b'u' => {
+                let unit = self.hex4()?;
+                self.decode_unit(unit)?
+            }
             _ => return Err(IndexError::Malformed),
         };
         out.push(ch);

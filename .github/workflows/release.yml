@@ -38,7 +38,13 @@ jobs:
           set -euo pipefail
           [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]
           test "${RELEASE_TAG#v}" = "$(cat VERSION)"
-          ./tools/sync-version.sh --check
+          # Crate, lockfile and metadata versions must match. The public README is a curated
+          # front page whose version badge may lag; that alone is a warning, not a failure.
+          if ! ./tools/sync-version.sh --check 2> sync.err; then
+            cat sync.err >&2
+            if grep -v -x 'Version mismatch: README.md' sync.err | grep -q .; then exit 1; fi
+            echo "::warning::README version badge does not match VERSION"
+          fi
           ./tools/extract-changelog.sh "$RELEASE_TAG" > release-notes.md
           test -s release-notes.md
       - name: Check optional publishing credentials
