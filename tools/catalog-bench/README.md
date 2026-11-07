@@ -27,10 +27,9 @@ cargo build --release --locked --manifest-path tools/catalog-bench/Cargo.toml
 python3 tools/catalog-bench/run.py
 ```
 
-The runner defaults to this worktree, `/srv/work`, and readable `/srv/data`,
+The runner defaults to this repository checkout (pass `--roots` to measure other trees),
 then a one-million-record synthetic metadata case. It deletes each catalog after
-measurement, including on ordinary exceptions. Its report defaults to
-[DCX-CATALOG-01.json](../../docs/results/DCX-CATALOG-01.json).
+measurement, including on ordinary exceptions. Its report defaults to `docs/results/DCX-CATALOG-01.json` (not committed).
 Use `--report` to choose another path inside the worktree and `--threads` to
 control parallelism. Positional roots replace the default roots.
 `--synthetic-only` runs only the generated one-million-record case;
@@ -172,5 +171,4 @@ RUSTDOCFLAGS='-D warnings' cargo doc --locked --manifest-path tools/catalog-benc
 Tests cover metadata round trips, parent-relative front coding, Unicode and
 non-UTF-8 bytes, query semantics, shards, empty catalogs, malformed/truncated
 formats, ignore rules, all four routing tiers, and symlink boundaries.
-Measured outcomes and acceptance decisions are in
-[DCX-CATALOG-01.md](../../docs/results/DCX-CATALOG-01.md).
+Measured outcomes are summarised in the project's benchmark notes when published.

@@ -38,7 +38,7 @@ def cgroup_memory_limit():
 def machine():
     memory = Path("/proc/meminfo").read_text()
     mounts = {}
-    for root in (WORKTREE, Path("/srv/work"), Path("/srv/data")):
+    for root in (WORKTREE,):
         if root.exists():
             disk = os.statvfs(root)
             mounts[str(root)] = {"capacity_bytes": disk.f_blocks * disk.f_frsize,
@@ -48,7 +48,7 @@ def machine():
             "git": command("git", "rev-parse", "HEAD"), "platform": platform.platform(),
             "uname": list(platform.uname()), "os_release": Path("/etc/os-release").read_text(),
             "nproc": command("nproc"), "lscpu": command("lscpu"),
-            "meminfo": memory, "disk": mounts, "df": command("df", "-B1", str(WORKTREE), "/srv/work", "/srv/data"),
+            "meminfo": memory, "disk": mounts, "df": command("df", "-B1", str(WORKTREE)),
             "rustc": command("rustc", "-Vv"), "cargo": command("cargo", "-V"),
             "cgroup": Path("/proc/self/cgroup").read_text(),
             "loadavg": Path("/proc/loadavg").read_text(),
@@ -129,7 +129,7 @@ def main():
     data = {"machine": machine(), "method": "first-observed cache unknown; warm following first build/queries; 1000 full-result token queries each",
             "spdx_license_identifier": "Apache-2.0",
             "threads": args.threads, "runs": []}
-    roots = [] if args.synthetic_only else (args.roots or [WORKTREE, Path("/srv/work"), Path("/srv/data")])
+    roots = [] if args.synthetic_only else (args.roots or [WORKTREE])
     checkpoint = scratch / f"checkpoint-{os.getpid()}.json"
     try:
         for root in roots:
