@@ -1356,30 +1356,21 @@ blast, serve). Interactive TUI when run without arguments.
 `crates/dctx` is the stable API for every surface (`docs/design/contracts/API-PORTS-v1.md`).
 Bindings for Python, Node and a C ABI wrap the facade; none re-implements an engine.
 
-### 24.3 MCP server (target, feature `mcp`)
+### 24.3 MCP server
 
-`dctx serve --mcp` speaks JSON-RPC over stdio only. It is a surface, not a plugin: it
-renders answers the facade already produced, so a broker hop would add cost without a
-privacy gain. Tool schemas are prompt bytes on every call, so the set is small and the
-schemas short:
+`dctx mcp [PATH]` (also `dctx serve --mcp`) speaks JSON-RPC over stdio, one message
+per line. The default tools are `map`, `find`, `neighbors`, `explain`, `read`, `hubs`,
+`grep`, `skeleton`, `path` and `export`; each runs the corresponding `dctx map` verb.
+`--profile lean` exposes only `find` and `read`; `--tools NAME,...` selects a custom
+subset. Selected tools have shorter descriptions and retain complete input schemas.
+Unselected tools cannot be called. The default surface is unchanged.
 
-| Tool | Maps to |
-|---|---|
-| `dctx_map` | `map` |
-| `dctx_find` | `find` |
-| `dctx_neighbors` | `neighbors` |
-| `dctx_explain` | `explain` |
-| `dctx_read` | `read` (always byte-verified) |
-| `dctx_status` | `status` |
-
-`dctx_blast` and `dctx_check` appear only when their plugins are enabled and granted.
-Tool results carry the same canonical text page as the CLI, so prefix stability holds
-across surfaces. A network listener is a policy-gated capability, never a default.
-
-**Gate.** Tool definitions ≤ 600 estimated tokens per session (comparison tool: 6
-tools, 3,515 bytes, about 1,005 tokens); results are the canonical text page. Answers
-MUST NOT contain instructions to the agent: no banners, no "report savings" text (the
-comparison tool spends about 310 bytes, roughly 89 tokens, per call on one).
+See the [MCP guide](https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MCP.md) for configuration, validation and startup response
+sizes. Measure whole agent sessions against grep plus reading files, including
+instructions, tool definitions and extra calls. Wire bytes and bytes/4 estimates
+alone do not establish total session token savings. Tool results use the CLI's code
+path and MUST NOT contain instructions to the agent, banners or requests to report
+savings.
 
 ### 24.4 Agent hooks (target)
 
@@ -1876,6 +1867,9 @@ The current CLI uses the shared dctx facade. Older storage and Git-based designs
 in SPEC-MAP-MODE are not the current CLI contract.
 dctx and this guide are Apache-2.0.
 
+For a tool client, see the [MCP server guide](https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MCP.md), including the opt-in lean
+profile and custom tool subsets.
+
 ## Commands
 
 ```text
@@ -2289,7 +2283,7 @@ Every failure prints two lines on stderr: `❌ Error: <what went wrong>` (prefix
 - `dctx pack` exits 1 only when no view filter is set (`--ext`, `--include`, `--exclude`, `--binary`, `--empty`, `--non-empty`, `--large`, `--small`, `--hidden`, `--debug-ignored`). A filter that matches nothing still prints an empty page and exits 0. The page and the `pack bytes=…` line are printed before the exit-1 message. `pack` exit 3 covers source, scan, render and output failures.
 - A reader that closes stdout early (`dctx pack . | head -1`) ends the run with exit 0 and no message, as `cat` does; every other failure keeps its code.
 - `dctx pack --for <TEXT>` exits 1 when no name in TEXT matched the index (the page is printed first), 2 for a bad flag or a `--budget` outside 100..100000 (or `--budget` without `--for`), and 3 when PATH is not a directory or the index fails.
-- `dctx mcp PATH` exits 3 when PATH cannot be entered and 2 for any other argument. Once serving, a failed tool call goes back to the client as a result with `isError: true`; the server exits 0 at end of input.
+- `dctx mcp [--profile default|lean | --tools NAME,...] [PATH]` exits 3 when PATH cannot be entered and 2 for invalid arguments (including unknown tool names/profiles). See the [MCP guide](https://github.com/Eris-Margeta/dctx/blob/main/docs/guides/MCP.md). Once serving, a failed tool call goes back to the client as a result with `isError: true`; unknown or unselected tools return JSON-RPC `-32602`. The server exits 0 at end of input.
 - A facade refusal of the query (`InvalidRequest`, `BudgetTooSmall`, `StaleContinuation`, `Stale`, `UnsupportedCapability`, `UnsupportedVersion`) is 2; `PolicyDenied` and `PolicyUnavailable` are 1; every other facade error, and every error of the snapshot build, is 3. The mapping is `dctx_cli::exit::from_facade`.
 - `map hubs`, `map path` and `map export` report their facade errors as text: an `unknown id` end of `map path` is 1, anything else 3.
 
