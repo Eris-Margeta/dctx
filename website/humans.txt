@@ -4,7 +4,7 @@ Organisation: TEJL
 Site: https://tejl.com/ and https://tejl.hr/
 
 /* SITE */
-Last update: 2026-11-06
+Last update: 2026-11-07
 Language: English
 Standards: HTML, CSS, schema.org JSON-LD, Atom, Open Graph, llms.txt, OpenAPI 3.1
 Components: a Python standard-library generator with Markdown and Pygments, Pillow for images; Geist and JetBrains Mono (SIL OFL 1.1); no frameworks, no third-party requests
