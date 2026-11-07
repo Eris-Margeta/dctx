@@ -60,6 +60,8 @@ pub(crate) struct WalkArgs<'a> {
     pub started_ms: u64,
     /// Clock instant for this walk. A frozen clock equals `started_ms`.
     pub now_ms: u64,
+    /// Monotonic elapsed-time guard for direct scans, independent of a frozen host clock.
+    pub elapsed: Option<std::time::Instant>,
 }
 
 struct State {
@@ -79,6 +81,14 @@ struct State {
 
 /// Walks `args.source` from the root. The root is listed even when a plan root would skip `""`.
 pub(crate) fn walk_source(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
+    walk_scope(args, None)
+}
+
+/// A path-bearing query visits just its scope, retaining place-relative identities.
+pub(crate) fn walk_scope(
+    args: &WalkArgs<'_>,
+    scope: Option<(&str, bool)>,
+) -> Result<Walked, DctxError> {
     // File watches inside this span close per file. Seal and query are not part of it.
     let _walk = WalkSpan::begin();
     checkpoint(args)?;
@@ -100,12 +110,18 @@ pub(crate) fn walk_source(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
     if state.entries > args.limits.entries {
         return Err(limit(Resource::Entries, args.limits.entries));
     }
-    visit_dir(
-        args,
-        languages.as_deref(),
-        &RelativePath::root(),
-        &mut state,
-    )?;
+    if let Some((scope, file)) = scope {
+        let path = RelativePath::parse(scope).map_err(DctxError::from_core)?;
+        visit_scope(args, languages.as_deref(), &path, file, &mut state)?;
+    } else {
+        visit_dir(
+            args,
+            languages.as_deref(),
+            &RelativePath::root(),
+            &mut state,
+        )?;
+    }
+    checkpoint(args)?;
     refs::link(
         &state.nodes,
         &mut state.edges,
@@ -113,7 +129,56 @@ pub(crate) fn walk_source(args: &WalkArgs<'_>) -> Result<Walked, DctxError> {
         &state.file_refs,
     );
     check_records(args, &state)?;
+    checkpoint(args)?;
     Ok(finish(args, state))
+}
+
+fn visit_scope(
+    args: &WalkArgs<'_>,
+    languages: Option<&[String]>,
+    path: &RelativePath,
+    file: bool,
+    state: &mut State,
+) -> Result<(), DctxError> {
+    let mut ancestor = RelativePath::root();
+    let parts: Vec<_> = path.as_str().split('/').collect();
+    for part in &parts[..parts.len().saturating_sub(1)] {
+        ancestor = ancestor.child(part).map_err(DctxError::from_core)?;
+        if args.policy.decide(ancestor.as_str(), true)? == FileHandlingDecision::Exclude {
+            return Ok(());
+        }
+    }
+    if u64::try_from(path.depth()).unwrap_or(u64::MAX) > args.limits.depth {
+        return Ok(());
+    }
+    let directory = match args.source.kind(path) {
+        Ok(dctx_core::datatypes::NodeType::Directory) => true,
+        Ok(_) => false,
+        Err(
+            dctx_core::error::DctxError::SourceUnavailable
+            | dctx_core::error::DctxError::PolicyDenied,
+        ) => return Ok(()),
+        Err(error) => return Err(DctxError::from_core(error)),
+    };
+    if file && directory {
+        return Ok(());
+    }
+    let mut decision = args.policy.decide(path.as_str(), directory)?;
+    if decision == FileHandlingDecision::Exclude {
+        return Ok(());
+    }
+    if directory {
+        visit_dir(args, languages, path, state)
+    } else {
+        if decision == FileHandlingDecision::Include && !language_ok(languages, path.as_str()) {
+            decision = FileHandlingDecision::OmitContent;
+        }
+        state.entries += 1;
+        if state.entries > args.limits.entries {
+            return Err(limit(Resource::Entries, args.limits.entries));
+        }
+        visit_file(args, path, decision, state)
+    }
 }
 
 fn visit_dir(
@@ -131,6 +196,15 @@ fn visit_dir(
         // scan does, and marks the snapshot partial. One such file never fails the whole walk.
         let Ok(path) = dir.child(&entry.name) else {
             state.partial = true;
+            if state
+                .text
+                .partial_dirs
+                .last()
+                .is_none_or(|last| last != dir.as_str())
+            {
+                state.text.partial_dirs.push(dir.as_str().to_string());
+                check_records(args, state)?;
+            }
             continue;
         };
         let mut decision = args.policy.decide(path.as_str(), entry.is_dir())?;
@@ -175,6 +249,9 @@ fn visit_file(
             state
                 .files
                 .push(file_row(path.as_str(), decision, None, 0, 0, None));
+            if let Some(row) = state.files.last_mut() {
+                row.partial = true;
+            }
             return Ok(());
         }
     };
@@ -208,6 +285,9 @@ fn visit_file(
             meta.modified.millis(),
             stamp,
         ));
+        if let Some(row) = state.files.last_mut() {
+            row.partial = true;
+        }
         return Ok(());
     }
     if state.source_bytes.saturating_add(meta.size) > args.limits.source_bytes {
@@ -234,6 +314,9 @@ fn visit_file(
                 meta.modified.millis(),
                 stamp,
             ));
+            if let Some(row) = state.files.last_mut() {
+                row.partial = true;
+            }
             return Ok(());
         }
     };
@@ -250,6 +333,7 @@ fn visit_file(
     let span_mark = profile::start();
     let lines = line_span(&bytes);
     watch.charge(Stage::SpanConversion, span_mark);
+    let mut parsed_syntax = false;
     let module = push_module(
         &mut state.nodes,
         &mut state.text,
@@ -265,6 +349,7 @@ fn visit_file(
         let parsed = prepare_file(args, path.as_str(), &bytes);
         watch.charge(Stage::ParseLex, parse_mark);
         let (prepared, syntax, raw_refs) = parsed?;
+        parsed_syntax = syntax;
         if syntax {
             state.syntax_files += 1;
         } else if args.parser != ParserChoice::Opaque {
@@ -295,14 +380,16 @@ fn visit_file(
         }
         watch.charge(Stage::GraphAssembly, graph_mark);
     }
-    state.files.push(file_row(
+    let mut row = file_row(
         path.as_str(),
         decision,
         Some(digest),
         meta.size,
         meta.modified.millis(),
         stamp,
-    ));
+    );
+    row.syntax = parsed_syntax;
+    state.files.push(row);
     check_records(args, state)
 }
 
@@ -310,7 +397,11 @@ fn visit_file(
 fn check_records(args: &WalkArgs<'_>, state: &State) -> Result<(), DctxError> {
     let cap = args.limits.records;
     let over = |len: usize| u64::try_from(len).map_or(true, |len| len > cap);
-    if over(state.nodes.len()) || over(state.edges.len()) || over(state.files.len()) {
+    if over(state.nodes.len())
+        || over(state.edges.len())
+        || over(state.files.len())
+        || over(state.text.partial_dirs.len())
+    {
         return Err(limit(Resource::Records, cap));
     }
     Ok(())
@@ -402,6 +493,8 @@ fn file_row(
         size,
         modified,
         stamp,
+        syntax: false,
+        partial: false,
     }
 }
 
@@ -470,7 +563,14 @@ fn bytecount(bytes: &[u8], needle: u8) -> usize {
 
 fn checkpoint(args: &WalkArgs<'_>) -> Result<(), DctxError> {
     args.cancel.checkpoint().map_err(DctxError::from_core)?;
-    check_deadline(args.started_ms, args.now_ms, args.deadline_ms)
+    let elapsed = args.elapsed.map_or(0, |start| {
+        u64::try_from(start.elapsed().as_millis()).unwrap_or(u64::MAX)
+    });
+    check_deadline(
+        args.started_ms,
+        args.now_ms.max(args.started_ms.saturating_add(elapsed)),
+        args.deadline_ms,
+    )
 }
 
 fn limit(resource: Resource, limit: u64) -> DctxError {

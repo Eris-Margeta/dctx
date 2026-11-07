@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: Apache-2.0
+# Policy: docs/PHILOSOPHY.md; facade: crates/dctx/src/lib.rs;
+# transport API: docs/protocol/README.md and crates/dctx-cli/src/lib.rs.
+# No engine implementation crate is allowed. Entries are complete path prefixes,
+# never arbitrary source-file exemptions. Changes require boundary review.
+version = 1
+
+[[surface]]
+name = "MCP transport"
+paths = ["crates/dctx-cli/src/mcp"]
+required = true
+rust_api = ["crate::exit::Failure", "crate::exit::USAGE", "crate::map::execute", "crate::mcp"]
+
+[[surface]]
+name = "RPC transport"
+paths = ["crates/dctx-cli/src/rpc"]
+required = true
+rust_api = [
+  "dctx_cli::exit::CommandOutput", "dctx_cli::exit::Failure", "dctx_cli::rpc",
+  "dctx_cli::pack::output", "dctx_cli::languages::output",
+  "dctx_cli::cache::status_output", "crate::pack_for::requested",
+  "crate::pack_for::output", "crate::map::output",
+]
+
+[[surface]]
+name = "Language and standalone transport packages (including future packages)"
+paths = ["bindings", "packaging/npm", "crates/dctx-mcp*", "crates/dctx-rpc*"]
+required = false
+# Packages must spawn the binary and use RPC, not link the Rust engine.
+rust_api = []

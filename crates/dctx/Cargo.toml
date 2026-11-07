@@ -27,6 +27,8 @@ segments = []
 cache = []
 syntax-rust = ["dep:dctx-lex-rust"]
 rpc = ["dep:serde", "dep:serde_json", "dep:schemars"]
+# Retain one bounded decoded generation per thread; source verification remains unchanged.
+warm-index-cache = []
 wire-json = ["dctx-map-model/wire-json"]
 
 [dependencies]

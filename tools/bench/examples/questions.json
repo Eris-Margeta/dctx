@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "questions": [
+    {
+      "id": "demo-cache",
+      "scenario": "short",
+      "question": "What are the synthetic cache limit and refresh interval?",
+      "evidence": [{"path": "docs/cache.md"}],
+      "gold_facts": [
+        {"id": "limit", "fact": "The synthetic cache limit is 2048 MiB."},
+        {"id": "refresh", "fact": "The refresh interval is 17 minutes."}
+      ]
+    },
+    {
+      "id": "demo-reader",
+      "scenario": "windows",
+      "question": "Which line endings does the synthetic reader preserve, and what is its continuation label?",
+      "evidence": [{"path": "docs/reader.md"}, {"path": "docs/cache.md"}],
+      "gold_facts": [
+        {"id": "line-endings", "fact": "The reader preserves CRLF line endings."},
+        {"id": "continuation", "fact": "The continuation label is NEXT_PAGE."}
+      ]
+    }
+  ]
+}

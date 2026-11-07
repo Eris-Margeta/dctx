@@ -23,6 +23,16 @@ impl<'a> Reader<'a> {
         Ok(self.take(1)?[0])
     }
 
+    pub(super) fn boolean(&mut self) -> Result<bool, DctxError> {
+        match self.u8()? {
+            0 => Ok(false),
+            1 => Ok(true),
+            _ => Err(DctxError::CorruptIndex {
+                reason: "generation boolean",
+            }),
+        }
+    }
+
     pub(super) fn u32(&mut self) -> Result<u32, DctxError> {
         let bytes = self.take(4)?;
         let raw: [u8; 4] = bytes.try_into().map_err(|_| DctxError::CorruptIndex {

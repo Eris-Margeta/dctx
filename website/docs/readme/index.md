@@ -147,7 +147,7 @@ For structured consumption, `--json` puts the same source bytes in `source_utf8`
 
 ```text
 $ dctx map read 's:src/util.rs#greet' --json
-{"v":2,"place":"kiosk","verb":"read","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/2"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":[44,126],"source_utf8":"pub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}","edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
+{"v":2,"place":"kiosk","verb":"read","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"syntax","completion":"complete","parser":"dctx-lex-rust/syn-3.0.9"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":[44,126],"source_utf8":"pub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}","edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
 ```
 
 ### Pack for a task

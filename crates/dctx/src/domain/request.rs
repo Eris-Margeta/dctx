@@ -367,6 +367,31 @@ pub struct MapRequest {
 }
 
 impl MapRequest {
+    /// Source scope that can answer this request without a whole-place generation.
+    /// Graph navigation, aliases and whole-snapshot metadata require the ordinary snapshot path.
+    #[must_use]
+    pub fn source_scope(&self) -> Option<&str> {
+        // --meta explicitly asks for whole-snapshot identity and provenance.
+        if self.meta {
+            return None;
+        }
+        let path = match self.verb {
+            Verb::Find | Verb::Grep => self.within.as_deref()?,
+            Verb::Read | Verb::Map | Verb::Skeleton | Verb::Explain => {
+                let (kind, rest) = self.target.split_once(':')?;
+                if !matches!(kind, "m" | "s" | "t" | "d") {
+                    return None;
+                }
+                rest.split_once('#').map_or(rest, |(path, _)| path)
+            }
+            Verb::Neighbors => return None,
+        };
+        let path = path.trim_end_matches('/');
+        // Drive prefixes and alternate streams are not portable source addresses.
+        // Keep them on the inventory-only lookup path instead of resolving them.
+        (!path.is_empty() && path != "." && !path.contains(':')).then_some(path)
+    }
+
     /// A request for `verb` at version 1, JSON v2, both directions.
     #[allow(
         clippy::must_use_candidate,
@@ -434,6 +459,22 @@ impl MapRequest {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn drive_and_stream_spellings_never_become_direct_source_addresses() {
+        for target in [
+            "m:C:/outside.py",
+            "s:C:outside.py#fn",
+            "m:src/file.py:stream",
+        ] {
+            let mut request = MapRequest::new(Verb::Read);
+            request.target = target.into();
+            assert!(request.source_scope().is_none());
+        }
+        let mut request = MapRequest::new(Verb::Grep);
+        request.within = Some("C:/outside".into());
+        assert!(request.source_scope().is_none());
+    }
 
     #[test]
     fn verb_names_round_trip() {

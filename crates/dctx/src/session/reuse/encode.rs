@@ -27,6 +27,10 @@ pub(in crate::session) fn encode_generation(
     push_u64(&mut out, limits.depth);
     push_u64(&mut out, limits.file_bytes);
     push_u64(&mut out, limits.source_bytes);
+    push_count(&mut out, generation.text.partial_dirs.len())?;
+    for dir in &generation.text.partial_dirs {
+        strings.push(&mut out, dir)?;
+    }
     push_count(&mut out, generation.files.len())?;
     for file in &generation.files {
         strings.push(&mut out, &file.path)?;
@@ -49,6 +53,8 @@ pub(in crate::session) fn encode_generation(
             }
             None => out.push(0),
         }
+        out.push(u8::from(file.syntax));
+        out.push(u8::from(file.partial));
     }
     push_count(&mut out, generation.nodes.len())?;
     for node in &generation.nodes {

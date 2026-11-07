@@ -75,18 +75,48 @@ pub fn session_cache(call: SessionCacheCall) -> Result<CacheReport, String> {
     }
 }
 
-/// `DCTX_CACHE_DIR` when it is set, otherwise the platform cache directory.
+/// Engine-major/minor namespace beneath [`cache_base_dir`]. Old unscoped data is ignored.
 /// # Errors
 /// Returns an invalid explicit cache root or failure to determine a supported system cache path.
 pub fn cache_root_dir() -> Result<PathBuf, String> {
-    if let Ok(raw) = std::env::var("DCTX_CACHE_DIR") {
+    Ok(cache_base_dir()?.join(engine_cache_namespace()))
+}
+
+/// The cache parent selected by `DCTX_CACHE_DIR` or the platform default, without creating it.
+/// # Errors
+/// Returns an invalid cache parent or a missing platform environment variable.
+pub fn cache_base_dir() -> Result<PathBuf, String> {
+    if let Some(raw) = std::env::var_os("DCTX_CACHE_DIR") {
         if !raw.is_empty() {
             let path = PathBuf::from(raw);
-            absolute_root(&path)?;
-            return Ok(path);
+            return validate_cache_base(path);
         }
     }
-    platform_cache_dir()
+    validate_cache_base(platform_cache_dir()?)
+}
+
+fn validate_cache_base(path: PathBuf) -> Result<PathBuf, String> {
+    absolute_root(&path)?;
+    match fs::symlink_metadata(&path) {
+        Ok(metadata) if metadata.file_type().is_symlink() || !metadata.is_dir() => {
+            return Err("cache parent is not a directory or is a symlink".into());
+        }
+        Err(error) if error.kind() != std::io::ErrorKind::NotFound => {
+            return Err(format!("cache parent metadata: {error}"));
+        }
+        _ => {}
+    }
+    Ok(path)
+}
+
+/// The compatible engine version whose indexes this binary owns. Patch releases share it.
+#[must_use]
+pub fn engine_cache_namespace() -> &'static str {
+    concat!(
+        env!("CARGO_PKG_VERSION_MAJOR"),
+        ".",
+        env!("CARGO_PKG_VERSION_MINOR")
+    )
 }
 
 /// True when this argv and `DCTX_AUTO_CLEAN` allow a piggy-back slice.
@@ -187,6 +217,13 @@ pub fn piggyback_auto_clean() {
         return;
     };
     let _ = piggyback_at(&root, true);
+}
+
+/// Applies the caller's maintenance choice to subsequent mapped sessions.
+/// A daemon uses this after the CLI has already run the maintenance slice, preserving
+/// `--no-auto-clean` without running maintenance twice or redirecting its diagnostics.
+pub fn set_session_auto_clean(allow: bool) {
+    MAP_AUTO_CLEAN.store(allow, Ordering::Relaxed);
 }
 
 /// Runs auto-clean at `root` when `allow` and the persisted policy are both on.
@@ -312,6 +349,33 @@ mod tests {
         assert_eq!(place_root_id(&a).expect("stable id"), id);
         assert_ne!(place_root_id(&b).expect("distinct id"), id);
         assert_ne!(id, MAINTENANCE_ROOT_ID);
+    }
+
+    #[test]
+    fn namespace_and_parent_validation_preserve_unscoped_data() {
+        let parent = tempfile::tempdir().expect("cache parent");
+        fs::write(parent.path().join("ledger.v1"), b"legacy").expect("legacy");
+        assert_eq!(
+            validate_cache_base(parent.path().to_path_buf()).expect("parent"),
+            parent.path()
+        );
+        assert_eq!(engine_cache_namespace(), "1.2");
+        assert!(!parent.path().join(engine_cache_namespace()).exists());
+        assert_eq!(
+            fs::read(parent.path().join("ledger.v1")).expect("unchanged"),
+            b"legacy"
+        );
+        assert!(validate_cache_base(parent.path().join("ledger.v1")).is_err());
+        assert!(validate_cache_base(PathBuf::from("relative")).is_err());
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_symlink_parent_cannot_redirect_versioned_cache_writes() {
+        let parent = tempfile::tempdir().expect("parent");
+        let link = parent.path().join("link");
+        std::os::unix::fs::symlink(parent.path(), &link).expect("link");
+        assert!(validate_cache_base(link).is_err());
     }
 
     #[test]

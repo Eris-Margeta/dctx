@@ -23,6 +23,8 @@ mod encode;
 mod entry;
 mod keys;
 mod reader;
+#[cfg(feature = "warm-index-cache")]
+mod warm;
 
 use bytes::{decision_of, freshness_of};
 use keys::{file_inventory, limits_match, parser_compatible};
@@ -34,8 +36,9 @@ const REUSE_ATTEMPTS: u32 = 32;
 const MAGIC: &[u8] = b"dctxgen1";
 // 2: module nodes carry the export list in `signature` (DCX-55c); a version-1 cache lacks it and is rebuilt.
 // 3: each file row ends with its stat stamp (DCX-P-C5); a version-2 cache lacks it and is rebuilt.
-// 4: interned strings, structural node ids and numeric edge endpoints; older caches rebuild.
-const VERSION: u32 = 4;
+// 4: scoped queries retain per-file parser and completion provenance.
+// 5: interned strings, structural node ids and numeric edge endpoints; older caches rebuild.
+const VERSION: u32 = 5;
 const MAX_STRING: usize = 1_048_576;
 const MAX_COUNT: usize = 1_000_000;
 const SYNTAX_PARSER: &str = "dctx-lex-rust/syn-3.0.9";
@@ -80,7 +83,11 @@ impl Session {
         let Some(bytes) = self.load_retained()? else {
             return Ok(None);
         };
-        let Ok(decoded) = decode_generation(&bytes) else {
+        #[cfg(feature = "warm-index-cache")]
+        let decoded = warm::decode(&bytes);
+        #[cfg(not(feature = "warm-index-cache"))]
+        let decoded = decode_generation(&bytes);
+        let Ok(decoded) = decoded else {
             return Ok(None);
         };
         if decoded.source_key != source_key
@@ -104,6 +111,7 @@ impl Session {
             deadline_ms: scan_limits.deadline_ms,
             started_ms: started,
             now_ms: started,
+            elapsed: None,
         })?;
         let Some(stored_files) = file_inventory(&decoded.generation.files) else {
             return Ok(None);
@@ -187,6 +195,7 @@ impl Session {
     }
 }
 
+#[derive(Clone)]
 struct PersistedGeneration {
     source_key: String,
     view: String,
@@ -225,6 +234,11 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
     let taken_at = reader.u64()?;
     let id = reader.u64()?;
     let limits = [reader.u64()?, reader.u64()?, reader.u64()?, reader.u64()?];
+    let partial_count = reader.count(4)?;
+    let mut partial_dirs = Vec::with_capacity(partial_count);
+    for _ in 0..partial_count {
+        partial_dirs.push(reader.string()?);
+    }
     let file_count = reader.count(23)?;
     let mut files = Vec::with_capacity(file_count);
     for _ in 0..file_count {
@@ -270,9 +284,12 @@ fn decode_generation(bytes: &[u8]) -> Result<PersistedGeneration, DctxError> {
             size,
             modified,
             stamp,
+            syntax: reader.boolean()?,
+            partial: reader.boolean()?,
         });
     }
     let mut text = TextBlob::default();
+    text.partial_dirs = partial_dirs;
     let node_count = reader.count(53)?;
     let mut nodes = Vec::with_capacity(node_count);
     for _ in 0..node_count {

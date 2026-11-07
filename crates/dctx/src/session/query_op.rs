@@ -35,7 +35,27 @@ impl Session {
         }
         self.reject_transport(request)?;
         request.validate()?;
-        let generation = self.generation(handle)?;
+        if handle
+            .scope
+            .as_deref()
+            .is_some_and(|scope| request.source_scope() != Some(scope))
+        {
+            return Err(DctxError::invalid(
+                "request exceeds the direct handle source scope",
+            ));
+        }
+        let shared = self.generation_for_query(handle)?;
+        let projected = request
+            .source_scope()
+            .map(|scope| {
+                let mut projected = crate::index::scope::project(&shared, scope)?;
+                // Answer.snapshot continues to identify the pinned handle; the cursor's
+                // generation and precision refer to the selected source scope.
+                projected.digest.clone_from(&shared.digest);
+                Ok::<_, DctxError>(projected)
+            })
+            .transpose()?;
+        let generation = projected.as_ref().unwrap_or(&shared);
         let cursor_id = match &request.continuation {
             Some(token) => Some(parse_cursor(token, generation.id, request.verb)?),
             None => None,
@@ -48,15 +68,15 @@ impl Session {
         let now = self.clock.now().millis();
         check_deadline(now, now, request.limits.deadline_ms)?;
         let collected = if request.verb == Verb::Grep {
-            Collected::Records(self.grep_hits(&generation, request)?)
+            Collected::Records(self.grep_hits(generation, request)?)
         } else {
-            collect(&generation, request, resolved.depth)?
+            collect(generation, request, resolved.depth)?
         };
         let mut text_match = false;
         let mut records = match collected {
             Collected::Outcome(outcome) => {
                 let answer = self.answer_of(
-                    &generation,
+                    generation,
                     request.verb,
                     Vec::new(),
                     0,
@@ -79,7 +99,7 @@ impl Session {
                     None => (request.line_start, resolved.lines),
                 };
                 let (mut record, sliced_cap) =
-                    self.read_record(&generation, *record, count, start)?;
+                    self.read_record(generation, *record, count, start)?;
                 let resume_beyond = resume.as_ref().is_some_and(|item| item.beyond);
                 if resume_beyond
                     && !sliced_cap
@@ -91,7 +111,7 @@ impl Session {
                 return self.finish_read(
                     sink,
                     request,
-                    &generation,
+                    generation,
                     record,
                     &resolved,
                     origin,
@@ -107,21 +127,21 @@ impl Session {
                 }
                 // A find that matched no symbol falls back to the literal search of grep; a key also lists its read sites.
                 if request.verb == Verb::Find {
-                    (records, text_match) = self.find_with_text(&generation, request, records)?;
+                    (records, text_match) = self.find_with_text(generation, request, records)?;
                 }
                 if request.verb == Verb::Map {
-                    self.order_by_exports(&generation, request, &mut records);
+                    self.order_by_exports(generation, request, &mut records);
                 }
                 records
             }
         };
         // Callers are ranked over the whole answer, before the cursor and the page cut, so every page sees one order.
         let ranked =
-            request.verb == Verb::Neighbors && self.rank_sites(&generation, request, &mut records);
+            request.verb == Verb::Neighbors && self.rank_sites(generation, request, &mut records);
         // A neighbors probe on a declaration-only symbol names its paired definition once, as its first record.
         if request.verb == Verb::Neighbors
             && cursor_id.is_none()
-            && let Some(pair) = crate::index::pair_record(&generation, &request.target)
+            && let Some(pair) = crate::index::pair_record(generation, &request.target)
         {
             records.insert(0, pair);
         }
@@ -142,9 +162,9 @@ impl Session {
         }
         if request.verb == Verb::Neighbors {
             if !ranked {
-                self.attach_sites(&generation, request, &mut records);
+                self.attach_sites(generation, request, &mut records);
             }
-            self.attach_out_calls(&generation, request, &mut records);
+            self.attach_out_calls(generation, request, &mut records);
             let fits = |page: &[AnswerRecord], more: u64| {
                 let next = if more > 0 {
                     page.last()
@@ -156,7 +176,7 @@ impl Session {
                     &encode_page(
                         request,
                         &self.place,
-                        &self.answer_of(&generation, request.verb, page.to_vec(), more, next, None),
+                        &self.answer_of(generation, request.verb, page.to_vec(), more, next, None),
                     ),
                     &resolved,
                 )
@@ -174,7 +194,7 @@ impl Session {
                 None
             };
             let mut answer = self.answer_of(
-                &generation,
+                generation,
                 request.verb,
                 records.clone(),
                 more,

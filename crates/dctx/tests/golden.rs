@@ -1,5 +1,5 @@
 //! Public map verbs over the repository fixture.
-//! The strict profile reports structural coverage, not the enhanced `syn` label.
+//! File-local pages report the parser coverage of the selected file.
 //! Refusals leave the sink empty. A successful call sits beside each refusal.
 
 #![forbid(unsafe_code)]
@@ -51,9 +51,9 @@ fn five_verbs_project_the_golden_symbol() {
     assert_eq!(map.records[0].summary, "Respond.");
     assert_eq!(map.records[0].summary_source, "doc");
     assert!(map.records[0].source_utf8.is_none());
-    assert_eq!(map.precision.coverage, "structural");
+    assert_eq!(map.precision.coverage, "syntax");
     assert_eq!(map.precision.completion, "complete");
-    assert_eq!(map.precision.parser, "dctx-structural/2");
+    assert_eq!(map.precision.parser, "dctx-lex-rust/syn-3.0.9");
     assert_eq!(
         map.freshness.mode,
         FreshnessMode::ImmutableSnapshot.as_str()
@@ -63,10 +63,9 @@ fn five_verbs_project_the_golden_symbol() {
     assert!(map.outcome.is_none());
     let text = std::str::from_utf8(sink.as_bytes()).expect("utf8");
     assert!(text.contains("\"place\":\"fixture\""));
-    assert!(text.contains("\"coverage\":\"structural\""));
-    assert!(text.contains("\"parser\":\"dctx-structural/2\""));
+    assert!(text.contains("\"coverage\":\"syntax\""));
+    assert!(text.contains("\"parser\":\"dctx-lex-rust/syn-3.0.9\""));
     assert!(!text.contains("\"vcs\""));
-    assert!(!text.contains("syntax"));
 
     let mut sink = VecSink::new();
     let found = session.find(&handle, "ping", &mut sink).expect("find");

@@ -247,6 +247,8 @@ mod tests {
             size: 1,
             modified: 0,
             stamp: None,
+            syntax: false,
+            partial: false,
         };
         Generation {
             id: 1,

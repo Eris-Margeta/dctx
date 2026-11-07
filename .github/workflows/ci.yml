@@ -127,6 +127,12 @@ jobs:
       - name: Format
         run: cargo fmt --all -- --check
 
+      - name: Wrapper engine API boundary
+        if: ${{ !cancelled() }}
+        run: |
+          python3 tools/engine-contract/check_imports.py
+          python3 -m unittest discover -s tools/engine-contract -p 'test_*.py' -v
+
       - name: Clippy
         # Report independent gates even when formatting or another gate fails.
         if: ${{ !cancelled() }}
@@ -180,6 +186,10 @@ jobs:
         if: ${{ !cancelled() }}
         run: cargo build --release --locked -p dctx-cli
 
+      - name: CLI, MCP and RPC golden byte parity
+        if: ${{ !cancelled() && steps.release_build.outcome == 'success' }}
+        run: python3 tools/engine-contract/parity.py target/release/dctx-cli
+
       - name: Website dependencies (isolated venv)
         id: website_deps
         if: ${{ !cancelled() }}
@@ -207,3 +217,7 @@ jobs:
       - name: Release gates
         if: ${{ !cancelled() && steps.release_build.outcome == 'success' && steps.network_tool.outcome == 'success' }}
         run: scripts/release-check.sh --quick "$GITHUB_WORKSPACE/target/release/dctx-cli"
+
+      - name: Warm targeted-read syscall contract (Linux)
+        if: ${{ !cancelled() && steps.release_build.outcome == 'success' }}
+        run: python3 tools/engine-contract/warm_read.py target/release/dctx-cli

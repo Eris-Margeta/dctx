@@ -6,9 +6,9 @@
 
 - This is llms.txt: the facts, the route table and the start documents. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: 929d17afec74f011b11bd767b949a90060528f1d (2026-11-07T20:27:40Z), the last commit that changed one of the documents.
+- Docs commit: eb310501bf4a163e6129105d523e342266c82c37 (2026-11-07T21:08:05Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
-- Budget: 17,364 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Budget: 17,365 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
@@ -312,7 +312,7 @@ For structured consumption, `--json` puts the same source bytes in `source_utf8`
 
 ```text
 $ dctx map read 's:src/util.rs#greet' --json
-{"v":2,"place":"kiosk","verb":"read","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"structural","completion":"complete","parser":"dctx-structural/2"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":[44,126],"source_utf8":"pub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}","edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
+{"v":2,"place":"kiosk","verb":"read","freshness":{"mode":"strict","state":"verified"},"precision":{"coverage":"syntax","completion":"complete","parser":"dctx-lex-rust/syn-3.0.9"},"records":[{"id":"s:src/util.rs#greet","kind":"fn","path":"src/util.rs","lines":[2,4],"summary":"The greeting shown on the kiosk screen.","summary_source":"doc","signature":null,"span":[44,126],"source_utf8":"pub fn greet(name: &str) -> String {\n    format!(\"Hello, {}!\", title_case(name))\n}","edge":null,"direction":null,"target":null,"confidence":null}],"more":0,"next":null}
 ```
 
 ### Pack for a task
