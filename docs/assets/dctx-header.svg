@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 400" width="1280" height="400" role="img" aria-labelledby="t d"><title id="t">dctx - context, engineered</title><desc id="d">A code tree of many file nodes flows into a compact, stable block of tokens.</desc>
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14101f"/><stop offset="1" stop-color="#0b0a12"/></linearGradient>
+<linearGradient id="fl" x1="0" x2="1"><stop offset="0" stop-color="#8b5cf6" stop-opacity=".05"/><stop offset="1" stop-color="#8b5cf6" stop-opacity=".7"/></linearGradient>
+<linearGradient id="bk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a78bfa"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs>
+<rect width="1280" height="400" rx="24" fill="url(#bg)"/><rect x=".5" y=".5" width="1279" height="399" rx="24" fill="none" stroke="#8b5cf6" stroke-opacity=".35"/>
+<line x1="74" y1="48.0" x2="133" y2="48.0" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="66" cy="48.0" r="4.5" fill="#a78bfa" fill-opacity="0.6"/>
+<path d="M141 48.0 C 420 48.0, 400 140.0, 520 140.0" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="118" y1="71.5" x2="164" y2="71.5" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="110" cy="71.5" r="4.5" fill="#a78bfa" fill-opacity="0.9"/>
+<path d="M172 71.5 C 420 71.5, 400 149.23076923076923, 520 149.23076923076923" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="96" y1="95.0" x2="148" y2="95.0" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="88" cy="95.0" r="4.5" fill="#a78bfa" fill-opacity="0.6"/>
+<path d="M156 95.0 C 420 95.0, 400 158.46153846153845, 520 158.46153846153845" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="96" y1="118.5" x2="143" y2="118.5" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="88" cy="118.5" r="4.5" fill="#a78bfa" fill-opacity="0.4"/>
+<path d="M151 118.5 C 420 118.5, 400 167.69230769230768, 520 167.69230769230768" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="74" y1="142.0" x2="118" y2="142.0" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="66" cy="142.0" r="4.5" fill="#a78bfa" fill-opacity="0.9"/>
+<path d="M126 142.0 C 420 142.0, 400 176.92307692307693, 520 176.92307692307693" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="96" y1="165.5" x2="189" y2="165.5" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="88" cy="165.5" r="4.5" fill="#a78bfa" fill-opacity="0.9"/>
+<path d="M197 165.5 C 420 165.5, 400 186.15384615384616, 520 186.15384615384616" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="74" y1="189.0" x2="125" y2="189.0" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="66" cy="189.0" r="4.5" fill="#a78bfa" fill-opacity="0.4"/>
+<path d="M133 189.0 C 420 189.0, 400 195.3846153846154, 520 195.3846153846154" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="96" y1="212.5" x2="143" y2="212.5" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="88" cy="212.5" r="4.5" fill="#a78bfa" fill-opacity="0.4"/>
+<path d="M151 212.5 C 420 212.5, 400 204.6153846153846, 520 204.6153846153846" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="52" y1="236.0" x2="120" y2="236.0" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="44" cy="236.0" r="4.5" fill="#a78bfa" fill-opacity="0.4"/>
+<path d="M128 236.0 C 420 236.0, 400 213.84615384615387, 520 213.84615384615387" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="118" y1="259.5" x2="165" y2="259.5" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="110" cy="259.5" r="4.5" fill="#a78bfa" fill-opacity="0.4"/>
+<path d="M173 259.5 C 420 259.5, 400 223.0769230769231, 520 223.0769230769231" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="96" y1="283.0" x2="186" y2="283.0" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="88" cy="283.0" r="4.5" fill="#a78bfa" fill-opacity="0.9"/>
+<path d="M194 283.0 C 420 283.0, 400 232.30769230769232, 520 232.30769230769232" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="74" y1="306.5" x2="119" y2="306.5" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="66" cy="306.5" r="4.5" fill="#a78bfa" fill-opacity="0.4"/>
+<path d="M127 306.5 C 420 306.5, 400 241.53846153846155, 520 241.53846153846155" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="74" y1="330.0" x2="151" y2="330.0" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="66" cy="330.0" r="4.5" fill="#a78bfa" fill-opacity="0.6"/>
+<path d="M159 330.0 C 420 330.0, 400 250.76923076923077, 520 250.76923076923077" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<line x1="74" y1="353.5" x2="183" y2="353.5" stroke="#c4b5fd" stroke-opacity=".28" stroke-width="3" stroke-linecap="round"/>
+<circle cx="66" cy="353.5" r="4.5" fill="#a78bfa" fill-opacity="0.9"/>
+<path d="M191 353.5 C 420 353.5, 400 260.0, 520 260.0" fill="none" stroke="url(#fl)" stroke-width="1.4"/>
+<rect x="520" y="120" width="170" height="160" rx="12" fill="#1c1530" stroke="#8b5cf6" stroke-width="2"/>
+<rect x="536" y="136.0" width="120" height="9" rx="4.5" fill="url(#bk)" fill-opacity="0.95"/>
+<rect x="536" y="153.5" width="96" height="9" rx="4.5" fill="url(#bk)" fill-opacity="0.9099999999999999"/>
+<rect x="536" y="171.0" width="130" height="9" rx="4.5" fill="url(#bk)" fill-opacity="0.87"/>
+<rect x="536" y="188.5" width="140" height="9" rx="4.5" fill="url(#bk)" fill-opacity="0.83"/>
+<rect x="536" y="206.0" width="100" height="9" rx="4.5" fill="url(#bk)" fill-opacity="0.7899999999999999"/>
+<rect x="536" y="223.5" width="130" height="9" rx="4.5" fill="url(#bk)" fill-opacity="0.75"/>
+<rect x="536" y="241.0" width="130" height="9" rx="4.5" fill="url(#bk)" fill-opacity="0.71"/>
+<rect x="536" y="258.5" width="110" height="9" rx="4.5" fill="url(#bk)" fill-opacity="0.6699999999999999"/>
+<text x="605.0" y="304" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" fill="#a78bfa">stable prefix</text>
+<text x="605.0" y="106" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" fill="#a78bfa">deterministic bytes</text>
+<path d="M700 200 H760" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="3 5"/><path d="M756 192 L768 200 L756 208" fill="none" stroke="#8b5cf6" stroke-width="2"/>
+<text x="800" y="205" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="104" font-weight="800" fill="#fff" letter-spacing="-3">dctx</text>
+<text x="804" y="250" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="30" font-weight="600" fill="#a78bfa">context, engineered.</text>
+<text x="804" y="290" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="18" fill="#cbd5e1">Fewer tokens. Stable prefixes. Exact source.</text>
+<text x="804" y="318" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif" font-size="15" fill="#94a3b8">Rust  ·  offline  ·  no telemetry  ·  MCP server  ·  Apache-2.0</text>
+</svg>

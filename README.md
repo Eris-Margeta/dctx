@@ -1,8 +1,6 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/dctx-Context%2C%20engineered-8b5cf6?style=for-the-badge" alt="dctx">
+  <img src="docs/assets/dctx-header.svg" alt="dctx - context, engineered" width="100%">
 </p>
-
-<h1 align="center">dctx</h1>
 
 <p align="center">
   <strong>The context engine for AI-assisted software development.</strong><br>
@@ -22,17 +20,45 @@
     <img src="https://img.shields.io/badge/commercial-maintenance%20available-8b5cf6" alt="Commercial maintenance available">
   </a>
   <img src="https://img.shields.io/badge/telemetry-none-brightgreen" alt="No telemetry">
+  <img src="https://img.shields.io/badge/own%20benchmark-140%2F140-8b5cf6" alt="Own benchmark 140/140">
 </p>
 
 <p align="center">
+  <a href="#why-dctx">Why dctx</a> •
   <a href="#the-core-belief-prompt-processing-efficiency">Philosophy</a> •
   <a href="#installation">Installation</a> •
   <a href="#quick-start">Quick Start</a> •
   <a href="#map-mode-context-for-agents">Map mode</a> •
   <a href="#security--privacy">Security & Privacy</a> •
   <a href="docs/SPEC.md">Specification</a> •
-  <a href="https://www.dctx.internet.technology/">Website</a>
+  <a href="https://dctx.internet.technology/">Website</a>
 </p>
+
+---
+
+## Why dctx
+
+<table>
+<tr><td><b>Deterministic</b></td><td>Same source snapshot and request give identical bytes (every text verb checked over 5 runs on Linux; the cross-OS gate is still open). <code>dctx pack</code> tree lines carry no timestamps, so a <code>touch</code> changes nothing.</td></tr>
+<tr><td><b>Prefix-stable</b></td><td>In a <code>dctx pack</code> page, an edit keeps every byte before the edited file as a shared prefix, which is what a provider's prompt cache reuses. Map answers are not prefix-stable yet (<a href="docs/SPEC.md">spec</a> PPE-3).</td></tr>
+<tr><td><b>Private and offline</b></td><td>No telemetry, no model calls, no network. The release check counts socket calls under <code>strace -f</code> and fails on any. Secrets files are listed by name, never read.</td></tr>
+<tr><td><b>Fast</b></td><td>Cold index of the benchmark corpora in 0.13-1.20 s (Trail-Code 1.04-52.83 s, graphify 4.59-59.56 s), on one Linux x86_64 runner.</td></tr>
+<tr><td><b>Agent-ready</b></td><td><code>dctx mcp</code> is a stdio MCP server exposing the map verbs; answers are bounded and never split a record.</td></tr>
+<tr><td><b>Broad</b></td><td>50 language families: 36 with symbols and lexical call edges, 8 with symbol outlines, 6 document formats with headed sections; run <code>dctx languages</code>.</td></tr>
+<tr><td><b>Verified</b></td><td>TLA+ models of the cache lifecycle and the plugin system in <a href="docs/formal">docs/formal</a>, each with a mutation gate: every deliberately broken variant must be caught (plugins: 8 baselines, 59 mutants, 37 reachability witnesses). Plugin manifests and the plugin discovery index are verified with Ed25519 signatures.</td></tr>
+<tr><td><b>Measured</b></td><td>140/140 on our 70-question protocol using 29,340 tokens, against Trail-Code 122 (88,923) and graphify 96 (197,203). <a href="#measured-in-the-open">Details and caveats below.</a></td></tr>
+<tr><td><b>Your choice of surface</b></td><td>CLI, Rust library facade, MCP server, and a <a href="apps/dctx-desktop">desktop app</a> (0.11 preview, free, Apache-2.0).</td></tr>
+</table>
+
+### At a glance
+
+| | |
+|---|---|
+| Version | 1.1.0 (release candidate 1) |
+| License | Apache-2.0 |
+| Written in | Rust (2021 and 2024 editions): 36 crates plus the desktop app |
+| Tested platform | Linux x86_64 (macOS/Windows untested) |
+| Modes | `pack` (whole project or diff), `map` (agents), `mcp` (stdio server) |
 
 ---
 
@@ -108,10 +134,12 @@ Alternatively, the Unix [installer](tools/install.sh) builds the CLI and copies 
 ```zsh
 dctx pack .            # whole project as one structured context block on stdout
 dctx pack . --clipboard  # … straight to the clipboard
+dctx . -d -c           # only what changed since the last snapshot
+dctx . -t -c           # tree only, no file contents
 dctx                   # interactive menu
 ```
 
-`dctx pack` writes to stdout, the clipboard or `--output`; it creates a text export only when you request a file. Its tree lines carry the `ID` only, with no modification time and no size, so the page stays byte-identical across a bare `touch` and an edit keeps everything before the edited file as a shared prefix (what a prompt cache reuses); `--tree-stamps=on` brings back the 1.0.0 tree lines with `MOD:` and `SIZE:`. Running without arguments opens an interactive terminal menu.
+`dctx pack` writes to stdout, the clipboard or `--output`; it creates a text export only when you request a file. Its tree lines carry the `ID` only, with no modification time and no size, so the page stays byte-identical across a bare `touch` and an edit keeps everything before the edited file as a shared prefix (what a prompt cache reuses); `--tree-stamps=on` brings back the 1.0.0 tree lines with `MOD:` and `SIZE:`. The legacy `dctx .` snapshot commands still write project text exports and cache state. Running without arguments opens an interactive terminal menu.
 
 ---
 
@@ -129,7 +157,7 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 
 - **Source bytes**: `map read --json` includes source content; the current text renderer prints metadata only.
 - **Bounded**: output uses an estimated token budget (up to 2,000; explain up to 1,000), not a model tokenizer guarantee, and never splits a record.
-- **Deterministic**: the same tree and question give the same bytes, so prompt caches hit (see byte-stable answers below).
+- **Deterministic**: the same tree and question give the same bytes, so prompt caches hit.
 - **Precision and freshness**: use `--json` for the structured metadata. Structural declarations and conservative call edges do not imply exact semantic resolution.
 - **Languages**: every supported language is in one of three tiers (full, outline, docs); see [Language tiers](#language-tiers) below or run `dctx languages`.
 - **No Git, no network for map queries**: identity comes from dctx's own content digest; map does not need Git history or embeddings.
@@ -141,7 +169,7 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 - **Find**: quote a multi-word concept as one argument; a name that spells the whole phrase ranks just under an exact name. For config keys with no symbol match, `find` falls back to literal hits, and a SCREAMING_CASE key (`HOME`, `DJANGO_SETTINGS_MODULE`) always lists the code that reads it after the best exact symbol.
 - **Outline of a file**: `map map <file>` lists exported top-level declarations first, then the rest in source order, with impl blocks, constants and tests last; without `--budget` its page is 1,000 tokens so `--limit 40` is not cut early. Map and find text lines are `<id>\t<kind>\tL<start>-<end>`, since the id already names the path.
 - **MCP**: `dctx mcp` runs a stdio MCP server that exposes the map verbs as tools, including skeleton, path and export.
-- **Byte-stable answers**: on 6 Nov 2026, build `0495f5f` preserved 33/33 text and 33/33 JSON answers after unrelated comment edits across three pinned local corpora (11 query shapes each); all were identical over five runs, with paired-answer common-prefix ratio 1.0. The tested text headers are `# <place> <verb>`; default JSON omits snapshot digest, generation and age, which `--meta` restores. [Protocol, raw answers and limits](docs/research/stability-20261105/REPORT.md). Prefix-stable tier layering (SPEC §12.1) remains a target.
+- **Byte-stable answers**: the text header is `# <place> <verb>`, and JSON leaves out the snapshot digest, generation and age. `--meta` restores them.
 - **Source limit**: `DCTX_MAX_SOURCE_BYTES` sets the total source bytes one scan may read (1 to 17179869184; default 1 GiB).
 
 
@@ -155,6 +183,8 @@ Details: [Map mode guide](docs/guides/MAP-MODE.md). The three-way benchmark agai
 - **outline**: symbols only; no call edges are promised. Shell function bodies can yield same-file call guesses, but v1 does not promise shell call edges.
 - **docs**: headed sections.
 - **Confidence**: `guess` marks the heuristic outline families, and every record from those files carries confidence `guess`; `structural` means a dedicated lexer or deterministic document rules.
+
+<details><summary>Full language table</summary>
 
 <!-- languages:begin -->
 | Language | Tag | Files | Tier | Confidence |
@@ -211,6 +241,8 @@ Details: [Map mode guide](docs/guides/MAP-MODE.md). The three-way benchmark agai
 | LaTeX | `tex` | `.tex` | docs | structural |
 <!-- languages:end -->
 
+</details>
+
 ---
 
 ## Organization control
@@ -237,6 +269,7 @@ dctx plugin info dctx/git
 | Rule file | Behaviour |
 |---|---|
 | `.gitignore`, `.dctxignore`, global ignore | Excluded from normal selection; `--debug-ignored` can show ignored path metadata without reading content |
+| `.dctxomitcontent` | Listed in the tree; content replaced with `[Content omitted]` and never read |
 
 Selection happens before any byte is read, hashed, parsed or cached, and is checked again before output leaves the engine.
 
@@ -249,7 +282,7 @@ On top of the rule files there is a strict built-in deny with no override (no fl
 dctx decides by file name only; a secret pasted into an ordinary source file is not detected. The shipped `pack`, `dctx map` and `dctx mcp` path is guarded by `crates/dctx/tests/map_sensitive_files.rs`, `crates/dctx/tests/git_and_symlink_privacy.rs`, `crates/dctx/tests/map_env_files.rs`, the unit tests in `crates/dctx/src/adapters/fs.rs`, `crates/dctx/src/domain/policy.rs` and `crates/dctx-pack/src/snapshot.rs`, and an end-to-end check that runs every command against a git-tracked canary fixture (`<repo>/scripts/checks/V1-1.zsh`).
 
 ```zsh
-dctx pack . --debug-ignored  # see ignored paths in the tree without reading them
+dctx . --debug-ignored     # see ignored paths in the tree without reading them
 ```
 
 ```gitignore
@@ -282,7 +315,7 @@ On our 70-question protocol (designed by the dctx team; questions, gold facts an
 
 That protocol is ours, so it can favour dctx. An independently selected protocol (repositories picked by seed, callers gold from language servers, questions written without seeing dctx output) is pending: v1 card 6 publishes it, and its table will be added here whatever the result.
 
-Cold index of the 6 benchmark corpora (flask, ripgrep, pocketbase, trailcode, mixed, docs; median of 3 runs) took dctx 0.13–1.20 s, against Trail-Code 1.04–52.83 s and graphify 4.59–59.56 s (docs: no index), on one Linux x86_64 runner (Linux 6.12.113+deb13-cloud-amd64, x86_64 CPU). Linux x86_64 is the only tested platform.
+Cold index of the 6 benchmark corpora (flask, ripgrep, pocketbase, trailcode, mixed, docs; median of 3 runs) took dctx 0.13–1.20 s, against Trail-Code 1.04–52.83 s and graphify 4.59–59.56 s (docs: no index), on one Linux x86_64 runner (Linux 6.12.113+deb13-cloud-amd64, Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz). Linux x86_64 is the only tested platform.
 
 dctx makes no network calls: it made 0 socket calls in all 4 traced benchmark steps, and the release check (`scripts/release-check.sh`) asserts zero AF_INET/AF_INET6 connect/send calls under `strace -f` for every map verb, `pack`, `cache status` and `mcp`.
 
@@ -369,9 +402,8 @@ dctx/
 ├── apps/          # dctx-desktop
 ├── legacy-c/      # The original C implementation (dircontxt)
 ├── docs/          # Specification, design records, contracts, formal models, guides
-├── presentation/  # Slides and the dctx film
 ├── tools/         # Benchmarks, plugin tooling, test scripts
-└── website/       # dctx.internet.technology
+└── website/       # project website
 ```
 
 Start with [docs/SPEC.md](docs/SPEC.md), then [docs/CRATE-MAP.md](docs/CRATE-MAP.md).
