@@ -4,9 +4,18 @@ from __future__ import annotations
 import json
 import re
 
-from common import e, fmt
+from common import demo, e, fmt
 
 SAFE = re.compile(r"^[A-Za-z0-9_./=,:@%+-]+$")
+
+
+def output_examples() -> str:
+    """The same captured output section as README, rendered as site Markdown."""
+    import md
+    from output_examples import render
+
+    body, _, _ = md.to_html(render(demo()["records"]), "README.md", md.Linker({}))
+    return '<div class="prose">' + body + '</div>'
 
 
 def quote(arg: str) -> str:

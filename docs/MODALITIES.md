@@ -8,6 +8,23 @@ instructions, tool definitions, conversation history and the number of model
 turns. A tool call can require another model request carrying that context again;
 provider caching can change its billed cost. Count both calls and session tokens.
 
+## Available surfaces and publication status
+
+| Modality | Install | Status | Best for |
+|---|---|---|---|
+| CLI / interactive terminal | [Prebuilt archives](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), or [build from source](../README.md#from-source) | Available now; `cargo install dctx-cli` publishing soon | One-off chat (`pack --clipboard`), shell agents, scripts and CI; run `dctx` for the terminal menu |
+| MCP server | Included in the CLI; configure `dctx mcp /absolute/project` | Available now, stdio | Claude Code, Cursor and Codex tool calls on a scoped project |
+| Rust library (`dctx` facade) | Tagged Git dependency in the [library section](#rust-library-embed-the-facade) | Available from Git; crates.io publishing soon | Embedding pack, map, templates and cache in Rust tools and editors |
+| npm CLI (`npx dctx`) | `npx dctx` after publication; use archives today | Publishing soon | Running the native CLI from a Node toolchain |
+| Desktop app | [Build the Tauri app](../apps/dctx-desktop/README.md#quick-start) | Tauri 0.11 preview today; GPUI rebuild planned | Selecting projects and generating snapshots in a GUI |
+| Python / Node bindings | No supported package install yet | Planned | Future in-process Python and JavaScript integrations |
+
+The npm package runs the native CLI; it is separate from the planned Node library
+binding. Registry installs marked publishing soon are not available yet; use the
+release archives or the tagged Rust Git dependency today.
+
+## Choose by task
+
 | Your situation | Start here | Avoid it when |
 |---|---|---|
 | Human, one-off chat | `dctx pack . --clipboard` | The selected tree is too large to paste or contains irrelevant material |
@@ -60,8 +77,8 @@ dctx map read 's:tests/fixtures/basic.go#Add' --json
 dctx map skeleton tests/fixtures/basic.go --budget 1000
 ```
 
-For your project, use the exact ID returned by `find`. `read --json` includes
-source bytes; the current text renderer prints read metadata only. Skeletons
+For your project, use the exact ID returned by `find`. Both text `read` and
+`read --json` include verified source bytes; JSON carries them in `source_utf8`. Skeletons
 show declaration signatures without bodies. If an answer has `more` and `next`,
 pass that opaque `next` value with `--cursor` on the same request, and count the
 extra call. Budgets are estimated output tokens, not a model tokenizer promise.
@@ -148,11 +165,46 @@ Configure your MCP client to launch this process in the selected project root:
 dctx mcp .
 ```
 
+### Client configuration
+
+Install the CLI archive first. Replace both absolute paths below with your
+executable and the project to index (on Windows, use `dctx.exe` and JSON-escaped
+paths). An explicit project path avoids relying on the client's working directory.
+For a source build, point `command` at `target/release/dctx-cli`.
+
+[Claude Code](https://code.claude.com/docs/en/mcp) (`.mcp.json` at the project root)
+and [Cursor](https://cursor.com/docs/mcp) (`.cursor/mcp.json`) use this JSON:
+
+```json
+{
+  "mcpServers": {
+    "dctx": {
+      "type": "stdio",
+      "command": "/absolute/path/to/dctx",
+      "args": ["mcp", "/absolute/path/to/project"]
+    }
+  }
+}
+```
+
+[Codex](https://developers.openai.com/codex/mcp/) uses `~/.codex/config.toml`
+(or `.codex/config.toml` in a trusted project):
+
+```toml
+[mcp_servers.dctx]
+command = "/absolute/path/to/dctx"
+args = ["mcp", "/absolute/path/to/project"]
+```
+
+
+### Tools and startup cost
+
 It exposes ten tools: `map`, `find`, `neighbors`, `explain`, `read`, `skeleton`,
 `grep`, `hubs`, `path`, `export`. These are query tools, not a pack or cache-admin
 interface. Export emits the whole graph without the normal answer-token cap.
-For source bytes, set the MCP `read` argument `"json": true`, just as CLI
-reads need `--json`. Without it, read output contains metadata only.
+Both text and JSON `read` answers include verified source bytes. Set the MCP
+`read` argument `"json": true` for structured output with `source_utf8`, equivalent
+to the CLI's `--json`.
 
 | Payload | Exact UTF-8 bytes | Estimated tokens |
 |---|---|---|
@@ -218,3 +270,68 @@ cache hits, billed tokens or whole-session latency. A bare `touch` leaves defaul
 pack output unchanged; a real edit can preserve the bytes before the edited
 file. Do not assume every edit preserves the entire prompt, or that provider
 cache retention and minimum-prefix requirements are controlled by dctx.
+
+
+## Rust library: embed the facade
+
+The supported entry point for Rust integrations is the [`dctx` facade](../crates/dctx),
+which exposes `Session`, `SnapshotRequest`, `MapRequest`, `PackRequest`, sinks,
+templates and cache operations. Internal engine crates are implementation details.
+The facade is available from Git now; **crates.io publishing soon**. In your
+application's `Cargo.toml`:
+
+```toml
+[dependencies]
+dctx = { git = "https://github.com/Eris-Margeta/dctx", tag = "v1.2.0" }
+```
+
+The [ten-line pack example](../README.md#use-as-a-library) is compiled and run as a
+[workspace doctest](../examples/library/README.md). It uses an in-memory source and
+an explicit 8 MiB ephemeral storage ceiling, so it needs no CLI subprocess or
+project scan. Run it from this repository's root:
+
+```sh
+cargo test --locked -p dctx-library-example --doc
+```
+
+The host supplies source, clock, cancellation, selection policy, grants, storage
+and place/view names. The facade does not discover a home directory, global
+configuration, Git executable or plugin host; it does not print to stdout.
+The example's `println!` belongs to the caller. A `VecSink` collects the encoded
+pack or query answer for your application to consume.
+
+For filesystem use, open an `FsSource` at a scoped root and supply a live `Clock`.
+The source does **not** automatically load `.gitignore`; the host must pass its
+ignore-rule texts through `RuleTexts` / `SelectionPolicy`. Choose storage ceilings
+and persistence explicitly. The CLI supplies its own config, rules and cache
+lifecycle, so copying a library call without that host policy is not equivalent
+to invoking the CLI.
+
+## npm CLI: publishing soon
+
+`npx dctx` is the planned npm entry point for the native command-line executable.
+The registry package is not live yet; use the prebuilt release archives today.
+After publication, the intended invocation is:
+
+```sh
+npx dctx pack .
+```
+
+This is a CLI distribution for Node-based workflows, not an in-process JavaScript
+API. Node bindings are a separate planned surface.
+
+## Desktop app: Tauri preview today
+
+The [desktop app](../apps/dctx-desktop/README.md) is a Tauri 2 app, currently the
+0.11 preview. It uses `dctx-desktop-api` and the shared Rust facade. Build it from
+source using the app's [quick start](../apps/dctx-desktop/README.md#quick-start);
+the CLI archives do not install a desktop application. A GPUI rebuild is planned,
+not the current downloadable or buildable desktop implementation.
+
+## Python and Node bindings: planned
+
+There is no supported Python or Node in-process binding package to install yet.
+The [binding plans](../bindings/README.md) describe future work; their illustrative
+APIs are not available today. Until then, Python and JavaScript tools can invoke
+the CLI as a subprocess and consume `--json` map answers. Use the Rust facade when
+you need an in-process engine now.
