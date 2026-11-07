@@ -1,16 +1,19 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # dctx Desktop
 
 > **Cross-platform GUI for dctx - Directory Context Generator**
 
 **License**: Apache-2.0 · free, forever
-**Status**: v0.1.0 - Working prototype
+**Status**: 0.11.0 Tauri preview; GPUI rebuild planned
 **Platform**: macOS, Windows, Linux
 
 ---
 
 ## About
 
-dctx Desktop is a modern, cross-platform GUI application for generating AI-ready context snapshots from your codebase. Built with **Tauri 2.0** and powered by the open-source `dctx-core` library.
+dctx Desktop is a modern, cross-platform GUI application for generating AI-ready context snapshots from your codebase. Built with **Tauri 2.0** and powered through `dctx-desktop-api` and the shared `dctx` facade. The planned GPUI
+rebuild will also use Apache-2.0. Copyright Eris Margeta.
 
 ### Why Desktop?
 
@@ -294,13 +297,16 @@ bun run tauri:build
 
 dctx Desktop is **free, forever** — for individuals, teams and companies — and licensed under Apache-2.0 like the rest of this repository. See the root [LICENSE](../../LICENSE) and the announcement on [the dctx website](https://www.dctx.internet.technology/).
 
-There is no proprietary edition. Organizations that want support or long-term maintenance can sign a maintenance agreement; see [MAINTENANCE.md](../../MAINTENANCE.md).
+Organizations that want support or long-term maintenance can sign a maintenance agreement; see [MAINTENANCE.md](../../MAINTENANCE.md).
 
 ---
 
 ## Roadmap
 
-### ✅ v0.1.0-alpha (Current)
+These items are planning notes without delivery dates. See the source and release
+notes for implemented behavior. The next UI direction is GPUI.
+
+### Tauri preview
 
 - [x] Tauri 2.0 setup
 - [x] Drag & drop folder selection
@@ -310,7 +316,7 @@ There is no proprietary edition. Organizations that want support or long-term ma
 - [x] Light/dark mode
 - [x] Safety limits
 
-### 🚧 v0.2.0 (Next - 2 weeks)
+### Planned improvements
 
 - [ ] Visual filter configuration UI
 - [ ] Real-time tree preview
@@ -318,19 +324,17 @@ There is no proprietary edition. Organizations that want support or long-term ma
 - [ ] Settings panel
 - [ ] Recent projects dropdown
 
-### 🔮 v0.3.0 (4 weeks)
+### Further design work
 
 - [ ] Visual diff viewer
 - [ ] Template selection UI
 - [ ] Project bookmarks
 - [ ] Search within snapshot
 
-### 🚀 v1.0.0 (8 weeks)
+### Release engineering
 
 - [ ] Code signing (macOS + Windows)
 - [ ] Auto-updater
-- [ ] License key system
-- [ ] Payment integration
 - [ ] Production release (downloads on https://www.dctx.internet.technology)
 
 ---

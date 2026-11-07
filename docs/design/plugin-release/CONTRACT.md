@@ -1,14 +1,16 @@
-# Release formats v1 — PL-RELC
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
+# Release formats v1
 
-Normative PA decisions under decision 114, 2026-10-18; reversible by a versioned contract change.
-Implements REL-C in `PL-REL-PLAN.md:120` and its §§2–4. Depends on the existing distribution contracts below.
-REL-T/B/M/I/G/K consume these six files. This packet defines formats and an offline structural validator;
+Status: current release metadata contract; changes require a versioned contract revision.
+Build, signing, manifest, index and platform tooling consume these formats.
+This contract defines formats and an offline structural validator;
 it neither implements product verification nor establishes a reproducible build, native qualification, trust or publication permission.
 
 ## 1. Existing formats remain authoritative
 
 Paths below are repository-relative; citations refer to this checkout. No plugin/index schema is duplicated here.
-The packet's named `crates/dctx-plugin-distribution/README.md` is absent; source and frozen schemas are the authority.
+Source and frozen schemas define the implementation boundary.
 
 | Existing object | Closed fields / rules | Source file:line |
 |---|---|---|
@@ -45,12 +47,12 @@ All digests are lowercase 64-hex SHA-256 of exact completed bytes; positive size
 | `authentication` | `{algorithm:"Ed25519",domain:"dctx-plugin-index-v1",key_fingerprint,index_sha256,index_sequence,trust}`; trust is `test` or `production` |
 | `qualification` | `{state,reason,native,target,profile,source_revision,build_inputs_sha256,cli_sha256,plugin_sha256,provider,records}` |
 | Qualification values | State `candidate` or `promotable`; candidate needs a nonblank reason, promotable an empty reason. `native` is boolean. Binding fields must equal the enclosing release and completed CLI/plugin digests. |
-| `provider` | `unqualified`, `qualified`, or `bundled-git-pending-confinement`; pending is default-only and has the limited decision 080 meaning below |
+| `provider` | `unqualified`, `qualified`, or `bundled-git-pending-confinement`; pending is default-only and has the limited bundled exception described below |
 | `records` | Closed object with optional `native,reproducibility,crypto,lifecycle,privacy,git,image_binding,native_inputs`, each an `artifact`. All eight are mandatory for a promotable shape. |
 
 An evidence record must independently bind the same target, profile/features, source, recipe, artifact digests,
 OS/CPU/libc/SDK floors and provider. Its exact document bytes are authenticated by the envelope's digest.
-The producing platform/crypto/lifecycle packet owns its evidence format; this contract does not invent approval receipts.
+Platform, cryptography and lifecycle checks define their evidence formats; this contract does not invent approval receipts.
 REL-G verifies record content, issuer, freshness and current acceptance. A filename, hash, boolean or `state` declaration alone is no proof.
 Evidence records and their referenced inputs must be present for real promotion, including approved exact native tool pins.
 
@@ -95,10 +97,10 @@ Both default and strict require their own native evidence; a successful cross-bu
 Invariant P1: promotable ⇒ eligible exact target ∧ native evidence ∧ all eight accepted evidence records ∧ production trust.
 Invariant P2: every record binds this exact source/recipe/target/profile and completed artifact digests; mismatch or staleness refuses.
 Invariant P3: strict contains no bundled worker. Default contains the separately inventoried worker with the CLI's containing digest.
-decision 080 permits `bundled-git-pending-confinement` only for verified containing-distribution Git, with consent, lifecycle, privacy,
+The protocol permits `bundled-git-pending-confinement` only for verified containing-distribution Git, with consent, lifecycle, privacy,
 broker/Git and image-binding evidence. It claims no isolation. Standalone/installed overrides still require a qualified provider before enablement.
-Packaging the standalone binary does not authorize its execution. General launcher support remains blocked as described in `PL-REL-PLAN.md:109`.
-No target is proven promotable by this packet; eligibility is a policy choice, not native qualification.
+Packaging the standalone binary does not authorize its execution. General launcher support requires native qualification.
+No target is proven promotable by this contract; eligibility is a policy choice, not native qualification.
 
 ## 5. Provenance and SBOM
 
@@ -129,7 +131,7 @@ Native/system libraries are separate components with reviewed versions, purls, l
 The CLI (`dctx/cli`), standalone plugin (`dctx/git/standalone`) and default's bundled worker (`dctx/git/bundled`) are distinct components.
 The bundled component hashes its containing CLI and names that bom-ref in `dctx:containing-component`; no worker binary is invented.
 Rust package components hash their source closure. Root properties bind target/profile/source; role-specific properties are closed in the profile.
-Amended 18.10.2026 by the PA after the real-workspace run: the only additional optional properties are `cdx:cargo:cfg-unresolved` (nonempty cfg expression text on the affected component) and `cdx:cargo:cfg-unresolved-count` (decimal digits on the document metadata); all other unknown property names remain refused.
+Amended 2026-10-18 after workspace validation: the only additional optional properties are `cdx:cargo:cfg-unresolved` (nonempty cfg expression text on the affected component) and `cdx:cargo:cfg-unresolved-count` (decimal digits on the document metadata); all other unknown property names remain refused.
 Every component has a dependency row `{ref,dependsOn}`, including empty leaves; refs are unique, no dangling edges, CLI depends on its worker.
 REL-I checks the complete independent Cargo/native closure, real licence expressions and package URLs; the stdlib checker checks shapes/bindings only.
 No Syft, external SBOM generator, random serial number, timestamp or host path enters this deterministic profile.
@@ -138,7 +140,7 @@ No Syft, external SBOM generator, random serial number, timestamp or host path e
 
 `build-inputs.json` pins stable Rust **1.97.1**, distribution Cargo **1.97.1**, minimal profile and explicit cargo/clippy/rust-std/rustc/rustfmt.
 Component versions denote their Rust distribution, not clippy/rustfmt's independent version banners. REL-T owns the exact toolchain file.
-Rustc's observation is supplied by the PA; this packet runs neither rustc nor Cargo. Cargo/component agreement must be checked on native builders.
+The recorded compiler version is a historical observation. Cargo/component agreement must be checked on native builders.
 No native runner/linker/SDK version has been approved here; explicit blocked reasons and required pin fields replace guessed versions.
 An accepted `native_inputs` record supplies exact approved versions/digests and measured OS/libc floors, bound as a provenance material.
 

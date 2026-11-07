@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # dctx vs Trail-Code: head-to-head benchmark (October 2026)
 
 Isolated, reproducible comparison of two code-context tools for coding agents on seven real corpora

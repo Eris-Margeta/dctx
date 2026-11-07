@@ -1,7 +1,9 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Semantic validation v1
 
-PL-C · normative supplement to the schemas · PLUGINS.md §§3–5.
-The protocol, template and host owners implement these rules after structural
+Status: normative supplement to the schemas.
+The protocol, template and host components implement these rules after structural
 decoding. Predicate names below are stable references for the corpus and matrix.
 
 ## Records and declarations

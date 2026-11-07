@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Exact measured commands
 
 Every row in `runs.jsonl` includes its exact argv, working directory, environment overrides, stdout, stderr, byte count, SHA-256 and exit. The disposable `/tmp` prefix differs on reproduction.

@@ -1,6 +1,8 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Contract corpus
 
-PL-C · data for PL-P/PL-D/PL-M/PL-H/PL-G/PL-I conformance.
+Protocol, host, Git, distribution and model conformance inputs.
 Depends on the adjacent schemas and normative semantic documents.
 Nothing here executes a plugin, signs a release or establishes publisher trust.
 
@@ -46,7 +48,7 @@ in a fake registry; give fixture/second a matching fake identity/lock before
 checking edges. It is not a trusted-install fixture. The optional-unavailable
 case tests an unavailable lock, not the default available registry. Source DTS
 fixtures are v2 plugin-section fragments; insert them under the existing DTS
-v2 container. No new outer DTS version directive is introduced by this packet.
+v2 container. The outer DTS version directive is unchanged.
 
 ## Stateful scenarios
 
@@ -82,7 +84,7 @@ bytes. An input of null is absent or deliberately withheld because policy
 forbids reading; inspect file_exists/selection rather than inventing bytes.
 Coverage and repository facts are injected independently of source disclosure.
 Stages/receipts and spy counters must match; no real Git operation is authorized
-by running a fake-domain case. Real platform corpus remains PL-R/PL-A/PL-G work.
+by running a fake-domain case. Native platform checks require separate adversarial fixtures.
 
 ## Digest provenance and reproduction
 
@@ -97,8 +99,7 @@ canonical compiled plan, action arguments and explicitly injected empty
 selection/policy preimages. Remaining Git text/key fingerprints are derived
 from their included preimages. Their expected values were authored using the
 SHA-256 padding/compression arithmetic in dctx-hash's sha256.rs/compress.rs;
-the Rust crate itself was not executed in this read/edit packet. The consuming
-remote predicate must recompute **all** these identities using the public
+Conformance checks must recompute **all** these identities using the public
 `dctx_hash::Sha256` API and compare digest bytes plus byte_length, both one-shot
 and incremental. Do not use a placeholder, a padded dummy hex string, the hash
 of base64 text, or a core Git hash as an expected identity. The deliberately
@@ -106,6 +107,5 @@ wrong artifact case uses a real digest of *different included bytes*.
 
 `schema`/`semantic` acceptance does not imply a signature, native format or OS
 confinement check passed. There are no forged "valid signed release" fixtures.
-PL-I/PL-REL own complete signed executable bundles and separate key manager grant
-requirements. The permitted PL-C directory checks do not validate this corpus;
-downstream remote conformance must do so before implementation promotion.
+Complete signed executable bundles require separate release and key-management
+evidence. Directory checks alone do not validate this corpus.

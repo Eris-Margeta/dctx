@@ -31,7 +31,7 @@ LLMS_LINKS = [
     ("Docs", [("README", doc_path("readme") + "index.md", "install, quick start, map mode"),
               ("Specification", doc_path("spec") + "index.md", "constraints and roadmap"),
               ("Map mode", doc_path("map-mode") + "index.md", "every map verb"),
-              ("Agent snippet", doc_path("agents") + "index.md", "AGENTS.md text"),
+              ("Which mode?", doc_path("modalities") + "index.md", "scope and startup cost"),
               ("All documents", "/docs/", "with Markdown twins")]),
     ("CLI", [("CLI reference", "/cli/", "help, env, exit codes, MCP tools"),
              ("Languages", "/languages/", "50 languages by tier")]),
@@ -82,7 +82,7 @@ def llms_small() -> str:
     _, head, rows = data.md_tables(md.read("docs/CLI-EXIT-CODES.md"))[0]
     exits = "\n".join(f"- {r[0]}: {r[1]}" for r in rows)
     facts = [
-        f"- {r7['points']['dctx']}/140 points on the 70-question protocol (Trail-Code {r7['points']['trail']}, graphify {r7['points']['graphify']}); the protocol was designed by the dctx team: {BLOB}{data.BENCH}",
+        f"- Compare with grep plus file reads; count startup and all model turns, not just tool output: {ORIGIN}/docs/modalities/",
         f"- Cold index {lo:.2f}-{hi:.2f} s on {n} corpora, median of 3 (run 7): {BLOB}{data.RUN7}",
         f"- {langs['total']} languages: {langs['tiers']['full']} full, {langs['tiers']['outline']} outline, {langs['tiers']['docs']} docs: {ORIGIN}/languages/",
         f"- {stab['text']} text and {stab['json']} JSON answers byte-identical after unrelated edits: {BLOB}{data.STAB}",

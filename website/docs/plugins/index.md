@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Plugins
 
 A plugin adds commands or hooks through a bounded, versioned JSON protocol over
@@ -5,7 +7,7 @@ stdio. The host brokers its requested effects; installation, enablement,
 capability consent and execution admission are separate steps. Bundled code can
 run as a worker of the same executable; independently installed artifacts use
 the plugin protocol. Availability is limited as described below.
-dctx, the bundled Git plugin and this guide are Apache-2.0 (decision 078).
+dctx, the bundled Git plugin and this guide are Apache-2.0.
 
 ## Bundled Git plugin and consent
 
@@ -26,7 +28,7 @@ disclose these grants:
 | Outputs / network | Neither requested. |
 
 This narrow optional Git recipe belongs to the plugin boundary. The map/core
-does not run Git, read `.git/` or use Git hashes for identity (decision 078).
+does not run Git, read `.git/` or use Git hashes for identity.
 
 Review the requested capabilities before approving:
 

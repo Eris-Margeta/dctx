@@ -1,7 +1,9 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Bundled Git v1 profile
 
-PL-C · normative · PLUGINS.md §6 and decision 078/decision 080.
-PL-G owns the algorithm; host/adapter owners implement audited effects.
+Status: normative bundled Git profile.
+The Git plugin defines the algorithm; host adapters implement audited effects.
 Core hashing, indexing, freshness, cache, pack and map never depend on Git.
 
 The canonical plugin is `dctx/git`, implemented in `plugins/dctx-plugin-git`.
@@ -69,7 +71,7 @@ Administrative scope includes only necessary index/lock/control metadata and
 object writes derived from the authorized `.gitignore`. It never permits
 excluded source/history reads, broad worktree scans, config homes, credentials,
 network, filters, hooks/helpers or unapproved descendants. Denial by organization
-or unsupported repository features leaves edit-only behavior. PL-R must pin
+or unsupported repository features leaves edit-only behavior. Feasibility must pin
 Git/OS versions and prove malicious config/include/attribute/filter, shared
 object, worktree and index-extension handling before a real recipe is accepted.
 The bundled confinement exception does not waive this program recipe gate.

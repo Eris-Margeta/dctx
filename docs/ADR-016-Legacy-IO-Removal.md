@@ -1,6 +1,10 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-016: Legacy IO Removal
 
-**Status:** accepted (PA, decision 114, pending the maintainer confirmation)
+**Status:** current — architectural principle retained; historical examples describe their original release.
+
+For shipped behavior and limitations, see the [README](../README.md), [testing guide](TESTING.md) and [specification](SPEC.md).
 
 ## Context
 
@@ -18,7 +22,7 @@ Keep `dctx-core` a pure domain with no filesystem, environment, process or globa
 
 Record the five decision 114 defaults against the open decisions in `docs/design/D3-LEGACY-REMOVAL.md`:
 
-| Decision | Accepted PA default; evidence/scope |
+| Decision | Recorded design; evidence/scope |
 | --- | --- |
 | Removal boundary | Removal in this tree only; downstream/release acceptance is separate (`docs/design/D3-LEGACY-REMOVAL.md`, D3-08/D3-10). |
 | Format compatibility | Keep import and byte-identical export against pinned fixtures, including the documented sorted compiled-template encoding (`docs/design/D3-COMPATIBILITY.md`). |

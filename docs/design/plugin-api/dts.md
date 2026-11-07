@@ -1,8 +1,10 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # DTS plugin declarations
 
-PL-C · normative source and compiled form · PLUGINS.md §3.5.
+Status: normative template source and compiled plugin form.
 Extends DTS v2 and the existing ContextPlan; does not replace their grammar.
-PL-D compiles the declarations against verified installed manifests/locks.
+The template compiler resolves declarations against verified installed manifests/locks.
 
 ## Source grammar
 

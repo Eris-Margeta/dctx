@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 Eris Margeta
 // apps/dctx-desktop/src/navigation.ts
 //
 // Screen navigation and state management for multi-screen desktop app

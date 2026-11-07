@@ -3,6 +3,8 @@
 # Fails unless every workspace member's Cargo.toml declares `license = "Apache-2.0"` in [package], or inherits it with
 # `license.workspace = true` (or `license = { workspace = true }`) while [workspace.package] sets `license = "Apache-2.0"`.
 # Also fails unless LICENSE (the Apache License, Version 2.0 text) and a non-empty NOTICE exist at the root.
+# Desktop application TS/JS/CSS/HTML sources must carry Apache-2.0 and Eris Margeta headers.
+# Test trees, generated output and third-party dependencies are outside this source-header check.
 # Members come from [workspace] members/exclude of the root Cargo.toml; a root [package] is checked as well. No cargo needed.
 set -eu
 root=${1:-"$(cd "$(dirname "$0")/.." && pwd)"}
@@ -68,5 +70,32 @@ if [ ! -s LICENSE ]; then bad "LICENSE missing or empty"
 elif ! grep -q 'Apache License' LICENSE || ! grep -q 'Version 2\.0' LICENSE; then bad "LICENSE is not the Apache License, Version 2.0"; fi
 [ -s NOTICE ] || bad "NOTICE missing or empty"
 
+# Restrict traversal to first-party application sources. Keep HTML's doctype first;
+# both SPDX fields must appear in the first eight lines in the language's comment form.
+desktop=apps/dctx-desktop
+sources=()
+if [ -d "$desktop/src" ]; then
+  while IFS= read -r -d '' source; do sources+=("$source"); done < <(
+    find "$desktop/src" -type f \( -name '*.ts' -o -name '*.tsx' -o -name '*.js' -o -name '*.mjs' -o -name '*.cjs' -o -name '*.css' -o -name '*.html' \) -print0
+  )
+fi
+for source in "$desktop/index.html" "$desktop/vite.config.ts"; do
+  [ ! -f "$source" ] || sources+=("$source")
+done
+for source in ${sources[@]+"${sources[@]}"}; do
+  case "$source" in
+    *.html) prefix='<!-- '; suffix=' -->' ;;
+    *.css) prefix='[[:space:]]*(/\*|\*) '; suffix='([[:space:]]*\*/)?' ;;
+    *) prefix='// '; suffix='' ;;
+  esac
+  header=$(head -n 8 "$source")
+  if ! grep -Eq "^${prefix}SPDX-License-Identifier: Apache-2\.0${suffix}$" <<< "$header"; then
+    bad "$source: missing Apache-2.0 SPDX source header"
+  fi
+  if ! grep -Eq "^${prefix}SPDX-FileCopyrightText: [0-9]{4} Eris Margeta${suffix}$" <<< "$header"; then
+    bad "$source: missing Eris Margeta copyright header"
+  fi
+done
+
 [ "$problems" = 0 ] || { echo "spdx_check FAIL: $problems problem(s)" >&2; exit 1; }
-echo "spdx_check ok: ${#manifests[@]} crates, LICENSE and NOTICE present"
+echo "spdx_check ok: ${#manifests[@]} crates, ${#sources[@]} desktop sources, LICENSE and NOTICE present"

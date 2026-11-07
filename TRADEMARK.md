@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # dctx trademark policy
 
 The "dctx" name and logo are trademarks of Eris Margeta. The Apache-2.0 license covers the code only, not these marks.

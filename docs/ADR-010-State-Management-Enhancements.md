@@ -1,7 +1,11 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-010: State Management Enhancements
 
 **Date:** 2026-01-25
-**Status:** Accepted
+**Status:** superseded — historical design and implementation record.
+
+Use the [current product contracts](design/PRODUCT-CONTRACTS.md), [README](../README.md) and [testing guide](TESTING.md) for release behavior.
 
 ---
 

@@ -1,6 +1,6 @@
 # dctx
 
-> The context engine for AI-assisted software development. Fewer tokens. Stable prefixes. Exact source. One policy for every workflow.
+> Turn a codebase into focused context for AI assistants. Pack a project, find symbols and read exact source locally. Stable output helps prompt caches reuse context.
 
 dctx 1.2.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short: https://www.dctx.internet.technology/llms-small.txt
 
@@ -9,7 +9,7 @@ dctx 1.2.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short:
 - [README](https://www.dctx.internet.technology/docs/readme/index.md): install, quick start, map mode
 - [Specification](https://www.dctx.internet.technology/docs/spec/index.md): constraints and roadmap
 - [Map mode](https://www.dctx.internet.technology/docs/map-mode/index.md): every map verb
-- [Agent snippet](https://www.dctx.internet.technology/docs/agents/index.md): AGENTS.md text
+- [Which mode?](https://www.dctx.internet.technology/docs/modalities/index.md): scope and startup cost
 - [All documents](https://www.dctx.internet.technology/docs/): with Markdown twins
 
 ## CLI
@@ -35,6 +35,8 @@ dctx 1.2.0: a Rust CLI and MCP server; Apache-2.0; offline, no telemetry. Short:
 
 ## Why dctx
 
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Why dctx exists
 
 What problem dctx solves, the rules it follows, and why "byte-identical output" matters even if you never think about bytes.
@@ -51,7 +53,13 @@ Each of these costs you. Models read text as **tokens** (small chunks of text, r
 
 dctx is a command-line tool that reads your project on your machine and answers precise questions about it: where a function is defined, what calls it, what its exact source is. Each answer fits a size budget and is built from whole pieces of syntax; a piece that is too long is marked as cut, with a way to get the rest. The same question about the same code gives the same bytes every time. An assistant can run the commands itself or call them through the built-in MCP server (`dctx mcp`; MCP is a standard way for AI tools to call other tools). dctx can also pack a whole project into one structured block for a chat.
 
-Think of photocopying random pages of a book versus using its index. dctx is the index.
+### Start with grep plus file reads
+
+The baseline is a literal search followed by reading the relevant files or line
+ranges. That is often enough for a short task. dctx earns its place when exact
+symbol reads and outlines avoid repeatedly sending large, irrelevant files.
+It aims to be one context-management tool across these workflows; choose the
+surface that fits in [Choosing how to use dctx](MODALITIES.md).
 
 ### A small worked example
 
@@ -74,7 +82,7 @@ $ dctx map neighbors 's:tests/fixtures/basic.go#Add' --edge calls --dir in
 calls:in:s:tests/fixtures/basic.go#main	fn	tests/fixtures/basic.go	L59
 ```
 
-`find` returns a stable id, the kind of thing it is (a function) and its lines. `read` returns the exact source. `neighbors` says that `main` calls it, on line 59.
+`find` returns a stable id, the kind of thing it is (a function) and its lines. This is a historical 1.1.0 transcript; in the current CLI use `read --json` to include source bytes, because text read output contains metadata only. `neighbors` says that `main` calls it, on line 59.
 
 ## The philosophy
 
@@ -91,20 +99,41 @@ The [specification](SPEC.md#2-the-core-belief-prompt-processing-efficiency) turn
 
 **Non-redundant.** Within one session, do not resend what was already sent unless it changed. This one is still a target.
 
-**Honest.** Every answer states its freshness, precision and provenance, and dctx never asserts what it does not know. With `--json`, the `read` above carries `"freshness":{"mode":"strict","state":"verified"}`, a `precision` block, and `more` and `next` fields for anything that did not fit. Calls it cannot resolve are listed as `unresolved`, not guessed.
-*Why it matters to you:* you and your assistant can tell a fact from a guess.
-
-The docs add a few more commitments:
-
 (continued: https://www.dctx.internet.technology/why/)
 
 ## Quick start
 
-```zsh
-dctx pack .            # whole project as one structured context block on stdout
-dctx pack . --clipboard  # … straight to the clipboard
-dctx                   # interactive menu
+In 30 seconds, try a tiny project (POSIX shell; on Windows use Git Bash):
+
+```sh
+mkdir dctx-demo
+cd dctx-demo
+printf 'def hello(name):\n    return f"Hello, {name}!"\n' > hello.py
+dctx map skeleton hello.py
 ```
+
+Output from dctx 1.2.0:
+
+```text
+# dctx-demo skeleton
+m:hello.py	module	L1-2	hello.py
+s:hello.py#hello	fn	L1-2	def hello(name):
+```
+
+For your own project:
+
+```sh
+dctx pack .                # structured context on stdout
+dctx pack . --clipboard    # copy it to the clipboard
+dctx map find "SnapshotConfig"
+dctx mcp                   # stdio tools for an MCP client
+```
+
+`pack` writes a file only with `--output`. Tree timestamps are off by default,
+so a bare `touch` does not change its output; `--tree-stamps=on` includes them.
+Run `dctx` without arguments for the interactive terminal menu.
+
+---
 
 ## Map mode
 
@@ -133,7 +162,7 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 
 ## Facts
 
-- 140/140 points on the 70-question protocol (Trail-Code 122, graphify 96); the protocol was designed by the dctx team: https://github.com/Eris-Margeta/dctx/blob/main/docs/BENCHMARK-20261030.md
+- Compare with grep plus file reads; count startup and all model turns, not just tool output: https://www.dctx.internet.technology/docs/modalities/
 - Cold index 0.13-1.20 s on 6 corpora, median of 3 (run 7): https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-3way-20261030/results/run7-53f8b6b/aggregate.json
 - 50 languages: 36 full, 8 outline, 6 docs: https://www.dctx.internet.technology/languages/
 - 33/33 text and 33/33 JSON answers byte-identical after unrelated edits: https://github.com/Eris-Margeta/dctx/blob/main/docs/research/stability-20261105/REPORT.md
@@ -145,7 +174,8 @@ dctx map read 's:crates/dctx-cli/src/lib.rs#SnapshotConfig' --json
 git clone https://github.com/Eris-Margeta/dctx
 cd dctx
 cargo build --locked --release -p dctx-cli
-./target/release/dctx-cli --version   # dctx 1.1.0 (<git sha>)
+./target/release/dctx-cli --version
+alias dctx="$PWD/target/release/dctx-cli"
 ```
 
 ## Exit codes

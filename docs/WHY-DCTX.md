@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Why dctx exists
 
 What problem dctx solves, the rules it follows, and why "byte-identical output" matters even if you never think about bytes.
@@ -14,7 +16,13 @@ Each of these costs you. Models read text as **tokens** (small chunks of text, r
 
 dctx is a command-line tool that reads your project on your machine and answers precise questions about it: where a function is defined, what calls it, what its exact source is. Each answer fits a size budget and is built from whole pieces of syntax; a piece that is too long is marked as cut, with a way to get the rest. The same question about the same code gives the same bytes every time. An assistant can run the commands itself or call them through the built-in MCP server (`dctx mcp`; MCP is a standard way for AI tools to call other tools). dctx can also pack a whole project into one structured block for a chat.
 
-Think of photocopying random pages of a book versus using its index. dctx is the index.
+### Start with grep plus file reads
+
+The baseline is a literal search followed by reading the relevant files or line
+ranges. That is often enough for a short task. dctx earns its place when exact
+symbol reads and outlines avoid repeatedly sending large, irrelevant files.
+It aims to be one context-management tool across these workflows; choose the
+surface that fits in [Choosing how to use dctx](MODALITIES.md).
 
 ### A small worked example
 
@@ -37,7 +45,7 @@ $ dctx map neighbors 's:tests/fixtures/basic.go#Add' --edge calls --dir in
 calls:in:s:tests/fixtures/basic.go#main	fn	tests/fixtures/basic.go	L59
 ```
 
-`find` returns a stable id, the kind of thing it is (a function) and its lines. `read` returns the exact source. `neighbors` says that `main` calls it, on line 59.
+`find` returns a stable id, the kind of thing it is (a function) and its lines. This is a historical 1.1.0 transcript; in the current CLI use `read --json` to include source bytes, because text read output contains metadata only. `neighbors` says that `main` calls it, on line 59.
 
 ## The philosophy
 
@@ -117,13 +125,13 @@ If the context is byte-identical, turn one pays 200 units and the next nine pay 
 - **Not exact token counting.** Budgets use an estimate, `ceil(2 × UTF-8 bytes / 7)`, not a model's tokenizer.
 - **Not vector search or RAG.** No embeddings in the core, and the engine never calls a model.
 - **Not a hosted service or a daemon.** One binary that runs when you call it. No telemetry, not even opt-out.
-- **Not finished everywhere.** Linux x86_64 is the only tested platform for v1. Plain `dctx pack` is not bounded; it sends the whole project. The desktop app is a source-only preview with no download yet.
+- **Limits still matter.** Plain `dctx pack` sends the selected project without an output budget by default. A 100 GB tree needs scoping, and the cache has a 2 GiB hard cap. CI covers Linux, macOS and Windows; byte-stability measurements here ran on Linux only.
 
 ## Where to go next
 
 - [README](../README.md): install, quick start, map mode.
 - [Specification](SPEC.md): rules, metrics, roadmap.
-- [Benchmark](BENCHMARK-20261030.md): dctx against Trail-Code and graphify, including where they win.
+- [Measurement evidence](BENCHMARK-20261030.md): grep plus file reads first; other-tool numbers are secondary historical notes.
 - [Stability report](research/stability-20261105/REPORT.md): protocol, raw answers and limits.
 - [Map mode guide](guides/MAP-MODE.md): every verb and option.
 
@@ -134,5 +142,4 @@ If the context is byte-identical, turn one pays 200 units and the next nine pay 
 - [docs/SPEC.md](SPEC.md): §2 rules PPE-1 to PPE-5, §3 defects R1 and R7, §4 privacy and no network, §11 page formats, §12.1 tiers, §13 token estimate, §32 non-goals.
 - [docs/research/stability-20261105/REPORT.md](research/stability-20261105/REPORT.md): 33/33 results and limits.
 - [docs/BENCHMARK-20261030.md](BENCHMARK-20261030.md): `unresolved` call records.
-- [Release and website verification](results/DCX-SITE-02.md): zero network connections in the release check; desktop preview.
 - Worked example and prefix figures: output of dctx 1.1.0 (`a4f6378`, built from [crates/dctx-cli](../crates/dctx-cli)) on a copy of [crates/dctx-lex-go](../crates/dctx-lex-go).

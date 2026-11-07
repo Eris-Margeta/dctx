@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Releasing dctx
 
 Maintainer runbook for `.github/workflows/release.yml` and `deploy-site.yml`. Desktop

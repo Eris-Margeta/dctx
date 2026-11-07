@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 Eris Margeta
 // apps/dctx-desktop/src/settings.ts
 //
 // Settings screen scroll-sync navigation and section management

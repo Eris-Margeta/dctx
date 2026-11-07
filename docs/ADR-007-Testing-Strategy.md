@@ -1,7 +1,11 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-007: Comprehensive CLI Testing Strategy (The Triple-Run Protocol)
 
 **Date:** 2026-01-12
-**Status:** Accepted
+**Status:** superseded — historical design and implementation record.
+
+Use the [current product contracts](design/PRODUCT-CONTRACTS.md), [README](../README.md) and [testing guide](TESTING.md) for release behavior.
 **Author:** dctx Team
 **Context:** Previous automated tests for `dctx` were insufficient. They failed to detect "lazy" state updates (requiring two runs to register a change) and did not adequately verify the clipboard mode or configuration propagation. We need a rigorous, battle-tested standard for verifying CLI behavior that mirrors actual human usage patterns.
 

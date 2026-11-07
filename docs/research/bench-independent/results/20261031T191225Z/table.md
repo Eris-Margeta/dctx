@@ -1,4 +1,6 @@
-# Independent benchmark (v1 card 6)
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
+# Independent benchmark (protocol v1)
 
 Seed `f77f86ac255ad5c35645dab2242ed1a56804cc1f` (explicit --seed). Tokenizer: cl100k_base for every tool, raw stdout. Gold: language servers (callHierarchy), facts from the repos' own history. Published regardless of outcome.
 

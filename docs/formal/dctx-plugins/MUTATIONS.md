@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Mutation witnesses
 
 PL-M / PLUGINS §7.1 and the PL-C PP1–PP10 contract. Each row names an

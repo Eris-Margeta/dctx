@@ -1,7 +1,9 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # DX-A1 architecture baseline
 
 Stage 0 evidence for the current dctx map mode, from
-[ARCHITECTURE-PROPOSAL §3 and §7](../../docs/design/ARCHITECTURE-PROPOSAL.md)
+[ARCHITECTURE-PROPOSAL §3 and §7](../../docs/archive/design/ARCHITECTURE-PROPOSAL.md)
 and the L1 review. The runner measures the landed library path behind
 `dctx map`: `dctx-map-query::Index` on SQLite/FTS5 with tree-sitter.
 It does not compare any number with a performance threshold, and no test

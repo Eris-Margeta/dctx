@@ -1,8 +1,10 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # DTS source v2 and compiled plan IR v1
 
-DX-A0b · versioned contract sketch · not final new source syntax.
+Status: current versioned design sketch; proposed syntax is not a release promise.
 Defines organization control of every mode under the accepted structure.
-Depends on API/identity/parser contracts; used by B2/D1 and all mode engines.
+Depends on API, identity and parser contracts; shared by the facade and mode engines.
 Preserves the v1 compiler/rendering contract while extending typed policy.
 
 ## Compatibility and typed plan

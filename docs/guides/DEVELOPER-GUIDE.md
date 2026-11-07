@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Developer Onboarding Guide
 
 **`[AI Assistant Instruction: Purpose and Maintenance of This Document]`**

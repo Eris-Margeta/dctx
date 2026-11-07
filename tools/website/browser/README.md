@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Browser checks (optional)
 
 Headless Chromium checks used to verify the site; they need Playwright (`pip install playwright==1.48.0`

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 Eris Margeta
 // Pure presentation model for the desktop plugin panel (PLUGINS.md §7.3 PL-APP).
 // Mirrors the public PluginRow transport from dctx-desktop-api/plugins_view.rs.
 // Depends on no DOM or Tauri APIs; consumed by plugins.ts and its Bun tests.

@@ -1,9 +1,9 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Segment and manifest format contract v1
 
-DX-A0b · binary sketches 1.0 · not a claim of a shipped format.
-Defines the immutable pure-Rust index chosen in decision 077 and DX-ARCH §3.
-Depends on identity v1 and cache v1; used by A2/C1/C3/C4/C5.
-The codec is pure, safe Rust; filesystem publication belongs to adapters.
+Status: current design reference. Immutable segment and manifest design. Binary format versions evolve independently of product releases.
+See [product contracts](../PRODUCT-CONTRACTS.md) for scope and compatibility.
 
 ## Encoding envelope
 

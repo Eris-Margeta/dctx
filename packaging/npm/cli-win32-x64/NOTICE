@@ -13,5 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 
-Project code is licensed under Apache-2.0.
+First-party code and documentation, including the desktop application,
+are licensed under Apache-2.0.
 Third-party dependencies retain their respective licenses and notices.

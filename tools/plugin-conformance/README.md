@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 <!-- PP6 dependency gate for PL-V; uses Python stdlib and Cargo.
      See docs/design/plugin-evidence/PP-MATRIX.md, PP6 and V-ISO.
      The kernel runs the real gate; unit tests use synthetic Cargo output. -->

@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # 3-way benchmark headline (2026-10-31T02:04:32Z)
 
 dctx `dctx-cli v0.25.0` sha256 `bea5055d9878`; Trail-Code 0.28.0; graphify graphify 0.9.97 (code-only, no LLM). CPUs 24-31, nice 10, unshare -Urn no-network: True. Host load at start: 1.49 (shared host).

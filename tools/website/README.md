@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # The dctx website generator
 
 `build.py` writes the static site into `website/`; `check.py` rebuilds it in isolation and fails on any
@@ -17,6 +19,11 @@ The deployment workflow builds first and uses `check.py --working-tree --no-capt
 to compare that fresh `website/` against an independent rebuild. All content checks
 still run; only the reference bytes change from HEAD to the generated working tree.
 Normal CI retains the default HEAD comparison and full CLI capture drift check.
+For uncommitted documentation changes, run the full check against the generated tree:
+
+```sh
+DCTX_BIN=target/release/dctx-cli tools/website/.venv/bin/python tools/website/check.py --working-tree
+```
 
 ## Where everything comes from
 

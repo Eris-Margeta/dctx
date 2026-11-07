@@ -1,6 +1,10 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-003: Extensible Templating System (DTS) & Compilation Strategy
 
-**Status:** Accepted
+**Status:** current — architectural principle retained; historical examples describe their original release.
+
+For shipped behavior and limitations, see the [README](https://www.dctx.internet.technology/docs/readme/), [testing guide](https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md) and [specification](https://www.dctx.internet.technology/docs/spec/).
 **Date:** 2026-01-08
 **Author:** dctx Team
 **Context:** Users require granular control over the output format to support various AI models. The system must maintain high performance (avoiding expensive parsing on every run) and ensure robustness (instructions matching output).

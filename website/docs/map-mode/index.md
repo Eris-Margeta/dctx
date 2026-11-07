@@ -1,10 +1,12 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Map mode
 
 Map mode explores a project through bounded outlines, symbol searches and source
 reads. It builds the index automatically; there is no user `index` command.
 The current CLI uses the shared dctx facade. Older storage and Git-based designs
 in SPEC-MAP-MODE are not the current CLI contract.
-dctx and this guide are Apache-2.0 (decision 078).
+dctx and this guide are Apache-2.0.
 
 ## Commands
 
@@ -92,14 +94,20 @@ checks empty records for `OpaqueBeacon` in `sample.unknown`.
 
 ## Index, cache and privacy
 
-Each invocation opens a facade session, takes a strict snapshot and queries its
-ephemeral index. Repeated processes share the host cache root, not a persistent
-CLI graph database. Identity uses dctx's first-party SHA-256 and file metadata,
-without Git object IDs. The retired per-worktree SQLite cache selector
-(`map/storage.rs`) has been deleted: queries do not create `~/.cache/dctx/map`,
-and the CLI does not read `DCTX_MAP_CACHE`.
+Each invocation opens a facade session and can reuse a compatible persisted
+map generation after checking its inventory and file freshness. The default
+stamp mode trusts settled files with unchanged size, mtime and inode;
+`DCTX_FRESHNESS=strict_live` hashes every file on a warm start. Exact source
+reads still verify live bytes. There is no persistent CLI graph database.
+The retired per-worktree SQLite cache selector (`map/storage.rs`) has been
+deleted; the CLI does not read `DCTX_MAP_CACHE`.
 
-The shared cache stores `ledger.v1` and `policy.v1`. Set `DCTX_CACHE_DIR` to an
+The shared cache stores `ledger.v1`, `policy.v1`, serialized generations and
+view manifests in managed object files. Generations contain file inventory,
+digests and stamps, nodes, signatures, summaries, spans and edges, rather than
+copies of all source contents. See [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/#huge-trees-scope-before-indexing)
+for huge-tree scoping and the behavior when the cache cap is reached.
+Set `DCTX_CACHE_DIR` to an
 absolute path to override its root. Otherwise it is:
 
 | Platform | Cache root |
@@ -109,7 +117,7 @@ absolute path to override its root. Otherwise it is:
 | Other | `$XDG_CACHE_HOME/dctx/v2`, or `~/.cache/dctx/v2` |
 
 The implemented lifecycle follows
-[DX-ARCH-08](https://github.com/Eris-Margeta/dctx/blob/main/docs/design/ARCHITECTURE-DECISIONS.md): time-based expiry, a system
+[DX-ARCH-08](https://github.com/Eris-Margeta/dctx/blob/main/docs/archive/design/ARCHITECTURE-DECISIONS.md): time-based expiry, a system
 size cap and an automatic cleaner. Defaults are 7 days for idle overlays/previews,
 30 days for unpinned roots and 1 day for staging; the hard cap is 2 GiB, the soft
 watermark 1.5 GiB and the eviction target 1.2 GiB. These are cache policies, not
@@ -132,11 +140,10 @@ plugin and TUI commands run one bounded cleanup when due (daily by default).
 `--no-auto-clean` or `DCTX_AUTO_CLEAN=0` disables that slice.
 
 Ignored files are excluded before content reads; omitted files may have metadata
-listed but their content is never read. The core never reads `.git/` or runs Git
-(decision 078). The intended `.gitignore` contract is rules only, not Git metadata.
-**Unverified:** automatic `.gitignore` rule loading in this facade CLI path:
-`host.rs` supplies `RuleTexts::default()`, with no local/global rule texts.
-Do not assume project-specific ignore rules were loaded by this map command.
+listed but their content is never read. The host loads global ignore rules,
+root and nested `.gitignore` rules, then the chosen root's `.dctxignore`.
+`DCTX_INDEX_IGNORED=1` skips those ignore texts; built-in sensitive-file and
+`.git` exclusions still apply. The core does not read Git metadata or run Git.
 The optional Git plugin has separately disclosed authority; see [Plugins](https://www.dctx.internet.technology/docs/plugins/).
 
 ## Two worked examples

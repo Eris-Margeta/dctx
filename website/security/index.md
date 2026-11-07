@@ -1,11 +1,15 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Security Policy
 
 ## Supported development line
 
-dctx is pre-1.0 software in active development. Security fixes target the current
-`main` development line. There is no published long-term support or backport
-commitment for older releases. There is no maintained 1.x release line. Include the exact commit and build features in a report so that
-maintainers can assess whether the current code is affected.
+Security fixes target the latest 1.x release and the current `main` development
+line. The current release is **1.2.0**. Upgrade to the latest release before
+checking whether an issue is resolved. Older releases have no published backport
+or long-term support commitment; separate [maintenance agreements](https://www.dctx.internet.technology/maintenance/)
+may define additional coverage. Include the exact version or commit and build
+features so maintainers can assess whether current code is affected.
 
 ## Reporting a vulnerability
 

@@ -1,54 +1,36 @@
-# Rust standards for the host project (decision 073)
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
+# Rust standards
 
-Binding for every Rust packet. Workers read this before writing code.
-
-## Shape: domain-driven, small, readable
-
-- **One crate per bounded context** (trace, store, gate, budget, scheduler/runtime, workers, key manager, shell…). A crate owns its domain types and rules; it never reaches into another crate's internals, only its public API.
-- **Inside a crate:** `domain/` (types and pure rules, no IO) · `ports/` (traits for IO the domain needs) · `adapters/` (SQLite, process, network implementations) · `lib.rs` (public API only). Small crates may flatten this, but the domain stays IO-free.
-- **Files stay small:** about 300 lines, one concept each. Name files and types after the domain words in the specs (`Packet`, `Attempt`, `Reservation`, `Halt`, `Grant`), not technical ones.
-- **Header doc on every file** (3–6 lines `//!`): what it is, which spec section or TLA+ model it implements, what it depends on and who uses it. This is for low-context worker models and costs about 100 tokens to read instead of thousands to explore. No other commentary except where a rule is not obvious from the code.
-- **Several binaries are fine:** a service, a CLI and tools each get their own `bin` crate that only wires library crates.
+Use small crates with explicit domain boundaries. Domain code is free of IO;
+ports define required effects and adapters implement them. Entry points compose
+libraries rather than duplicating their rules. The [crate map](../CRATE-MAP.md)
+describes the current layout.
 
 ## Safety and correctness
 
-- `#![forbid(unsafe_code)]` in every crate. `#![deny(missing_docs)]` for public items.
-- No `unwrap`/`expect`/`panic!` outside tests. Errors are typed enums per crate (`thiserror`), propagated with `?`.
-- **Make illegal states unrepresentable:** newtypes for ids, enums for states, state transitions as functions that consume the old state. Each state machine mirrors its TLA+ model; transitions not in the model don't compile or return a typed error.
-- **The spec wins** over the Node reference (decision 072). Differences are recorded in `docs/design/SPEC-VS-NODE.md`.
-- Determinism: inject clock, randomness and IO through ports, so tests and the DST harness replay exactly.
+First-party Rust forbids unsafe code. Use typed errors, checked arithmetic for
+sizes and offsets, explicit allocation limits, and bounded decoding of untrusted
+input. Document public errors and invariants. Keep selection and authorization
+ahead of content access, including cache reuse. Do not use panics for expected
+failures.
 
-## Performance
+## Dependencies
 
-- Borrow, don't clone; `&str`/`&[T]` in APIs; no allocation in hot loops. Bounded collections and bounded outputs everywhere (agents read the outputs).
-- SQLite access batched in transactions; prepared statements cached.
-- Async (tokio) only in adapters and binaries; domain code is synchronous and pure.
-- Measure before optimising: `criterion` benches for hot paths named in the spec.
+Read package manifests and the lockfile for the actual dependency graph;
+[THIRD_PARTY.md](../../THIRD_PARTY.md) inventories the current build. Review exact
+versions, features, native code and unsafe boundaries before adding dependencies.
+`dctx-ed25519` wraps audited signature verification; do not replace security
+primitives merely to reduce dependency counts. The desktop's UI dependencies
+belong outside the pure domain and CLI closure.
 
-## Tests
+## Verification
 
-- **Unit tests at the bottom of each file** in `#[cfg(test)] mod tests { … }`, covering that file's rules.
-- **Property tests** (`proptest`) for every state machine and every invariant the TLA+ model states.
-- **Integration tests** in `crates/<crate>/tests/` per public API; golden-corpus parity tests where the spec agrees with Node.
-- Every refusal path has a test with a positive control next to it.
+Run focused tests for changed behavior, formatting and warning-denied Clippy.
+Use [TESTING.md](../TESTING.md) for the full matrix, toolchains, exclusions and
+formal checks. Keep test homes and caches isolated; use fake clocks for lifecycle
+properties and separate performance measurement from correctness tests.
 
-## The bar a packet must meet
-
-`cargo test -p <crate> --locked` and `cargo clippy -p <crate> --locked -- -D warnings` on the dev machine, `cargo fmt --check`, no new `unsafe`, header docs present, and the TLA+ model it implements still checks. The continuous CI on the dev machine (decision 073) runs all of this for the whole workspace on every commit.
-
-## Dependencies (approved list; L1 keeps it)
-
-- **Workspace dependencies** (use `name.workspace = true`): `serde`, `serde_json`, `thiserror`, `sha2`, `hex`, `rusqlite`, `clap`, `regex`. Dev: `proptest`, `tempfile`.
-- **Crate-local exact pins** (declared in that crate's own `Cargo.toml`, never in the root):
-  - `cedar-policy = "=4.13.0"` in `the host tooling` only. It is the same engine as Node's `@cedar-policy/cedar-wasm` 4.13.0 (POLICY-BUNDLE.md §Evaluator).
-- **Anything else:** stop and ask with one QUESTION line. Give the crate, its exact version, licence, whether it uses `unsafe`, and why the approved list cannot do the job. L1 answers within one watch cycle and adds approved crates here.
-- Never edit the root `Cargo.toml`. Cargo.lock is refreshed by the VM CI; packets run without `--locked`.
-
-### dctx workspace additions (decision 075, spec §13a)
-
-- Also approved here: everything `dctx-core` already uses; `rusqlite` with `bundled` (FTS5) in `dctx-map-store`; `tree-sitter`, `tree-sitter-rust` and `tree-sitter-md` (exact pins) in `dctx-map-parse`.
-- In dctx, workspace-level dependencies may be declared in the crate's own `Cargo.toml` with an exact version. The root stays untouched.
-- Dev-dependency only, for differential testing of first-party SHA-256 (decision 078): `sha2` (against dctx-hash). It never appears in a production dependency closure.
-- Signature verification (decision 087, 16.10.2026: "use audited crate"): `ed25519-dalek =2.2.0` (with `curve25519-dalek` 4.1.3 and `ed25519` 2.2.3 as its closure), a production dependency of `crates/dctx-ed25519` only, which wraps it behind the unchanged first-party API and uses `verify_strict`. The Wycheproof vectors in its tests are verified identical to the official C2SP file (SHA-256 752d2ea7…, 151/151 cases, 16.10.2026).
-- `syn` (exact pin, minimal features) in `dctx-lex-rust` only: the Rust structural extractor (decision 077).
-- In `dctx-plugin-platform` only (Linux confinement, decision 080; versions checked on crates.io 16.10.2026): `rustix = "=1.1.5"`, `landlock = "=0.4.7"`, `seccompiler = "=0.5.0"`. Their unsafe stays inside them; first-party code keeps `forbid(unsafe_code)`.
+First-party packages declare Apache-2.0 directly or inherit the workspace license.
+Use `// SPDX-License-Identifier: Apache-2.0` in Rust source headers. Copyright:
+Eris Margeta. The [style notes](../STYLE.md) document scoped lint exceptions.

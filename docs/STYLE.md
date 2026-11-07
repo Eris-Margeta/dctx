@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Rust house style
 
 Run `cargo fmt --all` before submitting Rust changes; CI checks formatting.

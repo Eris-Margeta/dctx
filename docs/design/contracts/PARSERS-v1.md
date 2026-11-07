@@ -1,9 +1,9 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Parser and precision contract v1
 
-DX-A0b · sketch version 1.0 · applies decision 077 to DX-ARCH §3.
-Defines bounded default extraction and independent edge-confidence labels.
-Depends on identity v1 and PRODUCT-CONTRACTS C03/C05; used by B4/B5/A1/E6.
-Implementation and measured corpus evidence remain future work.
+Status: current design reference. Bounded extraction and independent edge-confidence labels. This is a design contract; use the current language registry and CLI help for implemented coverage.
+See [product contracts](../PRODUCT-CONTRACTS.md) for scope and compatibility.
 
 ## Common interface and provenance
 
@@ -34,7 +34,7 @@ requiring a hard deadline select explicit process isolation or receive
 
 ## Language contracts
 
-| Language | decision 077 default and coverage | Extracted facts | Uncertain/unsupported cases and required tests |
+| Language | Default and coverage | Extracted facts | Uncertain/unsupported cases and required tests |
 |---|---|---|---|
 | Rust | `syn` adapter, `syntax` for supported valid Rust; declared Rust edition and span capability | Items, modules, functions/methods, structs/enums/traits/impls, signatures, use/reexports, doc comments, test attributes, raw type/call references | No proc/declarative macro expansion, type inference, cfg evaluation without explicit environment, or dynamic dispatch proof. Malformed syntax returns partial opaque module + diagnostics; no silent tree-sitter switch. Corpus: raw strings, Unicode, nested generics, lifetimes, macros, cfg, async, impls, incomplete edits |
 | JavaScript | First-party bounded lexer, `structural`; `.js`/`.mjs`/`.cjs` dialect capability | Recognizable function/class declarations, literal static import/export, JSDoc, conservative identifier/member call sites | Strings/comments/templates/regex must not create fake declarations. Regex/division ambiguity, computed/dynamic imports, eval, property dispatch and unsupported JSX yield unsupported spans/unresolved refs. Corpus: interpolation, escapes, minified code, ASI, regex, destructuring, incomplete braces |

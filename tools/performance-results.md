@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # DCTX Performance Test Results
 
 **Test Date:** 2026-01-16 15:50:53

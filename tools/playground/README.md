@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # dctx-play: the website playground
 
 `dctx-play` runs the real `dctx` binary for the playground at <https://www.dctx.internet.technology/playground/>.

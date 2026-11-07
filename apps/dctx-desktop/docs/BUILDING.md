@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Building dctx Desktop from Source
 
 If you prefer to build the app yourself rather than using the unsigned binaries, follow this guide.

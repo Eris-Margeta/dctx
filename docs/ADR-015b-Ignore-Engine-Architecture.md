@@ -1,7 +1,11 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-015: Centralized Ignore Engine with Explicit State Model
 
 **Date:** 2026-02-02
-**Status:** Accepted
+**Status:** superseded — historical design and implementation record.
+
+Use the [current product contracts](design/PRODUCT-CONTRACTS.md), [README](../README.md) and [testing guide](TESTING.md) for release behavior.
 
 ---
 

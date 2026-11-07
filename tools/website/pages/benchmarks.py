@@ -34,9 +34,12 @@ def benchmarks() -> tuple[str, list]:
     tl, th, _ = r7["cold"]["trail"]
     gl, gh, gn = r7["cold"]["graphify"]
     body = f"""<div class="wrap"><div class="page-head">{{{{crumbs}}}}<span class="eyebrow">Evidence</span><h1>Benchmarks</h1>
-<p class="lede">dctx against Trail-Code 0.28.0 and graphify 0.9.97 (code-only) on one Linux x86_64 host, plus the byte-stability measurement. Every table here is parsed from the repository files linked under it; none is retyped.</p></div>
-<div class="notice"><p>The 70-question protocol was designed by the dctx team and can favour dctx. The independent run below picked unseen repositories by seed and took gold answers from language servers. {src(data.BENCH, "BENCHMARK-20261030.md", ind_line)}</p></div>
-<h2 id="run7">Run 7: task-level protocol</h2>
+<p class="lede">Compare dctx with grep plus file reads, then measure the whole agent session. Startup instructions, tool definitions and extra turns can outweigh smaller answers.</p></div>
+<h2 id="grep-read">Grep plus file reads</h2>
+<p>The headline baseline is grep plus reading files. A controlled benchmark against it, counting whole agent sessions (start-up context, every call, provider cache hits and accuracy), is being prepared and will be published with raw data. <a href="/docs/modalities/">Choosing how to use dctx</a> covers scope, cache limits and measured MCP definition bytes.</p>
+<h2 id="history">Secondary historical evidence</h2>
+<div class="notice"><p>All other-tool tables below preserve the October research record. Their tokens are tool stdout estimates, not whole-session cost; scores measure gold facts in raw output without an agent model. The dctx team designed the 70-question protocol. The independent run selected repositories by seed and used language-server gold.</p></div>
+<h2 id="run7">Historical run 7: task-level protocol</h2>
 {table(r7["head"], r7["rows"], numeric={1, 2, 3, 4}, caption=f'70 questions, 354 gold facts, 31 October 2026. {src(data.BENCH, "BENCHMARK-20261030.md", r7["line"])}')}
 <h2 id="question-types">By question type</h2>
 <p>Points out of 14 per type, from run 5 and task re-run 3 (dctx <code>a906884</code>), the last run with a per-type table; run 7 then scored every point on all ten types. {src(data.BENCH, "run 7 note", line_of(data.BENCH, "dctx scores every point on all ten question types"))}</p>

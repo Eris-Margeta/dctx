@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Contributing to dctx
 
 Read the [specification](docs/SPEC.md), [crate map](docs/CRATE-MAP.md) and

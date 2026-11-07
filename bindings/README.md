@@ -1,10 +1,12 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # dctx Language Bindings
 
 This directory contains language bindings for the `dctx-core` Rust library.
 
 **Status**: Planned for post-v1.0
 
-Binding design and approval prerequisites: [Python and Node dossiers](../docs/dossiers/dctx-bindings/README.md).
+Binding design and approval prerequisites: [Python and Node dossiers](../docs/archive/dossiers/dctx-bindings/README.md).
 
 ---
 

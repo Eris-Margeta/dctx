@@ -1,7 +1,11 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-DESKTOP-003: Config Inheritance Strategy (Two-Tier Configuration System)
 
 **Date:** 2026-02-03
-**Status:** Accepted
+**Status:** superseded — historical desktop architecture.
+
+The later [separation decision](ADR-DESKTOP-004-complete-separation.md) supersedes configuration inheritance. See the [desktop README](../../README.md).
 
 ---
 

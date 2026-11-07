@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 Eris Margeta
 // DOM adapter for the desktop plugin settings (PLUGINS.md §7.3 PL-APP).
 // Uses the pure plugins-model and the existing Tauri plugin management commands.
 // Initialized by settings.ts; never fetches from a network or executes plugin code.

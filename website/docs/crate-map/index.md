@@ -1,6 +1,8 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Crate map
 
-Static checkout guide for humans and low-context workers (DX-MAP).
+Static checkout guide for contributors and coding assistants.
 40 non-fixture Cargo packages: 36 under `crates/`, one plugin, one desktop,
 and two standalone tools. Root `Cargo.toml` includes crates, plugins and desktop;
 each tool declares its own workspace. `bindings/README.md` describes planned
@@ -31,7 +33,7 @@ What the `dctx` binary (`crates/dctx-cli`) actually runs, as of v1. No refactor:
 - **Shipped:** `dctx-cli` and the `crates/dctx` facade session (index, find, grep, callers, callees, neighbors, skeleton, hubs, pack, read), with dctx-core (selection), dctx-hash, dctx-ports, dctx-pack, dctx-template, dctx-adapter-cache, dctx-adapter-fs (compatibility IO), dctx-map-model (records and rendering) and the `dctx-lex-*` extractors.
 - **Request types only:** `dctx-map-query`. The CLI imports `Request`, `Verb`, `Direction`, `Format`, `AnswerBudget` and `EdgeKind`; its `Index` engine is never called.
 - **Internal or legacy (compiled as dependencies of `dctx-map-query`, not run by the CLI):** the `dctx-map-query` `Index` engine, `dctx-map-store`, `dctx-map-scan`, `dctx-map-resolve`, `dctx-map-segment`, `dctx-adapter-store`; `dctx-map-parse` likewise. docs/SPEC-MAP-MODE.md sections 6–8 and 10 describe this engine.
-- **Unstable (no stability promise in v1):** dctx-plugin-host, dctx-plugin-platform, dctx-plugin-protocol, dctx-plugin-distribution and dctx-desktop-api. The default `dctx-cli` build enables the plugin runtime and the bundled git worker; `--no-default-features --features strict` builds without them.
+- **Unstable (no stability promise in v1):** dctx-plugin-host, dctx-plugin-platform, dctx-plugin-protocol, dctx-plugin-distribution and dctx-desktop-api. The default `dctx-cli` build enables the plugin runtime and the bundled Git plugin process; `--no-default-features --features strict` builds without them.
 
 ## Core, engines and adapters
 
@@ -174,7 +176,7 @@ adapters; Unknown takes fallback. This is an oracle feature, not the default.
 
 ## Cross-cutting rules and evidence locations
 
-- **No git at runtime (decision 078):** `docs/design/ARCHITECTURE-DECISIONS.md`
+- **No Git in the core:** [product contracts](https://github.com/Eris-Margeta/dctx/blob/main/docs/design/PRODUCT-CONTRACTS.md)
   records the core ban and plain-text .gitignore exception. Enforcement evidence:
   `crates/dctx-map-query/tests/no_git.rs` (source spawn audit, PATH trap and
   source-port privacy tests). VCS effects belong to the plugin, not the core.
@@ -186,40 +188,21 @@ adapters; Unknown takes fallback. This is an oracle feature, not the default.
   `crates/dctx-core/tests/purity.rs`, which checks every source module without a
   directory exemption. Comments and unit-test tails are excluded from the IO scan.
   The crate retains its first-party dctx-hash dependency.
-- **Plugin PP1–PP10:** `docs/design/plugin-evidence/PP-MATRIX.md` maps tests,
+- **Plugin PP1–PP10:** [historical PP matrix](https://github.com/Eris-Margeta/dctx/blob/main/docs/archive/design/plugin-evidence/PP-MATRIX.md) maps tests,
   formal evidence and gaps: PP1 authority narrows; PP2 excluded-source privacy;
   PP3 effect audit; PP4 protocol binding; PP5 no blind replay; PP6 strict isolation;
   PP7 bounded resources; PP8 lifecycle progress; PP9 install integrity;
   PP10 hook order/result truth. The matrix is dated scout evidence, not a fresh
   passing test result or certification of today's product acceptance.
-- **Legacy removal:** DX-D3-08b deletes the core IO wrappers and their exports.
-  `docs/design/D3-LEGACY-REMOVAL.md` remains the historical inventory;
-  `docs/design/D3-COMPATIBILITY.md` maps retired families to retained tests.
+- **Legacy removal:** The migration removed the core IO wrappers and their exports.
+  [legacy removal inventory](https://github.com/Eris-Margeta/dctx/blob/main/docs/archive/design/D3-LEGACY-REMOVAL.md) remains the historical inventory;
+  [compatibility record](https://github.com/Eris-Margeta/dctx/blob/main/docs/archive/design/D3-COMPATIBILITY.md) maps retired families to retained tests.
   Pack codecs, template rendering, filesystem adapters and CLI compatibility IO
   own the replacements. Pure core modules, settings and template assets remain.
 
 ## Validation commands
 
-Run from the repository root unless a working directory is specified:
-
-```sh
-cargo test -p <crate>
-cargo test --workspace --exclude dctx-desktop
-tools/desktop-check.sh
-# Working directory: apps/dctx-desktop
-bun run e2e
-```
-
-Sources: single-crate testing in `docs/standards/RUST-STANDARDS.md` (its final
-lockfile note says packets run without `--locked`); workspace command in
-`docs/SPEC-MAP-MODE.md:344`; desktop backend check in `tools/desktop-check.sh`;
-UI script in `apps/dctx-desktop/package.json:9` (`node e2e/runner.mjs`).
-The desktop script runs `cargo check -p dctx-desktop`, creates a temporary
-frontend placeholder if needed, restores the lockfile, and skips Linux without
-webkit2gtk-4.1. A skip is not desktop validation. Standalone tools are outside
-the root workspace suite (their manifests declare separate workspaces).
-
-Harness discipline: the workspace suite runs once at the end in authorized CI;
-see `docs/design/PLUGINS.md:518`. This documentation packet forbids Cargo.
-No product tests, desktop checks or UI runs were executed here; their current
-results are **unverified**. Only the packet's document predicates are run.
+Use [TESTING.md](https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md) for the current commands, toolchains, matrix and
+exclusions. Desktop backend checks use `tools/desktop-check.sh`; browser evidence
+uses `bun run e2e` from `apps/dctx-desktop`. A skipped desktop check does not
+qualify a desktop release. Standalone tools have their own workspaces and checks.

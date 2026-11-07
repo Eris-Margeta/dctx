@@ -1,7 +1,11 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # ADR-006: Unified Monorepo Versioning Strategy
 
 **Date:** 2026-01-12
-**Status:** Accepted
+**Status:** superseded — historical design and implementation record.
+
+Use the [current product contracts](design/PRODUCT-CONTRACTS.md), [README](../README.md) and [testing guide](TESTING.md) for release behavior.
 **Author:** dctx Team
 **Context:** The `dctx` project consists of multiple components (Core, CLI, FFI, Desktop App) within a single repository. Managing versions independently (e.g., CLI v0.5 using Core v0.3) creates confusion for users and complexity in dependency management. We need a deterministic, automated strategy to ensure consistency across the ecosystem.
 

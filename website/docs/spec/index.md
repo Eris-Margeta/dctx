@@ -1,3 +1,5 @@
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # The dctx Context Management Specification
 
 Version 1.0 · draft 2 · 21.10.2026 · Apache-2.0 · measured against
@@ -49,7 +51,7 @@ contract that defines them.
   25. Blast radius
   26. Learnings
 - **Part VII — Assurance**
-  27. Dependencies and enterprise readiness
+  27. Dependencies and build profiles
   28. Conformance suite
   29. Formal models
   30. Versioning and compatibility
@@ -398,7 +400,7 @@ that keeps it can ask for a delta later.
 digest changed, `-<id>` lines for removed records, and a header
 `base=<view> changed=<n> removed=<m> unchanged=<u>`. An unknown base yields the full
 answer with `base=none`, never an error. The engine stores record ids and digests per
-view (not bytes) in a small, owner-only, TTL-bound ledger. `dctx pack --since
+view (not bytes) in a small, user-private, TTL-bound ledger. `dctx pack --since
 <snapshot>` applies the same rule to whole files: unchanged files appear as one tree
 line with their digest.
 
@@ -511,7 +513,7 @@ session_selection` (product contract C03) and the plugin grant lattice
 | L1 organization | Security / platform team | Organization key (enrolled once) | Parser, plugin and agent-host allowlists; privacy rules; budgets; cache caps; learnings kinds |
 | L2 tenant | Team lead | Organization key or a delegated team key | Narrower languages, plugin set, default templates, budgets |
 | L3 machine | IT / device management | Machine key or a root-owned file | Cache root, offline mode, threads and memory, installer proxy |
-| L4 user | The developer | — (owner-only file) | Personal defaults, consented plugins, installed agent hosts |
+| L4 user | The developer | — (user-private file) | Personal defaults, consented plugins, installed agent hosts |
 | L5 project | The repository | Optional organization signature for "trusted project policy" | `.dctx/policy.dts`: selections, omit rules, templates, learnings location |
 | L6 session | The invocation | — | Flags, environment, library builder arguments |
 
@@ -563,7 +565,7 @@ is Ed25519 over `dctx-org-policy-v1 ‖ manifest bytes`, verified by `crates/dct
 - `dctx policy explain [field]` prints each effective value, the layer that set it and
   the signer fingerprint. Byte-stable.
 - Every operation records the effective policy digest, the per-layer digests and signer
-  fingerprints in the local, owner-only receipt log. `dctx policy receipts --since <t>`
+  fingerprints in the local, user-private receipt log. `dctx policy receipts --since <t>`
   lists them. Nothing is uploaded.
 
 ---
@@ -626,8 +628,8 @@ per-file rebuild: each process re-walks and re-hashes, and any change rebuilds f
 
 ## 20. Cold build
 
-Parallel parsing with a bounded worker pool (`std::thread::scope`, ≤ available
-parallelism); each worker owns its fact segments; a single sealer merges sorted outputs
+Parallel parsing with a bounded parser thread pool (`std::thread::scope`, ≤ available
+parallelism); each thread owns its fact segments; a single sealer merges sorted outputs
 and hashes incrementally without materializing a joined payload. Policy caps facts per
 file (`extraction.max_facts_per_file`, default 10,000); excess configuration and JSON
 leaves collapse into one `partial` module node.
@@ -789,16 +791,14 @@ the code, without becoming a memory product.
 
 # Part VII — Assurance
 
-## 27. Dependencies and enterprise readiness
+## 27. Dependencies and build profiles
 
-**Rule: anything with third-party dependencies is not enterprise-ready.** The open
-repository is ongoing work; enterprise-ready builds are an engineering target, not a separate product (§27.3).
-
-| Line | Third-party crates in the default `dctx` closure (`cargo tree -e normal`) | Status |
-|---|---|---|
-| `dctx-core` 0.25.0 as tagged (`dctx-cli` linking only `dctx-core`) | 0 | Enterprise-ready baseline |
-| Development line at `17dff0b` (reports itself `dctx-cli v0.25.0`) | 46: `rusqlite` with bundled SQLite, `serde`/`serde_json`, `thiserror`, `sha2`, the `syn` stack, the `ed25519-dalek` stack, Linux `landlock`/`seccompiler`/`rustix` (§31.0) | Ongoing work; **not enterprise-ready**. The version string MUST become `0.26.0-dev` so the two lines cannot be confused |
-| Enterprise build (target, E2) | 0, plus the one disclosed exception in §27.1 behind feature `trust` | Enterprise-ready when CI proves the closure |
+All first-party code and documentation are Apache-2.0, copyright Eris Margeta,
+including the desktop app and planned GPUI rebuild. This section records build
+engineering goals, not an edition, license tier or certification of suitability.
+The current dependency inventories are [THIRD_PARTY.md](https://github.com/Eris-Margeta/dctx/blob/main/THIRD_PARTY.md) and
+[THIRD_PARTY_NPM.md](https://github.com/Eris-Margeta/dctx/blob/main/THIRD_PARTY_NPM.md); inspect manifests and features for an
+exact build's closure. Earlier 0.25.0 dependency counts are historical measurements.
 
 ### 27.1 The rules
 
@@ -825,18 +825,18 @@ repository is ongoing work; enterprise-ready builds are an engineering target, n
 
 | Remove | First-party replacement | Gate |
 |---|---|---|
-| `syn` from the `strict` feature | Today `strict` implies `syntax-rust`; the enterprise feature set MUST NOT (structural Rust extractor with `precision.parser = dctx-structural/1`) | Build proves the closure |
+| `syn` from the `strict` feature | Today `strict` implies `syntax-rust`; a minimal feature set MUST NOT (structural Rust extractor with `precision.parser = dctx-structural/1`) | Build proves the closure |
 | `serde`, `serde_json`, `thiserror`, production `sha2` | The facade's hand-written canonical JSON; std `Error`; `dctx-hash` | Goldens byte-identical |
 | `rusqlite` and bundled SQLite | The immutable segment index (§18) | Segment index beats the SQLite baseline on two of latency, disk and refresh with no quality loss |
 | `syn` stack from the default build | First-party Rust structural extractor + binder (§7.1) | Held-out precision ≥ `syn` − 1 point; zero wrong `exact` edges |
-| Linux confinement crates | Kept as a disclosed, target-specific adapter dependency outside the enterprise closure (plugins unavailable in that build), or a reviewed first-party syscall boundary in `dctx-plugin-platform` | Confinement property tests; written `unsafe` review |
+| Linux confinement crates | Kept as a disclosed, target-specific adapter dependency outside the minimal closure (plugins unavailable in that build), or a reviewed first-party syscall boundary in `dctx-plugin-platform` | Confinement property tests; written `unsafe` review |
 
 The desktop app is a separate surface over the facade and is never part of the CLI or
 library closure.
 
 ### 27.3 Maintenance
 
-dctx is Apache-2.0 open source, including the desktop app. There is no proprietary edition and no license fee. Organizations that depend on dctx can sign a maintenance agreement for security response targets, long-term support and priority work; see [MAINTENANCE.md](https://www.dctx.internet.technology/maintenance/). The build-closure targets in the table above are engineering goals, not a separate product.
+dctx is Apache-2.0 open source, including the desktop app, with no license fee. Organizations that depend on dctx can sign a maintenance agreement for security response targets, long-term support and priority work; see [MAINTENANCE.md](https://www.dctx.internet.technology/maintenance/). Build-closure targets are engineering goals.
 
 ## 28. Conformance suite
 
@@ -919,7 +919,7 @@ because they touch `crates/dctx-template`, manifests and CI, not the index.
 | **P3 Binder** (§7.1) | `dctx-map-bind`: scope graph, per-language import resolution from lexed manifests, receiver-type rules, `typed` rung, edge corpus | Receiver recall ≥ 0.56, interface name-level ≥ 0.42, hub ≥ 0.42; `exact ∪ typed` precision ≥ 0.95; zero wrong `exact`; callees question ≥ 10 of 14 (2) |
 | **P4 Token economics** (§12) | Tiers T0–T3, view digests, `--since` deltas, session dedup, compression levels, planner, `dctx bench tokens`, agent seeding | M7 ≥ 0.9 across turns; on ≥ 30 accepted tasks per route: M2 −50 %, M1 −25 %, M3 −50 %, M4 unchanged; task tokens ≤ 0.8× comparison at M8 ≥ 0.85; M6 reported |
 | **E1 Organization control** (§14–17; parallel) | `POLICY` / `TENANT`, seven layers, `.dctxpol`, enrollment, explain, receipts | P9; one bundle demonstrably controls every mode; an unverifiable bundle refuses |
-| **E2 Enterprise-ready build** (§27; parallel) | Removals in §27.2; `docs/DEPENDENCIES.md` with CI diff; truthful `--version`; version string `0.26.0-dev` on the development line | `cargo tree -e normal` for the enterprise feature set lists only `dctx-*` crates and the Ed25519 verifier closure behind `trust`; the `strict` feature no longer implies `syn` |
+| **E2 Minimal build profile** (§27; parallel) | Removals in §27.2; `docs/DEPENDENCIES.md` with CI diff; truthful `--version`; version strings matching the actual release or development version | `cargo tree -e normal` for a minimal feature set lists only `dctx-*` crates and the Ed25519 verifier closure behind `trust`; the `strict` feature no longer implies `syn` |
 | **P5 Surfaces** (§24–26) | MCP, agent hooks, `blast`, learnings and `check`, `vcs.changes` | MCP pages byte-identical to CLI; tool definitions ≤ 600 tokens (comparison 1,005); hooks idempotent with receipts; `blast` ≤ 100 ms warm |
 | **P6 Overlays and D3** (§23.2, §27.2) | LSP and SCIP overlays; network capability; CI comment plugin; first-party Rust structural extractor replaces `syn` in the default build | Overlays never alter first-party facts; PP1–PP10 still modeled; `syn` removed only at corpus parity |
 
@@ -927,8 +927,8 @@ P0 and P1 turn a 69-of-140 tool into a ≥ 115-of-140 tool with changes measured
 using lexers and a resolver that already exist. P2 is the one architectural piece, and
 it is also where dctx loses to the comparison tool on the largest corpus. P3 is the
 comparison people will make next. P4 pays only once answers are complete and stable.
-E1 and E2 together are the enterprise promise — organization control, and a binary
-with nothing third-party in it but the vetted signature verifier.
+E1 and E2 are engineering targets for organization policy and a reduced dependency
+closure. They do not introduce a paid edition or certify production readiness.
 
 ## 32. Non-goals
 
