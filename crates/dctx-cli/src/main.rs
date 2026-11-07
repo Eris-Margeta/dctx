@@ -3,6 +3,7 @@
 //! Plugin and map commands retain their explicit routes and facade sessions.
 #![forbid(unsafe_code)]
 
+mod context_cmd;
 mod map;
 mod mcp;
 mod pack_for;
@@ -54,6 +55,12 @@ fn main() {
                 .cloned()
                 .collect();
             mcp::run(&words).map_err(|failure| failure.within("serve"))
+        }
+        Some("context") => {
+            maybe_auto_clean(allow_auto_clean);
+            context_cmd::Runtime::default()
+                .output(&args[2..])
+                .and_then(exit::CommandOutput::emit)
         }
         Some("read") => {
             maybe_auto_clean(allow_auto_clean);

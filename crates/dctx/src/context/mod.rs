@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
-//! Engine-owned task-context selection and rendering, shared by CLI and RPC.
+//! Engine-owned context selection, content identities, rendering, and delivery sessions.
+//! Named targets share one implementation across CLI, MCP, RPC, and library callers.
+mod chunks;
+mod named;
 mod page;
+
+pub use chunks::{ContextSessions, chunk_id};
+pub use named::{ContextChunk, NamedContextReport, NamedContextRequest};
 mod terms;
 
 use crate::{DctxError, ErrorCode, MapRequest, Session, SnapshotHandle, VecSink, Verb};

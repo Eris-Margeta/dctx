@@ -38,7 +38,7 @@ PATH for pack operations.
 | RPC verb | Corresponding CLI operation |
 | --- | --- |
 | `pack` | `dctx pack [PATH] --json`, including `--for TEXT` |
-| `context` | Alias for `pack`; requires `--for TEXT` in `args` |
+| `context` | `dctx context TARGET --json`; legacy `--for TEXT` selects task context |
 | `map` | `dctx map map TARGET --json` |
 | `find` | `dctx map find QUERY --json` |
 | `read` | `dctx map read TARGET --json` |
@@ -59,6 +59,10 @@ string is one JSON document. `pack --for TEXT --json` returns the engine's JSON
 v2 context page with `verb: "context"`, `text` (the whole budgeted text page) and
 `hits`. Budgeting applies to the text page before JSON escaping. Text context
 output continues to use the same engine selection and renderer.
+
+Named context returns ranked content-addressed chunks and supports opt-in delivery
+sessions. See [named context and chunk IDs](../CONTEXT.md) for the shared CLI, MCP,
+and RPC contract, including final encoded budgets and reference lifetimes.
 
 Errors return `error: {"code":2,"message":"...","hint":"...","output":""}`.
 Codes reuse [CLI-EXIT-CODES.md](../CLI-EXIT-CODES.md): 1 means no result, 2 means

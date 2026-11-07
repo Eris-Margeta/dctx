@@ -80,6 +80,7 @@ Usage: dctx <COMMAND> [OPTIONS]
        dctx pack [PATH] [--output PATH] [--clipboard] [--json]
        dctx pack [PATH] --for <TEXT> [--budget TOKENS]
        dctx map <map|find|neighbors|explain|read|skeleton|grep|hubs|path> [--json]
+       dctx context TARGET [--place PATH] [--budget N] [--json] [--session ID --dedupe]
        dctx rpc
        dctx mcp [PATH]
        dctx serve [--mcp] [PATH]
