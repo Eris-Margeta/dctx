@@ -12,6 +12,8 @@ use std::time::{Duration, Instant};
 
 /// Lock file inside the cache root. Load skips this name when it lists orphans.
 pub(super) const LOCK_FILE: &str = "ledger.lock";
+/// Serializes acquisition only: a waiting writer stops new readers from overtaking it.
+pub(super) const ENTRY_FILE: &str = "ledger.entry.lock";
 
 /// How long a try is repeated before the cache reports `busy`. A publish holds the lock for well under a second.
 pub(super) const LOCK_WAIT: Duration = Duration::from_secs(20);
@@ -42,7 +44,22 @@ impl LockGuard {
         shared: bool,
         wait: Duration,
     ) -> Result<Self, CacheError> {
-        let path = root.join(LOCK_FILE);
+        let started = Instant::now();
+        // Readers release the entry lock once they hold their shared ledger lock,
+        // so their bodies still run together. A writer keeps the entry lock while
+        // existing readers finish, preventing a stream of readers from starving it.
+        let entry = Self::lock_file(&root.join(ENTRY_FILE), false, started, wait)?;
+        let ledger = Self::lock_file(&root.join(LOCK_FILE), shared, started, wait);
+        drop(entry);
+        ledger
+    }
+
+    fn lock_file(
+        path: &Path,
+        shared: bool,
+        started: Instant,
+        wait: Duration,
+    ) -> Result<Self, CacheError> {
         let mut options = OpenOptions::new();
         options.read(true).write(true).create(true);
         #[cfg(unix)]
@@ -51,9 +68,8 @@ impl LockGuard {
             options.mode(0o600);
         }
         let file = options
-            .open(&path)
+            .open(path)
             .map_err(|_| CacheError::LedgerIo { reason: "lock" })?;
-        let started = Instant::now();
         let mut pause = Duration::from_millis(1);
         loop {
             let tried = if shared {

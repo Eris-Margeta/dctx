@@ -1,0 +1,2 @@
+# Exact-byte fixtures and parser spans must survive Windows core.autocrlf.
+* text=auto eol=lf

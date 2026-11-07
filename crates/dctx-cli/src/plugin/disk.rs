@@ -128,7 +128,9 @@ pub fn default_root() -> PathBuf {
     }
 }
 
+#[cfg(unix)]
 const REGISTRY_LIMIT: u64 = 16 << 20; // Registry codec ceiling.
+#[cfg(unix)]
 const FILE_LIMIT: u64 = dctx_plugin_distribution::DEFAULT_MAX_ARTIFACT_BYTES;
 #[cfg(unix)]
 static NEXT: AtomicU64 = AtomicU64::new(1);

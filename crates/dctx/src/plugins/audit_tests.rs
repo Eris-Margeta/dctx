@@ -5,6 +5,15 @@
 
 use super::*;
 
+#[cfg(all(feature = "fs", not(unix)))]
+#[test]
+fn unqualified_filesystem_audit_refuses_without_writing() {
+    let dir = tempfile::tempdir().unwrap();
+    assert!(open(dir.path(), 8192).is_err());
+    assert!(open(dir.path(), MAX_CAPACITY + 1).is_err());
+    assert_eq!(std::fs::read_dir(dir.path()).unwrap().count(), 0);
+}
+
 #[derive(Clone, Default)]
 struct Memory(Vec<u8>);
 
