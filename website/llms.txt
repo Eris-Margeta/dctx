@@ -6,9 +6,9 @@
 
 - This is llms.txt: the facts, the route table and the start documents. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: 29f2b1b9dbc720971885e67d25f547e261c06351 (2026-11-07T17:43:20Z), the last commit that changed one of the documents.
+- Docs commit: a67913b9c7c7fe55ed711b638990ec49bb707e90 (2026-11-07T17:57:06Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
-- Budget: 17,881 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 3 documents.
+- Budget: 18,126 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 3 documents.
 
 ## Facts
 
@@ -159,7 +159,7 @@ Documents link to their Markdown twin (index.md), the repository file with only 
     [F] docs/MODALITIES.md (ID:F003)
     [F] docs/WHY-DCTX.md (ID:F004)
 </DIRECTORY_TREE>
-<FILE_CONTENT_START ID="F001" PATH="README.md" LINES="641">
+<FILE_CONTENT_START ID="F001" PATH="README.md" LINES="656">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 <p align="center">
@@ -208,8 +208,23 @@ Documents link to their Markdown twin (index.md), the repository file with only 
 
 Download the archive for your OS and architecture from
 [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), verify
-it against `SHA256SUMS`, extract it, and put `dctx` (`dctx.exe` on Windows) on
-`PATH`. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
+its signature and signed `SHA256SUMS`, extract it, and put `dctx` (`dctx.exe` on
+Windows) on `PATH`. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
+CLI releases produced by the supply-chain workflow include cosign bundles,
+CycloneDX SBOMs, GitHub provenance and per-platform air-gap bundles. For an archive
+and its `.sigstore.json` downloaded from the same release, use cosign 3.1.4:
+
+```sh
+TAG=v1.2.0 # select a release produced by the supply-chain workflow
+ASSET=dctx-x86_64-unknown-linux-musl.tar.gz
+cosign verify-blob --bundle "$ASSET.sigstore.json" \
+  --certificate-identity "https://github.com/Eris-Margeta/dctx/.github/workflows/release.yml@refs/tags/$TAG" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com "$ASSET"
+```
+
+See [verification, provenance and offline installation](docs/VERIFYING.md) for
+signed-checksum commands, `gh attestation verify`, trust preparation and build
+reproducibility limits. Earlier releases do not retroactively gain this evidence.
 CI covers Linux, macOS and Windows; see [the matrix and desktop exclusions](docs/TESTING.md).
 
 **Coming soon:** `cargo install dctx-cli` and `npx dctx`. Registry packages are

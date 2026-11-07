@@ -6,9 +6,9 @@
 
 - This is llms-full.txt: the facts, the route table, every document the budget allows, the captured CLI help and examples. The other entry points: https://www.dctx.internet.technology/llms-small.txt, https://www.dctx.internet.technology/llms.txt.
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: 29f2b1b9dbc720971885e67d25f547e261c06351 (2026-11-07T17:43:20Z), the last commit that changed one of the documents.
-- Command: `dctx pack . --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/SPEC.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/CLI-EXIT-CODES.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/ADR-018-Language-Coverage.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /docs/CRATE-MAP.md --include /CONTRIBUTING.md --include /RELEASING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /CHANGELOG.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
-- Budget: 91,585 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 24 documents.
+- Docs commit: a67913b9c7c7fe55ed711b638990ec49bb707e90 (2026-11-07T17:57:06Z), the last commit that changed one of the documents.
+- Command: `dctx pack . --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md --include /docs/guides/MAP-MODE.md --include /docs/guides/AGENTS-SNIPPET.md --include /docs/guides/PLUGINS.md --include /docs/SPEC.md --include /docs/ADR-014-Privacy-Guarantees-and-Ignore-Semantics.md --include /docs/ADR-018-Language-Coverage.md --include /docs/design/contracts/DTS-v2.md --include /docs/ADR-003-Templating-Engine.md --include /docs/CRATE-MAP.md --include /docs/CLI-EXIT-CODES.md --include /docs/BENCHMARK-20261030.md --include /docs/research/stability-20261105/REPORT.md --include /docs/research/trail-code-2026-10/REPORT.md --include /RELEASING.md --include /CONTRIBUTING.md --include /SECURITY.md --include /TRADEMARK.md --include /MAINTENANCE.md --include /CHANGELOG.md --include /crates/dctx-template/templates/default.dctx_template --include /crates/dctx-template/templates/stamped.dctx_template`
+- Budget: 92,298 of 110,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 24 documents.
 - Known engine issue: dctx 1.2.0 pack substitutes template variables written as `{{name}}` inside file content, so these documents differ from the repository here: docs/ADR-003-Templating-Engine.md, crates/dctx-template/templates/default.dctx_template, crates/dctx-template/templates/stamped.dctx_template. Read them at https://github.com/Eris-Margeta/dctx/tree/main/.
 
 ## Facts
@@ -620,7 +620,7 @@ Write to that address with your organisation, the tier you want and a contact na
 - The core (`pack`) and every modality stay open.
 
 </FILE_CONTENT_END ID="F003">
-<FILE_CONTENT_START ID="F004" PATH="README.md" LINES="641">
+<FILE_CONTENT_START ID="F004" PATH="README.md" LINES="656">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 <p align="center">
@@ -669,8 +669,23 @@ Write to that address with your organisation, the tier you want and a contact na
 
 Download the archive for your OS and architecture from
 [GitHub Releases](https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0), verify
-it against `SHA256SUMS`, extract it, and put `dctx` (`dctx.exe` on Windows) on
-`PATH`. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
+its signature and signed `SHA256SUMS`, extract it, and put `dctx` (`dctx.exe` on
+Windows) on `PATH`. Archives cover Linux x64/ARM64, macOS x64/ARM64 and Windows x64.
+CLI releases produced by the supply-chain workflow include cosign bundles,
+CycloneDX SBOMs, GitHub provenance and per-platform air-gap bundles. For an archive
+and its `.sigstore.json` downloaded from the same release, use cosign 3.1.4:
+
+```sh
+TAG=v1.2.0 # select a release produced by the supply-chain workflow
+ASSET=dctx-x86_64-unknown-linux-musl.tar.gz
+cosign verify-blob --bundle "$ASSET.sigstore.json" \
+  --certificate-identity "https://github.com/Eris-Margeta/dctx/.github/workflows/release.yml@refs/tags/$TAG" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com "$ASSET"
+```
+
+See [verification, provenance and offline installation](docs/VERIFYING.md) for
+signed-checksum commands, `gh attestation verify`, trust preparation and build
+reproducibility limits. Earlier releases do not retroactively gain this evidence.
 CI covers Linux, macOS and Windows; see [the matrix and desktop exclusions](docs/TESTING.md).
 
 **Coming soon:** `cargo install dctx-cli` and `npx dctx`. Registry packages are
@@ -1292,26 +1307,30 @@ exact release. A gate pass is not a claim of complete security.
 The owner must authorize the production tag/publication and deployment.
 
 </FILE_CONTENT_END ID="F005">
-<FILE_CONTENT_START ID="F006" PATH="SECURITY.md" LINES="50">
+<FILE_CONTENT_START ID="F006" PATH="SECURITY.md" LINES="76">
 <!-- SPDX-License-Identifier: Apache-2.0 -->
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Security Policy
 
-## Supported development line
+## Supported versions
 
-Security fixes target the latest 1.x release and the current `main` development
-line. The current release is **1.2.0**. Upgrade to the latest release before
-checking whether an issue is resolved. Older releases have no published backport
-or long-term support commitment; separate [maintenance agreements](MAINTENANCE.md)
-may define additional coverage. Include the exact version or commit and build
-features so maintainers can assess whether current code is affected.
+The current major release receives bug fixes and security fixes in its latest
+release. When a new major is released, the previous major receives security fixes
+for **six months after the new major's release date**, then reaches end of support.
+Older majors receive no fixes. Upgrade to the latest patch within a supported
+major before checking whether an issue is resolved. We publish fixes in new patch
+releases; we do not promise a separate patch for every historical minor version.
+This public policy has no LTS commitment beyond that six-month transition. Include the exact
+version or commit and build features so maintainers can assess affected versions.
 
 ## Reporting a vulnerability
 
-**Do not disclose vulnerabilities in public issues or pull requests.** Email
-[eris.margeta@gmail.com](mailto:eris.margeta@gmail.com) with a subject beginning
-`[dctx security]`. This private reporting route does not depend on GitHub private
-vulnerability reporting being enabled.
+**Do not disclose vulnerabilities in public issues or pull requests.** Use
+[GitHub private vulnerability reporting](https://github.com/Eris-Margeta/dctx/security/advisories/new)
+or email [info@tejl.com](mailto:info@tejl.com) with a subject beginning
+`[dctx security]`. If GitHub's private reporting form is unavailable, use email.
+Maintainers must enable private vulnerability reporting in repository security
+settings; that GitHub setting is separate from this policy file.
 
 Include, where possible:
 
@@ -1327,13 +1346,35 @@ Never send private keys, tokens, production data or a generated context export
 containing confidential code. Use synthetic examples and redact sensitive values.
 Test only systems and data you own or have explicit permission to assess.
 
+## What counts as a vulnerability
+
+dctx is an offline tool, but untrusted repositories, files, archives and plugin
+inputs still cross security boundaries. Report issues such as:
+
+- Disclosure of ignored, excluded or secret-file contents, including through
+  generated context, caches, diagnostics or plugin access.
+- Arbitrary code execution, sandbox or capability bypass, unsafe plugin execution,
+  or command injection caused by processing untrusted input.
+- Path traversal, symlink escapes, unintended file modification or unsafe archive
+  extraction outside an authorized destination.
+- Signature, checksum, provenance or update verification bypass; compromised
+  release artifacts or dependencies affecting supported builds.
+- A reproducible resource-exhaustion attack from a small malicious input that
+  defeats documented bounds and makes the tool unusable.
+
+Ordinary output mistakes, unsupported language coverage, feature requests and
+performance issues without a security boundary impact belong in public issues.
+Use private reporting when unsure. Offline operation does not make confidential
+local data or the release supply chain out of scope.
+
 ## Handling and disclosure
 
-Maintainers will review reports, investigate impact and coordinate fixes and
-public disclosure with the reporter. Response and remediation times depend on
-availability and severity; this policy does not promise a fixed service level.
-If you have not received a reply after a week, send a follow-up to the same address.
-Credit is subject to the reporter's consent.
+We acknowledge private vulnerability reports **within 7 days**. We investigate
+impact, identify affected supported versions and coordinate a fix or mitigation
+and public disclosure with the reporter. Remediation timing depends on severity
+and available maintainers; the acknowledgment window is not a promised fix deadline.
+If acknowledgment has not arrived within 7 days, follow up through the other
+private channel. Credit is subject to the reporter's consent.
 
 We will not take legal action against individuals who discover and report
 security vulnerabilities in good faith and in accordance with this policy.

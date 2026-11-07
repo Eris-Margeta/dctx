@@ -6,7 +6,7 @@
 
 - This is llms-small.txt: the facts and the route table, with an outline of the start documents. The other entry points: https://www.dctx.internet.technology/llms.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: 29f2b1b9dbc720971885e67d25f547e261c06351 (2026-11-07T17:43:20Z), the last commit that changed one of the documents.
+- Docs commit: a67913b9c7c7fe55ed711b638990ec49bb707e90 (2026-11-07T17:57:06Z), the last commit that changed one of the documents.
 - Command: `dctx map map docs/WHY-DCTX.md --depth 2`; `dctx map map README.md --depth 2`; `dctx map map docs/MODALITIES.md --depth 2`
 - Budget: 927 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 3 documents.
 
@@ -161,35 +161,35 @@ d:docs/WHY-DCTX.md#What dctx is not	heading	L122-129
 d:docs/WHY-DCTX.md#Where to go next	heading	L130-137
 d:docs/WHY-DCTX.md#Sources in this repository	heading	L138-145
 # dctx map
-d:README.md#Installation	heading	L45-72
-d:README.md#From source	heading	L56-72
-d:README.md#Quick Start	heading	L73-107
-d:README.md#What the output looks like	heading	L108-225
-d:README.md#Pack a project	heading	L112-160
-d:README.md#Find a symbol, then read it	heading	L161-187
-d:README.md#Pack for a task	heading	L188-225
-d:README.md#Which mode?	heading	L226-275
-d:README.md#Connect an MCP client	heading	L245-275
-d:README.md#Use as a library	heading	L276-313
-d:README.md#Why dctx	heading	L314-339
-d:README.md#At a glance	heading	L328-339
-d:README.md#The core belief: prompt-processing efficiency	heading	L340-365
-d:README.md#One engine for every way software is built	heading	L350-359
-d:README.md#Zero RAG defects	heading	L360-365
-d:README.md#Where it comes from	heading	L366-371
-d:README.md#Map mode: context for agents	heading	L372-473
-d:README.md#Language tiers	heading	L404-473
-d:README.md#Organization control	heading	L474-479
-d:README.md#Plugins	heading	L480-490
-d:README.md#Security & Privacy	heading	L491-527
-d:README.md#Measured, in the open	heading	L528-545
-d:README.md#Out of scope for v1	heading	L546-557
-d:README.md#Open source and maintenance	heading	L558-567
-d:README.md#CLI Reference	heading	L568-599
-d:README.md#Use as a library~2	heading	L600-610
-d:README.md#Architecture	heading	L611-627
-d:README.md#License	heading	L628-631
-d:README.md#Contributing	heading	L632-640
+d:README.md#Installation	heading	L45-87
+d:README.md#From source	heading	L71-87
+d:README.md#Quick Start	heading	L88-122
+d:README.md#What the output looks like	heading	L123-240
+d:README.md#Pack a project	heading	L127-175
+d:README.md#Find a symbol, then read it	heading	L176-202
+d:README.md#Pack for a task	heading	L203-240
+d:README.md#Which mode?	heading	L241-290
+d:README.md#Connect an MCP client	heading	L260-290
+d:README.md#Use as a library	heading	L291-328
+d:README.md#Why dctx	heading	L329-354
+d:README.md#At a glance	heading	L343-354
+d:README.md#The core belief: prompt-processing efficiency	heading	L355-380
+d:README.md#One engine for every way software is built	heading	L365-374
+d:README.md#Zero RAG defects	heading	L375-380
+d:README.md#Where it comes from	heading	L381-386
+d:README.md#Map mode: context for agents	heading	L387-488
+d:README.md#Language tiers	heading	L419-488
+d:README.md#Organization control	heading	L489-494
+d:README.md#Plugins	heading	L495-505
+d:README.md#Security & Privacy	heading	L506-542
+d:README.md#Measured, in the open	heading	L543-560
+d:README.md#Out of scope for v1	heading	L561-572
+d:README.md#Open source and maintenance	heading	L573-582
+d:README.md#CLI Reference	heading	L583-614
+d:README.md#Use as a library~2	heading	L615-625
+d:README.md#Architecture	heading	L626-642
+d:README.md#License	heading	L643-646
+d:README.md#Contributing	heading	L647-655
 # dctx map
 d:docs/MODALITIES.md#Choosing how to use dctx	heading	L3-337
 d:docs/MODALITIES.md#Available surfaces and publication status	heading	L11-25
