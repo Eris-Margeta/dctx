@@ -828,6 +828,9 @@ dependencies = [
  "dctx-ports",
  "dctx-template",
  "proptest",
+ "schemars 0.8.22",
+ "serde",
+ "serde_json",
  "tempfile",
 ]
 
@@ -879,6 +882,7 @@ dependencies = [
  "dctx-template",
  "ed25519-dalek",
  "proptest",
+ "serde_json",
  "tempfile",
 ]
 

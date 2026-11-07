@@ -78,6 +78,29 @@ pub fn run_in(args: &[String], root: Option<&Path>) -> Result<String, String> {
     }
 }
 
+/// Captures cache status for RPC, retaining the legacy cache exit-1 failure taxonomy.
+/// # Errors
+/// Returns the original cache failure with exit 1, including argument failures.
+pub fn status_output(args: &[String]) -> Result<crate::exit::CommandOutput, crate::exit::Failure> {
+    let command = parse::parse(args)
+        .map_err(|message| crate::exit::Failure::new(1, format!("cache: {message}"), ""))?;
+    if !matches!(command, Command::Status { .. } | Command::Help) {
+        return Err(crate::exit::Failure::usage(
+            "expected cache status",
+            "use cache_status",
+        ));
+    }
+    let mut stdout = run_in(args, None)
+        .map_err(|message| crate::exit::Failure::new(1, format!("cache: {message}"), ""))?;
+    if !stdout.is_empty() && !stdout.ends_with('\n') {
+        stdout.push('\n');
+    }
+    Ok(crate::exit::CommandOutput {
+        stdout,
+        failure: None,
+    })
+}
+
 /// Applies `args` to an injected ledger. Persistence tests use [`run_in`].
 #[cfg(test)]
 fn execute(args: &[String], env: CacheEnv<'_>) -> Result<String, String> {

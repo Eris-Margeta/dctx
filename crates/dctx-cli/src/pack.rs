@@ -81,7 +81,7 @@ Pack filters (ADR-011, ADR-009):
   --exclude <pattern>   Drop files matching this ignore-rule glob (repeatable)
   --output, -o <path>   Write the page to one file
   --clipboard, -c       Copy the page to the clipboard
-  --json                Summary report instead of the source page
+  --json                Summary report; with --for, the facade JSON context page
   --tree-stamps=on|off  MOD: timestamp on tree lines: off (default) keeps the page prefix stable across a touch, on = the 1.0.0 text
 Task context (agent cards):
   --for <text>          Instead of the source page: map find on the names in <text>, then neighbors and read of the best hits
@@ -97,10 +97,18 @@ Exit codes: 0 ok, 1 nothing to pack (no view filter), 2 usage, 3 source or outpu
 /// # Errors
 /// Argument refusals (exit 2), source, scan, render or output failures (exit 3), and a pack of no file (exit 1).
 pub fn run(args: &[String]) -> Result<(), Failure> {
+    output(args)?.emit()
+}
+
+/// Captures the same pack output and status as the CLI without printing.
+/// # Errors
+/// Returns argument, source, scan, render or output failures.
+pub fn output(args: &[String]) -> Result<crate::exit::CommandOutput, Failure> {
     if args.iter().any(|arg| arg == "--help" || arg == "-h") {
-        print!("{}", crate::help::text());
-        print!("{}", flag_help());
-        return Ok(());
+        return Ok(crate::exit::CommandOutput {
+            stdout: format!("{}{}", crate::help::text(), flag_help()),
+            failure: None,
+        });
     }
     let usage = |message: String| {
         Failure::usage(
@@ -116,22 +124,29 @@ pub fn run(args: &[String]) -> Result<(), Failure> {
     let outcome = execute_plan(&plan).map_err(|message| {
         Failure::index(message, "check that PATH is an existing, readable directory and that --output names a writable file").within("pack")
     })?;
+    let mut stdout = String::new();
     if outcome.wrote.is_none() && !outcome.clipboard {
-        print!("{}", String::from_utf8_lossy(&outcome.body));
+        stdout.push_str(&String::from_utf8_lossy(&outcome.body));
     }
-    println!("{}", outcome.report_line);
-    if outcome.files == 0 && !plan.filters.affects_view() && !plan.filters.debug_ignored {
-        let message = format!(
-            "nothing to pack in {}: no file passed the ignore and sensitive-file rules",
-            plan.path.display()
-        );
-        return Err(Failure::no_result(
-            message,
-            "add files to the directory, or check its .gitignore and .dctxignore rules",
-        )
-        .within("pack"));
-    }
-    Ok(())
+    stdout.push_str(&outcome.report_line);
+    stdout.push('\n');
+    let failure =
+        if outcome.files == 0 && !plan.filters.affects_view() && !plan.filters.debug_ignored {
+            let message = format!(
+                "nothing to pack in {}: no file passed the ignore and sensitive-file rules",
+                plan.path.display()
+            );
+            Some(
+                Failure::no_result(
+                    message,
+                    "add files to the directory, or check its .gitignore and .dctxignore rules",
+                )
+                .within("pack"),
+            )
+        } else {
+            None
+        };
+    Ok(crate::exit::CommandOutput { stdout, failure })
 }
 
 /// Runs pack and returns the page. Tests use this so stdout stays a projection.

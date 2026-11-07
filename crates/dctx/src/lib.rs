@@ -13,11 +13,14 @@
 #![cfg_attr(not(test), deny(clippy::panic))]
 
 mod adapters;
+pub mod context;
 mod domain;
 mod index;
 pub mod languages;
 mod plugins;
 mod ports;
+#[cfg(feature = "rpc")]
+pub mod rpc;
 mod session;
 
 /// Facade crate version: the package version, so it moves with the workspace release.
@@ -74,6 +77,9 @@ mod isolation_scan {
             ("index/syn_extract.rs", include_str!("index/syn_extract.rs")),
             ("index/walk.rs", include_str!("index/walk.rs")),
             ("languages.rs", include_str!("languages.rs")),
+            ("context/mod.rs", include_str!("context/mod.rs")),
+            ("context/page.rs", include_str!("context/page.rs")),
+            ("context/terms.rs", include_str!("context/terms.rs")),
             ("session/mod.rs", include_str!("session/mod.rs")),
             ("session/build.rs", include_str!("session/build.rs")),
             ("session/cache_op.rs", include_str!("session/cache_op.rs")),

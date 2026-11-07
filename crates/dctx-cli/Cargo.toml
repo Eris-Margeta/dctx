@@ -22,7 +22,7 @@ strict = ["dctx/pack", "dctx/map", "dctx/templates", "dctx/fs", "dctx/segments",
 
 [dependencies]
 # syntax-rust is explicit: this crate disables dctx defaults, and without it every .rs file is refused.
-dctx = { version = "=1.2.0", path = "../dctx", default-features = false, features = ["pack", "map", "templates", "fs", "segments", "cache", "syntax-rust"] }
+dctx = { version = "=1.2.0", path = "../dctx", default-features = false, features = ["pack", "map", "templates", "fs", "segments", "cache", "syntax-rust", "rpc"] }
 dctx-adapter-cache = { version = "=1.2.0", path = "../dctx-adapter-cache" }
 dctx-adapter-fs = { version = "=1.2.0", path = "../dctx-adapter-fs" }
 dctx-core = { version = "=1.2.0", path = "../dctx-core" }
@@ -32,6 +32,8 @@ dctx-plugin-distribution = { version = "=1.2.0", path = "../dctx-plugin-distribu
 dctx-plugin-protocol = { version = "=1.2.0", path = "../dctx-plugin-protocol" }
 dctx-template = { version = "=1.2.0", path = "../dctx-template" }
 dctx-plugin-git = { version = "=1.2.0", path = "../../plugins/dctx-plugin-git", optional = true }
+
+serde_json = "=1.0.149"
 
 [dev-dependencies]
 ed25519-dalek = { version = "=2.2.0", default-features = false, features = ["std"] }

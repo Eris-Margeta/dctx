@@ -46,3 +46,5 @@ pub(crate) use limits::{
 pub(crate) use policy::{ParserChoice, ancestors_include};
 pub(crate) use report::seal_segment;
 pub(crate) use wire::{cursor, encode_text, parse_cursor};
+
+pub(crate) use wire::push_string as quote_json;

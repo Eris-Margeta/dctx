@@ -1,105 +1,16 @@
 <!-- SPDX-License-Identifier: Apache-2.0 -->
-<!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
-# dctx Language Bindings
+# dctx language packages
 
-This directory contains language bindings for the `dctx-core` Rust library.
+Python (pip), Node.js (npm), and future Go, Java and .NET packages use the
+[versioned engine stdio protocol](../docs/protocol/README.md). The `dctx` binary
+is the single source of truth. Packages start the binary, pass arguments,
+stream its output and expose host-language idioms.
 
-**Status**: Planned for post-v1.0
+The [engine philosophy](../docs/PHILOSOPHY.md) defines the binding wrapper
+allow/deny list and CI parity requirements. Packages must not implement engine
+operations or parse pack text. The former PyO3/NAPI/FFI binding sketches in the
+[archived dossiers](../docs/archive/dossiers/dctx-bindings/README.md) are
+historical; they do not define the maintained package architecture.
 
-Binding design and approval prerequisites: [Python and Node dossiers](../docs/archive/dossiers/dctx-bindings/README.md).
-
----
-
-## Planned Bindings
-
-### Python (Phase 12)
-**Directory**: `bindings/dctx-py/`
-**Technology**: PyO3
-**License**: Apache-2.0
-**Target**: PyPI (`pip install dctx`)
-
-**Use Cases**:
-- Jupyter notebooks analyzing codebases
-- AI/ML automation pipelines
-- Build scripts and CI/CD
-- Python-based tools
-
-**Example**:
-```python
-import dctx
-
-snapshot = dctx.snapshot(
-    path=".",
-    filters={"ext": ["py", "md"], "max_size_mb": 1.0}
-)
-context = snapshot.to_llm_format()
-```
-
----
-
-### Node.js (Phase 13)
-**Directory**: `bindings/dctx-node/`
-**Technology**: NAPI-RS
-**License**: Apache-2.0
-**Target**: npm (`npm install dctx`)
-
-**Use Cases**:
-- VS Code extensions
-- Build tools (Webpack, Vite, Rollup plugins)
-- GitHub Actions
-- Electron apps
-
-**Example**:
-```javascript
-const dctx = require('dctx');
-
-const snapshot = await dctx.snapshot({
-    path: '.',
-    filters: { ext: ['ts', 'js'] }
-});
-const context = snapshot.toLlmFormat();
-```
-
----
-
-### Go (Future - If Demand Exists)
-**Directory**: `bindings/dctx-go/`
-**Technology**: cgo or FFI
-**License**: Apache-2.0
-
----
-
-## Architecture
-
-All bindings wrap the core Rust library (`dctx-core`) without duplicating logic:
-
-```
-┌─────────────────────────────────────┐
-│   Language-Specific API             │
-│   (Python, Node.js, Go)             │
-├─────────────────────────────────────┤
-│   FFI/Binding Layer                 │
-│   (PyO3, NAPI-RS, cgo)              │
-├─────────────────────────────────────┤
-│   dctx-core (Rust)                  │
-│   (Single source of truth)          │
-└─────────────────────────────────────┘
-```
-
-**Benefits**:
-- Zero code duplication
-- Single source of truth (dctx-core)
-- Native performance
-- Type safety
-
----
-
-## Current Status
-
-**Available Now**: Rust library (`dctx-core`)
-**Planned Q2 2026**: Python bindings
-**Planned Q3 2026**: Node.js bindings (if demand)
-
----
-
-For Rust usage, see the main [README](../README.md#use-as-a-library).
+No language package implementation is shipped in this directory yet.
+For direct Rust use, call the `dctx` facade in `crates/dctx`.

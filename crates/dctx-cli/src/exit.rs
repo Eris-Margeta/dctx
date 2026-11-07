@@ -199,3 +199,22 @@ mod tests {
         }
     }
 }
+
+/// Captured engine stdout and an optional failure reported after that output.
+#[derive(Debug)]
+pub struct CommandOutput {
+    /// Exact bytes printed by the command, represented as UTF-8.
+    pub stdout: String,
+    /// The CLI failure, including a no-result outcome after an emitted page.
+    pub failure: Option<Failure>,
+}
+
+impl CommandOutput {
+    /// Prints the captured output and returns its original CLI status.
+    /// # Errors
+    /// Returns the failure attached to the emitted output.
+    pub fn emit(self) -> Result<(), Failure> {
+        print!("{}", self.stdout);
+        self.failure.map_or(Ok(()), Err)
+    }
+}

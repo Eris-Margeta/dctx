@@ -26,6 +26,7 @@ fs = []
 segments = []
 cache = []
 syntax-rust = ["dep:dctx-lex-rust"]
+rpc = ["dep:serde", "dep:serde_json", "dep:schemars"]
 wire-json = ["dctx-map-model/wire-json"]
 
 [dependencies]
@@ -52,6 +53,10 @@ dctx-template = { version = "=1.2.0", path = "../dctx-template" }
 dctx-plugin-host = { version = "=1.2.0", path = "../dctx-plugin-host", optional = true }
 dctx-plugin-platform = { version = "=1.2.0", path = "../dctx-plugin-platform", optional = true }
 dctx-plugin-protocol = { version = "=1.2.0", path = "../dctx-plugin-protocol", optional = true }
+
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "=1.0.149", optional = true }
+schemars = { version = "=0.8.22", optional = true }
 
 [dev-dependencies]
 proptest = "1"
