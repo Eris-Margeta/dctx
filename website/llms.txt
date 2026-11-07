@@ -8,7 +8,7 @@
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
 - Docs commit: 929d17afec74f011b11bd767b949a90060528f1d (2026-11-07T20:27:40Z), the last commit that changed one of the documents.
 - Command: `dctx pack . --include /docs/START.md --include /docs/WHY-DCTX.md --include /README.md --include /docs/MODALITIES.md`
-- Budget: 17,364 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
+- Budget: 17,362 of 20,000 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
 ## Facts
 
@@ -151,8 +151,8 @@ Documents link to their Markdown twin (index.md), the repository file with only 
    - TYPE is [D] for directory, [F] for file.
 2. Content Access: To read a specific file:
    - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: <FILE_CONTENT_START ID=\"UNIQUE_ID\">
-   - The content is between this marker and </FILE_CONTENT_END ID=\"UNIQUE_ID\">
+   - Search for the marker: <FILE_CONTENT_START ID="UNIQUE_ID">
+   - The content is between this marker and </FILE_CONTENT_END ID="UNIQUE_ID">
 </INSTRUCTIONS>
 <DIRECTORY_TREE>
 [D]  (ID:ROOT)
@@ -253,8 +253,8 @@ $ dctx pack .
    - TYPE is [D] for directory, [F] for file.
 2. Content Access: To read a specific file:
    - Find its UNIQUE_ID from the directory tree.
-   - Search for the marker: <FILE_CONTENT_START ID=\"UNIQUE_ID\">
-   - The content is between this marker and </FILE_CONTENT_END ID=\"UNIQUE_ID\">
+   - Search for the marker: <FILE_CONTENT_START ID="UNIQUE_ID">
+   - The content is between this marker and </FILE_CONTENT_END ID="UNIQUE_ID">
 </INSTRUCTIONS>
 <DIRECTORY_TREE>
 [D]  (ID:ROOT)

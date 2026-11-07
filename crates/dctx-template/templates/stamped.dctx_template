@@ -42,7 +42,7 @@ folder_denotation_marker = "DIRECTORY"
 # This text explains the format to the LLM. It references the variables above
 # to ensure the instructions always match the actual format used.
 # Use '\n' for new lines.
-instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}{{start_marker_close}} section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH ({{attr_id}}:UNIQUE_ID, {{attr_mod}}:TIMESTAMP)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: {{start_marker_open}}{{file_start_marker}} {{attr_id}}=\"UNIQUE_ID\"{{start_marker_close}}\n   - The content is between this marker and {{end_marker_open}}{{file_end_marker}} {{attr_id}}=\"UNIQUE_ID\"{{end_marker_close}}"
+instructions_text = "1. Manifest: The {{start_marker_open}}{{tree_start_marker}}{{start_marker_close}} section lists all files.\n   - Each entry: [TYPE] RELATIVE_PATH ({{attr_id}}:UNIQUE_ID, {{attr_mod}}:TIMESTAMP)\n   - TYPE is [D] for directory, [F] for file.\n2. Content Access: To read a specific file:\n   - Find its UNIQUE_ID from the directory tree.\n   - Search for the marker: {{start_marker_open}}{{file_start_marker}} {{attr_id}}="UNIQUE_ID"{{start_marker_close}}\n   - The content is between this marker and {{end_marker_open}}{{file_end_marker}} {{attr_id}}="UNIQUE_ID"{{end_marker_close}}"
 
 # ==============================================================================
 # [PARTIALS]

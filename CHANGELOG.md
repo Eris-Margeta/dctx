@@ -16,6 +16,9 @@ and distribution plans below do not describe the current release.
 
 ### Fixed
 
+- Pack headers now show `ID="UNIQUE_ID"` with clean quotes in the file-access
+  instructions, including stamped and tree-only output. This changes pack output bytes.
+
 - Pack rendering preserves literal template syntax in file bodies and paths, including
   backslashes, for default, stamped and compiled templates. Variable substitution now
   applies only to template structure; `pack --for` also preserves source CRLF bytes.
