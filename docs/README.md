@@ -10,6 +10,7 @@ The Cargo-built executable is `dctx-cli`; guides also use the alias `dctx`.
 
 | Document | Scope |
 | --- | --- |
+| [Choosing how to use dctx](MODALITIES.md) | Clipboard, short and long agent tasks, huge trees, MCP overhead and CI. |
 | [Map mode](guides/MAP-MODE.md) | Structural outlines, symbol search, source reads and current limitations. |
 | [Plugins](guides/PLUGINS.md) | Installation, consent, trust and platform behavior. |
 | [Contributing](../CONTRIBUTING.md) | Development setup and checks. |

@@ -2,6 +2,8 @@
 <!-- SPDX-FileCopyrightText: 2026 Eris Margeta -->
 # Runnable CLI quickstart
 
+For in-process Rust integration, see the [compiled library example](library/README.md).
+
 Requires zsh and a recent stable Rust toolchain with Cargo (the workspace includes
 Rust 2024 crates). Run from the repository root:
 
@@ -35,7 +37,7 @@ The equivalent commands with a built CLI are:
 ./target/debug/dctx-cli map read m:main.rs --place /absolute/path/to/fixture --json
 ```
 
-Use `--json` for source reads: the current text renderer prints record metadata
-without the source body. Map results describe structural facts; they do not establish
+Both text `read` and `read --json` include the source body; use JSON's `source_utf8`
+field when consuming it in a script. Map results describe structural facts; they do not establish
 full semantic call resolution. See the [documentation index](../docs/README.md),
 [map guide](../docs/guides/MAP-MODE.md) and `dctx-cli map --help` for details.

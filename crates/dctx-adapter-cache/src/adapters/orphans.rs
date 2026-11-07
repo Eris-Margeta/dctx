@@ -5,7 +5,7 @@
 //! Known object files are not charged. A walk that passes the budget returns a typed refusal.
 
 use super::LEDGER_FILE;
-use super::lock::LOCK_FILE;
+use super::lock::{ENTRY_FILE, LOCK_FILE};
 use crate::error::CacheError;
 use crate::ports::OrphanFile;
 use std::collections::BTreeSet;
@@ -65,6 +65,7 @@ fn walk(
             fs::symlink_metadata(&path).map_err(|_| CacheError::LedgerIo { reason: "metadata" })?;
         if relative == LEDGER_FILE
             || relative == LOCK_FILE
+            || relative == ENTRY_FILE
             || super::reclaim::is_lease_lock(&relative)
             || known_object(&relative, known)
         {

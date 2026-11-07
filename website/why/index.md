@@ -16,7 +16,13 @@ Each of these costs you. Models read text as **tokens** (small chunks of text, r
 
 dctx is a command-line tool that reads your project on your machine and answers precise questions about it: where a function is defined, what calls it, what its exact source is. Each answer fits a size budget and is built from whole pieces of syntax; a piece that is too long is marked as cut, with a way to get the rest. The same question about the same code gives the same bytes every time. An assistant can run the commands itself or call them through the built-in MCP server (`dctx mcp`; MCP is a standard way for AI tools to call other tools). dctx can also pack a whole project into one structured block for a chat.
 
-Think of photocopying random pages of a book versus using its index. dctx is the index.
+### Start with grep plus file reads
+
+The baseline is a literal search followed by reading the relevant files or line
+ranges. That is often enough for a short task. dctx earns its place when exact
+symbol reads and outlines avoid repeatedly sending large, irrelevant files.
+It aims to be one context-management tool across these workflows; choose the
+surface that fits in [Choosing how to use dctx](https://www.dctx.internet.technology/docs/modalities/).
 
 ### A small worked example
 
@@ -39,7 +45,7 @@ $ dctx map neighbors 's:tests/fixtures/basic.go#Add' --edge calls --dir in
 calls:in:s:tests/fixtures/basic.go#main	fn	tests/fixtures/basic.go	L59
 ```
 
-`find` returns a stable id, the kind of thing it is (a function) and its lines. `read` returns the exact source. `neighbors` says that `main` calls it, on line 59.
+`find` returns a stable id, the kind of thing it is (a function) and its lines. This is a historical 1.1.0 transcript; the current CLI also includes verified source bytes in text `read` output, or in `source_utf8` with `read --json`. `neighbors` says that `main` calls it, on line 59.
 
 ## The philosophy
 
@@ -119,13 +125,13 @@ If the context is byte-identical, turn one pays 200 units and the next nine pay 
 - **Not exact token counting.** Budgets use an estimate, `ceil(2 × UTF-8 bytes / 7)`, not a model's tokenizer.
 - **Not vector search or RAG.** No embeddings in the core, and the engine never calls a model.
 - **Not a hosted service or a daemon.** One binary that runs when you call it. No telemetry, not even opt-out.
-- **Not finished everywhere.** Linux x86_64 is the only tested platform for v1. Plain `dctx pack` is not bounded; it sends the whole project. The desktop app is a source-only preview with no download yet.
+- **Limits still matter.** Plain `dctx pack` sends the selected project without an output budget by default. A 100 GB tree needs scoping, and the cache has a 2 GiB hard cap. CI covers Linux, macOS and Windows; byte-stability measurements here ran on Linux only.
 
 ## Where to go next
 
 - [README](https://www.dctx.internet.technology/docs/readme/): install, quick start, map mode.
 - [Specification](https://www.dctx.internet.technology/docs/spec/): rules, metrics, roadmap.
-- [Benchmark](https://www.dctx.internet.technology/docs/benchmark/): dctx against Trail-Code and graphify, including where they win.
+- [Measurement evidence](https://www.dctx.internet.technology/docs/benchmark/): grep plus file reads first; other-tool numbers are secondary historical notes.
 - [Stability report](https://www.dctx.internet.technology/docs/stability/): protocol, raw answers and limits.
 - [Map mode guide](https://www.dctx.internet.technology/docs/map-mode/): every verb and option.
 

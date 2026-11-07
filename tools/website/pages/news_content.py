@@ -17,7 +17,8 @@ NEWS = [
 <li><strong>A prefix-stable <code>dctx pack</code>.</strong> Tree lines carry the file id only, with no modification time and no size, so a bare <code>touch</code> leaves the page byte-identical and an edit keeps everything before the edited file as a shared prefix. <code>--tree-stamps=on</code> brings back the 1.0.0 lines.</li>
 <li><strong>Faster id lookup</strong>, record and entry caps checked during the scan, and a closed stdout pipe that exits cleanly.</li>
 </ul>
-<h2>What we measured</h2>
+<h2>Historical output-only measurements</h2>
+<p>These other-tool results are retained as release history. Tokens here estimate tool stdout, not whole-session cost. The current baseline is <a href="/benchmarks/#grep-read">grep plus file reads</a>; <a href="/docs/modalities/">choose a mode</a> and count startup context and all model turns.</p>
 <p>On our own 70-question protocol, run on 31 October against Trail-Code 0.28.0 and graphify 0.9.97 in code-only mode, dctx scored 140 of 140 points with 29,340 estimated tokens; Trail-Code scored 122 with 88,923 and graphify 96 with 197,203. Cold indexing of the six corpora took dctx 0.13&ndash;1.20 s.</p>
 <p>That protocol was designed by the dctx team and can favour dctx. An independently selected protocol is pending, and we will publish its result whatever it shows.</p>
 <p>On 6 November, 33 of 33 text answers and 33 of 33 JSON answers stayed byte-identical after unrelated edits across three pinned corpora. Three weeks earlier, answer headers that changed after unrelated edits were one of the findings that <a href="/news/specification-and-benchmark/">our first benchmark</a> held against us.</p>
@@ -56,6 +57,7 @@ NEWS = [
 <h2>The specification</h2>
 <p>The dctx Context Management Specification turns our core belief, prompt-processing efficiency, into five testable constraints: every answer is bounded, deterministic, prefix-stable, non-redundant and honest about its precision and freshness. It names ten ways chunk retrieval fails and the mechanism that rules out each one, defines a seven-layer organisation policy in which every layer can only narrow the one above it, and lays out the roadmap with an acceptance gate for every step. Each item is marked as available, under contract or a target.</p>
 <h2>The benchmark</h2>
+<p>This is a secondary historical comparison of tool outputs, not whole-session agent cost. The current baseline is <a href="/benchmarks/#grep-read">grep plus file reads</a>.</p>
 <p>We ran dctx and Trail-Code side by side on a dedicated machine: seven pinned code bases in Rust, Go, Python and TypeScript, no network during the runs, every command pinned to the same CPUs, and an adversarial corpus with planted secrets. The full report, raw data and scripts are public so anyone can rerun it.</p>
 <h3>Where dctx led</h3>
 <ul>

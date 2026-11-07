@@ -40,7 +40,7 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta property="og:image:alt" content="dctx: README">
-<meta property="article:modified_time" content="2026-11-07T16:20:33Z">
+<meta property="article:modified_time" content="2026-11-07T17:05:41Z">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="README · dctx">
 <meta name="twitter:description" content="Installation, quick start, map mode, language tiers and the CLI reference.">
@@ -191,13 +191,13 @@
    "mainEntityOfPage": {
     "@id": "https://www.dctx.internet.technology/docs/readme/#webpage"
    },
-   "wordCount": 3325,
+   "wordCount": 3809,
    "encoding": {
     "@type": "MediaObject",
     "contentUrl": "https://www.dctx.internet.technology/docs/readme/index.md",
     "encodingFormat": "text/markdown"
    },
-   "dateModified": "2026-11-07T16:20:33Z"
+   "dateModified": "2026-11-07T17:05:41Z"
   }
  ]
 }
@@ -219,7 +219,7 @@
  </div>
 </header>
 <main id="main">
-<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/" aria-current="page">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/">Three-way benchmark</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/readme/" aria-current="page">README</a></li></ol></nav><h1 id="dctx">dctx</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/README.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/README.md">Edit on GitHub</a> &middot; <a href="/docs/readme/index.md" type="text/markdown">Markdown</a> &middot; <code>README.md</code> &middot; 3,325 words &middot; updated <time datetime="2026-11-07">7 November 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#installation">Installation</a></li><li><a href="#quick-start">Quick Start</a></li><li><a href="#why-dctx">Why dctx</a></li><li><a href="#the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency</a></li><li><a href="#where-it-comes-from">Where it comes from</a></li><li><a href="#map-mode-context-for-agents">Map mode: context for agents</a></li><li><a href="#organization-control">Organization control</a></li><li><a href="#plugins">Plugins</a></li><li><a href="#security--privacy">Security &amp; Privacy</a></li><li><a href="#measured-in-the-open">Measured, in the open</a></li><li><a href="#out-of-scope-for-v1">Out of scope for v1</a></li><li><a href="#open-source-and-maintenance">Open source and maintenance</a></li><li><a href="#cli-reference">CLI Reference</a></li><li><a href="#use-as-a-library">Use as a library</a></li><li><a href="#architecture">Architecture</a></li><li><a href="#license">License</a></li><li><a href="#contributing">Contributing</a></li></ul></details>
+<div class="wrap docs-grid"><aside class="sidebar" aria-label="Documentation"><p class="side-h"><a href="/docs/">All documents</a></p><p class="side-h">Start here</p><ul><li><a href="/why/">Why dctx</a></li><li><a href="/docs/readme/" aria-current="page">README</a></li><li><a href="/docs/spec/">Specification</a></li><li><a href="/docs/modalities/">Choosing how to use dctx</a></li><li><a href="/docs/map-mode/">Map mode guide</a></li></ul><p class="side-h">Using dctx</p><ul><li><a href="/docs/agents/">Agent snippet</a></li><li><a href="/docs/plugins/">Plugins guide</a></li><li><a href="/docs/exit-codes/">CLI exit codes</a></li><li><a href="/docs/privacy/">Privacy guarantees</a></li><li><a href="/docs/language-coverage/">Language coverage (ADR-018)</a></li></ul><p class="side-h">Templates</p><ul><li><a href="/docs/templates-contract/">Template contract (DTS v2)</a></li><li><a href="/docs/templating/">Templating engine (ADR-003)</a></li></ul><p class="side-h">Evidence</p><ul><li><a href="/docs/benchmark/">Measurement evidence</a></li><li><a href="/docs/stability/">Byte-stability report</a></li><li><a href="/docs/benchmark-oct/">Earlier two-way study</a></li></ul><p class="side-h">Project</p><ul><li><a href="/docs/crate-map/">Crate map</a></li><li><a href="/docs/contributing/">Contributing</a></li><li><a href="/docs/releasing/">Releasing</a></li></ul><p class="side-h">Policies</p><ul><li><a href="/security/">Security</a></li><li><a href="/trademark/">Trademark</a></li><li><a href="/maintenance/">Maintenance</a></li></ul></aside><article class="prose"><nav class="crumbs" aria-label="Breadcrumb"><ol><li><a href="/">dctx</a></li><li><a href="/docs/">Documentation</a></li><li><a href="/docs/readme/" aria-current="page">README</a></li></ol></nav><h1 id="dctx">dctx</h1><p class="doc-meta"><a href="https://github.com/Eris-Margeta/dctx/blob/main/README.md">View source</a> &middot; <a href="https://github.com/Eris-Margeta/dctx/edit/main/README.md">Edit on GitHub</a> &middot; <a href="/docs/readme/index.md" type="text/markdown">Markdown</a> &middot; <code>README.md</code> &middot; 3,809 words &middot; updated <time datetime="2026-11-07">7 November 2026</time></p><details class="toc-m"><summary>On this page</summary><ul><li><a href="#installation">Installation</a></li><li><a href="#quick-start">Quick Start</a></li><li><a href="#what-the-output-looks-like">What the output looks like</a></li><li><a href="#which-mode">Which mode?</a></li><li><a href="#use-as-a-library">Use as a library</a></li><li><a href="#why-dctx">Why dctx</a></li><li><a href="#the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency</a></li><li><a href="#where-it-comes-from">Where it comes from</a></li><li><a href="#map-mode-context-for-agents">Map mode: context for agents</a></li><li><a href="#organization-control">Organization control</a></li><li><a href="#plugins">Plugins</a></li><li><a href="#security--privacy">Security &amp; Privacy</a></li><li><a href="#measured-in-the-open">Measured, in the open</a></li><li><a href="#out-of-scope-for-v1">Out of scope for v1</a></li><li><a href="#open-source-and-maintenance">Open source and maintenance</a></li><li><a href="#cli-reference">CLI Reference</a></li><li><a href="#use-as-a-library-1">Use as a library</a></li><li><a href="#architecture">Architecture</a></li><li><a href="#license">License</a></li><li><a href="#contributing">Contributing</a></li></ul></details>
 <p><strong>Turn a codebase into focused context for AI assistants.</strong> Pack a project, find symbols and read exact source locally. Stable output helps prompt caches reuse context.</p>
 <hr />
 <h2 id="installation">Installation<a class="hd" href="#installation" aria-label="Link to Installation">#</a></h2>
@@ -267,17 +267,229 @@ dctx<span class="t-w"> </span>mcp<span class="t-w">                   </span><sp
 <p><code>pack</code> writes a file only with <code>--output</code>. Tree timestamps are off by default,
 so a bare <code>touch</code> does not change its output; <code>--tree-stamps=on</code> includes them.
 Run <code>dctx</code> without arguments for the interactive terminal menu.</p>
+<h2 id="what-the-output-looks-like">What the output looks like<a class="hd" href="#what-the-output-looks-like" aria-label="Link to What the output looks like">#</a></h2>
+<p>These are real runs on the tiny <a href="https://github.com/Eris-Margeta/dctx/tree/main/tools/website/sample">kiosk sample</a>, captured by <a href="https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py">capture.py</a> from the release binary. Commands run inside a copy named <code>kiosk</code>. For source builds, the executable is <code>dctx-cli</code> (or define a <code>dctx</code> alias).</p>
+<h3 id="pack-a-project">Pack a project<a class="hd" href="#pack-a-project" aria-label="Link to Pack a project">#</a></h3>
+<p>The header explains the format, the tree assigns IDs, and file blocks carry paths and line counts. The first 40 output lines follow; only the tail is omitted. <code>.env</code> is listed without its contents.</p>
+<div class="hl"><pre><code>$ dctx pack .
+[DCTX_LLM_CONTEXT_SNAPSHOT_V1]
+[DIRECTORY:kiosk]
+&lt;INSTRUCTIONS&gt;
+1. Manifest: The &lt;DIRECTORY_TREE&gt; section lists all files.
+   - Each entry: [TYPE] RELATIVE_PATH (ID:UNIQUE_ID)
+   - TYPE is [D] for directory, [F] for file.
+2. Content Access: To read a specific file:
+   - Find its UNIQUE_ID from the directory tree.
+   - Search for the marker: &lt;FILE_CONTENT_START ID=\&quot;UNIQUE_ID\&quot;&gt;
+   - The content is between this marker and &lt;/FILE_CONTENT_END ID=\&quot;UNIQUE_ID\&quot;&gt;
+&lt;/INSTRUCTIONS&gt;
+&lt;DIRECTORY_TREE&gt;
+[D]  (ID:ROOT)
+  [F] .env (ID:F001)
+  [F] .gitignore (ID:F002)
+  [F] Cargo.toml (ID:F003)
+  [F] README.md (ID:F004)
+  [F] config.toml (ID:F005)
+  [D] src (ID:D006)
+    [F] src/main.rs (ID:F007)
+    [F] src/store.rs (ID:F008)
+    [F] src/util.rs (ID:F009)
+  [D] tools (ID:D010)
+    [F] tools/report.py (ID:F011)
+  [D] web (ID:D012)
+    [F] web/app.ts (ID:F013)
+    [F] web/format.ts (ID:F014)
+&lt;/DIRECTORY_TREE&gt;
+&lt;FILE_CONTENT_START ID=&quot;F001&quot; PATH=&quot;.env&quot; LINES=&quot;0&quot;&gt;
+[Content omitted by pattern rules]
+&lt;/FILE_CONTENT_END ID=&quot;F001&quot;&gt;
+&lt;FILE_CONTENT_START ID=&quot;F002&quot; PATH=&quot;.gitignore&quot; LINES=&quot;2&quot;&gt;
+target/
+
+&lt;/FILE_CONTENT_END ID=&quot;F002&quot;&gt;
+&lt;FILE_CONTENT_START ID=&quot;F003&quot; PATH=&quot;Cargo.toml&quot; LINES=&quot;9&quot;&gt;
+[package]
+name = &quot;kiosk&quot;
+version = &quot;0.1.0&quot;
+edition = &quot;2021&quot;
+… (147 more lines)
+</code></pre></div>
+
+<h3 id="find-a-symbol-then-read-it">Find a symbol, then read it<a class="hd" href="#find-a-symbol-then-read-it" aria-label="Link to Find a symbol, then read it">#</a></h3>
+<p>Pass the exact ID from <code>find</code> to <code>read</code> to get its metadata and verified source bytes:</p>
+<div class="hl"><pre><code>$ dctx map find greet
+# kiosk find
+s:src/util.rs#greet fn  L2-4
+s:web/app.ts#renderGreeting fn  L10-12
+</code></pre></div>
+
+<div class="hl"><pre><code>$ dctx map read &#39;s:src/util.rs#greet&#39;
+# kiosk read
+s:src/util.rs#greet fn  src/util.rs
+pub fn greet(name: &amp;str) -&gt; String {
+    format!(&quot;Hello, {}!&quot;, title_case(name))
+}
+</code></pre></div>
+
+<p>For structured consumption, <code>--json</code> puts the same source bytes in <code>source_utf8</code> (one JSON line, shown verbatim):</p>
+<div class="hl"><pre><code>$ dctx map read &#39;s:src/util.rs#greet&#39; --json
+{&quot;v&quot;:2,&quot;place&quot;:&quot;kiosk&quot;,&quot;verb&quot;:&quot;read&quot;,&quot;freshness&quot;:{&quot;mode&quot;:&quot;strict&quot;,&quot;state&quot;:&quot;verified&quot;},&quot;precision&quot;:{&quot;coverage&quot;:&quot;structural&quot;,&quot;completion&quot;:&quot;complete&quot;,&quot;parser&quot;:&quot;dctx-structural/2&quot;},&quot;records&quot;:[{&quot;id&quot;:&quot;s:src/util.rs#greet&quot;,&quot;kind&quot;:&quot;fn&quot;,&quot;path&quot;:&quot;src/util.rs&quot;,&quot;lines&quot;:[2,4],&quot;summary&quot;:&quot;The greeting shown on the kiosk screen.&quot;,&quot;summary_source&quot;:&quot;doc&quot;,&quot;signature&quot;:null,&quot;span&quot;:[44,126],&quot;source_utf8&quot;:&quot;pub fn greet(name: &amp;str) -&gt; String {\n    format!(\&quot;Hello, {}!\&quot;, title_case(name))\n}&quot;,&quot;edge&quot;:null,&quot;direction&quot;:null,&quot;target&quot;:null,&quot;confidence&quot;:null}],&quot;more&quot;:0,&quot;next&quot;:null}
+</code></pre></div>
+
+<h3 id="pack-for-a-task">Pack for a task<a class="hd" href="#pack-for-a-task" aria-label="Link to Pack for a task">#</a></h3>
+<p><code>--for</code> uses the task terms to select find results, neighbors and source reads. <code>--budget 800</code> bounds estimated output tokens, not scan size; the footer reports usage and dropped records.</p>
+<div class="hl"><pre><code>$ dctx pack . --for &#39;greet store&#39; --budget 800
+# dctx pack --for budget=800 terms=2
+## find greet
+s:src/util.rs#greet fn  L2-4
+s:web/app.ts#renderGreeting fn  L10-12
+## find store
+s:src/store.rs#Order    struct  L4-8
+s:src/store.rs#checksum fn  L22-24
+s:src/store.rs#encode   fn  L17-19
+## neighbors s:src/util.rs#greet
+calls:in:s:src/main.rs#main fn  src/main.rs L7
+calls:out:s:src/util.rs#title_case  fn  src/util.rs
+contains:in:m:src/util.rs   module  src/util.rs
+## neighbors s:src/store.rs#Order
+contains:in:m:src/store.rs  module  src/store.rs
+## read s:src/util.rs#greet
+s:src/util.rs#greet fn  src/util.rs
+pub fn greet(name: &amp;str) -&gt; String {
+    format!(&quot;Hello, {}!&quot;, title_case(name))
+}
+## read s:src/store.rs#Order
+s:src/store.rs#Order    struct  src/store.rs
+pub struct Order {
+    pub id: u32,
+    pub item: String,
+    pub qty: u32,
+}
+# end body_tokens=223 budget=800 dropped=0
+</code></pre></div>
+
 <hr />
+<h2 id="which-mode">Which mode?<a class="hd" href="#which-mode" aria-label="Link to Which mode?">#</a></h2>
+<div class="table-wrap"><table>
+<thead>
+<tr>
+<th>Modality</th>
+<th>Install</th>
+<th>Status</th>
+<th>Best for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CLI / interactive terminal</td>
+<td><a href="https://github.com/Eris-Margeta/dctx/releases/tag/v1.2.0">Prebuilt archives</a>, or build from source above</td>
+<td>Available now; <code>cargo install dctx-cli</code> publishing soon</td>
+<td>One-off chat (<code>pack --clipboard</code>), shell agents, scripts and CI; run <code>dctx</code> for the terminal menu</td>
+</tr>
+<tr>
+<td>MCP server</td>
+<td>Included in the CLI; configure <code>dctx mcp /absolute/project</code></td>
+<td>Available now, stdio</td>
+<td>Claude Code, Cursor and Codex tool calls on a scoped project</td>
+</tr>
+<tr>
+<td>Rust library (<code>dctx</code> facade)</td>
+<td>Tagged Git dependency below</td>
+<td>Available from Git; crates.io publishing soon</td>
+<td>Embedding pack, map, templates and cache in Rust tools and editors</td>
+</tr>
+<tr>
+<td>npm CLI (<code>npx dctx</code>)</td>
+<td><code>npx dctx</code> after publication; use archives today</td>
+<td>Publishing soon</td>
+<td>Running the native CLI from a Node toolchain</td>
+</tr>
+<tr>
+<td>Desktop app</td>
+<td><a href="https://github.com/Eris-Margeta/dctx/blob/main/apps/dctx-desktop/README.md#quick-start">Build the Tauri app</a></td>
+<td>Tauri 0.11 preview today; GPUI rebuild planned</td>
+<td>Selecting projects and generating snapshots in a GUI</td>
+</tr>
+<tr>
+<td>Python / Node bindings</td>
+<td>No supported package install yet</td>
+<td>Planned</td>
+<td>Future in-process Python and JavaScript integrations</td>
+</tr>
+</tbody>
+</table></div>
+<p>Use <code>dctx pack . --clipboard</code> for a one-off chat, plain grep plus file reads for a
+small agent task, and <code>find</code> + <code>read --json</code> + <code>skeleton</code> for repeated work in big
+files. Scope huge trees before indexing. MCP adds tool definitions to the agent's
+starting context; smaller answers alone do not prove lower session cost.
+The npm package wraps the CLI; it is separate from the planned Node library binding.
+See <a href="/docs/modalities/">Choosing how to use dctx</a> for commands, library boundaries,
+MCP configuration and overhead, cache limits and CI guidance.</p>
+<h3 id="connect-an-mcp-client">Connect an MCP client<a class="hd" href="#connect-an-mcp-client" aria-label="Link to Connect an MCP client">#</a></h3>
+<p>Install the CLI archive first. Replace both absolute paths below with your
+executable and the project to index (on Windows, use <code>dctx.exe</code> and JSON-escaped
+paths). An explicit project path avoids relying on the client's working directory.
+For a source build, point <code>command</code> at <code>target/release/dctx-cli</code>.</p>
+<p><a href="https://code.claude.com/docs/en/mcp">Claude Code</a> (<code>.mcp.json</code> at the project root)
+and <a href="https://cursor.com/docs/mcp">Cursor</a> (<code>.cursor/mcp.json</code>) use this JSON:</p>
+<div class="hl"><pre><code><span class="t-p">{</span>
+<span class="t-w">  </span><span class="t-nt">&quot;mcpServers&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">{</span>
+<span class="t-w">    </span><span class="t-nt">&quot;dctx&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">{</span>
+<span class="t-w">      </span><span class="t-nt">&quot;type&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">&quot;stdio&quot;</span><span class="t-p">,</span>
+<span class="t-w">      </span><span class="t-nt">&quot;command&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/dctx&quot;</span><span class="t-p">,</span>
+<span class="t-w">      </span><span class="t-nt">&quot;args&quot;</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-s2">&quot;mcp&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/project&quot;</span><span class="t-p">]</span>
+<span class="t-w">    </span><span class="t-p">}</span>
+<span class="t-w">  </span><span class="t-p">}</span>
+<span class="t-p">}</span>
+</code></pre></div>
+
+<p><a href="https://developers.openai.com/codex/mcp/">Codex</a> uses <code>~/.codex/config.toml</code>
+(or <code>.codex/config.toml</code> in a trusted project):</p>
+<div class="hl"><pre><code><span class="t-k">[mcp_servers.dctx]</span>
+<span class="t-n">command</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/dctx&quot;</span>
+<span class="t-n">args</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-p">[</span><span class="t-s2">&quot;mcp&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-s2">&quot;/absolute/path/to/project&quot;</span><span class="t-p">]</span>
+</code></pre></div>
+
+<h2 id="use-as-a-library">Use as a library<a class="hd" href="#use-as-a-library" aria-label="Link to Use as a library">#</a></h2>
+<p>The public Rust API is the <a href="https://github.com/Eris-Margeta/dctx/tree/main/crates/dctx"><code>dctx</code> facade</a>, rather than the internal
+<code>dctx-core</code> crate. It exposes sessions for pack, map, templates and cache, with
+explicit source, clock, cancellation, selection policy and storage ports.
+<strong>crates.io: publishing soon.</strong> Use the current tagged Git dependency:</p>
+<div class="hl"><pre><code><span class="t-k">[dependencies]</span>
+<span class="t-n">dctx</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-p">{</span><span class="t-w"> </span><span class="t-n">git</span><span class="t-w"> </span><span class="t-p">=</span><span class="t-w"> </span><span class="t-s2">&quot;https://github.com/Eris-Margeta/dctx&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">tag</span><span class="t-w"> </span><span class="t-p">=</span><span class="t-w"> </span><span class="t-s2">&quot;v1.2.0&quot;</span><span class="t-w"> </span><span class="t-p">}</span>
+</code></pre></div>
+
+<p>This ten-line example packs an in-memory source with an explicit 8 MiB ephemeral
+storage ceiling. It runs as a <a href="https://github.com/Eris-Margeta/dctx/blob/main/examples/library/README.md">Rust doctest</a> in workspace
+CI; rustdoc supplies the enclosing <code>main</code> and error return type.</p>
+<div class="hl"><pre><code><span class="t-k">use</span><span class="t-w"> </span><span class="t-n">dctx</span><span class="t-p">::{</span><span class="t-n">memory</span><span class="t-p">::{</span><span class="t-n">CancelFlag</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">FixedClock</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">MemorySource</span><span class="t-p">},</span><span class="t-w"> </span><span class="t-o">*</span><span class="t-p">};</span>
+<span class="t-kd">let</span><span class="t-w"> </span><span class="t-k">mut</span><span class="t-w"> </span><span class="t-n">source</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-n">MemorySource</span><span class="t-p">::</span><span class="t-n">new</span><span class="t-p">();</span>
+<span class="t-n">source</span><span class="t-p">.</span><span class="t-n">insert_file</span><span class="t-p">(</span><span class="t-s">&quot;hello.rs&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-s">b&quot;pub fn hello() {}</span><span class="t-se">\n</span><span class="t-s">&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-mi">0</span><span class="t-p">)</span><span class="t-o">?</span><span class="t-p">;</span>
+<span class="t-kd">let</span><span class="t-w"> </span><span class="t-k">mut</span><span class="t-w"> </span><span class="t-n">session</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-n">Session</span><span class="t-p">::</span><span class="t-n">builder</span><span class="t-p">(</span><span class="t-n">source</span><span class="t-p">).</span><span class="t-n">clock</span><span class="t-p">(</span><span class="t-n">FixedClock</span><span class="t-p">(</span><span class="t-n">Timestamp</span><span class="t-p">(</span><span class="t-mi">0</span><span class="t-p">)))</span>
+<span class="t-w">    </span><span class="t-p">.</span><span class="t-n">cancellation</span><span class="t-p">(</span><span class="t-n">std</span><span class="t-p">::</span><span class="t-n">sync</span><span class="t-p">::</span><span class="t-n">Arc</span><span class="t-p">::</span><span class="t-n">new</span><span class="t-p">(</span><span class="t-n">CancelFlag</span><span class="t-p">::</span><span class="t-n">new</span><span class="t-p">())).</span><span class="t-n">ceiling</span><span class="t-p">(</span><span class="t-n">HostCeiling</span><span class="t-p">::</span><span class="t-n">base</span><span class="t-p">())</span>
+<span class="t-w">    </span><span class="t-p">.</span><span class="t-n">selection</span><span class="t-p">(</span><span class="t-n">SelectionPolicy</span><span class="t-p">::</span><span class="t-n">from_texts</span><span class="t-p">(</span><span class="t-o">&amp;</span><span class="t-n">RuleTexts</span><span class="t-p">::</span><span class="t-n">default</span><span class="t-p">())).</span><span class="t-n">grants</span><span class="t-p">(</span><span class="t-n">HostGrants</span><span class="t-p">::</span><span class="t-n">PermitAll</span><span class="t-p">)</span>
+<span class="t-w">    </span><span class="t-p">.</span><span class="t-n">storage</span><span class="t-p">(</span><span class="t-n">StoragePolicy</span><span class="t-p">::</span><span class="t-n">Ephemeral</span><span class="t-w"> </span><span class="t-p">{</span><span class="t-w"> </span><span class="t-n">max_bytes</span><span class="t-p">:</span><span class="t-w"> </span><span class="t-mi">8</span><span class="t-w"> </span><span class="t-o">*</span><span class="t-w"> </span><span class="t-mi">1024</span><span class="t-w"> </span><span class="t-o">*</span><span class="t-w"> </span><span class="t-mi">1024</span><span class="t-w"> </span><span class="t-p">}).</span><span class="t-n">place</span><span class="t-p">(</span><span class="t-s">&quot;demo&quot;</span><span class="t-p">).</span><span class="t-n">view</span><span class="t-p">(</span><span class="t-s">&quot;pack&quot;</span><span class="t-p">).</span><span class="t-n">build</span><span class="t-p">()</span><span class="t-o">?</span><span class="t-p">;</span>
+<span class="t-kd">let</span><span class="t-w"> </span><span class="t-k">mut</span><span class="t-w"> </span><span class="t-n">output</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-n">VecSink</span><span class="t-p">::</span><span class="t-n">new</span><span class="t-p">();</span>
+<span class="t-n">session</span><span class="t-p">.</span><span class="t-n">pack</span><span class="t-p">(</span><span class="t-o">&amp;</span><span class="t-n">PackRequest</span><span class="t-p">::</span><span class="t-n">new</span><span class="t-p">(),</span><span class="t-w"> </span><span class="t-o">&amp;</span><span class="t-k">mut</span><span class="t-w"> </span><span class="t-n">output</span><span class="t-p">)</span><span class="t-o">?</span><span class="t-p">;</span>
+<span class="t-fm">println!</span><span class="t-p">(</span><span class="t-s">&quot;{}&quot;</span><span class="t-p">,</span><span class="t-w"> </span><span class="t-n">std</span><span class="t-p">::</span><span class="t-kt">str</span><span class="t-p">::</span><span class="t-n">from_utf8</span><span class="t-p">(</span><span class="t-n">output</span><span class="t-p">.</span><span class="t-n">as_bytes</span><span class="t-p">())</span><span class="t-o">?</span><span class="t-p">);</span>
+</code></pre></div>
+
+<p>The facade discovers no home directory, global config or Git executable and
+starts no plugin host by default. A filesystem integration must provide its own
+clock and ignore-rule policy; <code>FsSource</code> does not automatically apply <code>.gitignore</code>.
+See the <a href="/docs/modalities/#rust-library-embed-the-facade">library integration notes</a>
+for the boundary between library and CLI behavior. Python and Node bindings are
+planned; there is no supported in-process package for either yet.</p>
 <h2 id="why-dctx">Why dctx<a class="hd" href="#why-dctx" aria-label="Link to Why dctx">#</a></h2>
 <div class="table-wrap"><table>
 <tr><td><b>Deterministic</b></td><td>Same source snapshot and request give identical bytes (every text verb checked over 5 runs on Linux; the cross-OS gate is still open). <code>dctx pack</code> tree lines carry no timestamps, so a <code>touch</code> changes nothing.</td></tr>
 <tr><td><b>Prefix-stable</b></td><td>In a <code>dctx pack</code> page, an edit keeps every byte before the edited file as a shared prefix, which is what a provider's prompt cache reuses. Map and find answers were byte-identical after unrelated edits in 33/33 text and 33/33 JSON cases (<a href="/docs/stability/">measured 6 Nov 2026</a>); layered prompt tiers are still a target (<a href="/docs/spec/">spec</a> PPE-3).</td></tr>
 <tr><td><b>Private and offline</b></td><td>No telemetry, no model calls, no network. The release check counts socket calls under <code>strace -f</code> and fails on any. Secrets files are listed by name, never read.</td></tr>
-<tr><td><b>Fast</b></td><td>Cold index of the benchmark corpora in 0.13-1.20 s (Trail-Code 1.04-52.83 s, graphify 4.59-59.56 s), on one Linux x86_64 runner.</td></tr>
+<tr><td><b>Fast</b></td><td>Cold index of six historical benchmark corpora in 0.13-1.20 s, on one Linux x86_64 runner. This does not measure agent session cost.</td></tr>
 <tr><td><b>Agent-ready</b></td><td><code>dctx mcp</code> is a stdio MCP server exposing the map verbs; answers are bounded and never split a record.</td></tr>
 <tr><td><b>Broad</b></td><td>50 language families: 36 with symbols and lexical call edges, 8 with symbol outlines, 6 document formats with headed sections; run <code>dctx languages</code>.</td></tr>
 <tr><td><b>Verified</b></td><td>TLA+ models of the cache lifecycle and the plugin system in <a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/formal">docs/formal</a>, each with a mutation gate: every deliberately broken variant must be caught (plugins: 8 baselines, 59 mutants, 37 reachability witnesses). Plugin manifests and the plugin discovery index are verified with Ed25519 signatures.</td></tr>
-<tr><td><b>Measured</b></td><td>140/140 on our 70-question protocol using 29,340 tokens, against Trail-Code 122 (88,923) and graphify 96 (197,203). <a href="#measured-in-the-open">Details and caveats below.</a></td></tr>
+<tr><td><b>Measured</b></td><td>Compare focused answers with grep plus file reads, then count startup context and all agent turns. <a href="#measured-in-the-open">Evidence and limits below.</a></td></tr>
 <tr><td><b>Your choice of surface</b></td><td>CLI, Rust library facade, MCP server, and a <a href="https://github.com/Eris-Margeta/dctx/tree/main/apps/dctx-desktop">desktop app</a> (0.11 preview, free, Apache-2.0).</td></tr>
 </table></div>
 
@@ -369,7 +581,7 @@ dctx<span class="t-w"> </span>map<span class="t-w"> </span><span class="t-nb">re
 </code></pre></div>
 
 <ul>
-<li><strong>Source bytes</strong>: <code>map read --json</code> includes source content; the current text renderer prints metadata only.</li>
+<li><strong>Source bytes</strong>: <code>map read</code> prints metadata and verified source content; <code>--json</code> carries the content in <code>source_utf8</code> for tools.</li>
 <li><strong>Bounded</strong>: output uses an estimated token budget (up to 2,000; explain up to 1,000), not a model tokenizer guarantee, and never splits a record.</li>
 <li><strong>Deterministic</strong>: the same tree and question give the same bytes, so prompt caches hit.</li>
 <li><strong>Precision and freshness</strong>: use <code>--json</code> for the structured metadata. Structural declarations and conservative call edges do not imply exact semantic resolution.</li>
@@ -386,7 +598,7 @@ dctx<span class="t-w"> </span>map<span class="t-w"> </span><span class="t-nb">re
 <li><strong>Byte-stable answers</strong>: the text header is <code># &lt;place&gt; &lt;verb&gt;</code>, and JSON leaves out the snapshot digest, generation and age. <code>--meta</code> restores them.</li>
 <li><strong>Source limit</strong>: <code>DCTX_MAX_SOURCE_BYTES</code> sets the total source bytes one scan may read (1 to 17179869184; default 1 GiB).</li>
 </ul>
-<p>Details: <a href="/docs/map-mode/">Map mode guide</a>. The three-way benchmark against graphify and Trail-Code is in <a href="/docs/benchmark/">docs/BENCHMARK-20261030.md</a>. Planned next — agent hooks, blast radius for a diff, delta answers and prefix-stable context tiers — is specified in <a href="/docs/spec/#31-roadmap-and-acceptance-gates">docs/SPEC.md</a>.</p>
+<p>Details: <a href="/docs/map-mode/">Map mode guide</a>. The <a href="/docs/benchmark/">benchmark evidence</a> leads with grep plus file reads; older other-tool results are retained as historical evidence. Planned next — agent hooks, blast radius for a diff, delta answers and prefix-stable context tiers — is specified in <a href="/docs/spec/#31-roadmap-and-acceptance-gates">docs/SPEC.md</a>.</p>
 <h3 id="language-tiers">Language tiers<a class="hd" href="#language-tiers" aria-label="Link to Language tiers">#</a></h3>
 <p><code>dctx languages</code> prints this table (<code>--json</code> for tools, <code>--markdown</code> for this block) from the one registry that also drives <code>dctx --version --verbose</code>; a test fails when the block below differs from it.</p>
 <ul>
@@ -503,46 +715,11 @@ credentials/
 <p>The core pack/map workflows run locally, have <strong>no telemetry</strong>, <strong>call no model</strong> and <strong>make no network calls</strong>: the release check (<code>scripts/release-check.sh</code>) counts AF_INET/AF_INET6 connect/send calls under <code>strace -f</code> for every map verb, <code>pack</code>, <code>cache status</code> and <code>mcp</code>, and fails on any (it reports SKIP where strace cannot run). The current product CLI has no TLS network adapter for plugin discovery or downloads; network-capable distribution and plugin designs are documented separately. See the <a href="/docs/plugins/#what-is-not-yet-available">Plugins guide</a> for current limits and <a href="/security/">SECURITY.md</a> for private vulnerability reporting.</p>
 <hr />
 <h2 id="measured-in-the-open">Measured, in the open<a class="hd" href="#measured-in-the-open" aria-label="Link to Measured, in the open">#</a></h2>
-<p>On our 70-question protocol (designed by the dctx team; questions, gold facts and scorer are in <a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030/tasks"><code>docs/research/bench-3way-20261030/tasks/</code></a>), run 31 Oct 2026 against Trail-Code 0.28.0 and graphify 0.9.97 in code-only mode, dctx scored 140/140 using 29,340 tokens; Trail-Code 122 (88,923), graphify 96 (197,203). Tokens are estimated as stdout bytes / 3.5, rounded up, for every tool.</p>
-<div class="table-wrap"><table>
-<thead>
-<tr>
-<th>Tool</th>
-<th>Points /140</th>
-<th>Gold facts /354</th>
-<th>Tokens</th>
-<th>Tool calls</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>dctx <code>53f8b6b</code></td>
-<td>140</td>
-<td>353</td>
-<td>29,340</td>
-<td>105</td>
-</tr>
-<tr>
-<td>Trail-Code 0.28.0</td>
-<td>122</td>
-<td>312</td>
-<td>88,923</td>
-<td>70</td>
-</tr>
-<tr>
-<td>graphify 0.9.97, code-only</td>
-<td>96</td>
-<td>238</td>
-<td>197,203</td>
-<td>91</td>
-</tr>
-</tbody>
-</table></div>
-<p>That protocol is ours, so it can favour dctx. An independently selected protocol (repositories picked by seed, callers gold from language servers, questions written without seeing dctx output) is documented in <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/research/bench-independent/README.md">the independent protocol</a>; treat its results separately from this in-house benchmark.</p>
-<p>Cold index of the 6 benchmark corpora (flask, ripgrep, pocketbase, trailcode, mixed, docs; median of 3 runs) took dctx 0.13–1.20 s, against Trail-Code 1.04–52.83 s and graphify 4.59–59.56 s (docs: no index), on one Linux x86_64 runner (Linux 6.12.113+deb13-cloud-amd64, Intel(R) Xeon(R) CPU E5-2680 v2 @ 2.80GHz). These performance measurements cover Linux x86_64; cross-platform correctness checks are described in <a href="https://github.com/Eris-Margeta/dctx/blob/main/docs/TESTING.md">TESTING.md</a>.</p>
-<p>dctx makes no network calls: it made 0 socket calls in all 4 traced benchmark steps, and the release check (<code>scripts/release-check.sh</code>) asserts zero AF_INET/AF_INET6 connect/send calls under <code>strace -f</code> for every map verb, <code>pack</code>, <code>cache status</code> and <code>mcp</code>.</p>
-<p>Raw results, corpora pins and scripts: <a href="https://github.com/Eris-Margeta/dctx/tree/main/docs/research/bench-3way-20261030"><code>docs/research/bench-3way-20261030/</code></a>; the write-up is <a href="/docs/benchmark/">docs/BENCHMARK-20261030.md</a> (Run 7).</p>
-<p>An earlier two-way study against Trail-Code (October 2026, dctx <code>17dff0b</code>, before the call edges measured above) is in <a href="/docs/benchmark-oct/">docs/research/trail-code-2026-10</a>. See also the <a href="/changelog/">changelog</a>.</p>
+<p>The baseline is <strong>grep plus reading files</strong>.</p>
+<p>A controlled grep-plus-read benchmark that counts whole agent sessions (start-up context, every call, provider cache hits and accuracy) is being prepared; until it is published, dctx makes no whole-session savings claim.</p>
+<p>Historical cold indexing of six benchmark corpora took dctx 0.13–1.20 s on one Linux x86_64 runner. This measures CLI wall time, not agent completion time or session cost.</p>
+<p><a href="/docs/modalities/">Choosing how to use dctx</a> covers scoping and MCP startup overhead. <a href="/docs/benchmark/">Measurement evidence</a> describes what was measured (tool-output bytes and estimated tokens); other-tool protocols are retained only as secondary historical notes.</p>
+<p>Older protocols and raw results are linked from the <a href="/docs/benchmark/">benchmark evidence</a> as secondary historical material. See also the <a href="/changelog/">changelog</a>.</p>
 <hr />
 <h2 id="out-of-scope-for-v1">Out of scope for v1<a class="hd" href="#out-of-scope-for-v1" aria-label="Link to Out of scope for v1">#</a></h2>
 <ul>
@@ -588,7 +765,7 @@ Filter options:
 
 <p>Run <code>dctx --help</code> for the complete reference and <code>dctx --version --verbose</code> for feature and precision limits.</p>
 <hr />
-<h2 id="use-as-a-library">Use as a library<a class="hd" href="#use-as-a-library" aria-label="Link to Use as a library">#</a></h2>
+<h2 id="use-as-a-library-1">Use as a library<a class="hd" href="#use-as-a-library-1" aria-label="Link to Use as a library">#</a></h2>
 <div class="hl"><pre><code><span class="t-k">[dependencies]</span>
 <span class="t-n">dctx</span><span class="t-w"> </span><span class="t-o">=</span><span class="t-w"> </span><span class="t-p">{</span><span class="t-w"> </span><span class="t-n">path</span><span class="t-w"> </span><span class="t-p">=</span><span class="t-w"> </span><span class="t-s2">&quot;crates/dctx&quot;</span><span class="t-w"> </span><span class="t-p">}</span>
 </code></pre></div>
@@ -615,7 +792,7 @@ Filter options:
 <hr />
 <p align="center">
   <sub>Context, engineered. Built in Rust.</sub>
-</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/why/" rel="prev"><span>Previous</span>Why dctx</a><a class="next" href="/docs/spec/" rel="next"><span>Next</span>Specification</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#installation">Installation</a></li><li class="l3"><a href="#from-source">From source</a></li><li class="l2"><a href="#quick-start">Quick Start</a></li><li class="l2"><a href="#why-dctx">Why dctx</a></li><li class="l3"><a href="#at-a-glance">At a glance</a></li><li class="l2"><a href="#the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency</a></li><li class="l3"><a href="#one-engine-for-every-way-software-is-built">One engine for every way software is built</a></li><li class="l3"><a href="#zero-rag-defects">Zero RAG defects</a></li><li class="l2"><a href="#where-it-comes-from">Where it comes from</a></li><li class="l2"><a href="#map-mode-context-for-agents">Map mode: context for agents</a></li><li class="l3"><a href="#language-tiers">Language tiers</a></li><li class="l2"><a href="#organization-control">Organization control</a></li><li class="l2"><a href="#plugins">Plugins</a></li><li class="l2"><a href="#security--privacy">Security &amp; Privacy</a></li><li class="l2"><a href="#measured-in-the-open">Measured, in the open</a></li><li class="l2"><a href="#out-of-scope-for-v1">Out of scope for v1</a></li><li class="l2"><a href="#open-source-and-maintenance">Open source and maintenance</a></li><li class="l2"><a href="#cli-reference">CLI Reference</a></li><li class="l2"><a href="#use-as-a-library">Use as a library</a></li><li class="l2"><a href="#architecture">Architecture</a></li><li class="l2"><a href="#license">License</a></li><li class="l2"><a href="#contributing">Contributing</a></li></ul></nav></div>
+</p><nav class="pager" aria-label="Previous and next"><a class="prev" href="/why/" rel="prev"><span>Previous</span>Why dctx</a><a class="next" href="/docs/spec/" rel="next"><span>Next</span>Specification</a></nav></article><nav class="toc" aria-label="On this page"><p class="side-h">On this page</p><ul><li class="l2"><a href="#installation">Installation</a></li><li class="l3"><a href="#from-source">From source</a></li><li class="l2"><a href="#quick-start">Quick Start</a></li><li class="l2"><a href="#what-the-output-looks-like">What the output looks like</a></li><li class="l3"><a href="#pack-a-project">Pack a project</a></li><li class="l3"><a href="#find-a-symbol-then-read-it">Find a symbol, then read it</a></li><li class="l3"><a href="#pack-for-a-task">Pack for a task</a></li><li class="l2"><a href="#which-mode">Which mode?</a></li><li class="l3"><a href="#connect-an-mcp-client">Connect an MCP client</a></li><li class="l2"><a href="#use-as-a-library">Use as a library</a></li><li class="l2"><a href="#why-dctx">Why dctx</a></li><li class="l3"><a href="#at-a-glance">At a glance</a></li><li class="l2"><a href="#the-core-belief-prompt-processing-efficiency">The core belief: prompt-processing efficiency</a></li><li class="l3"><a href="#one-engine-for-every-way-software-is-built">One engine for every way software is built</a></li><li class="l3"><a href="#zero-rag-defects">Zero RAG defects</a></li><li class="l2"><a href="#where-it-comes-from">Where it comes from</a></li><li class="l2"><a href="#map-mode-context-for-agents">Map mode: context for agents</a></li><li class="l3"><a href="#language-tiers">Language tiers</a></li><li class="l2"><a href="#organization-control">Organization control</a></li><li class="l2"><a href="#plugins">Plugins</a></li><li class="l2"><a href="#security--privacy">Security &amp; Privacy</a></li><li class="l2"><a href="#measured-in-the-open">Measured, in the open</a></li><li class="l2"><a href="#out-of-scope-for-v1">Out of scope for v1</a></li><li class="l2"><a href="#open-source-and-maintenance">Open source and maintenance</a></li><li class="l2"><a href="#cli-reference">CLI Reference</a></li><li class="l2"><a href="#use-as-a-library-1">Use as a library</a></li><li class="l2"><a href="#architecture">Architecture</a></li><li class="l2"><a href="#license">License</a></li><li class="l2"><a href="#contributing">Contributing</a></li></ul></nav></div>
 </main>
 <footer class="ftr">
  <div class="wrap">
