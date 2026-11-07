@@ -6,7 +6,7 @@
 
 - This is llms-small.txt: the facts and the route table, with an outline of the start documents. The other entry points: https://www.dctx.internet.technology/llms.txt, https://www.dctx.internet.technology/llms-full.txt.
 - Engine: dctx 1.2.0. The documents section is the unedited output of the dctx binary on a copy of the documents, recorded by https://github.com/Eris-Margeta/dctx/blob/main/tools/website/capture.py; the site check re-runs it and fails on any byte of drift.
-- Docs commit: f778b45129acc7ba652b11d5199a65ef2f528970 (2026-11-07T23:17:38Z), the last commit that changed one of the documents.
+- Docs commit: 022554f29a0a0877b8bf327e2d832b4e5c9cbfeb (2026-11-07T23:39:25Z), the last commit that changed one of the documents.
 - Command: `dctx map map docs/START.md --depth 2`; `dctx map map docs/WHY-DCTX.md --depth 2`; `dctx map map README.md --depth 2`; `dctx map map docs/MODALITIES.md --depth 2`
 - Budget: 1,016 of 2,500 estimated tokens (ceil(2 * UTF-8 bytes / 7)), 4 documents.
 
@@ -147,19 +147,19 @@ Documents link to their Markdown twin (index.md), the repository file with only 
 
 ```text
 # dctx map
-d:docs/START.md#What dctx is	heading	L3-227
-d:docs/START.md#Choose your path	heading	L17-104
+d:docs/START.md#What dctx is	heading	L3-229
+d:docs/START.md#Choose your path	heading	L17-106
 d:docs/START.md#One giant folder	heading	L27-44
 d:docs/START.md#Many small projects	heading	L45-64
-d:docs/START.md#Agent builder embedding a library	heading	L65-84
-d:docs/START.md#Team / enterprise admin	heading	L85-104
-d:docs/START.md#Safe path in ten minutes	heading	L105-183
-d:docs/START.md#1. Install the system binary	heading	L107-126
-d:docs/START.md#2. Choose one project and inspect one answer	heading	L127-140
-d:docs/START.md#3. Configure the lean MCP profile	heading	L141-162
-d:docs/START.md#4. Measure before changing anything	heading	L163-183
-d:docs/START.md#Responsibilities	heading	L184-204
-d:docs/START.md#Two scopes, one binary	heading	L205-227
+d:docs/START.md#Agent builder embedding a library	heading	L65-86
+d:docs/START.md#Team / enterprise admin	heading	L87-106
+d:docs/START.md#Safe path in ten minutes	heading	L107-185
+d:docs/START.md#1. Install the system binary	heading	L109-128
+d:docs/START.md#2. Choose one project and inspect one answer	heading	L129-142
+d:docs/START.md#3. Configure the lean MCP profile	heading	L143-164
+d:docs/START.md#4. Measure before changing anything	heading	L165-185
+d:docs/START.md#Responsibilities	heading	L186-206
+d:docs/START.md#Two scopes, one binary	heading	L207-229
 # dctx map
 d:docs/WHY-DCTX.md#Why dctx exists	heading	L3-145
 d:docs/WHY-DCTX.md#The problem	heading	L7-14
