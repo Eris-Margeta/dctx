@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // SPDX-FileCopyrightText: 2026 Eris Margeta
-//! Format, corruption and filesystem-boundary regressions; scratch stays in this project.
+//! Format, corruption and filesystem-boundary regressions; scratch stays under the build target directory.
 
 use catalog_bench::{Catalog, Entry, Metadata, Tier, walk, write_catalog};
 use std::fs;
@@ -14,7 +14,7 @@ struct Scratch(PathBuf);
 impl Scratch {
     fn new() -> Self {
         let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-            .join("scratch")
+            .join("target/test-scratch")
             .join(format!(
                 "test-{}-{}",
                 std::process::id(),

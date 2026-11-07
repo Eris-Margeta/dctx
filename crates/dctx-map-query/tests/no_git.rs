@@ -6,6 +6,9 @@
 
 #![forbid(unsafe_code)]
 
+#[path = "../../../tests/support/source_files.rs"]
+mod source_files;
+
 use dctx_map_query::FileSource;
 use dctx_map_query::ports::Source;
 use std::{
@@ -40,33 +43,27 @@ fn compact(source: &str) -> String {
 }
 
 fn walk_sources(dir: &Path, hits: &mut Vec<PathBuf>) {
-    let Ok(entries) = fs::read_dir(dir) else {
-        return;
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        let name = path.file_name().and_then(|n| n.to_str()).unwrap_or("");
-        // decision 078 bans git from production code. Test trees may spawn git on purpose
-        // (confinement adversary probes prove it is blocked), so they are not scanned.
-        if name == "target" || name == ".git" || name == "tests" || name == "benches" {
+    let files = source_files::files(dir);
+    assert!(!files.is_empty(), "crate sources missing");
+    for path in files {
+        // Decision 078 bans Git from production code. Keep test/bench exclusions.
+        let relative = path.strip_prefix(dir).unwrap();
+        if relative.components().any(|part| {
+            matches!(
+                part.as_os_str().to_str(),
+                Some("target" | ".git" | "tests" | "benches")
+            )
+        }) || path.extension().is_none_or(|ext| ext != "rs")
+        {
             continue;
         }
-        let Ok(kind) = entry.file_type() else {
-            continue;
-        };
-        if kind.is_dir() {
-            walk_sources(&path, hits);
-        } else if path.extension().is_some_and(|ext| ext == "rs") {
-            let Ok(text) = fs::read_to_string(&path) else {
-                continue;
-            };
-            let compact = compact(&text);
-            if git_spawn_markers()
-                .iter()
-                .any(|marker| compact.contains(marker))
-            {
-                hits.push(path);
-            }
+        let text = fs::read_to_string(&path).unwrap();
+        let compact = compact(&text);
+        if git_spawn_markers()
+            .iter()
+            .any(|marker| compact.contains(marker))
+        {
+            hits.push(path);
         }
     }
 }
