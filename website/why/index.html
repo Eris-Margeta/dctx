@@ -250,7 +250,7 @@ $ dctx map neighbors &#39;s:tests/fixtures/basic.go#Add&#39; --edge calls --dir 
 calls:in:s:tests/fixtures/basic.go#main fn  tests/fixtures/basic.go L59
 </code></pre></div>
 
-<p><code>find</code> returns a stable id, the kind of thing it is (a function) and its lines. This is a historical 1.1.0 transcript; in the current CLI use <code>read --json</code> to include source bytes, because text read output contains metadata only. <code>neighbors</code> says that <code>main</code> calls it, on line 59.</p>
+<p><code>find</code> returns a stable id, the kind of thing it is (a function) and its lines. This is a historical 1.1.0 transcript; the current CLI also includes verified source bytes in text <code>read</code> output, or in <code>source_utf8</code> with <code>read --json</code>. <code>neighbors</code> says that <code>main</code> calls it, on line 59.</p>
 <h2 id="the-philosophy">The philosophy<a class="hd" href="#the-philosophy" aria-label="Link to The philosophy">#</a></h2>
 <p>The <a href="/docs/spec/#2-the-core-belief-prompt-processing-efficiency">specification</a> turns this into five testable rules.</p>
 <p><strong>Bounded.</strong> Every map answer has a size ceiling, reserved before anything is written, and a record is never split. The budget is up to 2,000 estimated tokens (1,000 for <code>explain</code>).

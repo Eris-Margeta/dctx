@@ -41,6 +41,8 @@ STATIC = {".gitignore", "assets/tejl-logo-off-black.svg"}
 ALLOWED_EXTERNAL = ("https://github.com/Eris-Margeta", "https://github.com/sponsors/Eris-Margeta", "https://tejl.com",
                     "https://tejl.hr", "https://schema.org", "https://www.apache.org/", "https://keepachangelog.com",
                     "https://semver.org", "https://developercertificate.org", "https://docs.github.com/en/actions",
+                    "https://code.claude.com/docs/en/mcp", "https://cursor.com/docs/mcp",
+                    "https://developers.openai.com/codex/mcp/",
                     "mailto:info@tejl.com", "mailto:eris.margeta@gmail.com")
 # First visit, cache empty. The reference sites measured 8 requests / 372 KB (rural) and 40 requests /
 # 396 KB (internet.technology) on their home pages; these budgets match or beat both.
@@ -121,6 +123,14 @@ def capture_drift(errors: list[str], warnings: list[str], skip: bool) -> None:
             a, b = json.loads(old), json.loads(new)
             changed = [x["id"] for x, y in zip(a["records"], b["records"]) if x != y] or ["(record list)"]
             errors.append(f"capture drift: the binary's output differs from data/demo.json in {', '.join(changed[:8])}; run capture.py")
+
+
+def readme_drift(errors: list[str]) -> None:
+    """Keep README examples tied to the same captures and compiled library snippet in CI."""
+    result = subprocess.run([sys.executable, str(ROOT / "scripts/render_readme.py"), "--check"],
+                            cwd=ROOT, capture_output=True, text=True)
+    if result.returncode:
+        errors.append(f"README drift: {result.stdout}{result.stderr}".strip())
 
 
 def deny_list(errors: list[str], warnings: list[str]) -> int:
@@ -606,6 +616,7 @@ def main(argv: list[str]) -> int:
             files = staleness(site, errors, "--working-tree" in argv)
             check_site(site, errors, report)
         capture_drift(errors, warnings, "--no-capture" in argv)
+        readme_drift(errors)
         hits = deny_list(errors, warnings)
         dates_fresh(errors, warnings)
     except (OSError, ValueError, RuntimeError, subprocess.CalledProcessError, StopIteration) as error:

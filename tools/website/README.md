@@ -23,7 +23,28 @@ For uncommitted documentation changes, run the full check against the generated 
 
 ```sh
 DCTX_BIN=target/release/dctx-cli tools/website/.venv/bin/python tools/website/check.py --working-tree
+tools/website/.venv/bin/python tools/website/test_build.py
 ```
+
+The unit tests check the freshly generated working tree. The default `check.py`
+still compares against HEAD for CI. Both checks run `scripts/render_readme.py --check`
+to catch drift in the README measurements, output examples and compiled Rust snippet.
+
+To refresh output examples after a CLI or sample change:
+
+```sh
+DCTX_BIN=target/release/dctx-cli tools/website/.venv/bin/python tools/website/capture.py
+python3 scripts/render_readme.py
+python3 scripts/render_readme.py --check
+tools/website/.venv/bin/python tools/website/build.py
+DCTX_BIN=target/release/dctx-cli tools/website/.venv/bin/python tools/website/check.py --working-tree
+```
+
+The README, home page and `/cli/` share `output_examples.py`: the first 40 pack
+lines plus an exact `… (N more lines)` count, find/read (including JSON source),
+and the full task pack with an 800-token estimated budget. Nothing in those
+examples is handwritten. The Rust snippet comes from the workspace doctest in
+`examples/library/README.md`; test it with `cargo test --locked -p dctx-library-example --doc`.
 
 ## Where everything comes from
 
