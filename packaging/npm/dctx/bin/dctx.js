@@ -1,25 +1,21 @@
 #!/usr/bin/env node
+// SPDX-License-Identifier: Apache-2.0
+// SPDX-FileCopyrightText: 2026 Eris Margeta
 'use strict';
 
 const { spawnSync } = require('node:child_process');
-const supported = new Set(['linux-x64', 'linux-arm64', 'darwin-x64', 'darwin-arm64', 'win32-x64']);
-const platform = `${process.platform}-${process.arch}`;
-if (!supported.has(platform)) {
-  console.error(`dctx: unsupported platform ${platform}`);
-  process.exit(1);
-}
+const { connect, resolveBinary } = require('../src/index.js');
 
-let binary;
-try {
-  binary = require.resolve(`@dctx/cli-${platform}/bin/dctx${process.platform === 'win32' ? '.exe' : ''}`);
-} catch {
-  console.error(`dctx: missing @dctx/cli-${platform}; reinstall with npm install --include=optional dctx`);
-  process.exit(1);
+async function main() {
+  const binaryPath = resolveBinary();
+  const client = await connect({ binaryPath });
+  await client.close();
+  const result = spawnSync(binaryPath, process.argv.slice(2), { stdio: 'inherit', windowsHide: true, shell: false });
+  if (result.error) throw result.error;
+  if (result.signal) process.kill(process.pid, result.signal);
+  else process.exitCode = result.status ?? 1;
 }
-const result = spawnSync(binary, process.argv.slice(2), { stdio: 'inherit', windowsHide: true });
-if (result.error) {
-  console.error(`dctx: ${result.error.message}`);
-  process.exit(1);
-}
-if (result.signal) process.kill(process.pid, result.signal);
-else process.exit(result.status ?? 1);
+main().catch((error) => {
+  console.error(error.message.startsWith('dctx') ? error.message : `dctx: ${error.message}`);
+  process.exitCode = 1;
+});

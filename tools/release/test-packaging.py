@@ -4,6 +4,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import subprocess
 import tarfile
 import tempfile
@@ -23,7 +24,13 @@ class Packaging(unittest.TestCase):
             directory = Path(tmp)
             artifacts, packages = directory / "artifacts", directory / "packages"
             artifacts.mkdir()
-            binary = b'#!/bin/sh\nprintf "arg=<%s>\\n" "$@"\nexit 23\n'
+            handshake = (
+                b'#!/bin/sh\nif [ "$1" = rpc ]; then\n'
+                b'IFS= read -r request\n'
+                b"printf '%s\\n' '{\"id\":\"0\",\"engine_version\":\"1.2.3\",\"result\":{\"protocol_version\":\"1.0.0\",\"verbs\":[\"hello\"]}}'\n"
+                b'cat >/dev/null\nexit 0\nfi\n'
+            )
+            binary = handshake + b'printf "arg=<%s>\\n" "$@"\nexit 23\n'
             checksums = []
             for platform, target in prepare_npm.PLATFORMS.items():
                 windows = platform.startswith("win32")
@@ -57,15 +64,18 @@ class Packaging(unittest.TestCase):
             modules.mkdir(parents=True)
             (modules / "cli-linux-x64").symlink_to(native, target_is_directory=True)
             command = ["node", str(main / "bin/dctx.js"), "with spaces", "--flag", "λ"]
-            result = subprocess.run(command, capture_output=True, text=True)
+            env = {**os.environ, "XDG_CACHE_HOME": str(directory / "cache"),
+                   "HOME": str(directory / "home")}
+            env.pop("DCTX_BIN", None)
+            result = subprocess.run(command, capture_output=True, text=True, env=env)
             self.assertEqual(result.returncode, 23)
             self.assertEqual(result.stdout, "arg=<with spaces>\narg=<--flag>\narg=<λ>\n")
             self.assertEqual(result.stderr, "")
-            (native / "bin/dctx").write_text("#!/bin/sh\nkill -TERM $$\n")
-            result = subprocess.run(command, capture_output=True, text=True)
+            (native / "bin/dctx").write_bytes(handshake + b"kill -TERM $$\n")
+            result = subprocess.run(command, capture_output=True, text=True, env=env)
             self.assertEqual(result.returncode, -15)
             (modules / "cli-linux-x64").unlink()
-            result = subprocess.run(command, capture_output=True, text=True)
+            result = subprocess.run(command, capture_output=True, text=True, env=env)
             self.assertEqual(result.returncode, 1)
             self.assertIn("--include=optional", result.stderr)
             # A damaged archive must be rejected before any output package is written.
