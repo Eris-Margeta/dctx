@@ -50,6 +50,10 @@ impl Repository {
         self.root.join("cache")
     }
 
+    fn scoped_cache(&self) -> PathBuf {
+        self.cache().join(dctx_cli::host::engine_cache_namespace())
+    }
+
     fn output(&self, args: &[&str]) -> Output {
         self.output_env(args, &[])
     }
@@ -144,7 +148,7 @@ fn switching_places_keeps_both_generations_warm_in_one_bounded_cache() {
             assert_eq!(count_line(&report, "content_reads"), 0, "{report}");
         }
     }
-    let life = dctx_cli::host::load_ledger(&repo.cache()).expect("ledger");
+    let life = dctx_cli::host::load_ledger(&repo.scoped_cache()).expect("ledger");
     let status = life.status();
     assert_eq!(status.roots.len(), 2);
     assert!(status.admitted > 0 && status.admitted <= status.hard_cap);
@@ -154,7 +158,7 @@ fn switching_places_keeps_both_generations_warm_in_one_bounded_cache() {
     let (_, report) = repo.run(&["map", "find", "kept", "--place", &alias]);
     assert!(report.contains("generation reused"), "{report}");
     assert_eq!(
-        dctx_cli::host::load_ledger(&repo.cache())
+        dctx_cli::host::load_ledger(&repo.scoped_cache())
             .expect("ledger")
             .status()
             .roots
@@ -176,7 +180,7 @@ fn switching_places_keeps_both_generations_warm_in_one_bounded_cache() {
         assert_eq!(output.status.code(), Some(3), "{stderr}");
         assert!(stderr.contains("cache limit"), "{stderr}");
     }
-    let after = dctx_cli::host::load_ledger(&repo.cache())
+    let after = dctx_cli::host::load_ledger(&repo.scoped_cache())
         .expect("bounded ledger")
         .status();
     assert_eq!(after.roots.len(), 3);
@@ -421,7 +425,7 @@ fn an_empty_tight_cache_refuses_without_suggesting_useless_gc() {
         assert!(!stderr.contains("check that PATH"), "{stderr}");
     }
     assert_eq!(
-        dctx_cli::host::load_ledger(&repo.cache())
+        dctx_cli::host::load_ledger(&repo.scoped_cache())
             .expect("ledger")
             .admitted(),
         0
